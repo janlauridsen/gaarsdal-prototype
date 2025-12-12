@@ -15,3 +15,17 @@ html, body { background: #F4F2ED; color: #2E2C29; }
 .animate-fadeIn {
   animation: fadeIn 0.25s ease-out;
 }
+/* Patch 6.4 – Chat refinements */
+#gaarsdal-chat-window {
+  scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c7c7c7;
+  border-radius: 6px;
+}
+
