@@ -1,4 +1,5 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+// pages/api/ai-stream.ts
+import type { NextApiRequest } from "next";
 
 export const config = {
   runtime: "edge",
@@ -12,12 +13,14 @@ export default async function handler(req: NextApiRequest) {
   const { messages } = await req.json();
 
   const encoder = new TextEncoder();
+
   const stream = new ReadableStream({
     async start(controller) {
       const systemPrompt = `
-Du er "Gaarsdal Assistent". Svar roligt, varmt og professionelt.
-Giv kun generel information — ingen diagnostik eller behandling.
-Svar på dansk. Skriv i korte, venlige afsnit.
+Du er "Gaarsdal Assistent". 
+Du hjælper besøgende med at forstå hypnoterapi på en rolig, varm og professionel måde.
+Du giver kun generel information — ingen diagnoser, ingen behandling.
+Svar på dansk og i korte, klare afsnit.
 `;
 
       const payload = {
@@ -29,7 +32,7 @@ Svar på dansk. Skriv i korte, venlige afsnit.
         stream: true,
       };
 
-      const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -38,13 +41,13 @@ Svar på dansk. Skriv i korte, venlige afsnit.
         body: JSON.stringify(payload),
       });
 
-      if (!resp.ok || !resp.body) {
+      if (!response.ok || !response.body) {
         controller.enqueue(encoder.encode("data: ERROR\n\n"));
         controller.close();
         return;
       }
 
-      const reader = resp.body.getReader();
+      const reader = response.body.getReader();
 
       while (true) {
         const { value, done } = await reader.read();
@@ -63,7 +66,7 @@ Svar på dansk. Skriv i korte, venlige afsnit.
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
+      "Connection": "keep-alive",
     },
   });
 }
