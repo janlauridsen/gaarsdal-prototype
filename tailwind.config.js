@@ -5,22 +5,29 @@ module.exports = {
     "./lib/**/*.{js,ts,jsx,tsx}",
     "./styles/**/*.{js,ts,jsx,tsx}",
   ],
- theme: {
+  theme: {
     extend: {
       colors: {
-        bg: "#F4F2ED",
-        text: "#2E2C29",
-        muted: "#6E675F",
-        accent: "#2F5C5B",
-        sage: "#8BAA9A",
+        bg: "#EFEDE7",
+        surface: "#FFFFFF",
+        text: "#2C2A28",
+        muted: "#6B675F",
+        accent: "#3E5F58",
+        "accent-light": "#8EA79D",
+        sage: "#AEBFB4",
+        border: "#D8D5CC",
       },
       fontSize: {
-        h1: ['48px', { lineHeight: '1.2' }],
-        h2: ['34px', { lineHeight: '1.3' }],
-        'base-lg': ['18px', { lineHeight: '1.7' }],
+        h1: ["48px", { lineHeight: "1.2" }],
+        h2: ["34px", { lineHeight: "1.3" }],
+        "base-lg": ["18px", { lineHeight: "1.7" }],
+      },
+      boxShadow: {
+        soft: "0 4px 16px rgba(0,0,0,0.08)",
+        card: "0 2px 10px rgba(0,0,0,0.05)",
       },
       borderRadius: {
-        'lg-2xl': '1rem',
+        xl2: "1rem",
       },
     },
   },
