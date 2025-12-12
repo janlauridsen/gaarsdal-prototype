@@ -9,12 +9,13 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <>
+      {/* Sideindhold */}
       <Component {...pageProps} />
 
-      {/* AI CHAT BUBBLE */}
+      {/* Chatboblen */}
       <AIChatButton onClick={() => setOpen(true)} />
 
-      {/* AI CHAT WINDOW */}
+      {/* Chatvinduet */}
       <AIChat open={open} onClose={() => setOpen(false)} />
     </>
   );
