@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const result = await resend.emails.send({
       from: "Gaarsdal Hypnoterapi <onboarding@resend.dev>",
-      to: "jan@gaarsdal.net",
+      to: "jan.lauridsen@hotmail.com",
       subject: `Ny kontaktformular fra ${name}`,
       reply_to: email,
       html: `
