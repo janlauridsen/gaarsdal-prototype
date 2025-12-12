@@ -12,8 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     return res.status(400).json({ ok: false, error: 'Manglende felter' })
   }
 
-  // Lige nu logger vi bare — virker i Vercel logs
-  console.log('Kontaktformular:', { name, email, phone, message })
+  console.log('Kontaktformular indsendt:', { name, email, phone, message })
 
   return res.status(200).json({ ok: true })
 }
