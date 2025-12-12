@@ -21,10 +21,22 @@ export default function Header({ siteTitle = 'Gaarsdal Hypnoterapi', menu = [{la
         </div>
 
         <nav className="hidden md:flex gap-8 items-center" aria-label="Hovednavigation">
-          {menu.map((item) => (
-            <Link key={item.href} href={item.href}><a className="text-muted hover:text-text">{item.label}</a></Link>
-          ))}
-        </nav>
+  {menu
+    .filter(item => item.href !== "/kontakt")
+    .map((item) => (
+      <Link key={item.href} href={item.href}>
+        <a className="text-muted hover:text-text">{item.label}</a>
+      </Link>
+    ))}
+
+  {/* CTA KNAP */}
+  <Link href="/kontakt">
+    <a className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition">
+      Kontakt mig
+    </a>
+  </Link>
+</nav>
+
 
         <button
           className="md:hidden ml-3 p-2 rounded focus:outline-none focus:ring-2 focus:ring-accent"
@@ -40,9 +52,21 @@ export default function Header({ siteTitle = 'Gaarsdal Hypnoterapi', menu = [{la
 
       <div className={`md:hidden transition-max-h duration-300 ease-in-out overflow-hidden ${open ? 'max-h-screen' : 'max-h-0'}`}>
         <div className="px-6 pb-6 flex flex-col gap-4">
-          {menu.map((item) => (
-            <Link key={item.href} href={item.href}><a className="block py-2 text-lg">{item.label}</a></Link>
-          ))}
+{menu
+  .filter(item => item.href !== "/kontakt")
+  .map((item) => (
+    <Link key={item.href} href={item.href}>
+      <a className="block py-2 text-lg">{item.label}</a>
+    </Link>
+  ))}
+
+{/* CTA i mobil */}
+<Link href="/kontakt">
+  <a className="mt-4 inline-block text-center bg-accent text-white px-4 py-3 rounded-lg hover:bg-accent/90 transition">
+    Kontakt mig
+  </a>
+</Link>
+
         </div>
       </div>
     </header>
