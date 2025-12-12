@@ -5,7 +5,7 @@ module.exports = {
     "./lib/**/*.{js,ts,jsx,tsx}",
     "./styles/**/*.{js,ts,jsx,tsx}",
   ],
-  theme: {
+ theme: {
     extend: {
       colors: {
         bg: "#F4F2ED",
@@ -15,9 +15,12 @@ module.exports = {
         sage: "#8BAA9A",
       },
       fontSize: {
-        h1: ["48px", { lineHeight: "1.2" }],
-        h2: ["34px", { lineHeight: "1.3" }],
-        "base-lg": ["18px", { lineHeight: "1.7" }],
+        h1: ['48px', { lineHeight: '1.2' }],
+        h2: ['34px', { lineHeight: '1.3' }],
+        'base-lg': ['18px', { lineHeight: '1.7' }],
+      },
+      borderRadius: {
+        'lg-2xl': '1rem',
       },
     },
   },
