@@ -3,7 +3,7 @@ module.exports = {
   "./pages/**/*.{js,ts,jsx,tsx}",
   "./components/**/*.{js,ts,jsx,tsx}",
   "./lib/**/*.{js,ts,jsx,tsx}",
-  "./styles/**/*.{js,ts,jsx,tsx}",
+  "./styles/**/*.{js,ts,jsx,tsx}"
 ]
       fontSize: {
         h1: ['48px', { lineHeight: '1.2' }],
