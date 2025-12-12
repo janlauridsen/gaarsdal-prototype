@@ -1,181 +1,142 @@
 // pages/admin/logs.tsx
-import { useState } from "react";
+import React, { useState } from "react";
 
-export default function AdminLogs() {
-  const [pw, setPw] = useState("");
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [messages, setMessages] = useState<any[] | null>(null);
+export default function AdminLogsPage() {
+  const [password, setPassword] = useState("");
+  const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [selected, setSelected] = useState<number | null>(null);
 
-  async function login() {
+  async function loadLogs() {
     setLoading(true);
+    setError("");
 
-    const res = await fetch("/api/sessions/list", {
-      method: "POST",
-      body: JSON.stringify({ password: pw }),
-    });
+    try {
+      const res = await fetch("/api/admin-logs", {
+        method: "POST",
+        body: JSON.stringify({ password }),
+      });
 
-    const data = await res.json();
-    setLoading(false);
+      const data = await res.json();
 
-    if (!data.ok) {
-      alert("Forkert adgangskode");
-      return;
+      if (!data.ok) {
+        setError(data.error || "Kunne ikke hente logs.");
+        setLogs([]);
+      } else {
+        setLogs(Array.isArray(data.logs) ? data.logs : []);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Uventet fejl ved indlæsning.");
     }
 
-    // FILTER: fjern entries uden sessionId
-    const cleaned = data.sessions.filter((s: any) => s.sessionId);
-
-    setLoggedIn(true);
-    setSessions(cleaned);
-  }
-
-  async function loadSession(sessionId: string) {
-    setLoading(true);
-
-    const res = await fetch("/api/sessions/get", {
-      method: "POST",
-      body: JSON.stringify({
-        password: pw,
-        sessionId,
-      }),
-    });
-
-    const data = await res.json();
     setLoading(false);
-
-    if (!data.ok) {
-      alert("Kunne ikke hente session");
-      return;
-    }
-
-    setMessages(data.messages);
   }
 
-  // LOGIN SCREEN
-  if (!loggedIn) {
-    return (
-      <div style={{ maxWidth: 420, margin: "100px auto", textAlign: "center" }}>
-        <h2 style={{ fontSize: "24px", marginBottom: "10px" }}>Admin Login</h2>
-        <p style={{ color: "#666", marginBottom: "20px" }}>
-          Indtast adgangskoden for at se chat-sessions
-        </p>
+  const selectedLog = selected !== null ? logs[selected] : null;
 
+  return (
+    <div style={{ padding: "40px", fontFamily: "sans-serif" }}>
+      <h1 style={{ marginBottom: "20px" }}>Chat Sessions</h1>
+
+      {/* Password input */}
+      <div style={{ marginBottom: "20px" }}>
         <input
           type="password"
-          placeholder="Password"
-          value={pw}
-          onChange={(e) => setPw(e.target.value)}
+          placeholder="Admin kodeord"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           style={{
-            padding: "12px",
-            width: "100%",
-            borderRadius: "8px",
+            padding: "10px",
             border: "1px solid #ccc",
-            marginBottom: "12px",
-            fontSize: "16px",
+            borderRadius: "6px",
+            width: "200px",
           }}
         />
-
         <button
-          onClick={login}
-          disabled={loading}
+          onClick={loadLogs}
           style={{
-            padding: "12px 20px",
-            width: "100%",
+            marginLeft: "10px",
+            padding: "10px 16px",
             background: "#2F5C5B",
             color: "white",
-            borderRadius: "8px",
+            borderRadius: "6px",
             border: "none",
-            fontSize: "16px",
             cursor: "pointer",
-            opacity: loading ? 0.6 : 1,
           }}
         >
-          {loading ? "Logger ind…" : "Login"}
+          Hent logs
         </button>
       </div>
-    );
-  }
 
-  // MAIN DASHBOARD
-  return (
-    <div style={{ maxWidth: 900, margin: "40px auto", padding: "10px" }}>
-      <h2 style={{ fontSize: "26px", marginBottom: "10px" }}>Chat Sessions</h2>
-      <p style={{ color: "#666" }}>Klik på en session for at se hele samtalen.</p>
+      {loading && <p>Indlæser logs…</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
-        {/* LEFT PANEL — SESSION LIST */}
-        <div style={{ width: "35%", borderRight: "1px solid #ddd", paddingRight: "10px" }}>
-          <h3 style={{ fontSize: "20px", marginBottom: "10px" }}>Sessions</h3>
+      <div style={{ display: "flex", gap: "30px", marginTop: "20px" }}>
+        {/* Sessions list */}
+        <div style={{ width: "40%" }}>
+          <h2>Sessions</h2>
 
-          {sessions.length === 0 && <p>Ingen gyldige sessions fundet.</p>}
-
-          <ul style={{ listStyle: "none", padding: 0 }}>
-            {sessions.map((s: any, i: number) => {
-              const sid = s.sessionId || "ukendt";
-              const label = sid !== "ukendt" ? sid.slice(0, 8) + "…" : "Ukendt session";
-
-              return (
+          {logs.length === 0 ? (
+            <p>Ingen gyldige sessions fundet.</p>
+          ) : (
+            <ul style={{ listStyle: "none", padding: 0 }}>
+              {logs.map((entry, i) => (
                 <li
                   key={i}
-                  onClick={() => sid !== "ukendt" && loadSession(sid)}
+                  onClick={() => setSelected(i)}
                   style={{
                     padding: "10px",
-                    marginBottom: "8px",
-                    borderRadius: "8px",
-                    border: "1px solid #ddd",
-                    cursor: sid !== "ukendt" ? "pointer" : "default",
-                    background: "#fafafa",
+                    marginBottom: "6px",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    background: selected === i ? "#e4eee9" : "#f6f6f6",
                   }}
                 >
-                  <strong>{label}</strong>
+                  <strong>Session {i + 1}</strong>
                   <br />
-                  <span style={{ fontSize: "12px", color: "#777" }}>
-                    {new Date(s.started).toLocaleString()}
-                  </span>
+                  <small>{entry.timestamp || "Ukendt tidspunkt"}</small>
                 </li>
-              );
-            })}
-          </ul>
+              ))}
+            </ul>
+          )}
         </div>
 
-        {/* RIGHT PANEL — MESSAGES */}
-        <div style={{ width: "65%", paddingLeft: "10px" }}>
-          <h3 style={{ fontSize: "20px", marginBottom: "10px" }}>Samtale</h3>
+        {/* Message viewer */}
+        <div style={{ width: "60%" }}>
+          <h2>Samtale</h2>
 
-          {!messages && <p>Vælg en session fra listen.</p>}
-
-          {messages && (
+          {!selectedLog ? (
+            <p>Vælg en session fra listen.</p>
+          ) : (
             <div
               style={{
-                border: "1px solid #ddd",
+                background: "#fafafa",
+                padding: "15px",
                 borderRadius: "8px",
-                padding: "10px",
-                maxHeight: "70vh",
+                maxHeight: "500px",
                 overflowY: "auto",
               }}
             >
-              {messages.map((m: any, i: number) => (
-                <div
-                  key={i}
-                  style={{
-                    marginBottom: "12px",
-                    padding: "10px",
-                    background: m.role === "user" ? "#2F5C5B" : "#f0f0f0",
-                    color: m.role === "user" ? "#fff" : "#333",
-                    borderRadius: "8px",
-                    maxWidth: "80%",
-                    alignSelf: m.role === "user" ? "flex-end" : "flex-start",
-                  }}
-                >
-                  <strong>{m.role === "user" ? "Bruger" : "Assistent"}</strong>
-                  <div style={{ whiteSpace: "pre-wrap", marginTop: "4px" }}>{m.text}</div>
-                  <div style={{ fontSize: "11px", marginTop: "6px", opacity: 0.6 }}>
-                    {new Date(m.time).toLocaleString()}
+              {Array.isArray(selectedLog.messages) ? (
+                selectedLog.messages.map((m: any, i: number) => (
+                  <div
+                    key={i}
+                    style={{
+                      marginBottom: "12px",
+                      padding: "10px",
+                      borderRadius: "6px",
+                      background: m.role === "user" ? "#dfefff" : "#e9f5e1",
+                    }}
+                  >
+                    <strong>{m.role.toUpperCase()}:</strong>
+                    <p>{m.text || JSON.stringify(m)}</p>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p>Ingen beskeder i denne session.</p>
+              )}
             </div>
           )}
         </div>
