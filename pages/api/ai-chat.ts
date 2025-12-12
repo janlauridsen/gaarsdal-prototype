@@ -39,7 +39,7 @@ Svar på dansk.
     }
 
     const payload = {
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o-mini",
       messages,
       max_tokens: 500,
       temperature: 0.2,
