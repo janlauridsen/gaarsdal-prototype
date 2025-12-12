@@ -1,6 +1,27 @@
 // pages/api/ai-stream.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { logChatMessage } from "../../lib/chat-logger";
+
+// --- Redis client (Upstash) ---
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL!;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN!;
+
+async function logToRedis(message: any) {
+  try {
+    await fetch(redisUrl + "/set", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${redisToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        key: `chatlog:${Date.now()}`,   // simple unique key
+        value: JSON.stringify(message),
+      }),
+    });
+  } catch (err) {
+    console.error("Redis log error:", err);
+  }
+}
 
 export const config = {
   runtime: "nodejs",
@@ -11,17 +32,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Parse body
   const body = JSON.parse(req.body || "{}");
 
   if (!body.messages) {
     return res.status(400).json({ error: "Missing messages" });
-  }
-
-  // Log last user message
-  const last = body.messages[body.messages.length - 1];
-  if (last?.content) {
-    logChatMessage("user", last.content);
   }
 
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
@@ -29,7 +43,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: "Missing OpenAI API key" });
   }
 
-  // Prepare streaming headers
+  // --- Log user message ---
+  await logToRedis({
+    type: "user_message",
+    timestamp: Date.now(),
+    content: body.messages,
+  });
+
   res.writeHead(200, {
     "Content-Type": "text/plain; charset=utf-8",
     "Transfer-Encoding": "chunked",
@@ -37,74 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     Connection: "keep-alive",
   });
 
-  // System prompt
-  const systemPrompt = `
-Du er *Gaarsdal Assistent* — en rolig, varm og fagligt ansvarlig hjælper
-på Gaarsdal Hypnoterapi’s hjemmeside. Du svarer altid på dansk.
-
-========================================
-🌿 STIL & TONE
-========================================
-- Vær balanceret: varm, empatisk, jordnær og faglig.
-- Undgå lange svar; 2–4 korte afsnit er passende.
-- Ingen amerikansk over-positivitet — hold en skandinavisk, rolig tone.
-- Vær respektfuld, tydelig, og nærværende.
-- Stil nænsomme afklarende spørgsmål, hvis det hjælper.
-
-========================================
-🎯 HVAD GAARSDAL HYPNOTERAPI TILBYDER
-========================================
-Gaarsdal Hypnoterapi tilbyder en rolig, tryg og fagligt funderet ramme
-til arbejde med indre tilstande, vaner, følelser og mentale mønstre.
-
-Typiske temaer:
-- Stress, uro, indre spændinger
-- Søvnproblemer
-- Vaner (rygestop, spisemønstre)
-- Selvfølelse, selvtillid og indre ro
-- Præstationspres, bekymringer, frygtreaktioner
-- Svære følelser i tryg ramme
-
-Du må ikke love resultater. Du taler om muligheder, ikke garantier.
-
-========================================
-🧘‍♂️ SÅDAN FOREGÅR EN SESSION
-========================================
-1) Samtale – rolig afklaring af tema og mål  
-2) Hypnose – guidet, behagelig fordybelse (ikke søvn)  
-3) Integration – rolig tilbagevenden og afrunding  
-
-========================================
-🛡 FAGLIGE RAMMER
-========================================
-- Du giver kun generel information.  
-- Du erstatter ikke professionel behandling.  
-- Ingen diagnoser eller løfter om resultater.  
-- Ved alvorlig mistrivsel → nænsom anbefaling om professionel hjælp.
-
-========================================
-🌱 VÆRDIER
-========================================
-Ro · Respekt · Faglighed · Tryghed · Jordnær tilgang  
-
-========================================
-📍 KONTAKT
-========================================
-Jan Erik Gaarsdal Lauridsen  
-Bakkevej 36, 3460 Birkerød  
-jan@gaarsdal.net · Tlf. 42807474
-
-========================================
-💬 HVORDAN DU SVARER
-========================================
-- Roligt, varmt, fagligt og jordnært.  
-- Korte, præcise svar (chat-format).  
-- Nænsom tilgang ved svære temaer.  
-- Ingen behandlingsråd — kun information.
-`;
-
   try {
-    // Call OpenAI with streaming enabled
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -115,7 +68,28 @@ jan@gaarsdal.net · Tlf. 42807474
         model: "gpt-4o-mini",
         stream: true,
         messages: [
-          { role: "system", content: systemPrompt },
+          {
+            role: "system",
+            content: `
+Du er *Gaarsdal Assistent* — en rolig, varm og fagligt ansvarlig hjælper
+på Gaarsdal Hypnoterapi’s hjemmeside. Du svarer altid på dansk.
+
+Hold svarene meget korte (maks 4–6 linjer), rolige og jordnære.
+Du giver ikke behandling eller diagnoser — kun generel og tryg information.
+Hvis noget kræver professionel vurdering, nænsomt anbefal kontakt.
+
+Kort præsentation af stedet:
+- Rolig og tryg ramme i Birkerød.
+- Arbejde med stress, indre uro, søvn, vaner, selvtillid og indre ro.
+- En session består af samtale → fordybelse → integration.
+
+Værdier:
+Ro • Respekt • Faglighed • Tryghed.
+
+Kontakt:
+jan@gaarsdal.net — 42807474
+`
+          },
           ...body.messages,
         ],
       }),
@@ -129,7 +103,8 @@ jan@gaarsdal.net · Tlf. 42807474
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
 
-    // Stream AI response chunks
+    let fullReply = "";
+
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
@@ -144,18 +119,22 @@ jan@gaarsdal.net · Tlf. 42807474
         try {
           const json = JSON.parse(line);
           const token = json.choices?.[0]?.delta?.content;
-
           if (token) {
+            fullReply += token;
             res.write(token);
-
-            // Log each streamed token
-            logChatMessage("assistant", token);
           }
-        } catch {
+        } catch (err) {
           // ignore malformed lines
         }
       }
     }
+
+    // --- Log AI reply ---
+    await logToRedis({
+      type: "assistant_reply",
+      timestamp: Date.now(),
+      content: fullReply,
+    });
 
     res.end();
   } catch (error) {
