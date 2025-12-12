@@ -1,3 +1,4 @@
+// components/AIChat.tsx
 import React, { useState, useRef, useEffect } from "react";
 
 type Message = { role: "user" | "assistant"; text: string };
@@ -6,8 +7,10 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [typing, setTyping] = useState(false); // PATCH 5
   const endRef = useRef<HTMLDivElement | null>(null);
 
+  // Start med en venlig besked
   useEffect(() => {
     if (open && messages.length === 0) {
       setMessages([
@@ -19,19 +22,26 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
     }
   }, [open]);
 
+  // Automatisk scroll
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading, open]);
+  }, [messages, loading, typing]);
 
+  // Streaming message handler
   async function sendMessage() {
     if (!input.trim()) return;
 
     const userText = input.trim();
     setInput("");
+
+    // Tilføj brugerbesked
     setMessages((m) => [...m, { role: "user", text: userText }]);
 
+    // Tilføj tom AI-boble
     setMessages((m) => [...m, { role: "assistant", text: "" }]);
+
     setLoading(true);
+    setTyping(true); // PATCH 5
 
     const resp = await fetch("/api/ai-stream", {
       method: "POST",
@@ -43,9 +53,13 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
     if (!resp.body) {
       setMessages((m) => [
         ...m,
-        { role: "assistant", text: "Beklager — der opstod en fejl under streaming." },
+        {
+          role: "assistant",
+          text: "Beklager — der opstod en fejl under streaming.",
+        },
       ]);
       setLoading(false);
+      setTyping(false); // PATCH 5
       return;
     }
 
@@ -60,25 +74,31 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
       const chunk = decoder.decode(value);
       aiText += chunk;
 
+      // Live opdatering af sidste AI-besked
       setMessages((m) => {
         const updated = [...m];
-        updated[updated.length - 1] = { role: "assistant", text: aiText };
+        updated[updated.length - 1] = {
+          role: "assistant",
+          text: aiText,
+        };
         return updated;
       });
     }
 
     setLoading(false);
+    setTyping(false); // PATCH 5
   }
 
   if (!open) return null;
 
   return (
-    <div className="
+    <div
+      className="
       fixed bottom-24 right-6 z-50 w-96 max-w-full
       bg-white rounded-2xl shadow-2xl border border-gray-200
       p-4 flex flex-col transition-all
-    ">
-      
+    "
+    >
       {/* Header */}
       <div className="flex items-center justify-between pb-2 mb-3 border-b border-gray-100">
         <div>
@@ -101,9 +121,11 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
             key={i}
             className={`
               px-3 py-2 rounded-xl max-w-[80%]
-              ${m.role === "assistant"
-                ? "bg-gray-100 text-text self-start"
-                : "bg-accent text-white self-end"
+              animate-fadeIn
+              ${
+                m.role === "assistant"
+                  ? "bg-gray-100 text-text self-start"
+                  : "bg-accent text-white self-end"
               }
             `}
           >
@@ -113,6 +135,19 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
             />
           </div>
         ))}
+
+        {/* Typing indicator */}
+        {typing && (
+          <div
+            className="
+              px-3 py-2 rounded-xl bg-gray-100 text-text text-sm 
+              self-start animate-pulse max-w-[60%]
+            "
+          >
+            Assistenten skriver…
+          </div>
+        )}
+
         <div ref={endRef} />
       </div>
 
