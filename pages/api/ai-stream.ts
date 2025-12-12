@@ -1,53 +1,74 @@
 // pages/api/ai-stream.ts
 import type { NextApiRequest, NextApiResponse } from "next";
+import { getOrCreateSessionId } from "../../lib/session";
 
-// --- Redis client (Upstash) ---
-const redisUrl = process.env.UPSTASH_REDIS_REST_URL!;
-const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN!;
-
-async function logToRedis(message: any) {
-  try {
-    await fetch(redisUrl + "/set", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${redisToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        key: `chatlog:${Date.now()}`,   // simple unique key
-        value: JSON.stringify(message),
-      }),
-    });
-  } catch (err) {
-    console.error("Redis log error:", err);
-  }
-}
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL!;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN!;
+const OPENAI_KEY = process.env.OPENAI_API_KEY!;
 
 export const config = {
   runtime: "nodejs",
 };
 
+// Helper – Upstash lpush
+async function redisPush(key: string, value: any) {
+  await fetch(`${REDIS_URL}/lpush/${key}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${REDIS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ value: JSON.stringify(value) }),
+  });
+}
+
+// Helper – initial metadata
+async function ensureSessionMeta(sessionId: string, req: NextApiRequest) {
+  await fetch(`${REDIS_URL}/set/session_meta_${sessionId}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${REDIS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      value: JSON.stringify({
+        sessionId,
+        started: Date.now(),
+        ua: req.headers["user-agent"] || "",
+        ip:
+          (req.headers["x-forwarded-for"] as string)?.split(",")[0] ||
+          req.socket.remoteAddress ||
+          "",
+      }),
+    }),
+  });
+
+  // Registrer session i sessions-listen
+  await redisPush("sessions", {
+    sessionId,
+    started: Date.now(),
+  });
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") {
+  if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
-  }
+
+  // SESSION-ID via cookie
+  const sessionId = getOrCreateSessionId(req, res);
+
+  // Sørg for metadata findes
+  await ensureSessionMeta(sessionId, req);
 
   const body = JSON.parse(req.body || "{}");
-
-  if (!body.messages) {
+  if (!body.messages)
     return res.status(400).json({ error: "Missing messages" });
-  }
 
-  const OPENAI_KEY = process.env.OPENAI_API_KEY;
-  if (!OPENAI_KEY) {
-    return res.status(500).json({ error: "Missing OpenAI API key" });
-  }
-
-  // --- Log user message ---
-  await logToRedis({
-    type: "user_message",
-    timestamp: Date.now(),
-    content: body.messages,
+  // LOG USER MESSAGE
+  await redisPush(`session_${sessionId}_messages`, {
+    role: "user",
+    text: body.messages?.[0]?.content || "",
+    time: Date.now(),
   });
 
   res.writeHead(200, {
@@ -58,51 +79,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   });
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        stream: true,
-        messages: [
-          {
-            role: "system",
-            content: `
-Du er *Gaarsdal Assistent* — en rolig, varm og fagligt ansvarlig hjælper
-på Gaarsdal Hypnoterapi’s hjemmeside. Du svarer altid på dansk.
+    const aiResponse = await fetch(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          stream: true,
+          messages: [
+            {
+              role: "system",
+              content: `
+Du er Gaarsdal Assistent — en rolig, kortfattet og faglig hjælper.
+Svar altid på dansk og aldrig med behandlingsråd.
+Hold svarene korte (4–6 linjer).
+`,
+            },
+            ...body.messages,
+          ],
+        }),
+      }
+    );
 
-Hold svarene meget korte (maks 4–6 linjer), rolige og jordnære.
-Du giver ikke behandling eller diagnoser — kun generel og tryg information.
-Hvis noget kræver professionel vurdering, nænsomt anbefal kontakt.
+    if (!aiResponse.body) return res.end();
 
-Kort præsentation af stedet:
-- Rolig og tryg ramme i Birkerød.
-- Arbejde med stress, indre uro, søvn, vaner, selvtillid og indre ro.
-- En session består af samtale → fordybelse → integration.
-
-Værdier:
-Ro • Respekt • Faglighed • Tryghed.
-
-Kontakt:
-jan@gaarsdal.net — 42807474
-`
-          },
-          ...body.messages,
-        ],
-      }),
-    });
-
-    if (!response.body) {
-      res.end();
-      return;
-    }
-
-    const reader = response.body.getReader();
+    const reader = aiResponse.body.getReader();
     const decoder = new TextDecoder();
-
     let fullReply = "";
 
     while (true) {
@@ -123,22 +129,20 @@ jan@gaarsdal.net — 42807474
             fullReply += token;
             res.write(token);
           }
-        } catch (err) {
-          // ignore malformed lines
-        }
+        } catch {}
       }
     }
 
-    // --- Log AI reply ---
-    await logToRedis({
-      type: "assistant_reply",
-      timestamp: Date.now(),
-      content: fullReply,
+    // LOG ASSISTANT REPLY
+    await redisPush(`session_${sessionId}_messages`, {
+      role: "assistant",
+      text: fullReply,
+      time: Date.now(),
     });
 
     res.end();
-  } catch (error) {
-    console.error("STREAM ERROR:", error);
+  } catch (err) {
+    console.error("STREAM ERROR:", err);
     res.end();
   }
 }
