@@ -7,10 +7,9 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [typing, setTyping] = useState(false); // PATCH 5
+  const [typing, setTyping] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  // Start med en venlig besked
   useEffect(() => {
     if (open && messages.length === 0) {
       setMessages([
@@ -22,26 +21,21 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
     }
   }, [open]);
 
-  // Automatisk scroll
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, typing]);
 
-  // Streaming message handler
   async function sendMessage() {
     if (!input.trim()) return;
 
     const userText = input.trim();
     setInput("");
 
-    // Tilføj brugerbesked
     setMessages((m) => [...m, { role: "user", text: userText }]);
-
-    // Tilføj tom AI-boble
     setMessages((m) => [...m, { role: "assistant", text: "" }]);
 
     setLoading(true);
-    setTyping(true); // PATCH 5
+    setTyping(true);
 
     const resp = await fetch("/api/ai-stream", {
       method: "POST",
@@ -59,7 +53,7 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
         },
       ]);
       setLoading(false);
-      setTyping(false); // PATCH 5
+      setTyping(false);
       return;
     }
 
@@ -74,7 +68,6 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
       const chunk = decoder.decode(value);
       aiText += chunk;
 
-      // Live opdatering af sidste AI-besked
       setMessages((m) => {
         const updated = [...m];
         updated[updated.length - 1] = {
@@ -86,20 +79,17 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
     }
 
     setLoading(false);
-    setTyping(false); // PATCH 5
+    setTyping(false);
   }
 
   if (!open) return null;
 
   return (
-    <div
-      className="
+    <div className="
       fixed bottom-24 right-6 z-50 w-96 max-w-full
       bg-white rounded-2xl shadow-2xl border border-gray-200
       p-4 flex flex-col transition-all
-    "
-    >
-      {/* Header */}
+    ">
       <div className="flex items-center justify-between pb-2 mb-3 border-b border-gray-100">
         <div>
           <div className="text-base font-semibold text-text">Gaarsdal Assistent</div>
@@ -114,7 +104,6 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
         </button>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-auto mb-4 space-y-3 pr-1" style={{ maxHeight: 340 }}>
         {messages.map((m, i) => (
           <div
@@ -136,7 +125,6 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
           </div>
         ))}
 
-        {/* Typing indicator */}
         {typing && (
           <div
             className="
@@ -151,7 +139,6 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
         <div ref={endRef} />
       </div>
 
-      {/* Input */}
       <div className="mt-1">
         <div className="flex gap-2">
           <input
