@@ -1,52 +1,17 @@
-/* ---------------------------------------
-   Tailwind base
---------------------------------------- */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ---------------------------------------
-   Global base styling
---------------------------------------- */
 html, body {
-  background: #F4F2ED;
-  color: #2E2C29;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", Roboto, sans-serif;
-  scroll-behavior: smooth;
+  background: #EFEDE7;
+  color: #2C2A28;
 }
 
-/* Better text rendering */
-html {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* Text utilities */
+.text-h1 { font-size: 48px; line-height: 1.2; }
+.text-base-lg { font-size: 18px; line-height: 1.7; }
 
-/* ---------------------------------------
-   Typography helpers
---------------------------------------- */
-.text-h1 {
-  font-size: 48px;
-  line-height: 1.2;
-  font-weight: 500;
-}
-
-.text-base-lg {
-  font-size: 18px;
-  line-height: 1.7;
-}
-
-/* Links */
-a {
-  color: inherit;
-  text-decoration: none;
-}
-a:hover {
-  opacity: 0.85;
-}
-
-/* ---------------------------------------
-   Animation
---------------------------------------- */
+/* Fade-in for messages */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: translateY(0); }
@@ -56,38 +21,17 @@ a:hover {
   animation: fadeIn 0.25s ease-out;
 }
 
-/* ---------------------------------------
-   Chat UI refinements
---------------------------------------- */
+/* Smooth scroll areas */
 #gaarsdal-chat-window {
   scroll-behavior: smooth;
 }
 
-/* Scrollbars (subtle, elegant) */
+/* Elegant scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
-  height: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.18);
-  border-radius: 999px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* ---------------------------------------
-   Cards and containers (light, Nordic)
---------------------------------------- */
-.card {
-  background: white;
-  border: 1px solid rgba(46,44,41,0.06);
-  border-radius: 16px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.03);
-}
-
-.card-appear {
-  animation: fadeIn 0.35s ease-out;
+  background: #D8D5CC;
+  border-radius: 6px;
 }
