@@ -1,30 +1,42 @@
 // pages/api/admin-logs.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { Redis } from "@upstash/redis";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD!;
-
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL!;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN!;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const body = JSON.parse(req.body || "{}");
+  if (req.method !== "POST") {
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
+  }
 
-  // Sikkerhed: adgangskode check
+  let body = {};
+  try {
+    body = JSON.parse(req.body || "{}");
+  } catch {
+    return res.status(400).json({ ok: false, error: "Invalid JSON" });
+  }
+
   if (body.password !== ADMIN_PASSWORD) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
 
-  try {
-    // Hent seneste 100 logs
-    const raw = await redis.lrange("chatlogs", 0, 100);
+  // Upstash REST call - correct format
+  const url = `${REDIS_URL}/lrange/chatlogs/0/100?token=${REDIS_TOKEN}`;
 
-    const logs = raw
-      .map((x) => {
+  try {
+    const response = await fetch(url);
+    const json = await response.json();
+
+    if (!json.result) {
+      return res.status(200).json({ ok: true, logs: [] });
+    }
+
+    // Parse entries
+    const logs = json.result
+      .map((row: string) => {
         try {
-          return JSON.parse(x);
+          return JSON.parse(row);
         } catch {
           return null;
         }
@@ -34,6 +46,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ ok: true, logs });
   } catch (err) {
     console.error("REDIS ERROR:", err);
-    return res.status(500).json({ ok: false, error: "Redis fetch failed" });
+    return res.status(500).json({ ok: false, error: "Redis request failed" });
   }
 }
