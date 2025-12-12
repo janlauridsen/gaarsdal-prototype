@@ -3,27 +3,42 @@ import React, { useState, useRef, useEffect } from "react";
 
 type Message = { role: "user" | "assistant"; text: string };
 
-export default function AIChat({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function AIChat({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [typing, setTyping] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll to TOP of the new message (Patch 6.4)
+  const scrollToTopOfLast = () => {
+    const container = document.getElementById("gaarsdal-chat-window");
+    if (!container) return;
+    container.scrollTop = container.scrollHeight - container.clientHeight - 9999;
+    setTimeout(() => {
+      container.scrollTop = 0;
+    }, 10);
+  };
 
   useEffect(() => {
     if (open && messages.length === 0) {
       setMessages([
         {
           role: "assistant",
-          text: "Hej — jeg er Gaarsdal Assistent. Hvordan kan jeg hjælpe dig i dag?",
+          text: "Hej — jeg er Gaarsdal Assistent. Du kan stille spørgsmål om hypnoterapi, hvis du har lyst.",
         },
       ]);
     }
   }, [open]);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading, typing]);
+    scrollToTopOfLast();
+  }, [messages]);
 
   async function sendMessage() {
     if (!input.trim()) return;
@@ -31,11 +46,12 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
     const userText = input.trim();
     setInput("");
 
+    // Add user message
     setMessages((m) => [...m, { role: "user", text: userText }]);
-    setMessages((m) => [...m, { role: "assistant", text: "" }]);
 
+    // Add placeholder AI bubble
+    setMessages((m) => [...m, { role: "assistant", text: "" }]);
     setLoading(true);
-    setTyping(true);
 
     const resp = await fetch("/api/ai-stream", {
       method: "POST",
@@ -47,13 +63,9 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
     if (!resp.body) {
       setMessages((m) => [
         ...m,
-        {
-          role: "assistant",
-          text: "Beklager — der opstod en fejl under streaming.",
-        },
+        { role: "assistant", text: "Der opstod en fejl med forbindelsen." },
       ]);
       setLoading(false);
-      setTyping(false);
       return;
     }
 
@@ -68,77 +80,68 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
       const chunk = decoder.decode(value);
       aiText += chunk;
 
+      // Live update last assistant message
       setMessages((m) => {
         const updated = [...m];
-        updated[updated.length - 1] = {
-          role: "assistant",
-          text: aiText,
-        };
+        updated[updated.length - 1] = { role: "assistant", text: aiText };
         return updated;
       });
     }
 
     setLoading(false);
-    setTyping(false);
   }
 
   if (!open) return null;
 
   return (
-    <div className="
-      fixed bottom-24 right-6 z-50 w-96 max-w-full
+    <div
+      className="
+      fixed bottom-24 right-6 z-50 
+      w-[420px] max-w-full
       bg-white rounded-2xl shadow-2xl border border-gray-200
-      p-4 flex flex-col transition-all
-    ">
+      p-4 flex flex-col
+    "
+    >
+      {/* HEADER */}
       <div className="flex items-center justify-between pb-2 mb-3 border-b border-gray-100">
         <div>
           <div className="text-base font-semibold text-text">Gaarsdal Assistent</div>
-          <div className="text-xs text-muted">Svar om hypnoterapi</div>
+          <div className="text-xs text-muted">Kort og rolig information</div>
         </div>
+
         <button
           onClick={onClose}
-          className="text-muted hover:text-text transition"
+          className="text-muted hover:text-text transition text-xl"
           aria-label="Luk chat"
         >
           ✕
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto mb-4 space-y-3 pr-1" style={{ maxHeight: 340 }}>
+      {/* MESSAGES */}
+      <div
+        id="gaarsdal-chat-window"
+        className="flex-1 overflow-auto mb-3 pr-1 space-y-3"
+        style={{ maxHeight: 300 }}
+      >
         {messages.map((m, i) => (
           <div
             key={i}
             className={`
-              px-3 py-2 rounded-xl max-w-[80%]
-              animate-fadeIn
-              ${
-                m.role === "assistant"
-                  ? "bg-gray-100 text-text self-start"
-                  : "bg-accent text-white self-end"
+              px-3 py-2 rounded-2xl max-w-[85%] text-sm leading-relaxed
+              ${m.role === "assistant"
+                ? "bg-gray-100 text-text self-start"
+                : "bg-accent text-white self-end"
               }
             `}
           >
-            <div
-              className="text-sm leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: m.text }}
-            />
+            <div dangerouslySetInnerHTML={{ __html: m.text }} />
           </div>
         ))}
-
-        {typing && (
-          <div
-            className="
-              px-3 py-2 rounded-xl bg-gray-100 text-text text-sm 
-              self-start animate-pulse max-w-[60%]
-            "
-          >
-            Assistenten skriver…
-          </div>
-        )}
-
         <div ref={endRef} />
       </div>
 
+      {/* INPUT */}
       <div className="mt-1">
         <div className="flex gap-2">
           <input
@@ -153,7 +156,7 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
             placeholder="Skriv dit spørgsmål…"
             className="
               flex-1 border border-gray-300 rounded-lg px-3 py-2
-              focus:outline-none focus:ring-2 focus:ring-accent/50
+              focus:outline-none focus:ring-2 focus:ring-accent/40
             "
           />
 
@@ -170,7 +173,7 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
         </div>
 
         <div className="text-xs text-muted mt-2">
-          AI'en giver generel information — ikke behandling.
+          AI'en giver kort og generel information.
         </div>
       </div>
     </div>
