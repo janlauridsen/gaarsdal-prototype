@@ -28,33 +28,47 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
   }, [messages, loading, open]);
 
   async function sendMessage() {
-    if (!input.trim()) return;
-    const userText = input.trim();
-    setMessages((m) => [...m, { role: "user", text: userText }]);
-    setInput("");
-    setLoading(true);
+  if (!input.trim()) return;
 
-    try {
-      const resp = await fetch("/api/ai-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: userText }],
-        }),
-      });
-      const data = await resp.json();
-      if (resp.ok && data.reply) {
-        setMessages((m) => [...m, { role: "assistant", text: data.reply }]);
-      } else {
-        const err = data?.error || "Der opstod en fejl. Prøv igen senere.";
-        setMessages((m) => [...m, { role: "assistant", text: `Beklager — ${err}` }]);
-      }
-    } catch (e) {
-      setMessages((m) => [...m, { role: "assistant", text: "Netværksfejl — prøv igen." }]);
-    } finally {
-      setLoading(false);
-    }
+  const userText = input.trim();
+  setInput("");
+  setMessages((m) => [...m, { role: "user", text: userText }]);
+  setLoading(true);
+
+  // Start med tomt AI-svar
+  let aiText = "";
+  setMessages((m) => [...m, { role: "assistant", text: "" }]);
+
+  const eventSource = new EventSource("/api/ai-stream");
+
+  // men vi sender POST-data – så vi bruger fetch først:
+  const resp = await fetch("/api/ai-stream", {
+    method: "POST",
+    body: JSON.stringify({
+      messages: [{ role: "user", content: userText }],
+    }),
+  });
+
+  const reader = resp.body?.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { done, value } = await reader!.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value);
+    aiText += chunk;
+
+    // Opdater sidste AI-besked live
+    setMessages((m) => {
+      const updated = [...m];
+      updated[updated.length - 1] = { role: "assistant", text: aiText };
+      return updated;
+    });
   }
+
+  setLoading(false);
+}
 
   if (!open) return null;
 
