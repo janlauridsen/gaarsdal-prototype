@@ -24,8 +24,11 @@ export default function AdminLogs() {
       return;
     }
 
+    // FILTER: fjern entries uden sessionId
+    const cleaned = data.sessions.filter((s: any) => s.sessionId);
+
     setLoggedIn(true);
-    setSessions(data.sessions);
+    setSessions(cleaned);
   }
 
   async function loadSession(sessionId: string) {
@@ -50,7 +53,7 @@ export default function AdminLogs() {
     setMessages(data.messages);
   }
 
-  // -------- LOGIN SCREEN --------
+  // LOGIN SCREEN
   if (!loggedIn) {
     return (
       <div style={{ maxWidth: 420, margin: "100px auto", textAlign: "center" }}>
@@ -95,50 +98,49 @@ export default function AdminLogs() {
     );
   }
 
-  // -------- SESSION VIEW --------
+  // MAIN DASHBOARD
   return (
     <div style={{ maxWidth: 900, margin: "40px auto", padding: "10px" }}>
       <h2 style={{ fontSize: "26px", marginBottom: "10px" }}>Chat Sessions</h2>
       <p style={{ color: "#666" }}>Klik på en session for at se hele samtalen.</p>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "20px",
-          marginTop: "20px",
-        }}
-      >
-        {/* LEFT SIDE — SESSION LIST */}
+      <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
+        {/* LEFT PANEL — SESSION LIST */}
         <div style={{ width: "35%", borderRight: "1px solid #ddd", paddingRight: "10px" }}>
           <h3 style={{ fontSize: "20px", marginBottom: "10px" }}>Sessions</h3>
 
-          {sessions.length === 0 && <p>Ingen sessions fundet.</p>}
+          {sessions.length === 0 && <p>Ingen gyldige sessions fundet.</p>}
 
           <ul style={{ listStyle: "none", padding: 0 }}>
-            {sessions.map((s: any, i: number) => (
-              <li
-                key={i}
-                onClick={() => loadSession(s.sessionId)}
-                style={{
-                  padding: "10px",
-                  marginBottom: "8px",
-                  borderRadius: "8px",
-                  border: "1px solid #ddd",
-                  cursor: "pointer",
-                  background: "#fafafa",
-                }}
-              >
-                <strong>{s.sessionId.slice(0, 8)}…</strong>
-                <br />
-                <span style={{ fontSize: "12px", color: "#777" }}>
-                  {new Date(s.started).toLocaleString()}
-                </span>
-              </li>
-            ))}
+            {sessions.map((s: any, i: number) => {
+              const sid = s.sessionId || "ukendt";
+              const label = sid !== "ukendt" ? sid.slice(0, 8) + "…" : "Ukendt session";
+
+              return (
+                <li
+                  key={i}
+                  onClick={() => sid !== "ukendt" && loadSession(sid)}
+                  style={{
+                    padding: "10px",
+                    marginBottom: "8px",
+                    borderRadius: "8px",
+                    border: "1px solid #ddd",
+                    cursor: sid !== "ukendt" ? "pointer" : "default",
+                    background: "#fafafa",
+                  }}
+                >
+                  <strong>{label}</strong>
+                  <br />
+                  <span style={{ fontSize: "12px", color: "#777" }}>
+                    {new Date(s.started).toLocaleString()}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </div>
 
-        {/* RIGHT SIDE — MESSAGE VIEW */}
+        {/* RIGHT PANEL — MESSAGES */}
         <div style={{ width: "65%", paddingLeft: "10px" }}>
           <h3 style={{ fontSize: "20px", marginBottom: "10px" }}>Samtale</h3>
 
@@ -169,13 +171,7 @@ export default function AdminLogs() {
                 >
                   <strong>{m.role === "user" ? "Bruger" : "Assistent"}</strong>
                   <div style={{ whiteSpace: "pre-wrap", marginTop: "4px" }}>{m.text}</div>
-                  <div
-                    style={{
-                      fontSize: "11px",
-                      marginTop: "6px",
-                      opacity: 0.6,
-                    }}
-                  >
+                  <div style={{ fontSize: "11px", marginTop: "6px", opacity: 0.6 }}>
                     {new Date(m.time).toLocaleString()}
                   </div>
                 </div>
