@@ -10,16 +10,13 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
   const endRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (open) {
-      // gentle welcome message if empty
-      if (messages.length === 0) {
-        setMessages([
-          {
-            role: "assistant",
-            text: "Hej — jeg er Gaarsdal Assistent. Hvordan kan jeg hjælpe dig i dag? (fx: 'Hvordan foregår en session?', 'Kan hypnose hjælpe mod søvnproblemer?')",
-          },
-        ]);
-      }
+    if (open && messages.length === 0) {
+      setMessages([
+        {
+          role: "assistant",
+          text: "Hej — jeg er Gaarsdal Assistent. Hvordan kan jeg hjælpe dig i dag? (fx: 'Hvordan foregår en session?', 'Kan hypnose hjælpe mod søvnproblemer?')",
+        },
+      ]);
     }
   }, [open]);
 
@@ -28,47 +25,55 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
   }, [messages, loading, open]);
 
   async function sendMessage() {
-  if (!input.trim()) return;
+    if (!input.trim()) return;
 
-  const userText = input.trim();
-  setInput("");
-  setMessages((m) => [...m, { role: "user", text: userText }]);
-  setLoading(true);
+    const userText = input.trim();
+    setInput("");
 
-  // Start med tomt AI-svar
-  let aiText = "";
-  setMessages((m) => [...m, { role: "assistant", text: "" }]);
+    // Tilføj brugerens besked
+    setMessages((m) => [...m, { role: "user", text: userText }]);
 
-  const eventSource = new EventSource("/api/ai-stream");
+    // Tilføj tom AI-boble
+    setMessages((m) => [...m, { role: "assistant", text: "" }]);
+    setLoading(true);
 
-  // men vi sender POST-data – så vi bruger fetch først:
-  const resp = await fetch("/api/ai-stream", {
-    method: "POST",
-    body: JSON.stringify({
-      messages: [{ role: "user", content: userText }],
-    }),
-  });
-
-  const reader = resp.body?.getReader();
-  const decoder = new TextDecoder();
-
-  while (true) {
-    const { done, value } = await reader!.read();
-    if (done) break;
-
-    const chunk = decoder.decode(value);
-    aiText += chunk;
-
-    // Opdater sidste AI-besked live
-    setMessages((m) => {
-      const updated = [...m];
-      updated[updated.length - 1] = { role: "assistant", text: aiText };
-      return updated;
+    const resp = await fetch("/api/ai-stream", {
+      method: "POST",
+      body: JSON.stringify({
+        messages: [{ role: "user", content: userText }],
+      }),
     });
-  }
 
-  setLoading(false);
-}
+    if (!resp.body) {
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", text: "Beklager — der opstod en streamingfejl." },
+      ]);
+      setLoading(false);
+      return;
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let aiText = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      aiText += chunk;
+
+      // Opdater sidste assistent-svar live
+      setMessages((m) => {
+        const updated = [...m];
+        updated[updated.length - 1] = { role: "assistant", text: aiText };
+        return updated;
+      });
+    }
+
+    setLoading(false);
+  }
 
   if (!open) return null;
 
@@ -83,35 +88,4 @@ export default function AIChat({ open, onClose }: { open: boolean; onClose: () =
       </div>
 
       <div className="flex-1 overflow-auto mb-3 space-y-3" style={{ maxHeight: 320 }}>
-        {messages.map((m, i) => (
-          <div key={i} className={`p-2 rounded ${m.role === "assistant" ? "bg-sage/10 self-start" : "bg-accent text-white self-end"}`}>
-            <div className={m.role === "assistant" ? "text-sm text-text" : "text-sm"} dangerouslySetInnerHTML={{ __html: m.text }} />
-          </div>
-        ))}
-        <div ref={endRef} />
-      </div>
-
-      <div className="mt-2">
-        <div className="flex gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-            placeholder="Skriv dit spørgsmål..."
-            className="flex-1 border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
-          />
-          <button
-            onClick={sendMessage}
-            disabled={loading}
-            className="bg-accent text-white px-3 py-2 rounded-md disabled:opacity-60"
-          >
-            {loading ? "..." : "Send"}
-          </button>
-        </div>
-        <div className="text-xs text-muted mt-2">
-          Bemærk: AI-assistenten giver generel information — den erstatter ikke professionel behandling.
-        </div>
-      </div>
-    </div>
-  );
-}
+        {messages.map((m,
