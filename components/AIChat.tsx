@@ -128,7 +128,7 @@ export default function AIChat({
           <div
             key={i}
             className={`
-              px-3 py-2 rounded-2xl max-w-[85%] text-sm leading-relaxed
+              px-3 py-2 rounded-2xl max-w-[85%] text-sm leading-snug
               ${m.role === "assistant"
                 ? "bg-gray-100 text-text self-start"
                 : "bg-accent text-white self-end"
