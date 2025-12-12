@@ -7,3 +7,11 @@ html, body { background: #F4F2ED; color: #2E2C29; }
 /* Basic utility for text sizes */
 .text-h1 { font-size: 48px; line-height: 1.2; }
 .text-base-lg { font-size: 18px; line-height: 1.7; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out;
+}
