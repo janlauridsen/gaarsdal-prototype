@@ -17,7 +17,6 @@ export default function Kontakt() {
     setStatus('sending')
     setErrorMsg('')
 
-    // Basic client-side validation
     if (!form.name || !form.email || !form.message) {
       setErrorMsg('Udfyld venligst navn, email og besked.')
       setStatus('error')
@@ -129,11 +128,13 @@ export default function Kontakt() {
                 {status === 'sending' ? 'Sender…' : 'Send besked'}
               </button>
 
-              {status === 'success' && <div className="text-green-600">Tak — din besked er modtaget, jeg vender tilbage snart.</div>}
+              {status === 'success' && (
+                <div className="text-green-600">Tak — din besked er modtaget. Jeg vender tilbage snart.</div>
+              )}
             </div>
 
             <p className="text-xs text-muted mt-4">
-              Ved kontakt accepterer du, at oplysninger behandles i forbindelse med din henvendelse.
+              Ved at kontakte mig accepterer du, at dine oplysninger behandles i forbindelse med henvendelsen.
             </p>
           </form>
         </section>
