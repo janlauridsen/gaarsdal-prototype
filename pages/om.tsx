@@ -1,22 +1,100 @@
-import Header from '../components/Header'
-import Footer from '../components/Footer'
+// pages/om.tsx
+import Head from "next/head";
+import Link from "next/link";
 
 export default function Om() {
   return (
-    <div className="min-h-screen bg-bg text-text">
-      <Header />
-      <main className="max-w-4xl mx-auto px-6 py-24">
-        <h1 className="text-h1 font-light mb-6">Om</h1>
-        <p className="text-base-lg text-muted mb-6">Mit navn er Jan Lauridsen, og jeg arbejder professionelt med hypnoterapi i Birkerød. Min tilgang er rolig, jordnær og fagligt forankret. For mig handler hypnoterapi om at skabe et trygt rum, hvor du kan arbejde med det, der fylder — i et tempo og en dybde, der passer til dig.</p>
+    <>
+      <Head>
+        <title>Om — Gaarsdal Hypnoterapi</title>
+        <meta name="description" content="Om Jan Erik Gaarsdal Lauridsen — rolig og jordnær hypnoterapi" />
+      </Head>
 
-        <h2 className="text-2xl font-semibold mt-8 mb-3">Min tilgang</h2>
-        <p className="text-muted">Jeg ser hypnoterapi som et samarbejde. Det er ikke noget, der gøres ved dig, men en proces vi er fælles om. Min opgave er at guide dig ind i en tilstand af ro og fokus og hjælpe dig med at bruge dine egne ressourcer på en mere klar og målrettet måde.</p>
+      <main className="min-h-screen bg-bg text-text">
+        <section className="max-w-4xl mx-auto py-20 px-6">
+          {/* HERO */}
+          <div className="mb-12 text-center">
+            <h1 className="text-h1 font-medium mb-4">En rolig og tryg tilgang til indre arbejde</h1>
+            <p className="text-base-lg text-muted max-w-2xl mx-auto">
+              Jeg arbejder med hypnoterapi som en måde at skabe ro, fokus og klarhed i menneskers indre tilstande. For mig handler det ikke om teknikker i sig selv, men om at møde mennesker på en måde, der giver plads, struktur og tryghed.
+            </p>
+          </div>
 
-        <h2 className="text-2xl font-semibold mt-8 mb-3">Kontakt</h2>
-        <p className="text-muted">Telefon: +45 42 80 74 74 • E-mail: jan@gaarsdal.net</p>
-        <p className="text-muted mt-2">Adresse: Bakkevej 36, 3460 Birkerød</p>
+          {/* TEXT BLOCK */}
+          <div className="prose prose-lg max-w-none text-text mb-10">
+            <p>
+              Mit navn er <strong>Jan Erik Gaarsdal Lauridsen</strong>. Jeg har gennem hele mit liv haft en dyb interesse for, hvordan mennesker fungerer — mentalt, følelsesmæssigt og adfærdsmæssigt. Allerede som ung begyndte jeg at studere hypnose og senere psykologi, kognition og neurofaglig litteratur. Sidenhen har mange år i ledelsesroller og arbejde med mennesker i forskellige kulturer præget min måde at møde andre på.
+            </p>
+
+            <p>
+              Gennem 45 års arbejdsliv har jeg mødt pres, ansvar og forandring — og lært at bevare roen, skabe overblik og finde retning i komplekse situationer. Den erfaring er kernen i min tilgang som terapeut: roligt, jordnært og uden løfter.
+            </p>
+          </div>
+
+          {/* APPROACH CARDS */}
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <h3 className="font-semibold mb-2">Ro & klarhed</h3>
+              <p className="text-sm text-muted">Et trygt rum hvor tempo og struktur passer til dig.</p>
+            </div>
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <h3 className="font-semibold mb-2">Respekt & nysgerrighed</h3>
+              <p className="text-sm text-muted">Vi undersøger uden at dømme — med respekt for din rytme.</p>
+            </div>
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <h3 className="font-semibold mb-2">Intuition & struktur</h3>
+              <p className="text-sm text-muted">Kombination af menneskeforståelse og analytisk overblik.</p>
+            </div>
+          </div>
+
+          {/* SESSION STEPS */}
+          <div className="mb-12">
+            <h2 className="h2 font-medium mb-4">Sådan foregår en typisk session</h2>
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 bg-white p-5 rounded-lg border border-gray-100">
+                <strong>1) Samtale</strong>
+                <p className="text-sm text-muted mt-2">Kort afdækning af tema, mål og ressourcer — i dit tempo.</p>
+              </div>
+              <div className="flex-1 bg-white p-5 rounded-lg border border-gray-100">
+                <strong>2) Hypnose</strong>
+                <p className="text-sm text-muted mt-2">En guidet, fokuseret og behagelig fordybelse — ikke søvn.</p>
+              </div>
+              <div className="flex-1 bg-white p-5 rounded-lg border border-gray-100">
+                <strong>3) Integration</strong>
+                <p className="text-sm text-muted mt-2">Rolig afrunding og landing — ingen hast.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* WHO IT SUITS */}
+          <div className="mb-12">
+            <h2 className="h2 font-medium mb-4">Hvem henvender det sig til</h2>
+            <ul className="list-disc pl-5 text-muted space-y-2">
+              <li>Stress, uro og indre spændinger</li>
+              <li>Søvnproblemer</li>
+              <li>Vaner og mønstre</li>
+              <li>Præstationspres og ledelsesansvar</li>
+              <li>Søgen efter indre ro og klarhed</li>
+            </ul>
+          </div>
+
+          {/* CLOSING NOTE */}
+          <div className="mb-8 max-w-2xl">
+            <p className="text-base-lg text-text">
+              Hos mig møder du et menneske, der lytter, afklarer og hjælper dig med at finde ro i det, du står i. Vi arbejder i et tempo, som passer til dig — uden løfter og uden hast.
+            </p>
+          </div>
+
+          {/* CONTACT */}
+          <div className="bg-white p-6 rounded-lg border border-gray-100">
+            <h3 className="font-semibold mb-2">Kontakt</h3>
+            <p className="text-sm text-muted mb-1">Bakkevej 36, 3460 Birkerød</p>
+            <p className="text-sm text-muted mb-1">Mail: <a href="mailto:jan@gaarsdal.net" className="text-accent">jan@gaarsdal.net</a></p>
+            <p className="text-sm text-muted">Tlf: 42807474</p>
+          </div>
+
+        </section>
       </main>
-      <Footer />
-    </div>
-  )
+    </>
+  );
 }
