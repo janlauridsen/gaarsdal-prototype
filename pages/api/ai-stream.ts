@@ -2,18 +2,15 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getOrCreateSessionId } from "../../lib/session";
 
-export const config = {
-  runtime: "nodejs",
-};
-
-// ENV
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL!;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN!;
 const OPENAI_KEY = process.env.OPENAI_API_KEY!;
 
-// -------------------------------------------------------
-// Redis helpers
-// -------------------------------------------------------
+export const config = {
+  runtime: "nodejs",
+};
+
+// Redis helper
 async function redisPush(key: string, value: any) {
   await fetch(`${REDIS_URL}/lpush/${key}`, {
     method: "POST",
@@ -25,68 +22,56 @@ async function redisPush(key: string, value: any) {
   });
 }
 
-async function redisSet(key: string, value: any) {
-  await fetch(`${REDIS_URL}/set/${key}`, {
+// Ensure session metadata exists
+async function ensureSessionMeta(sessionId: string, req: NextApiRequest) {
+  const started = Number(Date.now());
+
+  await fetch(`${REDIS_URL}/set/session_meta_${sessionId}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${REDIS_TOKEN}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ value: JSON.stringify(value) }),
+    body: JSON.stringify({
+      value: JSON.stringify({
+        sessionId,
+        started,
+        ua: req.headers["user-agent"] || "",
+        ip:
+          (req.headers["x-forwarded-for"] as string)?.split(",")[0] ||
+          req.socket.remoteAddress ||
+          "",
+      }),
+    }),
   });
-}
 
-// -------------------------------------------------------
-// Ensure metadata + register session (PATCH 6.6)
-// -------------------------------------------------------
-async function ensureSessionMeta(sessionId: string, req: NextApiRequest) {
-  const now = Date.now();
-
-  const meta = {
-    sessionId,
-    started: now,
-    ua: req.headers["user-agent"] || "",
-    ip:
-      (req.headers["x-forwarded-for"] as string)?.split(",")[0] ||
-      req.socket.remoteAddress ||
-      "",
-  };
-
-  // Save metadata
-  await redisSet(`session_meta_${sessionId}`, meta);
-
-  // Ensure session is pushed into the session list
+  // Register session
   await redisPush("sessions", {
     sessionId,
-    started: now,
+    started,
   });
 }
 
-// -------------------------------------------------------
-// MAIN HANDLER
-// -------------------------------------------------------
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST")
+  if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
 
-  // Create/get session ID via cookie
   const sessionId = getOrCreateSessionId(req, res);
-
-  // Make sure metadata exists
   await ensureSessionMeta(sessionId, req);
 
   const body = JSON.parse(req.body || "{}");
-  if (!body.messages)
+  if (!body.messages) {
     return res.status(400).json({ error: "Missing messages" });
+  }
 
-  // Log USER message
+  // Log user message
   await redisPush(`session_${sessionId}_messages`, {
     role: "user",
     text: body.messages?.[0]?.content || "",
-    time: Date.now(),
+    time: Number(Date.now()),
   });
 
-  // Prepare streaming response
   res.writeHead(200, {
     "Content-Type": "text/plain; charset=utf-8",
     "Transfer-Encoding": "chunked",
@@ -108,10 +93,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           {
             role: "system",
             content: `
-Du er Gaarsdal Assistent — en rolig, kortfattet og faglig hjælper.
-Svar altid på dansk og aldrig med behandlingsråd.
-Hold svarene korte (4–6 linjer).
-`,
+Du er Gaarsdal Assistent.
+Svar altid på dansk.
+Vær rolig, kortfattet og faglig.
+Ingen behandlingsråd. Ingen løfter.
+Svar i 3–6 korte linjer.
+            `,
           },
           ...body.messages,
         ],
@@ -142,17 +129,15 @@ Hold svarene korte (4–6 linjer).
             fullReply += token;
             res.write(token);
           }
-        } catch {
-          // ignore incomplete lines
-        }
+        } catch {}
       }
     }
 
-    // Log ASSISTANT message
+    // Log assistant reply
     await redisPush(`session_${sessionId}_messages`, {
       role: "assistant",
       text: fullReply,
-      time: Date.now(),
+      time: Number(Date.now()),
     });
 
     res.end();
