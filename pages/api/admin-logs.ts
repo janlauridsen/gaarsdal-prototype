@@ -1,79 +1,68 @@
 // pages/api/admin-logs.ts
 import type { NextApiRequest, NextApiResponse } from "next";
+import { Redis } from "@upstash/redis";
 
-const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL!;
-const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN!;
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
+
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD!;
-
-async function redisGet(path: string) {
-  const res = await fetch(`${REDIS_URL}/${path}`, {
-    headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
-  });
-  return res.json();
-}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST")
     return res.status(405).json({ ok: false, error: "Method not allowed" });
 
-  const body = JSON.parse(req.body || "{}");
+  if (!req.body)
+    return res.status(400).json({ ok: false, error: "Missing body" });
 
-  if (body.password !== ADMIN_PASSWORD) {
+  let body: any = {};
+  try {
+    body = JSON.parse(req.body);
+  } catch {
+    return res.status(400).json({ ok: false, error: "Invalid JSON" });
+  }
+
+  if (body.password !== ADMIN_PASSWORD)
     return res.status(401).json({ ok: false, error: "Unauthorized" });
-  }
 
-  // 1) Hent liste over sessions
-  const sessionList = await redisGet("lrange/sessions/0/-1");
+  // Hent sessions-listen
+  const sessionList = await redis.lrange("sessions", 0, -1);
 
-  if (!sessionList.result || sessionList.result.length === 0) {
-    return res.status(200).json({ ok: true, sessions: [] });
-  }
+  const sessions = [];
 
-  const sessions: any[] = [];
-
-  // 2) Loop igennem hver session
-  for (const s of sessionList.result) {
-    let parsed;
+  for (const raw of sessionList) {
+    let entry: any;
     try {
-      parsed = JSON.parse(s);
+      entry = JSON.parse(raw);
     } catch {
       continue;
     }
 
-    const sessionId = parsed.sessionId;
+    const sessionId = entry.sessionId;
 
     // Hent metadata
-    const metaRes = await redisGet(`get/session_meta_${sessionId}`);
+    const metaRaw = await redis.get(`session_meta_${sessionId}`);
     let meta = null;
-    if (metaRes.result) {
+    if (metaRaw) {
       try {
-        meta = JSON.parse(metaRes.result);
+        meta = JSON.parse(metaRaw);
       } catch {}
     }
 
-    // Hent beskeder
-    const msgRes = await redisGet(`lrange/session_${sessionId}_messages/0/-1`);
-
-    let messages = [];
-    if (msgRes.result) {
-      messages = msgRes.result
-        .map((m: string) => {
-          try {
-            return JSON.parse(m);
-          } catch {
-            return null;
-          }
-        })
-        .filter(Boolean);
-    }
+    // Hent beskedantal
+    const count = await redis.llen(`session_${sessionId}_messages`);
 
     sessions.push({
       sessionId,
-      started: parsed.started,
+      started: entry.started,
       meta,
-      messages,
+      messageCount: count,
     });
   }
 
-  res.status(200).json({ ok: true, sessions });
+  res.status(200).json({
+    ok: true,
+    sessions,
+  });
 }
