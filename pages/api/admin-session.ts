@@ -1,46 +1,61 @@
 // pages/api/admin-session.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { Redis } from "@upstash/redis";
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
-
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL!;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN!;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD!;
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST")
-    return res.status(405).json({ ok: false, error: "Method not allowed" });
+export const config = {
+  runtime: "nodejs",
+};
 
-  let body: any = {};
-  try {
-    body = JSON.parse(req.body);
-  } catch {
-    return res.status(400).json({ ok: false, error: "Invalid JSON" });
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ ok: false });
   }
 
-  if (body.password !== ADMIN_PASSWORD)
+  const body = JSON.parse(req.body || "{}");
+
+  if (body.password !== ADMIN_PASSWORD) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
 
-  if (!body.sessionId)
+  const { sessionId } = body;
+  if (!sessionId) {
     return res.status(400).json({ ok: false, error: "Missing sessionId" });
+  }
 
-  const messagesRaw = await redis.lrange(
-    `session_${body.sessionId}_messages`,
-    0,
-    -1
-  );
+  // Hent beskeder
+  const msgRes = await fetch(`${REDIS_URL}/lrange/session_${sessionId}_messages/0/-1`, {
+    headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
+  });
 
-  const messages = messagesRaw
-    .map((m: string) => {
+  const msgData = await msgRes.json();
+  const messages = (msgData.result || [])
+    .map((v: any) => {
       try {
-        return JSON.parse(m);
+        return JSON.parse(v);
       } catch {
         return null;
       }
     })
     .filter(Boolean);
 
-  res.status(200).json({ ok: true, messages });
+  // Hent metadata
+  const metaRes = await fetch(`${REDIS_URL}/get/session_meta_${sessionId}`, {
+    headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
+  });
+
+  let meta = null;
+  try {
+    const metaData = await metaRes.json();
+    meta = metaData.result ? JSON.parse(metaData.result) : null;
+  } catch {}
+
+  res.status(200).json({
+    ok: true,
+    sessionId,
+    messages,
+    meta,
+  });
 }
