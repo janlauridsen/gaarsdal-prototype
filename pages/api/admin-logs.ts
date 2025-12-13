@@ -1,68 +1,81 @@
 // pages/api/admin-logs.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { Redis } from "@upstash/redis";
-
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD!;
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL!;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN!;
+
+export const config = {
+  runtime: "nodejs",
+};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST")
+
+  // Acceptér KUN POST
+  if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "Method not allowed" });
-
-  if (!req.body)
-    return res.status(400).json({ ok: false, error: "Missing body" });
-
-  let body: any = {};
-  try {
-    body = JSON.parse(req.body);
-  } catch {
-    return res.status(400).json({ ok: false, error: "Invalid JSON" });
   }
 
-  if (body.password !== ADMIN_PASSWORD)
+  // Parse body
+  let body = {};
+  try {
+    body = JSON.parse(req.body || "{}");
+  } catch {
+    return res.status(400).json({ ok: false, error: "Invalid JSON body" });
+  }
+
+  // Password check
+  if (body["password"] !== ADMIN_PASSWORD) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
 
   // Hent sessions-listen
-  const sessionList = await redis.lrange("sessions", 0, -1);
+  const listRes = await fetch(`${REDIS_URL}/lrange/sessions/0/-1`, {
+    headers: {
+      Authorization: `Bearer ${REDIS_TOKEN}`,
+    },
+  });
 
-  const sessions = [];
+  const listData = await listRes.json();
+  if (!listData.result) {
+    return res.status(200).json({ ok: true, sessions: [] });
+  }
 
-  for (const raw of sessionList) {
-    let entry: any;
+  // Parse session-entries
+  const sessions = listData.result.map((raw: string) => {
     try {
-      entry = JSON.parse(raw);
+      return JSON.parse(raw);
     } catch {
-      continue;
+      return null;
     }
+  }).filter(Boolean);
 
-    const sessionId = entry.sessionId;
+  // Tilføj metadata til hver session (hvis du ønsker det)
+  const enriched = [];
 
-    // Hent metadata
-    const metaRaw = await redis.get(`session_meta_${sessionId}`);
+  for (const s of sessions) {
+    const metaKey = `session_meta_${s.sessionId}`;
+    const metaRes = await fetch(`${REDIS_URL}/get/${metaKey}`, {
+      headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
+    });
+
+    const metaData = await metaRes.json();
     let meta = null;
-    if (metaRaw) {
+
+    if (metaData.result) {
       try {
-        meta = JSON.parse(metaRaw);
+        meta = JSON.parse(metaData.result);
       } catch {}
     }
 
-    // Hent beskedantal
-    const count = await redis.llen(`session_${sessionId}_messages`);
-
-    sessions.push({
-      sessionId,
-      started: entry.started,
-      meta,
-      messageCount: count,
+    enriched.push({
+      ...s,
+      meta
     });
   }
 
   res.status(200).json({
     ok: true,
-    sessions,
+    sessions: enriched
   });
 }
