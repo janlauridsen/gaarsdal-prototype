@@ -10,7 +10,7 @@ export const config = {
   runtime: "nodejs",
 };
 
-// Helper – Upstash lpush
+// Helper to push to Redis (LPUSH)
 async function redisPush(key: string, value: any) {
   await fetch(`${REDIS_URL}/lpush/${key}`, {
     method: "POST",
@@ -22,7 +22,7 @@ async function redisPush(key: string, value: any) {
   });
 }
 
-// Helper – initial metadata
+// Save session metadata + register session
 async function ensureSessionMeta(sessionId: string, req: NextApiRequest) {
   await fetch(`${REDIS_URL}/set/session_meta_${sessionId}`, {
     method: "POST",
@@ -43,10 +43,11 @@ async function ensureSessionMeta(sessionId: string, req: NextApiRequest) {
     }),
   });
 
-  // Registrer session i sessions-listen
-  await redisPush("sessions", {
+  // Register session in a list (for admin)
+  await redisPush("chatlogs", {
     sessionId,
-    started: Date.now(),
+    type: "session-start",
+    time: Date.now(),
   });
 }
 
@@ -54,23 +55,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
 
-  // SESSION-ID via cookie
   const sessionId = getOrCreateSessionId(req, res);
 
-  // Sørg for metadata findes
   await ensureSessionMeta(sessionId, req);
 
   const body = JSON.parse(req.body || "{}");
   if (!body.messages)
     return res.status(400).json({ error: "Missing messages" });
 
-  // LOG USER MESSAGE
-  await redisPush(`session_${sessionId}_messages`, {
+  const userText = body.messages?.[0]?.content || "";
+
+  // Log USER message
+  await redisPush("chatlogs", {
+    sessionId,
     role: "user",
-    text: body.messages?.[0]?.content || "",
+    text: userText,
     time: Date.now(),
   });
 
+  await redisPush(`session_${sessionId}`, {
+    role: "user",
+    text: userText,
+    time: Date.now(),
+  });
+
+  // Send streaming response
   res.writeHead(200, {
     "Content-Type": "text/plain; charset=utf-8",
     "Transfer-Encoding": "chunked",
@@ -94,9 +103,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             {
               role: "system",
               content: `
-Du er Gaarsdal Assistent — en rolig, kortfattet og faglig hjælper.
-Svar altid på dansk og aldrig med behandlingsråd.
-Hold svarene korte (4–6 linjer).
+Du er Gaarsdal Assistent — rolig, kortfattet, varm og faglig.
+Svar på dansk. Brug 4–6 linjer. Ingen behandlingsråd.
 `,
             },
             ...body.messages,
@@ -133,8 +141,15 @@ Hold svarene korte (4–6 linjer).
       }
     }
 
-    // LOG ASSISTANT REPLY
-    await redisPush(`session_${sessionId}_messages`, {
+    // Log ASSISTANT reply
+    await redisPush("chatlogs", {
+      sessionId,
+      role: "assistant",
+      text: fullReply,
+      time: Date.now(),
+    });
+
+    await redisPush(`session_${sessionId}`, {
       role: "assistant",
       text: fullReply,
       time: Date.now(),
