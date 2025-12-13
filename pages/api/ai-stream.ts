@@ -121,10 +121,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           {
             role: "system",
             content: `
-Du er Gaarsdal Assistent.
+Du er Jan Assistent.
 Svar altid på dansk.
 Vær rolig, kortfattet og faglig.
-Ingen behandlingsråd. Ingen løfter.
 Svar i 3–6 korte linjer.
             `,
           },
