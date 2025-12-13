@@ -22,10 +22,28 @@ async function redisPush(key: string, value: any) {
   });
 }
 
-// Ensure session metadata exists
+// Helper – ensure session metadata exists (RUNS ONLY ONCE PER SESSION)
 async function ensureSessionMeta(sessionId: string, req: NextApiRequest) {
+  // Tjek om session allerede findes
+  const existsRes = await fetch(
+    `${REDIS_URL}/exists/session_meta_${sessionId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${REDIS_TOKEN}`,
+      },
+    }
+  );
+
+  const existsData = await existsRes.json();
+
+  // Hvis metadata allerede findes → gør intet
+  if (existsData?.result === 1) {
+    return;
+  }
+
   const started = Number(Date.now());
 
+  // Opret metadata
   await fetch(`${REDIS_URL}/set/session_meta_${sessionId}`, {
     method: "POST",
     headers: {
@@ -45,12 +63,22 @@ async function ensureSessionMeta(sessionId: string, req: NextApiRequest) {
     }),
   });
 
-  // Register session
-  await redisPush("sessions", {
-    sessionId,
-    started,
+  // Registrér session ÉN GANG
+  await fetch(`${REDIS_URL}/lpush/sessions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${REDIS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      value: JSON.stringify({
+        sessionId,
+        started,
+      }),
+    }),
   });
 }
+
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
