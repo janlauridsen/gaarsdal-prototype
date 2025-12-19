@@ -16,6 +16,17 @@ Formålet er at demonstrere en moderne, hurtig og SEO-venlig hjemmeside med AI-c
 - AI-baseret chat-assistent
 - Klar struktur til videreudvikling
 
+Gaarsdal AI – Status (testfase)
+
+- AI er informationsassistent, ikke rådgiver
+- Ingen personlige anbefalinger
+- Ingen medicinsk sammenligning
+- Fast nød-flow (Livslinien / 112)
+- Fast admin-bypass → gaarsdal.net
+- Disclaimer ved chatbot-ikon
+- Collapsible “Om AI-assistenten” på /om
+- Tone: nøgtern, afbalanceret, jordnær
+- 
 ## Struktur
 Se detaljeret dokumentation i `/docs`.
 
