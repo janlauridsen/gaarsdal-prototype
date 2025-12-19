@@ -1,7 +1,6 @@
 // pages/om.tsx
 import { useState } from "react";
 import Head from "next/head";
-import Link from "next/link";
 
 export default function Om() {
   const [showAIInfo, setShowAIInfo] = useState(false);
@@ -12,7 +11,7 @@ export default function Om() {
         <title>Om — Gaarsdal Hypnoterapi</title>
         <meta
           name="description"
-          content="Om Jan Erik Gaarsdal Lauridsen — rolig og jordnær tilgang til hypnoterapi, etik og ansvar"
+          content="Hypnoterapi med fokus på trygge rammer, etik og en afdæmpet, jordnær tilgang"
         />
       </Head>
 
@@ -22,54 +21,57 @@ export default function Om() {
           {/* HERO */}
           <div className="mb-12 text-center">
             <h1 className="text-h1 font-medium mb-4">
-              En rolig og tryg tilgang til indre arbejde
+              En tryg ramme for indre arbejde
             </h1>
             <p className="text-base-lg text-muted max-w-2xl mx-auto">
-              Jeg arbejder med hypnoterapi som en måde at skabe ro, fokus og klarhed
-              i menneskers indre tilstande. For mig handler det ikke om teknikker i
-              sig selv, men om at møde mennesker på en måde, der giver plads,
-              struktur og tryghed.
+              Hypnoterapi bruges her som en mulighed for at skabe fordybelse,
+              overblik og indre ro — i et tempo, der respekterer den enkelte.
+              Fokus er ikke på hurtige løsninger, men på klarhed og tryghed
+              i processen.
             </p>
           </div>
 
-          {/* TEXT BLOCK */}
-          <div className="prose prose-lg max-w-none text-text mb-10">
+          {/* RAMME / TILGANG */}
+          <div className="prose prose-lg max-w-none text-text mb-12">
             <p>
-              Mit navn er <strong>Jan Erik Gaarsdal Lauridsen</strong>. Jeg har
-              gennem hele mit liv haft en dyb interesse for, hvordan mennesker
-              fungerer — mentalt, følelsesmæssigt og adfærdsmæssigt. Allerede som
-              ung begyndte jeg at studere hypnose og senere psykologi, kognition og
-              neurofaglig litteratur. Sidenhen har mange år i ledelsesroller og
-              arbejde med mennesker i forskellige kulturer præget min måde at møde
-              andre på.
+              Hos Gaarsdal Hypnoterapi er rammen enkel og tydelig. Der arbejdes
+              uden faste programmer, uden løfter om resultater og uden pres
+              for forandring. I stedet skabes der plads til at undersøge det,
+              der fylder, med respekt for dine grænser og dit tempo.
             </p>
 
             <p>
-              Gennem et langt arbejdsliv har jeg mødt pres, ansvar og forandring —
-              og lært at bevare roen, skabe overblik og finde retning i komplekse
-              situationer. Den erfaring er kernen i min tilgang som hypnoterapeut:
-              roligt, jordnært og uden løfter.
+              Hypnoterapi anvendes som et redskab til fokuseret opmærksomhed og
+              indre fordybelse. Arbejdet tager udgangspunkt i samtale,
+              afklaring og samarbejde. Processen formes løbende i dialog
+              og justeres efter behov.
+            </p>
+
+            <p>
+              Du møder et menneske, der lytter, hjælper med at skabe struktur
+              og overblik og som understøtter refleksion — uden at tage
+              beslutninger på dine vegne.
             </p>
           </div>
 
           {/* APPROACH CARDS */}
           <div className="grid md:grid-cols-3 gap-6 mb-12">
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-              <h3 className="font-semibold mb-2">Ro & klarhed</h3>
+              <h3 className="font-semibold mb-2">Tryghed & tempo</h3>
               <p className="text-sm text-muted">
-                Et trygt rum hvor tempo og struktur passer til dig.
+                Et rum med plads til pauser, afklaring og ro — uden hast.
               </p>
             </div>
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-              <h3 className="font-semibold mb-2">Respekt & nysgerrighed</h3>
+              <h3 className="font-semibold mb-2">Respekt & samarbejde</h3>
               <p className="text-sm text-muted">
-                Vi undersøger uden at dømme — med respekt for din rytme.
+                Arbejdet foregår i dialog og med respekt for dine grænser.
               </p>
             </div>
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-              <h3 className="font-semibold mb-2">Intuition & struktur</h3>
+              <h3 className="font-semibold mb-2">Klarhed & struktur</h3>
               <p className="text-sm text-muted">
-                Kombination af menneskeforståelse og analytisk overblik.
+                Fokus på overblik og forståelse frem for forklaringer og pres.
               </p>
             </div>
           </div>
@@ -83,45 +85,36 @@ export default function Om() {
               <div className="flex-1 bg-white p-5 rounded-lg border border-gray-100">
                 <strong>1) Samtale</strong>
                 <p className="text-sm text-muted mt-2">
-                  Rolig afdækning af tema, mål og rammer — i dit tempo.
+                  Afdækning af tema, forventninger og rammer — i et roligt tempo.
                 </p>
               </div>
               <div className="flex-1 bg-white p-5 rounded-lg border border-gray-100">
                 <strong>2) Hypnose</strong>
                 <p className="text-sm text-muted mt-2">
-                  En guidet, fokuseret og behagelig fordybelse — ikke søvn.
+                  En guidet, fokuseret fordybelse, hvor opmærksomheden samles.
                 </p>
               </div>
               <div className="flex-1 bg-white p-5 rounded-lg border border-gray-100">
-                <strong>3) Integration</strong>
+                <strong>3) Afrunding</strong>
                 <p className="text-sm text-muted mt-2">
-                  Rolig afrunding og landing — uden hast.
+                  Rolig afslutning og refleksion — uden krav om konklusion.
                 </p>
               </div>
             </div>
           </div>
 
           {/* WHO IT SUITS */}
-          <div className="mb-12">
+          <div className="mb-16">
             <h2 className="text-h2 font-medium mb-4">
-              Hvem henvender det sig til
+              Hvem henvender forløb sig typisk til
             </h2>
             <ul className="list-disc pl-5 text-muted space-y-2">
-              <li>Stress, uro og indre spændinger</li>
-              <li>Søvnproblemer</li>
+              <li>Oplevelse af stress, uro eller indre spænding</li>
+              <li>Søvnproblemer og tankemylder</li>
               <li>Vaner og gentagne mønstre</li>
-              <li>Præstationspres og ledelsesansvar</li>
-              <li>Søgen efter indre ro og klarhed</li>
+              <li>Præstationspres og ansvar</li>
+              <li>Ønske om mere indre klarhed</li>
             </ul>
-          </div>
-
-          {/* CLOSING NOTE */}
-          <div className="mb-16 max-w-2xl">
-            <p className="text-base-lg text-text">
-              Hos mig møder du et menneske, der lytter, afklarer og hjælper dig med
-              at finde ro i det, du står i. Vi arbejder i et tempo, som passer til
-              dig — uden løfter og uden hast.
-            </p>
           </div>
 
           {/* AI ASSISTENT INFO (COLLAPSIBLE) */}
@@ -148,52 +141,42 @@ export default function Om() {
               <div className="mt-4 bg-bg border border-gray-200 rounded-2xl p-8">
                 <div className="text-sm text-muted leading-relaxed space-y-4">
                   <p>
-                    På dette website anvendes en AI-baseret assistent, som kan svare
-                    på generelle spørgsmål om hypnoterapi og relaterede emner.
+                    På dette website anvendes en AI-baseret assistent, som kan
+                    svare på generelle spørgsmål om hypnoterapi og relaterede
+                    emner.
                   </p>
 
                   <p>
                     AI-assistenten giver udelukkende{" "}
-                    <strong>generel information</strong>. Den giver ikke personlig
-                    rådgivning, stiller ikke diagnoser og kan ikke erstatte kontakt
-                    med en professionel behandler eller sundhedsfaglig person.
+                    <strong>generel information</strong>. Den giver ikke
+                    personlig rådgivning, stiller ikke diagnoser og kan ikke
+                    erstatte kontakt med en professionel behandler eller
+                    sundhedsfaglig person.
                   </p>
 
                   <p>
-                    Svarene kan være forenklede og kan indeholde fejl. Det er altid
-                    dit eget ansvar at vurdere, hvad der er relevant for dig.
+                    Svarene kan være forenklede og kan indeholde fejl. Det er
+                    altid dit eget ansvar at vurdere, hvad der er relevant for
+                    dig.
                   </p>
 
                   <p>
-                    Hvis du oplever alvorlig mistrivsel eller står i en akut
-                    situation, anbefales det altid at søge menneskelig hjælp.
+                    Ved alvorlig mistrivsel eller i akutte situationer
+                    anbefales det altid at søge menneskelig hjælp.
                   </p>
 
                   <p className="text-xs text-gray-500 pt-2 border-t border-gray-200">
-                    AI-assistenten er udviklet med fokus på transparens, etik og
-                    klare grænser for ansvar.
+                    AI-assistenten er udviklet med fokus på transparens, etik
+                    og klare grænser for ansvar.
                   </p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* CONTACT */}
-          <div className="bg-white p-6 rounded-lg border border-gray-100">
-            <h3 className="font-semibold mb-2">Kontakt</h3>
-            <p className="text-sm text-muted mb-1">
-              Bakkevej 36, 3460 Birkerød
-            </p>
-            <p className="text-sm text-muted mb-1">
-              Mail:{" "}
-              <a
-                href="mailto:jan@gaarsdal.net"
-                className="text-accent hover:underline"
-              >
-                jan@gaarsdal.net
-              </a>
-            </p>
-            <p className="text-sm text-muted">Tlf: 42 80 74 74</p>
+          {/* FOOTER PERSON NOTE */}
+          <div className="text-sm text-muted">
+            Gaarsdal Hypnoterapi drives af Jan Erik Gaarsdal Lauridsen.
           </div>
 
         </section>
