@@ -3,6 +3,13 @@ import React, { useState, useRef, useEffect } from "react";
 
 type Message = { role: "user" | "assistant"; text: string };
 
+// Helper: map frontend messages → API format
+const toApiMessages = (messages: Message[]) =>
+  messages.map((m) => ({
+    role: m.role,
+    content: m.text,
+  }));
+
 export default function AIChat({
   open,
   onClose,
@@ -19,12 +26,14 @@ export default function AIChat({
   const scrollToTopOfLast = () => {
     const container = document.getElementById("gaarsdal-chat-window");
     if (!container) return;
-    container.scrollTop = container.scrollHeight - container.clientHeight - 9999;
+    container.scrollTop =
+      container.scrollHeight - container.clientHeight - 9999;
     setTimeout(() => {
       container.scrollTop = 0;
     }, 10);
   };
 
+  // Initial greeting
   useEffect(() => {
     if (open && messages.length === 0) {
       setMessages([
@@ -41,28 +50,35 @@ export default function AIChat({
   }, [messages]);
 
   async function sendMessage() {
-    if (!input.trim()) return;
+    if (!input.trim() || loading) return;
 
     const userText = input.trim();
     setInput("");
 
-    // Add user message
-    setMessages((m) => [...m, { role: "user", text: userText }]);
+    // Build next message state explicitly (vigtigt!)
+    const nextMessages: Message[] = [
+      ...messages,
+      { role: "user", text: userText },
+    ];
 
-    // Add placeholder AI bubble
-    setMessages((m) => [...m, { role: "assistant", text: "" }]);
+    // Update UI immediately
+    setMessages([
+      ...nextMessages,
+      { role: "assistant", text: "" },
+    ]);
     setLoading(true);
 
     const resp = await fetch("/api/ai-stream", {
       method: "POST",
       body: JSON.stringify({
-        messages: [{ role: "user", content: userText }],
+        // ✅ SEND HELE SAMTALEN
+        messages: toApiMessages(nextMessages),
       }),
     });
 
     if (!resp.body) {
       setMessages((m) => [
-        ...m,
+        ...m.slice(0, -1),
         { role: "assistant", text: "Der opstod en fejl med forbindelsen." },
       ]);
       setLoading(false);
@@ -83,7 +99,10 @@ export default function AIChat({
       // Live update last assistant message
       setMessages((m) => {
         const updated = [...m];
-        updated[updated.length - 1] = { role: "assistant", text: aiText };
+        updated[updated.length - 1] = {
+          role: "assistant",
+          text: aiText,
+        };
         return updated;
       });
     }
@@ -96,17 +115,21 @@ export default function AIChat({
   return (
     <div
       className="
-      fixed bottom-24 right-6 z-50 
-      w-[420px] max-w-full
-      bg-white rounded-2xl shadow-2xl border border-gray-200
-      p-4 flex flex-col
-    "
+        fixed bottom-24 right-6 z-50 
+        w-[420px] max-w-full
+        bg-white rounded-2xl shadow-2xl border border-gray-200
+        p-4 flex flex-col
+      "
     >
       {/* HEADER */}
       <div className="flex items-center justify-between pb-2 mb-3 border-b border-gray-100">
         <div>
-          <div className="text-base font-semibold text-text">Gaarsdal Assistent</div>
-          <div className="text-xs text-muted">Kort og rolig information</div>
+          <div className="text-base font-semibold text-text">
+            Gaarsdal Assistent
+          </div>
+          <div className="text-xs text-muted">
+            Kort og rolig information
+          </div>
         </div>
 
         <button
@@ -129,9 +152,10 @@ export default function AIChat({
             key={i}
             className={`
               px-3 py-2 rounded-2xl max-w-[85%] text-sm leading-snug
-              ${m.role === "assistant"
-                ? "bg-gray-100 text-text self-start"
-                : "bg-accent text-white self-end"
+              ${
+                m.role === "assistant"
+                  ? "bg-gray-100 text-text self-start"
+                  : "bg-accent text-white self-end"
               }
             `}
           >
@@ -179,3 +203,4 @@ export default function AIChat({
     </div>
   );
 }
+
