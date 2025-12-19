@@ -1,11 +1,13 @@
 // components/AIChat.tsx
 import React, { useState, useRef, useEffect } from "react";
+import {
+  EMERGENCY_REPLY_DK,
+  ADMIN_REPLY,
+} from "@/lib/aiStandardReplies";
 
 type Message = { role: "user" | "assistant"; text: string };
 
-// 🔹 SYSTEM PROMPT (sendes altid til AI, men vises ikke i UI)
-//
-//
+// ================= SYSTEM PROMPT (v1 – juridisk sikret) =================
 const SYSTEM_PROMPT = {
   role: "system",
   content: `
@@ -13,77 +15,42 @@ Du er Gaarsdal Assistent.
 
 === IDENTITET ===
 Du fungerer som en rolig, professionel hypnoterapi-assistent.
-Du er informerende, nærværende og respektfuld – ikke sælgende og ikke behandlende.
+Du er informerende og støttende, men ikke behandlende og ikke sælgende.
 
 === FORMÅL ===
 - Give generel, tryg og forståelig information om hypnoterapi
-- Hjælpe brugeren med at blive klogere på, om hypnoterapi kan være relevant for dem
-- Støtte refleksion og afklaring uden at presse eller overbevise
+- Hjælpe brugeren med at vurdere relevans uden at presse eller rådgive
 
 === GRUNDHOLDNING ===
-- Du er positiv og håbefuld, men afbalanceret
+- Du er positiv, men afbalanceret
 - Du anerkender både muligheder og begrænsninger
-- Du respekterer, at brugeren selv vurderer, hvad der er rigtigt for dem
+- Du respekterer brugerens egen vurdering
 
-=== SPROG & TONE ===
+=== JURIDISKE GRÆNSER (KRITISK) ===
+- Du må ikke give personlige råd eller anbefalinger
+- Du må ikke vurdere, om hypnoterapi er det rette valg for den enkelte
+- Du må ikke sammenligne hypnoterapi med medicin som alternativ
+- Du må ikke love resultater, varighed eller “for altid”-effekter
+
+=== MEDICIN ===
+- Hypnoterapi må kun omtales som et muligt supplement
+- Valg om medicin henvises altid til sundhedsfagligt personale
+
+=== MANIPULATION ===
+- Du må aldrig forklare eller støtte manipulation, kontrol eller skjult hypnose
+- Hypnose forudsætter altid samtykke og samarbejde
+
+=== TONE ===
 - Sprog: Dansk
-- Tone: Rolig, varm og respektfuld
-- Stil: Klar, menneskelig og nøgtern
-- Du undgår markedsføringssprog og overdrevne formuleringer
+- Tone: Rolig, varm, respektfuld
+- Stil: Klar, nøgtern og menneskelig
+- Let humor er tilladt, men aldrig sarkasme mod brugeren
 
-=== OM HYPNOTERAPI (VIGTIGT) ===
-Når du taler om hypnoterapi:
-- Forklar hvad det *kan* hjælpe med, uden at love resultater
-- Brug formuleringer som:
-  - "kan være hjælpsomt for nogle"
-  - "mange oplever, at..."
-  - "for nogle fungerer det godt, for andre mindre"
-- Vær åben om, at hypnoterapi ikke virker ens for alle
-- Præsenter hypnoterapi som et supplement, ikke en mirakelløsning
-
-=== DIALOGREGLER ===
-- Stil højst ét opfølgende spørgsmål ad gangen
-- Følg brugerens tempo
-- Hold svar på 3–6 sætninger
-- Giv plads til tvivl og skepsis uden at blive defensiv
-
-=== HUMOR & TONE ===
-- Du må bruge let, venlig humor når det føles naturligt
-- Humor må aldrig bruges til at presse, overtale eller bagatellisere
-- Du undgår sarkasme rettet mod brugeren
-
-=== SARKASME & GRÆNSESØGENDE SPØRGSMÅL ===
-- Anerkend testende eller sarkastisk tone roligt
-- Afvis respektløse eller destruktive spørgsmål venligt men klart
-- Tilbyd altid et mere konstruktivt alternativ
-
-=== FAGLIGE GRÆNSER ===
-- Du giver ikke medicinsk, psykologisk eller psykiatrisk rådgivning
-- Du stiller ikke diagnoser
-- Du lover ikke resultater
-- Du anbefaler ikke, at brugeren stopper anden behandling
-
-=== KRISE- OG SÅRBARHEDSSEKTION ===
-Hvis brugeren udtrykker stærk mistrivsel eller håbløshed:
-- Anerkend følelsen roligt
-- Undgå at bagatellisere eller overtage ansvar
-
-Hvis brugeren antyder selvskade eller alvorlig krise:
-- Vær rolig og tydelig
-- Sig, at du ikke kan hjælpe alene
-- Opfordr blidt til professionel hjælp eller kontakt til en betroet person
-- Undlad detaljer eller metoder
-
-=== FEJLHÅNDTERING ===
-- Hvis noget er uklart, bed om afklaring
-- Hvis spørgsmålet er bredt, hjælp med at afgrænse
-- Hvis du er i tvivl, svar konservativt og sikkert
+=== KRISE ===
+- Ved alvorlig mistrivsel skal du eskalere og ikke forsøge at hjælpe alene
 `,
 };
 
-
-//
-//
 // Helper: map frontend messages → API format
 const toApiMessages = (messages: Message[]) => [
   SYSTEM_PROMPT,
@@ -105,18 +72,7 @@ export default function AIChat({
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  // Scroll helper
-  const scrollToTopOfLast = () => {
-    const container = document.getElementById("gaarsdal-chat-window");
-    if (!container) return;
-    container.scrollTop =
-      container.scrollHeight - container.clientHeight - 9999;
-    setTimeout(() => {
-      container.scrollTop = 0;
-    }, 10);
-  };
-
-  // Initial greeting (UI only – ikke system prompt)
+  // Initial greeting
   useEffect(() => {
     if (open && messages.length === 0) {
       setMessages([
@@ -127,10 +83,6 @@ export default function AIChat({
       ]);
     }
   }, [open]);
-
-  useEffect(() => {
-    scrollToTopOfLast();
-  }, [messages]);
 
   async function sendMessage() {
     if (!input.trim() || loading) return;
@@ -143,17 +95,41 @@ export default function AIChat({
       { role: "user", text: userText },
     ];
 
-    // UI update
-    setMessages([
-      ...nextMessages,
-      { role: "assistant", text: "" },
-    ]);
+    // === SIMPLE v1 ROUTING ===
+    const lower = userText.toLowerCase();
+
+    if (
+      lower.includes("book") ||
+      lower.includes("pris") ||
+      lower.includes("kontakt") ||
+      lower.includes("betaling")
+    ) {
+      setMessages([
+        ...nextMessages,
+        { role: "assistant", text: ADMIN_REPLY },
+      ]);
+      return;
+    }
+
+    if (
+      lower.includes("vil ikke leve") ||
+      lower.includes("selvmord") ||
+      lower.includes("kan ikke mere")
+    ) {
+      setMessages([
+        ...nextMessages,
+        { role: "assistant", text: EMERGENCY_REPLY_DK },
+      ]);
+      return;
+    }
+
+    // Normal AI flow
+    setMessages([...nextMessages, { role: "assistant", text: "" }]);
     setLoading(true);
 
     const resp = await fetch("/api/ai-stream", {
       method: "POST",
       body: JSON.stringify({
-        // ✅ SYSTEM PROMPT + HELE SAMTALEN
         messages: toApiMessages(nextMessages),
       }),
     });
@@ -161,7 +137,7 @@ export default function AIChat({
     if (!resp.body) {
       setMessages((m) => [
         ...m.slice(0, -1),
-        { role: "assistant", text: "Der opstod en fejl med forbindelsen." },
+        { role: "assistant", text: "Der opstod en teknisk fejl." },
       ]);
       setLoading(false);
       return;
@@ -174,9 +150,7 @@ export default function AIChat({
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
-
-      const chunk = decoder.decode(value);
-      aiText += chunk;
+      aiText += decoder.decode(value);
 
       setMessages((m) => {
         const updated = [...m];
@@ -194,51 +168,19 @@ export default function AIChat({
   if (!open) return null;
 
   return (
-    <div
-      className="
-        fixed bottom-24 right-6 z-50 
-        w-[420px] max-w-full
-        bg-white rounded-2xl shadow-2xl border border-gray-200
-        p-4 flex flex-col
-      "
-    >
-      {/* HEADER */}
-      <div className="flex items-center justify-between pb-2 mb-3 border-b border-gray-100">
-        <div>
-          <div className="text-base font-semibold text-text">
-            Gaarsdal Assistent
-          </div>
-          <div className="text-xs text-muted">
-            Kort og rolig information
-          </div>
-        </div>
-
-        <button
-          onClick={onClose}
-          className="text-muted hover:text-text transition text-xl"
-          aria-label="Luk chat"
-        >
-          ✕
-        </button>
+    <div className="fixed bottom-24 right-6 z-50 w-[420px] bg-white rounded-2xl shadow-2xl p-4 flex flex-col">
+      <div className="flex justify-between mb-2">
+        <strong>Gaarsdal Assistent</strong>
+        <button onClick={onClose}>✕</button>
       </div>
 
-      {/* MESSAGES */}
-      <div
-        id="gaarsdal-chat-window"
-        className="flex-1 overflow-auto mb-3 pr-1 space-y-3"
-        style={{ maxHeight: 300 }}
-      >
+      <div className="flex-1 overflow-auto mb-2 space-y-2">
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`
-              px-3 py-2 rounded-2xl max-w-[85%] text-sm leading-snug
-              ${
-                m.role === "assistant"
-                  ? "bg-gray-100 text-text self-start"
-                  : "bg-accent text-white self-end"
-              }
-            `}
+            className={`p-2 rounded ${
+              m.role === "assistant" ? "bg-gray-100" : "bg-accent text-white"
+            }`}
           >
             <div dangerouslySetInnerHTML={{ __html: m.text }} />
           </div>
@@ -246,40 +188,21 @@ export default function AIChat({
         <div ref={endRef} />
       </div>
 
-      {/* INPUT */}
-      <div className="mt-1">
-        <div className="flex gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            placeholder="Skriv dit spørgsmål…"
-            className="
-              flex-1 border border-gray-300 rounded-lg px-3 py-2
-              focus:outline-none focus:ring-2 focus:ring-accent/40
-            "
-          />
-
-          <button
-            onClick={sendMessage}
-            disabled={loading}
-            className="
-              bg-accent text-white px-4 py-2 rounded-lg 
-              disabled:opacity-50 hover:bg-accent/90 transition
-            "
-          >
-            {loading ? "…" : "Send"}
-          </button>
-        </div>
-
-        <div className="text-xs text-muted mt-2">
-          AI'en giver kort og generel information.
-        </div>
+      <div className="flex gap-2">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          placeholder="Skriv dit spørgsmål…"
+          className="flex-1 border rounded px-3 py-2"
+        />
+        <button
+          onClick={sendMessage}
+          disabled={loading}
+          className="bg-accent text-white px-4 rounded"
+        >
+          Send
+        </button>
       </div>
     </div>
   );
