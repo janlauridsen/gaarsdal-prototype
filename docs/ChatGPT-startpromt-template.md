@@ -27,5 +27,13 @@ VIGTIGE REGLER
 - Lav ingen antagelser om manglende funktioner eller hensigt
 - Strukturelle ændringer må kun foreslås – ikke implementeres – uden accept
 
+KONTEXT & TRÅDSTYRING
+- Meld proaktivt ind, hvis denne tråd nærmer sig et punkt,
+  hvor kontekst eller overblik kan gå tabt
+- Giv varsling i god tid, så en ny tråd kan startes,
+  mens viden stadig er intakt
+- Angiv kort, hvad der bør kopieres med til næste tråd
+- Fortsæt ikke komplekse ændringer efter sådan varsling
+
 OPGAVE
 [indsæt hvad du vil arbejde på]
