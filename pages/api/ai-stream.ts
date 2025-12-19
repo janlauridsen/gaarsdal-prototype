@@ -6,6 +6,11 @@ const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL!;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN!;
 const OPENAI_KEY = process.env.OPENAI_API_KEY!;
 
+// 🔹 Logging mode
+// "full" = log everything (testfase)
+// "off"  = no message content logging
+const LOGGING_MODE = process.env.AI_LOGGING_MODE || "full";
+
 export const config = {
   runtime: "nodejs",
 };
@@ -22,9 +27,8 @@ async function redisPush(key: string, value: any) {
   });
 }
 
-// Helper – ensure session metadata exists (RUNS ONLY ONCE PER SESSION)
+// Ensure session metadata exists (runs once per session)
 async function ensureSessionMeta(sessionId: string, req: NextApiRequest) {
-  // Tjek om session allerede findes
   const existsRes = await fetch(
     `${REDIS_URL}/exists/session_meta_${sessionId}`,
     {
@@ -35,15 +39,10 @@ async function ensureSessionMeta(sessionId: string, req: NextApiRequest) {
   );
 
   const existsData = await existsRes.json();
+  if (existsData?.result === 1) return;
 
-  // Hvis metadata allerede findes → gør intet
-  if (existsData?.result === 1) {
-    return;
-  }
+  const started = Date.now();
 
-  const started = Number(Date.now());
-
-  // Opret metadata
   await fetch(`${REDIS_URL}/set/session_meta_${sessionId}`, {
     method: "POST",
     headers: {
@@ -63,7 +62,6 @@ async function ensureSessionMeta(sessionId: string, req: NextApiRequest) {
     }),
   });
 
-  // Registrér session ÉN GANG
   await fetch(`${REDIS_URL}/lpush/sessions`, {
     method: "POST",
     headers: {
@@ -71,16 +69,15 @@ async function ensureSessionMeta(sessionId: string, req: NextApiRequest) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      value: JSON.stringify({
-        sessionId,
-        started,
-      }),
+      value: JSON.stringify({ sessionId, started }),
     }),
   });
 }
 
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -93,12 +90,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: "Missing messages" });
   }
 
-  // Log user message
-  await redisPush(`session_${sessionId}_messages`, {
-    role: "user",
-    text: body.messages?.[0]?.content || "",
-    time: Number(Date.now()),
-  });
+  // 🔹 Log user message (if enabled)
+  if (LOGGING_MODE === "full") {
+    await redisPush(`session_${sessionId}_messages`, {
+      role: "user",
+      text: body.messages?.[0]?.content || "",
+      time: Date.now(),
+    });
+  }
 
   res.writeHead(200, {
     "Content-Type": "text/plain; charset=utf-8",
@@ -108,29 +107,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   });
 
   try {
-    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        stream: true,
-        messages: [
-          {
-            role: "system",
-            content: `
-Du er Jan Assistent.
-Svar altid på dansk.
-Vær rolig, kortfattet og faglig.
-Svar i 3–6 korte linjer.
-            `,
-          },
-          ...body.messages,
-        ],
-      }),
-    });
+    const aiResponse = await fetch(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          stream: true,
+          messages: body.messages, // frontend system prompt gælder
+        }),
+      }
+    );
 
     if (!aiResponse.body) return res.end();
 
@@ -156,16 +147,20 @@ Svar i 3–6 korte linjer.
             fullReply += token;
             res.write(token);
           }
-        } catch {}
+        } catch {
+          // ignore malformed chunks
+        }
       }
     }
 
-    // Log assistant reply
-    await redisPush(`session_${sessionId}_messages`, {
-      role: "assistant",
-      text: fullReply,
-      time: Number(Date.now()),
-    });
+    // 🔹 Log assistant reply (if enabled)
+    if (LOGGING_MODE === "full") {
+      await redisPush(`session_${sessionId}_messages`, {
+        role: "assistant",
+        text: fullReply,
+        time: Date.now(),
+      });
+    }
 
     res.end();
   } catch (err) {
