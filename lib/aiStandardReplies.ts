@@ -1,26 +1,23 @@
 // lib/aiStandardReplies.ts
 
-export const EMERGENCY_REPLY_DK = `
-Jeg er virkelig ked af at høre, at du har det så svært lige nu.
-Det lyder som om, du står i noget, der er mere, end jeg kan hjælpe med her.
+export const ADMIN_REPLY = `
+Spørgsmål om booking, priser, betaling og andre praktiske forhold håndteres ikke i chatten.
 
-Du behøver ikke stå alene med det.
-Det er vigtigt, at du får kontakt til et menneske, der kan hjælpe dig her og nu.
-
-Du kan kontakte:
-• Livslinien på telefon 70 201 201 (døgnåben)
-• Chat anonymt via https://www.livslinien.dk
-• Hvis situationen er akut, ring 112
-
-Hvis du kan, så overvej også at tage kontakt til en person, du har tillid til.
-Der findes hjælp – også selvom det måske ikke føles sådan lige nu.
+Du finder opdateret information og kontaktmuligheder på:
+<a href="https://gaarsdal.net" target="_blank" rel="noopener noreferrer">
+gaarsdal.net
+</a>
 `;
 
-export const ADMIN_REPLY = `
-Det kan jeg desværre ikke hjælpe med her.
+export const EMERGENCY_REPLY_DK = `
+Det lyder som om, du har det meget svært lige nu.
 
-Du kan finde opdateret information om booking, priser, kontakt og praktiske forhold på:
-https://gaarsdal.net
+Jeg kan ikke hjælpe alene i sådan en situation, men det er vigtigt, at du ikke står med det selv.
 
-Hvis du har spørgsmål om hypnoterapi generelt, er du meget velkommen til at spørge videre her.
+Du kan kontakte:
+<br /><br />
+<strong>Livslinien</strong> — telefon <strong>70 201 201</strong> (døgnåben)<br />
+Chat anonymt via <a href="https://www.livslinien.dk" target="_blank" rel="noopener noreferrer">livslinien.dk</a>
+<br /><br />
+Hvis situationen er akut eller føles farlig, så ring <strong>112</strong>.
 `;
