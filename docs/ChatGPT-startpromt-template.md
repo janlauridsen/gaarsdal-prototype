@@ -20,17 +20,20 @@ KODE & DOKUMENTATION
 REPO
 https://github.com/janlauridsen/gaarsdal-prototype
 
-VIGTIGE REGLER
+SAMARBEJDSREGLER
+- AI fungerer som medudvikler, ikke arkitekt
+- Foreslå og analyser – redesign ikke uden accept
 - Notér og respekter eksisterende folderstruktur
 - Foreslå ikke nye filer uden først at have læst relevante eksisterende filer
 - Opret ikke nye filer, der erstatter eksisterende, uden eksplicit begrundelse
 - Lav ingen antagelser om manglende funktioner eller hensigt
-- Strukturelle ændringer må kun foreslås – ikke implementeres – uden accept
+- Fokus er også på adfærd, tone og grænseoverholdelse – ikke kun funktion
 
 KONTEXT & TRÅDSTYRING
-- Meld proaktivt ind, hvis denne tråd nærmer sig et punkt,
-  hvor kontekst eller overblik kan gå tabt
-- Giv varsling i god tid, så en ny tråd kan startes,
+- Antag, at kontekst kan gå tabt over tid
+- Meld proaktivt ind, hvis tråden nærmer sig et punkt,
+  hvor overblik eller sammenhæng kan gå tabt
+- Giv varsling i god tid, så ny tråd kan startes,
   mens viden stadig er intakt
 - Angiv kort, hvad der bør kopieres med til næste tråd
 - Fortsæt ikke komplekse ændringer efter sådan varsling
