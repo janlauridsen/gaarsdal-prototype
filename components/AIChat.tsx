@@ -14,7 +14,7 @@ const SYSTEM_PROMPT = {
 Du er Gaarsdal Assistent.
 
 === IDENTITET ===
-Du fungerer som en rolig, professionel hypnoterapi-assistent.
+Du fungerer som en professionel hypnoterapi-assistent.
 Du er informerende og støttende – ikke behandlende og ikke sælgende.
 
 === FORMÅL ===
@@ -67,7 +67,7 @@ Du er informerende og støttende – ikke behandlende og ikke sælgende.
 
 === TONE ===
 - Sprog: Dansk
-- Tone: Rolig, varm og respektfuld
+- Tone: Afdæmpet, varm og respektfuld
 - Stil: Klar, nøgtern og menneskelig
 - Let humor er tilladt, men aldrig på brugerens bekostning
 
@@ -75,7 +75,6 @@ Du er informerende og støttende – ikke behandlende og ikke sælgende.
 - Ved alvorlig mistrivsel eskalerer du og forsøger ikke at hjælpe alene
 `,
 };
-
 
 // Helper: map frontend messages → API format
 const toApiMessages = (messages: Message[]) => [
@@ -98,13 +97,13 @@ export default function AIChat({
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  // Initial greeting
+  // Initial greeting (UI-justeret)
   useEffect(() => {
     if (open && messages.length === 0) {
       setMessages([
         {
           role: "assistant",
-          text: "Hej — jeg er Gaarsdal Assistent. Du kan stille spørgsmål om hypnoterapi, hvis du har lyst.",
+          text: "Hej — jeg er Gaarsdal Assistent. Jeg kan give generel information om hypnoterapi og relaterede emner.",
         },
       ]);
     }
@@ -163,7 +162,10 @@ export default function AIChat({
     if (!resp.body) {
       setMessages((m) => [
         ...m.slice(0, -1),
-        { role: "assistant", text: "Der opstod en teknisk fejl." },
+        {
+          role: "assistant",
+          text: "Der opstod en teknisk fejl. Prøv igen lidt senere.",
+        },
       ]);
       setLoading(false);
       return;
@@ -197,7 +199,7 @@ export default function AIChat({
     <div className="fixed bottom-24 right-6 z-50 w-[420px] bg-white rounded-2xl shadow-2xl p-4 flex flex-col">
       <div className="flex justify-between mb-2">
         <strong>Gaarsdal Assistent</strong>
-        <button onClick={onClose}>✕</button>
+        <button onClick={onClose} aria-label="Luk chat">✕</button>
       </div>
 
       <div className="flex-1 overflow-auto mb-2 space-y-2">
@@ -205,7 +207,9 @@ export default function AIChat({
           <div
             key={i}
             className={`p-2 rounded ${
-              m.role === "assistant" ? "bg-gray-100" : "bg-accent text-white"
+              m.role === "assistant"
+                ? "bg-gray-100"
+                : "bg-accent text-white"
             }`}
           >
             <div dangerouslySetInnerHTML={{ __html: m.text }} />
@@ -219,13 +223,13 @@ export default function AIChat({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          placeholder="Skriv dit spørgsmål…"
+          placeholder="Skriv dit spørgsmål om hypnoterapi…"
           className="flex-1 border rounded px-3 py-2"
         />
         <button
           onClick={sendMessage}
           disabled={loading}
-          className="bg-accent text-white px-4 rounded"
+          className="bg-accent text-white px-4 rounded disabled:opacity-50"
         >
           Send
         </button>
