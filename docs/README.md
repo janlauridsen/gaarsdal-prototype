@@ -23,3 +23,45 @@ Se detaljeret dokumentation i `/docs`.
 ```bash
 npm install
 npm run dev
+Applikationen kører på: http://localhost:3000
+
+yaml
+Kopier kode
+
+---
+
+# 📄 2️⃣ `docs/architecture.md`
+*(System- og arkitektur-overblik)*
+
+```md
+# Arkitektur-overblik
+
+## Overordnet arkitektur
+Applikationen er bygget som en klassisk Next.js SPA med API routes.
+
+Browser
+│
+▼
+Next.js Pages
+│
+├── Components (UI)
+│
+└── API Routes (/api/chat)
+│
+▼
+AI Service
+
+markdown
+Kopier kode
+
+## Principper
+- UI og logik adskilt
+- Komponentbaseret arkitektur
+- Minimal global state
+- Klar separation mellem frontend og backend
+
+## Dataflow
+1. Bruger interagerer med UI
+2. UI-komponent kalder API-route
+3. API håndterer forretningslogik
+4. Svar returneres til frontend
