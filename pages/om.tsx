@@ -1,8 +1,11 @@
 // pages/om.tsx
+import { useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 
 export default function Om() {
+  const [showAIInfo, setShowAIInfo] = useState(false);
+
   return (
     <>
       <Head>
@@ -121,40 +124,58 @@ export default function Om() {
             </p>
           </div>
 
-          {/* AI ASSISTENT INFO */}
-          <div className="mb-16 bg-bg border border-gray-200 rounded-2xl p-8 max-w-3xl mx-auto">
-            <h2 className="text-xl font-medium mb-4 text-center">
-              Om AI-assistenten på websitet
-            </h2>
+          {/* AI ASSISTENT INFO (COLLAPSIBLE) */}
+          <div className="mb-16 max-w-3xl mx-auto">
+            <button
+              onClick={() => setShowAIInfo((v) => !v)}
+              aria-expanded={showAIInfo}
+              className="
+                w-full flex items-center justify-between
+                bg-bg border border-gray-200 rounded-2xl
+                px-6 py-4 text-left
+                hover:bg-gray-50 transition
+              "
+            >
+              <span className="font-medium text-text">
+                Om AI-assistenten på websitet
+              </span>
+              <span className="text-sm text-muted">
+                {showAIInfo ? "Skjul" : "Læs mere"}
+              </span>
+            </button>
 
-            <div className="text-sm text-muted leading-relaxed space-y-4">
-              <p>
-                På dette website anvendes en AI-baseret assistent, som kan svare på
-                generelle spørgsmål om hypnoterapi og relaterede emner.
-              </p>
+            {showAIInfo && (
+              <div className="mt-4 bg-bg border border-gray-200 rounded-2xl p-8">
+                <div className="text-sm text-muted leading-relaxed space-y-4">
+                  <p>
+                    På dette website anvendes en AI-baseret assistent, som kan svare
+                    på generelle spørgsmål om hypnoterapi og relaterede emner.
+                  </p>
 
-              <p>
-                AI-assistenten giver udelukkende{" "}
-                <strong>generel information</strong>. Den giver ikke personlig
-                rådgivning, stiller ikke diagnoser og kan ikke erstatte kontakt med
-                en professionel behandler eller sundhedsfaglig person.
-              </p>
+                  <p>
+                    AI-assistenten giver udelukkende{" "}
+                    <strong>generel information</strong>. Den giver ikke personlig
+                    rådgivning, stiller ikke diagnoser og kan ikke erstatte kontakt
+                    med en professionel behandler eller sundhedsfaglig person.
+                  </p>
 
-              <p>
-                Svarene kan være forenklede og kan indeholde fejl. Det er altid dit
-                eget ansvar at vurdere, hvad der er relevant for dig.
-              </p>
+                  <p>
+                    Svarene kan være forenklede og kan indeholde fejl. Det er altid
+                    dit eget ansvar at vurdere, hvad der er relevant for dig.
+                  </p>
 
-              <p>
-                Hvis du oplever alvorlig mistrivsel eller står i en akut situation,
-                anbefales det altid at søge menneskelig hjælp.
-              </p>
+                  <p>
+                    Hvis du oplever alvorlig mistrivsel eller står i en akut
+                    situation, anbefales det altid at søge menneskelig hjælp.
+                  </p>
 
-              <p className="text-xs text-gray-500 pt-2 border-t border-gray-200">
-                AI-assistenten er udviklet med fokus på transparens, etik og klare
-                grænser for ansvar.
-              </p>
-            </div>
+                  <p className="text-xs text-gray-500 pt-2 border-t border-gray-200">
+                    AI-assistenten er udviklet med fokus på transparens, etik og
+                    klare grænser for ansvar.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* CONTACT */}
