@@ -38,9 +38,20 @@ export default function AIChat({
     const userText = input.trim();
     setInput("");
 
-    // Vis brugerens besked i UI
-    setMessages((m) => [...m, { role: "user", text: userText }]);
+    // Opdatér UI med brugerens besked
+    setMessages((prev) => [...prev, { role: "user", text: userText }]);
     setLoading(true);
+
+    /**
+     * 🔒 Send AL user-historik (kun role=user)
+     * Dette giver kontekst uden server-state
+     */
+    const userHistory = messages
+      .filter((m) => m.role === "user")
+      .map((m) => ({
+        role: "user" as const,
+        content: m.text,
+      }));
 
     try {
       const resp = await fetch("/api/ai-chat", {
@@ -49,8 +60,10 @@ export default function AIChat({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          // 🔒 KUN user-beskeden sendes
-          messages: [{ role: "user", content: userText }],
+          messages: [
+            ...userHistory,
+            { role: "user", content: userText },
+          ],
         }),
       });
 
@@ -60,13 +73,13 @@ export default function AIChat({
 
       const data = await resp.json();
 
-      setMessages((m) => [
-        ...m,
+      setMessages((prev) => [
+        ...prev,
         { role: "assistant", text: data.reply },
       ]);
     } catch (err) {
-      setMessages((m) => [
-        ...m,
+      setMessages((prev) => [
+        ...prev,
         {
           role: "assistant",
           text:
