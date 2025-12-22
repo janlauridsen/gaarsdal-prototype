@@ -17,7 +17,7 @@ export default function AIChat({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Initial UI-only welcome message
+  // UI-only welcome message
   useEffect(() => {
     if (open && messages.length === 0) {
       setMessages([
@@ -30,7 +30,7 @@ export default function AIChat({
         },
       ]);
     }
-  }, [open]);
+  }, [open, messages.length]);
 
   async function sendMessage() {
     if (!input.trim() || loading) return;
@@ -38,7 +38,7 @@ export default function AIChat({
     const userText = input.trim();
     setInput("");
 
-    // Update UI immediately
+    // Add user message to UI
     setMessages((m) => [...m, { role: "user", text: userText }]);
     setLoading(true);
 
@@ -49,7 +49,6 @@ export default function AIChat({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          // 🔒 KUN user-beskeden sendes
           messages: [{ role: "user", content: userText }],
         }),
       });
@@ -89,4 +88,68 @@ export default function AIChat({
           <div className="text-base font-semibold text-text">
             Gaarsdal Assistent
           </div>
-          <div className="text-xs te
+          <div className="text-xs text-muted">
+            Kort og rolig information
+          </div>
+        </div>
+
+        <button
+          onClick={onClose}
+          className="text-muted hover:text-text transition text-xl"
+          aria-label="Luk chat"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* MESSAGES */}
+      <div
+        className="flex-1 overflow-auto mb-3 pr-1 space-y-3"
+        style={{ maxHeight: 300 }}
+      >
+        {messages.map((m, i) => (
+          <div
+            key={i}
+            className={`px-3 py-2 rounded-2xl max-w-[85%] text-sm leading-snug ${
+              m.role === "assistant"
+                ? "bg-gray-100 text-text self-start"
+                : "bg-accent text-white self-end"
+            }`}
+          >
+            {m.text}
+          </div>
+        ))}
+      </div>
+
+      {/* INPUT */}
+      <div className="mt-1">
+        <div className="flex gap-2">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+            placeholder="Skriv dit spørgsmål…"
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent/40"
+          />
+
+          <button
+            onClick={sendMessage}
+            disabled={loading}
+            className="bg-accent text-white px-4 py-2 rounded-lg disabled:opacity-50 hover:bg-accent/90 transition"
+          >
+            {loading ? "…" : "Send"}
+          </button>
+        </div>
+
+        <div className="text-xs text-muted mt-2">
+          AI&apos;en giver kort og generel information.
+        </div>
+      </div>
+    </div>
+  );
+}
