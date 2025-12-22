@@ -2,7 +2,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import screeningPrompt from "../../prompts/screening-v1";
 
-type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
+type ChatMessage = {
+  role: "user" | "assistant" | "system";
+  content: string;
+};
 
 export default async function handler(
   req: NextApiRequest,
@@ -13,12 +16,27 @@ export default async function handler(
   }
 
   const body = req.body;
+
   if (!body?.messages || !Array.isArray(body.messages)) {
     return res.status(400).json({ error: "Missing messages" });
   }
 
-  const userMessages: ChatMessage[] = body.messages;
+  const incomingMessages: ChatMessage[] = body.messages;
 
+  /**
+   * 🔒 KRITISK:
+   * Vi sender KUN user-beskeder videre til modellen.
+   * UI-assistant-beskeder (fx "Hej — jeg er Gaarsdal Assistent")
+   * må ALDRIG påvirke modellen.
+   */
+  const userMessages: ChatMessage[] = incomingMessages.filter(
+    (m) => m.role === "user"
+  );
+
+  /**
+   * 🧠 SAMLET MESSAGE-STACK
+   * System prompt skal ALTID være først.
+   */
   const messages: ChatMessage[] = [
     {
       role: "system",
@@ -42,17 +60,14 @@ export default async function handler(
       temperature: 0.2,
     };
 
-    const resp = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${OPENAI_KEY}`,
-        },
-        body: JSON.stringify(payload),
-      }
-    );
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_KEY}`,
+      },
+      body: JSON.stringify(payload),
+    });
 
     if (!resp.ok) {
       const text = await resp.text();
@@ -69,8 +84,9 @@ export default async function handler(
     return res.status(200).json({ reply: assistantReply });
   } catch (err: any) {
     console.error("API error:", err);
-    return res
-      .status(500)
-      .json({ error: "Server error", details: err.message ?? String(err) });
+    return res.status(500).json({
+      error: "Server error",
+      details: err?.message ?? String(err),
+    });
   }
 }
