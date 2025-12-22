@@ -1,6 +1,6 @@
 // pages/api/ai-chat.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import screeningPrompt from "../../prompts/screening-v2";
+import screeningPrompt from "../../prompts/screening-v3";
 
 type ChatMessage = {
   role: "user" | "assistant" | "system";
