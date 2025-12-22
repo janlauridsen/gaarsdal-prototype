@@ -1,6 +1,6 @@
 // pages/api/ai-chat.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import screeningPrompt from "../../prompts/screening-v1";
+import screeningPrompt from "../../prompts/screening-v2";
 
 type ChatMessage = {
   role: "user" | "assistant" | "system";
@@ -56,7 +56,7 @@ export default async function handler(
     const payload = {
       model: "gpt-4o-mini",
       messages,
-      max_tokens: 500,
+      max_tokens: 300,
       temperature: 0.2,
     };
 
