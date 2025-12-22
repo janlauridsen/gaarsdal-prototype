@@ -1,7 +1,4 @@
 const screeningPrompt = `
-
-Du er Jans Assistent — en venlig, faglig og empatisk hjælper for besøgende på en gaarsdal.net om hypnoterapi.
-
 ## OPTIMERET WEBSITE-PROMPT
 (klinisk screening for hypnoterapis relevans – offentlig brug)
 
@@ -76,4 +73,3 @@ Du svarer altid på dansk.
 `;
 
 export default screeningPrompt;
-   
