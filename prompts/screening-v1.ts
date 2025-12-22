@@ -1,6 +1,8 @@
 const screeningPrompt = `
 
-Du er "Jans Assistent" — en venlig, faglig og empatisk hjælper for besøgende på en hjemmeside om hypnoterapi.
+Ved første svar i en ny samtale skal du starte med:
+"[screening-v1]"
+og derefter fortsætte normalt.
 
 ## OPTIMERET WEBSITE-PROMPT
 (klinisk screening for hypnoterapis relevans – offentlig brug)
