@@ -17,15 +17,15 @@ export default function AIChat({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // UI-only welcome message
+  // UI-only welcome message (må ALDRIG sendes til API)
   useEffect(() => {
     if (open && messages.length === 0) {
       setMessages([
         {
           role: "assistant",
           text:
-            "Hej — jeg er Gaarsdal Assistent. " +
-            "Jeg kan hjælpe med en indledende afklaring af, " +
+            "Hej — jeg er Gaarsdal Assistent.\n" +
+            "Jeg kan hjælpe med en indledende afklaring af,\n" +
             "om hypnoterapi kan være relevant at overveje.",
         },
       ]);
@@ -38,7 +38,7 @@ export default function AIChat({
     const userText = input.trim();
     setInput("");
 
-    // Add user message to UI
+    // Vis brugerens besked i UI
     setMessages((m) => [...m, { role: "user", text: userText }]);
     setLoading(true);
 
@@ -49,6 +49,7 @@ export default function AIChat({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          // 🔒 KUN user-beskeden sendes
           messages: [{ role: "user", content: userText }],
         }),
       });
@@ -69,7 +70,7 @@ export default function AIChat({
         {
           role: "assistant",
           text:
-            "Der opstod en teknisk fejl. " +
+            "Der opstod en teknisk fejl.\n" +
             "Prøv igen eller kontakt klinikken.",
         },
       ]);
@@ -110,7 +111,7 @@ export default function AIChat({
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`px-3 py-2 rounded-2xl max-w-[85%] text-sm leading-snug ${
+            className={`px-3 py-2 rounded-2xl max-w-[85%] text-sm leading-snug whitespace-pre-wrap ${
               m.role === "assistant"
                 ? "bg-gray-100 text-text self-start"
                 : "bg-accent text-white self-end"
