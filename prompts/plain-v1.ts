@@ -7,6 +7,6 @@ Kort og klare svar (1-3 korte afsnit) er foretrukket. Hvis brugeren stiller spø
 Svar på dansk.
 `;
 
-export default screeningPrompt;
+export default plainPrompt;
 
   
