@@ -1,0 +1,10 @@
+export type SessionEval = {
+  sessionId: string;
+
+  replay: {
+    totalTurns: number;
+    closingTurnIndex?: number;
+  };
+
+  eval: EvalResult;
+};
