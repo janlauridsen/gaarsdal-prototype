@@ -1,80 +1,64 @@
-// lib/playback/runPlaybackSession.ts
+import type {
+  LoggedSession,
+  ReplayResult,
+  ReplayTurn,
+} from "./replay-types";
 
-import { buildPlaybackMessages } from "./buildMessages";
-import type { PlaybackSessionResult } from "./types";
+import { buildReplayTurn } from "./buildMessages";
 
-export async function runPlaybackSession({
-  sessionId,
-  originalMeta,
-  turns,
-  promptId,
-  promptText,
-  model,
-  temperature,
-}: {
-  sessionId: string;
-  originalMeta: {
-    promptVersion: string;
-    model: string;
-    startedAt: string;
-  };
-  turns: {
-    turnIndex: number;
-    userText: string;
-    assistantText: string;
-  }[];
-  promptId: string;
-  promptText: string;
-  model: string;
-  temperature: number;
-}): Promise<PlaybackSessionResult> {
-  const userTurns = turns.map((t) => ({ userText: t.userText }));
+/* ----------------------------------
+   RUN SINGLE SESSION PLAYBACK
+---------------------------------- */
 
-  const messages = buildPlaybackMessages(promptText, userTurns);
+/**
+ * Kører et silent playback af en session.
+ *
+ * Bemærk:
+ * - outputText sættes til det loggede assistant-svar
+ * - ingen OpenAI-kald foretages her
+ * - bruges til eval, compare og batch-analyse
+ */
+export function runPlaybackSession(
+  session: LoggedSession,
+  systemPrompt: string
+): ReplayResult {
+  const turns: ReplayTurn[] = [];
 
-  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model,
-      temperature,
-      messages,
-    }),
-  });
+  let closingTurnIndex: number | undefined = undefined;
+  let closingCount = 0;
 
-  if (!resp.ok) {
-    throw new Error(`OpenAI error ${resp.status}`);
+  for (let i = 0; i < session.turns.length; i++) {
+    const replayTurn = buildReplayTurn(
+      session,
+      systemPrompt,
+      i
+    );
+
+    // Silent mode: brug logget assistant-svar
+    replayTurn.outputText = session.turns[i].assistantText;
+
+    if (replayTurn.isClosing) {
+      closingCount++;
+      if (closingTurnIndex === undefined) {
+        closingTurnIndex = i;
+      }
+    }
+
+    turns.push(replayTurn);
   }
 
-  const data = await resp.json();
-  const newAssistantText =
-    data?.choices?.[0]?.message?.content ?? "";
-
   return {
-    sessionId,
+    sessionId: session.sessionId,
+    promptVersion: session.promptVersion,
+    model: session.model,
 
-    original: originalMeta,
+    totalTurns: turns.length,
+    turns,
 
-    playback: {
-      promptId,
-      model,
-      temperature,
-      runAt: new Date().toISOString(),
-    },
-
-    turns: turns.map((t) => ({
-      turnIndex: t.turnIndex,
-      userText: t.userText,
-      originalAssistantText: t.assistantText,
-      newAssistantText,
-    })),
-
-    stats: {
-      originalTurnCount: turns.length,
-      newTurnCount: turns.length,
+    summary: {
+      hasClosing: closingTurnIndex !== undefined,
+      closingTurnIndex,
+      repeatedClosing: closingCount > 1,
     },
   };
 }
