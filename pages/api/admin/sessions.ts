@@ -1,5 +1,5 @@
+// pages/api/admin/sessions.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { requireAdminAuth } from "../../../lib/admin-auth";
 import type { SessionMeta } from "../../../lib/admin-types";
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL!;
@@ -14,14 +14,7 @@ export default async function handler(
   }
 
   try {
-    /* ----------------------------------
-       ADMIN AUTH (kun i live prod)
-    ---------------------------------- */
-    requireAdminAuth(req);
-
-    /* ----------------------------------
-       FIND ALLE META-KEYS
-    ---------------------------------- */
+    // 1. Find alle session meta keys
     const keysRes = await fetch(
       `${REDIS_URL}/keys/${encodeURIComponent("session:*:meta")}`,
       {
@@ -34,9 +27,7 @@ export default async function handler(
     const keysJson = await keysRes.json();
     const keys: string[] = keysJson.result || [];
 
-    /* ----------------------------------
-       HENT META FOR HVER SESSION
-    ---------------------------------- */
+    // 2. Hent meta for hver session
     const sessions: SessionMeta[] = [];
 
     for (const key of keys) {
@@ -56,9 +47,7 @@ export default async function handler(
       }
     }
 
-    /* ----------------------------------
-       SORTÉR (nyeste først)
-    ---------------------------------- */
+    // 3. Sortér nyeste først
     sessions.sort(
       (a, b) =>
         new Date(b.startedAt).getTime() -
@@ -67,11 +56,10 @@ export default async function handler(
 
     return res.status(200).json({ sessions });
   } catch (err: any) {
-    if (err.statusCode === 401) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    console.error("admin/sessions error:", err);
-    return res.status(500).json({ error: "Server error" });
+    console.error("Admin sessions error:", err);
+    return res.status(500).json({
+      error: "Server error",
+      details: err?.message ?? String(err),
+    });
   }
 }
