@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import screeningPrompt from "../../prompts/screening-v4.4";
+import screeningPrompt from "../../prompts/screening-v4";
 import { getOrCreateSessionId } from "../../lib/session";
 import {
   logSessionMeta,
