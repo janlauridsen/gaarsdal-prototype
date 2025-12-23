@@ -1,22 +1,55 @@
-import type { EvalContext, EvalIssue } from "../types";
+import type { ReplayResult } from "../../playback/replay-types";
+import type { EvalIssue } from "../types";
 
-export function checkStopRule(ctx: EvalContext): EvalIssue[] {
-  const steps = ctx.replay.steps;
+/* ----------------------------------
+   STOP-RULE HEURISTIC
+---------------------------------- */
 
-  const firstClosing = steps.find((s) => s.isClosing);
-  if (!firstClosing) return [];
+/**
+ * Kontrollerer om modellen fortsætter
+ * med fagligt indhold EFTER at den
+ * har lukket screeningen.
+ */
+export function checkStopRule(
+  replay: ReplayResult
+): EvalIssue[] {
+  const issues: EvalIssue[] = [];
 
-  const after = steps.filter((s) => s.index > firstClosing.index);
+  const {
+    closingTurnIndex,
+    turns,
+    summary,
+  } = replay;
 
-  if (after.length > 0) {
-    return [
-      {
-        code: "POST_CLOSING_TURNS",
-        level: "warning",
-        message: "Der kom flere svar efter lukning.",
-      },
-    ];
+  if (
+    !summary.hasClosing ||
+    typeof closingTurnIndex !== "number"
+  ) {
+    // Ingen lukning → stop-regel irrelevant
+    return issues;
   }
 
-  return [];
+  /* -----------------------------
+     EFTERFØLGENDE ASSISTENT-SVAR
+  ----------------------------- */
+
+  for (let i = closingTurnIndex + 1; i < turns.length; i++) {
+    const turn = turns[i];
+
+    // Vi reagerer kun på assistant-svar
+    if (!turn.assistantText) continue;
+
+    issues.push({
+      code: "STOP_RULE_VIOLATION",
+      level: "error",
+      message:
+        "Modellen fortsætter med svar efter at screeningen er afsluttet.",
+      turnIndex: i,
+    });
+
+    // Én fejl er nok – resten er støj
+    break;
+  }
+
+  return issues;
 }
