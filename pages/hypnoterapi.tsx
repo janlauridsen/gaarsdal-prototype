@@ -11,85 +11,102 @@ export default function Hypnoterapi() {
         {/* HERO */}
         <h1 className="text-h1 font-light mb-6">Hypnoterapi</h1>
         <p className="text-base-lg text-muted mb-10">
-          En effektiv, rolig og tryg metode til at arbejde med forandring og indre balance.
+          Hypnoterapi er en struktureret og rolig metode, der anvendes i arbejdet
+          med forskellige mentale og følelsesmæssige problemstillinger.
         </p>
 
         {/* HVAD ER HYPNOTERAPI */}
         <section className="bg-white p-6 rounded-lg shadow-sm mb-10">
           <h2 className="text-h2 font-light mb-4">Hvad er hypnoterapi?</h2>
           <p className="text-muted leading-relaxed mb-4">
-            Hypnoterapi er en terapiform, hvor du gennem dyb afslapning og fokuseret opmærksomhed
-            får lettere adgang til dine egne tanke- og følelsesmønstre. Du er vågen, til stede
-            og kan til enhver tid afbryde processen.
+            Hypnoterapi er en samtale- og oplevelsesbaseret metode, hvor der arbejdes
+            med fokuseret opmærksomhed og indre forestilling. Du er vågen, til stede
+            og har fuld kontrol gennem hele forløbet.
           </p>
           <p className="text-muted leading-relaxed">
-            Det føles ofte som en guidet meditation, hvor du får mulighed for at arbejde med det,
-            der fylder — på en mere direkte og effektiv måde.
+            Tilstanden kan minde om dyb koncentration eller guidet opmærksomhed,
+            hvor indre oplevelser træder tydeligere frem. Processen kan altid
+            afbrydes.
           </p>
         </section>
 
-        {/* HVAD KAN DET HJÆLPE MED */}
+        {/* ANVENDELSESOMRÅDER */}
         <section className="bg-white p-6 rounded-lg shadow-sm mb-10">
-          <h2 className="text-h2 font-light mb-4">Hvad kan hypnoterapi hjælpe med?</h2>
+          <h2 className="text-h2 font-light mb-4">
+            Typiske anvendelsesområder
+          </h2>
+          <p className="text-muted mb-4">
+            Hypnoterapi anvendes i forskellige sammenhænge. Relevansen afhænger
+            altid af den konkrete problemstilling.
+          </p>
           <ul className="list-disc ml-6 text-muted space-y-2">
-            <li>Stress og indre uro</li>
-            <li>Søvnproblemer</li>
-            <li>Lavt selvværd</li>
-            <li>Præstationspres</li>
-            <li>Angst og bekymringer</li>
-            <li>Vaner og uhensigtsmæssige mønstre</li>
-            <li>Tankemylder</li>
-            <li>Følelsesmæssige blokeringer</li>
+            <li>Stressrelateret belastning og indre uro</li>
+            <li>Søvnrelaterede vanskeligheder</li>
+            <li>Oplevelser af lav selvfølelse</li>
+            <li>Præstationsrelateret pres</li>
+            <li>Bekymringer og vedvarende tankemønstre</li>
+            <li>Vaner og gentagelsesmønstre</li>
+            <li>Mentalt overstimulerende tankeaktivitet</li>
+            <li>Følelsesmæssige reaktioner</li>
           </ul>
         </section>
 
         {/* HVORDAN FOREGÅR DET */}
         <section className="bg-white p-6 rounded-lg shadow-sm mb-10">
-          <h2 className="text-h2 font-light mb-4">Hvordan foregår en session?</h2>
+          <h2 className="text-h2 font-light mb-4">
+            Hvordan foregår en session?
+          </h2>
 
           <p className="text-muted mb-4">
             En session foregår i rolige omgivelser i min praksis på Bakkevej 36 i Birkerød.
           </p>
 
           <ol className="list-decimal ml-6 text-muted space-y-2">
-            <li>Kort samtale: hvad fylder hos dig lige nu?</li>
-            <li>En rolig guidning i hypnose</li>
-            <li>Terapeutisk arbejde med dit tema</li>
-            <li>Afrunding og hjælp til næste skridt</li>
+            <li>Indledende samtale med afklaring af tema og ramme</li>
+            <li>Guidning i en fokuseret opmærksomhedstilstand</li>
+            <li>Arbejde med det aktuelle tema inden for den aftalte ramme</li>
+            <li>Rolig afrunding</li>
           </ol>
 
           <p className="text-muted mt-4">
-            Du er ikke “væk” — du er blot i en mere fokuseret og afslappet tilstand.
+            Du er ikke væk eller uden kontrol, men i en mere fokuseret og afgrænset tilstand.
           </p>
         </section>
 
         {/* SIKKERHED */}
         <section className="bg-white p-6 rounded-lg shadow-sm mb-10">
-          <h2 className="text-h2 font-light mb-4">Er hypnoterapi sikkert?</h2>
+          <h2 className="text-h2 font-light mb-4">
+            Er hypnoterapi sikkert?
+          </h2>
           <p className="text-muted leading-relaxed">
-            Ja. Hypnoterapi er en veldokumenteret metode, og du bevarer altid din egen kontrol.
-            Du kan tale, åbne øjnene, afbryde eller stille spørgsmål undervejs. Min opgave er
-            at skabe et trygt rum og støtte dig gennem processen.
+            Hypnoterapi er en metode, der er undersøgt i psykologisk og klinisk forskning.
+            Under sessionen bevarer du altid din egen kontrol og opmærksomhed.
+            Du kan tale, åbne øjnene eller afbryde processen når som helst.
           </p>
         </section>
 
         {/* HVEM ER DET FOR */}
         <section className="bg-white p-6 rounded-lg shadow-sm mb-10">
-          <h2 className="text-h2 font-light mb-4">Hvem er hypnoterapi for?</h2>
+          <h2 className="text-h2 font-light mb-4">
+            Hvem er hypnoterapi for?
+          </h2>
           <p className="text-muted leading-relaxed mb-3">
-            Hypnoterapi er for dig, der ønsker forandring, men måske oplever at sidde fast —
-            eller for dig, der gerne vil arbejde med dig selv på en rolig og effektiv måde.
+            Hypnoterapi anvendes af personer, der ønsker at arbejde med
+            bestemte oplevelser, reaktioner eller mønstre på en struktureret
+            og rolig måde.
           </p>
           <p className="text-muted leading-relaxed">
-            Der kræves ingen tidligere erfaring.
+            Der kræves ingen tidligere erfaring med hypnose.
           </p>
         </section>
 
-        {/* AFSLUTNING / CTA */}
+        {/* CTA */}
         <section className="bg-white p-6 rounded-lg shadow-sm text-center">
-          <h2 className="text-h2 font-light mb-4">Er du nysgerrig på, om hypnoterapi kan hjælpe dig?</h2>
+          <h2 className="text-h2 font-light mb-4">
+            Ønsker du at afklare, om hypnoterapi kan være relevant?
+          </h2>
           <p className="text-muted mb-6">
-            Du er velkommen til at kontakte mig for en uforpligtende samtale.
+            Du er velkommen til at tage kontakt for en indledende afklaring.
           </p>
           <a
             href="/kontakt"
