@@ -1,5 +1,9 @@
 import type { ReplayResult } from "../playback/replay-types";
 
+/* ----------------------------------
+   GRUNDLÆGGENDE TYPES
+---------------------------------- */
+
 export type EvalIssueLevel = "info" | "warning" | "error";
 
 export type EvalIssue = {
@@ -8,6 +12,10 @@ export type EvalIssue = {
   message: string;
   turnIndex?: number;
 };
+
+/* ----------------------------------
+   SINGLE SESSION EVAL
+---------------------------------- */
 
 export type EvalResult = {
   sessionId: string;
@@ -26,7 +34,32 @@ export type EvalResult = {
   };
 };
 
+/* ----------------------------------
+   BATCH EVAL TYPES
+---------------------------------- */
+
+export type SessionEval = {
+  replay: ReplayResult;
+  eval: EvalResult;
+};
+
+export type BatchEvalResult = {
+  totalSessions: number;
+
+  sessions: SessionEval[];
+
+  aggregates: {
+    withClosing: number;
+    repeatedClosing: number;
+    askedQuestions: number;
+    excessiveLength: number;
+  };
+};
+
+/* ----------------------------------
+   INTERNAL CONTEXT
+---------------------------------- */
+
 export type EvalContext = {
   replay: ReplayResult;
 };
-
