@@ -1,28 +1,68 @@
-import type { EvalContext, EvalIssue } from "../types";
+import type { ReplayResult } from "../../playback/replay-types";
+import type { EvalIssue } from "../types";
 
-export function checkClosure(ctx: EvalContext): EvalIssue[] {
-  const steps = ctx.replay.steps;
-  const closings = steps.filter((s) => s.isClosing);
+/* ----------------------------------
+   CLOSURE HEURISTIC
+---------------------------------- */
 
-  if (closings.length === 0) {
-    return [
-      {
-        code: "NO_CLOSING",
-        level: "warning",
-        message: "Sessionen blev aldrig tydeligt lukket.",
-      },
-    ];
+/**
+ * Kontrollerer om:
+ * - sessionen bliver lukket
+ * - lukningen sker flere gange
+ * - lukningen sker ekstremt tidligt
+ */
+export function checkClosure(
+  replay: ReplayResult
+): EvalIssue[] {
+  const issues: EvalIssue[] = [];
+
+  const { hasClosing, closingTurnIndex, repeatedClosing } =
+    replay.summary;
+
+  /* -----------------------------
+     MANGLENDE LUKNING
+  ----------------------------- */
+
+  if (!hasClosing) {
+    issues.push({
+      code: "NO_CLOSING",
+      level: "warning",
+      message:
+        "Sessionen afsluttes ikke eksplicit med en klar konklusion.",
+    });
+    return issues;
   }
 
-  if (closings.length > 1) {
-    return [
-      {
-        code: "REPEATED_CLOSING",
-        level: "info",
-        message: "Sessionen blev lukket flere gange.",
-      },
-    ];
+  /* -----------------------------
+     GENTAGEN LUKNING
+  ----------------------------- */
+
+  if (repeatedClosing) {
+    issues.push({
+      code: "REPEATED_CLOSING",
+      level: "warning",
+      message:
+        "Sessionen afsluttes flere gange efter hinanden.",
+      turnIndex: closingTurnIndex,
+    });
   }
 
-  return [];
+  /* -----------------------------
+     FOR TIDLIG LUKNING
+  ----------------------------- */
+
+  if (
+    typeof closingTurnIndex === "number" &&
+    closingTurnIndex === 0
+  ) {
+    issues.push({
+      code: "CLOSING_TOO_EARLY",
+      level: "info",
+      message:
+        "Sessionen afsluttes allerede ved første brugerhenvendelse.",
+      turnIndex: closingTurnIndex,
+    });
+  }
+
+  return issues;
 }
