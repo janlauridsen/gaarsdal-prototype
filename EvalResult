@@ -1,0 +1,10 @@
+export type EvalResult = {
+  issues: EvalIssue[];
+
+  summary: {
+    hasClosing: boolean;
+    repeatedClosing: boolean;
+    askedQuestions: boolean;
+    excessiveLength: boolean;
+  };
+};
