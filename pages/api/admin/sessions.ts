@@ -14,7 +14,9 @@ export default async function handler(
   }
 
   try {
-    // 1. Find alle session meta keys
+    /* ----------------------------------
+       FIND ALLE SESSION META KEYS
+    ---------------------------------- */
     const keysRes = await fetch(
       `${REDIS_URL}/keys/${encodeURIComponent("session:*:meta")}`,
       {
@@ -27,7 +29,9 @@ export default async function handler(
     const keysJson = await keysRes.json();
     const keys: string[] = keysJson.result || [];
 
-    // 2. Hent meta for hver session
+    /* ----------------------------------
+       HENT META FOR HVER SESSION
+    ---------------------------------- */
     const sessions: SessionMeta[] = [];
 
     for (const key of keys) {
@@ -42,12 +46,27 @@ export default async function handler(
       );
 
       const metaJson = await metaRes.json();
+
       if (metaJson?.result) {
-        sessions.push(JSON.parse(metaJson.result));
+        let parsed: any;
+
+        if (typeof metaJson.result === "string") {
+          parsed = JSON.parse(metaJson.result);
+        } else {
+          parsed = metaJson.result;
+        }
+
+        sessions.push({
+          ...parsed,
+          endedAt: metaJson.endedAt ?? parsed.endedAt,
+          closedReason: metaJson.closedReason ?? parsed.closedReason,
+        });
       }
     }
 
-    // 3. Sortér nyeste først
+    /* ----------------------------------
+       SORTÉR (NYESTE FØRST)
+    ---------------------------------- */
     sessions.sort(
       (a, b) =>
         new Date(b.startedAt).getTime() -
