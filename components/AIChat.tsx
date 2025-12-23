@@ -5,6 +5,8 @@ type Message = {
   text: string;
 };
 
+type ChatState = "welcome" | "orienting" | "screening" | "closed";
+
 export default function AIChat({
   open,
   onClose,
@@ -15,6 +17,7 @@ export default function AIChat({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [chatState, setChatState] = useState<ChatState>("welcome");
 
   const chatRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -27,21 +30,18 @@ export default function AIChat({
 
     const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-
-    // Hvis brugeren er tæt på bunden → tillad auto-scroll
     shouldAutoScrollRef.current = distanceFromBottom < 80;
   }
 
   useEffect(() => {
     if (!chatRef.current) return;
-
     if (shouldAutoScrollRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [messages]);
 
   /* ----------------------------------
-     WELCOME MESSAGE (kortere & roligere)
+     WELCOME MESSAGE
   ---------------------------------- */
   useEffect(() => {
     if (open && messages.length === 0) {
@@ -53,6 +53,7 @@ export default function AIChat({
             "Jeg kan hjælpe med en kort, indledende afklaring af dine spørgsmål.",
         },
       ]);
+      setChatState("orienting");
     }
   }, [open, messages.length]);
 
@@ -60,7 +61,7 @@ export default function AIChat({
      SEND MESSAGE
   ---------------------------------- */
   async function sendMessage() {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loading || chatState === "closed") return;
 
     const userText = input.trim();
     setInput("");
@@ -77,16 +78,26 @@ export default function AIChat({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          state: chatState,
           messages: [...userHistory, { role: "user", content: userText }],
         }),
       });
 
       const data = await resp.json();
+      const replyText: string = data.reply ?? "";
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", text: data.reply },
-      ]);
+      // Tjek for v4.3-afslutning
+      const isClosing = replyText
+        .trim()
+        .startsWith("Ud fra det, du har beskrevet, er det primært afklaret, at");
+
+      setMessages((prev) => [...prev, { role: "assistant", text: replyText }]);
+
+      if (isClosing) {
+        setChatState("closed");
+      } else if (chatState === "orienting") {
+        setChatState("screening");
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -147,13 +158,18 @@ export default function AIChat({
               sendMessage();
             }
           }}
-          placeholder="Skriv dit spørgsmål…"
-          className="flex-1 border rounded px-3 py-2"
+          placeholder={
+            chatState === "closed"
+              ? "Screeningen er afsluttet"
+              : "Skriv dit spørgsmål…"
+          }
+          disabled={chatState === "closed"}
+          className="flex-1 border rounded px-3 py-2 disabled:bg-gray-100"
         />
         <button
           onClick={sendMessage}
-          disabled={loading}
-          className="bg-accent text-white px-4 py-2 rounded"
+          disabled={loading || chatState === "closed"}
+          className="bg-accent text-white px-4 py-2 rounded disabled:opacity-50"
         >
           {loading ? "…" : "Send"}
         </button>
