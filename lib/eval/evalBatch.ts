@@ -1,44 +1,44 @@
-// lib/eval/evalBatch.ts
-
+import type { ReplayResult } from "../playback/replay-types";
 import type {
   BatchEvalResult,
   SessionEval,
 } from "./types";
 
-import type {
-  BatchPlaybackResult,
-} from "../playback/types";
-
 import { evalSession } from "./evalSession";
 
 export function evalBatch(
-  playback: BatchPlaybackResult
+  replays: ReplayResult[]
 ): BatchEvalResult {
-  const sessions: SessionEval[] =
-    playback.sessions.map(evalSession);
+  const sessions: SessionEval[] = [];
 
-  const regressions = sessions.filter(
-    (s) => s.summary.regression
-  ).length;
+  let withClosing = 0;
+  let repeatedClosing = 0;
+  let askedQuestions = 0;
+  let excessiveLength = 0;
 
-  const improvements = sessions.filter(
-    (s) => s.summary.improvement
-  ).length;
+  for (let i = 0; i < replays.length; i++) {
+    const replay = replays[i];
+    const evalResult = evalSession(replay);
 
-  const neutral = sessions.filter(
-    (s) => s.summary.neutral
-  ).length;
+    sessions.push({
+      replay,
+      eval: evalResult,
+    });
+
+    if (evalResult.summary.hasClosing) withClosing++;
+    if (evalResult.summary.repeatedClosing) repeatedClosing++;
+    if (evalResult.summary.askedQuestions) askedQuestions++;
+    if (evalResult.summary.excessiveLength) excessiveLength++;
+  }
 
   return {
-    batchId: playback.batchId,
-    evalVersion: "baseline-v1.1",
-    evaluatedAt: new Date().toISOString(),
-    totals: {
-      sessions: sessions.length,
-      regressions,
-      improvements,
-      neutral,
-    },
+    totalSessions: replays.length,
     sessions,
+    aggregates: {
+      withClosing,
+      repeatedClosing,
+      askedQuestions,
+      excessiveLength,
+    },
   };
 }
