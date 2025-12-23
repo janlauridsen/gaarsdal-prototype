@@ -37,7 +37,7 @@ export default function Kontakt() {
         setErrorMsg(txt || 'Der opstod en fejl. Prøv igen senere.')
         setStatus('error')
       }
-    } catch (err) {
+    } catch {
       setErrorMsg('Netværksfejl — prøv igen.')
       setStatus('error')
     }
@@ -50,21 +50,36 @@ export default function Kontakt() {
         <h1 className="text-h1 font-light mb-6">Kontakt</h1>
 
         <p className="text-base-lg text-muted mb-6">
-          Hvis du har spørgsmål eller ønsker at booke en tid, er du velkommen til at kontakte mig.
-          Jeg svarer som regel samme dag.
+          Du er velkommen til at tage kontakt, hvis du har spørgsmål
+          eller ønsker en indledende afklaring.
         </p>
 
         <div className="grid md:grid-cols-2 gap-8 mb-10">
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <h2 className="font-medium mb-2">Kontaktoplysninger</h2>
-            <p className="text-muted mb-2"><strong>Telefon:</strong> <a href="tel:+4542807474" className="text-accent hover:underline">42 80 74 74</a></p>
-            <p className="text-muted mb-2"><strong>Email:</strong> <a href="mailto:jan@gaarsdal.net" className="text-accent hover:underline">jan@gaarsdal.net</a></p>
-            <p className="text-muted mb-2"><strong>Adresse:</strong> Bakkevej 36, 3460 Birkerød</p>
+            <p className="text-muted mb-2">
+              <strong>Telefon:</strong>{' '}
+              <a href="tel:+4542807474" className="text-accent hover:underline">
+                42 80 74 74
+              </a>
+            </p>
+            <p className="text-muted mb-2">
+              <strong>Email:</strong>{' '}
+              <a href="mailto:jan@gaarsdal.net" className="text-accent hover:underline">
+                jan@gaarsdal.net
+              </a>
+            </p>
+            <p className="text-muted mb-2">
+              <strong>Adresse:</strong> Bakkevej 36, 3460 Birkerød
+            </p>
           </div>
 
           <aside className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="font-medium mb-2">Hvordan foregår booking?</h3>
-            <p className="text-muted">Du kan ringe, skrive en mail eller bruge formularen. Jeg kontakter dig for at aftale tid og formål med sessionen.</p>
+            <h3 className="font-medium mb-2">Hvordan foregår kontakt?</h3>
+            <p className="text-muted">
+              Du kan ringe, skrive en mail eller benytte formularen.
+              Henvendelser bruges til afklaring og praktisk koordinering.
+            </p>
           </aside>
         </div>
 
@@ -129,12 +144,15 @@ export default function Kontakt() {
               </button>
 
               {status === 'success' && (
-                <div className="text-green-600">Tak — din besked er modtaget. Jeg vender tilbage snart.</div>
+                <div className="text-green-600">
+                  Tak — din besked er modtaget.
+                </div>
               )}
             </div>
 
             <p className="text-xs text-muted mt-4">
-              Ved at kontakte mig accepterer du, at dine oplysninger behandles i forbindelse med henvendelsen.
+              Ved at kontakte mig accepterer du, at dine oplysninger
+              behandles i forbindelse med din henvendelse.
             </p>
           </form>
         </section>
