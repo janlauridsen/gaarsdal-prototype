@@ -1,116 +1,42 @@
-// lib/eval/evalSession.ts
+import type { ReplayResult } from "../playback/replay-types";
+import type { EvalResult, EvalContext } from "./types";
 
-import type {
-  PlaybackSessionResult,
-  SessionEval,
-  TurnEval,
-} from "./types";
+import { checkClosure } from "./heuristics/closure";
+import { checkLength } from "./heuristics/length";
+import { checkQuestions } from "./heuristics/questions";
+import { checkRedundancy } from "./heuristics/redundancy";
+import { checkStopRule } from "./heuristics/stopRule";
 
-import { detectClosure } from "./heuristics/closure";
-import { violatesStopRule } from "./heuristics/stopRule";
-import { lengthDelta } from "./heuristics/length";
-import { redundancyScore } from "./heuristics/redundancy";
-import { countQuestions } from "./heuristics/questions";
-import { containsAdvisoryLanguage } from "./heuristics/clinical";
+export function evalSession(replay: ReplayResult): EvalResult {
+  const ctx: EvalContext = { replay };
 
-export function evalSession(
-  session: PlaybackSessionResult
-): SessionEval {
-  let hasClosed = false;
-  const turnEvals: TurnEval[] = [];
+  const issues = [
+    ...checkClosure(ctx),
+    ...checkStopRule(ctx),
+    ...checkRedundancy(ctx),
+    ...checkLength(ctx),
+    ...checkQuestions(ctx),
+  ];
 
-  for (const turn of session.turns) {
-    const originalClosed = detectClosure(
-      turn.originalAssistantText
-    );
-    const newClosed = detectClosure(
-      turn.newAssistantText
-    );
-
-    const violatedStop =
-      violatesStopRule(hasClosed, newClosed);
-
-    if (newClosed) {
-      hasClosed = true;
-    }
-
-    const questionsOriginal = countQuestions(
-      turn.originalAssistantText
-    );
-    const questionsNew = countQuestions(
-      turn.newAssistantText
-    );
-
-    const redundancy = redundancyScore(
-      turn.originalAssistantText,
-      turn.newAssistantText
-    );
-
-    const advisory = containsAdvisoryLanguage(
-      turn.newAssistantText
-    );
-
-    const turnEval: TurnEval = {
-      turnIndex: turn.turnIndex,
-      deltas: {
-        closureChanged:
-          originalClosed !== newClosed,
-        lengthDelta: lengthDelta(
-          turn.originalAssistantText,
-          turn.newAssistantText
-        ),
-        questionsAdded:
-          Math.max(
-            0,
-            questionsNew - questionsOriginal
-          ),
-        questionsRemoved:
-          Math.max(
-            0,
-            questionsOriginal - questionsNew
-          ),
-      },
-      flags: {
-        violatedStopRule: violatedStop,
-        askedAfterClosure: violatedStop,
-        advisoryLanguage: advisory,
-      },
-      notes:
-        redundancy > 0.7
-          ? "Høj tekstlig redundans"
-          : undefined,
-    };
-
-    turnEvals.push(turnEval);
-  }
-
-  const anyStopViolation = turnEvals.some(
-    (t) => t.flags.violatedStopRule
-  );
-
-  const hasAdvisory = turnEvals.some(
-    (t) => t.flags.advisoryLanguage
-  );
-
-  const highRedundancy = turnEvals.some(
-    (t) => t.notes === "Høj tekstlig redundans"
-  );
-
-  const regression =
-    anyStopViolation || hasAdvisory;
+  const closingStep = replay.steps.find((s) => s.isClosing);
 
   return {
-    sessionId: session.sessionId,
+    sessionId: replay.sessionId,
+    promptVersion: replay.promptVersion,
+
+    totalTurns: replay.steps.length,
+    closingTurnIndex: closingStep?.index,
+
+    issues,
+
     summary: {
-      regression,
-      improvement: false,
-      neutral: !regression,
+      hasClosing: Boolean(closingStep),
+      repeatedClosing:
+        issues.some((i) => i.code === "REPEATED_CLOSING"),
+      excessiveLength:
+        issues.some((i) => i.code === "LONG_RESPONSE"),
+      askedQuestions:
+        issues.some((i) => i.code === "QUESTION_USED"),
     },
-    flags: {
-      hardRegression: anyStopViolation,
-      needsReview:
-        hasAdvisory || highRedundancy,
-    },
-    turnEvals,
   };
 }
