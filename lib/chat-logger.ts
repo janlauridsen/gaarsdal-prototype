@@ -1,13 +1,14 @@
-// lib/chat-logger.ts
-import { redisPush } from "./redis";
+import { redisAppend } from "./redis";
 
-export async function logChatMessage(role: "user" | "assistant", text: string) {
-  const timestamp = Date.now();
+export async function logChatMessage(
+  role: "user" | "assistant",
+  text: string
+) {
   const entry = {
     role,
     text,
-    time: new Date(timestamp).toISOString(),
+    time: new Date().toISOString(),
   };
 
-  await redisPush("gaarsdal_chat_log", entry);
+  await redisAppend("gaarsdal_chat_log", entry);
 }
