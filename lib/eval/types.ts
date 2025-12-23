@@ -1,61 +1,32 @@
-// lib/eval/types.ts
-export * from "../playback/types";
+import type { ReplayResult } from "../playback/replay-types";
 
-export type EvalCriterion =
-  | "closure_timing"
-  | "question_policy"
-  | "clinical_boundary"
-  | "redundancy"
-  | "tone_neutrality"
-  | "prompt_compliance";
+export type EvalIssueLevel = "info" | "warning" | "error";
 
-export type TurnEval = {
-  turnIndex: number;
-
-  deltas: {
-    closureChanged?: boolean;
-    questionsAdded?: number;
-    questionsRemoved?: number;
-    lengthDelta?: number;
-  };
-
-  flags: {
-    violatedStopRule?: boolean;
-    askedAfterClosure?: boolean;
-    advisoryLanguage?: boolean;
-  };
-
-  notes?: string;
+export type EvalIssue = {
+  code: string;
+  level: EvalIssueLevel;
+  message: string;
+  turnIndex?: number;
 };
 
-export type SessionEval = {
+export type EvalResult = {
   sessionId: string;
+  promptVersion: string;
+
+  totalTurns: number;
+  closingTurnIndex?: number;
+
+  issues: EvalIssue[];
 
   summary: {
-    regression: boolean;
-    improvement: boolean;
-    neutral: boolean;
+    hasClosing: boolean;
+    repeatedClosing: boolean;
+    excessiveLength: boolean;
+    askedQuestions: boolean;
   };
-
-  flags: {
-    hardRegression?: boolean;
-    needsReview?: boolean;
-  };
-
-  turnEvals: TurnEval[];
 };
 
-export type BatchEvalResult = {
-  batchId: string;
-  evalVersion: string;
-  evaluatedAt: string;
-
-  totals: {
-    sessions: number;
-    regressions: number;
-    improvements: number;
-    neutral: number;
-  };
-
-  sessions: SessionEval[];
+export type EvalContext = {
+  replay: ReplayResult;
 };
+
