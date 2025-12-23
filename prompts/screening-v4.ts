@@ -115,6 +115,9 @@ Når et udfald er nået, skal svaret afsluttes med præcis én linje:
 “Denne vurdering vedrører kun den beskrevne problemstilling.”
 
 Der må ikke tilføjes yderligere dialogåbning.
+Når et af udfaldene er nået, SKAL svaret afsluttes med afrundingssætningen:
+"Ud fra det, du har beskrevet, er det primært afklaret, at …"
+Afrundingssætningen er obligatorisk og må ikke udelades.
 
 ---
 
