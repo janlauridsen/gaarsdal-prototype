@@ -1,4 +1,3 @@
-// pages/api/ai-chat.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import screeningPrompt from "../../prompts/screening-v4";
 
@@ -18,14 +17,12 @@ export default async function handler(
   }
 
   const body = req.body;
-
   if (!body?.messages || !Array.isArray(body.messages)) {
     return res.status(400).json({ error: "Missing messages" });
   }
 
   const state: ChatState = body.state ?? "welcome";
 
-  // 🔒 HARD STOP: screening er afsluttet
   if (state === "closed") {
     return res.status(200).json({
       reply:
@@ -33,59 +30,35 @@ export default async function handler(
     });
   }
 
-  const incomingMessages: ChatMessage[] = body.messages;
-
-  const userMessages: ChatMessage[] = incomingMessages.filter(
-    (m) => m.role === "user"
+  const userMessages = body.messages.filter(
+    (m: ChatMessage) => m.role === "user"
   );
 
   const messages: ChatMessage[] = [
-    {
-      role: "system",
-      content: screeningPrompt,
-    },
+    { role: "system", content: screeningPrompt },
     ...userMessages,
   ];
 
   try {
-    const OPENAI_KEY = process.env.OPENAI_API_KEY;
-    if (!OPENAI_KEY) {
-      return res
-        .status(500)
-        .json({ error: "Missing OpenAI API key on server" });
-    }
-
-    const payload = {
-      model: "gpt-4o-mini",
-      messages,
-      max_tokens: 300,
-      temperature: 0.2,
-    };
-
     const resp = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_KEY}`,
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages,
+        max_tokens: 300,
+        temperature: 0.2,
+      }),
     });
 
-    if (!resp.ok) {
-      const text = await resp.text();
-      console.error("OpenAI error:", resp.status, text);
-      return res
-        .status(502)
-        .json({ error: "OpenAI API error", details: text });
-    }
-
     const data = await resp.json();
-    const assistantReply =
-      data?.choices?.[0]?.message?.content ?? "";
+    const reply = data?.choices?.[0]?.message?.content ?? "";
 
-    return res.status(200).json({ reply: assistantReply });
+    return res.status(200).json({ reply });
   } catch (err: any) {
-    console.error("API error:", err);
     return res.status(500).json({
       error: "Server error",
       details: err?.message ?? String(err),
