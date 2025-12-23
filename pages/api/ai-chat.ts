@@ -7,6 +7,8 @@ type ChatMessage = {
   content: string;
 };
 
+type ChatState = "welcome" | "orienting" | "screening" | "closed";
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -21,22 +23,22 @@ export default async function handler(
     return res.status(400).json({ error: "Missing messages" });
   }
 
+  const state: ChatState = body.state ?? "welcome";
+
+  // 🔒 HARD STOP: screening er afsluttet
+  if (state === "closed") {
+    return res.status(200).json({
+      reply:
+        "Screeningen er afsluttet og kan kun afklare relevansen af hypnoterapi for den beskrevne problemstilling.",
+    });
+  }
+
   const incomingMessages: ChatMessage[] = body.messages;
 
-  /**
-   * 🔒 KRITISK:
-   * Vi sender KUN user-beskeder videre til modellen.
-   * UI-assistant-beskeder (fx "Hej — jeg er Gaarsdal Assistent")
-   * må ALDRIG påvirke modellen.
-   */
   const userMessages: ChatMessage[] = incomingMessages.filter(
     (m) => m.role === "user"
   );
 
-  /**
-   * 🧠 SAMLET MESSAGE-STACK
-   * System prompt skal ALTID være først.
-   */
   const messages: ChatMessage[] = [
     {
       role: "system",
