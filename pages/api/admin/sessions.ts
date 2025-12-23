@@ -1,9 +1,43 @@
-// pages/api/admin/sessions.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { SessionMeta } from "../../../lib/admin-types";
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL!;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN!;
+
+function normalizeMeta(raw: any): SessionMeta | null {
+  if (!raw) return null;
+
+  let parsed = raw;
+
+  // 1) Hvis raw er string → parse
+  if (typeof parsed === "string") {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch {
+      return null;
+    }
+  }
+
+  // 2) Hvis parsed har .result som string → parse igen
+  if (parsed && typeof parsed.result === "string") {
+    try {
+      parsed = JSON.parse(parsed.result);
+    } catch {
+      return null;
+    }
+  }
+
+  // 3) Hvis parsed stadig har .result (objekt) → unwrap
+  if (parsed && typeof parsed.result === "object") {
+    parsed = parsed.result;
+  }
+
+  if (!parsed.sessionId || !parsed.startedAt) {
+    return null;
+  }
+
+  return parsed as SessionMeta;
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,7 +49,7 @@ export default async function handler(
 
   try {
     /* ----------------------------------
-       FIND ALLE SESSION META KEYS
+       FIND ALLE META-KEYS
     ---------------------------------- */
     const keysRes = await fetch(
       `${REDIS_URL}/keys/${encodeURIComponent("session:*:meta")}`,
@@ -30,42 +64,39 @@ export default async function handler(
     const keys: string[] = keysJson.result || [];
 
     /* ----------------------------------
-       HENT META FOR HVER SESSION
+       LOAD + NORMALISÉR META
     ---------------------------------- */
     const sessions: SessionMeta[] = [];
 
     for (const key of keys) {
-      const metaRes = await fetch(
-        `${REDIS_URL}/get/${encodeURIComponent(key)}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${REDIS_TOKEN}`,
-          },
-        }
-      );
+      try {
+        const metaRes = await fetch(
+          `${REDIS_URL}/get/${encodeURIComponent(key)}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${REDIS_TOKEN}`,
+            },
+          }
+        );
 
-      const metaJson = await metaRes.json();
+        const metaJson = await metaRes.json();
 
-      if (metaJson?.result) {
-        let parsed: any;
-
-        if (typeof metaJson.result === "string") {
-          parsed = JSON.parse(metaJson.result);
-        } else {
-          parsed = metaJson.result;
-        }
+        const normalized = normalizeMeta(metaJson?.result);
+        if (!normalized) continue;
 
         sessions.push({
-          ...parsed,
-          endedAt: metaJson.endedAt ?? parsed.endedAt,
-          closedReason: metaJson.closedReason ?? parsed.closedReason,
+          ...normalized,
+          endedAt: metaJson.endedAt ?? normalized.endedAt,
+          closedReason: metaJson.closedReason ?? normalized.closedReason,
         });
+      } catch {
+        // skip corrupt entry
       }
     }
 
     /* ----------------------------------
-       SORTÉR (NYESTE FØRST)
+       SORTÉR NYESTE FØRST
     ---------------------------------- */
     sessions.sort(
       (a, b) =>
