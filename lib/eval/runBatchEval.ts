@@ -1,36 +1,63 @@
+import { replaySession } from "../playback/replay-session";
 import type { ReplayResult } from "../playback/replay-types";
+
+import { evalBatch } from "./evalBatch";
 import type { BatchEvalResult } from "./types";
 
-import { runBatchPlayback } from "../playback/runBatchPlayback";
-import { evalBatch } from "./evalBatch";
-
-/* ----------------------------------
-   BATCH EVAL RUNNER
----------------------------------- */
-
 /**
- * Kører:
- * 1) batch playback (silent)
- * 2) evaluerer alle sessions
- *
- * Ingen persistence, ingen logging.
- * Returnerer et fuldt eval-objekt.
+ * Kører batch playback + eval for et sæt sessionIds
+ * – helt silent
+ * – ingen skrivning
+ * – deterministisk
  */
-export async function runBatchEval(
-  sessionIds: string[]
-): Promise<BatchEvalResult> {
-  /* ----------------------------------
-     PLAYBACK
-  ---------------------------------- */
+export async function runBatchEval(params: {
+  sessionIds: string[];
+  promptVersion: string;
+  model: string;
+}): Promise<BatchEvalResult> {
+  const { sessionIds, promptVersion, model } = params;
 
-  const replays: ReplayResult[] =
-    await runBatchPlayback(sessionIds);
+  const replays: ReplayResult[] = [];
 
-  /* ----------------------------------
-     EVALUATION
-  ---------------------------------- */
+  for (const sessionId of sessionIds) {
+    try {
+      const replay = await replaySession({
+        sessionId,
+        promptVersion,
+        model,
+      });
 
-  const batchResult = evalBatch(replays);
+      replays.push(replay);
+    } catch (err) {
+      // Hvis en session fejler, ignorerer vi den
+      // (kan senere tælles som errorSessions)
+      console.warn("Replay failed for session:", sessionId, err);
+    }
+  }
 
-  return batchResult;
+  const batchEval = evalBatch(replays);
+
+  return {
+    meta: {
+      generatedAt: new Date().toISOString(),
+      promptVersion,
+      model,
+      totalSessions: replays.length,
+    },
+    aggregates: {
+      withClosing: batchEval.aggregates.withClosing,
+      repeatedClosing: batchEval.aggregates.repeatedClosing,
+      askedQuestions: batchEval.aggregates.askedQuestions,
+      excessiveLength: batchEval.aggregates.excessiveLength,
+      errorSessions: sessionIds.length - replays.length,
+    },
+    sessions: batchEval.sessions.map((s) => ({
+      sessionId: s.replay.sessionId,
+      replay: {
+        totalTurns: s.replay.turns.length,
+        closingTurnIndex: s.replay.closingTurnIndex,
+      },
+      eval: s.eval,
+    })),
+  };
 }
