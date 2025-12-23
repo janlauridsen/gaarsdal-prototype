@@ -1,10 +1,9 @@
-// pages/api/admin/sessions.ts
 import type { NextApiRequest, NextApiResponse } from "next";
+import { requireAdminAuth } from "../../../lib/admin-auth";
 import type { SessionMeta } from "../../../lib/admin-types";
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL!;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN!;
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN!;
 
 export default async function handler(
   req: NextApiRequest,
@@ -14,18 +13,12 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  /* ----------------------------------
-     AUTH (READ-ONLY)
-  ---------------------------------- */
-  console.log("ADMIN_TOKEN:", ADMIN_TOKEN);
-  console.log("AUTH HEADER:", req.headers.authorization);
-
-  const auth = req.headers.authorization;
-  if (!auth || auth !== `Bearer ${ADMIN_TOKEN}`) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
   try {
+    /* ----------------------------------
+       ADMIN AUTH (kun i live prod)
+    ---------------------------------- */
+    requireAdminAuth(req);
+
     /* ----------------------------------
        FIND ALLE META-KEYS
     ---------------------------------- */
@@ -44,44 +37,41 @@ export default async function handler(
     /* ----------------------------------
        HENT META FOR HVER SESSION
     ---------------------------------- */
-    const metas: SessionMeta[] = [];
+    const sessions: SessionMeta[] = [];
 
     for (const key of keys) {
-      try {
-        const metaRes = await fetch(
-          `${REDIS_URL}/get/${encodeURIComponent(key)}`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${REDIS_TOKEN}`,
-            },
-          }
-        );
-
-        const metaJson = await metaRes.json();
-        if (metaJson?.result) {
-          metas.push(JSON.parse(metaJson.result));
+      const metaRes = await fetch(
+        `${REDIS_URL}/get/${encodeURIComponent(key)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${REDIS_TOKEN}`,
+          },
         }
-      } catch {
-        // spring over defekte entries
+      );
+
+      const metaJson = await metaRes.json();
+      if (metaJson?.result) {
+        sessions.push(JSON.parse(metaJson.result));
       }
     }
 
     /* ----------------------------------
-       SORTÉR (NYESTE FØRST)
+       SORTÉR (nyeste først)
     ---------------------------------- */
-    metas.sort(
+    sessions.sort(
       (a, b) =>
         new Date(b.startedAt).getTime() -
         new Date(a.startedAt).getTime()
     );
 
-    return res.status(200).json({ sessions: metas });
+    return res.status(200).json({ sessions });
   } catch (err: any) {
-    console.error("Admin sessions error:", err);
-    return res.status(500).json({
-      error: "Server error",
-      details: err?.message ?? String(err),
-    });
+    if (err.statusCode === 401) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    console.error("admin/sessions error:", err);
+    return res.status(500).json({ error: "Server error" });
   }
 }
