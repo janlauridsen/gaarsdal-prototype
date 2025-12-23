@@ -60,10 +60,30 @@ export async function finalizeSession(
 ) {
   const key = `session:${sessionId}:meta`;
 
-  const patch = {
+  // Hent eksisterende meta
+  const res = await fetch(
+    `${process.env.UPSTASH_REDIS_REST_URL}/get/${encodeURIComponent(key)}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}`,
+      },
+    }
+  );
+
+  let existing = {};
+  try {
+    const text = await res.text();
+    existing = text ? JSON.parse(text) : {};
+  } catch {
+    existing = {};
+  }
+
+  const merged = {
+    ...existing,
     endedAt: new Date().toISOString(),
     closedReason,
   };
 
-  await redisSet(key, patch);
+  await redisSet(key, merged);
 }
