@@ -1,3 +1,5 @@
+// lib/eval/heuristics/redundancy.ts
+
 export function redundancyScore(
   original: string,
   updated: string
@@ -16,11 +18,25 @@ export function redundancyScore(
 
   if (o === n) return 1;
 
-  // meget simpel overlap-måling
-  const oWords = new Set(o.split(" "));
-  const nWords = new Set(n.split(" "));
+  const oWords = o.split(" ");
+  const nWordsSet: { [key: string]: true } = {};
 
-  const overlap = [...oWords].filter((w) => nWords.has(w));
+  for (let i = 0; i < nWordsSet.length; i++) {
+    // placeholder – vi bygger nedenfor
+  }
 
-  return overlap.length / Math.max(oWords.size, 1);
+  // byg lookup-table
+  for (let i = 0; i < n.split(" ").length; i++) {
+    nWordsSet[n.split(" ")[i]] = true;
+  }
+
+  let overlapCount = 0;
+
+  for (let i = 0; i < oWords.length; i++) {
+    if (nWordsSet[oWords[i]]) {
+      overlapCount++;
+    }
+  }
+
+  return overlapCount / Math.max(oWords.length, 1);
 }
