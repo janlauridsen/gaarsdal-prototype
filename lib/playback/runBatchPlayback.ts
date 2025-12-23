@@ -1,53 +1,44 @@
-// lib/playback/runBatchPlayback.ts
+import type {
+  LoggedSession,
+  ReplayResult,
+} from "./replay-types";
 
-import type { BatchPlaybackResult } from "./types";
 import { runPlaybackSession } from "./runPlaybackSession";
 
-export async function runBatchPlayback({
-  sessions,
-  promptId,
-  promptText,
-  model,
-  temperature,
-}: {
-  sessions: {
-    sessionId: string;
-    meta: {
-      promptVersion: string;
-      model: string;
-      startedAt: string;
-    };
-    turns: {
-      turnIndex: number;
-      userText: string;
-      assistantText: string;
-    }[];
-  }[];
-  promptId: string;
-  promptText: string;
-  model: string;
-  temperature: number;
-}): Promise<BatchPlaybackResult> {
-  const results = [];
+/* ----------------------------------
+   RUN BATCH PLAYBACK
+---------------------------------- */
 
-  for (const s of sessions) {
-    const r = await runPlaybackSession({
-      sessionId: s.sessionId,
-      originalMeta: s.meta,
-      turns: s.turns,
-      promptId,
-      promptText,
-      model,
-      temperature,
-    });
+/**
+ * Kører silent playback for et batch af sessions.
+ *
+ * Bruges til:
+ * - evalBatch
+ * - compare
+ * - regression-tests
+ *
+ * Ingen side effects.
+ */
+export function runBatchPlayback(
+  sessions: LoggedSession[],
+  systemPrompt: string
+): ReplayResult[] {
+  const results: ReplayResult[] = [];
 
-    results.push(r);
+  for (let i = 0; i < sessions.length; i++) {
+    const session = sessions[i];
+
+    try {
+      const replay = runPlaybackSession(
+        session,
+        systemPrompt
+      );
+      results.push(replay);
+    } catch {
+      // Hvis én session fejler, stopper vi ikke batch
+      // (eval kan senere markere den som defekt)
+    }
   }
 
-  return {
-    batchId: crypto.randomUUID(),
-    runAt: new Date().toISOString(),
-    sessionCount: results.length,
-    sessions: results,
-  };
+  return results;
 }
