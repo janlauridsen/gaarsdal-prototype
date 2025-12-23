@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import type { SessionMeta, SessionTurn } from "../../../lib/admin-types";
+import type { SessionMeta, SessionTurn } from "../../../../lib/admin-types";
+
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL!;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN!;
