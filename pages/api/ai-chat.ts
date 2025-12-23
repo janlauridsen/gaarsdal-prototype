@@ -1,12 +1,17 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import screeningPrompt from "../../prompts/screening-v4";
+import screeningPrompt from "../../prompts/screening-v4.4";
+import { getOrCreateSessionId } from "../../lib/session";
+import {
+  logSessionMeta,
+  logSessionTurn,
+  finalizeSession,
+  ChatState,
+} from "../../lib/session-logger";
 
 type ChatMessage = {
   role: "user" | "assistant" | "system";
   content: string;
 };
-
-type ChatState = "welcome" | "orienting" | "screening" | "closed";
 
 export default async function handler(
   req: NextApiRequest,
@@ -17,21 +22,46 @@ export default async function handler(
   }
 
   const body = req.body;
+
   if (!body?.messages || !Array.isArray(body.messages)) {
     return res.status(400).json({ error: "Missing messages" });
   }
 
-  const state: ChatState = body.state ?? "welcome";
+  /* ----------------------------------
+     SESSION IDENTITET
+  ---------------------------------- */
+  const sessionId = getOrCreateSessionId(req, res);
 
-  if (state === "closed") {
+  const stateBefore: ChatState = body.state ?? "welcome";
+
+  /* ----------------------------------
+     HARD STOP EFTER LUKNING
+  ---------------------------------- */
+  if (stateBefore === "closed") {
     return res.status(200).json({
       reply:
         "Screeningen er afsluttet og kan kun afklare relevansen af hypnoterapi for den beskrevne problemstilling.",
     });
   }
 
-  const userMessages = body.messages.filter(
-    (m: ChatMessage) => m.role === "user"
+  /* ----------------------------------
+     SESSION META (idempotent)
+  ---------------------------------- */
+  await logSessionMeta({
+    sessionId,
+    startedAt: new Date().toISOString(),
+    model: "gpt-4o-mini",
+    promptVersion: "screening-v4.4",
+    environment: process.env.NODE_ENV === "production" ? "prod" : "dev",
+  });
+
+  /* ----------------------------------
+     MESSAGE STACK (KUN USER)
+  ---------------------------------- */
+  const incomingMessages: ChatMessage[] = body.messages;
+
+  const userMessages: ChatMessage[] = incomingMessages.filter(
+    (m) => m.role === "user"
   );
 
   const messages: ChatMessage[] = [
@@ -40,6 +70,9 @@ export default async function handler(
   ];
 
   try {
+    /* ----------------------------------
+       OPENAI KALD
+    ---------------------------------- */
     const resp = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -54,11 +87,55 @@ export default async function handler(
       }),
     });
 
-    const data = await resp.json();
-    const reply = data?.choices?.[0]?.message?.content ?? "";
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`OpenAI error ${resp.status}: ${text}`);
+    }
 
-    return res.status(200).json({ reply });
+    const data = await resp.json();
+    const assistantText: string =
+      data?.choices?.[0]?.message?.content ?? "";
+
+    /* ----------------------------------
+       AFGØR LUKNING
+    ---------------------------------- */
+    const isClosing =
+      assistantText.trim().startsWith(
+        "Ud fra det, du har beskrevet, er det primært afklaret, at"
+      ) ||
+      assistantText.includes(
+        "Denne vurdering vedrører kun den beskrevne problemstilling"
+      );
+
+    const stateAfter: ChatState = isClosing ? "closed" : "screening";
+
+    /* ----------------------------------
+       LOG TURN (APPEND-ONLY)
+    ---------------------------------- */
+    await logSessionTurn({
+      sessionId,
+      turnIndex: userMessages.length - 1,
+      userText: userMessages[userMessages.length - 1]?.content ?? "",
+      assistantText,
+      chatStateBefore: stateBefore,
+      chatStateAfter: stateAfter,
+      isClosing,
+      timestamp: new Date().toISOString(),
+    });
+
+    /* ----------------------------------
+       FINALISÉR SESSION
+    ---------------------------------- */
+    if (isClosing) {
+      await finalizeSession(sessionId, "concluded");
+    }
+
+    return res.status(200).json({ reply: assistantText });
   } catch (err: any) {
+    await finalizeSession(sessionId, "error");
+
+    console.error("AI chat error:", err);
+
     return res.status(500).json({
       error: "Server error",
       details: err?.message ?? String(err),
