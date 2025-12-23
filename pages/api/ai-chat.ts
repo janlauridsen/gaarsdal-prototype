@@ -13,6 +13,9 @@ type ChatMessage = {
   content: string;
 };
 
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL!;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN!;
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -28,12 +31,38 @@ export default async function handler(
   }
 
   /* ----------------------------------
-     SESSION
+     SESSION ID
   ---------------------------------- */
   const sessionId = getOrCreateSessionId(req, res);
-  const stateBefore: ChatState = body.state ?? "welcome";
 
-  if (stateBefore === "closed") {
+  /* ----------------------------------
+     REDIS = SANDHED
+     TJEK OM SESSION ALLEREDE ER LUKKET
+  ---------------------------------- */
+  const metaKey = `session:${sessionId}:meta`;
+
+  let existingMeta: any = null;
+
+  try {
+    const metaRes = await fetch(
+      `${REDIS_URL}/get/${encodeURIComponent(metaKey)}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${REDIS_TOKEN}`,
+        },
+      }
+    );
+
+    const metaJson = await metaRes.json();
+    if (metaJson?.result) {
+      existingMeta = JSON.parse(metaJson.result);
+    }
+  } catch {
+    existingMeta = null;
+  }
+
+  if (existingMeta?.closedReason) {
     return res.status(200).json({
       reply:
         "Screeningen er afsluttet og kan ikke fortsættes yderligere.",
@@ -41,11 +70,11 @@ export default async function handler(
   }
 
   /* ----------------------------------
-     SESSION META (idempotent)
+     SESSION META (IDEMPOTENT)
   ---------------------------------- */
   await logSessionMeta({
     sessionId,
-    startedAt: new Date().toISOString(),
+    startedAt: existingMeta?.startedAt ?? new Date().toISOString(),
     model: "gpt-4o-mini",
     promptVersion: "screening-v4.5",
     environment: process.env.NODE_ENV === "production" ? "prod" : "dev",
@@ -64,6 +93,9 @@ export default async function handler(
   ];
 
   try {
+    /* ----------------------------------
+       OPENAI KALD
+    ---------------------------------- */
     const resp = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -88,7 +120,7 @@ export default async function handler(
       data?.choices?.[0]?.message?.content ?? "";
 
     /* ----------------------------------
-       LUKNING – DETERMINISTISK
+       LUKNING – DETERMINISTISK TOKEN
     ---------------------------------- */
     const isClosing = assistantText.includes("[SCREENING_AFSLUTTET]");
 
@@ -101,19 +133,22 @@ export default async function handler(
     const stateAfter: ChatState = isClosing ? "closed" : "screening";
 
     /* ----------------------------------
-       LOG TURN
+       LOG TURN (KUN HVIS ÅBEN)
     ---------------------------------- */
     await logSessionTurn({
       sessionId,
       turnIndex: userMessages.length - 1,
       userText: userMessages[userMessages.length - 1]?.content ?? "",
       assistantText,
-      chatStateBefore: stateBefore,
+      chatStateBefore: "screening",
       chatStateAfter: stateAfter,
       isClosing,
       timestamp: new Date().toISOString(),
     });
 
+    /* ----------------------------------
+       FINALISÉR SESSION ÉN GANG
+    ---------------------------------- */
     if (isClosing) {
       await finalizeSession(sessionId, "concluded");
     }
