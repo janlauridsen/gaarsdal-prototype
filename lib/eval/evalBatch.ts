@@ -2,7 +2,7 @@ import type { ReplayResult } from "../playback/replay-types";
 import type {
   BatchEvalResult,
   SessionEval,
-} from "./types";
+} from "./types.ts";
 
 
 import { evalSession } from "./evalSession";
