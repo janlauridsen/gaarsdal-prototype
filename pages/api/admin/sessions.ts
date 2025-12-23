@@ -17,6 +17,9 @@ export default async function handler(
   /* ----------------------------------
      AUTH (READ-ONLY)
   ---------------------------------- */
+  console.log("ADMIN_TOKEN:", ADMIN_TOKEN);
+  console.log("AUTH HEADER:", req.headers.authorization);
+
   const auth = req.headers.authorization;
   if (!auth || auth !== `Bearer ${ADMIN_TOKEN}`) {
     return res.status(401).json({ error: "Unauthorized" });
