@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import screeningPrompt from "../../prompts/screening-v4";
+import screeningPrompt from "../../prompts/screening-v4.5";
 import { getOrCreateSessionId } from "../../lib/session";
 import {
   logSessionMeta,
@@ -28,19 +28,15 @@ export default async function handler(
   }
 
   /* ----------------------------------
-     SESSION IDENTITET
+     SESSION
   ---------------------------------- */
   const sessionId = getOrCreateSessionId(req, res);
-
   const stateBefore: ChatState = body.state ?? "welcome";
 
-  /* ----------------------------------
-     HARD STOP EFTER LUKNING
-  ---------------------------------- */
   if (stateBefore === "closed") {
     return res.status(200).json({
       reply:
-        "Screeningen er afsluttet og kan kun afklare relevansen af hypnoterapi for den beskrevne problemstilling.",
+        "Screeningen er afsluttet og kan ikke fortsættes yderligere.",
     });
   }
 
@@ -51,17 +47,15 @@ export default async function handler(
     sessionId,
     startedAt: new Date().toISOString(),
     model: "gpt-4o-mini",
-    promptVersion: "screening-v4.4",
+    promptVersion: "screening-v4.5",
     environment: process.env.NODE_ENV === "production" ? "prod" : "dev",
   });
 
   /* ----------------------------------
      MESSAGE STACK (KUN USER)
   ---------------------------------- */
-  const incomingMessages: ChatMessage[] = body.messages;
-
-  const userMessages: ChatMessage[] = incomingMessages.filter(
-    (m) => m.role === "user"
+  const userMessages: ChatMessage[] = body.messages.filter(
+    (m: ChatMessage) => m.role === "user"
   );
 
   const messages: ChatMessage[] = [
@@ -70,9 +64,6 @@ export default async function handler(
   ];
 
   try {
-    /* ----------------------------------
-       OPENAI KALD
-    ---------------------------------- */
     const resp = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -93,20 +84,24 @@ export default async function handler(
     }
 
     const data = await resp.json();
-    const assistantText: string =
+    let assistantText: string =
       data?.choices?.[0]?.message?.content ?? "";
 
     /* ----------------------------------
-       AFGØR LUKNING
+       LUKNING – DETERMINISTISK
     ---------------------------------- */
-    const isClosing = assistantText
-  .trim()
-  .startsWith("Ud fra det, du har beskrevet, er det primært afklaret, at");
+    const isClosing = assistantText.includes("[SCREENING_AFSLUTTET]");
+
+    if (isClosing) {
+      assistantText = assistantText
+        .replace("[SCREENING_AFSLUTTET]", "")
+        .trim();
+    }
 
     const stateAfter: ChatState = isClosing ? "closed" : "screening";
 
     /* ----------------------------------
-       LOG TURN (APPEND-ONLY)
+       LOG TURN
     ---------------------------------- */
     await logSessionTurn({
       sessionId,
@@ -119,9 +114,6 @@ export default async function handler(
       timestamp: new Date().toISOString(),
     });
 
-    /* ----------------------------------
-       FINALISÉR SESSION
-    ---------------------------------- */
     if (isClosing) {
       await finalizeSession(sessionId, "concluded");
     }
