@@ -5,13 +5,13 @@ import type {
 } from "./types";
 
 import { checkClosure } from "./heuristics/closure";
-import { checkStopRule } from "./heuristics/stopRule";
-import { checkRedundancy } from "./heuristics/redundancy";
 import { checkLength } from "./heuristics/length";
 import { checkQuestions } from "./heuristics/questions";
+import { checkRedundancy } from "./heuristics/redundancy";
+import { checkStopRule } from "./heuristics/stopRule";
 
 /* ----------------------------------
-   EVAL SINGLE SESSION
+   EVALUATE SINGLE SESSION
 ---------------------------------- */
 
 export function evalSession(
@@ -19,44 +19,68 @@ export function evalSession(
 ): EvalResult {
   const issues: EvalIssue[] = [];
 
-  /* -----------------------------
-     HEURISTICS
-  ----------------------------- */
+  /* ----------------------------------
+     RUN HEURISTICS
+  ---------------------------------- */
 
-  issues.push(...checkClosure(replay));
-  issues.push(...checkStopRule(replay));
-  issues.push(...checkRedundancy(replay));
-  issues.push(...checkLength(replay));
-  issues.push(...checkQuestions(replay));
+  const closureIssues = checkClosure(replay);
+  const lengthIssues = checkLength(replay);
+  const questionIssues = checkQuestions(replay);
+  const redundancyIssues = checkRedundancy(replay);
+  const stopRuleIssues = checkStopRule(replay);
 
-  /* -----------------------------
-     SUMMARY FLAGS
-  ----------------------------- */
-
-  const hasClosing = replay.summary.hasClosing;
-
-  const repeatedClosing =
-    replay.summary.repeatedClosing ||
-    issues.some((i) => i.code === "REPEATED_CLOSING");
-
-  const excessiveLength = issues.some(
-    (i) => i.code === "EXCESSIVE_LENGTH"
+  issues.push(
+    ...closureIssues,
+    ...lengthIssues,
+    ...questionIssues,
+    ...redundancyIssues,
+    ...stopRuleIssues
   );
 
-  const askedQuestions = issues.some(
-    (i) => i.code === "QUESTION_ASKED"
-  );
+  /* ----------------------------------
+     DERIVED FLAGS
+  ---------------------------------- */
 
-  /* -----------------------------
+  let hasClosing = false;
+  let repeatedClosing = false;
+  let excessiveLength = false;
+  let askedQuestions = false;
+
+  let closingTurnIndex: number | undefined = undefined;
+
+  for (let i = 0; i < issues.length; i++) {
+    const issue = issues[i];
+
+    if (issue.code === "CLOSING_DETECTED") {
+      hasClosing = true;
+      if (closingTurnIndex === undefined && issue.turnIndex !== undefined) {
+        closingTurnIndex = issue.turnIndex;
+      }
+    }
+
+    if (issue.code === "REPEATED_CLOSING") {
+      repeatedClosing = true;
+    }
+
+    if (issue.code === "EXCESSIVE_RESPONSE_LENGTH") {
+      excessiveLength = true;
+    }
+
+    if (issue.code === "ASSISTANT_ASKED_QUESTION") {
+      askedQuestions = true;
+    }
+  }
+
+  /* ----------------------------------
      RESULT
-  ----------------------------- */
+  ---------------------------------- */
 
   return {
     sessionId: replay.sessionId,
     promptVersion: replay.promptVersion,
 
-    totalTurns: replay.totalTurns,
-    closingTurnIndex: replay.summary.closingTurnIndex,
+    totalTurns: replay.turns.length,
+    closingTurnIndex,
 
     issues,
 
