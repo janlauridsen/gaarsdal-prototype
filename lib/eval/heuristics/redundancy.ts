@@ -15,28 +15,23 @@ export function redundancyScore(
   const n = normalize(updated);
 
   if (!o || !n) return 0;
-
   if (o === n) return 1;
 
   const oWords = o.split(" ");
-  const nWordsSet: { [key: string]: true } = {};
+  const nWords = n.split(" ");
 
-  for (let i = 0; i < nWordsSet.length; i++) {
-    // placeholder – vi bygger nedenfor
+  // lookup-table (ES5-safe)
+  const nWordMap: { [key: string]: true } = {};
+  for (let i = 0; i < nWords.length; i++) {
+    nWordMap[nWords[i]] = true;
   }
 
-  // byg lookup-table
-  for (let i = 0; i < n.split(" ").length; i++) {
-    nWordsSet[n.split(" ")[i]] = true;
-  }
-
-  let overlapCount = 0;
-
+  let overlap = 0;
   for (let i = 0; i < oWords.length; i++) {
-    if (nWordsSet[oWords[i]]) {
-      overlapCount++;
+    if (nWordMap[oWords[i]]) {
+      overlap++;
     }
   }
 
-  return overlapCount / Math.max(oWords.length, 1);
+  return overlap / Math.max(oWords.length, 1);
 }
