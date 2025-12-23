@@ -22,27 +22,19 @@ export default function AIChat({
   const chatRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
 
-  /* ----------------------------------
-     SMART SCROLL HANDLING
-  ---------------------------------- */
   function handleScroll() {
     if (!chatRef.current) return;
-
     const { scrollTop, scrollHeight, clientHeight } = chatRef.current;
-    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-    shouldAutoScrollRef.current = distanceFromBottom < 80;
+    shouldAutoScrollRef.current =
+      scrollHeight - scrollTop - clientHeight < 80;
   }
 
   useEffect(() => {
-    if (!chatRef.current) return;
-    if (shouldAutoScrollRef.current) {
+    if (shouldAutoScrollRef.current && chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [messages]);
 
-  /* ----------------------------------
-     WELCOME MESSAGE
-  ---------------------------------- */
   useEffect(() => {
     if (open && messages.length === 0) {
       setMessages([
@@ -57,17 +49,14 @@ export default function AIChat({
     }
   }, [open, messages.length]);
 
-  /* ----------------------------------
-     SEND MESSAGE
-  ---------------------------------- */
   async function sendMessage() {
     if (!input.trim() || loading || chatState === "closed") return;
 
     const userText = input.trim();
     setInput("");
+    setLoading(true);
 
     setMessages((prev) => [...prev, { role: "user", text: userText }]);
-    setLoading(true);
 
     const userHistory = messages
       .filter((m) => m.role === "user")
@@ -86,16 +75,23 @@ export default function AIChat({
       const data = await resp.json();
       const replyText: string = data.reply ?? "";
 
-      // Tjek for v4.3-afslutning
-      const isClosing = replyText
-        .trim()
-        .startsWith("Ud fra det, du har beskrevet, er det primært afklaret, at");
+      const isClosing =
+        replyText.trim().startsWith(
+          "Ud fra det, du har beskrevet, er det primært afklaret, at"
+        ) ||
+        replyText.includes(
+          "Denne vurdering vedrører kun den beskrevne problemstilling"
+        );
 
       setMessages((prev) => [...prev, { role: "assistant", text: replyText }]);
 
       if (isClosing) {
         setChatState("closed");
-      } else if (chatState === "orienting") {
+        setLoading(false);
+        return;
+      }
+
+      if (chatState === "orienting") {
         setChatState("screening");
       }
     } catch {
@@ -115,18 +111,14 @@ export default function AIChat({
 
   return (
     <div className="fixed bottom-24 right-6 z-50 w-[440px] max-w-[95vw] bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 flex flex-col">
-      {/* Header */}
       <div className="flex items-center justify-between pb-2 mb-3 border-b border-gray-100">
         <div>
           <div className="text-base font-semibold">Gaarsdal Assistent</div>
-          <div className="text-xs text-muted">
-            Indledende afklaring
-          </div>
+          <div className="text-xs text-muted">Indledende afklaring</div>
         </div>
         <button onClick={onClose} className="text-xl">✕</button>
       </div>
 
-      {/* Messages */}
       <div
         ref={chatRef}
         onScroll={handleScroll}
@@ -147,12 +139,12 @@ export default function AIChat({
         ))}
       </div>
 
-      {/* Input */}
       <div className="flex gap-2">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
+            if (chatState === "closed") return;
             if (e.key === "Enter") {
               e.preventDefault();
               sendMessage();
