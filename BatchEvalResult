@@ -1,0 +1,18 @@
+export type BatchEvalResult = {
+  meta: {
+    generatedAt: string;        // ISO
+    promptVersion: string;      // fx "screening-v4.5"
+    model: string;              // fx "gpt-4o-mini"
+    totalSessions: number;
+  };
+
+  aggregates: {
+    withClosing: number;
+    repeatedClosing: number;
+    askedQuestions: number;
+    excessiveLength: number;
+    errorSessions: number;
+  };
+
+  sessions: SessionEval[];
+};
