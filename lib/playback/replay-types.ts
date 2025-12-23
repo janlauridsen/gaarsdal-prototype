@@ -1,43 +1,82 @@
-import type { SessionMeta, SessionTurn } from "../admin-types";
+import type { ChatState } from "../admin-types";
 
-/**
- * Input til replay.
- * Bruges af batch-runner eller single-session replay.
- */
-export type ReplayInput = {
-  meta: SessionMeta;
-  turns: SessionTurn[];
-};
+/* ----------------------------------
+   INPUT (fra logging)
+---------------------------------- */
 
-/**
- * Ét replay-step (én user → assistant interaktion).
- * Bruges som eval-input.
- */
-export type ReplayStep = {
-  index: number;
+export type LoggedTurn = {
+  sessionId: string;
+  turnIndex: number;
 
   userText: string;
   assistantText: string;
 
-  chatStateBefore: SessionTurn["chatStateBefore"];
-  chatStateAfter: SessionTurn["chatStateAfter"];
+  chatStateBefore: ChatState;
+  chatStateAfter: ChatState;
+
+  isClosing: boolean;
+  timestamp: string;
+};
+
+export type LoggedSession = {
+  sessionId: string;
+  startedAt: string;
+  endedAt?: string;
+
+  model: string;
+  promptVersion: string;
+  environment: "dev" | "prod";
+
+  closedReason?: "concluded" | "aborted" | "error";
+
+  turns: LoggedTurn[];
+};
+
+/* ----------------------------------
+   REPLAY OUTPUT
+---------------------------------- */
+
+export type ReplayMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+
+export type ReplayTurn = {
+  turnIndex: number;
+
+  inputMessages: ReplayMessage[];
+  outputText: string;
+
+  chatStateBefore: ChatState;
+  chatStateAfter: ChatState;
 
   isClosing: boolean;
 };
 
-/**
- * Resultat af et fuldt replay af en session.
- * Dette er GRUNDLAGET for evalSession().
- */
+/* ----------------------------------
+   REPLAY RESULT
+---------------------------------- */
+
 export type ReplayResult = {
   sessionId: string;
-
   promptVersion: string;
   model: string;
-  environment: "dev" | "prod";
 
-  startedAt: string;
-  endedAt?: string;
+  totalTurns: number;
 
-  steps: ReplayStep[];
+  turns: ReplayTurn[];
+
+  summary: {
+    hasClosing: boolean;
+    closingTurnIndex?: number;
+    repeatedClosing: boolean;
+  };
+};
+
+/* ----------------------------------
+   INTERNAL CONTEXT (IKKE PERSISTENT)
+---------------------------------- */
+
+export type ReplayContext = {
+  systemPrompt: string;
 };
