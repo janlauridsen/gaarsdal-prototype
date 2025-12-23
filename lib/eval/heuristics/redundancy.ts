@@ -1,37 +1,20 @@
-// lib/eval/heuristics/redundancy.ts
+import type { EvalContext, EvalIssue } from "../types";
 
-export function redundancyScore(
-  original: string,
-  updated: string
-): number {
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/\s+/g, " ")
-      .replace(/[^\wæøå ]/gi, "")
-      .trim();
+export function checkRedundancy(ctx: EvalContext): EvalIssue[] {
+  const issues: EvalIssue[] = [];
+  let last = "";
 
-  const o = normalize(original);
-  const n = normalize(updated);
-
-  if (!o || !n) return 0;
-  if (o === n) return 1;
-
-  const oWords = o.split(" ");
-  const nWords = n.split(" ");
-
-  // lookup-table (ES5-safe)
-  const nWordMap: { [key: string]: true } = {};
-  for (let i = 0; i < nWords.length; i++) {
-    nWordMap[nWords[i]] = true;
-  }
-
-  let overlap = 0;
-  for (let i = 0; i < oWords.length; i++) {
-    if (nWordMap[oWords[i]]) {
-      overlap++;
+  ctx.replay.steps.forEach((s) => {
+    if (last && s.assistantText === last) {
+      issues.push({
+        code: "DUPLICATE_RESPONSE",
+        level: "warning",
+        message: "Assistenten gentog samme svar.",
+        turnIndex: s.index,
+      });
     }
-  }
+    last = s.assistantText;
+  });
 
-  return overlap / Math.max(oWords.length, 1);
+  return issues;
 }
