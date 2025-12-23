@@ -99,13 +99,9 @@ export default async function handler(
     /* ----------------------------------
        AFGØR LUKNING
     ---------------------------------- */
-    const isClosing =
-      assistantText.trim().startsWith(
-        "Ud fra det, du har beskrevet, er det primært afklaret, at"
-      ) ||
-      assistantText.includes(
-        "Denne vurdering vedrører kun den beskrevne problemstilling"
-      );
+    const isClosing = assistantText
+  .trim()
+  .startsWith("Ud fra det, du har beskrevet, er det primært afklaret, at");
 
     const stateAfter: ChatState = isClosing ? "closed" : "screening";
 
