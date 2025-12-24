@@ -26,12 +26,10 @@ export default async function handler(
       if (session) sessions.push(session);
     }
 
+    // 👇 KORREKT SIGNATUR: (sessions, systemPrompt)
     const result = await runBatchPlayback(
       sessions,
-      {
-        promptId: "screening-v4.5",
-        promptText: screeningPrompt,
-      }
+      screeningPrompt
     );
 
     return res.status(200).json(result);
