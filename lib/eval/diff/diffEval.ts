@@ -25,7 +25,7 @@ export function diffBatchEval(
   let lengthRegressed = 0;
 
   for (const c of compare.sessions) {
-    const b = byId.get(c.sessionId);
+    const b = byId.get(c.replay.sessionId);
     if (!b) continue;
 
     const closing = cmp(
