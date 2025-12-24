@@ -1,54 +1,36 @@
-import type { ReplayResult } from "../../playback/replay-types";
 import type { EvalIssue } from "../types";
+import type { EvalContext } from "../types";
 
 /* ----------------------------------
-   STOP-RULE HEURISTIC
+   STOP RULE
 ---------------------------------- */
 
 /**
- * Kontrollerer om modellen fortsætter
- * med fagligt indhold EFTER at den
- * har lukket screeningen.
+ * Evaluerer om sessionen burde være stoppet
+ * tidligere efter første konklusion.
  */
 export function checkStopRule(
-  replay: ReplayResult
+  ctx: EvalContext
 ): EvalIssue[] {
   const issues: EvalIssue[] = [];
+  const { replay } = ctx;
 
-  const {
-    closingTurnIndex,
-    turns,
-    summary,
-  } = replay;
+  const { hasClosing, closingTurnIndex } = replay.summary;
+  const turns = replay.turns;
 
-  if (
-    !summary.hasClosing ||
-    typeof closingTurnIndex !== "number"
-  ) {
-    // Ingen lukning → stop-regel irrelevant
+  if (!hasClosing || closingTurnIndex === undefined) {
     return issues;
   }
 
-  /* -----------------------------
-     EFTERFØLGENDE ASSISTENT-SVAR
-  ----------------------------- */
-
-  for (let i = closingTurnIndex + 1; i < turns.length; i++) {
-    const turn = turns[i];
-
-    // Vi reagerer kun på assistant-svar
-    if (!turn.assistantText) continue;
-
+  // Hvis der er turns EFTER closing
+  if (closingTurnIndex < turns.length - 1) {
     issues.push({
-      code: "STOP_RULE_VIOLATION",
-      level: "error",
+      code: "continued_after_closing",
+      level: "warning",
       message:
-        "Modellen fortsætter med svar efter at screeningen er afsluttet.",
-      turnIndex: i,
+        "Sessionen fortsætter efter første afsluttende konklusion.",
+      turnIndex: closingTurnIndex,
     });
-
-    // Én fejl er nok – resten er støj
-    break;
   }
 
   return issues;
