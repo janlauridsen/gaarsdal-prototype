@@ -6,6 +6,7 @@ export type BatchEvalResult = {
     totalSessions: number;
   };
 
+
   aggregates: {
     withClosing: number;
     repeatedClosing: number;
