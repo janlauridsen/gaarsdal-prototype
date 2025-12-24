@@ -1,4 +1,4 @@
-import { runBatchEval } from "./runBatchEval";
+import { evalBatch } from "../evalBatch";
 import { diffBatchEval } from "./diff/diffEval";
 import type { PromptDiffResult } from "./diff/diffTypes";
 
