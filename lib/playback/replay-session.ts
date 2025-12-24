@@ -1,34 +1,74 @@
-import type { ReplayInput, ReplayResult, ReplayStep } from "./replay-types";
+import type {
+  LoggedSession,
+  ReplayResult,
+  ReplayTurn,
+  ReplayMessage,
+  ReplayContext,
+} from "./replay-types";
 
 /**
- * Replayer en allerede logget session.
+ * Genskaber en session turn-for-turn baseret på loggede data.
  * Ingen netværkskald. Ingen sideeffekter.
  */
-export function replaySession(input: ReplayInput): ReplayResult {
-  const { meta, turns } = input;
+export function replaySession(
+  session: LoggedSession,
+  context: ReplayContext
+): ReplayResult {
+  const turns: ReplayTurn[] = [];
 
-  const steps: ReplayStep[] = turns.map((turn, index) => ({
-    index,
+  const history: ReplayMessage[] = [
+    {
+      role: "system",
+      content: context.systemPrompt,
+    },
+  ];
 
-    userText: turn.userText,
-    assistantText: turn.assistantText,
+  let closingTurnIndex: number | undefined;
+  let repeatedClosing = false;
 
-    chatStateBefore: turn.chatStateBefore,
-    chatStateAfter: turn.chatStateAfter,
+  for (const turn of session.turns) {
+    // input = system + historik + current user
+    const inputMessages: ReplayMessage[] = [
+      ...history,
+      { role: "user", content: turn.userText },
+    ];
 
-    isClosing: turn.isClosing,
-  }));
+    turns.push({
+      turnIndex: turn.turnIndex,
+      inputMessages,
+      outputText: turn.assistantText,
+      chatStateBefore: turn.chatStateBefore,
+      chatStateAfter: turn.chatStateAfter,
+      isClosing: turn.isClosing,
+    });
+
+    // opdater historik (immutabelt)
+    history.push(
+      { role: "user", content: turn.userText },
+      { role: "assistant", content: turn.assistantText }
+    );
+
+    if (turn.isClosing) {
+      if (closingTurnIndex === undefined) {
+        closingTurnIndex = turn.turnIndex;
+      } else {
+        repeatedClosing = true;
+      }
+    }
+  }
 
   return {
-    sessionId: meta.sessionId,
+    sessionId: session.sessionId,
+    promptVersion: session.promptVersion,
+    model: session.model,
 
-    promptVersion: meta.promptVersion,
-    model: meta.model,
-    environment: meta.environment,
+    totalTurns: turns.length,
+    turns,
 
-    startedAt: meta.startedAt,
-    endedAt: meta.endedAt,
-
-    steps,
+    summary: {
+      hasClosing: closingTurnIndex !== undefined,
+      closingTurnIndex,
+      repeatedClosing,
+    },
   };
 }
