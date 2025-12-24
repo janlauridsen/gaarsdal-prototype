@@ -12,7 +12,7 @@ export function diffBatchEval(
   compare: BatchEvalResult
 ): PromptDiffResult {
   const byId = new Map(
-    base.sessions.map((s) => [s.sessionId, s])
+   base.sessions.map((s) => [s.replay.sessionId, s])
   );
 
   const perSession: PromptDiffResult["perSession"] = [];
