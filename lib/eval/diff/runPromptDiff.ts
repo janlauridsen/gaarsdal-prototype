@@ -10,17 +10,27 @@ import type { ReplayResult } from "../../playback/replay-types";
 /**
  * Kører batch-evaluering på to sæt replays
  * og sammenligner resultaterne.
- *
- * Bruges til:
- * - prompt-sammenligning
- * - regression-tests
- * - kvalitetsmåling over tid
  */
 export async function runPromptDiff(params: {
   base: ReplayResult[];
   compare: ReplayResult[];
 }): Promise<PromptDiffResult> {
   const { base, compare } = params;
+
+  if (base.length === 0 || compare.length === 0) {
+    throw new Error("runPromptDiff kræver non-empty replay batches");
+  }
+
+  // Antag ens prompt/model pr. batch (designregel)
+  const baseMeta = {
+    promptVersion: base[0].promptVersion,
+    model: base[0].model,
+  };
+
+  const compareMeta = {
+    promptVersion: compare[0].promptVersion,
+    model: compare[0].model,
+  };
 
   // 1. Evaluer begge batches
   const baseEval = evalBatch(base);
@@ -30,8 +40,14 @@ export async function runPromptDiff(params: {
   const diff = diffEval(baseEval, compareEval);
 
   return {
-    base: baseEval,
-    compare: compareEval,
+    base: {
+      ...baseMeta,
+      eval: baseEval,
+    },
+    compare: {
+      ...compareMeta,
+      eval: compareEval,
+    },
     diff,
   };
 }
