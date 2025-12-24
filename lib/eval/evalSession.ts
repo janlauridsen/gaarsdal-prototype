@@ -2,78 +2,53 @@ import type { ReplayResult } from "../playback/replay-types";
 import type {
   EvalResult,
   EvalIssue,
+  EvalContext,
 } from "./types";
 
-import { checkClosure } from "./heuristics/closure";
-import { checkLength } from "./heuristics/length";
-import { checkQuestions } from "./heuristics/questions";
-import { checkRedundancy } from "./heuristics/redundancy";
-import { checkStopRule } from "./heuristics/stopRule";
+import { evalRedundancy } from "./heuristics/redundancy";
+import { evalLength } from "./heuristics/length";
+import { evalQuestions } from "./heuristics/questions";
+import { evalClinical } from "./heuristics/clinical";
+import { evalClosure } from "./heuristics/closure";
+import { evalStopRule } from "./heuristics/stopRule";
 
-/* ----------------------------------
-   EVALUATE SINGLE SESSION
----------------------------------- */
+export function evalSession(replay: ReplayResult): EvalResult {
+  const ctx: EvalContext = { replay };
 
-export function evalSession(
-  replay: ReplayResult
-): EvalResult {
   const issues: EvalIssue[] = [];
 
-  /* ----------------------------------
-     RUN HEURISTICS
-  ---------------------------------- */
+  // --- Kør ALLE heuristikker deterministisk ---
+  issues.push(...evalRedundancy(ctx));
+  issues.push(...evalLength(ctx));
+  issues.push(...evalQuestions(ctx));
+  issues.push(...evalClinical(ctx));
+  issues.push(...evalClosure(ctx));
+  issues.push(...evalStopRule(ctx));
 
-  const closureIssues = checkClosure(replay);
-  const lengthIssues = checkLength(replay);
-  const questionIssues = checkQuestions(replay);
-  const redundancyIssues = checkRedundancy(replay);
-  const stopRuleIssues = checkStopRule(replay);
-
-  issues.push(
-    ...closureIssues,
-    ...lengthIssues,
-    ...questionIssues,
-    ...redundancyIssues,
-    ...stopRuleIssues
-  );
-
-  /* ----------------------------------
-     DERIVED FLAGS
-  ---------------------------------- */
-
-  let hasClosing = false;
-  let repeatedClosing = false;
-  let excessiveLength = false;
-  let askedQuestions = false;
-
+  // --- Afled summary FELTER (ingen heuristik sætter dem direkte) ---
   let closingTurnIndex: number | undefined = undefined;
+  let closingCount = 0;
+  let askedQuestions = false;
+  let excessiveLength = false;
 
-  for (let i = 0; i < issues.length; i++) {
-    const issue = issues[i];
-
-    if (issue.code === "CLOSING_DETECTED") {
-      hasClosing = true;
-      if (closingTurnIndex === undefined && issue.turnIndex !== undefined) {
-        closingTurnIndex = issue.turnIndex;
+  for (let i = 0; i < replay.turns.length; i++) {
+    const t = replay.turns[i];
+    if (t.isClosing) {
+      closingCount++;
+      if (closingTurnIndex === undefined) {
+        closingTurnIndex = i;
       }
-    }
-
-    if (issue.code === "REPEATED_CLOSING") {
-      repeatedClosing = true;
-    }
-
-    if (issue.code === "EXCESSIVE_RESPONSE_LENGTH") {
-      excessiveLength = true;
-    }
-
-    if (issue.code === "ASSISTANT_ASKED_QUESTION") {
-      askedQuestions = true;
     }
   }
 
-  /* ----------------------------------
-     RESULT
-  ---------------------------------- */
+  for (const issue of issues) {
+    if (issue.code === "asked_questions") {
+      askedQuestions = true;
+    }
+    if (issue.code === "excessive_length") {
+      excessiveLength = true;
+    }
+  }
 
   return {
     sessionId: replay.sessionId,
@@ -85,10 +60,10 @@ export function evalSession(
     issues,
 
     summary: {
-      hasClosing,
-      repeatedClosing,
-      excessiveLength,
+      hasClosing: closingCount > 0,
+      repeatedClosing: closingCount > 1,
       askedQuestions,
+      excessiveLength,
     },
   };
 }
