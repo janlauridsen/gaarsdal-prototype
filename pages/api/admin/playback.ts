@@ -1,6 +1,6 @@
-// pages/api/admin/playback.ts
-
 import type { NextApiRequest, NextApiResponse } from "next";
+
+import { getLoggedSession } from "../../../lib/playback/getLoggedSession";
 import { runBatchPlayback } from "../../../lib/playback/runBatchPlayback";
 import screeningPrompt from "../../../prompts/screening-v4.5";
 
@@ -12,24 +12,31 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { sessions } = req.body;
+  const { sessionIds } = req.body;
 
-  if (!Array.isArray(sessions)) {
-    return res.status(400).json({ error: "Missing sessions" });
+  if (!Array.isArray(sessionIds)) {
+    return res.status(400).json({ error: "Missing sessionIds" });
   }
 
   try {
-    const result = await runBatchPlayback({
+    const sessions = [];
+
+    for (const sessionId of sessionIds) {
+      const session = await getLoggedSession(sessionId);
+      if (session) sessions.push(session);
+    }
+
+    const result = await runBatchPlayback(
       sessions,
-      promptId: "screening-v4.5",
-      promptText: screeningPrompt,
-      model: "gpt-4o-mini",
-      temperature: 0.2,
-    });
+      {
+        promptId: "screening-v4.5",
+        promptText: screeningPrompt,
+      }
+    );
 
     return res.status(200).json(result);
   } catch (err: any) {
-    console.error("Batch playback error:", err);
+    console.error("admin playback error:", err);
     return res.status(500).json({
       error: "Server error",
       details: err?.message ?? String(err),
