@@ -1,20 +1,29 @@
-import type { EvalContext, EvalIssue } from "../types";
+import type { EvalIssue } from "../types";
+import type { EvalContext } from "../types";
 
-const MAX_ASSISTANT_CHARS = 900;
+/* ----------------------------------
+   LENGTH HEURISTIC
+---------------------------------- */
 
-export function checkLength(ctx: EvalContext): EvalIssue[] {
+const MAX_ASSISTANT_CHARS = 600;
+
+export function checkLength(
+  ctx: EvalContext
+): EvalIssue[] {
   const issues: EvalIssue[] = [];
 
-  ctx.replay.steps.forEach((s) => {
-    if (s.assistantText.length > MAX_ASSISTANT_CHARS) {
+  for (const turn of ctx.replay.turns) {
+    if (turn.outputText.length > MAX_ASSISTANT_CHARS) {
       issues.push({
-        code: "LONG_RESPONSE",
-        level: "info",
-        message: "Svar er relativt langt.",
-        turnIndex: s.index,
+        code: "long_response",
+        level: "warning",
+        message:
+          "Assistentens svar er usædvanligt langt i forhold til screeningsformålet.",
+        turnIndex: turn.turnIndex,
       });
     }
-  });
+  }
 
   return issues;
 }
+
