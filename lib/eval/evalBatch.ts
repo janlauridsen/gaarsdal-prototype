@@ -1,16 +1,11 @@
-// lib/eval/evalBatch.ts
 import type { ReplayResult } from "../playback/replay-types";
-import type {
-  BatchEvalResult,
-  SessionEval,
-} from "./types";
-
+import type { BatchEvalResult, SessionEval } from "./types";
 import { evalSession } from "./evalSession";
 
-/* ----------------------------------
-   BATCH EVALUATION
----------------------------------- */
-
+/**
+ * Evaluerer en batch af replayede sessioner.
+ * Eval læser KUN ReplayResult.
+ */
 export function evalBatch(
   replays: ReplayResult[]
 ): BatchEvalResult {
