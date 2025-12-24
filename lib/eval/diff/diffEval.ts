@@ -62,13 +62,13 @@ export function diffBatchEval(
 
   return {
     base: {
-      promptVersion: base.meta.promptVersion,
-      model: base.meta.model,
-    },
-    compare: {
-      promptVersion: compare.meta.promptVersion,
-      model: compare.meta.model,
-    },
+  promptVersion: base.sessions[0]?.replay.promptVersion ?? "unknown",
+  model: base.sessions[0]?.replay.model ?? "unknown",
+},
+compare: {
+  promptVersion: compare.sessions[0]?.replay.promptVersion ?? "unknown",
+  model: compare.sessions[0]?.replay.model ?? "unknown",
+},
     totals: {
       sessionsCompared: perSession.length,
       closingImproved,
