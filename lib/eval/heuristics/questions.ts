@@ -1,75 +1,33 @@
-import type { ReplayResult } from "../../playback/replay-types";
 import type { EvalIssue } from "../types";
+import type { EvalContext } from "../types";
 
 /* ----------------------------------
-   QUESTION DETECTION HEURISTIC
+   QUESTIONS HEURISTIC
 ---------------------------------- */
 
 /**
- * Simpel indikator:
- * - Spørgsmålstegn
- * - Kendte danske spørgeord i starten af sætning
+ * Detekterer om assistenten stiller spørgsmål,
+ * hvilket som udgangspunkt er uønsket i screening.
  */
-function containsQuestion(text: string): boolean {
-  if (!text) return false;
-
-  const lower = text.toLowerCase();
-
-  // 1. Direkte spørgsmålstegn
-  if (lower.indexOf("?") !== -1) {
-    return true;
-  }
-
-  // 2. Spørgeord (konservativ liste)
-  const questionStarters = [
-    "hvordan ",
-    "hvad ",
-    "hvor ",
-    "hvornår ",
-    "hvorfor ",
-    "har du ",
-    "har der ",
-    "er der ",
-    "kan du ",
-    "kan det ",
-    "har du ",
-  ];
-
-  // Tjek kun starten af sætninger (første ~40 tegn)
-  const prefix = lower.slice(0, 40);
-
-  for (let i = 0; i < questionStarters.length; i++) {
-    if (prefix.indexOf(questionStarters[i]) !== -1) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-/* ----------------------------------
-   CHECK QUESTIONS
----------------------------------- */
-
 export function checkQuestions(
-  replay: ReplayResult
+  ctx: EvalContext
 ): EvalIssue[] {
   const issues: EvalIssue[] = [];
 
-  const { turns } = replay;
+  const turns = ctx.replay.turns;
 
   for (let i = 0; i < turns.length; i++) {
-    const assistantText = turns[i].assistantText;
+    const text = turns[i].outputText;
+    if (!text) continue;
 
-    if (!assistantText) continue;
-
-    if (containsQuestion(assistantText)) {
+    // Simpel, bevidst konservativ heuristik
+    if (text.includes("?")) {
       issues.push({
-        code: "ASSISTANT_ASKED_QUESTION",
-        level: "error",
+        code: "asked_question",
+        level: "warning",
         message:
-          "Assistant stillede et spørgsmål, hvilket ikke er tilladt i screening-flow.",
-        turnIndex: i,
+          "Assistenten stiller spørgsmål, hvilket kan være i strid med screeningsrammen.",
+        turnIndex: turns[i].turnIndex,
       });
     }
   }
