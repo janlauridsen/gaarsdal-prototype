@@ -1,81 +1,53 @@
-import type { ReplayResult } from "../../playback/replay-types";
-import type { EvalIssue } from "../types";
+import type { EvalContext } from "../types";
 
-/* ----------------------------------
-   REDUNDANCY HEURISTIC
----------------------------------- */
-
-/**
- * Meget enkel overlap-score baseret på ord.
- * 0.0 = ingen overlap
- * 1.0 = identisk indhold
- */
-function wordOverlap(a: string, b: string): number {
-  const aWords = a
+function tokenize(text: string): string[] {
+  return text
     .toLowerCase()
+    .replace(/[^a-zæøå0-9\s]/gi, "")
     .split(/\s+/)
     .filter(Boolean);
-
-  const bWords = b
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (aWords.length === 0 || bWords.length === 0) {
-    return 0;
-  }
-
-  const seen: { [key: string]: boolean } = {};
-  let overlap = 0;
-
-  for (let i = 0; i < aWords.length; i++) {
-    seen[aWords[i]] = true;
-  }
-
-  for (let j = 0; j < bWords.length; j++) {
-    if (seen[bWords[j]]) {
-      overlap++;
-    }
-  }
-
-  return overlap / Math.max(aWords.length, bWords.length);
 }
 
-/* ----------------------------------
-   CHECK REDUNDANCY
----------------------------------- */
+export function redundancyScore(
+  prev: string,
+  next: string
+): number {
+  const prevWords = tokenize(prev);
+  const nextWords = tokenize(next);
 
-export function checkRedundancy(
-  replay: ReplayResult
-): EvalIssue[] {
-  const issues: EvalIssue[] = [];
-  const { turns } = replay;
+  if (prevWords.length === 0) return 0;
 
-  let previousAssistantText: string | null = null;
+  const seen: { [key: string]: true } = {};
+  for (let i = 0; i < prevWords.length; i++) {
+    seen[prevWords[i]] = true;
+  }
 
-  for (let i = 0; i < turns.length; i++) {
-    const current = turns[i].assistantText;
-    if (!current) continue;
+  let overlap = 0;
+  for (let i = 0; i < nextWords.length; i++) {
+    if (seen[nextWords[i]]) overlap++;
+  }
 
-    if (previousAssistantText) {
-      const score = wordOverlap(
-        previousAssistantText,
-        current
-      );
+  return overlap / prevWords.length;
+}
 
-      // Tærskel: 60% overlap
-      if (score >= 0.6) {
-        issues.push({
-          code: "REDUNDANT_RESPONSE",
-          level: "warning",
-          message:
-            "Assistant gentager i høj grad tidligere svar.",
-          turnIndex: i,
-        });
-      }
+export function evalRedundancy(ctx: EvalContext) {
+  const turns = ctx.replay.turns;
+  const issues = [];
+
+  for (let i = 1; i < turns.length; i++) {
+    const score = redundancyScore(
+      turns[i - 1].assistantText,
+      turns[i].assistantText
+    );
+
+    if (score > 0.7) {
+      issues.push({
+        code: "redundant_response",
+        level: "warning",
+        message: "Assistant gentager i høj grad tidligere svar.",
+        turnIndex: i,
+      });
     }
-
-    previousAssistantText = current;
   }
 
   return issues;
