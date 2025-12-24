@@ -1,33 +1,27 @@
 import type { BatchEvalResult } from "../types";
 
+/* ----------------------------------
+   PROMPT DIFF RESULT
+---------------------------------- */
+
+export type PromptDiffSide = {
+  promptVersion: string;
+  model: string;
+  eval: BatchEvalResult;
+};
+
+export type PromptDiffPerSession = {
+  sessionId: string;
+  base: BatchEvalResult["sessions"][number]["eval"];
+  compare: BatchEvalResult["sessions"][number]["eval"];
+};
+
 export type PromptDiffResult = {
-  base: {
-    promptVersion: string;
-    model: string;
+  base: PromptDiffSide;
+  compare: PromptDiffSide;
+
+  diff: {
+    totalCompared: number;
+    perSession: PromptDiffPerSession[];
   };
-  compare: {
-    promptVersion: string;
-    model: string;
-  };
-
-  totals: {
-    sessionsCompared: number;
-
-    closingImproved: number;
-    closingRegressed: number;
-
-    questionsImproved: number;
-    questionsRegressed: number;
-
-    lengthImproved: number;
-    lengthRegressed: number;
-  };
-
-  perSession: {
-    sessionId: string;
-
-    closing: "improved" | "regressed" | "same";
-    questions: "improved" | "regressed" | "same";
-    length: "improved" | "regressed" | "same";
-  }[];
 };
