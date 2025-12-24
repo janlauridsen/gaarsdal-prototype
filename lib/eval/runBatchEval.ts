@@ -1,63 +1,52 @@
-import { replaySession } from "../playback/replay-session";
-import type { ReplayResult } from "../playback/replay-types";
-
-import { evalBatch } from "./evalBatch";
 import type { BatchEvalResult } from "./types";
+import type { LoggedSession } from "../playback/replay-types";
+
+import { replaySession } from "../playback/runPlaybackSession";
+import { evalSession } from "./evalSession";
+
+/* ----------------------------------
+   RUN BATCH EVALUATION
+---------------------------------- */
 
 /**
- * Kører batch playback + eval for et sæt sessionIds
- * – helt silent
- * – ingen skrivning
- * – deterministisk
+ * Kører eval på en liste af loggede sessioner.
+ * Ingen netværkskald – batch-input er allerede hentet.
  */
-export async function runBatchEval(params: {
-  sessionIds: string[];
-  promptVersion: string;
-  model: string;
-}): Promise<BatchEvalResult> {
-  const { sessionIds, promptVersion, model } = params;
+export function runBatchEval(params: {
+  sessions: LoggedSession[];
+  systemPrompt: string;
+}): BatchEvalResult {
+  const { sessions, systemPrompt } = params;
 
-  const replays: ReplayResult[] = [];
+  const results = [];
+  let withClosing = 0;
+  let repeatedClosing = 0;
+  let askedQuestions = 0;
+  let excessiveLength = 0;
 
-  for (const sessionId of sessionIds) {
-    try {
-      const replay = await replaySession({
-        sessionId,
-        promptVersion,
-        model,
-      });
+  for (const session of sessions) {
+    const replay = replaySession(session, systemPrompt);
+    const evalResult = evalSession(replay);
 
-      replays.push(replay);
-    } catch (err) {
-      // Hvis en session fejler, ignorerer vi den
-      // (kan senere tælles som errorSessions)
-      console.warn("Replay failed for session:", sessionId, err);
-    }
+    results.push({
+      replay,
+      eval: evalResult,
+    });
+
+    if (evalResult.summary.hasClosing) withClosing++;
+    if (evalResult.summary.repeatedClosing) repeatedClosing++;
+    if (evalResult.summary.askedQuestions) askedQuestions++;
+    if (evalResult.summary.excessiveLength) excessiveLength++;
   }
 
-  const batchEval = evalBatch(replays);
-
   return {
-    meta: {
-      generatedAt: new Date().toISOString(),
-      promptVersion,
-      model,
-      totalSessions: replays.length,
-    },
+    totalSessions: sessions.length,
+    sessions: results,
     aggregates: {
-      withClosing: batchEval.aggregates.withClosing,
-      repeatedClosing: batchEval.aggregates.repeatedClosing,
-      askedQuestions: batchEval.aggregates.askedQuestions,
-      excessiveLength: batchEval.aggregates.excessiveLength,
-      errorSessions: sessionIds.length - replays.length,
+      withClosing,
+      repeatedClosing,
+      askedQuestions,
+      excessiveLength,
     },
-    sessions: batchEval.sessions.map((s) => ({
-      sessionId: s.replay.sessionId,
-      replay: {
-        totalTurns: s.replay.turns.length,
-        closingTurnIndex: s.replay.closingTurnIndex,
-      },
-      eval: s.eval,
-    })),
   };
 }
