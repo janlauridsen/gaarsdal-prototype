@@ -1,7 +1,8 @@
+// lib/eval/types.ts
 import type { ReplayResult } from "../playback/replay-types";
 
 /* ----------------------------------
-   GRUNDLÆGGENDE TYPES
+   ISSUE MODEL
 ---------------------------------- */
 
 export type EvalIssueLevel = "info" | "warning" | "error";
@@ -14,7 +15,7 @@ export type EvalIssue = {
 };
 
 /* ----------------------------------
-   SINGLE SESSION EVAL
+   SINGLE SESSION EVAL RESULT
 ---------------------------------- */
 
 export type EvalResult = {
@@ -35,13 +36,17 @@ export type EvalResult = {
 };
 
 /* ----------------------------------
-   BATCH EVAL TYPES
+   SESSION EVAL (REPLAY + EVAL)
 ---------------------------------- */
 
 export type SessionEval = {
   replay: ReplayResult;
   eval: EvalResult;
 };
+
+/* ----------------------------------
+   BATCH EVAL RESULT
+---------------------------------- */
 
 export type BatchEvalResult = {
   totalSessions: number;
@@ -57,7 +62,7 @@ export type BatchEvalResult = {
 };
 
 /* ----------------------------------
-   INTERNAL CONTEXT
+   INTERNAL CONTEXT (READ-ONLY)
 ---------------------------------- */
 
 export type EvalContext = {
