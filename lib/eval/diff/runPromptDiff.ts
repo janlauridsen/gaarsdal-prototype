@@ -1,6 +1,7 @@
 import { evalBatch } from "../evalBatch";
-import { diffBatchEval } from "./diff/diffEval";
-import type { PromptDiffResult } from "./diff/diffTypes";
+import { diffBatchEval } from "./diffEval";
+import type { PromptDiffResult } from "./diffTypes";
+
 
 export async function runPromptDiff(params: {
   sessionIds: string[];
