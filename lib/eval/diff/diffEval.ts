@@ -1,74 +1,60 @@
-import type { BatchEvalResult } from "../types";
-import type { PromptDiffResult } from "./diffTypes";
+import type { BatchEvalResult, SessionEval } from "../types";
 
-function cmp(a: boolean, b: boolean) {
-  if (a === b) return "same";
-  if (!a && b) return "improved";
-  return "regressed";
-}
+export type PromptDiffResult = {
+  perSession: {
+    sessionId: string;
+    base?: SessionEval;
+    next?: SessionEval;
+  }[];
 
-export function diffBatchEval(
+  summary: {
+    added: number;
+    removed: number;
+    changed: number;
+  };
+};
+
+export function diffEval(
   base: BatchEvalResult,
-  compare: BatchEvalResult
+  next: BatchEvalResult
 ): PromptDiffResult {
-  const byId = new Map(
-    base.sessions.map((s) => [s.replay.sessionId, s])
-  );
+  const byId = new Map<string, SessionEval>();
+
+  // indexér base via replay.sessionId
+  for (const s of base.sessions) {
+    byId.set(s.replay.sessionId, s);
+  }
 
   const perSession: PromptDiffResult["perSession"] = [];
 
-  let closingImproved = 0;
-  let closingRegressed = 0;
-  let questionsImproved = 0;
-  let questionsRegressed = 0;
-  let lengthImproved = 0;
-  let lengthRegressed = 0;
+  let added = 0;
+  let removed = 0;
+  let changed = 0;
 
-  for (const current of compare.sessions) {
-    const baseEval = byId.get(current.replay.sessionId);
-    if (!baseEval) continue;
+  // gennemløb next
+  for (const n of next.sessions) {
+    const id = n.replay.sessionId;
+    const b = byId.get(id);
 
-    const closing = cmp(
-      baseEval.eval.summary.hasClosing,
-      current.eval.summary.hasClosing
-    );
+    if (!b) {
+      added++;
+      perSession.push({ sessionId: id, next: n });
+    } else {
+      // placeholder: vi sammenligner struktur senere
+      changed++;
+      perSession.push({ sessionId: id, base: b, next: n });
+      byId.delete(id);
+    }
+  }
 
-    const questions = cmp(
-      baseEval.eval.summary.askedQuestions,
-      current.eval.summary.askedQuestions
-    );
-
-    const length = cmp(
-      baseEval.eval.summary.excessiveLength,
-      current.eval.summary.excessiveLength
-    );
-
-    if (closing === "improved") closingImproved++;
-    if (closing === "regressed") closingRegressed++;
-    if (questions === "improved") questionsImproved++;
-    if (questions === "regressed") questionsRegressed++;
-    if (length === "improved") lengthImproved++;
-    if (length === "regressed") lengthRegressed++;
-
-    perSession.push({
-      sessionId: current.replay.sessionId,
-      closing,
-      questions,
-      length,
-    });
+  // resterende i base er fjernede
+  for (const [id, b] of byId.entries()) {
+    removed++;
+    perSession.push({ sessionId: id, base: b });
   }
 
   return {
-    model: compare.sessions[0]?.replay.model ?? "unknown",
-    totals: {
-      sessionsCompared: perSession.length,
-      closingImproved,
-      closingRegressed,
-      questionsImproved,
-      questionsRegressed,
-      lengthImproved,
-      lengthRegressed,
-    },
     perSession,
+    summary: { added, removed, changed },
   };
 }
