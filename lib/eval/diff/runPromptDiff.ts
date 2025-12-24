@@ -1,30 +1,37 @@
 import { evalBatch } from "../evalBatch";
-import { diffBatchEval } from "./diffEval";
+import { diffEval } from "./diffEval";
 import type { PromptDiffResult } from "./diffTypes";
+import type { ReplayResult } from "../../playback/replay-types";
 
+/* ----------------------------------
+   RUN PROMPT DIFF (BATCH)
+---------------------------------- */
 
+/**
+ * Kører batch-evaluering på to sæt replays
+ * og sammenligner resultaterne.
+ *
+ * Bruges til:
+ * - prompt-sammenligning
+ * - regression-tests
+ * - kvalitetsmåling over tid
+ */
 export async function runPromptDiff(params: {
-  sessionIds: string[];
-  base: {
-    promptVersion: string;
-    model: string;
-  };
-  compare: {
-    promptVersion: string;
-    model: string;
-  };
+  base: ReplayResult[];
+  compare: ReplayResult[];
 }): Promise<PromptDiffResult> {
-  const baseEval = await runBatchEval({
-    sessionIds: params.sessionIds,
-    promptVersion: params.base.promptVersion,
-    model: params.base.model,
-  });
+  const { base, compare } = params;
 
-  const compareEval = await runBatchEval({
-    sessionIds: params.sessionIds,
-    promptVersion: params.compare.promptVersion,
-    model: params.compare.model,
-  });
+  // 1. Evaluer begge batches
+  const baseEval = evalBatch(base);
+  const compareEval = evalBatch(compare);
 
-  return diffBatchEval(baseEval, compareEval);
+  // 2. Diff resultaterne
+  const diff = diffEval(baseEval, compareEval);
+
+  return {
+    base: baseEval,
+    compare: compareEval,
+    diff,
+  };
 }
