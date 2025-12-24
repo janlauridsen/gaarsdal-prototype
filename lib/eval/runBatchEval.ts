@@ -1,7 +1,7 @@
 import type { BatchEvalResult } from "./types";
 import type { LoggedSession } from "../playback/replay-types";
 
-import { replaySession } from "../playback/runPlaybackSession";
+import { runPlaybackSession } from "../playback/runPlaybackSession";
 import { evalSession } from "./evalSession";
 
 /* ----------------------------------
@@ -25,7 +25,7 @@ export function runBatchEval(params: {
   let excessiveLength = 0;
 
   for (const session of sessions) {
-    const replay = replaySession(session, systemPrompt);
+    const replay = runPlaybackSession(session, systemPrompt);
     const evalResult = evalSession(replay);
 
     results.push({
