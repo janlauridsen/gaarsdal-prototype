@@ -53,7 +53,7 @@ export function diffBatchEval(
     if (length === "regressed") lengthRegressed++;
 
     perSession.push({
-      sessionId: c.sessionId,
+      sessionId: c.replay.sessionId,
       closing,
       questions,
       length,
