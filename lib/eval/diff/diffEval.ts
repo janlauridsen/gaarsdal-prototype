@@ -12,7 +12,7 @@ export function diffBatchEval(
   compare: BatchEvalResult
 ): PromptDiffResult {
   const byId = new Map(
-   base.sessions.map((s) => [s.replay.sessionId, s])
+    base.sessions.map((s) => [s.replay.sessionId, s])
   );
 
   const perSession: PromptDiffResult["perSession"] = [];
@@ -24,36 +24,34 @@ export function diffBatchEval(
   let lengthImproved = 0;
   let lengthRegressed = 0;
 
-  for (const c of compare.sessions) {
-    const b = byId.get(c.replay.sessionId);
-    if (!b) continue;
+  for (const current of compare.sessions) {
+    const baseEval = byId.get(current.replay.sessionId);
+    if (!baseEval) continue;
 
     const closing = cmp(
-      b.eval.summary.hasClosing,
-      c.eval.summary.hasClosing
+      baseEval.eval.summary.hasClosing,
+      current.eval.summary.hasClosing
     );
 
     const questions = cmp(
-      !b.eval.summary.askedQuestions,
-      !c.eval.summary.askedQuestions
+      baseEval.eval.summary.askedQuestions,
+      current.eval.summary.askedQuestions
     );
 
     const length = cmp(
-      !b.eval.summary.excessiveLength,
-      !c.eval.summary.excessiveLength
+      baseEval.eval.summary.excessiveLength,
+      current.eval.summary.excessiveLength
     );
 
     if (closing === "improved") closingImproved++;
     if (closing === "regressed") closingRegressed++;
-
     if (questions === "improved") questionsImproved++;
     if (questions === "regressed") questionsRegressed++;
-
     if (length === "improved") lengthImproved++;
     if (length === "regressed") lengthRegressed++;
 
     perSession.push({
-      sessionId: c.replay.sessionId,
+      sessionId: current.replay.sessionId,
       closing,
       questions,
       length,
@@ -61,14 +59,7 @@ export function diffBatchEval(
   }
 
   return {
-    base: {
-  promptVersion: base.sessions[0]?.replay.promptVersion ?? "unknown",
-  model: base.sessions[0]?.replay.model ?? "unknown",
-},
-compare: {
-  promptVersion: compare.sessions[0]?.replay.promptVersion ?? "unknown",
-  model: compare.sessions[0]?.replay.model ?? "unknown",
-},
+    model: compare.sessions[0]?.replay.model ?? "unknown",
     totals: {
       sessionsCompared: perSession.length,
       closingImproved,
