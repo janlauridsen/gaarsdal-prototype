@@ -7,6 +7,7 @@ import AIChat from "../components/AIChat";
 export default function App({ Component, pageProps }: AppProps) {
   const [open, setOpen] = useState(false);
 
+
   return (
     <>
       {/* Sideindhold */}
