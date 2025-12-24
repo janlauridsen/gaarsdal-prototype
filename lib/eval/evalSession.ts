@@ -1,69 +1,83 @@
+// lib/eval/evalSession.ts
 import type { ReplayResult } from "../playback/replay-types";
-import type {
-  EvalResult,
-  EvalIssue,
-  EvalContext,
-} from "./types";
+import type { EvalResult, EvalIssue } from "./types";
 
-import { evalRedundancy } from "./heuristics/redundancy";
-import { evalLength } from "./heuristics/length";
-import { evalQuestions } from "./heuristics/questions";
-import { evalClinical } from "./heuristics/clinical";
-import { evalClosure } from "./heuristics/closure";
-import { evalStopRule } from "./heuristics/stopRule";
+/* ----------------------------------
+   SINGLE SESSION EVALUATION
+---------------------------------- */
 
 export function evalSession(replay: ReplayResult): EvalResult {
-  const ctx: EvalContext = { replay };
-
   const issues: EvalIssue[] = [];
 
-  // --- Kør ALLE heuristikker deterministisk ---
-  issues.push(...evalRedundancy(ctx));
-  issues.push(...evalLength(ctx));
-  issues.push(...evalQuestions(ctx));
-  issues.push(...evalClinical(ctx));
-  issues.push(...evalClosure(ctx));
-  issues.push(...evalStopRule(ctx));
+  const totalTurns = replay.turns.length;
 
-  // --- Afled summary FELTER (ingen heuristik sætter dem direkte) ---
-  let closingTurnIndex: number | undefined = undefined;
-  let closingCount = 0;
+  const { hasClosing, closingTurnIndex, repeatedClosing } =
+    replay.summary;
+
+  /* ----------------------------------
+     RULE: EXCESSIVE LENGTH
+  ---------------------------------- */
+  const excessiveLength = totalTurns > 6;
+
+  if (excessiveLength) {
+    issues.push({
+      code: "excessive_length",
+      level: "warning",
+      message:
+        "Sessionen indeholder mange turns i forhold til screeningsformålet.",
+    });
+  }
+
+  /* ----------------------------------
+     RULE: ASKED QUESTIONS
+  ---------------------------------- */
   let askedQuestions = false;
-  let excessiveLength = false;
 
-  for (let i = 0; i < replay.turns.length; i++) {
-    const t = replay.turns[i];
-    if (t.isClosing) {
-      closingCount++;
-      if (closingTurnIndex === undefined) {
-        closingTurnIndex = i;
-      }
-    }
-  }
-
-  for (const issue of issues) {
-    if (issue.code === "asked_questions") {
+  for (const turn of replay.turns) {
+    if (turn.outputText.includes("?")) {
       askedQuestions = true;
-    }
-    if (issue.code === "excessive_length") {
-      excessiveLength = true;
+      break;
     }
   }
 
+  if (askedQuestions) {
+    issues.push({
+      code: "asked_questions",
+      level: "warning",
+      message:
+        "Assistenten stiller spørgsmål, hvilket kan være i strid med screeningsrammen.",
+    });
+  }
+
+  /* ----------------------------------
+     RULE: REPEATED CLOSING
+  ---------------------------------- */
+  if (repeatedClosing) {
+    issues.push({
+      code: "repeated_closing",
+      level: "warning",
+      message:
+        "Sessionen indeholder gentagne afslutninger efter første konklusion.",
+    });
+  }
+
+  /* ----------------------------------
+     RESULT
+  ---------------------------------- */
   return {
     sessionId: replay.sessionId,
     promptVersion: replay.promptVersion,
 
-    totalTurns: replay.turns.length,
+    totalTurns,
     closingTurnIndex,
 
     issues,
 
     summary: {
-      hasClosing: closingCount > 0,
-      repeatedClosing: closingCount > 1,
-      askedQuestions,
+      hasClosing,
+      repeatedClosing,
       excessiveLength,
+      askedQuestions,
     },
   };
 }
