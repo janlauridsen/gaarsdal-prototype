@@ -1,8 +1,8 @@
 import type { ChatState } from "../admin-types";
 
-/* ----------------------------------
-   INPUT (fra logging)
----------------------------------- */
+/* ======================================================
+   INPUT (fra logging – stabil, historisk sandhed)
+====================================================== */
 
 export type LoggedTurn = {
   sessionId: string;
@@ -32,19 +32,32 @@ export type LoggedSession = {
   turns: LoggedTurn[];
 };
 
-/* ----------------------------------
-   REPLAY OUTPUT
----------------------------------- */
+/* ======================================================
+   REPLAY MESSAGE (deterministisk input)
+====================================================== */
 
 export type ReplayMessage = {
   role: "system" | "user" | "assistant";
   content: string;
 };
 
+/* ======================================================
+   REPLAY TURN (én deterministisk step)
+====================================================== */
+
 export type ReplayTurn = {
   turnIndex: number;
 
+  /**
+   * Fuldt message-stack frem til
+   * og med bruger-input for dette turn.
+   */
   inputMessages: ReplayMessage[];
+
+  /**
+   * Output som MODELLEN gav dengang
+   * (eller giver ved replay/compare).
+   */
   outputText: string;
 
   chatStateBefore: ChatState;
@@ -53,9 +66,9 @@ export type ReplayTurn = {
   isClosing: boolean;
 };
 
-/* ----------------------------------
-   REPLAY RESULT
----------------------------------- */
+/* ======================================================
+   REPLAY RESULT (DEN ENESTE SANDE PLAYBACK-OUTPUT)
+====================================================== */
 
 export type ReplayResult = {
   sessionId: string;
@@ -63,7 +76,6 @@ export type ReplayResult = {
   model: string;
 
   totalTurns: number;
-
   turns: ReplayTurn[];
 
   summary: {
@@ -73,9 +85,9 @@ export type ReplayResult = {
   };
 };
 
-/* ----------------------------------
-   INTERNAL CONTEXT (IKKE PERSISTENT)
----------------------------------- */
+/* ======================================================
+   INTERN CONTEXT (IKKE PERSISTENT)
+====================================================== */
 
 export type ReplayContext = {
   systemPrompt: string;
