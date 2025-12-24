@@ -6,11 +6,11 @@ import type { PromptDiffResult } from "./diffTypes";
  * Wrapper til single-session diff.
  * Bruges af API-lag.
  */
-export function runSessionDiff(params: {
+export async function runSessionDiff(params: {
   base: ReplayResult;
   compare: ReplayResult;
-}): PromptDiffResult {
-  return runPromptDiff({
+}): Promise<PromptDiffResult> {
+  return await runPromptDiff({
     base: [params.base],
     compare: [params.compare],
   });
