@@ -1,11 +1,15 @@
+// lib/eval/evalBatch.ts
 import type { ReplayResult } from "../playback/replay-types";
 import type {
   BatchEvalResult,
   SessionEval,
-} from "./types.ts";
-
+} from "./types";
 
 import { evalSession } from "./evalSession";
+
+/* ----------------------------------
+   BATCH EVALUATION
+---------------------------------- */
 
 export function evalBatch(
   replays: ReplayResult[]
@@ -17,8 +21,7 @@ export function evalBatch(
   let askedQuestions = 0;
   let excessiveLength = 0;
 
-  for (let i = 0; i < replays.length; i++) {
-    const replay = replays[i];
+  for (const replay of replays) {
     const evalResult = evalSession(replay);
 
     sessions.push({
