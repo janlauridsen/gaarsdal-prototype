@@ -27,3 +27,14 @@
 - Formål: Synliggøre dialogens mulighedsrum
 - Modal: spørgsmål | invitation | tavshed
 - Post-output-lag (ikke del af hovedsvaret)
+
+## Brugerperspektiv-Evaluator (META)
+
+- Formål: Vurdere oplevet mening og klarhed set fra en brugerposition
+- Klassificerer potentielle problemer (fx uklarhed, overabstraktion)
+- Logger indsigter til designbrug
+- Påvirker ikke svar i samme turn
+- Kører kun i workbench / test / evaluering
+
+Denne rolle er et design- og evalueringsværktøj,
+ikke en del af produktets runtime-arkitektur.
