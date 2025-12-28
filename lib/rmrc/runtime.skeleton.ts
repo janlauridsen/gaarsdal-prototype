@@ -56,7 +56,7 @@ export async function runRMRCSessionSkeleton(sessionId: string) {
   const mirrorInvoked: LayerEventLog = {
     sessionId,
     turnIndex: 1,
-    layer: "runtime",
+    layer: "relational_legitimacy",
     event: "role_invoked:mirror",
   }
 
@@ -65,7 +65,7 @@ export async function runRMRCSessionSkeleton(sessionId: string) {
   const boundaryInvoked: LayerEventLog = {
     sessionId,
     turnIndex: 1,
-    layer: "runtime",
+    layer: "relational_legitimacy",
     event: "role_invoked:boundary",
   }
 
