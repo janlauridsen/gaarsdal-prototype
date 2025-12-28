@@ -6,108 +6,81 @@ import {
   LayerEventLog,
 } from "../logging/logging.contract"
 import { runMetaObserverRole } from "../roles/meta.observer.role"
+import { runMirrorAIRole } from "../roles/mirror.ai.role"
 
 /**
  * RMRC Session Skeleton
  * --------------------
  * Purpose:
  * - Verify session lifecycle logging
- * - Verify turn progression
- * - Verify deterministic role invocation
- * - Verify meta-observer logging
+ * - Verify role orchestration
+ * - Verify minimal AI role execution
  *
- * No AI
- * No consolidation
- * No role output
+ * Controlled AI usage
  */
 export async function runRMRCSessionSkeleton(sessionId: string) {
   const logger = new RMRCLogger(new RedisLogSink())
   const startedAt = new Date().toISOString()
 
-  /* ──────────────────────────────
-     SESSION START
-  ────────────────────────────── */
-
-  const sessionStart: SessionLog = {
+  /* SESSION START */
+  await logger.logSession({
     sessionId,
     startedAt,
     runtimeProfile: "minimal",
-    configVersion: "v2.0.2-build-0.3",
-  }
+    configVersion: "v2.0.2-build-0.5",
+  })
 
-  await logger.logSession(sessionStart)
-
-  /* ──────────────────────────────
-     TURN 1
-  ────────────────────────────── */
-
-  const turn1: TurnLog = {
+  /* TURN 1 */
+  await logger.logTurn({
     sessionId,
     turnIndex: 1,
     userInputPresent: true,
-    systemOutputEmitted: false,
+    systemOutputEmitted: true,
     stopTriggered: false,
-  }
+  })
 
-  await logger.logTurn(turn1)
+  /* AI ROLE */
+  const mirroredText = await runMirrorAIRole(logger, {
+    sessionId,
+    turnIndex: 1,
+    userInput: "Jeg oplever uro, når jeg skal præstere.",
+  })
 
-  /* ──────────────────────────────
-     ROLE INVOCATION (ORDERED)
-  ────────────────────────────── */
-
-  const mirrorInvoked: LayerEventLog = {
+  /* OUTPUT EMITTED (STRUCTURAL ONLY) */
+  const outputEvent: LayerEventLog = {
     sessionId,
     turnIndex: 1,
     layer: "relational_legitimacy",
-    event: "role_invoked:mirror",
+    event: "system_output_emitted",
   }
 
-  await logger.logLayerEvent(mirrorInvoked)
+  await logger.logLayerEvent(outputEvent)
 
-  const boundaryInvoked: LayerEventLog = {
-    sessionId,
-    turnIndex: 1,
-    layer: "relational_legitimacy",
-    event: "role_invoked:boundary",
-  }
-
-  await logger.logLayerEvent(boundaryInvoked)
-
-  /* ──────────────────────────────
-     META OBSERVER (LOGGING ONLY)
-  ────────────────────────────── */
-
+  /* META OBSERVER */
   await runMetaObserverRole(logger, {
     sessionId,
     turnIndex: 1,
   })
 
-  /* ──────────────────────────────
-     TURN 2 (STOP)
-  ────────────────────────────── */
-
-  const turn2: TurnLog = {
+  /* TURN 2 (STOP) */
+  await logger.logTurn({
     sessionId,
     turnIndex: 2,
     userInputPresent: false,
     systemOutputEmitted: false,
     stopTriggered: true,
-  }
+  })
 
-  await logger.logTurn(turn2)
-
-  /* ──────────────────────────────
-     SESSION END
-  ────────────────────────────── */
-
-  const sessionEnd: SessionLog = {
+  /* SESSION END */
+  await logger.logSession({
     sessionId,
     startedAt,
     endedAt: new Date().toISOString(),
     runtimeProfile: "minimal",
-    configVersion: "v2.0.2-build-0.3",
+    configVersion: "v2.0.2-build-0.5",
     stopReason: "max_turns",
-  }
+  })
 
-  await logger.logSession(sessionEnd)
+  // NOTE: mirroredText intentionally unused here
+  // This is a structural test, not a UI flow.
 }
