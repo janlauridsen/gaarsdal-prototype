@@ -1,42 +1,33 @@
-// lib/logging/logEpistemicWitness.ts
+/**
+ * Epistemic Witness Logging
+ * ------------------------
+ * This module logs an epistemic snapshot as a structural
+ * layer event, in strict accordance with logging.contract.ts.
+ *
+ * No custom event types.
+ * No semantic interpretation.
+ */
 
-import { createLogEvent } from "./createLogEvent";
-import { writeLogEvent } from "./writeLogEvent";
+import { RMRCLogger } from "./logging.writer"
+import { LayerEventLog } from "./logging.contract"
 
-export async function logEpistemicSnapshot(params: {
-  sessionId: string;
-  description: string;
-  openGaps?: string[];
-}) {
-  const event = createLogEvent({
-    sessionId: params.sessionId,
-    layer: "epistemic-witness",
-    eventType: "epistemic_snapshot",
-    payload: {
-      description: params.description,
-      openGaps: params.openGaps ?? [],
-    },
-  });
-
-  await writeLogEvent(event);
+type EpistemicWitnessParams = {
+  sessionId: string
+  turnIndex: number
+  description: string
+  openGaps?: string[]
 }
 
-export async function logDomainWitnessHypothesis(params: {
-  sessionId: string;
-  domain: string;
-  hypothesis: string;
-  confidence: "low" | "medium" | "high";
-}) {
-  const event = createLogEvent({
+export async function logEpistemicWitness(
+  logger: RMRCLogger,
+  params: EpistemicWitnessParams
+): Promise<void> {
+  const event: LayerEventLog = {
     sessionId: params.sessionId,
-    layer: "epistemic-witness",
-    eventType: "domain_witness_hypothesis",
-    payload: {
-      domain: params.domain,
-      hypothesis: params.hypothesis,
-      confidence: params.confidence,
-    },
-  });
+    turnIndex: params.turnIndex,
+    layer: "relational_legitimacy",
+    event: "epistemic_snapshot_recorded",
+  }
 
-  await writeLogEvent(event);
+  await logger.logLayerEvent(event)
 }
