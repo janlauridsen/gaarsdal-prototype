@@ -1,17 +1,25 @@
 import { RMRCLogger } from "../logging/logging.writer"
 import { LayerEventLog } from "../logging/logging.contract"
-import OpenAI from "openai"
 
 /**
- * Mirror AI Role (Minimal)
+ * Mirror AI Role (Stubbed)
  * -----------------------
- * Produces a short reflective mirroring of user input.
+ * Structural placeholder for a reflective AI role.
+ *
+ * Purpose:
+ * - Prove AI-role orchestration
+ * - Prove logging integration
+ * - Avoid external dependencies
  *
  * Constraints:
  * - No advice
  * - No diagnosis
  * - No interpretation
  * - No next-step suggestions
+ *
+ * NOTE:
+ * This implementation intentionally does NOT call an AI API.
+ * It will be replaced later by a real AI adapter.
  */
 export async function runMirrorAIRole(
   logger: RMRCLogger,
@@ -21,43 +29,18 @@ export async function runMirrorAIRole(
     userInput: string
   }
 ): Promise<string> {
-  const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  })
-
-  const systemPrompt = `
-You are a reflective mirror.
-Your task is to restate the user's experience in neutral, tentative language.
-
-Rules:
-- Do not advise
-- Do not explain
-- Do not diagnose
-- Do not suggest actions
-- Keep it short (1–3 sentences)
-- Preserve ambiguity
-`
-
-  const response = await client.chat.completions.create({
-    model: "gpt-4o-mini",
-    temperature: 0.2,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: params.userInput },
-    ],
-  })
-
-  const content =
-    response.choices[0]?.message?.content ?? ""
+  // --- STUBBED MIRROR OUTPUT ---
+  const mirroredText =
+    "Du beskriver en oplevelse, hvor uro opstår i situationer, der kræver noget af dig."
 
   const aiEvent: LayerEventLog = {
     sessionId: params.sessionId,
     turnIndex: params.turnIndex,
     layer: "relational_legitimacy",
-    event: "ai_role_invoked:mirror",
+    event: "ai_role_invoked:mirror_stub",
   }
 
   await logger.logLayerEvent(aiEvent)
 
-  return content
+  return mirroredText
 }
