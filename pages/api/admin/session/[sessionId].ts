@@ -1,12 +1,13 @@
 // pages/api/admin/session/[sessionId].ts
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createLogEvent } from "../../../../lib/logging/createLogEvent";
-import { writeLogEvent } from "../../../../lib/logging/writeLogEvent";
 import {
   logSessionStarted,
   logSessionEnded,
 } from "../../../../lib/logging/logLifecycle";
+import { createLogEvent } from "../../../../lib/logging/createLogEvent";
+import { writeLogEvent } from "../../../../lib/logging/writeLogEvent";
+import { getNextTurn } from "../../../../lib/logging/getNextTurn";
 
 export default async function handler(
   req: NextApiRequest,
@@ -24,7 +25,7 @@ export default async function handler(
 
   const { text } = req.body;
 
-  // Lifecycle start
+  // Start session (idempotens håndteres eksternt)
   await logSessionStarted({
     sessionId,
     entrypoint: "api/admin/session/[sessionId]",
@@ -32,23 +33,23 @@ export default async function handler(
     bootstrapSnapshot: "v2.0-start-RMRC-build-0.1",
   });
 
-  // User input event
+  const turn = await getNextTurn(sessionId);
+
   const userEvent = createLogEvent({
     sessionId,
     layer: "session",
     eventType: "user_input",
-    turn: 1,
+    turn,
     payload: { text },
   });
 
   await writeLogEvent(userEvent);
 
-  // Assistant placeholder output
   const assistantEvent = createLogEvent({
     sessionId,
     layer: "session",
     eventType: "assistant_output",
-    turn: 1,
+    turn,
     payload: {
       text: "placeholder-response",
     },
@@ -56,7 +57,7 @@ export default async function handler(
 
   await writeLogEvent(assistantEvent);
 
-  // Lifecycle end (hard stop for now)
+  // Hard stop for nu
   await logSessionEnded({
     sessionId,
     reason: "system_exit",
