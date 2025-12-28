@@ -5,6 +5,7 @@ import {
   TurnLog,
   LayerEventLog,
 } from "../logging/logging.contract"
+import { runMetaObserverRole } from "../roles/meta.observer.role"
 
 /**
  * RMRC Session Skeleton
@@ -13,6 +14,7 @@ import {
  * - Verify session lifecycle logging
  * - Verify turn progression
  * - Verify deterministic role invocation
+ * - Verify meta-observer logging
  *
  * No AI
  * No consolidation
@@ -70,6 +72,15 @@ export async function runRMRCSessionSkeleton(sessionId: string) {
   }
 
   await logger.logLayerEvent(boundaryInvoked)
+
+  /* ──────────────────────────────
+     META OBSERVER (LOGGING ONLY)
+  ────────────────────────────── */
+
+  await runMetaObserverRole(logger, {
+    sessionId,
+    turnIndex: 1,
+  })
 
   /* ──────────────────────────────
      TURN 2 (STOP)
