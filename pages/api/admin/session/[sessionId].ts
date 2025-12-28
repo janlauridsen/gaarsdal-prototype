@@ -5,9 +5,7 @@ import {
   logSessionStarted,
   logSessionEnded,
 } from "../../../../lib/logging/logLifecycle";
-import { createLogEvent } from "../../../../lib/logging/createLogEvent";
-import { writeLogEvent } from "../../../../lib/logging/writeLogEvent";
-import { getNextTurn } from "../../../../lib/logging/getNextTurn";
+import { runSessionTurn } from "../../../../lib/runtime/runSessionTurn";
 
 export default async function handler(
   req: NextApiRequest,
@@ -25,39 +23,18 @@ export default async function handler(
 
   const { text } = req.body;
 
-  // Start session (idempotens håndteres eksternt)
   await logSessionStarted({
     sessionId,
     entrypoint: "api/admin/session/[sessionId]",
     runtimeProfile: "minimal",
-    bootstrapSnapshot: "v2.0-start-RMRC-build-0.1",
+    bootstrapSnapshot: "RMRC_LOGGING_AND_ADMIN_CORE",
   });
 
-  const turn = await getNextTurn(sessionId);
-
-  const userEvent = createLogEvent({
+  await runSessionTurn({
     sessionId,
-    layer: "session",
-    eventType: "user_input",
-    turn,
-    payload: { text },
+    userText: text ?? "",
   });
 
-  await writeLogEvent(userEvent);
-
-  const assistantEvent = createLogEvent({
-    sessionId,
-    layer: "session",
-    eventType: "assistant_output",
-    turn,
-    payload: {
-      text: "placeholder-response",
-    },
-  });
-
-  await writeLogEvent(assistantEvent);
-
-  // Hard stop for nu
   await logSessionEnded({
     sessionId,
     reason: "system_exit",
