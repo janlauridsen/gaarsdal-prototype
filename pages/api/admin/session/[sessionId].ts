@@ -1,9 +1,12 @@
 // pages/api/admin/session/[sessionId].ts
 
 import type { NextApiRequest, NextApiResponse } from "next";
+import { createLogEvent } from "../../../../lib/logging/createLogEvent";
 import { writeLogEvent } from "../../../../lib/logging/writeLogEvent";
-import { RMRCLogEvent } from "../../../../lib/logging/logEvent";
-import { randomUUID } from "crypto";
+import {
+  logSessionStarted,
+  logSessionEnded,
+} from "../../../../lib/logging/logLifecycle";
 
 export default async function handler(
   req: NextApiRequest,
@@ -21,31 +24,43 @@ export default async function handler(
 
   const { text } = req.body;
 
-  const timestamp = new Date().toISOString();
-
-  const userEvent: RMRCLogEvent = {
-    eventId: randomUUID(),
+  // Lifecycle start
+  await logSessionStarted({
     sessionId,
-    timestamp,
+    entrypoint: "api/admin/session/[sessionId]",
+    runtimeProfile: "minimal",
+    bootstrapSnapshot: "v2.0-start-RMRC-build-0.1",
+  });
+
+  // User input event
+  const userEvent = createLogEvent({
+    sessionId,
     layer: "session",
     eventType: "user_input",
+    turn: 1,
     payload: { text },
-  };
+  });
 
   await writeLogEvent(userEvent);
 
-  const assistantEvent: RMRCLogEvent = {
-    eventId: randomUUID(),
+  // Assistant placeholder output
+  const assistantEvent = createLogEvent({
     sessionId,
-    timestamp: new Date().toISOString(),
     layer: "session",
     eventType: "assistant_output",
+    turn: 1,
     payload: {
       text: "placeholder-response",
     },
-  };
+  });
 
   await writeLogEvent(assistantEvent);
+
+  // Lifecycle end (hard stop for now)
+  await logSessionEnded({
+    sessionId,
+    reason: "system_exit",
+  });
 
   res.status(200).json({ ok: true });
 }
