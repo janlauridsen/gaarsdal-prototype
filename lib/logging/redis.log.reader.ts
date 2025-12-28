@@ -1,16 +1,23 @@
-import { Redis } from "@upstash/redis"
+/**
+ * Redis-backed log reader.
+ *
+ * Uses the shared Redis client from lib/redis.ts.
+ * No direct dependency on @upstash/redis here.
+ */
+
+import { redis } from "../redis"
 import { RMRCLogEntry, SessionId } from "./logging.contract"
 import { LogReader } from "./logging.reader"
 
-const redis = Redis.fromEnv()
-
 export class RedisLogReader implements LogReader {
-  async getSessionLogs(sessionId: SessionId): Promise<RMRCLogEntry[]> {
+  async readSession(sessionId: SessionId): Promise<RMRCLogEntry[]> {
     const key = `rmrc:session:${sessionId}`
+    const entries = await redis.lrange(key, 0, -1)
 
-    const raw = await redis.lrange(key, 0, -1)
-    if (!raw) return []
+    if (!entries) return []
 
-    return raw.map((item: string) => JSON.parse(item))
+    return entries.map((raw) =>
+      typeof raw === "string" ? JSON.parse(raw) : raw
+    )
   }
 }
