@@ -1,43 +1,23 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiRequest, NextApiResponse } from "next"
 
-import { getLoggedSession } from "../../../lib/playback/getLoggedSession";
-import { runBatchPlayback } from "../../../lib/playback/runBatchPlayback";
-import screeningPrompt from "../../../prompts/screening-v4.5";
+/**
+ * Playback endpoint is intentionally disabled.
+ *
+ * Reason:
+ * - Legacy evaluation / screening / playback pipeline
+ * - Not part of RMRC v2.0 logging-first architecture
+ * - Kept as a stub to avoid build-time failures
+ *
+ * This endpoint may be reintroduced later as a
+ * dedicated analysis-only service.
+ */
 
 export default async function handler(
-  req: NextApiRequest,
+  _req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const { sessionIds } = req.body;
-
-  if (!Array.isArray(sessionIds)) {
-    return res.status(400).json({ error: "Missing sessionIds" });
-  }
-
-  try {
-    const sessions = [];
-
-    for (const sessionId of sessionIds) {
-      const session = await getLoggedSession(sessionId);
-      if (session) sessions.push(session);
-    }
-
-    // 👇 KORREKT SIGNATUR: (sessions, systemPrompt)
-    const result = await runBatchPlayback(
-      sessions,
-      screeningPrompt
-    );
-
-    return res.status(200).json(result);
-  } catch (err: any) {
-    console.error("admin playback error:", err);
-    return res.status(500).json({
-      error: "Server error",
-      details: err?.message ?? String(err),
-    });
-  }
+  res.status(410).json({
+    disabled: true,
+    reason: "Playback subsystem is not active in RMRC v2.0",
+  })
 }
