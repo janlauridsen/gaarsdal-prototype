@@ -6,9 +6,25 @@ import {
   LayerEventLog,
 } from "../logging/logging.contract"
 
+/**
+ * RMRC Session Skeleton
+ * --------------------
+ * Purpose:
+ * - Verify session lifecycle logging
+ * - Verify turn progression
+ * - Verify deterministic role invocation
+ *
+ * No AI
+ * No consolidation
+ * No role output
+ */
 export async function runRMRCSessionSkeleton(sessionId: string) {
   const logger = new RMRCLogger(new RedisLogSink())
   const startedAt = new Date().toISOString()
+
+  /* ──────────────────────────────
+     SESSION START
+  ────────────────────────────── */
 
   const sessionStart: SessionLog = {
     sessionId,
@@ -19,24 +35,45 @@ export async function runRMRCSessionSkeleton(sessionId: string) {
 
   await logger.logSession(sessionStart)
 
+  /* ──────────────────────────────
+     TURN 1
+  ────────────────────────────── */
+
   const turn1: TurnLog = {
     sessionId,
     turnIndex: 1,
     userInputPresent: true,
-    systemOutputEmitted: true,
+    systemOutputEmitted: false,
     stopTriggered: false,
   }
 
   await logger.logTurn(turn1)
 
-  const layerEvent: LayerEventLog = {
+  /* ──────────────────────────────
+     ROLE INVOCATION (ORDERED)
+  ────────────────────────────── */
+
+  const mirrorInvoked: LayerEventLog = {
     sessionId,
     turnIndex: 1,
-    layer: "consolidation",
-    event: "runtime_skeleton_no_roles",
+    layer: "runtime",
+    event: "role_invoked:mirror",
   }
 
-  await logger.logLayerEvent(layerEvent)
+  await logger.logLayerEvent(mirrorInvoked)
+
+  const boundaryInvoked: LayerEventLog = {
+    sessionId,
+    turnIndex: 1,
+    layer: "runtime",
+    event: "role_invoked:boundary",
+  }
+
+  await logger.logLayerEvent(boundaryInvoked)
+
+  /* ──────────────────────────────
+     TURN 2 (STOP)
+  ────────────────────────────── */
 
   const turn2: TurnLog = {
     sessionId,
@@ -47,6 +84,10 @@ export async function runRMRCSessionSkeleton(sessionId: string) {
   }
 
   await logger.logTurn(turn2)
+
+  /* ──────────────────────────────
+     SESSION END
+  ────────────────────────────── */
 
   const sessionEnd: SessionLog = {
     sessionId,
