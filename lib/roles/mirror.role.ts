@@ -6,7 +6,7 @@
  * - No AI
  * - No interpretation
  * - No text generation
- * - Logs invocation via an existing runtime layer
+ * - Logs invocation using an existing, valid LayerId
  */
 
 import { RMRCLogger } from "../logging/logging.writer"
@@ -23,7 +23,7 @@ export async function runMirrorRole(
   await logger.logLayerEvent({
     sessionId: params.sessionId,
     turnIndex: params.turnIndex,
-    layer: "runtime",
+    layer: "relational_legitimacy",
     event: "role_invoked",
   })
 }
