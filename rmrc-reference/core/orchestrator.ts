@@ -35,10 +35,19 @@ export class Orchestrator {
         profile.enabledRoles.includes(roleId)
       );
 
+      // --- Boundary & Authority triggers evaluated once per turn ---
+      const boundaryTriggered =
+        userInput !== null && shouldTriggerBoundary(userInput);
+
+      const authorityTriggered =
+        userInput !== null && shouldDiffuseAuthority(userInput);
+
       for (const roleId of activeRoles) {
         this.logger.log("role_invoked", { roleId });
 
         if (!userInput) continue;
+
+        // --- Reflective roles (always allowed) ---
 
         if (roleId === "mirror") {
           const prompt = loadPrompt("mirror_v1");
@@ -52,18 +61,28 @@ export class Orchestrator {
           if (result.output) outputs.push(result.output);
         }
 
+        // --- Boundary Guardian has priority ---
+
         if (
           roleId === "boundary_guardian" &&
-          shouldTriggerBoundary(userInput)
+          boundaryTriggered
         ) {
           const prompt = loadPrompt("boundary_guardian_v1");
           const result = await invokeAI({ prompt, userInput });
           if (result.output) outputs.push(result.output);
+
+          // IMPORTANT:
+          // If boundary is triggered, authority diffusion
+          // must NOT happen in the same turn.
+          continue;
         }
+
+        // --- Authority Diffuser only if no boundary ---
 
         if (
           roleId === "authority_diffuser" &&
-          shouldDiffuseAuthority(userInput)
+          authorityTriggered &&
+          !boundaryTriggered
         ) {
           const prompt = loadPrompt("authority_diffuser_v1");
           const result = await invokeAI({ prompt, userInput });
