@@ -56,11 +56,11 @@ export class Orchestrator {
         }
 
         
-this.logger.log("role_invoked", {
-  roleId,
-  boardId,
-  turnIndex,
-});
+      this.logger.log("role_invoked", {
+        roleId,
+        boardId,
+        turnIndex,
+      });
 
         if (!userInput) continue;
 
