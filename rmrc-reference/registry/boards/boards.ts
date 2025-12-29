@@ -1,68 +1,52 @@
 /**
  * RMRC Board Registry
  *
- * This file declares all boards known to the RMRC system.
- * It contains data only — no logic, no imports, no side effects.
+ * Declares all boards and which roles are allowed
+ * to participate in each board.
+ *
+ * Structural only — no logic.
  */
-
-export type BoardStatus = "active" | "deprecated";
-
-export type BoardType =
-  | "reflective"
-  | "boundary"
-  | "navigation"
-  | "meta";
 
 export interface BoardDefinition {
   boardId: string;
-  boardType: BoardType;
   allowedRoles: string[];
-  purpose: string;
-  status: BoardStatus;
+  notes?: string;
 }
 
-/**
- * Canonical board registry
- */
 export const boards: BoardDefinition[] = [
   {
     boardId: "reflective",
-    boardType: "reflective",
     allowedRoles: [
       "mirror",
-      "context_holder",
+      "context_holder"
     ],
-    purpose:
-      "Holding and reflecting the user's experience without explanation, direction, or reduction.",
-    status: "active",
+    notes:
+      "Core reflective board. Holds and mirrors user experience without direction."
   },
   {
     boardId: "boundary",
-    boardType: "boundary",
     allowedRoles: [
       "boundary_guardian",
-      "authority_diffuser",
+      "authority_diffuser"
     ],
-    purpose:
-      "Protecting ethical and relational boundaries without interpretation or justification.",
-    status: "active",
+    notes:
+      "Protects ethical and relational boundaries."
   },
   {
     boardId: "navigation",
-    boardType: "navigation",
     allowedRoles: [
-      "dialog_navigator",
+      "dialog_navigator"
     ],
-    purpose:
-      "Supporting gentle movement in dialogue without directing or prioritizing content.",
-    status: "active",
+    notes:
+      "Optional board for rare, open invitations when reflection already carries the dialogue."
   },
   {
     boardId: "meta",
-    boardType: "meta",
-    allowedRoles: [],
-    purpose:
-      "Observing system behavior for logging and analysis without affecting runtime.",
-    status: "active",
-  },
+    allowedRoles: [
+      "user_perspective_evaluator",
+      "latent_question_hypothesizer"
+    ],
+    notes:
+      "Observer-only board. Read-only. No runtime influence."
+  }
 ];
