@@ -1,426 +1,357 @@
-📄 DOC 2 — RMRC · Role & Board Registry
+📄 DOC 3 — RMRC · Prompt & Configuration Strategy
 
-Subtitle: Structural Contracts for Reflective Dialogue
+Subtitle: Versioned AI Behavior Without Code Drift
 
 Status
 
-Autoritativt arkitekturdokument.
-DOC 2 fastlåser hvilke roller og boards der må eksistere i RMRC, og hvilke mandater og begrænsninger de opererer under.
+Autoritativt styringsdokument.
+DOC 3 definerer, hvordan AI-adfærd styres, ændres og analyseres i RMRC – uden at kode bliver bærer af adfærd.
 
-Ændringer i dette dokument er:
-
-arkitektoniske
-
-bevidste
-
-versionsstyrede
-
-aldrig implicitte via kode eller prompts
+Hvis der opstår konflikt mellem kode og prompt-konfiguration, har dette dokument forrang.
 
 1. Formål
 
-Formålet med DOC 2 er at definere:
+Formålet med DOC 3 er at sikre, at:
 
-hvilke roller der findes
+al AI-adfærd er eksplicit
 
-hvilke boards de hører til
+adfærd kan ændres uden kodeændringer
 
-hvilke perspektiver de repræsenterer
+ændringer er sporbare og versionsstyrede
 
-hvilke grænser de aldrig må overskride
+RMRC kan analyseres, simuleres og justeres bevidst
 
-Dokumentet beskriver hvem der taler og hvorfra –
-ikke hvordan der tales (DOC 3),
-og ikke hvorfor (DOC 5).
+ChatGPT (eller anden AI) kan bruges aktivt i design- og analysearbejde uden at påvirke runtime
 
-2. Grunddefinitioner
-2.1 Rolle (Role)
+DOC 3 eksisterer for at forhindre:
 
-En rolle i RMRC er:
+spredte prompts
 
-et snævert perspektiv
+implicit adfærd
 
-med ét entydigt formål
+kodebåret metode
 
-stateless
+uigennemsigtig udvikling
 
-non-agentic
+2. Grundprincip: Arkitektur > Adfærd > Implementering
 
-uden autoritet
+RMRC arbejder med en klar prioritering:
 
-uden hukommelse
+Arkitektur (DOC 1, DOC 2, DOC 5)
 
-En rolle:
+Adfærd (prompts og konfiguration)
 
-modtager input
+Implementering (kode)
 
-producerer tekst eller metadata
+Prompts er adfærdsbærere, ikke implementeringsdetaljer.
 
-kan ikke se andre rollers output
+Kode må:
 
-kan ikke evaluere sandhed, hensigt eller effekt
+eksekvere
 
-kan ikke vælge prompt eller styre flow
+route
 
-En rolle er ikke:
+logge
 
-en agent
+Kode må ikke:
 
-en persona
+definere menneskelig holdning
 
-en terapeutisk instans
+indeholde prompts
 
-en beslutningstager
+skjule metode eller autoritet
 
-en ekspert
+3. Problemet med spredte og hardcodede prompts
 
-2.2 Board
+Spredte prompts fører til:
 
-Et board er:
+uigennemsigtig adfærd
 
-et afgrænset meningsrum
+utilsigtet metodebrug
 
-med faste regler og begrænsninger
+manglende sporbarhed
 
-hvor et defineret sæt roller aktiveres parallelt
+vanskeligt replay
 
-Boards:
+umulig governance
 
-definerer typen af refleksion
+Derfor gælder i RMRC:
 
-ejer rammen, ikke indholdet
+Ingen hardcodede prompts i kode.
+Ingen implicit prompt-logik i roller.
 
-har ingen egen intelligens
+Hvis en rolle indeholder prompt-tekst, er det et arkitektonisk brud.
 
-træffer ingen beslutninger
+4. Prompt som førsteklasses artefakt
 
-Boards er fraktale:
+I RMRC er en prompt:
 
-samme struktur på alle niveauer
+et selvstændigt artefakt
 
-samme regler for aktivering og afslutning
+versionsstyret
 
-3. Board-typer i RMRC (v2.x)
+sporbar
 
-RMRC opererer med et bevidst begrænset antal board-typer.
-Udvidelser kræver nyt dokument og governance-beslutning.
+bundet til:
 
-3.1 Reflective Board (Kerne)
-Formål
+én rolle
 
-At holde og spejle brugerens oplevelse uden at reducere, forklare eller dirigere den.
+ét board
 
-Karakteristika
+én kontekst
 
-lav intensitet
+En prompt repræsenterer:
 
-høj tolerance for tvetydighed
+sproglig adfærd
 
-stilhed accepteres
+menneskelig holdning
 
-ingen bevægelse mod løsning
+etisk ramme
 
-Tilladt output
+Prompts er ikke “instruktioner til AI” i snæver forstand,
+men kontrakter for adfærd inden for RMRC’s arkitektur.
 
-spejling
+5. Prompt Registry (konceptuelt)
 
-omskrivning
+RMRC anvender et centralt Prompt Registry.
 
-perspektivfastholdelse
+Registry’et:
 
-Forbud
+er deklarativt
 
-forklaring
+er read-only i runtime
 
-årsagsanalyse
+er versionsstyret
 
-validering (“det giver mening fordi…”)
+indeholder ingen runtime-logik
 
-rådgivning
+Registry’et definerer:
 
-Roller i Reflective Board
-Mirror
+hvilke prompts der findes
 
-Formål: Neutral spejling af brugerens udsagn i samme oplevelsesdomæne.
+hvilken rolle de er bundet til
 
-Input: Brugerens tekst
+hvilket board de gælder for
 
-Output: Kort, tentativ omskrivning
+hvilke versioner der er aktive
 
-Må ikke:
+Registry’et er styringsværktøj, ikke performance-optimering.
 
-fortolke
+6. Prompt-versionering og governance
 
-trøste
+Hver prompt skal have:
 
-forklare
+et stabilt promptId
 
-skifte domæne
+en eksplicit version
 
-Mirror er første-resonans-rollen og må aldrig “løfte” oplevelsen.
+en beskrivelse af ændringens intention
 
-Context Holder
+Ændringer i prompts er:
 
-Formål: Fastholde og binde kontekst uden at strukturere eller konkludere.
+arkitektonisk relevante
 
-Input:
+governance-beslutninger
 
-Brugerens tekst
+aldrig trivielle
 
-Dialoghistorik (read-only)
+Prompt-versioner:
 
-Output: Sammenbindende formulering
+må aldrig overskrives
 
-Skærpet begrænsning (kalibreret mod DOC 5):
-Context Holder må ikke:
+må aldrig ændres retroaktivt
 
-samle for tidligt
+kan deaktiveres, men ikke slettes
 
-skabe kognitiv overbygning
+Dette sikrer:
 
-flytte oplevelsen til et andet domæne
+fuld sporbarhed
 
-Context Holder er fastholdende, ikke strukturerende.
+meningsfuld replay
 
-3.2 Boundary Board
-Formål
+ansvarlig iteration
 
-At beskytte systemets relationelle, etiske og arkitektoniske grænser.
+7. Sammenhæng mellem runtime, prompt og logs
 
-Karakteristika
+I runtime:
 
-konservativ
+vælges prompts udelukkende via konfiguration
 
-regelbaseret
+aldrig via kode
 
-ikke-fortolkende
+aldrig via rollelogik
 
-ikke-refleksivt
+Logs refererer til:
 
-Tilladt output
+promptId
 
-afgrænsende formuleringer
+promptVersion
 
-stop-signaler
+roleId
 
-metakommentarer om ramme
+boardId
 
-Boundary Board prioriterer beskyttelse over flow.
+Logs indeholder aldrig prompt-tekst.
 
-Roller i Boundary Board
-Boundary Guardian
+Dette sikrer:
 
-Formål: Detektere og afgrænse grænseoverskridelser.
+fortrolighed
 
-Input:
+stabil analyse
 
-Brugerinput
+mulighed for ekstern revision
 
-Systemoutput
+8. AI-meta vs. AI-produkt-prompts
 
-Output: Neutral afgrænsning
+RMRC skelner mellem:
 
-Må ikke:
+8.1 AI-produkt-prompts
 
-forklare hvorfor grænsen findes
+Prompts der:
 
-moraliserer
+genererer tekst til brugeren
 
-eskalere konflikten
+opererer inden for boards
 
-Authority Diffuser
+er underlagt DOC 2 og DOC 5
 
-Formål: Afmontere tillagt autoritet eller afhængighed.
+Disse er en del af runtime-adfærd.
 
-Input: Sproglige signaler om autoritetsforventning
+8.2 AI-meta-prompts
 
-Output: Aftagning af autoritetsantagelse
+Prompts der:
 
-Må ikke:
+bruges til analyse
 
-afvise brugeren emotionelt
+bruges til design
 
-fremstå belærende
+bruges til simulering og replay
 
-3.3 Navigation Board (Sekundært og valgfrit)
-Formål
+aldrig påvirker runtime direkte
 
-At støtte bevægelse i dialogen uden at dirigere eller presse.
+AI-meta-prompts kan anvendes af:
 
-Karakteristika
+ChatGPT
 
-lav intensitet
+analyseværktøjer
 
-bruges sjældent
+designprocesser
 
-stilhed har forrang
+Men:
 
-aldrig progressionsmotor
+deres output er altid forslag
 
-Navigation Board er sekundært i forhold til Reflective Board.
+aldrig handling
 
-Roller i Navigation Board
-Dialog Navigator
+aldrig automatisk ændring
 
-Formål: Invitere til mulig bevægelse uden at prioritere retning.
+Dette bevarer menneskelig governance.
 
-Input: Dialogens nuværende form
+9. Prompts som bærere af menneskelig holdning
 
-Output: Ét åbent spørgsmål eller invitation
+Prompts i RMRC må – og skal – afspejle:
 
-Må ikke:
+refleksiv holdning
 
-styre retning
+erfaring uden autoritet
 
-prioritere indhold
+domæne-resonans
 
-afbryde refleksion
+metakognitiv mulighed
 
-Navigation må aldrig bruges til at “løse” fastlåsning automatisk.
+transparent styring
 
-3.4 Meta-Board (Observerende)
-Formål
-
-At observere systemets egen funktion uden at påvirke runtime.
-
-Karakteristika
-
-read-only
-
-ingen indgriben
-
-ingen tekst til bruger
-
-Meta-Board er centralt for analyse, replay og governance.
-
-Roller i Meta-Board
-User Perspective Evaluator
-
-Formål: Vurdere oplevet meningsfuldhed retrospektivt.
-
-Output: Metadata (ikke tekst)
-
-Latent Question Hypothesizer
-
-Formål: Hypotese om uformulerede spørgsmål.
-
-Output: Intern struktur
-
-Aldrig vist for bruger
-
-Disse hypoteser er analytiske – ikke sandheder.
-
-4. Rolle-til-Board Mapping (Fast i v2.x)
-Rolle	Board
-Mirror	Reflective
-Context Holder	Reflective
-Boundary Guardian	Boundary
-Authority Diffuser	Boundary
-Dialog Navigator	Navigation
-User Perspective Evaluator	Meta
-Latent Question Hypothesizer	Meta
-
-Denne mapping er statisk i v2.x.
-
-5. Hvad roller aldrig må gøre
-
-Ingen rolle må:
-
-foreslå behandling
-
-give råd
-
-forklare årsager
-
-vurdere rigtighed
-
-vurdere effekt
-
-akkumulere viden om brugeren
+Prompts må ikke:
 
 udøve skjult autoritet
 
-Hvis dette ønskes, kræver det:
+manipulere refleksion
 
-nyt board
+presse mod konklusion
 
-ny rolle
+skjule styring som neutralitet
 
-nyt dokument
+DOC 5 er normativ reference for al prompt-design.
 
-eksplicit governance-beslutning
+10. Hvad der eksplicit ikke er konfigurerbart
 
-6. Fraktal konsistens
+For at beskytte arkitekturen må følgende aldrig være prompt- eller konfigurationsstyret:
 
-Hvert board følger samme interne struktur:
+rolle-autoritet
 
-Input modtages
+board-typer
 
-Roller aktiveres parallelt
+rolle-til-board mapping
 
-Output samles uden semantisk prioritering
+logging-niveauer
 
-Linting og legitimitetskontrol anvendes
+læringsmekanismer i runtime
 
-Resultat vises – eller stilhed opretholdes
+Disse ændringer kræver:
 
-Dette gælder for:
+nye dokumenter
 
-hoveddialog
+eksplicit governance
 
-preprocessing
+versionsmæssige commitpoints
 
-postprocessing
+11. Prompt-ændringer som eksperimenter
 
-analyse
+Ændringer i prompts betragtes som:
+
+eksperimenter
+
+hypoteser
+
+design-afprøvninger
+
+Effekten vurderes via:
+
+logs
 
 replay
 
-7. Designrationale
+sammenlignende analyse
 
-Antallet af roller og boards er bevidst lavt for at:
+Ikke via:
 
-undgå semantisk overlap
+intuition alene
 
-bevare sporbarhed
+“bedre svar”
 
-muliggøre kvalitativ log-analyse
+kortsigtet tilfredshed
 
-forhindre skjult metodebrug
+Dette muliggør langsigtet kvalitativ forbedring.
 
-RMRC optimerer for:
+12. Relation til øvrige dokumenter
 
-forudsigelighed
+DOC 1 → Arkitektur og ontologi
 
-gennemsigtighed
+DOC 2 → Roller og boards
 
-relationel ansvarlighed
-
-Ikke for:
-
-dækning
-
-effektivitet
-
-problemløsning
-
-8. Relation til øvrige dokumenter
-
-DOC 1 → Ontologi og arkitektur
-
-DOC 3 → Prompt- og konfigurationsstyring
-
-DOC 4 → Logging, replay og governance
+DOC 4 → Logging, replay og læring
 
 DOC 5 → Menneskelig og erkendelsesmæssig ramme
 
-DOC 2 definerer hvem der taler og hvorfra – ikke hvordan og hvorfor.
+DOC 3 forbinder arkitektur og adfærd uden at blande dem.
 
-9. Afsluttende bemærkning
+13. Afsluttende bemærkning
 
-DOC 2 fastlåser RMRC’s strukturelle stemmer.
+DOC 3 gør RMRC styrbart.
 
-Det er lettere at tilføje nye boards senere
-end at fjerne autoritet, når den først er introduceret.
+Ikke ved at gøre systemet “klogere”,
+men ved at gøre det gennemsigtigt, analysebart og ansvarligt.
 
-DOC 2 er nu klar til at blive gemt som autoritativt dokument.
+Når adfærd er eksplicit, kan den:
+
+diskuteres
+
+kritiseres
+
+forbedres
+
+rulles tilbage
+
+Det er forudsætningen for tillid – både teknisk og menneskelig.
+
+DOC 3 er nu klar til at blive gemt som autoritativt dokument.
