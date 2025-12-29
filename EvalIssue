@@ -1,7 +1,0 @@
-export type EvalIssue = {
-  code: string;                 // fx "REPEATED_CLOSING"
-  level: "info" | "warning" | "error";
-  message: string;
-  turnIndex?: number;
-};
-
