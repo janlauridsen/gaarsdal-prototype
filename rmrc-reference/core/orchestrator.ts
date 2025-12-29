@@ -67,7 +67,7 @@ export class Orchestrator {
         if (!userInput) continue;
 
         const promptId = `${roleId}_v1`;
-        const prompt = loadPrompt(promptId);
+        const prompt = await loadPrompt(promptId);
 
         const result = await invokeAI({
           prompt,
