@@ -1,51 +1,57 @@
 /**
  * RMRC Role Registry
  *
- * This file declares all roles known to the RMRC system.
- * It contains data only — no logic, no imports, no side effects.
+ * Declares all roles as structural contracts.
+ * Roles do not contain prompts, logic, or state.
  */
-
-export type RoleStatus = "active" | "deprecated";
 
 export interface RoleDefinition {
   roleId: string;
   boardId: string;
-  purpose: string;
-  status: RoleStatus;
+  notes?: string;
 }
 
-/**
- * Canonical role registry
- */
 export const roles: RoleDefinition[] = [
   {
     roleId: "mirror",
     boardId: "reflective",
-    purpose: "Neutral reflection of the user's expression without interpretation or guidance.",
-    status: "active",
+    notes:
+      "Neutral mirroring of the user's current expression."
   },
   {
     roleId: "context_holder",
     boardId: "reflective",
-    purpose: "Holding continuity across turns without structuring, concluding, or elevating meaning.",
-    status: "active",
-  },
-  {
-    roleId: "boundary_guardian",
-    boardId: "boundary",
-    purpose: "Protecting ethical and relational boundaries without explanation or authority.",
-    status: "active",
-  },
-  {
-    roleId: "authority_diffuser",
-    boardId: "boundary",
-    purpose: "Dissolving perceived authority or dependency attributed to the system.",
-    status: "active",
+    notes:
+      "Maintains continuity across turns. Silent in first turn."
   },
   {
     roleId: "dialog_navigator",
     boardId: "navigation",
-    purpose: "Offering light invitations for movement without directing or prioritizing.",
-    status: "active",
+    notes:
+      "Offers a single open invitation when reflection already carries the dialogue."
   },
+  {
+    roleId: "boundary_guardian",
+    boardId: "boundary",
+    notes:
+      "Detects and enforces ethical and relational boundaries."
+  },
+  {
+    roleId: "authority_diffuser",
+    boardId: "boundary",
+    notes:
+      "Diffuses inappropriate authority attribution."
+  },
+  {
+    roleId: "user_perspective_evaluator",
+    boardId: "meta",
+    notes:
+      "Observer-only. Assesses perceived meaningfulness (metadata only)."
+  },
+  {
+    roleId: "latent_question_hypothesizer",
+    boardId: "meta",
+    notes:
+      "Observer-only. Hypothesizes unarticulated questions (internal only)."
+  }
 ];
