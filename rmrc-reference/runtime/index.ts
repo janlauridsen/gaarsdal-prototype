@@ -2,17 +2,25 @@ import { Logger } from "../logs/logger";
 import { Orchestrator } from "../core/orchestrator";
 import { Session } from "./session";
 
-const logger = new Logger();
-const orchestrator = new Orchestrator(logger);
+async function run() {
+  const logger = new Logger();
+  const orchestrator = new Orchestrator(logger);
 
-const session = new Session(
-  "reflective_minimal",
-  orchestrator,
-  logger
-);
+  const session = new Session(
+    "reflective_minimal",
+    orchestrator,
+    logger
+  );
 
-// Simulated input
-const output = session.handleInput("I feel stuck lately");
+  const output = await session.handleInput(
+    "Jeg føler mig lidt fastlåst for tiden"
+  );
 
-console.log("OUTPUT:", output);
-console.log("LOGS:", logger.getEvents());
+  console.log("OUTPUT:");
+  console.log(output);
+
+  console.log("\nLOGS:");
+  console.log(logger.getEvents());
+}
+
+run();
