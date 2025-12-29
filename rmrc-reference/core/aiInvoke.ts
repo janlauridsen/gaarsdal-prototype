@@ -1,9 +1,3 @@
-import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export interface AIInvokeParams {
   prompt: string;
   userInput: string;
@@ -13,21 +7,22 @@ export interface AIInvokeResult {
   output: string | null;
 }
 
+/**
+ * AI invocation stub.
+ *
+ * This implementation is intentionally SDK-free
+ * to keep builds stable and architecture isolated.
+ *
+ * A real AI provider is introduced later via
+ * a separate integration layer or branch.
+ */
 export async function invokeAI(
   params: AIInvokeParams
 ): Promise<AIInvokeResult> {
-  const response = await client.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      { role: "system", content: params.prompt },
-      { role: "user", content: params.userInput },
-    ],
-    temperature: 0.3,
-  });
-
-  const text = response.choices[0]?.message?.content?.trim();
-
+  // Minimal placeholder behavior for build stability
   return {
-    output: text || null,
+    output: params.userInput
+      ? `(${params.userInput})`
+      : null,
   };
 }
