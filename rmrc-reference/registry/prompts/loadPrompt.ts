@@ -1,6 +1,10 @@
 export async function loadPrompt(promptId: string): Promise<string> {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    "http://localhost:3000";
+
   const res = await fetch(
-    `/prompts/${promptId}.prompt.txt`
+    `${baseUrl}/prompts/${promptId}.prompt.txt`
   );
 
   if (!res.ok) {
@@ -9,3 +13,4 @@ export async function loadPrompt(promptId: string): Promise<string> {
 
   return res.text();
 }
+
