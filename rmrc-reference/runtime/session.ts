@@ -16,13 +16,15 @@ export class Session {
     input: string | null
   ): Promise<string | null> {
     this.turnIndex++;
+
     this.logger.log("turn_index", {
       turnIndex: this.turnIndex,
     });
 
     return this.orchestrator.runTurn(
       this.profileId,
-      input
+      input,
+      this.turnIndex
     );
   }
 
