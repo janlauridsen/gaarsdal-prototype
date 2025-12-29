@@ -1,194 +1,339 @@
-RMRC · Fractal Board Architecture
+📄 DOC 1 — RMRC · Fractal Board Architecture
 
-A Non-Agentic, Reflective AI System Design
+Subtitle: A Non-Agentic, Reflective AI System Design
+
+Status
+
+Autoritativt anker-dokument.
+DOC 1 definerer RMRC’s ontologi, arkitektur og mentale model.
+
+Hvis der opstår konflikt mellem kode og dokumentation, har dette dokument forrang.
 
 1. Executive Intent
+Hvad RMRC er – og ikke er
 
-RMRC (Reflective Multi-Role Chat Architecture) er et ikke-agentisk, ikke-autoritativt refleksionssystem, designet til at understøtte menneskelig afklaring gennem struktureret dialog.
+RMRC (Reflective Multi-Role Chat Architecture) er:
 
-Systemet er bevidst designet til ikke at:
+ét sammenhængende system
 
-diagnosticere
+ét refleksionsrum pr. session
 
-rådgive
+et non-agentic AI-system
 
-forklare årsager
+et refleksivt system, ikke et problemløsningssystem
 
-foreslå handlinger
+RMRC er designet til at:
 
-optimere mod mål
+holde og strukturere refleksion
 
-RMRC konkurrerer ikke med brugerens forståelse.
-Det forsøger heller ikke at erstatte menneskelig relation.
+understøtte menneskelig erkendelse
 
-Det fungerer som et resonans- og refleksionsrum, konstrueret gennem arkitektoniske begrænsninger.
+gøre dialog analysebar og styrbar
 
-2. Grundantagelser og Designprincipper
+bevare tvetydighed uden at opløse ansvar
 
-RMRC bygger på følgende antagelser:
-
-Sprog former oplevelse, også uden intention
-
-Ikke-intervention er aldrig neutral
-
-Begrænsning er en aktiv designhandling
-
-Tydelige strukturer reducerer uønsket emergens
-
-Centrale principper:
-
-Non-agentic design: systemet har ingen egne mål
-
-Stateless roller: ingen intern hukommelse per rolle
-
-Kontrakt frem for heuristik
-
-Auditérbarhed før intelligens
-
-Forklarlighed før fleksibilitet
-
-3. Fraktal Arkitektur
-
-RMRC er bygget som en fraktal arkitektur.
-
-Det betyder:
-
-Systemet består af gentagende strukturer
-
-Hver struktur følger samme grundmønster
-
-Del og helhed kan forstås med samme begreber
-
-En fraktal i RMRC består af:
-
-et afgrænset meningsrum
-
-et fast sæt roller
-
-klare ind- og udgange
-
-eksplicitte begrænsninger
-
-Denne gentagelse gør systemet:
-
-lettere at teste
-
-lettere at analysere
-
-lettere at ændre uden kollaps
-
-4. Bord-analogien
-
-Den centrale fraktal i RMRC er bordet (board).
-
-Et board er:
-
-et midlertidigt refleksionsrum
-
-hvor flere roller “sidder ved samme bord”
-
-og responderer på samme input
-
-Roller kommunikerer ikke med hinanden.
-De producerer parallelle bidrag inden for samme ramme.
-
-Et board:
-
-definerer hvilke roller der er aktive
-
-definerer hvilken type mening der arbejdes med
-
-sætter grænser for, hvad der må ske
-
-5. Roller, Lag og Boards
-
-Roller: Perspektiver med meget snævert mandat
-
-Boards: Samlinger af roller i et fælles meningsrum
-
-Lag: Strukturelle faser (fx konsolidering, linting)
-
-Roller er indholdsskabende.
-Lag er strukturelle og begrænsende.
-
-Ingen rolle:
-
-ser helheden
-
-kender brugerens “sandhed”
-
-træffer beslutninger
-
-6. AI-kaldets Rolle
-
-Et AI-kald i RMRC repræsenterer ikke:
+RMRC er ikke:
 
 en agent
 
-en persona
+en terapeut
 
-en intention
+en rådgiver
 
-Det repræsenterer:
+et diagnosesystem
 
-en formel sproglig transformation
+et adaptivt lærende system i runtime
 
-udført under stramme kontrakter
+Systemet træffer ingen beslutninger på brugerens vegne og har ingen egen agenda.
 
-AI simulerer kode, ikke omvendt.
-Kreativitet er tilladt — men kun inden for kontrakten.
+2. Grundantagelser og designprincipper
 
-7. Hvad Systemet Eksplicit Ikke Gør
+RMRC bygger på følgende grundantagelser:
 
-RMRC:
+Erkendelse opstår gennem gentagelse og omformulering, ikke gennem svar
 
-evaluerer ikke brugerens mentaltilstand
+Menneskelig forståelse er ikke lineær, men cirkulær (hermeneutisk)
 
-tilpasser sig ikke dynamisk over tid
+Struktur er en forudsætning for fri refleksion, ikke en begrænsning
+
+Governance er vigtigere end adaptiv intelligens
+
+Sporbarhed er vigtigere end effektivitet
+
+Disse antagelser gennemsyrer hele arkitekturen.
+
+3. RMRC som refleksionssystem
+
+RMRC’s “intelligens” består ikke i at:
+
+analysere problemer
+
+foreslå løsninger
+
+optimere udfald
+
+RMRC’s intelligens består i at:
+
+fastholde meningsrum
+
+gentage refleksion strukturelt
+
+holde dialogen åben uden at drive den
+
+Systemet understøtter erkendelse ved at:
+
+lade perspektiver gentage sig
+
+lade stilhed være et gyldigt udfald
+
+tillade bevægelse uden mål
+
+Dette adskiller RMRC fra både:
+
+klassiske chatbots
+
+agent-baserede AI-systemer
+
+beslutningsstøttesystemer
+
+4. Fraktal arkitektur
+Systemet som gentagende struktur
+
+RMRC er fraktalt opbygget.
+
+Det betyder, at:
+
+den samme strukturelle logik gentager sig på alle niveauer
+
+der ikke findes et “særligt” lag med mere intelligens end andre
+
+analyse, preprocessing, runtime og replay deler samme arkitektur
+
+Fraktaliteten gør systemet:
+
+forståeligt
+
+skalerbart
+
+analysebart
+
+genskabeligt i nye kontekster
+
+5. Bord-analogien
+Boards som meningsrum
+
+Kernen i RMRC er board-begrebet.
+
+Et board er:
+
+et afgrænset meningsrum
+
+med faste regler og begrænsninger
+
+hvor refleksion kan foregå uden at blive reduceret
+
+Boards:
+
+ejer rammen, ikke indholdet
+
+har ingen intelligens
+
+træffer ingen beslutninger
+
+Boards definerer:
+
+hvilken type refleksion der er tilladt
+
+hvad der er forbudt
+
+hvordan roller aktiveres
+
+Bord-analogien understreger, at:
+
+“Det er rammen, der muliggør samtalen – ikke deltagerne alene.”
+
+6. Roller, lag og boards
+Strukturel adskillelse
+
+RMRC adskiller eksplicit mellem:
+
+Boards → meningsrum
+
+Roller → snævre perspektiver
+
+Lag → systemiske funktioner (runtime, logging, analyse)
+
+Ingen af disse må sammenblandes.
+
+Roller
+
+er stateless
+
+er non-agentic
+
+har ingen autoritet
+
+ser ikke hinandens output
+
+eksisterer kun inden for et board
+
+Lag
+
+organiserer systemets funktion
+
+er ikke refleksive i sig selv
+
+må ikke indeholde adfærd
+
+Denne adskillelse er afgørende for:
+
+governance
+
+audit
+
+fremtidig udvidelse uden kaos
+
+7. AI-kaldets rolle i arkitekturen
+
+AI-kaldet er sekundært i RMRC.
+
+AI anvendes til:
+
+at generere tekst inden for stramme rammer
+
+at bære sproglig refleksion
+
+at tilbyde perspektiver uden autoritet
+
+AI:
+
+styrer ikke systemet
+
+beslutter ikke flow
+
+har ingen hukommelse
 
 lærer ikke i runtime
 
-akkumulerer ikke psykologiske modeller
+Al AI-adfærd styres:
 
-søger ikke at “hjælpe” i traditionel forstand
+via konfiguration
+
+via prompts
+
+via governance udenfor drift
+
+8. Hermeneutik og refleksion over tid
+
+RMRC er inspireret af den hermeneutiske cirkel:
+
+forståelse → formulering → ny forståelse
+
+Denne cirkel:
+
+lukkes aldrig af systemet
+
+kan gentages over mange turns
+
+kan rumme stilhed og pauser
+
+Systemets fraktale struktur gør det muligt at:
+
+gentage refleksion uden eskalation
+
+bevare kontekst uden at akkumulere viden
+
+analysere refleksion retrospektivt via logs
+
+9. Hvad systemet eksplicit ikke gør
+
+RMRC:
+
+giver ikke råd
+
+forklarer ikke årsager
+
+vurderer ikke rigtighed
+
+vurderer ikke effekt
+
+diagnosticerer ikke
+
+behandler ikke
+
+optimerer ikke brugeradfærd
 
 Hvis noget af dette ønskes, kræver det:
 
-nye boards
+nyt board
 
-nye kontrakter
+nye roller
 
-eksplicit designbeslutning
+nyt dokument
 
-8. Konsekvenser for Implementering
+eksplicit governance-beslutning
 
-Denne arkitektur indebærer:
+10. Konsekvenser for implementering, test og governance
 
-Central konfiguration frem for spredt kode
+Denne arkitektur indebærer, at:
 
-Prompt-styring som data, ikke logik
+kode er sekundær i prototypefasen
 
-Logging som primær feedback-mekanisme
+konfiguration har forrang over implementering
 
-Test via replay, ikke live-tilpasning
+logging er strukturel sandhed
 
-Kompleksitet flyttes:
+læring sker udenfor runtime
 
-væk fra runtime
+ændringer er langsomme og bevidste
 
-hen imod design, dokumentation og analyse
+RMRC optimerer for:
 
-9. Læsevejledning
+forudsigelighed
 
-Dette dokument forklarer hvad RMRC er.
+gennemsigtighed
 
-For detaljer om:
+relationel ansvarlighed
 
-konkrete roller → se DOC 2
+Ikke for:
 
-AI-prompts og konfiguration → se DOC 3
+effektivitet
 
-logging, replay og læring → se DOC 4
+dækning
 
-Dette dokument ændres sjældent.
-Ændringer her er arkitektoniske skift.
+problemløsning
+
+11. Læsevejledning og relation til øvrige dokumenter
+
+DOC 1 definerer hvad RMRC er.
+
+De øvrige dokumenter uddyber:
+
+DOC 2 — hvilke roller og boards der findes
+
+DOC 3 — hvordan AI-adfærd styres uden kode
+
+DOC 4 — hvordan systemet logger, analyseres og udvikles
+
+DOC 5 — hvordan systemet møder menneskelig erkendelse
+
+Tilsammen udgør DOC 1–5 RMRC’s autoritative sandhed.
+
+12. Afsluttende bemærkning
+
+DOC 1 er bevidst arkitektonisk og abstrakt.
+
+Ikke for at være fjern,
+men for at sikre, at RMRC kan:
+
+forstås
+
+genopbygges
+
+kritiseres
+
+videreudvikles
+
+uden at miste sit grundlæggende formål.
+
+DOC 1 er nu klar til at blive gemt som autoritativt anker-dokument.
