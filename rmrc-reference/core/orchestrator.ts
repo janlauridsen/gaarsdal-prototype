@@ -3,8 +3,6 @@ import { runtimeProfiles } from "../registry/runtime-profiles/profiles";
 import { Logger } from "../logs/logger";
 import { invokeAI } from "./aiInvoke";
 import { loadPrompt } from "../registry/prompts/loadPrompt";
-import { shouldTriggerBoundary } from "./boundaryTrigger";
-import { shouldDiffuseAuthority } from "./authorityTrigger";
 
 export class Orchestrator {
   constructor(private logger: Logger) {}
@@ -36,14 +34,8 @@ export class Orchestrator {
         profile.enabledRoles.includes(roleId)
       );
 
-      const boundaryTriggered =
-        userInput !== null && shouldTriggerBoundary(userInput);
-
-      const authorityTriggered =
-        userInput !== null && shouldDiffuseAuthority(userInput);
-
       for (const roleId of activeRoles) {
-        // 🔑 Context Holder is silent in first turn
+        // DOC 5: Context Holder is silent in first turn
         if (roleId === "context_holder" && turnIndex < 2) {
           this.logger.log("role_skipped", {
             roleId,
@@ -53,40 +45,30 @@ export class Orchestrator {
           continue;
         }
 
+        // DOC 5: Dialog Navigator never runs in turn 1
+        if (roleId === "dialog_navigator" && turnIndex < 2) {
+          this.logger.log("role_skipped", {
+            roleId,
+            reason: "navigation_not_allowed_in_turn_1",
+            turnIndex,
+          });
+          continue;
+        }
+
         this.logger.log("role_invoked", { roleId });
 
         if (!userInput) continue;
 
-        if (roleId === "mirror") {
-          const prompt = loadPrompt("mirror_v1");
-          const result = await invokeAI({ prompt, userInput });
-          if (result.output) outputs.push(result.output);
-        }
+        const promptId = `${roleId}_v1`;
+        const prompt = loadPrompt(promptId);
 
-        if (roleId === "context_holder") {
-          const prompt = loadPrompt("context_holder_v1");
-          const result = await invokeAI({ prompt, userInput });
-          if (result.output) outputs.push(result.output);
-        }
+        const result = await invokeAI({
+          prompt,
+          userInput,
+        });
 
-        if (
-          roleId === "boundary_guardian" &&
-          boundaryTriggered
-        ) {
-          const prompt = loadPrompt("boundary_guardian_v1");
-          const result = await invokeAI({ prompt, userInput });
-          if (result.output) outputs.push(result.output);
-          continue;
-        }
-
-        if (
-          roleId === "authority_diffuser" &&
-          authorityTriggered &&
-          !boundaryTriggered
-        ) {
-          const prompt = loadPrompt("authority_diffuser_v1");
-          const result = await invokeAI({ prompt, userInput });
-          if (result.output) outputs.push(result.output);
+        if (result?.output) {
+          outputs.push(result.output);
         }
       }
     }
@@ -96,13 +78,11 @@ export class Orchestrator {
       return null;
     }
 
-    const finalOutput = outputs[0];
-
-    this.logger.log("output_consolidated", {
-      strategy: "first_non_empty",
-      candidateCount: outputs.length,
+    this.logger.log("output_emitted", {
+      roleCount: outputs.length,
     });
 
-    return finalOutput;
+    // DOC 5: No semantic prioritization
+    return outputs.join("\n");
   }
 }
