@@ -1,9 +1,10 @@
 /**
  * RMRC Runtime Profile Registry
  *
- * This file declares runtime profiles used to configure
- * which boards and roles are active during a session.
- * It contains data only — no logic, no imports.
+ * Declares which boards and roles are enabled
+ * for a given runtime configuration.
+ *
+ * Data only — no logic.
  */
 
 export interface RuntimeProfile {
@@ -13,16 +14,16 @@ export interface RuntimeProfile {
   notes?: string;
 }
 
-/**
- * Canonical runtime profiles
- */
 export const runtimeProfiles: RuntimeProfile[] = [
   {
     profileId: "reflective_minimal",
     enabledBoards: ["reflective"],
-    enabledRoles: ["mirror", "context_holder"],
+    enabledRoles: [
+      "mirror",
+      "context_holder"
+    ],
     notes:
-      "Minimal reflective profile focused purely on mirroring and contextual holding.",
+      "Pure reflective profile. No navigation, no boundaries."
   },
   {
     profileId: "reflective_with_boundaries",
@@ -31,10 +32,10 @@ export const runtimeProfiles: RuntimeProfile[] = [
       "mirror",
       "context_holder",
       "boundary_guardian",
-      "authority_diffuser",
+      "authority_diffuser"
     ],
     notes:
-      "Reflective profile with ethical and relational boundary protection enabled.",
+      "Reflective dialogue with ethical and relational protection."
   },
   {
     profileId: "full_reflective_navigation",
@@ -44,9 +45,9 @@ export const runtimeProfiles: RuntimeProfile[] = [
       "context_holder",
       "boundary_guardian",
       "authority_diffuser",
-      "dialog_navigator",
+      "dialog_navigator"
     ],
     notes:
-      "Full reflective profile with optional navigation support for gentle movement.",
-  },
+      "Full reflective experience with rare, optional navigation."
+  }
 ];
