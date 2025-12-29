@@ -27,8 +27,10 @@ export class Orchestrator {
     for (const boardId of profile.enabledBoards) {
       const board = boards.find((b) => b.boardId === boardId);
       if (!board) continue;
-
-      this.logger.log("board_activated", { boardId });
+        this.logger.log("board_activated", {
+        boardId,
+        turnIndex,
+      });
 
       const activeRoles = board.allowedRoles.filter((roleId) =>
         profile.enabledRoles.includes(roleId)
@@ -79,7 +81,10 @@ export class Orchestrator {
     }
 
     if (outputs.length === 0) {
-      this.logger.log("silence_emitted");
+      this.logger.log("silence_emitted", {
+      turnIndex,
+    });
+
       return null;
     }
 
