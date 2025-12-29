@@ -8,11 +8,9 @@ import path from "path";
 
 export function loadPrompt(promptId: string): string {
   const filePath = path.join(
-    process.cwd(),
-    "registry",
-    "prompts",
-    `${promptId}.prompt.txt`
-  );
+   __dirname,
+   `${promptId}.prompt.txt`
+   );
 
   if (!fs.existsSync(filePath)) {
     throw new Error(`Prompt not found: ${promptId}`);
