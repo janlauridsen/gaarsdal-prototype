@@ -2,46 +2,47 @@
 
 Subtitle: Auditability Without Adaptive Drift
 
-Status
-
-Autoritativt arkitektur- og governance-dokument.
-DOC 4 definerer RMRC’s logging-, replay- og analysemodel som et ikke-adaptivt, revisionsklart subsystem.
-
-Hvis der opstår konflikt mellem kode og dokumentation, har dette dokument forrang.
-
 1. Formål
 
-Formålet med DOC 4 er at sikre, at RMRC:
+Dette dokument fastlægger RMRC’s logging-, replay- og analysemodel som et ikke-adaptivt, revisionsklart subsystem.
 
-kan observeres uden at ændre sig
+DOC 4 definerer:
 
-kan analyseres uden at lære i runtime
+hvad systemet logger
 
-kan forbedres uden skjult drift
+hvad systemet eksplicit ikke logger
 
-kan genskabes og revideres over tid
+hvordan data bruges til analyse og iteration
+
+hvordan AI kan inddrages uden at påvirke runtime
+
+hvordan læring sker uden adaptiv drift
 
 Logs er sandhed, ikke feedback.
-Læring er beslutning, ikke automatisme.
 
-2. Grundprincip: Strikt lagadskillelse
+Hvis der opstår konflikt mellem:
 
-RMRC adskiller konsekvent mellem følgende lag:
+runtime-adfærd og logs
+👉 har logs forrang som observationsgrundlag
+
+2. Grundlæggende adskillelse af lag
+
+RMRC adskiller strengt mellem følgende lag:
 
 Lag	Funktion
-Runtime	Fører dialog
+Runtime	Afvikler dialog
 Logging	Registrerer strukturelle fakta
-Analyse	Fortolker mønstre
-Governance	Træffer ændringsbeslutninger
+Analyse	Fortolker logs
+Governance	Træffer beslutninger
 
-Ingen information flyder opad i runtime.
-Ingen analyse påvirker systemets adfærd direkte.
+Ingen læring sker i runtime.
+Al forbedring sker uden for drift.
 
-3. Hvad er en log i RMRC?
+3. Hvad en log er i RMRC
 
 En RMRC-log er:
 
-strukturel
+strukturel (ikke semantisk)
 
 deterministisk
 
@@ -49,15 +50,13 @@ ikke-fortolkende
 
 tidsbundet
 
-versionsrefererende
+append-only
 
-Logs beskriver hvad systemet gjorde, ikke:
+Logs beskriver:
 
+hvad systemet gjorde
+ikke:
 hvorfor det gjorde det
-
-om det var rigtigt
-
-om det var hjælpsomt
 
 Logs må:
 
@@ -67,26 +66,23 @@ analyseres
 
 genafspilles
 
-Logs må ikke:
+sammenlignes
+
+Logs må aldrig:
 
 ændre systemets adfærd
 
-akkumulere viden
+akkumulere viden i runtime
 
-fungere som hukommelse
+fungere som implicit hukommelse
 
-indgå i runtime-beslutninger
-
-4. Kanoniske log-niveauer
+4. Log-niveauer (kanonisk)
 
 RMRC logger på fire faste niveauer.
-Disse niveauer må udvides, men aldrig ændres i betydning.
 
 4.1 Session-niveau
 
-Logger konteksten for en samlet kørsel.
-
-Eksempler på felter
+Logger:
 
 sessionId
 
@@ -96,25 +92,16 @@ configVersion
 
 startTimestamp
 
-stopTimestamp
+endTimestamp
 
 stopReason
 
 Formål
-
-At kunne fastslå:
-
-hvad der kørte
-
-hvornår
-
-under hvilke betingelser
+At fastslå hvad der kørte, hvornår og under hvilke rammer.
 
 4.2 Turn-niveau
 
-Logger dialogens rytme.
-
-Eksempler på felter
+Logger:
 
 turnIndex
 
@@ -122,259 +109,146 @@ userInputPresent
 
 systemOutputEmitted
 
-stopTriggered
+silenceEmitted
 
 Formål
+At analysere dialogens rytme, tempo og pauser.
 
-At analysere:
+4.3 Role-invokation
 
-tempo
-
-pauser
-
-gentagelse
-
-stilhed som aktivt valg
-
-4.3 Rolle-invokation
-
-Logger strukturel deltagelse – ikke indhold.
-
-Eksempler på felter
+Logger:
 
 roleId
 
 boardId
 
-activated (true/false)
+promptId
 
-producedOutput (true/false)
+promptVersion
 
-Formål
+activated
 
-At kunne se:
-
-hvilke perspektiver var aktive
-
-hvornår de var aktive
-
-om systemet “gjorde for meget / for lidt”
-
-4.4 Lag-events
-
-Logger systemets interne kontrolflow.
-
-Eksempler på events
-
-boardActivated
-
-boundaryTriggered
-
-lintingApplied
-
-outputSuppressed
-
-transitionOccurred
+producedOutput (boolean)
 
 Formål
+At dokumentere hvilke perspektiver var aktive, uden at kende deres indhold.
 
-At gøre systemets styring synlig
+4.4 Layer-events
 
-At muliggøre audit og replay
+Logger:
+
+layerId
+
+eventType
+
+metadata (strukturel)
+
+Formål
+At spore systemets kontrolflow:
+
+konsolidering
+
+linting
+
+legitimitetskontrol
+
+stop-signaler
 
 5. Hvad der eksplicit ikke logges
 
 RMRC logger aldrig:
 
-prompt-tekst
-
 brugerens rå tekst
 
-AI’ens fulde svar (medmindre eksplicit konfigureret til analyse)
+AI’ens fulde output (medmindre eksplicit aktiveret i særskilt analyse-mode)
 
-fortolkninger
+prompt-tekst
 
 psykologiske vurderinger
 
-score, kvalitetstal eller ratings
+fortolkninger
 
-skjulte heuristikker
+score, rating eller kvalitetsmål
 
 Logs er epistemisk beskedne.
 
-6. Dialogkvalitet som analyseobjekt
-
-RMRC analyserer dialogkvalitet, ikke dialogindhold.
-
-Dialogkvalitet forstås som strukturelle fænomener såsom:
-
-rytme og puls
-
-gentagelse vs. variation
-
-pauser og stilhed
-
-eskalering eller afspænding
-
-board-skift og overgangstæthed
-
-Disse fænomener:
-
-kan ses i logs
-
-kan analyseres retrospektivt
-
-kan sammenlignes på tværs af sessions
-
-De må aldrig:
-
-bruges til scoring
-
-bruges til optimering i runtime
-
-bruges som feedback til systemet
-
-7. Fastlåsnings-analyse (uden intervention)
-
-RMRC anerkender, at fastlåsning kan opstå som:
-
-cirkulation uden ny formulering
-
-stigende kompleksitet uden klarhed
-
-gentagne roller uden ændret rytme
-
-langvarig stilhed uden skift
-
-Fastlåsning:
-
-er ikke en fejl
-
-er ikke nødvendigvis uønsket
-
-må ikke “løses” automatisk
-
-Fastlåsning kan:
-
-observeres i logs
-
-analyseres i governance-laget
-
-informere fremtidige justeringer
-
-Men:
-
-aldrig udløse runtime-handling
-
-8. Erkendelsessignaler (indikatorer, ikke beviser)
-
-RMRC kan retrospektivt analysere strukturelle indikatorer på erkendelse, fx:
-
-ændret dialogrytme
-
-færre ord, større klarhed
-
-ophør af gentagelse
-
-længere pauser
-
-afslutning uden pres
-
-Disse er:
-
-ikke beviser
-
-ikke mål
-
-ikke succes-kriterier
-
-De bruges udelukkende til:
-
-kvalitativ forståelse
-
-designrefleksion
-
-governance-beslutninger
-
-9. Replay: Hvad betyder det i RMRC?
+6. Replay-begrebet
 
 Replay i RMRC betyder:
 
 At genafspille et tidligere forløb
-med samme struktur
-under kontrollerede variationer.
+med samme strukturelle ramme
+og kontrollerede variationer.
 
 Replay ændrer aldrig den oprindelige log.
 
-9.1 Struktur-replay
+7. Typer af replay
+7.1 Struktur-replay
 
-Samme turn-flow
+samme session-log
 
-Samme boards og roller
+samme boards
 
-Ingen AI-kald
+samme roller
+
+ingen AI-kald
 
 Formål
+At validere determinisme og arkitektonisk konsistens.
 
-At teste determinisme
+7.2 Prompt-replay
 
-At validere arkitekturens konsistens
+samme session-log
 
-9.2 Prompt-replay
-
-Samme session-log
-
-Ny promptVersion
+ændret promptVersion
 
 AI genererer nyt output
 
 Formål
+At isolere adfærdsændringer til prompt-niveau.
 
-At isolere adfærdsændringer
+7.3 Board-replay
 
-At sammenligne versioner kvalitativt
+samme session
 
-9.3 Board-replay
-
-Samme session
-
-Ændret board-konfiguration
+ændret board- eller role-aktivering
 
 Formål
+At teste arkitektoniske ændringer uden drift.
 
-At teste arkitektoniske ændringer
+8. AI-assisteret analyse (uden runtime-effekt)
 
-At vurdere oplevelsesmæssige konsekvenser
+AI-assistenter må bruges til at:
 
-10. AI-assisteret analyse (uden runtime-effekt)
-
-AI (fx ChatGPT) må bruges til at:
-
-analysere log-filer
+analysere logfiler
 
 identificere mønstre
 
-formulere hypoteser
-
 foreslå ændringer
 
-simulere alternative opsætninger
+generere hypotese-tests
 
-Men:
+sammenligne sessioner
 
-AI må ikke skrive direkte til runtime
+AI-assistenter må ikke:
 
-AI må ikke ændre konfiguration
+skrive direkte til runtime
 
-AI-output er altid forslag
+ændre konfiguration
 
-Dette bevarer menneskelig governance.
+aktivere roller
 
-11. Bias- og drift-beskyttelse
+påvirke næste session automatisk
+
+AI-output er altid forslag, aldrig handling.
+
+Dette sikrer menneskelig governance.
+
+9. Bias- og drift-beskyttelse
 
 For at forhindre akkumulativ bias:
 
-logs slettes ikke
+logs slettes aldrig
 
 analyser versionsmærkes
 
@@ -382,10 +256,12 @@ prompt-ændringer spores eksplicit
 
 ingen statistik fødes tilbage til runtime
 
-RMRC kan blive klogere –
-men kun gennem beslutninger, ikke drift.
+RMRC kan blive klogere
+men kun gennem beslutninger, ikke gennem drift.
 
-12. Det formelle governance-loop
+10. Governance-loop (formelt)
+
+Den formelle forbedringscyklus er:
 
 Sessioner køres
 
@@ -395,47 +271,63 @@ Analyse foretages (evt. AI-assisteret)
 
 Ændringer foreslås
 
-Ændringer vurderes
+Ændringer vurderes op imod DOC 1–5
 
-Nyt commit-point oprettes
+Nyt commitpoint oprettes
 
 Nyt runtime testes
 
-Dette loop er bevidst langsomt.
+Loopet er bevidst langsomt.
 
-13. Relation til øvrige dokumenter
+11. Logs som datagrundlag for fremtidig funktionalitet
 
-DOC 1 → Arkitektur og ontologi
+Logs betragtes som:
 
-DOC 2 → Roller og boards
+systemets primære datakilde
 
-DOC 3 → Prompt-styring
+grundlag for scripts og visualisering
 
-DOC 5 → Menneskelig og erkendelsesmæssig ramme
+input til senere AI-analyse
 
-DOC 4 definerer hvordan RMRC husker – uden at lære.
+fundament for simpelt UI
 
-14. Afsluttende bemærkning
+UI og tooling er:
 
-DOC 4 eksisterer for at forhindre:
+sekundære
+
+udskiftelige
+
+ikke bærende for systemets sandhed
+
+12. Designrationale
+
+Dette lag eksisterer for at forhindre:
 
 skjult læring
 
-uigennemsigtig forbedring
+uigennemsigtig optimering
 
 “smart” men uforklarlig adfærd
 
-et system ingen kan forklare
+systemer ingen kan forklare eller vedligeholde
 
 RMRC vælger:
 
-revision frem for optimering
+revision frem for adaptiv optimering
 
-governance frem for autonomi
+transparens frem for autonomi
 
-forståelse frem for fart
+ansvarlighed frem for effektivitet
 
-DOC 4 er nu klar til at blive gemt som autoritativt dokument.
-UDVIKLERTILSTAND
+13. Relation til øvrige dokumenter
 
-ChatGPT
+Arkitektur → DOC 1
+
+Roller & boards → DOC 2
+
+Prompt-strategi → DOC 3
+
+Menneskeligt grundlag → DOC 5
+
+DOC 4 lukker cirklen.
+RMRC lærer – men kun uden for drift.
