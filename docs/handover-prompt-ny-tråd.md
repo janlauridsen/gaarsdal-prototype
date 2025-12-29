@@ -1,4 +1,4 @@
-🔁 RMRC · Handover Prompt (Authoritative)
+ ha🔁 RMRC · Handover Prompt (Authoritative)
 
 Formål:
 At genstarte arbejdet i en ny tråd med fuld arkitektonisk kontekst, stabil begrebsramme og uden afhængighed af tidligere dialog.
