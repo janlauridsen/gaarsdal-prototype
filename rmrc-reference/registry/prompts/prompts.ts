@@ -1,10 +1,3 @@
-/**
- * RMRC Prompt Registry (Metadata)
- *
- * This file declares all prompts known to the RMRC system.
- * It contains metadata only — no prompt text, no logic.
- */
-
 export type PromptStatus = "active" | "archived";
 
 export interface PromptDefinition {
@@ -15,14 +8,11 @@ export interface PromptDefinition {
   status: PromptStatus;
 }
 
-/**
- * Canonical prompt registry (metadata only)
- */
 export const prompts: PromptDefinition[] = [
   {
     promptId: "mirror_v1",
     roleId: "mirror",
-    version: "1.0.0",
+    version: "1.0.1",
     intent: "Neutral reflective mirroring of the user's expression without interpretation or guidance.",
     status: "active",
   },
