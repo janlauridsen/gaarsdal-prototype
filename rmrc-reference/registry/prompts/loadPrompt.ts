@@ -1,20 +1,11 @@
-import fs from "fs";
-import path from "path";
-
-/**
- * Loads a prompt by promptId.
- * Prompts are versioned and stored as plain text files.
- */
-
-export function loadPrompt(promptId: string): string {
-  const filePath = path.resolve(
-    "./registry/prompts",
-    `${promptId}.prompt.txt`
+export async function loadPrompt(promptId: string): Promise<string> {
+  const res = await fetch(
+    `/prompts/${promptId}.prompt.txt`
   );
 
-  if (!fs.existsSync(filePath)) {
+  if (!res.ok) {
     throw new Error(`Prompt not found: ${promptId}`);
   }
 
-  return fs.readFileSync(filePath, "utf-8");
+  return res.text();
 }
