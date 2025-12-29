@@ -16,6 +16,7 @@ Focus on:
 - Rephrasing what is explicitly present
 - Preserving uncertainty and ambiguity
 - Staying very close to the user's wording
+- Prefer slight rephrasing over exact repetition, unless repetition adds clarity
 
 Length:
 - One short sentence, at most two if absolutely necessary
