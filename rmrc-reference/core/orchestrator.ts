@@ -11,7 +11,8 @@ export class Orchestrator {
 
   async runTurn(
     profileId: string,
-    userInput: string | null
+    userInput: string | null,
+    turnIndex: number
   ): Promise<string | null> {
     const profile = runtimeProfiles.find(
       (p) => p.profileId === profileId
@@ -21,7 +22,7 @@ export class Orchestrator {
       throw new Error(`Unknown runtime profile: ${profileId}`);
     }
 
-    this.logger.log("turn_started", { profileId });
+    this.logger.log("turn_started", { profileId, turnIndex });
 
     const outputs: string[] = [];
 
@@ -35,7 +36,6 @@ export class Orchestrator {
         profile.enabledRoles.includes(roleId)
       );
 
-      // --- Boundary & Authority triggers evaluated once per turn ---
       const boundaryTriggered =
         userInput !== null && shouldTriggerBoundary(userInput);
 
@@ -43,11 +43,19 @@ export class Orchestrator {
         userInput !== null && shouldDiffuseAuthority(userInput);
 
       for (const roleId of activeRoles) {
+        // 🔑 Context Holder is silent in first turn
+        if (roleId === "context_holder" && turnIndex < 2) {
+          this.logger.log("role_skipped", {
+            roleId,
+            reason: "no_context_yet",
+            turnIndex,
+          });
+          continue;
+        }
+
         this.logger.log("role_invoked", { roleId });
 
         if (!userInput) continue;
-
-        // --- Reflective roles (always allowed) ---
 
         if (roleId === "mirror") {
           const prompt = loadPrompt("mirror_v1");
@@ -61,8 +69,6 @@ export class Orchestrator {
           if (result.output) outputs.push(result.output);
         }
 
-        // --- Boundary Guardian has priority ---
-
         if (
           roleId === "boundary_guardian" &&
           boundaryTriggered
@@ -70,14 +76,8 @@ export class Orchestrator {
           const prompt = loadPrompt("boundary_guardian_v1");
           const result = await invokeAI({ prompt, userInput });
           if (result.output) outputs.push(result.output);
-
-          // IMPORTANT:
-          // If boundary is triggered, authority diffusion
-          // must NOT happen in the same turn.
           continue;
         }
-
-        // --- Authority Diffuser only if no boundary ---
 
         if (
           roleId === "authority_diffuser" &&
@@ -96,7 +96,13 @@ export class Orchestrator {
       return null;
     }
 
-    this.logger.log("output_emitted");
-    return outputs.join("\n");
+    const finalOutput = outputs[0];
+
+    this.logger.log("output_consolidated", {
+      strategy: "first_non_empty",
+      candidateCount: outputs.length,
+    });
+
+    return finalOutput;
   }
 }
