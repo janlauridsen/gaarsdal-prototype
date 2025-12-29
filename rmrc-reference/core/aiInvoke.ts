@@ -10,16 +10,15 @@ export interface AIInvokeResult {
 /**
  * AI invocation interface.
  *
- * This is intentionally minimal and synchronous.
- * The actual AI provider is injected later.
+ * This is a temporary stub implementation.
+ * Replace with a real AI provider later.
  */
 export async function invokeAI(
   params: AIInvokeParams
 ): Promise<AIInvokeResult> {
-  // TEMPORARY STUB
-  // Replace with real AI call later
-
+  // Placeholder behavior:
+  // simply echoes input in parentheses
   return {
-    output: `(${params.userInput})`, // placeholder reflection
+    output: `(${params.userInput})`,
   };
 }
