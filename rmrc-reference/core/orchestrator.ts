@@ -3,6 +3,7 @@ import { runtimeProfiles } from "../registry/runtime-profiles/profiles";
 import { Logger } from "../logs/logger";
 import { invokeAI } from "./aiInvoke";
 import { loadPrompt } from "../registry/prompts/loadPrompt";
+import { shouldTriggerBoundary } from "./boundaryTrigger";
 
 export class Orchestrator {
   constructor(private logger: Logger) {}
@@ -46,6 +47,15 @@ export class Orchestrator {
 
         if (roleId === "context_holder") {
           const prompt = loadPrompt("context_holder_v1");
+          const result = await invokeAI({ prompt, userInput });
+          if (result.output) outputs.push(result.output);
+        }
+
+        if (
+          roleId === "boundary_guardian" &&
+          shouldTriggerBoundary(userInput)
+        ) {
+          const prompt = loadPrompt("boundary_guardian_v1");
           const result = await invokeAI({ prompt, userInput });
           if (result.output) outputs.push(result.output);
         }
