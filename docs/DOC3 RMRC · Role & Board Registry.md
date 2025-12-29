@@ -1,187 +1,150 @@
 📄 DOC 3 — RMRC · Prompt & Configuration Strategy
 
-Subtitle: Versioned AI Behavior Without Code Drift
-
-Status
-
-Autoritativt styringsdokument.
-DOC 3 definerer, hvordan AI-adfærd styres, ændres og analyseres i RMRC – uden at kode bliver bærer af adfærd.
-
-Hvis der opstår konflikt mellem kode og prompt-konfiguration, har dette dokument forrang.
+Subtitle: Versioned Behavior Without Code Drift
 
 1. Formål
 
-Formålet med DOC 3 er at sikre, at:
+Dette dokument fastlægger, hvordan AI-adfærd styres, ændres og analyseres i RMRC.
 
-al AI-adfærd er eksplicit
+DOC 3 sikrer:
 
-adfærd kan ændres uden kodeændringer
+at adfærd kan ændres uden kodeændringer
 
-ændringer er sporbare og versionsstyrede
+at prompts er centrale, sporbare artefakter
 
-RMRC kan analyseres, simuleres og justeres bevidst
+at ændringer kan analyseres og rulles tilbage
 
-ChatGPT (eller anden AI) kan bruges aktivt i design- og analysearbejde uden at påvirke runtime
+at AI-assistenter kan bruges aktivt uden at skabe drift
 
-DOC 3 eksisterer for at forhindre:
+Hvis der opstår konflikt mellem:
 
-spredte prompts
+kode og prompts
+👉 har prompts forrang
 
-implicit adfærd
+Hvis der opstår konflikt mellem:
 
-kodebåret metode
+prompts og DOC 1, 2 eller 5
+👉 har dokumenterne forrang
 
-uigennemsigtig udvikling
+2. Grundprincip
 
-2. Grundprincip: Arkitektur > Adfærd > Implementering
+I RMRC gælder følgende faste princip:
 
-RMRC arbejder med en klar prioritering:
+Kode definerer struktur.
+Prompts definerer adfærd.
 
-Arkitektur (DOC 1, DOC 2, DOC 5)
+Derfor:
 
-Adfærd (prompts og konfiguration)
+indeholder runtime-kode ingen adfærdsbeskrivelser
 
-Implementering (kode)
+indeholder roller ingen hardcoded prompts
 
-Prompts er adfærdsbærere, ikke implementeringsdetaljer.
+foretages adfærdsændringer aldrig via kode
 
-Kode må:
+Prompts behandles som:
 
-eksekvere
+førsteklasses konfigurationsartefakter
 
-route
+versionsstyrede tekster
 
-logge
+genstand for analyse og governance
 
-Kode må ikke:
+3. Central Prompt Registry (konceptuelt)
 
-definere menneskelig holdning
-
-indeholde prompts
-
-skjule metode eller autoritet
-
-3. Problemet med spredte og hardcodede prompts
-
-Spredte prompts fører til:
-
-uigennemsigtig adfærd
-
-utilsigtet metodebrug
-
-manglende sporbarhed
-
-vanskeligt replay
-
-umulig governance
-
-Derfor gælder i RMRC:
-
-Ingen hardcodede prompts i kode.
-Ingen implicit prompt-logik i roller.
-
-Hvis en rolle indeholder prompt-tekst, er det et arkitektonisk brud.
-
-4. Prompt som førsteklasses artefakt
-
-I RMRC er en prompt:
-
-et selvstændigt artefakt
-
-versionsstyret
-
-sporbar
-
-bundet til:
-
-én rolle
-
-ét board
-
-én kontekst
-
-En prompt repræsenterer:
-
-sproglig adfærd
-
-menneskelig holdning
-
-etisk ramme
-
-Prompts er ikke “instruktioner til AI” i snæver forstand,
-men kontrakter for adfærd inden for RMRC’s arkitektur.
-
-5. Prompt Registry (konceptuelt)
-
-RMRC anvender et centralt Prompt Registry.
+RMRC anvender et centralt prompt-registry.
 
 Registry’et:
 
-er deklarativt
-
 er read-only i runtime
 
-er versionsstyret
+indeholder alle aktive prompts
 
-indeholder ingen runtime-logik
+er den eneste kilde til AI-adfærd
 
-Registry’et definerer:
+Et prompt identificeres altid ved:
 
-hvilke prompts der findes
+promptId
 
-hvilken rolle de er bundet til
+promptVersion (implicit eller eksplicit)
 
-hvilket board de gælder for
+Eksempel:
 
-hvilke versioner der er aktive
+mirror_v1
+context_holder_v1
+boundary_guardian_v1
 
-Registry’et er styringsværktøj, ikke performance-optimering.
 
-6. Prompt-versionering og governance
+Ingen prompt må eksistere:
 
-Hver prompt skal have:
+skjult i kode
 
-et stabilt promptId
+duplikeret i flere versioner uden eksplicit versionsskift
 
-en eksplicit version
+uden at kunne spores i logs
 
-en beskrivelse af ændringens intention
+4. Runtime-prompts vs. reference-prompts
 
-Ændringer i prompts er:
+RMRC skelner mellem to typer prompts:
 
-arkitektonisk relevante
+4.1 Runtime-prompts
 
-governance-beslutninger
+bruges direkte i systemets drift
 
-aldrig trivielle
+er bevidst snævre og konservative
 
-Prompt-versioner:
+ændres sjældent
 
-må aldrig overskrives
+prioriterer stabilitet over finesse
 
-må aldrig ændres retroaktivt
+4.2 Reference- / analyse-prompts
 
-kan deaktiveres, men ikke slettes
+bruges til analyse, simulation og redesign
 
-Dette sikrer:
+kan være længere og mere eksplicitte
 
-fuld sporbarhed
+bruges af mennesker og AI-assistenter
 
-meningsfuld replay
+påvirker ikke runtime direkte
 
-ansvarlig iteration
+Denne adskillelse er afgørende for:
 
-7. Sammenhæng mellem runtime, prompt og logs
+lav kompleksitet i drift
 
-I runtime:
+høj fleksibilitet i udvikling
 
-vælges prompts udelukkende via konfiguration
+5. Prompt-versionering
 
-aldrig via kode
+Alle prompts er versionsmærkede.
 
-aldrig via rollelogik
+Versionering:
 
-Logs refererer til:
+er semantisk, ikke automatisk
+
+ændres kun ved bevidst beslutning
+
+dokumenteres via commitpoints
+
+Eksempel:
+
+mirror_v1 → stabil, neutral spejling
+
+mirror_v2 → ændret tone eller præcision
+
+Ældre versioner:
+
+slettes ikke
+
+arkiveres som reference
+
+kan bruges i replay og sammenlignende test
+
+6. Sammenhæng mellem runtime, prompts og logs
+
+I RMRC gælder:
+
+runtime ved, hvilken prompt der bruges
+
+logs registrerer:
 
 promptId
 
@@ -191,167 +154,121 @@ roleId
 
 boardId
 
-Logs indeholder aldrig prompt-tekst.
+Logs indeholder:
 
-Dette sikrer:
+aldrig prompt-tekst
 
-fortrolighed
+aldrig AI-output som feedback
 
-stabil analyse
+aldrig fortolkning
 
-mulighed for ekstern revision
+Dette gør det muligt at:
 
-8. AI-meta vs. AI-produkt-prompts
+analysere adfærd over tid
 
-RMRC skelner mellem:
+sammenligne før/efter ændringer
 
-8.1 AI-produkt-prompts
+bruge AI til meta-analyse uden drift
 
-Prompts der:
+7. Brug af AI-assistenter i prompt-arbejde
 
-genererer tekst til brugeren
+AI-assistenter (fx ChatGPT) må bruges til:
 
-opererer inden for boards
+at analysere prompts
 
-er underlagt DOC 2 og DOC 5
+at foreslå ændringer
 
-Disse er en del af runtime-adfærd.
+at identificere overlap og huller
 
-8.2 AI-meta-prompts
+at simulere dialogforløb
 
-Prompts der:
+at foreslå nye versioner
 
-bruges til analyse
+AI-assistenter må ikke:
 
-bruges til design
+skrive direkte til runtime
 
-bruges til simulering og replay
+ændre registry automatisk
 
-aldrig påvirker runtime direkte
+introducere nye roller eller boards
 
-AI-meta-prompts kan anvendes af:
+Alle AI-forslag er:
 
-ChatGPT
+hypotetiske
 
-analyseværktøjer
+menneskegodkendte
 
-designprocesser
+dokumenterede
 
-Men:
+8. Ændringsdisciplin (vigtig)
 
-deres output er altid forslag
+Ændringer i prompts sker efter denne rækkefølge:
 
-aldrig handling
+Oplevet behov (simulation / dialog)
 
-aldrig automatisk ændring
+Analyse op imod DOC 1, 2 og 5
 
-Dette bevarer menneskelig governance.
+Justering af prompt-tekst
 
-9. Prompts som bærere af menneskelig holdning
+Versionsskift (nyt promptId)
 
-Prompts i RMRC må – og skal – afspejle:
+Test via simulation eller begrænset runtime
 
-refleksiv holdning
+Analyse af logs
 
-erfaring uden autoritet
+Nyt commitpoint
 
-domæne-resonans
+Spring i denne rækkefølge betragtes som teknisk gæld.
 
-metakognitiv mulighed
+9. Hvad der eksplicit ikke er konfigurerbart
 
-transparent styring
+Følgende må aldrig styres via prompts:
 
-Prompts må ikke:
+systemets arkitektur
 
-udøve skjult autoritet
+hvilke roller der findes
 
-manipulere refleksion
+hvilke boards der eksisterer
 
-presse mod konklusion
+aktiveringsregler for boards
 
-skjule styring som neutralitet
+logging-struktur
 
-DOC 5 er normativ reference for al prompt-design.
+Disse ændres kun via:
 
-10. Hvad der eksplicit ikke er konfigurerbart
-
-For at beskytte arkitekturen må følgende aldrig være prompt- eller konfigurationsstyret:
-
-rolle-autoritet
-
-board-typer
-
-rolle-til-board mapping
-
-logging-niveauer
-
-læringsmekanismer i runtime
-
-Disse ændringer kræver:
-
-nye dokumenter
+arkitektoniske dokumenter
 
 eksplicit governance
 
-versionsmæssige commitpoints
+10. Designrationale
 
-11. Prompt-ændringer som eksperimenter
+Denne strategi eksisterer for at forhindre:
 
-Ændringer i prompts betragtes som:
+spredte prompts
 
-eksperimenter
+skjult adfærd
 
-hypoteser
+uigennemsigtige ændringer
 
-design-afprøvninger
+“smart” men uforklarlig AI-opførsel
 
-Effekten vurderes via:
+RMRC vælger:
 
-logs
+stabilitet over finesse
 
-replay
+transparens over adaptiv intelligens
 
-sammenlignende analyse
+governance over autonomi
 
-Ikke via:
+11. Relation til øvrige dokumenter
 
-intuition alene
+Arkitektur → DOC 1
 
-“bedre svar”
+Roller & boards → DOC 2
 
-kortsigtet tilfredshed
+Logging & replay → DOC 4
 
-Dette muliggør langsigtet kvalitativ forbedring.
+Menneskeligt grundlag → DOC 5
 
-12. Relation til øvrige dokumenter
-
-DOC 1 → Arkitektur og ontologi
-
-DOC 2 → Roller og boards
-
-DOC 4 → Logging, replay og læring
-
-DOC 5 → Menneskelig og erkendelsesmæssig ramme
-
-DOC 3 forbinder arkitektur og adfærd uden at blande dem.
-
-13. Afsluttende bemærkning
-
-DOC 3 gør RMRC styrbart.
-
-Ikke ved at gøre systemet “klogere”,
-men ved at gøre det gennemsigtigt, analysebart og ansvarligt.
-
-Når adfærd er eksplicit, kan den:
-
-diskuteres
-
-kritiseres
-
-forbedres
-
-rulles tilbage
-
-Det er forudsætningen for tillid – både teknisk og menneskelig.
-
-DOC 3 er nu klar til at blive gemt som autoritativt dokument.
+DOC 3 fastlægger, hvordan RMRC taler –
+og hvordan vi ændrer det uden at miste kontrollen.
