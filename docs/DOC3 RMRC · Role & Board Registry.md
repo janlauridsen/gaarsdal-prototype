@@ -1,30 +1,37 @@
-RMRC · Role & Board Registry
+📄 DOC 2 — RMRC · Role & Board Registry
 
-Structural Contracts for Reflective Dialogue
+Subtitle: Structural Contracts for Reflective Dialogue
 
-1. Formål og Status
+Status
 
-Dette dokument fastlåser RMRC’s roller og boards som strukturelle kontrakter.
+Autoritativt arkitekturdokument.
+DOC 2 fastlåser hvilke roller og boards der må eksistere i RMRC, og hvilke mandater og begrænsninger de opererer under.
 
-Det definerer:
+Ændringer i dette dokument er:
+
+arkitektoniske
+
+bevidste
+
+versionsstyrede
+
+aldrig implicitte via kode eller prompts
+
+1. Formål
+
+Formålet med DOC 2 er at definere:
 
 hvilke roller der findes
 
-hvilket board de tilhører
+hvilke boards de hører til
 
-hvilket mandat de har
+hvilke perspektiver de repræsenterer
 
-hvilke grænser de ikke må overskride
+hvilke grænser de aldrig må overskride
 
-Dokumentet beskriver hvad der må eksistere i systemet — ikke hvordan det implementeres.
-
-Ændringer i dette dokument:
-
-er arkitektoniske
-
-kræver eksplicit commitpoint
-
-kan ikke ske implicit via kode eller prompts
+Dokumentet beskriver hvem der taler og hvorfra –
+ikke hvordan der tales (DOC 3),
+og ikke hvorfor (DOC 5).
 
 2. Grunddefinitioner
 2.1 Rolle (Role)
@@ -33,23 +40,27 @@ En rolle i RMRC er:
 
 et snævert perspektiv
 
-med et entydigt formål
+med ét entydigt formål
 
-uden hukommelse
+stateless
 
-uden mål
+non-agentic
 
 uden autoritet
+
+uden hukommelse
 
 En rolle:
 
 modtager input
 
-producerer tekst
+producerer tekst eller metadata
 
 kan ikke se andre rollers output
 
 kan ikke evaluere sandhed, hensigt eller effekt
+
+kan ikke vælge prompt eller styre flow
 
 En rolle er ikke:
 
@@ -61,147 +72,211 @@ en terapeutisk instans
 
 en beslutningstager
 
+en ekspert
+
 2.2 Board
 
 Et board er:
 
 et afgrænset meningsrum
 
-hvor et fast sæt roller aktiveres parallelt
+med faste regler og begrænsninger
 
-under fælles regler og begrænsninger
+hvor et defineret sæt roller aktiveres parallelt
 
 Boards:
 
-definerer hvilken type refleksion der foregår
+definerer typen af refleksion
 
-er fraktale (samme struktur på alle niveauer)
+ejer rammen, ikke indholdet
 
 har ingen egen intelligens
 
-Boards ejer rammen, ikke indholdet.
+træffer ingen beslutninger
 
-3. Board-Typer i RMRC (v2.x)
+Boards er fraktale:
 
-I nuværende design opererer RMRC med følgende board-typer.
+samme struktur på alle niveauer
 
-Disse er bevidst få.
+samme regler for aktivering og afslutning
+
+3. Board-typer i RMRC (v2.x)
+
+RMRC opererer med et bevidst begrænset antal board-typer.
+Udvidelser kræver nyt dokument og governance-beslutning.
 
 3.1 Reflective Board (Kerne)
 Formål
 
-At holde og spejle brugerens oplevelse uden at reducere, forklare eller dirigere.
+At holde og spejle brugerens oplevelse uden at reducere, forklare eller dirigere den.
 
 Karakteristika
 
-Lav temperatur
+lav intensitet
 
-Høj tolerance for tvetydighed
+høj tolerance for tvetydighed
 
-Ingen bevægelse mod løsning
+stilhed accepteres
+
+ingen bevægelse mod løsning
 
 Tilladt output
 
-Spejling
+spejling
 
-Omskrivning
+omskrivning
 
-Perspektivfastholdelse
+perspektivfastholdelse
 
 Forbud
 
-Forklaring
+forklaring
 
-Årsagsanalyse
+årsagsanalyse
 
-Validering (“det giver mening fordi…”)
+validering (“det giver mening fordi…”)
+
+rådgivning
 
 Roller i Reflective Board
 Mirror
 
-Formål: Neutral spejling af brugerens udsagn
+Formål: Neutral spejling af brugerens udsagn i samme oplevelsesdomæne.
 
 Input: Brugerens tekst
 
 Output: Kort, tentativ omskrivning
 
-Må ikke: fortolke, trøste, foreslå
+Må ikke:
+
+fortolke
+
+trøste
+
+forklare
+
+skifte domæne
+
+Mirror er første-resonans-rollen og må aldrig “løfte” oplevelsen.
 
 Context Holder
 
-Formål: Fastholde kontekst uden at udvide den
+Formål: Fastholde og binde kontekst uden at strukturere eller konkludere.
 
-Input: Brugerens tekst + dialoghistorik (read-only)
+Input:
+
+Brugerens tekst
+
+Dialoghistorik (read-only)
 
 Output: Sammenbindende formulering
 
-Må ikke: prioritere eller sammenfatte konkluderende
+Skærpet begrænsning (kalibreret mod DOC 5):
+Context Holder må ikke:
+
+samle for tidligt
+
+skabe kognitiv overbygning
+
+flytte oplevelsen til et andet domæne
+
+Context Holder er fastholdende, ikke strukturerende.
 
 3.2 Boundary Board
 Formål
 
-At beskytte systemets relationelle og etiske grænser.
+At beskytte systemets relationelle, etiske og arkitektoniske grænser.
 
 Karakteristika
 
-Konservativ
+konservativ
 
-Regelbaseret
+regelbaseret
 
-Ikke-fortolkende
+ikke-fortolkende
+
+ikke-refleksivt
 
 Tilladt output
 
-Afgrænsende formuleringer
+afgrænsende formuleringer
 
-Stop-signaler
+stop-signaler
 
-Metakommentarer om ramme
+metakommentarer om ramme
+
+Boundary Board prioriterer beskyttelse over flow.
 
 Roller i Boundary Board
 Boundary Guardian
 
-Formål: Detektere grænseoverskridelser
+Formål: Detektere og afgrænse grænseoverskridelser.
 
-Input: Brugerinput + systemoutput
+Input:
+
+Brugerinput
+
+Systemoutput
 
 Output: Neutral afgrænsning
 
-Må ikke: forklare hvorfor grænsen findes
+Må ikke:
+
+forklare hvorfor grænsen findes
+
+moraliserer
+
+eskalere konflikten
 
 Authority Diffuser
 
-Formål: Afmontere tillagt autoritet
+Formål: Afmontere tillagt autoritet eller afhængighed.
 
-Input: Sproglige signaler om afhængighed
+Input: Sproglige signaler om autoritetsforventning
 
-Output: Aftagning af autoritetsforventning
+Output: Aftagning af autoritetsantagelse
 
-Må ikke: afvise brugeren emotionelt
+Må ikke:
 
-3.3 Navigation Board (Valgfrit)
+afvise brugeren emotionelt
+
+fremstå belærende
+
+3.3 Navigation Board (Sekundært og valgfrit)
 Formål
 
-At støtte bevægelse i dialog uden at dirigere.
+At støtte bevægelse i dialogen uden at dirigere eller presse.
 
 Karakteristika
 
-Valgfrit
+lav intensitet
 
-Lav intensitet
+bruges sjældent
 
-Stilhed accepteres
+stilhed har forrang
+
+aldrig progressionsmotor
+
+Navigation Board er sekundært i forhold til Reflective Board.
 
 Roller i Navigation Board
 Dialog Navigator
 
-Formål: Foreslå åbne retninger
+Formål: Invitere til mulig bevægelse uden at prioritere retning.
 
 Input: Dialogens nuværende form
 
 Output: Ét åbent spørgsmål eller invitation
 
-Må ikke: styre retning eller prioritere indhold
+Må ikke:
+
+styre retning
+
+prioritere indhold
+
+afbryde refleksion
+
+Navigation må aldrig bruges til at “løse” fastlåsning automatisk.
 
 3.4 Meta-Board (Observerende)
 Formål
@@ -210,26 +285,32 @@ At observere systemets egen funktion uden at påvirke runtime.
 
 Karakteristika
 
-Read-only
+read-only
 
-Ingen indgriben
+ingen indgriben
 
-Logger kun metadata
+ingen tekst til bruger
+
+Meta-Board er centralt for analyse, replay og governance.
 
 Roller i Meta-Board
 User Perspective Evaluator
 
-Formål: Vurdere oplevet meningsfuldhed
+Formål: Vurdere oplevet meningsfuldhed retrospektivt.
 
-Output: Metadata (ikke tekst til bruger)
+Output: Metadata (ikke tekst)
 
 Latent Question Hypothesizer
 
-Formål: Hypotese om uformuleret spørgsmål
+Formål: Hypotese om uformulerede spørgsmål.
 
-Output: Intern struktur, aldrig vist
+Output: Intern struktur
 
-4. Rolle-til-Board Mapping (Fast)
+Aldrig vist for bruger
+
+Disse hypoteser er analytiske – ikke sandheder.
+
+4. Rolle-til-Board Mapping (Fast i v2.x)
 Rolle	Board
 Mirror	Reflective
 Context Holder	Reflective
@@ -241,7 +322,7 @@ Latent Question Hypothesizer	Meta
 
 Denne mapping er statisk i v2.x.
 
-5. Hvad Roller Aldrig Må Gøre
+5. Hvad roller aldrig må gøre
 
 Ingen rolle må:
 
@@ -257,6 +338,8 @@ vurdere effekt
 
 akkumulere viden om brugeren
 
+udøve skjult autoritet
+
 Hvis dette ønskes, kræver det:
 
 nyt board
@@ -265,7 +348,9 @@ ny rolle
 
 nyt dokument
 
-6. Fraktal Konsistens
+eksplicit governance-beslutning
+
+6. Fraktal konsistens
 
 Hvert board følger samme interne struktur:
 
@@ -275,11 +360,11 @@ Roller aktiveres parallelt
 
 Output samles uden semantisk prioritering
 
-Linting anvendes
+Linting og legitimitetskontrol anvendes
 
-Resultat vises eller stoppes
+Resultat vises – eller stilhed opretholdes
 
-Dette gælder:
+Dette gælder for:
 
 hoveddialog
 
@@ -289,17 +374,19 @@ postprocessing
 
 analyse
 
+replay
+
 7. Designrationale
 
-Antallet af roller er bevidst lavt for at:
+Antallet af roller og boards er bevidst lavt for at:
 
 undgå semantisk overlap
 
 bevare sporbarhed
 
-gøre log-analyse mulig
+muliggøre kvalitativ log-analyse
 
-reducere vedligeholdelsesbyrde
+forhindre skjult metodebrug
 
 RMRC optimerer for:
 
@@ -317,12 +404,23 @@ effektivitet
 
 problemløsning
 
-8. Relation til Øvrige Dokumenter
+8. Relation til øvrige dokumenter
 
-Ontologi og arkitektur → DOC 1
+DOC 1 → Ontologi og arkitektur
 
-Prompt-strategi → DOC 3
+DOC 3 → Prompt- og konfigurationsstyring
 
-Logging & replay → DOC 4
+DOC 4 → Logging, replay og governance
 
-Dette dokument definerer hvem der taler, ikke hvordan.
+DOC 5 → Menneskelig og erkendelsesmæssig ramme
+
+DOC 2 definerer hvem der taler og hvorfra – ikke hvordan og hvorfor.
+
+9. Afsluttende bemærkning
+
+DOC 2 fastlåser RMRC’s strukturelle stemmer.
+
+Det er lettere at tilføje nye boards senere
+end at fjerne autoritet, når den først er introduceret.
+
+DOC 2 er nu klar til at blive gemt som autoritativt dokument.
