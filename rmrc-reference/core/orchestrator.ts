@@ -4,6 +4,7 @@ import { Logger } from "../logs/logger";
 import { invokeAI } from "./aiInvoke";
 import { loadPrompt } from "../registry/prompts/loadPrompt";
 import { shouldTriggerBoundary } from "./boundaryTrigger";
+import { shouldDiffuseAuthority } from "./authorityTrigger";
 
 export class Orchestrator {
   constructor(private logger: Logger) {}
@@ -56,6 +57,15 @@ export class Orchestrator {
           shouldTriggerBoundary(userInput)
         ) {
           const prompt = loadPrompt("boundary_guardian_v1");
+          const result = await invokeAI({ prompt, userInput });
+          if (result.output) outputs.push(result.output);
+        }
+
+        if (
+          roleId === "authority_diffuser" &&
+          shouldDiffuseAuthority(userInput)
+        ) {
+          const prompt = loadPrompt("authority_diffuser_v1");
           const result = await invokeAI({ prompt, userInput });
           if (result.output) outputs.push(result.output);
         }
