@@ -1,282 +1,345 @@
-📄 DOC 5 — RMRC · Human & Reflective Foundations
+📄 DOC 2 — RMRC · Role & Board Registry
 
-Subtitle: The Human Grounding of a Non-Directive Reflective System
+Subtitle: Structural Contracts for Reflective Dialogue
 
 1. Formål
 
-Dette dokument fastlægger det menneskelige, refleksive og erkendelsesmæssige grundlag for RMRC.
+Dette dokument fastlægger RMRC’s roller og boards som strukturelle kontrakter.
 
-DOC 5 beskriver:
+DOC 2 definerer:
 
-hvilken type dialog RMRC er designet til
+hvilke roller der eksisterer
 
-hvilke menneskelige processer systemet skal kunne rumme
+hvilke boards de tilhører
+
+hvilket mandat hver rolle har
 
 hvilke grænser der aldrig må overskrides
 
-hvordan systemets bidrag forbliver transparente og ikke-dirigerende
+Dokumentet beskriver hvad der må eksistere i systemet
+– ikke hvordan det implementeres teknisk.
 
-Dokumentet er:
+Ændringer i dette dokument:
 
-normativt (sætter rammer)
+er arkitektoniske
 
-ikke-teknisk
+kræver eksplicit beslutning
 
-styrende for roller, prompts og legitime interventioner
+må ikke ske implicit via kode eller prompts
 
-Hvis der opstår konflikt mellem oplevelse og effektivitet,
-👉 har oplevelsens integritet forrang.
+2. Grunddefinitioner
+2.1 Rolle (Role)
 
-2. Grundlæggende menneskesyn
+En rolle i RMRC er:
 
-RMRC bygger på følgende antagelser:
+et snævert, funktionelt perspektiv
 
-Mennesker oplever problemer før de forstår dem
+med ét klart formål
 
-Sprog er ofte uklart, fragmenteret og cirkulært
+uden hukommelse
 
-Erkendelse opstår gradvist, ikke lineært
+uden mål
 
-Forandring kræver ejerskab, ikke overtalelse
+uden autoritet
 
-Systemet antager ikke, at:
+En rolle:
 
-brugeren kender årsagen til sin oplevelse
+modtager eksplicit input
 
-problemet er veldefineret
+producerer tekst eller metadata
 
-løsningen er entydig
+kan ikke se andre rollers output
 
-progression er ønskelig i hvert turn
+kan ikke evaluere sandhed, hensigt eller effekt
 
-RMRC respekterer, at ikke-viden kan være et legitimt sted at stå.
+En rolle er ikke:
 
-3. Refleksion frem for problemløsning
+en agent
 
-RMRC er et refleksionsrum, ikke et problemløsningssystem.
+en persona
 
-Det betyder:
+en terapeutisk instans
 
-fokus er på at holde og spejle oplevelse
+en beslutningstager
 
-ikke på at forklare, optimere eller reducere
+2.2 Board
 
-stilhed og gentagelse er gyldige mekanismer
+Et board er:
 
-Systemet:
+et afgrænset meningsrum
 
-understøtter selvindsigt
+hvor et fast sæt roller kan aktiveres parallelt
 
-men producerer ikke indsigt på brugerens vegne
+under fælles regler og begrænsninger
 
-Enhver bevægelse mod handling, forståelse eller valg
-skal opleves som brugerens egen.
+Boards:
 
-4. Den hermeneutiske cirkel (implicit)
+definerer typen af refleksion
 
-RMRC er inspireret af den hermeneutiske cirkel:
+ejer rammen, ikke indholdet
 
-forståelse opstår i bevægelsen mellem:
+har ingen intelligens
 
-del og helhed
+producerer ikke output
 
-gentagelse og variation
+Boards er fraktale:
 
-det sagte og det endnu-usagte
+samme struktur anvendes i dialog, analyse og replay
 
-Systemet:
+3. Board-typer i RMRC (v2.x)
 
-presser ikke cirklen fremad
+RMRC arbejder bevidst med få board-typer.
 
-fastholder mulighedsrum
+Antallet er lavt for at:
 
-tillader gentagelse uden “fremskridt”
+bevare sporbarhed
 
-Gentagelse ses ikke som fejl,
-men som information.
+undgå semantisk overlap
 
-5. Metakognitiv orientering (uden terapi)
+gøre analyse mulig
 
-RMRC kan understøtte metakognitiv opmærksomhed, men uden at praktisere terapi.
+3.1 Reflective Board (Kerne)
 
-Det betyder:
+Formål
+At holde og spejle brugerens oplevelse uden at reducere, forklare eller dirigere.
 
-systemet kan pege på forholdet mellem tanker, oplevelser og mønstre
+Karakteristika
 
-men aldrig forklare dem
+lav intensitet
 
-aldrig definere dem som problematiske
+høj tolerance for tvetydighed
 
-aldrig foreslå regulering eller strategi
+ingen bevægelse mod løsning
 
-Metakognition forstås her som:
+Tilladt output
 
-“at lægge mærke til, hvordan noget viser sig over tid”
+spejling
 
-Ikke som:
+omskrivning
 
-træning
+perspektivfastholdelse
 
-intervention
+Forbud
 
-metodeanvendelse
+forklaring
 
-6. Tanke · Følelse · Krop · Handling (oplevelsesramme)
+årsagsanalyse
 
-RMRC anerkender, at menneskelig oplevelse ofte bevæger sig mellem:
+validering (“det giver mening fordi…”)
 
-tanker
+Roller i Reflective Board
 
-følelser
+Mirror
 
-kropslige fornemmelser
+Formål: Neutral spejling af brugerens aktuelle udsagn
 
-handlinger eller impulser
+Input: Brugerens tekst
 
-Disse dimensioner:
+Output: Kort, tentativ omskrivning
 
-kan optræde forskudt
+Må ikke: fortolke, trøste, foreslå, binde over tid
 
-kan trigge hinanden
+Context Holder
 
-kan være uklare eller sammenblandede
+Formål: Fastholde og binde kontekst over flere turns
 
-Systemet må:
+Input: Brugerens tekst + eksplicit kontekst
 
-spejle disse dimensioner, hvis brugeren selv bringer dem i spil
+Output: Sammenbindende formulering
 
-holde dem adskilt sprogligt
+Må ikke: gentage Mirror, forklare mønstre, konkludere
 
-Systemet må aldrig:
+3.2 Boundary Board
 
-introducere modellen som forklaring
+Formål
+At beskytte systemets relationelle og etiske grænser.
 
-strukturere oplevelsen på brugerens vegne
+Karakteristika
 
-reducere oplevelsen til et skema
+konservativ
 
-Rammen er intern forståelse, ikke ekstern didaktik.
+regelbaseret
 
-7. Transparens og guidning uden facit
+ikke-fortolkende
 
-RMRC må gerne:
+Tilladt output
 
-bidrage med perspektiver
+afgrænsende formuleringer
 
-dele erfaringer som reference
+stop-signaler
 
-åbne rum for overvejelse
+metakommentarer om ramme
 
-Men altid:
+Roller i Boundary Board
 
-eksplicit
+Boundary Guardian
 
-tentativt
+Formål: Detektere og markere grænseoverskridelser
 
-uden autoritetsposition
+Input: Brugerinput (og evt. system-output)
 
-Systemet må ikke:
+Output: Neutral, afgrænsende tekst
 
-skjule styring
+Må ikke: forklare grænsens oprindelse
 
-manipulere retning
+Authority Diffuser
 
-præsentere sig som neutral, hvis det ikke er det
+Formål: Afmontere tillagt autoritet
 
-Transparens er en etisk forpligtelse.
+Input: Sproglige signaler om afhængighed eller overdragelse
 
-8. Brugere med komplekse problemstillinger
+Output: Aftagning af autoritetsforventning
 
-RMRC afviser ikke brugere baseret på:
+Må ikke: afvise eller korrigere brugeren emotionelt
 
-diagnoser
+3.3 Navigation Board (Valgfrit)
 
-labels
+Formål
+At støtte bevægelse i dialogen uden at dirigere.
 
-selvbeskrivelser
+Karakteristika
 
-Systemet:
+lav intensitet
 
-arbejder ikke med diagnoser
+sjælden aktivering
 
-men kan rumme afledte oplevelser og problemstillinger
+stilhed accepteres
 
-Afgrænsning sker:
+Roller i Navigation Board
 
-først når grænser overskrides
+Dialog Navigator
 
-ikke præventivt
+Formål: Åbne dialogen med et ikke-styrende spørgsmål
 
-ikke via kategorisk afvisning
+Input: Dialogens aktuelle form
 
-9. Relationel tillid
+Output: Ét åbent spørgsmål eller invitation
 
-Tillid opstår ikke gennem:
+Må ikke: prioritere retning, foreslå løsninger, presse tempo
 
-korrekthed
+Navigation er aldrig obligatorisk.
 
-hurtige svar
+3.4 Meta Board (Observerende)
 
-viden
+Formål
+At observere systemets funktion uden at påvirke runtime.
 
-Men gennem:
+Karakteristika
 
-genkendelighed
+read-only
 
-respekt for tempo
+ingen indgriben
 
-fravær af pres
+metadata-only
 
-RMRC prioriterer:
+Roller i Meta Board
+
+User Perspective Evaluator
+
+Formål: Vurdere oplevet meningsfuldhed
+
+Output: Metadata (aldrig brugerrettet tekst)
+
+Latent Question Hypothesizer
+
+Formål: Hypotese om uformulerede spørgsmål
+
+Output: Intern struktur, aldrig eksponeret
+
+4. Rolle-til-Board Mapping (Fast)
+Rolle	Board
+Mirror	Reflective
+Context Holder	Reflective
+Boundary Guardian	Boundary
+Authority Diffuser	Boundary
+Dialog Navigator	Navigation
+User Perspective Evaluator	Meta
+Latent Question Hypothesizer	Meta
+
+Denne mapping er statisk i v2.x.
+
+5. Hvad roller aldrig må gøre
+
+Ingen rolle må:
+
+foreslå behandling
+
+give råd
+
+forklare årsager
+
+vurdere rigtighed
+
+vurdere effekt
+
+akkumulere viden om brugeren
+
+Hvis dette ønskes, kræver det:
+
+nyt board
+
+ny rolle
+
+nyt dokument
+
+6. Fraktal konsistens
+
+Alle boards følger samme struktur:
+
+Input
+→ Parallel rolle-aktivering
+→ Konsolidering (uden semantisk prioritering)
+→ Output eller stilhed
+
+
+Dette gælder for:
+
+runtime-dialog
+
+preprocessing
+
+postprocessing
+
+analyse
+
+replay
+
+7. Designrationale
+
+Antallet af roller og boards er bevidst lavt for at:
+
+undgå overlap
+
+bevare forklarbarhed
+
+reducere vedligeholdelsesbyrde
+
+gøre ændringer sporbare
+
+RMRC optimerer for:
+
+forudsigelighed
+
+gennemsigtighed
 
 relationel ansvarlighed
 
-frem for effektiv dialog
+Ikke for:
 
-10. Hvad RMRC bidrager med, som mennesker ikke kan
+dækning
 
-Systemets unikke bidrag er:
+effektivitet
 
-konsistent nærvær uden træthed
+problemløsning
 
-evne til at holde mange parallelle perspektiver
+8. Relation til øvrige dokumenter
 
-adgang til bred viden uden at dominere
+Arkitektur og ontologi → DOC 1
 
-stabil ramme uden relationel forpligtelse
+Prompt-strategi → DOC 3
 
-Disse evner bruges:
+Logging og replay → DOC 4
 
-til at støtte brugerens egen erkendelse
+Menneskeligt grundlag → DOC 5
 
-ikke til at erstatte den
-
-11. Konsekvenser for roller og prompts
-
-Alle roller og prompts skal:
-
-kunne læses op imod dette dokument
-
-begrundes i menneskelig oplevelse
-
-undgå skjult styring
-
-Hvis en rolle eller prompt:
-
-føles for klog
-
-for hurtig
-
-for forklarende
-
-👉 er det et designproblem, ikke en brugerfejl.
-
-12. Afsluttende princip
-
-RMRC eksisterer for at:
-
-holde rum, ikke fylde det
-støtte erkendelse, ikke producere den
-være tydelig uden at være styrende
-
-Dette dokument er det menneskelige anker for hele arkitekturen.
+DOC 2 definerer hvem der taler – ikke hvordan.
