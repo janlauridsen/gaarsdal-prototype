@@ -1,45 +1,58 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { Logger } from "../../rmrc-reference/logs/logger";
-import { Orchestrator } from "../../rmrc-reference/core/orchestrator";
-import { Session } from "../../rmrc-reference/runtime/session";
+import { useState } from "react";
 
-type Data =
-  | { output: string | null; logs: unknown[] }
-  | { error: string };
+export default function RMRC_Test() {
+  const [input, setInput] = useState("");
+  const [output, setOutput] = useState<string | null>(null);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<Data>
-) {
-  if (req.method !== "POST") {
-    res.status(405).json({ error: "Method not allowed" });
-    return;
-  }
+  async function send() {
+    setLoading(true);
+    setOutput(null);
 
-  const { input, profileId } = req.body ?? {};
-
-  if (typeof input !== "string") {
-    res.status(400).json({ error: "Missing input" });
-    return;
-  }
-
-  const runtimeProfile = profileId ?? "reflective_with_boundaries";
-
-  try {
-    const logger = new Logger();
-    const orchestrator = new Orchestrator(logger);
-    const session = new Session(runtimeProfile, orchestrator, logger);
-
-    const output = await session.handleInput(input);
-    session.end();
-
-    res.status(200).json({
-      output,
-      logs: logger.getEvents(),
+    const res = await fetch("/api/rmrc-test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        input,
+        profileId: "reflective_with_boundaries",
+      }),
     });
-  } catch (err: any) {
-    res.status(500).json({
-      error: err?.message ?? "Unknown error",
-    });
+
+    const data = await res.json();
+    setOutput(data.output ?? null);
+    setLogs(data.logs ?? []);
+    setLoading(false);
   }
+
+  return (
+    <main style={{ padding: 40, maxWidth: 700 }}>
+      <h1>RMRC Test</h1>
+
+      <textarea
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        rows={4}
+        style={{ width: "100%", marginBottom: 12 }}
+      />
+
+      <button onClick={send} disabled={loading}>
+        {loading ? "..." : "Send"}
+      </button>
+
+      {output !== null && (
+        <p style={{ marginTop: 20 }}>
+          <strong>Output:</strong><br />
+          {output}
+        </p>
+      )}
+
+      {logs.length > 0 && (
+        <details style={{ marginTop: 20 }}>
+          <summary>Logs</summary>
+          <pre>{JSON.stringify(logs, null, 2)}</pre>
+        </details>
+      )}
+    </main>
+  );
 }
