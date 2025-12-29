@@ -36,18 +36,18 @@ export class Orchestrator {
       for (const roleId of activeRoles) {
         this.logger.log("role_invoked", { roleId });
 
-        // Only Mirror is active with AI in this iteration
-        if (roleId === "mirror" && userInput) {
+        if (!userInput) continue;
+
+        if (roleId === "mirror") {
           const prompt = loadPrompt("mirror_v1");
+          const result = await invokeAI({ prompt, userInput });
+          if (result.output) outputs.push(result.output);
+        }
 
-          const result = await invokeAI({
-            prompt,
-            userInput,
-          });
-
-          if (result.output) {
-            outputs.push(result.output);
-          }
+        if (roleId === "context_holder") {
+          const prompt = loadPrompt("context_holder_v1");
+          const result = await invokeAI({ prompt, userInput });
+          if (result.output) outputs.push(result.output);
         }
       }
     }
