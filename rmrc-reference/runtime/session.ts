@@ -12,11 +12,18 @@ export class Session {
     this.logger.log("session_started", { profileId });
   }
 
-  handleInput(input: string | null): string | null {
+  async handleInput(
+    input: string | null
+  ): Promise<string | null> {
     this.turnIndex++;
-    this.logger.log("turn_index", { turnIndex: this.turnIndex });
+    this.logger.log("turn_index", {
+      turnIndex: this.turnIndex,
+    });
 
-    return this.orchestrator.runTurn(this.profileId, input);
+    return this.orchestrator.runTurn(
+      this.profileId,
+      input
+    );
   }
 
   end() {
