@@ -1,17 +1,22 @@
-import { promptRegistry, PromptId } from "./registry";
+import fs from "fs";
+import path from "path";
 
 /**
- * Load a prompt by id from the canonical registry.
- *
- * Fail-soft by design during prototype phase.
+ * Loads a prompt by promptId.
+ * Prompts are versioned and stored as plain text files.
  */
-export function loadPrompt(promptId: PromptId): string {
-  const prompt = promptRegistry[promptId];
 
-  if (!prompt) {
-    return `SYSTEM NOTICE:
-Prompt "${promptId}" not found in registry.`;
+export function loadPrompt(promptId: string): string {
+  const filePath = path.join(
+    process.cwd(),
+    "registry",
+    "prompts",
+    `${promptId}.prompt.txt`
+  );
+
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Prompt not found: ${promptId}`);
   }
 
-  return prompt;
+  return fs.readFileSync(filePath, "utf-8");
 }
