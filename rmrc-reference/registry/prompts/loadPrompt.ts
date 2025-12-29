@@ -1,16 +1,22 @@
-export async function loadPrompt(promptId: string): Promise<string> {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    "http://localhost:3000";
+import fs from "fs";
+import path from "path";
 
-  const res = await fetch(
-    `${baseUrl}/prompts/${promptId}.prompt.txt`
+/**
+ * Loads a prompt by promptId.
+ * Prompts are stored in /public/prompts and bundled by Next.js.
+ */
+
+export function loadPrompt(promptId: string): string {
+  const filePath = path.join(
+    process.cwd(),
+    "public",
+    "prompts",
+    `${promptId}.prompt.txt`
   );
 
-  if (!res.ok) {
+  if (!fs.existsSync(filePath)) {
     throw new Error(`Prompt not found: ${promptId}`);
   }
 
-  return res.text();
+  return fs.readFileSync(filePath, "utf-8");
 }
-
