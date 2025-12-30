@@ -6,6 +6,37 @@ interface LogEvent {
   data?: Record<string, any>;
 }
 
+function eventStyle(type: string) {
+  switch (type) {
+    case "session_started":
+      return { color: "border-green-400", icon: "▶️" };
+    case "session_ended":
+      return { color: "border-red-400", icon: "⏹️" };
+
+    case "turn_started":
+      return { color: "border-blue-400", icon: "🔁" };
+    case "turn_index":
+      return { color: "border-blue-200", icon: "🔢" };
+
+    case "board_activated":
+      return { color: "border-purple-400", icon: "🧩" };
+
+    case "role_invoked":
+      return { color: "border-gray-400", icon: "🗣️" };
+    case "role_skipped":
+      return { color: "border-yellow-400", icon: "🤐" };
+
+    case "output_emitted":
+      return { color: "border-black", icon: "💬" };
+    case "silence_emitted":
+      return { color: "border-yellow-200", icon: "…"};
+
+    default:
+      return { color: "border-gray-200", icon: "•" };
+  }
+}
+
+
 export default function LogsPage() {
   const [logs, setLogs] = useState<LogEvent[]>([]);
 
