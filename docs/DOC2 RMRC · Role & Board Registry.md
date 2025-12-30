@@ -343,3 +343,29 @@ Logging og replay → DOC 4
 Menneskeligt grundlag → DOC 5
 
 DOC 2 definerer hvem der taler – ikke hvordan.
+
+Præcisering (nyt princip)
+
+Roller er continuity-aware, men continuity-agnostiske
+
+Det betyder:
+
+Roller må modtage continuity-anchor som input
+
+Roller må ikke ændre, udvide eller evaluere den
+
+Ingen rolle må skrive til continuity-laget
+
+Eksplicit forbud:
+
+Ingen rolle må “huske” tidligere turns
+
+Ingen rolle må referere til historik, som brugeren ikke selv bringer ind
+
+Continuity beskytter dermed rollerne mod:
+
+skjult state
+
+gradvis autoritetsopbygning
+
+implicit narrativ kontrol
