@@ -331,3 +331,37 @@ Menneskeligt grundlag → DOC 5
 
 DOC 4 lukker cirklen.
 RMRC lærer – men kun uden for drift.
+
+Nyt log-niveau
+
+Continuity Event (non-interpretive)
+
+Loggen må indeholde:
+
+anchor-ID
+
+tidspunkt for aktivering / validering
+
+kilde (bruger / governance)
+
+Loggen må ikke indeholde:
+
+anchor-indhold som fritekst
+
+fortolkninger eller vurderinger
+
+Ved replay:
+
+continuity kan genindlæses
+
+runtime kan afvikles på ny
+
+original continuity ændres aldrig
+
+Dette sikrer:
+
+sporbarhed
+
+sammenlignelighed
+
+ingen baglæns tilpasning
