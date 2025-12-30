@@ -2,6 +2,8 @@ RMRC · Exploratory Backlog (Non-Binding)
 
 Formål
 At samle idéer, eksperimenter og alternative retninger, som ikke indgår i den nuværende hovedimplementering, men som kan undersøges, når mainstream-løsningen er stabil.
+Dette backlog-dokument eksisterer for at beskytte hovedarkitekturen mod for tidlig kompleksitet – ikke for at accelerere udvikling.
+
 
 Dette dokument er:
 
