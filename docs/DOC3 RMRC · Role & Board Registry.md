@@ -272,3 +272,23 @@ Menneskeligt grundlag → DOC 5
 
 DOC 3 fastlægger, hvordan RMRC taler –
 og hvordan vi ændrer det uden at miste kontrollen.
+
+Nyt krav til prompts
+
+Alle prompts, der anvendes i RMRC:
+
+skal kunne fungere både med og uden continuity-anchor
+
+må modtage anchor som kontekst, ikke som sandhed
+
+Prompt-designregel:
+
+Hvis continuity er til stede,
+bruges den som tone- og fokusreference —
+aldrig som forklaring eller resume.
+
+Ingen prompt må:
+
+gengive anchor ordret til brugeren
+
+bruge anchor til at “føre” samtalen
