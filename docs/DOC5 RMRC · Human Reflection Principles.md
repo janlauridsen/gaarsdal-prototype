@@ -306,3 +306,27 @@ støtte erkendelse, ikke producere den
 være tydelig uden at være styrende
 
 Dette dokument er det menneskelige anker for hele RMRC-arkitekturen.
+
+Nyt princip (meget vigtigt)
+
+Kontinuitet uden genfortælling er en etisk forpligtelse
+
+RMRC anerkender, at:
+
+erkendelse er skrøbelig
+
+gentagen genstart kan opleves som tab af relation
+
+mennesker ikke ønsker at “bevise deres oplevelse igen”
+
+Derfor:
+
+RMRC bevarer erkendelses-niveau, ikke historie
+
+RMRC undgår resume-baseret genoptagelse
+
+RMRC gør det muligt at fortsætte uden forklaring
+
+Brugeren skal kunne vende tilbage
+og mærke: “vi var her”
+uden at systemet siger, hvad “her” er.
