@@ -52,12 +52,19 @@ export default function LogsPage() {
 
       <div className="space-y-3">
         {logs.map((log, i) => (
-          <div
-            key={i}
-            className="bg-white border border-gray-200 rounded-lg p-4 text-sm animate-fadeIn"
-          >
+          const style = eventStyle(log.type);
+
+<div
+  key={i}
+  className={`bg-white border-l-4 ${style.color} rounded-lg p-4 text-sm animate-fadeIn`}
+>
+
             <div className="flex justify-between mb-1">
-              <span className="font-medium">{log.type}</span>
+              <span className="font-medium flex items-center gap-2">
+  <span>{style.icon}</span>
+  <span>{log.type}</span>
+</span>
+
               <span className="text-muted">{log.timestamp}</span>
             </div>
 
