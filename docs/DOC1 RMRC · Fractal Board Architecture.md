@@ -261,3 +261,32 @@ DOC 5: definerer det menneskelige og refleksive grundlag (hvorfor systemet finde
 
 DOC 1 lukker arkitekturen.
 Ændringer her er sjældne og bevidste.
+
+Session Continuity Layer (mellem runtime og governance)
+
+RMRC opererer med et eksplicit continuity-lag, der:
+
+er adskilt fra runtime-sessioner
+
+ikke er en del af boards eller roller
+
+ikke indeholder dialoghistorik
+
+Continuity-laget:
+
+holder en aktiv erkendelses-anchor
+
+er læsbart, begrænset og eksplicit
+
+kan anvendes på tværs af runtime-sessioner
+
+Fraktal konsistens opretholdes ved, at:
+
+continuity ikke er et board
+
+continuity ikke aktiverer roller
+
+continuity kun leverer kontekst, aldrig output
+
+Boards er rum for refleksion.
+Continuity er stabiliteten mellem rummene.
