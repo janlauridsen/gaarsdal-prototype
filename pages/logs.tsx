@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 
-/* =========================
-   Types
-========================= */
+/* ---------- Types ---------- */
 
 interface LogEvent {
   type: string;
@@ -10,14 +8,15 @@ interface LogEvent {
   data?: Record<string, any>;
 }
 
-interface AnalysisNote {
-  roleId: string;
-  note: string;
+interface TurnSummary {
+  turnIndex: number;
+  boards: string[];
+  rolesInvoked: string[];
+  rolesSkipped: { roleId: string; reason?: string }[];
+  outputEmitted: boolean;
 }
 
-/* =========================
-   Helpers
-========================= */
+/* ---------- Helpers ---------- */
 
 function groupLogsByTurn(logs: LogEvent[]) {
   const turns: Record<number, LogEvent[]> = {};
@@ -29,151 +28,149 @@ function groupLogsByTurn(logs: LogEvent[]) {
       if (!turns[currentTurn]) turns[currentTurn] = [];
     }
 
-    if (!turns[currentTurn]) turns[currentTurn] = [];
+    if (!turns[currentTurn]) {
+      turns[currentTurn] = [];
+    }
+
     turns[currentTurn].push(log);
   }
 
   return turns;
 }
 
-function eventStyle(type: string) {
-  switch (type) {
-    case "session_started":
-      return { color: "border-green-400", icon: "▶️" };
-    case "session_ended":
-      return { color: "border-red-400", icon: "⏹️" };
-    case "turn_started":
-      return { color: "border-blue-400", icon: "🔁" };
-    case "turn_index":
-      return { color: "border-blue-200", icon: "🔢" };
-    case "board_activated":
-      return { color: "border-purple-400", icon: "🧩" };
-    case "role_invoked":
-      return { color: "border-gray-400", icon: "🗣️" };
-    case "role_skipped":
-      return { color: "border-yellow-400", icon: "🤐" };
-    case "output_emitted":
-      return { color: "border-black", icon: "💬" };
-    case "silence_emitted":
-      return { color: "border-yellow-200", icon: "…" };
-    default:
-      return { color: "border-gray-200", icon: "•" };
+function summarizeTurn(turnIndex: number, logs: LogEvent[]): TurnSummary {
+  const boards = new Set<string>();
+  const rolesInvoked = new Set<string>();
+  const rolesSkipped: { roleId: string; reason?: string }[] = [];
+  let outputEmitted = false;
+
+  for (const log of logs) {
+    if (log.type === "board_activated") {
+      boards.add(log.data?.boardId);
+    }
+
+    if (log.type === "role_invoked") {
+      rolesInvoked.add(log.data?.roleId);
+    }
+
+    if (log.type === "role_skipped") {
+      rolesSkipped.push({
+        roleId: log.data?.roleId,
+        reason: log.data?.reason,
+      });
+    }
+
+    if (log.type === "output_emitted") {
+      outputEmitted = true;
+    }
   }
+
+  return {
+    turnIndex,
+    boards: Array.from(boards),
+    rolesInvoked: Array.from(rolesInvoked),
+    rolesSkipped,
+    outputEmitted,
+  };
 }
 
-/* =========================
-   Page
-========================= */
+/* ---------- Page ---------- */
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<LogEvent[]>([]);
-  const [analysis, setAnalysis] = useState<AnalysisNote[]>([]);
-
   const turns = groupLogsByTurn(logs);
 
   useEffect(() => {
     fetch("/api/rmrc-logs")
       .then((r) => r.json())
-      .then((d) => setLogs(d.logs));
-
-    // 🔬 Mock analysis (lab-side placeholder)
-    setAnalysis([
-      {
-        roleId: "dialog_coherence_evaluator",
-        note:
-          "Dialogen fremstår tematisk sammenhængende med gentagelse omkring fastlåsthed.",
-      },
-      {
-        roleId: "missed_intervention_detector",
-        note:
-          "Dialog Navigator kunne hypotetisk have været aktiveret efter gentagelsen.",
-      },
-      {
-        roleId: "experience_quality_reflector",
-        note:
-          "Systemets respons synes at have bevaret en ikke-presserende og tryg tone.",
-      },
-    ]);
+      .then((d) => setLogs(d.logs ?? []));
   }, []);
 
   return (
-    <main className="p-10 max-w-7xl mx-auto">
+    <main className="p-10 max-w-5xl mx-auto">
       <h1 className="text-h1 mb-8">RMRC · Session Workbench</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* ================= Runtime Logs ================= */}
-        <section>
-          <h2 className="text-xl font-medium mb-4">Runtime Log</h2>
+      {Object.entries(turns).map(([turnIndex, turnLogs]) => {
+        const summary = summarizeTurn(Number(turnIndex), turnLogs);
 
-          <div className="space-y-6">
-            {Object.entries(turns).map(([turnIndex, events]) => (
-              <details
-                key={turnIndex}
-                open
-                className="bg-bg rounded-xl border border-gray-300 p-4"
-              >
-                <summary className="cursor-pointer font-medium text-lg mb-3">
-                  🔁 Turn {turnIndex}
-                </summary>
+        return (
+          <section
+            key={turnIndex}
+            className="mb-8 bg-white rounded-xl border border-gray-200 shadow-sm"
+          >
+            {/* --- Turn Header --- */}
+            <div className="px-6 py-4 border-b flex justify-between items-center">
+              <h2 className="text-xl font-medium">
+                Turn {summary.turnIndex}
+              </h2>
 
-                <div className="space-y-3">
-                  {events.map((log, i) => {
-                    const style = eventStyle(log.type);
+              <span className="text-sm text-muted">
+                {summary.outputEmitted ? "Output emitted" : "No output"}
+              </span>
+            </div>
 
-                    return (
-                      <div
-                        key={i}
-                        className={`bg-white border-l-4 ${style.color} rounded-lg p-4 text-sm`}
-                      >
-                        <div className="flex justify-between mb-1">
-                          <span className="font-medium flex items-center gap-2">
-                            <span>{style.icon}</span>
-                            <span>{log.type}</span>
-                          </span>
-                          <span className="text-muted">
-                            {log.timestamp}
-                          </span>
-                        </div>
-
-                        {log.data && (
-                          <pre className="text-xs bg-bg p-2 rounded mt-2 overflow-x-auto">
-                            {JSON.stringify(log.data, null, 2)}
-                          </pre>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </details>
-            ))}
-          </div>
-        </section>
-
-        {/* ================= Analysis ================= */}
-        <section>
-          <h2 className="text-xl font-medium mb-4">Post-Analysis (Lab)</h2>
-
-          <div className="space-y-4">
-            {analysis.map((item, i) => (
-              <div
-                key={i}
-                className="bg-white border border-gray-300 rounded-lg p-4 text-sm"
-              >
-                <div className="font-medium mb-2">
-                  🧠 {item.roleId}
-                </div>
-                <p className="text-muted leading-relaxed">
-                  {item.note}
-                </p>
+            {/* --- Turn Summary --- */}
+            <div className="px-6 py-4 grid grid-cols-3 gap-6 text-sm">
+              <div>
+                <h3 className="font-medium mb-1">Boards</h3>
+                {summary.boards.length === 0 ? (
+                  <span className="text-muted">None</span>
+                ) : (
+                  <ul className="list-disc list-inside">
+                    {summary.boards.map((b) => (
+                      <li key={b}>{b}</li>
+                    ))}
+                  </ul>
+                )}
               </div>
-            ))}
-          </div>
 
-          <p className="text-xs text-muted mt-6">
-            Analyse udføres udenfor runtime og påvirker ikke systemets adfærd.
-          </p>
-        </section>
-      </div>
+              <div>
+                <h3 className="font-medium mb-1">Roles Invoked</h3>
+                {summary.rolesInvoked.length === 0 ? (
+                  <span className="text-muted">None</span>
+                ) : (
+                  <ul className="list-disc list-inside">
+                    {summary.rolesInvoked.map((r) => (
+                      <li key={r}>{r}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div>
+                <h3 className="font-medium mb-1">Roles Silent</h3>
+                {summary.rolesSkipped.length === 0 ? (
+                  <span className="text-muted">None</span>
+                ) : (
+                  <ul className="list-disc list-inside">
+                    {summary.rolesSkipped.map((r, i) => (
+                      <li key={i}>
+                        {r.roleId}
+                        {r.reason && (
+                          <span className="text-muted">
+                            {" "}
+                            ({r.reason})
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            {/* --- Raw Logs (foldable later) --- */}
+            <details className="px-6 pb-4 text-xs">
+              <summary className="cursor-pointer text-muted">
+                Show raw logs
+              </summary>
+              <pre className="bg-bg p-3 rounded mt-2 overflow-x-auto">
+                {JSON.stringify(turnLogs, null, 2)}
+              </pre>
+            </details>
+          </section>
+        );
+      })}
     </main>
   );
 }
