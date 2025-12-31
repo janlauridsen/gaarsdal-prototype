@@ -1,7 +1,7 @@
 // pages/logsx.tsx
-// RMRC logsx v0.3
+// RMRC logsx v0.4
 // Status: Exploratory / Non-normative
-// Focus: Readability + Session overview + Semantic badges
+// Focus: Collapsible turns (document-style navigation)
 
 import React from "react";
 import { Redis } from "@upstash/redis";
@@ -82,6 +82,7 @@ function Badge({
         background: colors[tone],
         fontSize: "0.85rem",
         marginRight: "0.5rem",
+        marginBottom: "0.25rem",
       }}
     >
       {label}
@@ -104,7 +105,7 @@ export default function LogsXPage({ sessions, error }: Props) {
       <h1>RMRC · Extended Logs (logsx)</h1>
 
       <p style={{ color: "#555" }}>
-        <strong>Version:</strong> v0.3 <br />
+        <strong>Version:</strong> v0.4 <br />
         <strong>Status:</strong> Exploratory / Non-normative <br />
         <strong>Purpose:</strong> Architectural observability
       </p>
@@ -138,10 +139,8 @@ export default function LogsXPage({ sessions, error }: Props) {
           <ul>
             {sessions.map((s) => (
               <li key={s.id}>
-                <a href={`#${s.id}`}>
-                  {s.id}
-                </a>{" "}
-                — {s.board}, {s.turns.length} turn(s)
+                <a href={`#${s.id}`}>{s.id}</a> — {s.board},{" "}
+                {s.turns.length} turn(s)
               </li>
             ))}
           </ul>
@@ -168,53 +167,55 @@ export default function LogsXPage({ sessions, error }: Props) {
             <h2>📁 Session: {session.id}</h2>
             <p>
               <Badge label={`Board: ${session.board}`} tone="info" />
-              <Badge
-                label={`${session.turns.length} turn(s)`}
-              />
+              <Badge label={`${session.turns.length} turn(s)`} />
             </p>
             <p>
-              <strong>Created:</strong>{" "}
-              {session.createdAt}
+              <strong>Created:</strong> {session.createdAt}
             </p>
           </header>
 
-          {session.turns.map((turn) => (
-            <section
+          {/* ---------- COLLAPSIBLE TURNS ---------- */}
+          {session.turns.map((turn, idx) => (
+            <details
               key={turn.index}
+              open={idx === 0}
               style={{
                 border: "1px solid #ccc",
                 borderRadius: "4px",
-                padding: "1rem",
-                marginBottom: "1.5rem",
+                padding: "0.75rem 1rem",
+                marginBottom: "1rem",
               }}
             >
-              <h3>TURN {turn.index}</h3>
+              <summary
+                style={{
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                TURN {turn.index}
+              </summary>
 
-              <section>
+              <section style={{ marginBottom: "0.75rem" }}>
                 <strong>👤 Input</strong>
                 <pre>{turn.input}</pre>
               </section>
 
-              <section>
+              <section style={{ marginBottom: "0.75rem" }}>
                 <strong>🧠 Runtime</strong>
                 <ul>
+                  <li>Board: {turn.runtime.board}</li>
                   <li>
-                    Board: {turn.runtime.board}
-                  </li>
-                  <li>
-                    Context status:{" "}
-                    {turn.runtime.contextStatus}
+                    Context status: {turn.runtime.contextStatus}
                   </li>
                   <li>
                     Active roles:{" "}
-                    {turn.runtime.activeRoles.join(
-                      ", "
-                    )}
+                    {turn.runtime.activeRoles.join(", ")}
                   </li>
                 </ul>
               </section>
 
-              <section>
+              <section style={{ marginBottom: "0.75rem" }}>
                 <strong>🪞 Role outputs</strong>
                 <ul>
                   {turn.roleOutputs.map((r, i) => (
@@ -226,7 +227,7 @@ export default function LogsXPage({ sessions, error }: Props) {
                 </ul>
               </section>
 
-              <section>
+              <section style={{ marginBottom: "0.75rem" }}>
                 <strong>🧱 Consolidation</strong>
                 <p>
                   <Badge
@@ -239,7 +240,7 @@ export default function LogsXPage({ sessions, error }: Props) {
                 </p>
               </section>
 
-              <section>
+              <section style={{ marginBottom: "0.75rem" }}>
                 <strong>📤 Output</strong>
                 <pre>{turn.output ?? "—"}</pre>
               </section>
@@ -258,14 +259,16 @@ export default function LogsXPage({ sessions, error }: Props) {
                   />
                 </p>
               </section>
-            </section>
+            </details>
           ))}
 
+          {/* ---------- HERMENEUTIC SPIRAL ---------- */}
           {session.spiral && (
             <section
               style={{
                 borderTop: "2px dashed #ccc",
                 paddingTop: "1rem",
+                marginTop: "1.5rem",
               }}
             >
               <h3>🌀 Session Reflection (Hermeneutic Spiral)</h3>
@@ -304,11 +307,7 @@ export async function getServerSideProps() {
       token: process.env.UPSTASH_REDIS_REST_TOKEN!,
     });
 
-    const raw = await redis.lrange(
-      "logsx:sessions",
-      0,
-      -1
-    );
+    const raw = await redis.lrange("logsx:sessions", 0, -1);
 
     const sessions = raw.map((item: any) =>
       typeof item === "string" ? JSON.parse(item) : item
