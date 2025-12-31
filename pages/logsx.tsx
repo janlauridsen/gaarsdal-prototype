@@ -1,7 +1,6 @@
 // pages/logsx.tsx
-// RMRC /logsx v0.1
+// RMRC logsx v0.1
 // Status: Exploratory / Non-normative
-// Purpose: Learning + Debug + System Owner Overview
 
 import React from "react";
 
@@ -46,8 +45,8 @@ type Session = {
 };
 
 /**
- * v0.1 DATA SOURCE
- * Replace later with real loader (Redis / runtime logs)
+ * v0.1 mock data source
+ * Replace later with Redis/runtime logs
  */
 async function loadSessions(): Promise<Session[]> {
   return [
@@ -102,9 +101,11 @@ async function loadSessions(): Promise<Session[]> {
   ];
 }
 
-export default async function LogsXPage() {
-  const sessions = await loadSessions();
+type Props = {
+  sessions: Session[];
+};
 
+export default function LogsXPage({ sessions }: Props) {
   return (
     <main
       style={{
@@ -113,7 +114,7 @@ export default async function LogsXPage() {
         maxWidth: "1000px",
       }}
     >
-      <h1>RMRC · Extended Logs (/logsx)</h1>
+      <h1>RMRC · Extended Logs (logsx)</h1>
       <p>
         <strong>Version:</strong> v0.1 <br />
         <strong>Status:</strong> Exploratory / Non-normative
@@ -193,7 +194,9 @@ Context stability: {turn.meta.contextStability}
 
           {session.spiral && (
             <section style={{ marginTop: "1.5rem" }}>
-              <h3>🌀 Session Reflection (Hermeneutic Spiral)</h3>
+              <h3>
+                🌀 Session Reflection (Hermeneutic Spiral)
+              </h3>
               <ul>
                 <li>
                   <strong>Oplevelse:</strong>{" "}
@@ -218,4 +221,12 @@ Context stability: {turn.meta.contextStability}
       ))}
     </main>
   );
+}
+
+export async function getStaticProps() {
+  const sessions = await loadSessions();
+
+  return {
+    props: { sessions },
+  };
 }
