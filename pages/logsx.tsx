@@ -5,6 +5,11 @@
 import React from "react";
 import { Redis } from "@upstash/redis";
 
+// 🔒 Force Node runtime (critical on Vercel)
+export const config = {
+  runtime: "nodejs",
+};
+
 type RoleOutput = {
   role: string;
   output: string | null;
