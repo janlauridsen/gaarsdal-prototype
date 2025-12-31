@@ -420,3 +420,154 @@ Samarbejdet forbliver eksplicit og ikke glider implicit
 AI forbliver refleksiv og tjenende, ikke styrende
 
 Systemejerens dømmekraft forbliver endelig autoritet
+SECTION 11 · OBSERVABILITY & TESTLAB (STABIL)
+11.1 Formål
+
+Formålet med RMRC Observability & Testlab er at etablere et kontrolleret, ikke-produktivt miljø, hvor systemets refleksive adfærd kan:
+
+observeres
+
+sammenlignes
+
+forklares
+
+og evalueres
+
+uden at:
+
+optimere
+
+manipulere
+
+skjule tvetydighed
+
+eller introducere implicit styring.
+
+Observability forstås her ikke som klassisk driftsovervågning, men som arkitektonisk indsigt i beslutnings- og afgrænsningsmønstre.
+
+11.2 Designprincipper
+
+Observability-laget følger disse faste principper:
+
+Ikke-normativt
+Logs forklarer hvad der skete, ikke hvad der burde ske.
+
+Dokument-orienteret navigation
+Læsning foregår som i et teknisk dokument, ikke som i et dashboard.
+
+Lav kognitiv belastning
+Struktur, hierarki og visuel ro prioriteres over detaljerigdom.
+
+Ingen produktionsdata
+Al observability er baseret på testcases og manuel afprøvning.
+
+Ingen skjult state
+Al synlig adfærd kan spores tilbage til kendte inputs.
+
+11.3 logsx – Extended Logs
+
+Endpointet /logsx fungerer som RMRC’s udvidede observability-view.
+
+Det præsenterer hver session som en selvstændig, læsbar enhed bestående af:
+
+Session-identitet og board
+
+Sekventielle turns (collapsible)
+
+Runtime-tilstand (board, kontekst, aktive roller)
+
+Rolleoutput
+
+Konsolideringsstrategi
+
+Endeligt output
+
+Meta-observationer
+
+Hermeneutisk spiral (oplevelse → refleksion → meta → justering)
+
+logsx er eksplicit ikke et debug-view og ikke et performance-værktøj, men et forklarings- og læringsartefakt.
+
+11.4 Testcases som primær datakilde
+
+RMRC anvender kuraterede testcases som primær kilde til observability.
+
+Testcases er designet til at:
+
+repræsentere adfærdstyper (fx spejling, grænseaktivering)
+
+skabe kontrast mellem sessions
+
+understøtte sammenlignende analyse
+
+fungere som undervisnings- og refleksionsmateriale
+
+Testcases er:
+
+eksplicitte
+
+versionsstyrede
+
+statiske pr. iteration
+
+Der anvendes bevidst flush + seed før hver testkørsel for at sikre deterministisk adfærd og eliminere historisk støj.
+
+11.5 Testlab-ritual
+
+Arbejdet i testlab følger et fast ritual:
+
+Database flush
+
+Indlæsning af definerede testcases
+
+Observation via /logsx
+
+Refleksion og evt. justering ved commitpoint
+
+Der foretages ingen løbende mutation af data mellem tests.
+
+Dette sikrer:
+
+reproducerbarhed
+
+ro i samarbejdet
+
+klar sammenhæng mellem konfiguration og adfærd
+
+11.6 Governance- og læringsperspektiv
+
+Observability & Testlab er ikke kun et teknisk værktøj, men et governance-artefakt.
+
+Det muliggør:
+
+dialog med styregrupper og review-fora
+
+arkitektonisk kvalitetssikring
+
+dokumentation af systemets begrænsninger
+
+træning af systemejere i forståelse af AI-adfærd
+
+logsx fungerer dermed som et mellemled mellem kode, arkitektur og beslutningstagning.
+
+11.7 Stabilitet og videre udvikling
+
+Denne sektion betragtes som stabil.
+
+Videre udvikling kan omfatte:
+
+flere testcases
+
+forbedret læsbarhed
+
+supplerende observability-views
+
+men må ikke:
+
+ændre logsx’ ikke-normative karakter
+
+indføre produktionsdata
+
+forvandle observability til styring
+
+SECTION 11 afslutter RMRC’s grundlæggende test- og observability-setup.
