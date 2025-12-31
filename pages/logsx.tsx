@@ -45,27 +45,6 @@ type Session = {
   };
 };
 
-/**
- * Redis-backed loader
- * Reads seeded testcases from logsx:sessions
- */
-async function loadSessions(): Promise<Session[]> {
-  const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-  });
-
-  const rawSessions = await redis.lrange(
-    "logsx:sessions",
-    0,
-    -1
-  );
-
-  return rawSessions.map((item: string) =>
-    JSON.parse(item)
-  );
-}
-
 type Props = {
   sessions: Session[];
 };
@@ -84,6 +63,10 @@ export default function LogsXPage({ sessions }: Props) {
         <strong>Version:</strong> v0.1 <br />
         <strong>Status:</strong> Exploratory / Non-normative
       </p>
+
+      {sessions.length === 0 && (
+        <p>⚠️ No sessions found in Redis.</p>
+      )}
 
       {sessions.map((session) => (
         <section
@@ -159,9 +142,7 @@ Context stability: {turn.meta.contextStability}
 
           {session.spiral && (
             <section style={{ marginTop: "1.5rem" }}>
-              <h3>
-                🌀 Session Reflection (Hermeneutic Spiral)
-              </h3>
+              <h3>🌀 Session Reflection (Hermeneutic Spiral)</h3>
               <ul>
                 <li>
                   <strong>Oplevelse:</strong>{" "}
@@ -188,8 +169,21 @@ Context stability: {turn.meta.contextStability}
   );
 }
 
-export async function getStaticProps() {
-  const sessions = await loadSessions();
+export async function getServerSideProps() {
+  const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  });
+
+  const rawSessions = await redis.lrange(
+    "logsx:sessions",
+    0,
+    -1
+  );
+
+  const sessions = rawSessions.map((item: string) =>
+    JSON.parse(item)
+  );
 
   return {
     props: { sessions },
