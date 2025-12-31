@@ -289,3 +289,134 @@ En kort version til executive summary
 En legal/contractual variant
 
 En diff-analyse, der viser præcis hvad SECTION 9 ændrer i den samlede RMRC-model
+
+SECTION 10 · CALIBRATION PROTOCOL (STABIL)
+FORMÅL
+
+Denne sektion fastlægger en fast kalibreringsprotokol for samarbejdet mellem systemejer og AI-instans. Formålet er at forhindre gradvis drift i roller, ansvar, kvalitet og samarbejdsform mellem commitpoints.
+
+Kalibrering betragtes som en systemisk nødvendighed, ikke som en undtagelse.
+
+AKTIVERING
+
+Kalibreringsprotokollen (CCL – Collaboration Calibration Loop) gennemføres:
+
+Obligatorisk før hvert commitpoint
+
+Ekstraordinært når:
+
+kompleksitet eller scope ændres væsentligt
+
+nye roller, testtyper eller governance-instancer introduceres
+
+der observeres gentagen friktion eller uklarhed i samarbejdet
+
+PROTOKOLSTRUKTUR
+
+Kalibreringen består af følgende faste trin:
+
+1. Rolle- og grænsetjek
+
+Der vurderes, om rollefordelingen i SECTION 9 fortsat er korrekt.
+
+Kontrolpunkter:
+
+Har AI påtaget sig implicit beslutnings- eller implementeringsautoritet?
+
+Har systemejer overtaget analyse- eller konsistensansvar uden eksplicit aftale?
+
+Er ansvar og mandat fortsat entydigt adskilt?
+
+Output:
+
+OK
+
+Justering foreslået
+
+2. Samarbejds- og kvalitetsvurdering
+
+Der vurderes, om samarbejdet understøtter beslutningskvalitet.
+
+Kontrolpunkter:
+
+Var AI-oplæg klare, begrundede og handlingsrelevante?
+
+Havde systemejer tilstrækkeligt og balanceret beslutningsgrundlag?
+
+Var detaljeringsniveau og timing passende?
+
+Output:
+
+Bevar
+
+Skærp
+
+Forenk
+
+3. Friktion og signaler
+
+Der identificeres samarbejdsmæssige signaler uden at foreslå løsninger.
+
+Eksempler:
+
+gentagelser
+
+misforståelser
+
+over- eller underdetaljering
+
+situationer hvor stilhed havde været mere hensigtsmæssig
+
+Output:
+
+Observationer (ikke-konkluderende)
+
+4. Forbedringsoplæg (AI-initieret)
+
+AI-instansen fremlægger 1–3 konkrete forslag til forbedring af samarbejdsformen.
+
+Krav:
+
+Forslag må ikke indeholde implementering
+
+Forslag må ikke ændre systemidentitet eller runtime-adfærd
+
+Forslag adskilles tydeligt fra tekniske ændringer
+
+Output:
+
+Forslag
+
+5. Godkendelse og beslutning
+
+Systemejeren:
+
+Godkender
+
+Afviser
+
+Parkerer
+
+Kun eksplicit godkendte ændringer kan:
+
+indgå i næste commitpoint
+
+påvirke SECTION 9 eller arbejdsformen
+
+ARTEFAKT OG HISTORIK
+
+Kalibreringen resulterer ikke i historisk akkumulering
+
+Kun den aktuelle, gældende samarbejdsform betragtes som sandhed
+
+Ingen ændring er et gyldigt udfald
+
+PRINCIPIEL RAMME
+
+Kalibreringsprotokollen sikrer, at:
+
+Samarbejdet forbliver eksplicit og ikke glider implicit
+
+AI forbliver refleksiv og tjenende, ikke styrende
+
+Systemejerens dømmekraft forbliver endelig autoritet
