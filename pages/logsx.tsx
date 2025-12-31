@@ -3,6 +3,7 @@
 // Status: Exploratory / Non-normative
 
 import React from "react";
+import { Redis } from "@upstash/redis";
 
 type RoleOutput = {
   role: string;
@@ -45,60 +46,24 @@ type Session = {
 };
 
 /**
- * v0.1 mock data source
- * Replace later with Redis/runtime logs
+ * Redis-backed loader
+ * Reads seeded testcases from logsx:sessions
  */
 async function loadSessions(): Promise<Session[]> {
-  return [
-    {
-      id: "session-001",
-      board: "reflective",
-      createdAt: new Date().toISOString(),
-      turns: [
-        {
-          index: 1,
-          input: "Jeg føler mig presset, men undgår fokus.",
-          runtime: {
-            board: "reflective",
-            contextStatus: "no_context_yet",
-            activeRoles: ["🪞 Spejler", "🧭 Kontekstholder"],
-          },
-          roleOutputs: [
-            {
-              role: "🪞 Spejler",
-              output:
-                "Du beskriver et pres, som samtidig holdes på afstand.",
-            },
-            {
-              role: "🧭 Kontekstholder",
-              output: null,
-            },
-          ],
-          consolidation: {
-            strategy: "mirror-only",
-            navigationInvoked: false,
-            boundaryGuard: "passive",
-          },
-          output:
-            "Du beskriver et pres, som samtidig holdes på afstand.",
-          meta: {
-            ambiguity: "preserved",
-            silenceChosen: false,
-            contextStability: "unstable",
-          },
-        },
-      ],
-      spiral: {
-        experience: "Session med én turn og spejlende respons.",
-        reflection:
-          "Systemet valgte ikke navigation eller kontekstetablering.",
-        meta:
-          "RMRC opfører sig konservativt i tidlige sessioner.",
-        adjustment:
-          "Ingen ændringer. Observeres videre.",
-      },
-    },
-  ];
+  const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  });
+
+  const rawSessions = await redis.lrange(
+    "logsx:sessions",
+    0,
+    -1
+  );
+
+  return rawSessions.map((item: string) =>
+    JSON.parse(item)
+  );
 }
 
 type Props = {
@@ -161,7 +126,7 @@ Roles: {turn.runtime.activeRoles.join(", ")}
   .map(
     (r) =>
       `${r.role}: ${
-        r.output ?? "(no output)"
+        r.output ?? "— (no output)"
       }`
   )
   .join("\n")}
@@ -178,7 +143,7 @@ Boundary guard: {turn.consolidation.boundaryGuard}
 
               <pre>
 📤 Output
-{turn.output ?? "(no output)"}
+{turn.output ?? "—"}
               </pre>
 
               <pre>
