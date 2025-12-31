@@ -1,7 +1,7 @@
 // pages/logsx.tsx
-// RMRC logsx v0.2
+// RMRC logsx v0.3
 // Status: Exploratory / Non-normative
-// Focus: Readability & structural clarity (no new logic)
+// Focus: Readability + Session overview + Semantic badges
 
 import React from "react";
 import { Redis } from "@upstash/redis";
@@ -10,6 +10,8 @@ import { Redis } from "@upstash/redis";
 export const config = {
   runtime: "nodejs",
 };
+
+/* ---------- Types ---------- */
 
 type RoleOutput = {
   role: string;
@@ -56,6 +58,39 @@ type Props = {
   error?: string;
 };
 
+/* ---------- UI helpers ---------- */
+
+function Badge({
+  label,
+  tone = "neutral",
+}: {
+  label: string;
+  tone?: "neutral" | "info" | "guard";
+}) {
+  const colors: Record<string, string> = {
+    neutral: "#eee",
+    info: "#e8f0ff",
+    guard: "#fff0e8",
+  };
+
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        padding: "0.15rem 0.5rem",
+        borderRadius: "4px",
+        background: colors[tone],
+        fontSize: "0.85rem",
+        marginRight: "0.5rem",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+/* ---------- Page ---------- */
+
 export default function LogsXPage({ sessions, error }: Props) {
   return (
     <main
@@ -69,7 +104,7 @@ export default function LogsXPage({ sessions, error }: Props) {
       <h1>RMRC · Extended Logs (logsx)</h1>
 
       <p style={{ color: "#555" }}>
-        <strong>Version:</strong> v0.2 <br />
+        <strong>Version:</strong> v0.3 <br />
         <strong>Status:</strong> Exploratory / Non-normative <br />
         <strong>Purpose:</strong> Architectural observability
       </p>
@@ -90,13 +125,38 @@ export default function LogsXPage({ sessions, error }: Props) {
         </pre>
       )}
 
-      {!error && sessions.length === 0 && (
+      {/* ---------- SESSION INDEX ---------- */}
+      {sessions.length > 0 && (
+        <section
+          style={{
+            border: "1px solid #ccc",
+            padding: "1rem",
+            marginBottom: "2rem",
+          }}
+        >
+          <h2>🧭 Session Index</h2>
+          <ul>
+            {sessions.map((s) => (
+              <li key={s.id}>
+                <a href={`#${s.id}`}>
+                  {s.id}
+                </a>{" "}
+                — {s.board}, {s.turns.length} turn(s)
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {sessions.length === 0 && !error && (
         <p>⚠️ No sessions found in Redis.</p>
       )}
 
+      {/* ---------- SESSIONS ---------- */}
       {sessions.map((session) => (
         <section
           key={session.id}
+          id={session.id}
           style={{
             border: "2px solid #ddd",
             borderRadius: "6px",
@@ -104,17 +164,20 @@ export default function LogsXPage({ sessions, error }: Props) {
             marginBottom: "3rem",
           }}
         >
-          {/* SESSION HEADER */}
           <header style={{ marginBottom: "1rem" }}>
             <h2>📁 Session: {session.id}</h2>
             <p>
-              <strong>Board:</strong> {session.board} <br />
-              <strong>Created:</strong> {session.createdAt} <br />
-              <strong>Turns:</strong> {session.turns.length}
+              <Badge label={`Board: ${session.board}`} tone="info" />
+              <Badge
+                label={`${session.turns.length} turn(s)`}
+              />
+            </p>
+            <p>
+              <strong>Created:</strong>{" "}
+              {session.createdAt}
             </p>
           </header>
 
-          {/* TURNS */}
           {session.turns.map((turn) => (
             <section
               key={turn.index}
@@ -127,29 +190,31 @@ export default function LogsXPage({ sessions, error }: Props) {
             >
               <h3>TURN {turn.index}</h3>
 
-              <section style={{ marginBottom: "0.75rem" }}>
+              <section>
                 <strong>👤 Input</strong>
                 <pre>{turn.input}</pre>
               </section>
 
-              <section style={{ marginBottom: "0.75rem" }}>
+              <section>
                 <strong>🧠 Runtime</strong>
                 <ul>
                   <li>
-                    <strong>Board:</strong> {turn.runtime.board}
+                    Board: {turn.runtime.board}
                   </li>
                   <li>
-                    <strong>Context status:</strong>{" "}
+                    Context status:{" "}
                     {turn.runtime.contextStatus}
                   </li>
                   <li>
-                    <strong>Active roles:</strong>{" "}
-                    {turn.runtime.activeRoles.join(", ")}
+                    Active roles:{" "}
+                    {turn.runtime.activeRoles.join(
+                      ", "
+                    )}
                   </li>
                 </ul>
               </section>
 
-              <section style={{ marginBottom: "0.75rem" }}>
+              <section>
                 <strong>🪞 Role outputs</strong>
                 <ul>
                   {turn.roleOutputs.map((r, i) => (
@@ -161,58 +226,46 @@ export default function LogsXPage({ sessions, error }: Props) {
                 </ul>
               </section>
 
-              <section style={{ marginBottom: "0.75rem" }}>
+              <section>
                 <strong>🧱 Consolidation</strong>
-                <ul>
-                  <li>
-                    <strong>Strategy:</strong>{" "}
-                    {turn.consolidation.strategy}
-                  </li>
-                  <li>
-                    <strong>Navigation invoked:</strong>{" "}
-                    {String(
-                      turn.consolidation.navigationInvoked
-                    )}
-                  </li>
-                  <li>
-                    <strong>Boundary guard:</strong>{" "}
-                    {turn.consolidation.boundaryGuard}
-                  </li>
-                </ul>
+                <p>
+                  <Badge
+                    label={`Strategy: ${turn.consolidation.strategy}`}
+                  />
+                  <Badge
+                    label={`Boundary: ${turn.consolidation.boundaryGuard}`}
+                    tone="guard"
+                  />
+                </p>
               </section>
 
-              <section style={{ marginBottom: "0.75rem" }}>
+              <section>
                 <strong>📤 Output</strong>
                 <pre>{turn.output ?? "—"}</pre>
               </section>
 
               <section>
                 <strong>⚙️ Meta</strong>
-                <ul>
-                  <li>
-                    <strong>Ambiguity:</strong>{" "}
-                    {turn.meta.ambiguity}
-                  </li>
-                  <li>
-                    <strong>Silence chosen:</strong>{" "}
-                    {String(turn.meta.silenceChosen)}
-                  </li>
-                  <li>
-                    <strong>Context stability:</strong>{" "}
-                    {turn.meta.contextStability}
-                  </li>
-                </ul>
+                <p>
+                  <Badge
+                    label={`Ambiguity: ${turn.meta.ambiguity}`}
+                  />
+                  <Badge
+                    label={`Silence: ${turn.meta.silenceChosen}`}
+                  />
+                  <Badge
+                    label={`Context: ${turn.meta.contextStability}`}
+                  />
+                </p>
               </section>
             </section>
           ))}
 
-          {/* HERMENEUTIC SPIRAL */}
           {session.spiral && (
             <section
               style={{
                 borderTop: "2px dashed #ccc",
                 paddingTop: "1rem",
-                marginTop: "1.5rem",
               }}
             >
               <h3>🌀 Session Reflection (Hermeneutic Spiral)</h3>
@@ -241,6 +294,8 @@ export default function LogsXPage({ sessions, error }: Props) {
     </main>
   );
 }
+
+/* ---------- Data loader ---------- */
 
 export async function getServerSideProps() {
   try {
