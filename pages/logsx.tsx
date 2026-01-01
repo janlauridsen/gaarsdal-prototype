@@ -1,17 +1,12 @@
 // pages/logsx.tsx
-// RMRC logsx v0.4
+// RMRC · Extended Logs (logsx)
+// Version: v0.4
 // Status: Exploratory / Non-normative
-// Focus: Collapsible turns (document-style navigation)
+// Purpose: Architectural observability (read-only)
 
 import React from "react";
 import { Redis } from "@upstash/redis";
-
-// 🔒 Force Node runtime
-export const config = {
-  runtime: "nodejs",
-};
-
-/* ---------- Types ---------- */
+import { GetServerSideProps } from "next";
 
 type RoleOutput = {
   role: string;
@@ -23,28 +18,36 @@ type Turn = {
   input: string;
   runtime: {
     board: string;
-    contextStatus: string;
     activeRoles: string[];
   };
-  roleOutputs: RoleOutput[];
-  consolidation: {
+  roleOutputs?: RoleOutput[];
+  consolidation?: {
     strategy: string;
     navigationInvoked: boolean;
     boundaryGuard: string;
   };
-  output: string | null;
-  meta: {
+  output?: string | null;
+  meta?: {
     ambiguity: string;
     silenceChosen: boolean;
     contextStability: string;
   };
 };
 
+type EvaluationNote = {
+  level: "note" | "warn";
+  message: string;
+};
+
 type Session = {
   id: string;
-  board: string;
+  source?: string;
+  archetype?: string;
+  parameters?: Record<string, any>;
+  board?: string;
   createdAt: string;
   turns: Turn[];
+  evaluation?: EvaluationNote[];
   spiral?: {
     experience: string;
     reflection: string;
@@ -55,273 +58,229 @@ type Session = {
 
 type Props = {
   sessions: Session[];
-  error?: string;
+  selectedSessionId?: string | null;
 };
 
-/* ---------- UI helpers ---------- */
+export default function LogsXPage({
+  sessions,
+  selectedSessionId,
+}: Props) {
+  const selected =
+    selectedSessionId &&
+    sessions.find((s) => s.id === selectedSessionId);
 
-function Badge({
-  label,
-  tone = "neutral",
-}: {
-  label: string;
-  tone?: "neutral" | "info" | "guard";
-}) {
-  const colors: Record<string, string> = {
-    neutral: "#eee",
-    info: "#e8f0ff",
-    guard: "#fff0e8",
-  };
-
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        padding: "0.15rem 0.5rem",
-        borderRadius: "4px",
-        background: colors[tone],
-        fontSize: "0.85rem",
-        marginRight: "0.5rem",
-        marginBottom: "0.25rem",
-      }}
-    >
-      {label}
-    </span>
-  );
-}
-
-/* ---------- Page ---------- */
-
-export default function LogsXPage({ sessions, error }: Props) {
   return (
     <main
       style={{
         padding: "2rem",
-        fontFamily: "monospace",
         maxWidth: "1100px",
-        margin: "0 auto",
+        fontFamily: "monospace",
       }}
     >
       <h1>RMRC · Extended Logs (logsx)</h1>
-
-      <p style={{ color: "#555" }}>
+      <p>
         <strong>Version:</strong> v0.4 <br />
         <strong>Status:</strong> Exploratory / Non-normative <br />
         <strong>Purpose:</strong> Architectural observability
       </p>
 
-      {error && (
-        <pre
-          style={{
-            color: "darkred",
-            background: "#ffecec",
-            padding: "1rem",
-            border: "1px solid #f5c2c2",
-            marginBottom: "2rem",
-          }}
-        >
-          ERROR:
-          {"\n"}
-          {error}
-        </pre>
-      )}
+      {/* SESSION INDEX */}
+      <section style={{ marginTop: "2rem" }}>
+        <h2>🧭 Session Index</h2>
+        {sessions.length === 0 && (
+          <p>⚠️ No sessions found.</p>
+        )}
+        <ul>
+          {sessions.map((s) => (
+            <li key={s.id}>
+              <a href={`/logsx?session=${s.id}`}>
+                {s.id}
+              </a>{" "}
+              — {s.archetype ?? "n/a"},{" "}
+              {s.turns.length} turn(s)
+            </li>
+          ))}
+        </ul>
+      </section>
 
-      {/* ---------- SESSION INDEX ---------- */}
-      {sessions.length > 0 && (
-        <section
-          style={{
-            border: "1px solid #ccc",
-            padding: "1rem",
-            marginBottom: "2rem",
-          }}
-        >
-          <h2>🧭 Session Index</h2>
-          <ul>
-            {sessions.map((s) => (
-              <li key={s.id}>
-                <a href={`#${s.id}`}>{s.id}</a> — {s.board},{" "}
-                {s.turns.length} turn(s)
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {/* SELECTED SESSION */}
+      {selected && (
+        <section style={{ marginTop: "3rem" }}>
+          <h2>📁 Session: {selected.id}</h2>
+          <p>
+            <strong>Source:</strong>{" "}
+            {selected.source ?? "unknown"}
+            <br />
+            <strong>Archetype:</strong>{" "}
+            {selected.archetype ?? "n/a"}
+            <br />
+            <strong>Created:</strong>{" "}
+            {selected.createdAt}
+          </p>
 
-      {sessions.length === 0 && !error && (
-        <p>⚠️ No sessions found in Redis.</p>
-      )}
+          {selected.parameters && (
+            <details style={{ marginBottom: "1.5rem" }}>
+              <summary>⚙️ Parameters</summary>
+              <pre>
+                {JSON.stringify(
+                  selected.parameters,
+                  null,
+                  2
+                )}
+              </pre>
+            </details>
+          )}
 
-      {/* ---------- SESSIONS ---------- */}
-      {sessions.map((session) => (
-        <section
-          key={session.id}
-          id={session.id}
-          style={{
-            border: "2px solid #ddd",
-            borderRadius: "6px",
-            padding: "1.5rem",
-            marginBottom: "3rem",
-          }}
-        >
-          <header style={{ marginBottom: "1rem" }}>
-            <h2>📁 Session: {session.id}</h2>
-            <p>
-              <Badge label={`Board: ${session.board}`} tone="info" />
-              <Badge label={`${session.turns.length} turn(s)`} />
-            </p>
-            <p>
-              <strong>Created:</strong> {session.createdAt}
-            </p>
-          </header>
-
-          {/* ---------- COLLAPSIBLE TURNS ---------- */}
-          {session.turns.map((turn, idx) => (
+          {/* TURNS */}
+          {selected.turns.map((turn) => (
             <details
               key={turn.index}
-              open={idx === 0}
               style={{
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-                padding: "0.75rem 1rem",
                 marginBottom: "1rem",
+                border: "1px solid #ddd",
+                padding: "0.75rem",
               }}
             >
-              <summary
-                style={{
-                  cursor: "pointer",
-                  fontWeight: "bold",
-                  marginBottom: "0.5rem",
-                }}
-              >
-                TURN {turn.index}
-              </summary>
+              <summary>TURN {turn.index}</summary>
 
-              <section style={{ marginBottom: "0.75rem" }}>
-                <strong>👤 Input</strong>
-                <pre>{turn.input}</pre>
-              </section>
+              <pre>
+👤 Input
+{turn.input}
+              </pre>
 
-              <section style={{ marginBottom: "0.75rem" }}>
-                <strong>🧠 Runtime</strong>
-                <ul>
-                  <li>Board: {turn.runtime.board}</li>
-                  <li>
-                    Context status: {turn.runtime.contextStatus}
-                  </li>
-                  <li>
-                    Active roles:{" "}
-                    {turn.runtime.activeRoles.join(", ")}
-                  </li>
-                </ul>
-              </section>
+              <pre>
+🧠 Runtime
+Board: {turn.runtime.board}
+Roles: {turn.runtime.activeRoles.join(", ")}
+              </pre>
 
-              <section style={{ marginBottom: "0.75rem" }}>
-                <strong>🪞 Role outputs</strong>
-                <ul>
-                  {turn.roleOutputs.map((r, i) => (
-                    <li key={i}>
-                      <strong>{r.role}:</strong>{" "}
-                      {r.output ?? "—"}
-                    </li>
-                  ))}
-                </ul>
-              </section>
+              {turn.roleOutputs && (
+                <pre>
+🧩 Role outputs
+{turn.roleOutputs
+  .map(
+    (r) =>
+      `${r.role}: ${
+        r.output ?? "— (no output)"
+      }`
+  )
+  .join("\n")}
+                </pre>
+              )}
 
-              <section style={{ marginBottom: "0.75rem" }}>
-                <strong>🧱 Consolidation</strong>
-                <p>
-                  <Badge
-                    label={`Strategy: ${turn.consolidation.strategy}`}
-                  />
-                  <Badge
-                    label={`Boundary: ${turn.consolidation.boundaryGuard}`}
-                    tone="guard"
-                  />
-                </p>
-              </section>
+              {turn.consolidation && (
+                <pre>
+🧱 Consolidation
+Strategy: {turn.consolidation.strategy}
+Navigation:{" "}
+{String(
+  turn.consolidation.navigationInvoked
+)}
+Boundary:{" "}
+{turn.consolidation.boundaryGuard}
+                </pre>
+              )}
 
-              <section style={{ marginBottom: "0.75rem" }}>
-                <strong>📤 Output</strong>
-                <pre>{turn.output ?? "—"}</pre>
-              </section>
+              <pre>
+📤 Output
+{turn.output ?? "—"}
+              </pre>
 
-              <section>
-                <strong>⚙️ Meta</strong>
-                <p>
-                  <Badge
-                    label={`Ambiguity: ${turn.meta.ambiguity}`}
-                  />
-                  <Badge
-                    label={`Silence: ${turn.meta.silenceChosen}`}
-                  />
-                  <Badge
-                    label={`Context: ${turn.meta.contextStability}`}
-                  />
-                </p>
-              </section>
+              {turn.meta && (
+                <pre>
+⚙️ Meta
+Ambiguity: {turn.meta.ambiguity}
+Silence:{" "}
+{String(turn.meta.silenceChosen)}
+Context:{" "}
+{turn.meta.contextStability}
+                </pre>
+              )}
             </details>
           ))}
 
-          {/* ---------- HERMENEUTIC SPIRAL ---------- */}
-          {session.spiral && (
-            <section
-              style={{
-                borderTop: "2px dashed #ccc",
-                paddingTop: "1rem",
-                marginTop: "1.5rem",
-              }}
-            >
-              <h3>🌀 Session Reflection (Hermeneutic Spiral)</h3>
+          {/* POST-ROLE EVALUATION */}
+          {selected.evaluation && (
+            <section style={{ marginTop: "2rem" }}>
+              <h3>🧪 Post-role evaluation</h3>
+              <ul>
+                {selected.evaluation.map(
+                  (e, i) => (
+                    <li key={i}>
+                      [{e.level.toUpperCase()}]{" "}
+                      {e.message}
+                    </li>
+                  )
+                )}
+              </ul>
+            </section>
+          )}
+
+          {/* HERMENEUTIC SPIRAL */}
+          {selected.spiral && (
+            <section style={{ marginTop: "2rem" }}>
+              <h3>
+                🌀 Session Reflection (Hermeneutic
+                Spiral)
+              </h3>
               <ul>
                 <li>
                   <strong>Oplevelse:</strong>{" "}
-                  {session.spiral.experience}
+                  {selected.spiral.experience}
                 </li>
                 <li>
                   <strong>Refleksion:</strong>{" "}
-                  {session.spiral.reflection}
+                  {selected.spiral.reflection}
                 </li>
                 <li>
                   <strong>Meta:</strong>{" "}
-                  {session.spiral.meta}
+                  {selected.spiral.meta}
                 </li>
                 <li>
                   <strong>Justering:</strong>{" "}
-                  {session.spiral.adjustment}
+                  {selected.spiral.adjustment}
                 </li>
               </ul>
             </section>
           )}
         </section>
-      ))}
+      )}
     </main>
   );
 }
 
-/* ---------- Data loader ---------- */
-
-export async function getServerSideProps() {
-  try {
+export const getServerSideProps: GetServerSideProps =
+  async (context) => {
     const redis = new Redis({
       url: process.env.UPSTASH_REDIS_REST_URL!,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+      token:
+        process.env.UPSTASH_REDIS_REST_TOKEN!,
     });
 
-    const raw = await redis.lrange("logsx:sessions", 0, -1);
+    const raw =
+      (await redis.lrange(
+        "logsx:sessions",
+        0,
+        -1
+      )) as any[];
 
-    const sessions = raw.map((item: any) =>
-      typeof item === "string" ? JSON.parse(item) : item
-    );
+    const sessions: Session[] = raw
+      .map((item) =>
+        typeof item === "string"
+          ? JSON.parse(item)
+          : item
+      )
+      .reverse(); // newest first
 
-    return {
-      props: { sessions },
-    };
-  } catch (err: any) {
+    const selectedSessionId =
+      typeof context.query.session === "string"
+        ? context.query.session
+        : null;
+
     return {
       props: {
-        sessions: [],
-        error: err?.stack || err?.message || String(err),
+        sessions,
+        selectedSessionId,
       },
     };
-  }
-}
+  };
