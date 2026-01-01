@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Role = "user" | "assistant";
 
@@ -15,6 +15,13 @@ export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll til bund ved nye beskeder
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   async function sendAutoGreeting() {
     try {
@@ -95,8 +102,17 @@ export default function Chatbot() {
     }
   }
 
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.ctrlKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+    // Ctrl+Enter giver linjeskift (default)
+  }
+
   return (
     <>
+      {/* Chatbot ikon */}
       <button
         onClick={() => {
           setOpen(true);
@@ -105,20 +121,29 @@ export default function Chatbot() {
             sendAutoGreeting();
           }
         }}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center z-50"
-        aria-label="Åbn samtale"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center text-xl z-50"
+        aria-label="Åbn chatbot"
+        title="Chatbot"
       >
-        Samtale
+        💬
       </button>
 
       {open && (
         <div className="fixed bottom-24 right-6 w-[640px] max-w-[95vw] h-[70vh] bg-white border border-gray-300 rounded-xl shadow-xl flex flex-col z-50">
           {/* HEADER */}
-          <div className="px-4 py-3 border-b">
-            <div className="text-sm font-medium">Velkommen</div>
-            <div className="text-xs text-gray-500">
-              Godt at se dig – hvad kan jeg hjælpe med?
+          <div className="px-4 py-3 border-b flex justify-between items-center">
+            <div>
+              <div className="text-sm font-medium">Velkommen</div>
+              <div className="text-xs text-gray-500">
+                Godt at se dig – hvad kan jeg hjælpe med?
+              </div>
             </div>
+            <button
+              onClick={() => setOpen(false)}
+              className="text-sm text-gray-500"
+            >
+              Luk
+            </button>
           </div>
 
           {/* MESSAGES */}
@@ -136,6 +161,7 @@ export default function Chatbot() {
                 {m.content}
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* INPUT */}
@@ -143,8 +169,9 @@ export default function Chatbot() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
               rows={3}
-              placeholder="Skriv her…"
+              placeholder="Skriv her… (Enter = send, Ctrl+Enter = ny linje)"
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
             />
             <button
