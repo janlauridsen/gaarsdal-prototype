@@ -22,9 +22,8 @@ export default function Chatbot() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          input: "Chatten er åbnet",
+          input: "Chat åbnet",
           contextReplay: "",
-          mode: "PRODUCT",
         }),
       });
 
@@ -34,8 +33,8 @@ export default function Chatbot() {
         {
           role: "assistant",
           content:
-            data?.output ||
-            "Velkommen. Godt at se dig. Hvad kan jeg hjælpe med?",
+            data?.output ??
+            "Velkommen. Godt at se dig – hvad kan jeg hjælpe med?",
         },
       ]);
     } catch {
@@ -43,7 +42,7 @@ export default function Chatbot() {
         {
           role: "assistant",
           content:
-            "Velkommen. Godt at se dig. Hvad kan jeg hjælpe med?",
+            "Velkommen. Godt at se dig – hvad kan jeg hjælpe med?",
         },
       ]);
     }
@@ -69,9 +68,8 @@ export default function Chatbot() {
         body: JSON.stringify({
           input: userMessage.content,
           contextReplay: messages
-            .map((m) => `${m.role.toUpperCase()}:\n${m.content}`)
-            .join("\n\n"),
-          mode: "PRODUCT",
+            .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
+            .join("\n"),
         }),
       });
 
@@ -81,7 +79,7 @@ export default function Chatbot() {
         ...nextMessages,
         {
           role: "assistant",
-          content: data?.output || "Jeg har ikke et klart svar på det.",
+          content: data?.output ?? "Jeg har ikke et klart svar på det.",
         },
       ]);
     } catch {
