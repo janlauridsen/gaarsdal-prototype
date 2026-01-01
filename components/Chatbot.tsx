@@ -9,16 +9,6 @@ type Message = {
   content: string;
 };
 
-function extractReply(data: any): string {
-  if (!data) return "Ingen respons.";
-  if (typeof data === "string") return data;
-  if (data.reply) return data.reply;
-  if (data.message) return data.message;
-  if (data.content) return data.content;
-  if (data.text) return data.text;
-  return "Ingen respons.";
-}
-
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -28,10 +18,12 @@ export default function Chatbot() {
   async function sendMessage() {
     if (!input.trim() || loading) return;
 
-    const nextMessages: Message[] = [
-      ...messages,
-      { role: "user", content: input }
-    ];
+    const userMessage: Message = {
+      role: "user",
+      content: input,
+    };
+
+    const nextMessages = [...messages, userMessage];
 
     setMessages(nextMessages);
     setInput("");
@@ -41,21 +33,27 @@ export default function Chatbot() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages })
+        body: JSON.stringify({
+          input: userMessage.content,
+          contextReplay: messages
+            .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
+            .join("\n"),
+          mode: "PRODUCT",
+        }),
       });
 
       const data = await res.json();
 
       const assistantMessage: Message = {
         role: "assistant",
-        content: extractReply(data)
+        content: data?.output || "Ingen respons.",
       };
 
       setMessages([...nextMessages, assistantMessage]);
     } catch {
       setMessages([
         ...nextMessages,
-        { role: "assistant", content: "Der opstod en fejl." }
+        { role: "assistant", content: "Der opstod en fejl." },
       ]);
     } finally {
       setLoading(false);
@@ -105,7 +103,7 @@ export default function Chatbot() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              placeholder="Skriv..."
+              placeholder="Skriv…"
               className="flex-1 border border-gray-300 rounded-lg px-2 py-1 text-sm"
             />
             <button
