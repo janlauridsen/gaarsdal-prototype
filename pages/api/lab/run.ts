@@ -1,10 +1,10 @@
 // pages/api/lab/run.ts
 // RMRC LAB · Simulation Runner v0
 // Purpose: Orchestrate controlled session, store in Redis
+// NOTE: Dependency-free ID generation (no uuid)
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { Redis } from "@upstash/redis";
-import { v4 as uuid } from "uuid";
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -48,6 +48,11 @@ function archetypeConfig(archetype: string) {
   }
 }
 
+// Simple, deterministic session ID (lab-scoped)
+function generateSessionId() {
+  return `lab-${Date.now()}`;
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -58,12 +63,17 @@ export default async function handler(
 
   const { input, archetype } = req.body;
 
-  const sessionId = `lab-${uuid()}`;
+  if (!input || typeof input !== "string") {
+    return res
+      .status(400)
+      .json({ error: "input required" });
+  }
+
+  const sessionId = generateSessionId();
   const createdAt = new Date().toISOString();
   const config = archetypeConfig(archetype);
 
-  // --- RMRC Core is assumed stable & external ---
-  // Here we simulate a minimal single-turn session (v0)
+  // --- Minimal single-turn session (Core is external & stable) ---
   const session = {
     id: sessionId,
     source: "lab",
@@ -78,7 +88,7 @@ export default async function handler(
           board: "reflective",
           activeRoles: config.roles,
         },
-        output: null, // Core would populate this
+        output: null,
       },
     ],
   };
