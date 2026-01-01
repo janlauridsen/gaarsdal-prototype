@@ -9,6 +9,16 @@ type Message = {
   content: string;
 };
 
+function extractReply(data: any): string {
+  if (!data) return "Ingen respons.";
+  if (typeof data === "string") return data;
+  if (data.reply) return data.reply;
+  if (data.message) return data.message;
+  if (data.content) return data.content;
+  if (data.text) return data.text;
+  return "Ingen respons.";
+}
+
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -38,17 +48,15 @@ export default function Chatbot() {
 
       const assistantMessage: Message = {
         role: "assistant",
-        content: data.reply ?? "Ingen respons."
+        content: extractReply(data)
       };
 
       setMessages([...nextMessages, assistantMessage]);
     } catch {
-      const errorMessage: Message = {
-        role: "assistant",
-        content: "Der opstod en fejl."
-      };
-
-      setMessages([...nextMessages, errorMessage]);
+      setMessages([
+        ...nextMessages,
+        { role: "assistant", content: "Der opstod en fejl." }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -56,7 +64,6 @@ export default function Chatbot() {
 
   return (
     <>
-      {/* Chat icon */}
       <button
         onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center text-xl z-50"
@@ -106,11 +113,3 @@ export default function Chatbot() {
               className="bg-accent text-white px-3 rounded-lg text-sm disabled:opacity-50"
             >
               Send
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
