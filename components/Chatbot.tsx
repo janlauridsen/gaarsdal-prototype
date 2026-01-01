@@ -8,6 +8,7 @@ type Message = {
 };
 
 export default function Chatbot() {
+  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,7 @@ export default function Chatbot() {
   async function sendMessage() {
     if (!input.trim() || loading) return;
 
-    const nextMessages: Message[] = [
+    const nextMessages = [
       ...messages,
       { role: "user", content: input }
     ];
@@ -48,40 +49,61 @@ export default function Chatbot() {
   }
 
   return (
-    <div className="border border-gray-200 rounded-xl p-4 bg-white">
-      <div className="space-y-3 mb-4 max-h-[400px] overflow-y-auto">
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`text-sm p-3 rounded-lg ${
-              m.role === "user"
-                ? "bg-accent text-white ml-8"
-                : "bg-gray-100 text-text mr-8"
-            }`}
-          >
-            {m.content}
+    <>
+      {/* Chat icon */}
+      <button
+        onClick={() => setOpen(true)}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center text-xl z-50"
+        aria-label="Åbn chat"
+      >
+        💬
+      </button>
+
+      {open && (
+        <div className="fixed bottom-24 right-6 w-80 bg-white border border-gray-200 rounded-xl shadow-xl flex flex-col z-50">
+          <div className="flex justify-between items-center px-4 py-3 border-b">
+            <span className="text-sm font-medium">Chat</span>
+            <button
+              onClick={() => setOpen(false)}
+              className="text-sm text-gray-500"
+            >
+              Luk
+            </button>
           </div>
-        ))}
-      </div>
 
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          placeholder="Skriv dit spørgsmål…"
-          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-        />
+          <div className="flex-1 p-3 space-y-2 overflow-y-auto text-sm">
+            {messages.map((m, i) => (
+              <div
+                key={i}
+                className={`p-2 rounded-lg ${
+                  m.role === "user"
+                    ? "bg-accent text-white ml-8"
+                    : "bg-gray-100 mr-8"
+                }`}
+              >
+                {m.content}
+              </div>
+            ))}
+          </div>
 
-        <button
-          onClick={sendMessage}
-          disabled={loading}
-          className="bg-accent text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50"
-        >
-          Send
-        </button>
-      </div>
-    </div>
+          <div className="p-3 border-t flex gap-2">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder="Skriv..."
+              className="flex-1 border border-gray-300 rounded-lg px-2 py-1 text-sm"
+            />
+            <button
+              onClick={sendMessage}
+              disabled={loading}
+              className="bg-accent text-white px-3 rounded-lg text-sm disabled:opacity-50"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
