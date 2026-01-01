@@ -17,9 +17,10 @@ export default function Chatbot() {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  // Scroll altid til bunden når der kommer nye beskeder
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, open]);
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
@@ -45,13 +46,15 @@ export default function Chatbot() {
 
       const data = await res.json();
 
-      // 🚨 VIGTIGT: INGEN UI-FALLBACK
+      // 🔒 ALDRIG tom assistant-besked i UI
+      const assistantContent =
+        typeof data?.output === "string" && data.output.trim().length > 0
+          ? data.output
+          : "Jeg vil gerne hjælpe. Skriv gerne lidt mere om, hvad du har brug for.";
+
       setMessages([
         ...nextMessages,
-        {
-          role: "assistant",
-          content: data.output,
-        },
+        { role: "assistant", content: assistantContent },
       ]);
     } catch {
       setMessages([
@@ -76,22 +79,34 @@ export default function Chatbot() {
 
   return (
     <>
+      {/* Chatbot ikon */}
       <button
         onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center text-xl z-50"
+        aria-label="Åbn chatbot"
       >
         💬
       </button>
 
       {open && (
         <div className="fixed bottom-24 right-6 w-[640px] max-w-[95vw] h-[70vh] bg-white border border-gray-300 rounded-xl shadow-xl flex flex-col z-50">
-          <div className="px-4 py-3 border-b">
-            <div className="text-sm font-medium">Velkommen</div>
-            <div className="text-xs text-gray-500">
-              Godt at se dig – hvad kan jeg hjælpe med?
+          {/* Header */}
+          <div className="px-4 py-3 border-b bg-gray-50 flex justify-between items-center">
+            <div>
+              <div className="text-sm font-medium">Velkommen</div>
+              <div className="text-xs text-gray-600">
+                Godt at se dig – hvad kan jeg hjælpe med?
+              </div>
             </div>
+            <button
+              onClick={() => setOpen(false)}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              Luk
+            </button>
           </div>
 
+          {/* Beskeder */}
           <div className="flex-1 p-4 space-y-4 overflow-y-auto text-sm">
             {messages.map((m, i) => (
               <div
@@ -109,6 +124,7 @@ export default function Chatbot() {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Input */}
           <div className="p-4 border-t flex gap-2">
             <textarea
               value={input}
