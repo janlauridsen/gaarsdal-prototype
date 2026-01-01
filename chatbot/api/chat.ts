@@ -35,6 +35,13 @@ export default async function handler(
     });
   }
 
+  if (!process.env.OPENAI_API_KEY) {
+    console.error("OPENAI_API_KEY missing");
+    return res.status(500).json({
+      error: "Server misconfigured",
+    });
+  }
+
   try {
     const completion = await fetch(
       "https://api.openai.com/v1/chat/completions",
@@ -61,13 +68,23 @@ export default async function handler(
       }
     );
 
+    if (!completion.ok) {
+      const errText = await completion.text();
+      console.error(
+        "OpenAI API error:",
+        completion.status,
+        errText
+      );
+      return res.status(500).json({
+        error: "OpenAI API error",
+      });
+    }
+
     const data = await completion.json();
 
     const rawOutput =
-      data?.choices?.[0]?.message?.content ??
-      "";
+      data?.choices?.[0]?.message?.content ?? "";
 
-    // Minimal post-linting (defensive)
     const output = rawOutput
       .replace(/du bør/gi, "du kunne overveje")
       .replace(/du skal/gi, "det kan være relevant at")
@@ -82,7 +99,7 @@ export default async function handler(
       },
     });
   } catch (err) {
-    console.error(err);
+    console.error("Chat failed:", err);
     return res.status(500).json({
       error: "Chat failed",
     });
