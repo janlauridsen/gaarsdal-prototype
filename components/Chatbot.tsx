@@ -11,7 +11,6 @@ type Message = {
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
-  const [hasOpened, setHasOpened] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,42 +21,10 @@ export default function Chatbot() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  async function sendAutoGreeting() {
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input: "Chat åbnet",
-          contextReplay: "",
-        }),
-      });
+  async function sendMessage(text: string) {
+    if (!text.trim() || loading) return;
 
-      const data = await res.json();
-
-      setMessages([
-        {
-          role: "assistant",
-          content:
-            data?.output ??
-            "Velkommen. Godt at se dig – hvad kan jeg hjælpe med?",
-        },
-      ]);
-    } catch {
-      setMessages([
-        {
-          role: "assistant",
-          content:
-            "Velkommen. Godt at se dig – hvad kan jeg hjælpe med?",
-        },
-      ]);
-    }
-  }
-
-  async function sendMessage() {
-    if (!input.trim() || loading) return;
-
-    const userMessage: Message = { role: "user", content: input };
+    const userMessage: Message = { role: "user", content: text };
     const nextMessages = [...messages, userMessage];
 
     setMessages(nextMessages);
@@ -69,8 +36,8 @@ export default function Chatbot() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          input: userMessage.content,
-          contextReplay: messages
+          input: text,
+          contextReplay: nextMessages
             .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
             .join("\n"),
         }),
@@ -78,17 +45,22 @@ export default function Chatbot() {
 
       const data = await res.json();
 
+      // 🚨 VIGTIGT: INGEN UI-FALLBACK
       setMessages([
         ...nextMessages,
         {
           role: "assistant",
-          content: data?.output ?? "Jeg har ikke et klart svar på det.",
+          content: data.output,
         },
       ]);
     } catch {
       setMessages([
         ...nextMessages,
-        { role: "assistant", content: "Der opstod en fejl." },
+        {
+          role: "assistant",
+          content:
+            "Der opstod en teknisk fejl. Prøv igen om lidt.",
+        },
       ]);
     } finally {
       setLoading(false);
@@ -98,22 +70,15 @@ export default function Chatbot() {
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.ctrlKey) {
       e.preventDefault();
-      sendMessage();
+      sendMessage(input);
     }
   }
 
   return (
     <>
       <button
-        onClick={() => {
-          setOpen(true);
-          if (!hasOpened) {
-            setHasOpened(true);
-            sendAutoGreeting();
-          }
-        }}
+        onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center text-xl z-50"
-        aria-label="Åbn chatbot"
       >
         💬
       </button>
@@ -150,11 +115,11 @@ export default function Chatbot() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               rows={3}
-              placeholder="Skriv her… (Enter = send, Ctrl+Enter = ny linje)"
+              placeholder="Skriv her…"
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
             />
             <button
-              onClick={sendMessage}
+              onClick={() => sendMessage(input)}
               disabled={loading}
               className="bg-accent text-white px-4 rounded-lg text-sm disabled:opacity-50"
             >
