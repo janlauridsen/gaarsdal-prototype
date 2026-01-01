@@ -17,8 +17,6 @@ export default function Chatbot() {
   const [loading, setLoading] = useState(false);
 
   async function sendAutoGreeting() {
-    setLoading(true);
-
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -37,7 +35,7 @@ export default function Chatbot() {
           role: "assistant",
           content:
             data?.output ||
-            "Velkommen. Du kan skrive frit om det, du gerne vil have overblik over.",
+            "Velkommen. Godt at se dig. Hvad kan jeg hjælpe med?",
         },
       ]);
     } catch {
@@ -45,11 +43,9 @@ export default function Chatbot() {
         {
           role: "assistant",
           content:
-            "Velkommen. Du kan skrive frit om det, du gerne vil have overblik over.",
+            "Velkommen. Godt at se dig. Hvad kan jeg hjælpe med?",
         },
       ]);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -85,7 +81,7 @@ export default function Chatbot() {
         ...nextMessages,
         {
           role: "assistant",
-          content: data?.output || "Ingen respons.",
+          content: data?.output || "Jeg har ikke et klart svar på det.",
         },
       ]);
     } catch {
@@ -103,11 +99,9 @@ export default function Chatbot() {
 
   return (
     <>
-      {/* Chat icon */}
       <button
         onClick={() => {
           setOpen(true);
-
           if (!hasOpened) {
             setHasOpened(true);
             sendAutoGreeting();
@@ -122,21 +116,11 @@ export default function Chatbot() {
       {open && (
         <div className="fixed bottom-24 right-6 w-[640px] max-w-[95vw] h-[70vh] bg-white border border-gray-300 rounded-xl shadow-xl flex flex-col z-50">
           {/* HEADER */}
-          <div className="flex justify-between items-center px-4 py-3 border-b">
-            <div>
-              <div className="text-sm font-medium">
-                Velkommen 
-              </div>
-              <div className="text-xs text-gray-500">
-               Godt at se dig - hvad kan jeg hjælpe med?
-              </div>
+          <div className="px-4 py-3 border-b">
+            <div className="text-sm font-medium">Velkommen</div>
+            <div className="text-xs text-gray-500">
+              Godt at se dig – hvad kan jeg hjælpe med?
             </div>
-            <button
-              onClick={() => setOpen(false)}
-              className="text-sm text-gray-500"
-            >
-              Luk
-            </button>
           </div>
 
           {/* MESSAGES */}
@@ -162,7 +146,7 @@ export default function Chatbot() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               rows={3}
-              placeholder="Skriv her, hvad du gerne vil have overblik over…"
+              placeholder="Skriv her…"
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
             />
             <button
