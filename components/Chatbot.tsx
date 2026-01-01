@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 
+type Role = "user" | "assistant";
+
 type Message = {
-  role: "user" | "assistant";
+  role: Role;
   content: string;
 };
 
@@ -16,7 +18,7 @@ export default function Chatbot() {
   async function sendMessage() {
     if (!input.trim() || loading) return;
 
-    const nextMessages = [
+    const nextMessages: Message[] = [
       ...messages,
       { role: "user", content: input }
     ];
@@ -34,15 +36,19 @@ export default function Chatbot() {
 
       const data = await res.json();
 
-      setMessages([
-        ...nextMessages,
-        { role: "assistant", content: data.reply ?? "Ingen respons." }
-      ]);
+      const assistantMessage: Message = {
+        role: "assistant",
+        content: data.reply ?? "Ingen respons."
+      };
+
+      setMessages([...nextMessages, assistantMessage]);
     } catch {
-      setMessages([
-        ...nextMessages,
-        { role: "assistant", content: "Der opstod en fejl." }
-      ]);
+      const errorMessage: Message = {
+        role: "assistant",
+        content: "Der opstod en fejl."
+      };
+
+      setMessages([...nextMessages, errorMessage]);
     } finally {
       setLoading(false);
     }
@@ -107,3 +113,4 @@ export default function Chatbot() {
     </>
   );
 }
+
