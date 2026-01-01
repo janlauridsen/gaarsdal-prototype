@@ -11,9 +11,47 @@ type Message = {
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
+  async function sendAutoGreeting() {
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: "Chatten er åbnet",
+          contextReplay: "",
+          mode: "PRODUCT",
+        }),
+      });
+
+      const data = await res.json();
+
+      setMessages([
+        {
+          role: "assistant",
+          content:
+            data?.output ||
+            "Velkommen. Du kan skrive frit om det, du gerne vil have overblik over.",
+        },
+      ]);
+    } catch {
+      setMessages([
+        {
+          role: "assistant",
+          content:
+            "Velkommen. Du kan skrive frit om det, du gerne vil have overblik over.",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function sendMessage() {
     if (!input.trim() || loading) return;
@@ -37,7 +75,7 @@ export default function Chatbot() {
           contextReplay: messages
             .map((m) => `${m.role.toUpperCase()}:\n${m.content}`)
             .join("\n\n"),
-          mode: "LAB",
+          mode: "PRODUCT",
         }),
       });
 
@@ -53,7 +91,10 @@ export default function Chatbot() {
     } catch {
       setMessages([
         ...nextMessages,
-        { role: "assistant", content: "Der opstod en fejl." },
+        {
+          role: "assistant",
+          content: "Der opstod en fejl.",
+        },
       ]);
     } finally {
       setLoading(false);
@@ -64,7 +105,14 @@ export default function Chatbot() {
     <>
       {/* Chat icon */}
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+
+          if (!hasOpened) {
+            setHasOpened(true);
+            sendAutoGreeting();
+          }
+        }}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center z-50"
         aria-label="Åbn samtale"
       >
@@ -77,10 +125,10 @@ export default function Chatbot() {
           <div className="flex justify-between items-center px-4 py-3 border-b">
             <div>
               <div className="text-sm font-medium">
-                Afklarende samtale
+                Velkommen 
               </div>
               <div className="text-xs text-gray-500">
-                En rolig dialog med fokus på overblik og muligheder
+               Godt at se dig - hvad kan jeg hjælpe med?
               </div>
             </div>
             <button
