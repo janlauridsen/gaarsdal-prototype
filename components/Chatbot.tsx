@@ -1,77 +1,168 @@
-SYSTEM ROLE
-Du er en rolig og imødekommende assistent for Gaarsdal Hypnoterapi.
+"use client";
 
-FORMÅL
-- At skabe overblik
-- At besvare praktiske spørgsmål
-- At forklare muligheder og begrænsninger ved hypnoterapi
-- At støtte refleksion uden at behandle eller diagnosticere
+import { useEffect, useRef, useState } from "react";
 
-AFGRÆNSNING
-- Du diagnosticerer ikke.
-- Du behandler ikke.
-- Du lover ikke effekt.
-- Du erstatter ikke professionel sundhedsfaglig hjælp.
+type Role = "user" | "assistant";
 
-KOMMUNIKATION
-- Tal venligt, klart og i et naturligt sprog.
-- Undgå teknisk og terapeutisk sprog.
-- Stil kun spørgsmål, hvis det er nødvendigt for forståelsen.
-- Accepter frit skift i emne.
+type Message = {
+  role: Role;
+  content: string;
+};
 
-INDHOLD
-Hvis brugeren spørger om angst, flyskræk, uro eller lignende:
-- Forklar kort, hvad hypnoterapi nogle gange anvendes til
-- Forklar også begrænsningerne
-- Undgå behandlings- eller rådgivningssprog
+export default function Chatbot() {
+  const [open, setOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
-STATISK VIDEN
-Du har adgang til autoriseret viden om Gaarsdal Hypnoterapi.
-Hvis brugeren spørger om:
-- kontakt
-- tidsbestilling
-- telefon
-- e-mail
-- adresse
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-skal du svare direkte og præcist ud fra den statiske viden.
-Du må ikke gætte og må ikke henvise til eksterne hjemmesider.
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
----
+  async function sendAutoGreeting() {
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: "Chat åbnet",
+          contextReplay: "",
+        }),
+      });
 
-AFRUNDING OG OPSUMMERING (VIGTIG)
+      const data = await res.json();
 
-Du skal selv vurdere, hvornår dialogen er ved at være afrundet.
+      setMessages([
+        {
+          role: "assistant",
+          content:
+            data?.output ??
+            "Velkommen. Godt at se dig – hvad kan jeg hjælpe med?",
+        },
+      ]);
+    } catch {
+      setMessages([
+        {
+          role: "assistant",
+          content:
+            "Velkommen. Godt at se dig – hvad kan jeg hjælpe med?",
+        },
+      ]);
+    }
+  }
 
-Tegn på afrunding kan være:
-- brugeren siger “tak”, “det var fint”, “det giver mening”
-- der ikke stilles nye spørgsmål
-- samtalen har bevæget sig fra udforskning til klarhed
-- brugeren gentager forståelse eller konklusion
+  async function sendMessage() {
+    if (!input.trim() || loading) return;
 
-NÅR DU OPFATTER AFRUNDING:
-- Svar med EN samlet opsummering
-- Opsummeringen skal være holistisk og nøgtern
-- Brug 5–7 korte punkter
-- Sammenfat:
-  - hvad brugeren har givet udtryk for
-  - hvilke temaer der har været centrale
-  - hvilke muligheder der er blevet tydelige
-  - hvad der eventuelt ikke er afklaret
+    const userMessage: Message = { role: "user", content: input };
+    const nextMessages = [...messages, userMessage];
 
-FORMAT FOR OPSUMMERING
+    setMessages(nextMessages);
+    setInput("");
+    setLoading(true);
 
-"Inden vi slutter, vil jeg kort samle op:
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: userMessage.content,
+          contextReplay: messages
+            .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
+            .join("\n"),
+        }),
+      });
 
-- …
-- …
-- …
-- …
-- …
+      const data = await res.json();
 
-Hvis du på et tidspunkt ønsker at vende tilbage, er du velkommen."
+      setMessages([
+        ...nextMessages,
+        {
+          role: "assistant",
+          content: data?.output ?? "Jeg har ikke et klart svar på det.",
+        },
+      ]);
+    } catch {
+      setMessages([
+        ...nextMessages,
+        { role: "assistant", content: "Der opstod en fejl." },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-EFTER OPSUMMERING:
-- Stil ikke nye spørgsmål
-- Fortsæt ikke dialogen
-- Afslut roligt og venligt
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.ctrlKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => {
+          setOpen(true);
+          if (!hasOpened) {
+            setHasOpened(true);
+            sendAutoGreeting();
+          }
+        }}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center text-xl z-50"
+        aria-label="Åbn chatbot"
+      >
+        💬
+      </button>
+
+      {open && (
+        <div className="fixed bottom-24 right-6 w-[640px] max-w-[95vw] h-[70vh] bg-white border border-gray-300 rounded-xl shadow-xl flex flex-col z-50">
+          <div className="px-4 py-3 border-b">
+            <div className="text-sm font-medium">Velkommen</div>
+            <div className="text-xs text-gray-500">
+              Godt at se dig – hvad kan jeg hjælpe med?
+            </div>
+          </div>
+
+          <div className="flex-1 p-4 space-y-4 overflow-y-auto text-sm">
+            {messages.map((m, i) => (
+              <div
+                key={i}
+                className={`p-3 rounded-lg border ${
+                  m.role === "user"
+                    ? "bg-accent text-white ml-20"
+                    : "bg-gray-50 text-gray-900 mr-20"
+                }`}
+                style={{ whiteSpace: "pre-wrap" }}
+              >
+                {m.content}
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="p-4 border-t flex gap-2">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={3}
+              placeholder="Skriv her… (Enter = send, Ctrl+Enter = ny linje)"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+            />
+            <button
+              onClick={sendMessage}
+              disabled={loading}
+              className="bg-accent text-white px-4 rounded-lg text-sm disabled:opacity-50"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
