@@ -7,7 +7,7 @@ import fs from "fs";
 import path from "path";
 
 // >>> TILFØJET: logger (observerende)
-import { logTurn, resolveSessionId } from "@/lib/chatLogger";
+import { logTurn, resolveSessionId } from "../../lib/chatLogger";
 
 // --- Load PRISM prompt (system message) ---
 const PROMPT_PATH = path.join(process.cwd(), "chatbot", "prompt.md");
