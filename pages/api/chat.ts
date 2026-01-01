@@ -11,6 +11,15 @@ const PROMPT_PATH = path.join(process.cwd(), "chatbot", "prompt.md");
 
 const SYSTEM_PROMPT = fs.readFileSync(PROMPT_PATH, "utf8");
 
+const STATIC_INFO_PATH = path.join(
+  process.cwd(),
+  "chatbot",
+  "static-info.md"
+);
+
+const STATIC_INFO = fs.readFileSync(STATIC_INFO_PATH, "utf8");
+
+
 // --- API handler ---
 export default async function handler(
   req: NextApiRequest,
@@ -30,12 +39,14 @@ export default async function handler(
     mode === "LAB" || mode === "PRODUCT" ? mode : "PRODUCT";
 
   // Build user message with optional replay
-  const userContent = [
-    contextReplay
-      ? `[CONTEXT REPLAY]\n${contextReplay}\n`
-      : "",
-    `[USER INPUT]\n${input}`,
-  ].join("\n");
+const userContent = [
+  `[STATISK VIDEN]\n${STATIC_INFO}\n`,
+  contextReplay
+    ? `[CONTEXT REPLAY]\n${contextReplay}\n`
+    : "",
+  `[USER INPUT]\n${input}`,
+].join("\n");
+
 
   try {
     const completion = await fetch(
