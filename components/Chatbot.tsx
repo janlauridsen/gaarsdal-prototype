@@ -64,6 +64,7 @@ export default function Chatbot() {
 
   return (
     <>
+      {/* Chat icon */}
       <button
         onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center text-xl z-50"
@@ -113,3 +114,10 @@ export default function Chatbot() {
               className="bg-accent text-white px-3 rounded-lg text-sm disabled:opacity-50"
             >
               Send
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
