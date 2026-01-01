@@ -66,15 +66,23 @@ export default function Chatbot() {
       <button
         onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center z-50"
-        aria-label="Åbn chat"
+        aria-label="Åbn samtale"
       >
-        Chat
+        Samtale
       </button>
 
       {open && (
         <div className="fixed bottom-24 right-6 w-[640px] max-w-[95vw] h-[70vh] bg-white border border-gray-300 rounded-xl shadow-xl flex flex-col z-50">
+          {/* HEADER */}
           <div className="flex justify-between items-center px-4 py-3 border-b">
-            <span className="text-sm font-medium">Chat · Debug</span>
+            <div>
+              <div className="text-sm font-medium">
+                Afklarende samtale
+              </div>
+              <div className="text-xs text-gray-500">
+                En rolig dialog med fokus på overblik og muligheder
+              </div>
+            </div>
             <button
               onClick={() => setOpen(false)}
               className="text-sm text-gray-500"
@@ -83,6 +91,7 @@ export default function Chatbot() {
             </button>
           </div>
 
+          {/* MESSAGES */}
           <div className="flex-1 p-4 space-y-4 overflow-y-auto text-sm">
             {messages.map((m, i) => (
               <div
@@ -99,12 +108,13 @@ export default function Chatbot() {
             ))}
           </div>
 
+          {/* INPUT */}
           <div className="p-4 border-t flex gap-2">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               rows={3}
-              placeholder="Skriv her…"
+              placeholder="Skriv her, hvad du gerne vil have overblik over…"
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
             />
             <button
