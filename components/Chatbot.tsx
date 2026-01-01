@@ -24,7 +24,6 @@ export default function Chatbot() {
     };
 
     const nextMessages = [...messages, userMessage];
-
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
@@ -36,20 +35,21 @@ export default function Chatbot() {
         body: JSON.stringify({
           input: userMessage.content,
           contextReplay: messages
-            .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
-            .join("\n"),
-          mode: "PRODUCT",
+            .map((m) => `${m.role.toUpperCase()}:\n${m.content}`)
+            .join("\n\n"),
+          mode: "LAB",
         }),
       });
 
       const data = await res.json();
 
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: data?.output || "Ingen respons.",
-      };
-
-      setMessages([...nextMessages, assistantMessage]);
+      setMessages([
+        ...nextMessages,
+        {
+          role: "assistant",
+          content: data?.output || "Ingen respons.",
+        },
+      ]);
     } catch {
       setMessages([
         ...nextMessages,
@@ -65,16 +65,16 @@ export default function Chatbot() {
       {/* Chat icon */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center text-xl z-50"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center z-50"
         aria-label="Åbn chat"
       >
-        💬
+        Chat
       </button>
 
       {open && (
-        <div className="fixed bottom-24 right-6 w-80 bg-white border border-gray-200 rounded-xl shadow-xl flex flex-col z-50">
+        <div className="fixed bottom-24 right-6 w-[640px] max-w-[95vw] h-[70vh] bg-white border border-gray-300 rounded-xl shadow-xl flex flex-col z-50">
           <div className="flex justify-between items-center px-4 py-3 border-b">
-            <span className="text-sm font-medium">Chat</span>
+            <span className="text-sm font-medium">Chat · Debug</span>
             <button
               onClick={() => setOpen(false)}
               className="text-sm text-gray-500"
@@ -83,33 +83,34 @@ export default function Chatbot() {
             </button>
           </div>
 
-          <div className="flex-1 p-3 space-y-2 overflow-y-auto text-sm">
+          <div className="flex-1 p-4 space-y-4 overflow-y-auto text-sm">
             {messages.map((m, i) => (
               <div
                 key={i}
-                className={`p-2 rounded-lg ${
+                className={`p-3 rounded-lg border ${
                   m.role === "user"
-                    ? "bg-accent text-white ml-8"
-                    : "bg-gray-100 mr-8"
+                    ? "bg-accent text-white ml-20"
+                    : "bg-gray-50 text-gray-900 mr-20"
                 }`}
+                style={{ whiteSpace: "pre-wrap" }}
               >
                 {m.content}
               </div>
             ))}
           </div>
 
-          <div className="p-3 border-t flex gap-2">
-            <input
+          <div className="p-4 border-t flex gap-2">
+            <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              placeholder="Skriv…"
-              className="flex-1 border border-gray-300 rounded-lg px-2 py-1 text-sm"
+              rows={3}
+              placeholder="Skriv her…"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
             />
             <button
               onClick={sendMessage}
               disabled={loading}
-              className="bg-accent text-white px-3 rounded-lg text-sm disabled:opacity-50"
+              className="bg-accent text-white px-4 rounded-lg text-sm disabled:opacity-50"
             >
               Send
             </button>
