@@ -1,6 +1,7 @@
 // pages/lab.tsx
-// RMRC LAB · Simulation Console v0
+// RMRC LAB · Simulation Console v0.1
 // Status: Control-only · Non-innovative · Non-chat
+// Purpose: Human-controlled session initiation
 
 import { useState } from "react";
 import { useRouter } from "next/router";
@@ -21,25 +22,30 @@ export default function LabPage() {
   const [running, setRunning] = useState(false);
 
   async function runSimulation() {
-    if (!input.trim()) return;
+    if (!input.trim() || running) return;
 
     setRunning(true);
 
-    const res = await fetch("/api/lab/run", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        input,
-        archetype,
-      }),
-    });
+    try {
+      const res = await fetch("/api/lab/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input,
+          archetype,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    setRunning(false);
-
-    if (data.sessionId) {
-      router.push(`/logsx?session=${data.sessionId}`);
+      if (data.sessionId) {
+        router.push(`/logsx?session=${data.sessionId}`);
+      } else {
+        setRunning(false);
+      }
+    } catch (err) {
+      console.error("Simulation failed", err);
+      setRunning(false);
     }
   }
 
@@ -52,8 +58,10 @@ export default function LabPage() {
       }}
     >
       <h1>RMRC LAB · Simulation Console</h1>
+
       <p>
-        <strong>Status:</strong> Control-only<br />
+        <strong>Status:</strong> Control-only
+        <br />
         <strong>Mode:</strong> One session · Manual
       </p>
 
@@ -63,6 +71,7 @@ export default function LabPage() {
           <br />
           <select
             value={archetype}
+            disabled={running}
             onChange={(e) =>
               setArchetype(e.target.value as Archetype)
             }
@@ -94,6 +103,7 @@ export default function LabPage() {
             rows={4}
             style={{ width: "100%" }}
             value={input}
+            disabled={running}
             onChange={(e) => setInput(e.target.value)}
           />
         </label>
@@ -103,15 +113,24 @@ export default function LabPage() {
         <button
           onClick={runSimulation}
           disabled={running}
+          style={{
+            backgroundColor: "#222",
+            color: "#fff",
+            padding: "0.5rem 1rem",
+            cursor: running ? "default" : "pointer",
+          }}
         >
-          {running ? "Running simulation…" : "Run simulation"}
+          {running
+            ? "Simulation running…"
+            : "Initiate controlled simulation"}
         </button>
       </section>
 
       <section style={{ marginTop: "2rem", color: "#555" }}>
         <p>
-          Simulation results are not shown here.<br />
-          Review full session details in logsx.
+          This action creates a new simulation session.
+          <br />
+          Results are reviewed exclusively in logsx.
         </p>
       </section>
     </main>
