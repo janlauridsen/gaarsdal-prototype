@@ -6,9 +6,11 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
 
+// >>> TILFØJET: logger (observerende)
+import { logTurn, resolveSessionId } from "@/lib/chatLogger";
+
 // --- Load PRISM prompt (system message) ---
 const PROMPT_PATH = path.join(process.cwd(), "chatbot", "prompt.md");
-
 const SYSTEM_PROMPT = fs.readFileSync(PROMPT_PATH, "utf8");
 
 const STATIC_INFO_PATH = path.join(
@@ -16,9 +18,7 @@ const STATIC_INFO_PATH = path.join(
   "chatbot",
   "static-info.md"
 );
-
 const STATIC_INFO = fs.readFileSync(STATIC_INFO_PATH, "utf8");
-
 
 // --- API handler ---
 export default async function handler(
@@ -35,18 +35,24 @@ export default async function handler(
     return res.status(400).json({ error: "Missing input" });
   }
 
+  // >>> TILFØJET: session og turn (kun læsning)
+  const sessionId = resolveSessionId(req);
+
+  const turnIndex = contextReplay
+    ? contextReplay.split("\n").filter(Boolean).length
+    : 0;
+
   const effectiveMode =
     mode === "LAB" || mode === "PRODUCT" ? mode : "PRODUCT";
 
   // Build user message with optional replay
-const userContent = [
-  `[STATISK VIDEN]\n${STATIC_INFO}\n`,
-  contextReplay
-    ? `[CONTEXT REPLAY]\n${contextReplay}\n`
-    : "",
-  `[USER INPUT]\n${input}`,
-].join("\n");
-
+  const userContent = [
+    `[STATISK VIDEN]\n${STATIC_INFO}\n`,
+    contextReplay
+      ? `[CONTEXT REPLAY]\n${contextReplay}\n`
+      : "",
+    `[USER INPUT]\n${input}`,
+  ].join("\n");
 
   try {
     const completion = await fetch(
@@ -87,6 +93,16 @@ const userContent = [
 
     const output =
       data?.choices?.[0]?.message?.content?.trim() ?? "";
+
+    // >>> TILFØJET: log ét turn (side-effect only)
+    logTurn({
+      sessionId,
+      turnIndex,
+      timestamp: new Date().toISOString(),
+      mode: effectiveMode,
+      userInput: input,
+      assistantOutput: output,
+    });
 
     return res.status(200).json({
       output,
