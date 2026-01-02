@@ -16,77 +16,56 @@ type Chip = {
 };
 
 const START_CHIPS: Chip[] = [
-  {
-    id: "overview",
-    label: "Jeg vil gerne have overblik",
-    value: "Jeg vil gerne have overblik",
-  },
-  {
-    id: "questions",
-    label: "Jeg har spørgsmål om hypnoterapi",
-    value: "Jeg har spørgsmål om hypnoterapi",
-  },
-  {
-    id: "experience",
-    label: "Jeg oplever noget, der fylder",
-    value: "Jeg oplever noget, der fylder",
-  },
-  {
-    id: "contact",
-    label: "Hvordan kontakter jeg jer?",
-    value: "Hvordan kontakter jeg jer?",
-  },
+  { id: "overview", label: "Jeg vil gerne have overblik", value: "Jeg vil gerne have overblik" },
+  { id: "questions", label: "Jeg har spørgsmål om hypnoterapi", value: "Jeg har spørgsmål om hypnoterapi" },
+  { id: "experience", label: "Jeg oplever noget, der fylder", value: "Jeg oplever noget, der fylder" },
+  { id: "contact", label: "Hvordan kontakter jeg jer?", value: "Hvordan kontakter jeg jer?" },
 ];
 
 const CONTEXT_CHIPS: Chip[] = [
-  {
-    id: "context",
-    label: "Hvordan kan det hænge sammen?",
-    value: "Hvordan kan det hænge sammen?",
-  },
-  {
-    id: "relevant",
-    label: "Hvad kan være relevant at vide?",
-    value: "Hvad kan være relevant at vide?",
-  },
-  {
-    id: "limits",
-    label: "Begrænsninger og rammer",
-    value: "Hvad er rammerne og begrænsningerne?",
-  },
+  { id: "context", label: "Hvordan kan det hænge sammen?", value: "Hvordan kan det hænge sammen?" },
+  { id: "relevant", label: "Hvad kan være relevant at vide?", value: "Hvad kan være relevant at vide?" },
+  { id: "limits", label: "Begrænsninger og rammer", value: "Hvad er rammerne og begrænsningerne?" },
 ];
 
 const END_CHIPS: Chip[] = [
-  {
-    id: "summary",
-    label: "Opsummer samtalen",
-    value: "Kan du opsummere samtalen?",
-  },
-  {
-    id: "done",
-    label: "Jeg er færdig for nu",
-    value: "Jeg er færdig for nu",
-  },
+  { id: "summary", label: "Opsummer samtalen", value: "Kan du opsummere samtalen?" },
+  { id: "done", label: "Jeg er færdig for nu", value: "__END__" },
 ];
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
-  const [hasOpened, setHasOpened] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [locked, setLocked] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const userTurns = messages.filter((m) => m.role === "user").length;
+
+  // simple heuristic: har brugeren nævnt noget oplevelses-/symptomagtigt?
+  const hasContext = messages.some(
+    (m) =>
+      m.role === "user" &&
+      /stress|angst|søvn|uro|ondt|problemer|svært|fylder/i.test(m.content)
+  );
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
 
   async function sendMessage(text?: string) {
+    if (locked) return;
+
     const content = (text ?? input).trim();
     if (!content || loading) return;
+
+    if (content === "__END__") {
+      setLocked(true);
+      setOpen(false);
+      return;
+    }
 
     const userMessage: Message = { role: "user", content };
     const nextMessages = [...messages, userMessage];
@@ -113,8 +92,7 @@ export default function Chatbot() {
         ...nextMessages,
         {
           role: "assistant",
-          content:
-            data?.output ?? "Jeg har ikke et klart svar på det.",
+          content: data?.output ?? "Jeg har ikke et klart svar på det.",
         },
       ]);
     } catch {
@@ -135,13 +113,15 @@ export default function Chatbot() {
   }
 
   function renderChips() {
+    if (locked) return null;
+
     let chips: Chip[] = START_CHIPS;
 
-    if (userTurns >= 2 && userTurns < 5) {
+    if (userTurns >= 2 && hasContext) {
       chips = CONTEXT_CHIPS;
     }
 
-    if (userTurns >= 5) {
+    if (userTurns >= 4) {
       chips = END_CHIPS;
     }
 
@@ -174,12 +154,7 @@ export default function Chatbot() {
         <div
           className="fixed bottom-20 right-4 sm:right-6 w-[95vw] sm:w-[420px] bg-white border border-gray-300 rounded-xl shadow-xl flex flex-col z-50"
           style={{
-            height:
-              userTurns < 2
-                ? "45vh"
-                : userTurns < 5
-                ? "60vh"
-                : "70vh",
+            height: userTurns < 2 ? "45vh" : userTurns < 4 ? "60vh" : "70vh",
           }}
         >
           {/* Header */}
@@ -220,23 +195,25 @@ export default function Chatbot() {
           {renderChips()}
 
           {/* Input */}
-          <div className="p-4 border-t flex gap-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              rows={2}
-              placeholder="Skriv her… (Enter = send, Ctrl+Enter = ny linje)"
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
-            />
-            <button
-              onClick={() => sendMessage()}
-              disabled={loading}
-              className="bg-accent text-white px-4 rounded-lg text-sm disabled:opacity-50"
-            >
-              Send
-            </button>
-          </div>
+          {!locked && (
+            <div className="p-4 border-t flex gap-2">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                rows={2}
+                placeholder="Skriv her… (Enter = send, Ctrl+Enter = ny linje)"
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+              />
+              <button
+                onClick={() => sendMessage()}
+                disabled={loading}
+                className="bg-accent text-white px-4 rounded-lg text-sm disabled:opacity-50"
+              >
+                Send
+              </button>
+            </div>
+          )}
         </div>
       )}
     </>
