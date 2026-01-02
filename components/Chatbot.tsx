@@ -18,42 +18,19 @@ export default function Chatbot() {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Scroll altid til bunden ved nye beskeder
+  // Scroll altid til bunden
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
 
   async function sendAutoGreeting() {
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input: "Chat åbnet",
-          contextReplay: "",
-        }),
-      });
-
-      const data = await res.json();
-
-      setMessages([
-        {
-          role: "assistant",
-          content:
-            typeof data?.output === "string" && data.output.trim().length > 0
-              ? data.output
-              : "Velkommen. Godt at se dig – hvad kan jeg hjælpe med?",
-        },
-      ]);
-    } catch {
-      setMessages([
-        {
-          role: "assistant",
-          content:
-            "Velkommen. Godt at se dig – hvad kan jeg hjælpe med?",
-        },
-      ]);
-    }
+    setMessages([
+      {
+        role: "assistant",
+        content:
+          "Velkommen.\n\nDu er velkommen til at skrive frit om det, der fylder for dig. Hvis det er hjælpsomt, kan du også starte med et af de foreslåede valg herunder.",
+      },
+    ]);
   }
 
   async function sendMessage(text?: string) {
@@ -114,11 +91,13 @@ export default function Chatbot() {
     }
   }
 
-  const showQuickActions = messages.length === 0;
+  // Quick actions vises indtil første brugerbesked
+  const showQuickActions =
+    messages.filter((m) => m.role === "user").length === 0;
 
   return (
     <>
-      {/* Chatbot ikon */}
+      {/* Chat-ikon */}
       <button
         onClick={() => {
           setOpen(true);
@@ -140,7 +119,7 @@ export default function Chatbot() {
             <div>
               <div className="text-sm font-medium">Velkommen</div>
               <div className="text-xs text-gray-600">
-                Godt at se dig – hvad kan jeg hjælpe med?
+                Afklarende samtale
               </div>
             </div>
             <button
@@ -167,7 +146,7 @@ export default function Chatbot() {
               </div>
             ))}
 
-            {/* Quick actions – kun i tom state */}
+            {/* Quick actions */}
             {showQuickActions && (
               <div className="flex flex-wrap gap-2">
                 <button
@@ -177,13 +156,17 @@ export default function Chatbot() {
                   Overblik
                 </button>
                 <button
-                  onClick={() => sendMessage("Jeg vil forstå mine muligheder")}
+                  onClick={() =>
+                    sendMessage("Jeg vil forstå mine muligheder")
+                  }
                   className="px-3 py-2 rounded-full border bg-white hover:bg-gray-50 text-sm"
                 >
                   Muligheder
                 </button>
                 <button
-                  onClick={() => sendMessage("Hvordan kontakter jeg jer?")}
+                  onClick={() =>
+                    sendMessage("Hvordan kontakter jeg jer?")
+                  }
                   className="px-3 py-2 rounded-full border bg-white hover:bg-gray-50 text-sm"
                 >
                   Kontakt
