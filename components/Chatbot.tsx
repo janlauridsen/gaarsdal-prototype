@@ -18,7 +18,6 @@ export default function Chatbot() {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Scroll til bunden ved nye beskeder eller åbning
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
@@ -36,11 +35,7 @@ export default function Chatbot() {
     const messageText = text ?? input;
     if (!messageText.trim() || loading) return;
 
-    const userMessage: Message = {
-      role: "user",
-      content: messageText,
-    };
-
+    const userMessage: Message = { role: "user", content: messageText };
     const nextMessages = [...messages, userMessage];
 
     setMessages(nextMessages);
@@ -90,13 +85,61 @@ export default function Chatbot() {
     }
   }
 
-  // Chips vises indtil første brugerbesked
-  const showQuickActions =
-    messages.filter((m) => m.role === "user").length === 0;
+  const userMessages = messages.filter((m) => m.role === "user");
+  const lastUserMessage =
+    userMessages.length > 0
+      ? userMessages[userMessages.length - 1].content.toLowerCase()
+      : "";
+
+  // --- START-CHIPS ---
+  const showStartChips = userMessages.length === 0;
+
+  // --- KONTEKST-CHIPS ---
+  function renderContextChips() {
+    if (userMessages.length === 0) return null;
+
+    if (
+      lastUserMessage.includes("angst") ||
+      lastUserMessage.includes("uro") ||
+      lastUserMessage.includes("nervøs")
+    ) {
+      return (
+        <>
+          <Chip label="Fortæl lidt mere" onClick={() => sendMessage("Jeg vil gerne uddybe")} />
+          <Chip label="Muligheder" onClick={() => sendMessage("Hvilke muligheder findes der?")} />
+        </>
+      );
+    }
+
+    if (
+      lastUserMessage.includes("søvn") ||
+      lastUserMessage.includes("sover")
+    ) {
+      return (
+        <>
+          <Chip label="Hvad kan påvirke søvn?" onClick={() => sendMessage("Hvad kan påvirke søvn?")} />
+          <Chip label="Muligheder" onClick={() => sendMessage("Hvilke muligheder findes der?")} />
+        </>
+      );
+    }
+
+    if (
+      lastUserMessage.includes("tak") ||
+      lastUserMessage.includes("farvel")
+    ) {
+      return (
+        <>
+          <Chip label="Kontakt" onClick={() => sendMessage("Hvordan kontakter jeg jer?")} />
+          <Chip label="Afslut" onClick={() => setOpen(false)} />
+        </>
+      );
+    }
+
+    return null;
+  }
 
   return (
     <>
-      {/* Chat-ikon */}
       <button
         onClick={() => {
           setOpen(true);
@@ -119,7 +162,6 @@ export default function Chatbot() {
             sm:bottom-24 sm:right-6 sm:w-[640px] sm:h-[70vh] sm:rounded-xl
           "
         >
-          {/* Header */}
           <div className="px-4 py-3 border-b bg-gray-50 flex justify-between items-center">
             <div>
               <div className="text-sm font-medium">Velkommen</div>
@@ -135,7 +177,6 @@ export default function Chatbot() {
             </button>
           </div>
 
-          {/* Beskeder */}
           <div className="flex-1 p-4 space-y-4 overflow-y-auto text-sm">
             {messages.map((m, i) => (
               <div
@@ -151,53 +192,31 @@ export default function Chatbot() {
               </div>
             ))}
 
-            {/* Valgchips */}
-            {showQuickActions && (
+            {showStartChips && (
               <div className="flex flex-wrap gap-2 pt-2">
-                <button
-                  onClick={() => sendMessage("Jeg vil gerne have overblik")}
-                  className="px-4 py-2 rounded-full border bg-white hover:bg-gray-50 text-sm"
-                >
-                  Overblik
-                </button>
-                <button
-                  onClick={() =>
-                    sendMessage("Jeg vil forstå mine muligheder")
-                  }
-                  className="px-4 py-2 rounded-full border bg-white hover:bg-gray-50 text-sm"
-                >
-                  Muligheder
-                </button>
-                <button
-                  onClick={() =>
-                    sendMessage("Hvordan kontakter jeg jer?")
-                  }
-                  className="px-4 py-2 rounded-full border bg-white hover:bg-gray-50 text-sm"
-                >
-                  Kontakt
-                </button>
-                <button
-                  onClick={() =>
-                    sendMessage("Der er noget, der fylder for mig")
-                  }
-                  className="px-4 py-2 rounded-full border bg-white hover:bg-gray-50 text-sm"
-                >
-                  Noget der fylder
-                </button>
+                <Chip label="Overblik" onClick={() => sendMessage("Jeg vil gerne have overblik")} />
+                <Chip label="Muligheder" onClick={() => sendMessage("Jeg vil forstå mine muligheder")} />
+                <Chip label="Kontakt" onClick={() => sendMessage("Hvordan kontakter jeg jer?")} />
+                <Chip label="Noget der fylder" onClick={() => sendMessage("Der er noget, der fylder for mig")} />
+              </div>
+            )}
+
+            {!showStartChips && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {renderContextChips()}
               </div>
             )}
 
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input (sticky) */}
           <div className="p-3 border-t flex gap-2">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               rows={2}
-              placeholder="Skriv her… (Enter = send, Ctrl+Enter = ny linje)"
+              placeholder="Skriv her…"
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
             />
             <button
@@ -211,5 +230,22 @@ export default function Chatbot() {
         </div>
       )}
     </>
+  );
+}
+
+function Chip({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="px-4 py-2 rounded-full border bg-white hover:bg-gray-50 text-sm"
+    >
+      {label}
+    </button>
   );
 }
