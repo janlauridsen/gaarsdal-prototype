@@ -2,9 +2,6 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
 
-/**
- * Load prompts
- */
 const PRIMARY_PROMPT = fs.readFileSync(
   path.join(process.cwd(), "chatbot", "prompt.md"),
   "utf8"
@@ -30,10 +27,7 @@ export default async function handler(
   }
 
   try {
-    /* =======================
-       PHASE 1 – Primary reply
-       ======================= */
-
+    // ---------- PHASE 1 ----------
     const phase1Res = await fetch(
       "https://api.openai.com/v1/chat/completions",
       {
@@ -46,10 +40,7 @@ export default async function handler(
           model: "gpt-4o-mini",
           temperature: 0.7,
           messages: [
-            {
-              role: "system",
-              content: PRIMARY_PROMPT,
-            },
+            { role: "system", content: PRIMARY_PROMPT },
             {
               role: "user",
               content: `
@@ -69,10 +60,7 @@ ${input}
     const draft =
       phase1Data?.choices?.[0]?.message?.content?.trim() ?? "";
 
-    /* =======================
-       PHASE 2 – Validation
-       ======================= */
-
+    // ---------- PHASE 2 ----------
     const phase2Res = await fetch(
       "https://api.openai.com/v1/chat/completions",
       {
@@ -85,10 +73,7 @@ ${input}
           model: "gpt-4o-mini",
           temperature: 0.2,
           messages: [
-            {
-              role: "system",
-              content: VALIDATOR_PROMPT,
-            },
+            { role: "system", content: VALIDATOR_PROMPT },
             {
               role: "user",
               content: `
@@ -110,9 +95,7 @@ ${draft}
 
     return res.status(200).json({
       output: finalOutput,
-      meta: {
-        engine: "2-phase",
-      },
+      meta: { engine: "2-phase" },
     });
   } catch (err) {
     console.error("Chat API error:", err);
