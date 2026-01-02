@@ -1,15 +1,18 @@
-// Chatbot API · PRISM v0.3
-// Mode: Flat prompt · Stateless with optional replay
-// Status: Production baseline
+// Chatbot API · PRISM v0.4
+// Mode: 2-phase prompt · Stateless with replay
+// Status: Chatbot optimization baseline
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
 
-// --- Load PRISM prompt (system message) ---
-const PROMPT_PATH = path.join(process.cwd(), "chatbot", "prompt.md");
-
-const SYSTEM_PROMPT = fs.readFileSync(PROMPT_PATH, "utf8");
+// -------- Load prompts --------
+const PROMPT_PHASE1_PATH = path.join(process.cwd(), "chatbot", "prompt.md");
+const PROMPT_PHASE2_PATH = path.join(
+  process.cwd(),
+  "chatbot",
+  "prompt-phase2.md"
+);
 
 const STATIC_INFO_PATH = path.join(
   process.cwd(),
@@ -17,10 +20,35 @@ const STATIC_INFO_PATH = path.join(
   "static-info.md"
 );
 
+const PROMPT_PHASE1 = fs.readFileSync(PROMPT_PHASE1_PATH, "utf8");
+const PROMPT_PHASE2 = fs.readFileSync(PROMPT_PHASE2_PATH, "utf8");
 const STATIC_INFO = fs.readFileSync(STATIC_INFO_PATH, "utf8");
 
+// -------- Helper: call OpenAI --------
+async function callOpenAI(messages: any[]) {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      temperature: 0.6,
+      messages,
+    }),
+  });
 
-// --- API handler ---
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text);
+  }
+
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content?.trim() ?? "";
+}
+
+// -------- API handler --------
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -38,61 +66,53 @@ export default async function handler(
   const effectiveMode =
     mode === "LAB" || mode === "PRODUCT" ? mode : "PRODUCT";
 
-  // Build user message with optional replay
-const userContent = [
-  `[STATISK VIDEN]\n${STATIC_INFO}\n`,
-  contextReplay
-    ? `[CONTEXT REPLAY]\n${contextReplay}\n`
-    : "",
-  `[USER INPUT]\n${input}`,
-].join("\n");
-
-
   try {
-    const completion = await fetch(
-      "https://api.openai.com/v1/chat/completions",
+    // -------- PHASE 1: Raw answer --------
+    const phase1UserContent = [
+      `[STATISK VIDEN]\n${STATIC_INFO}\n`,
+      contextReplay ? `[CONTEXT REPLAY]\n${contextReplay}\n` : "",
+      `[USER INPUT]\n${input}`,
+    ].join("\n");
+
+    const draftAnswer = await callOpenAI([
       {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          temperature: 0.7,
-          messages: [
-            {
-              role: "system",
-              content: SYSTEM_PROMPT.replace(
-                "MODE: {PRODUCT | LAB}",
-                `MODE: ${effectiveMode}`
-              ),
-            },
-            {
-              role: "user",
-              content: userContent,
-            },
-          ],
-        }),
-      }
-    );
+        role: "system",
+        content: PROMPT_PHASE1.replace(
+          "MODE: {PRODUCT | LAB}",
+          `MODE: ${effectiveMode}`
+        ),
+      },
+      {
+        role: "user",
+        content: phase1UserContent,
+      },
+    ]);
 
-    if (!completion.ok) {
-      const text = await completion.text();
-      console.error("OpenAI error:", text);
-      return res.status(500).json({ error: "Upstream model error" });
-    }
+    // -------- PHASE 2: Normalize & validate --------
+    const phase2Input = `
+SESSION CONTEXT:
+${contextReplay || "—"}
 
-    const data = await completion.json();
+RAW ANSWER:
+${draftAnswer}
+`;
 
-    const output =
-      data?.choices?.[0]?.message?.content?.trim() ?? "";
+    const finalAnswer = await callOpenAI([
+      {
+        role: "system",
+        content: PROMPT_PHASE2,
+      },
+      {
+        role: "user",
+        content: phase2Input,
+      },
+    ]);
 
     return res.status(200).json({
-      output,
+      output: finalAnswer || draftAnswer,
       meta: {
+        engine: "PRISM v0.4 · 2-phase",
         mode: effectiveMode,
-        engine: "PRISM v0.3",
       },
     });
   } catch (err) {
