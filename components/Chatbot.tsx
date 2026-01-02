@@ -17,44 +17,16 @@ type Chip = {
 };
 
 const START_CHIPS: Chip[] = [
-  {
-    id: "overview",
-    label: "Overblik",
-    value: "Jeg vil gerne have overblik",
-  },
-  {
-    id: "questions",
-    label: "Spørgsmål om hypnoterapi",
-    value: "Jeg har spørgsmål om hypnoterapi",
-  },
-  {
-    id: "experience",
-    label: "Noget der fylder i dig",
-    value: "Jeg oplever noget, der fylder",
-  },
-  {
-    id: "contact",
-    label: "Hvordan kontakter jeg jer?",
-    value: "Hvordan kontakter jeg jer?",
-  },
+  { id: "overview", label: "Overblik", value: "Jeg vil gerne have overblik" },
+  { id: "questions", label: "Spørgsmål", value: "Jeg har spørgsmål om hypnoterapi" },
+  { id: "experience", label: "Det der fylder", value: "Jeg oplever noget, der fylder" },
+  { id: "contact", label: "Kontakt", value: "Hvordan kontakter jeg jer?" },
 ];
 
 const CONTEXT_CHIPS: Chip[] = [
-  {
-    id: "context",
-    label: "Hvordan kan det hænge sammen?",
-    value: "Hvordan kan det hænge sammen?",
-  },
-  {
-    id: "relevant",
-    label: "Hvad kan være relevant at vide?",
-    value: "Hvad kan være relevant at vide?",
-  },
-  {
-    id: "limits",
-    label: "Begrænsninger og rammer",
-    value: "Begrænsninger og rammer",
-  },
+  { id: "context", label: "Sammenhæng", value: "Hvordan kan det hænge sammen?" },
+  { id: "relevant", label: "Relevant viden", value: "Hvad kan være relevant at vide?" },
+  { id: "limits", label: "Rammer", value: "Hvad er rammerne og begrænsningerne?" },
 ];
 
 export default function Chatbot() {
@@ -69,7 +41,7 @@ export default function Chatbot() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, open]);
+  }, [messages, loading, open]);
 
   function resetSession() {
     setMessages([]);
@@ -106,8 +78,7 @@ export default function Chatbot() {
         ...nextMessages,
         {
           role: "assistant",
-          content:
-            data?.output ?? "Jeg har ikke et klart svar på det.",
+          content: data?.output ?? "Jeg har ikke et klart svar på det.",
         },
       ]);
     } catch {
@@ -128,20 +99,13 @@ export default function Chatbot() {
   }
 
   function renderChips() {
-    let chips: Chip[] = START_CHIPS;
+    if (loading) return null;
 
-    if (userTurns >= 2) {
-      chips = CONTEXT_CHIPS;
-    }
+    let chips: Chip[] = userTurns < 2 ? START_CHIPS : CONTEXT_CHIPS;
 
-    // Reset-chip er ALTID tilgængelig
     chips = [
       ...chips,
-      {
-        id: "reset",
-        label: "Nulstil samtale",
-        action: resetSession,
-      },
+      { id: "reset", label: "Nulstil", action: resetSession },
     ];
 
     return (
@@ -174,14 +138,7 @@ export default function Chatbot() {
       {open && (
         <div
           className="fixed bottom-20 right-4 sm:right-6 w-[95vw] sm:w-[420px] bg-white border border-gray-300 rounded-xl shadow-xl flex flex-col z-50"
-          style={{
-            height:
-              userTurns < 2
-                ? "45vh"
-                : userTurns < 5
-                ? "60vh"
-                : "70vh",
-          }}
+          style={{ height: userTurns < 2 ? "45vh" : "65vh" }}
         >
           {/* Header */}
           <div className="px-4 py-3 border-b flex items-center justify-between">
@@ -214,6 +171,13 @@ export default function Chatbot() {
                 {m.content}
               </div>
             ))}
+
+            {loading && (
+              <div className="p-3 rounded-lg border bg-gray-100 text-gray-500 mr-12 italic">
+                Systemet arbejder …
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
 
@@ -227,8 +191,9 @@ export default function Chatbot() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               rows={2}
-              placeholder="Skriv her… (Enter = send, Ctrl+Enter = ny linje)"
+              placeholder="Skriv her…"
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+              disabled={loading}
             />
             <button
               onClick={() => sendMessage()}
