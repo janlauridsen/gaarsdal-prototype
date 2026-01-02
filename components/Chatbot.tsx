@@ -18,12 +18,10 @@ export default function Chatbot() {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Scroll til bunden ved nye beskeder eller åbning
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
 
-  // Første besked: invitation + forklaring
   function sendInitialAssistantMessage() {
     setMessages([
       {
@@ -44,7 +42,6 @@ export default function Chatbot() {
     };
 
     const nextMessages = [...messages, userMessage];
-
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
@@ -66,7 +63,7 @@ export default function Chatbot() {
       const assistantContent =
         typeof data?.output === "string" && data.output.trim().length > 0
           ? data.output
-          : "Jeg vil gerne hjælpe. Skriv gerne lidt mere om, hvad du har brug for.";
+          : "Jeg vil gerne hjælpe. Du er velkommen til at uddybe.";
 
       setMessages([
         ...nextMessages,
@@ -98,56 +95,63 @@ export default function Chatbot() {
       ? userMessages[userMessages.length - 1].content.toLowerCase()
       : "";
 
-  // Start-chips vises indtil første user-turn
   const showStartChips = userMessages.length === 0;
 
-  // Kontekst-chips efter første user-turn
   function renderContextChips() {
     if (userMessages.length === 0) return null;
 
-    if (
-      lastUserMessage.includes("angst") ||
-      lastUserMessage.includes("uro") ||
-      lastUserMessage.includes("nervøs")
-    ) {
-      return (
-        <>
-          <Chip label="Fortæl lidt mere" onClick={() => sendMessage("Jeg vil gerne uddybe")} />
-          <Chip label="Muligheder" onClick={() => sendMessage("Hvilke muligheder findes der?")} />
-        </>
-      );
-    }
+    const chips: { label: string; action: () => void }[] = [];
 
     if (
       lastUserMessage.includes("søvn") ||
       lastUserMessage.includes("sover")
     ) {
-      return (
-        <>
-          <Chip label="Hvad kan påvirke søvn?" onClick={() => sendMessage("Hvad kan påvirke søvn?")} />
-          <Chip label="Muligheder" onClick={() => sendMessage("Hvilke muligheder findes der?")} />
-        </>
-      );
+      chips.push({
+        label: "Sammenhæng",
+        action: () =>
+          sendMessage(
+            "Kan det hænge sammen med det, jeg allerede har nævnt?"
+          ),
+      });
     }
 
     if (
-      lastUserMessage.includes("tak") ||
-      lastUserMessage.includes("farvel")
+      lastUserMessage.includes("angst") ||
+      lastUserMessage.includes("uro") ||
+      lastUserMessage.includes("spændt")
     ) {
-      return (
-        <>
-          <Chip label="Kontakt" onClick={() => sendMessage("Hvordan kontakter jeg jer?")} />
-          <Chip label="Afslut" onClick={() => setOpen(false)} />
-        </>
-      );
+      chips.push({
+        label: "Fortæl lidt mere",
+        action: () => sendMessage("Jeg vil gerne uddybe"),
+      });
     }
 
-    return null;
+    chips.push({
+      label: "Begrænsninger",
+      action: () =>
+        sendMessage(
+          "Hvilke begrænsninger er der ved at bruge hypnoterapi i den her sammenhæng?"
+        ),
+    });
+
+    chips.push({
+      label: "Kontakt",
+      action: () => sendMessage("Hvordan kontakter jeg jer?"),
+    });
+
+    return chips.map((chip, i) => (
+      <Chip key={i} label={chip.label} onClick={chip.action} />
+    ));
+  }
+
+  function resolveHeightClass() {
+    if (userMessages.length <= 1) return "sm:h-[45vh]";
+    if (userMessages.length <= 3) return "sm:h-[60vh]";
+    return "sm:h-[75vh]";
   }
 
   return (
     <>
-      {/* Chat-ikon */}
       <button
         onClick={() => {
           setOpen(true);
@@ -164,13 +168,12 @@ export default function Chatbot() {
 
       {open && (
         <div
-          className="
+          className={`
             fixed z-50 bg-white border border-gray-300 shadow-xl flex flex-col
             bottom-0 right-0 w-full h-full
-            sm:bottom-24 sm:right-6 sm:w-[640px] sm:h-[70vh] sm:rounded-xl
-          "
+            sm:bottom-24 sm:right-6 sm:w-[640px] ${resolveHeightClass()} sm:rounded-xl
+          `}
         >
-          {/* Header */}
           <div className="px-4 py-3 border-b bg-gray-50 flex justify-between items-center">
             <div>
               <div className="text-sm font-medium">Velkommen</div>
@@ -184,7 +187,6 @@ export default function Chatbot() {
             </button>
           </div>
 
-          {/* Beskeder */}
           <div className="flex-1 p-4 space-y-4 overflow-y-auto text-sm">
             {messages.map((m, i) => (
               <div
@@ -200,7 +202,6 @@ export default function Chatbot() {
               </div>
             ))}
 
-            {/* Start-chips */}
             {showStartChips && (
               <div className="flex flex-wrap gap-2 pt-2">
                 <Chip label="Overblik" onClick={() => sendMessage("Jeg vil gerne have overblik")} />
@@ -210,7 +211,6 @@ export default function Chatbot() {
               </div>
             )}
 
-            {/* Kontekst-chips */}
             {!showStartChips && (
               <div className="flex flex-wrap gap-2 pt-2">
                 {renderContextChips()}
@@ -220,14 +220,13 @@ export default function Chatbot() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
           <div className="p-3 border-t flex gap-2">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               rows={2}
-              placeholder="Skriv her… (Enter = send, Ctrl+Enter = ny linje)"
+              placeholder="Skriv her…"
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
             />
             <button
