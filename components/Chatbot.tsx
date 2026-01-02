@@ -17,16 +17,14 @@ type Chip = {
 };
 
 const START_CHIPS: Chip[] = [
+  { id: "experience", label: "Noget der fylder", value: "Jeg oplever noget, der fylder" },
   { id: "overview", label: "Overblik", value: "Jeg vil gerne have overblik" },
-  { id: "questions", label: "Spørgsmål", value: "Jeg har spørgsmål om hypnoterapi" },
-  { id: "experience", label: "Det der fylder", value: "Jeg oplever noget, der fylder" },
   { id: "contact", label: "Kontakt", value: "Hvordan kontakter jeg jer?" },
 ];
 
-const CONTEXT_CHIPS: Chip[] = [
-  { id: "context", label: "Sammenhæng", value: "Hvordan kan det hænge sammen?" },
-  { id: "relevant", label: "Relevant viden", value: "Hvad kan være relevant at vide?" },
-  { id: "limits", label: "Rammer", value: "Hvad er rammerne og begrænsningerne?" },
+const END_CHIPS: Chip[] = [
+  { id: "summary", label: "Opsummer", value: "Kan du opsummere samtalen?" },
+  { id: "restart", label: "Genstart", action: () => {} }, // action sættes dynamisk
 ];
 
 export default function Chatbot() {
@@ -34,6 +32,7 @@ export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -47,11 +46,14 @@ export default function Chatbot() {
     setMessages([]);
     setInput("");
     setLoading(false);
+    setHasStarted(false);
   }
 
   async function sendMessage(text?: string) {
     const content = (text ?? input).trim();
     if (!content || loading) return;
+
+    if (!hasStarted) setHasStarted(true);
 
     const userMessage: Message = { role: "user", content };
     const nextMessages = [...messages, userMessage];
@@ -101,28 +103,45 @@ export default function Chatbot() {
   function renderChips() {
     if (loading) return null;
 
-    let chips: Chip[] = userTurns < 2 ? START_CHIPS : CONTEXT_CHIPS;
+    // Startfase
+    if (!hasStarted) {
+      return (
+        <div className="flex flex-wrap gap-2 px-4 pb-2">
+          {START_CHIPS.map((chip) => (
+            <button
+              key={chip.id}
+              onClick={() => sendMessage(chip.value)}
+              className="text-xs px-3 py-1 rounded-full border border-gray-300 hover:bg-gray-100"
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      );
+    }
 
-    chips = [
-      ...chips,
-      { id: "reset", label: "Nulstil", action: resetSession },
-    ];
+    // Slutfase (efter dialog)
+    if (userTurns >= 3) {
+      return (
+        <div className="flex flex-wrap gap-2 px-4 pb-2">
+          {END_CHIPS.map((chip) => (
+            <button
+              key={chip.id}
+              onClick={() =>
+                chip.id === "restart"
+                  ? resetSession()
+                  : sendMessage(chip.value)
+              }
+              className="text-xs px-3 py-1 rounded-full border border-gray-300 hover:bg-gray-100"
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      );
+    }
 
-    return (
-      <div className="flex flex-wrap gap-2 px-4 pb-2">
-        {chips.map((chip) => (
-          <button
-            key={chip.id}
-            onClick={() =>
-              chip.action ? chip.action() : sendMessage(chip.value)
-            }
-            className="text-xs px-3 py-1 rounded-full border border-gray-300 hover:bg-gray-100"
-          >
-            {chip.label}
-          </button>
-        ))}
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -138,14 +157,14 @@ export default function Chatbot() {
       {open && (
         <div
           className="fixed bottom-20 right-4 sm:right-6 w-[95vw] sm:w-[420px] bg-white border border-gray-300 rounded-xl shadow-xl flex flex-col z-50"
-          style={{ height: userTurns < 2 ? "45vh" : "65vh" }}
+          style={{ height: hasStarted ? "65vh" : "50vh" }}
         >
           {/* Header */}
           <div className="px-4 py-3 border-b flex items-center justify-between">
             <div>
               <div className="text-sm font-medium">Velkommen</div>
               <div className="text-xs text-gray-500">
-                Godt at se dig – hvad kan jeg hjælpe med?
+                Du kan skrive frit – eller starte med et valg
               </div>
             </div>
             <button
@@ -155,6 +174,14 @@ export default function Chatbot() {
               Luk
             </button>
           </div>
+
+          {/* Prolog – kun før start */}
+          {!hasStarted && (
+            <div className="px-4 py-3 text-sm text-gray-600 border-b">
+              Du er velkommen til at beskrive med egne ord, hvad der fylder for dig.
+              Valgene herunder er blot forslag – ikke en fast rækkefølge.
+            </div>
+          )}
 
           {/* Messages */}
           <div className="flex-1 p-4 space-y-4 overflow-y-auto text-sm">
