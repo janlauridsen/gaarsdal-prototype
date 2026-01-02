@@ -1,15 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { OpenAI } from "openai";
 import {
   SYSTEM_PROMPT,
   PROLOG_PROMPT,
   SUMMARY_PROMPT,
   PERSPECTIVE_PROMPT,
 } from "../../chatbot/prompts";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
 
 type Phase = "PROLOG" | "DIALOG" | "SUMMARY" | "PERSPECTIVE";
 
@@ -35,10 +30,9 @@ export default async function handler(
   const lastUser = [...messages].reverse().find(m => m.role === "user");
   const userText = lastUser?.content ?? "";
 
-  // Deterministisk fase
   let phase: Phase = detectPhase(userText);
 
-  // Prolog-garanti: altid første assistant-svar
+  // Prolog-garanti
   const hasAssistant = messages.some(m => m.role === "assistant");
   if (!hasAssistant) phase = "PROLOG";
 
@@ -51,18 +45,32 @@ export default async function handler(
       ? PERSPECTIVE_PROMPT
       : SYSTEM_PROMPT;
 
-  const assembled = [
-    { role: "system", content: phasePrompt },
-    ...messages,
-  ];
-
-  const completion = await client.chat.completions.create({
+  const payload = {
     model: "gpt-4o-mini",
-    messages: assembled,
     temperature: 0.3,
+    messages: [
+      { role: "system", content: phasePrompt },
+      ...messages,
+    ],
+  };
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify(payload),
   });
 
-  const reply = completion.choices[0]?.message?.content ?? "";
+  if (!response.ok) {
+    const error = await response.text();
+    res.status(500).json({ error });
+    return;
+  }
+
+  const data = await response.json();
+  const reply = data.choices?.[0]?.message?.content ?? "";
 
   res.status(200).json({
     phase,
