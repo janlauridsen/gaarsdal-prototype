@@ -18,15 +18,18 @@ export default function Chatbot() {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  // Scroll til bunden ved nye beskeder eller åbning
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
 
-  function sendAutoGreeting() {
+  // Første besked: invitation + forklaring
+  function sendInitialAssistantMessage() {
     setMessages([
       {
         role: "assistant",
-        content: "Godt at se dig. Du er velkommen til at skrive frit her.",
+        content:
+          "Godt at se dig.\n\nDu er velkommen til at skrive frit om det, der fylder for dig. Hvis det er hjælpsomt, kan du også starte med et af de foreslåede valg herunder.",
       },
     ]);
   }
@@ -35,7 +38,11 @@ export default function Chatbot() {
     const messageText = text ?? input;
     if (!messageText.trim() || loading) return;
 
-    const userMessage: Message = { role: "user", content: messageText };
+    const userMessage: Message = {
+      role: "user",
+      content: messageText,
+    };
+
     const nextMessages = [...messages, userMessage];
 
     setMessages(nextMessages);
@@ -91,10 +98,10 @@ export default function Chatbot() {
       ? userMessages[userMessages.length - 1].content.toLowerCase()
       : "";
 
-  // --- START-CHIPS ---
+  // Start-chips vises indtil første user-turn
   const showStartChips = userMessages.length === 0;
 
-  // --- KONTEKST-CHIPS ---
+  // Kontekst-chips efter første user-turn
   function renderContextChips() {
     if (userMessages.length === 0) return null;
 
@@ -140,12 +147,13 @@ export default function Chatbot() {
 
   return (
     <>
+      {/* Chat-ikon */}
       <button
         onClick={() => {
           setOpen(true);
           if (!hasOpened) {
             setHasOpened(true);
-            sendAutoGreeting();
+            sendInitialAssistantMessage();
           }
         }}
         className="fixed bottom-5 right-5 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center text-xl z-50"
@@ -162,12 +170,11 @@ export default function Chatbot() {
             sm:bottom-24 sm:right-6 sm:w-[640px] sm:h-[70vh] sm:rounded-xl
           "
         >
+          {/* Header */}
           <div className="px-4 py-3 border-b bg-gray-50 flex justify-between items-center">
             <div>
               <div className="text-sm font-medium">Velkommen</div>
-              <div className="text-xs text-gray-600">
-                Godt at se dig – hvad kan jeg hjælpe med?
-              </div>
+              <div className="text-xs text-gray-600">Afklarende samtale</div>
             </div>
             <button
               onClick={() => setOpen(false)}
@@ -177,6 +184,7 @@ export default function Chatbot() {
             </button>
           </div>
 
+          {/* Beskeder */}
           <div className="flex-1 p-4 space-y-4 overflow-y-auto text-sm">
             {messages.map((m, i) => (
               <div
@@ -192,6 +200,7 @@ export default function Chatbot() {
               </div>
             ))}
 
+            {/* Start-chips */}
             {showStartChips && (
               <div className="flex flex-wrap gap-2 pt-2">
                 <Chip label="Overblik" onClick={() => sendMessage("Jeg vil gerne have overblik")} />
@@ -201,6 +210,7 @@ export default function Chatbot() {
               </div>
             )}
 
+            {/* Kontekst-chips */}
             {!showStartChips && (
               <div className="flex flex-wrap gap-2 pt-2">
                 {renderContextChips()}
@@ -210,13 +220,14 @@ export default function Chatbot() {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Input */}
           <div className="p-3 border-t flex gap-2">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               rows={2}
-              placeholder="Skriv her…"
+              placeholder="Skriv her… (Enter = send, Ctrl+Enter = ny linje)"
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
             />
             <button
