@@ -22,21 +22,16 @@ const START_CHIPS: Chip[] = [
   { id: "contact", label: "Kontakt", value: "Hvordan kontakter jeg jer?" },
 ];
 
-const END_CHIPS: Chip[] = [
-  { id: "summary", label: "Opsummer", value: "Kan du opsummere samtalen?" },
-  { id: "restart", label: "Genstart", action: () => {} }, // action sættes dynamisk
-];
-
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
   const [hasStarted, setHasStarted] = useState(false);
+  const [hasSummarized, setHasSummarized] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
-  const userTurns = messages.filter((m) => m.role === "user").length;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -47,11 +42,25 @@ export default function Chatbot() {
     setInput("");
     setLoading(false);
     setHasStarted(false);
+    setHasSummarized(false);
   }
 
   async function sendMessage(text?: string) {
     const content = (text ?? input).trim();
     if (!content || loading) return;
+
+    // Guard: gentagen opsummering
+    if (hasSummarized && content.toLowerCase().includes("opsummer")) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "Jeg har allerede samlet overblikket for denne samtale. Du kan starte en ny samtale, hvis du ønsker.",
+        },
+      ]);
+      return;
+    }
 
     if (!hasStarted) setHasStarted(true);
 
@@ -75,12 +84,17 @@ export default function Chatbot() {
       });
 
       const data = await res.json();
+      const output = data?.output ?? "Jeg har ikke et klart svar på det.";
+
+      if (content.toLowerCase().includes("opsummer")) {
+        setHasSummarized(true);
+      }
 
       setMessages([
         ...nextMessages,
         {
           role: "assistant",
-          content: data?.output ?? "Jeg har ikke et klart svar på det.",
+          content: output,
         },
       ]);
     } catch {
@@ -103,7 +117,7 @@ export default function Chatbot() {
   function renderChips() {
     if (loading) return null;
 
-    // Startfase
+    // Før start
     if (!hasStarted) {
       return (
         <div className="flex flex-wrap gap-2 px-4 pb-2">
@@ -120,28 +134,31 @@ export default function Chatbot() {
       );
     }
 
-    // Slutfase (efter dialog)
-    if (userTurns >= 3) {
+    // Efter opsummering
+    if (hasSummarized) {
       return (
         <div className="flex flex-wrap gap-2 px-4 pb-2">
-          {END_CHIPS.map((chip) => (
-            <button
-              key={chip.id}
-              onClick={() =>
-                chip.id === "restart"
-                  ? resetSession()
-                  : sendMessage(chip.value)
-              }
-              className="text-xs px-3 py-1 rounded-full border border-gray-300 hover:bg-gray-100"
-            >
-              {chip.label}
-            </button>
-          ))}
+          <button
+            onClick={resetSession}
+            className="text-xs px-3 py-1 rounded-full border border-gray-300 hover:bg-gray-100"
+          >
+            Genstart
+          </button>
         </div>
       );
     }
 
-    return null;
+    // Undervejs
+    return (
+      <div className="flex flex-wrap gap-2 px-4 pb-2">
+        <button
+          onClick={() => sendMessage("Kan du opsummere samtalen?")}
+          className="text-xs px-3 py-1 rounded-full border border-gray-300 hover:bg-gray-100"
+        >
+          Opsummer
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -175,11 +192,11 @@ export default function Chatbot() {
             </button>
           </div>
 
-          {/* Prolog – kun før start */}
+          {/* Prolog */}
           {!hasStarted && (
             <div className="px-4 py-3 text-sm text-gray-600 border-b">
               Du er velkommen til at beskrive med egne ord, hvad der fylder for dig.
-              Valgene herunder er blot forslag – ikke en fast rækkefølge.
+              Valgene herunder er blot forslag.
             </div>
           )}
 
@@ -220,11 +237,11 @@ export default function Chatbot() {
               rows={2}
               placeholder="Skriv her…"
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
-              disabled={loading}
+              disabled={loading || hasSummarized}
             />
             <button
               onClick={() => sendMessage()}
-              disabled={loading}
+              disabled={loading || hasSummarized}
               className="bg-accent text-white px-4 rounded-lg text-sm disabled:opacity-50"
             >
               Send
