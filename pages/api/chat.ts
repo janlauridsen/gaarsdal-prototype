@@ -2,13 +2,15 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
 
-const PROMPT_PATH = path.join(process.cwd(), "chatbot", "prompt.md");
-const REFLECTION_PATH = path.join(process.cwd(), "chatbot", "prompt.reflection.md");
-const STATIC_INFO_PATH = path.join(process.cwd(), "chatbot", "static-info.md");
+const PRIMARY_PROMPT = fs.readFileSync(
+  path.join(process.cwd(), "chatbot", "prompt.md"),
+  "utf8"
+);
 
-const SYSTEM_PROMPT = fs.readFileSync(PROMPT_PATH, "utf8");
-const REFLECTION_PROMPT = fs.readFileSync(REFLECTION_PATH, "utf8");
-const STATIC_INFO = fs.readFileSync(STATIC_INFO_PATH, "utf8");
+const VALIDATOR_PROMPT = fs.readFileSync(
+  path.join(process.cwd(), "chatbot", "validator-prompt.md"),
+  "utf8"
+);
 
 export default async function handler(
   req: NextApiRequest,
@@ -24,15 +26,9 @@ export default async function handler(
     return res.status(400).json({ error: "Missing input" });
   }
 
-  const userContent = [
-    `[STATISK VIDEN]\n${STATIC_INFO}\n`,
-    contextReplay ? `[CONTEXT]\n${contextReplay}\n` : "",
-    `[BRUGER]\n${input}`,
-  ].join("\n");
-
   try {
-    // --- PHASE 1: NORMAL DIALOG ---
-    const completion = await fetch("https://api.openai.com/v1/chat/completions", {
+    // ---------- PHASE 1 ----------
+    const phase1 = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -42,61 +38,60 @@ export default async function handler(
         model: "gpt-4o-mini",
         temperature: 0.7,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userContent },
+          { role: "system", content: PRIMARY_PROMPT },
+          {
+            role: "user",
+            content: `
+DIALOG INDEN NU:
+${contextReplay || "—"}
+
+BRUGER:
+${input}
+`,
+          },
         ],
       }),
     });
 
-    if (!completion.ok) {
-      return res.status(500).json({ error: "Upstream model error" });
-    }
+    const phase1Data = await phase1.json();
+    const draft =
+      phase1Data?.choices?.[0]?.message?.content?.trim() ?? "";
 
-    const data = await completion.json();
-    const mainOutput =
-      data?.choices?.[0]?.message?.content?.trim() ?? "";
+    // ---------- PHASE 2 ----------
+    const phase2 = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        messages: [
+          { role: "system", content: VALIDATOR_PROMPT },
+          {
+            role: "user",
+            content: `
+FUL DIALOG:
+${contextReplay || "—"}
 
-    // --- CHECK: OPSUMMERING ---
-    const isSummary =
-      input.toLowerCase().includes("opsummer");
+DRAFT:
+${draft}
+`,
+          },
+        ],
+      }),
+    });
 
-    if (!isSummary) {
-      return res.status(200).json({ output: mainOutput });
-    }
-
-    // --- PHASE 2: UDVIDET REFLEKSION ---
-    const reflectionCall = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          temperature: 0.6,
-          messages: [
-            { role: "system", content: REFLECTION_PROMPT },
-            {
-              role: "user",
-              content: `OPSAMMERING:\n${mainOutput}`,
-            },
-          ],
-        }),
-      }
-    );
-
-    if (!reflectionCall.ok) {
-      return res.status(200).json({ output: mainOutput });
-    }
-
-    const reflectionData = await reflectionCall.json();
-    const reflectionOutput =
-      reflectionData?.choices?.[0]?.message?.content?.trim() ?? "";
+    const phase2Data = await phase2.json();
+    const finalOutput =
+      phase2Data?.choices?.[0]?.message?.content?.trim() ?? draft;
 
     return res.status(200).json({
-      output: `${mainOutput}\n\n${reflectionOutput}`,
+      output: finalOutput,
+      meta: {
+        engine: "2-phase",
+      },
     });
   } catch (err) {
     console.error(err);
