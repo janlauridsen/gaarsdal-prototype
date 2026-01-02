@@ -1,104 +1,71 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import fs from "fs";
-import path from "path";
+import { OpenAI } from "openai";
+import {
+  SYSTEM_PROMPT,
+  PROLOG_PROMPT,
+  SUMMARY_PROMPT,
+  PERSPECTIVE_PROMPT,
+} from "../../chatbot/prompts";
 
-const PRIMARY_PROMPT = fs.readFileSync(
-  path.join(process.cwd(), "chatbot", "prompt.md"),
-  "utf8"
-);
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
-const VALIDATOR_PROMPT = fs.readFileSync(
-  path.join(process.cwd(), "chatbot", "validator-prompt.md"),
-  "utf8"
-);
+type Phase = "PROLOG" | "DIALOG" | "SUMMARY" | "PERSPECTIVE";
+
+function detectPhase(userText: string): Phase {
+  const t = userText.toLowerCase().trim();
+  if (t === "opsummer" || t === "opsummering") return "SUMMARY";
+  return "DIALOG";
+}
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    res.status(405).end();
+    return;
   }
 
-  const { input, contextReplay } = req.body;
+  const { messages = [] } = req.body as {
+    messages: { role: "user" | "assistant"; content: string }[];
+  };
 
-  if (!input || typeof input !== "string") {
-    return res.status(400).json({ error: "Missing input" });
-  }
+  const lastUser = [...messages].reverse().find(m => m.role === "user");
+  const userText = lastUser?.content ?? "";
 
-  try {
-    // ---------- PHASE 1 ----------
-    const phase1Res = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          temperature: 0.7,
-          messages: [
-            { role: "system", content: PRIMARY_PROMPT },
-            {
-              role: "user",
-              content: `
-DIALOG INDEN NU:
-${contextReplay || "—"}
+  // Deterministisk fase
+  let phase: Phase = detectPhase(userText);
 
-BRUGER:
-${input}
-`,
-            },
-          ],
-        }),
-      }
-    );
+  // Prolog-garanti: altid første assistant-svar
+  const hasAssistant = messages.some(m => m.role === "assistant");
+  if (!hasAssistant) phase = "PROLOG";
 
-    const phase1Data = await phase1Res.json();
-    const draft =
-      phase1Data?.choices?.[0]?.message?.content?.trim() ?? "";
+  const phasePrompt =
+    phase === "PROLOG"
+      ? PROLOG_PROMPT
+      : phase === "SUMMARY"
+      ? SUMMARY_PROMPT
+      : phase === "PERSPECTIVE"
+      ? PERSPECTIVE_PROMPT
+      : SYSTEM_PROMPT;
 
-    // ---------- PHASE 2 ----------
-    const phase2Res = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          temperature: 0.2,
-          messages: [
-            { role: "system", content: VALIDATOR_PROMPT },
-            {
-              role: "user",
-              content: `
-FUL DIALOG:
-${contextReplay || "—"}
+  const assembled = [
+    { role: "system", content: phasePrompt },
+    ...messages,
+  ];
 
-DRAFT:
-${draft}
-`,
-            },
-          ],
-        }),
-      }
-    );
+  const completion = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: assembled,
+    temperature: 0.3,
+  });
 
-    const phase2Data = await phase2Res.json();
-    const finalOutput =
-      phase2Data?.choices?.[0]?.message?.content?.trim() ?? draft;
+  const reply = completion.choices[0]?.message?.content ?? "";
 
-    return res.status(200).json({
-      output: finalOutput,
-      meta: { engine: "2-phase" },
-    });
-  } catch (err) {
-    console.error("Chat API error:", err);
-    return res.status(500).json({ error: "Chat failed" });
-  }
+  res.status(200).json({
+    phase,
+    reply,
+  });
 }
