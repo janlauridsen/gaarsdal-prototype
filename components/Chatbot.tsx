@@ -18,17 +18,16 @@ export default function Chatbot() {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Scroll altid til bunden
+  // Scroll til bunden ved nye beskeder eller åbning
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
 
-  async function sendAutoGreeting() {
+  function sendAutoGreeting() {
     setMessages([
       {
         role: "assistant",
-        content:
-          "Velkommen.\n\nDu er velkommen til at skrive frit om det, der fylder for dig. Hvis det er hjælpsomt, kan du også starte med et af de foreslåede valg herunder.",
+        content: "Godt at se dig. Du er velkommen til at skrive frit her.",
       },
     ]);
   }
@@ -91,7 +90,7 @@ export default function Chatbot() {
     }
   }
 
-  // Quick actions vises indtil første brugerbesked
+  // Chips vises indtil første brugerbesked
   const showQuickActions =
     messages.filter((m) => m.role === "user").length === 0;
 
@@ -106,20 +105,26 @@ export default function Chatbot() {
             sendAutoGreeting();
           }
         }}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center text-xl z-50"
+        className="fixed bottom-5 right-5 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center text-xl z-50"
         aria-label="Åbn chatbot"
       >
         💬
       </button>
 
       {open && (
-        <div className="fixed bottom-24 right-6 w-[640px] max-w-[95vw] h-[70vh] bg-white border border-gray-300 rounded-xl shadow-xl flex flex-col z-50">
+        <div
+          className="
+            fixed z-50 bg-white border border-gray-300 shadow-xl flex flex-col
+            bottom-0 right-0 w-full h-full
+            sm:bottom-24 sm:right-6 sm:w-[640px] sm:h-[70vh] sm:rounded-xl
+          "
+        >
           {/* Header */}
           <div className="px-4 py-3 border-b bg-gray-50 flex justify-between items-center">
             <div>
               <div className="text-sm font-medium">Velkommen</div>
               <div className="text-xs text-gray-600">
-                Afklarende samtale
+                Godt at se dig – hvad kan jeg hjælpe med?
               </div>
             </div>
             <button
@@ -137,8 +142,8 @@ export default function Chatbot() {
                 key={i}
                 className={`p-3 rounded-lg border ${
                   m.role === "user"
-                    ? "bg-accent text-white ml-20"
-                    : "bg-gray-50 text-gray-900 mr-20"
+                    ? "bg-accent text-white ml-10 sm:ml-20"
+                    : "bg-gray-50 text-gray-900 mr-10 sm:mr-20"
                 }`}
                 style={{ whiteSpace: "pre-wrap" }}
               >
@@ -146,12 +151,12 @@ export default function Chatbot() {
               </div>
             ))}
 
-            {/* Quick actions */}
+            {/* Valgchips */}
             {showQuickActions && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 pt-2">
                 <button
                   onClick={() => sendMessage("Jeg vil gerne have overblik")}
-                  className="px-3 py-2 rounded-full border bg-white hover:bg-gray-50 text-sm"
+                  className="px-4 py-2 rounded-full border bg-white hover:bg-gray-50 text-sm"
                 >
                   Overblik
                 </button>
@@ -159,7 +164,7 @@ export default function Chatbot() {
                   onClick={() =>
                     sendMessage("Jeg vil forstå mine muligheder")
                   }
-                  className="px-3 py-2 rounded-full border bg-white hover:bg-gray-50 text-sm"
+                  className="px-4 py-2 rounded-full border bg-white hover:bg-gray-50 text-sm"
                 >
                   Muligheder
                 </button>
@@ -167,9 +172,17 @@ export default function Chatbot() {
                   onClick={() =>
                     sendMessage("Hvordan kontakter jeg jer?")
                   }
-                  className="px-3 py-2 rounded-full border bg-white hover:bg-gray-50 text-sm"
+                  className="px-4 py-2 rounded-full border bg-white hover:bg-gray-50 text-sm"
                 >
                   Kontakt
+                </button>
+                <button
+                  onClick={() =>
+                    sendMessage("Der er noget, der fylder for mig")
+                  }
+                  className="px-4 py-2 rounded-full border bg-white hover:bg-gray-50 text-sm"
+                >
+                  Noget der fylder
                 </button>
               </div>
             )}
@@ -177,13 +190,13 @@ export default function Chatbot() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
-          <div className="p-4 border-t flex gap-2">
+          {/* Input (sticky) */}
+          <div className="p-3 border-t flex gap-2">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              rows={3}
+              rows={2}
               placeholder="Skriv her… (Enter = send, Ctrl+Enter = ny linje)"
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
             />
