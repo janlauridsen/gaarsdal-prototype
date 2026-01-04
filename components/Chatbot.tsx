@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  HomeIcon,
   PlusIcon,
-  ArrowLeftIcon,
-  ArrowRightIcon,
+  BackwardIcon,
+  ForwardIcon,
   EnvelopeIcon,
   ChatBubbleOvalLeftEllipsisIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 
 /* ---------- typer ---------- */
@@ -74,16 +74,12 @@ export default function Chatbot() {
     setInput("");
   }
 
-  function goBack() {
+  function goPrev() {
     if (index > 0) setIndex(index - 1);
   }
 
-  function goForward() {
+  function goNext() {
     if (index < stack.length - 1) setIndex(index + 1);
-  }
-
-  function goHome() {
-    setIndex(stack.length - 1);
   }
 
   /* ---------- messaging ---------- */
@@ -136,6 +132,7 @@ export default function Chatbot() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Åbn chat"
+        title="Åbn chat"
         className="
           fixed bottom-6 right-6
           w-14 h-14 rounded-full
@@ -150,16 +147,24 @@ export default function Chatbot() {
       </button>
 
       {open && (
-        <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] border rounded-lg bg-white flex flex-col">
+        <div
+          className="
+            fixed bottom-24 right-6
+            w-96 max-w-[90vw]
+            border rounded-lg
+            bg-bg
+            flex flex-col
+          "
+        >
           {/* Header */}
           <div className="flex justify-between items-center px-4 py-2 border-b">
             <span className="font-medium">Gaarsdal</span>
             <button
               onClick={() => setOpen(false)}
               aria-label="Luk chat"
-              className="text-lg"
+              title="Luk chat"
             >
-              ✕
+              <XMarkIcon className="w-5 h-5" />
             </button>
           </div>
 
@@ -176,7 +181,7 @@ export default function Chatbot() {
                   m.role === "user" ? "text-right" : "text-left"
                 } animate-fadeIn`}
               >
-                <div className="inline-block px-3 py-2 rounded border text-sm whitespace-pre-wrap">
+                <div className="inline-block px-3 py-2 rounded border bg-white text-sm whitespace-pre-wrap">
                   {m.content}
                 </div>
               </div>
@@ -187,8 +192,8 @@ export default function Chatbot() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
-          <div className="p-3 border-t">
+          {/* Input + navigation */}
+          <div className="border-t p-3 bg-bg">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -199,46 +204,42 @@ export default function Chatbot() {
                 }
               }}
               rows={2}
-              className="w-full border rounded px-3 py-2 text-sm resize-none"
+              className="w-full border rounded px-3 py-2 text-sm resize-none bg-white"
               placeholder="Skriv dit spørgsmål…"
             />
 
             {/* Navigation bar */}
-            <div className="mt-2 flex justify-between items-center">
-              <div className="flex gap-2">
+            <div className="mt-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 {/* Ny samtale */}
-                <button onClick={pushNewConversation} aria-label="Ny samtale">
+                <button
+                  onClick={pushNewConversation}
+                  aria-label="Ny samtale"
+                  title="Ny samtale (nyt emne)"
+                >
                   <PlusIcon className="w-5 h-5" />
                 </button>
 
-                {/* Tilbage */}
+                {/* Tidligere */}
                 <button
-                  onClick={goBack}
+                  onClick={goPrev}
                   disabled={index === 0}
-                  aria-label="Tilbage"
+                  aria-label="Tidligere samtale"
+                  title="Tidligere samtale"
                   className={index === 0 ? "opacity-30" : ""}
                 >
-                  <ArrowLeftIcon className="w-5 h-5" />
+                  <BackwardIcon className="w-5 h-5" />
                 </button>
 
-                {/* Frem */}
+                {/* Senere */}
                 <button
-                  onClick={goForward}
+                  onClick={goNext}
                   disabled={index === stack.length - 1}
-                  aria-label="Frem"
+                  aria-label="Senere samtale"
+                  title="Senere samtale"
                   className={index === stack.length - 1 ? "opacity-30" : ""}
                 >
-                  <ArrowRightIcon className="w-5 h-5" />
-                </button>
-
-                {/* Home */}
-                <button
-                  onClick={goHome}
-                  disabled={index === stack.length - 1}
-                  aria-label="Home"
-                  className={index === stack.length - 1 ? "opacity-30" : ""}
-                >
-                  <HomeIcon className="w-5 h-5" />
+                  <ForwardIcon className="w-5 h-5" />
                 </button>
               </div>
 
@@ -246,9 +247,23 @@ export default function Chatbot() {
               <button
                 onClick={() => sendMessage(CONTACT_TEXT)}
                 aria-label="Kontakt"
+                title="Kontaktoplysninger"
               >
                 <EnvelopeIcon className="w-5 h-5" />
               </button>
+            </div>
+
+            {/* Stack indicator */}
+            <div className="mt-2 flex justify-center gap-1">
+              {stack.map((_, i) => (
+                <span
+                  key={i}
+                  className={`w-2 h-2 rounded-full ${
+                    i === index ? "bg-accent" : "bg-gray-300"
+                  }`}
+                  aria-hidden
+                />
+              ))}
             </div>
           </div>
         </div>
