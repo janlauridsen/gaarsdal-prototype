@@ -6,15 +6,15 @@ type Message = {
 };
 
 const CONTACT_TEXT = "Hvordan kontakter jeg jer?";
-const FORBEHOLD_TEXT =
-  "Her er en kort og nøgtern forklaring af de forbehold, der gælder for brug af hypnoterapi.";
-
 const ACUTE_HELP_TEXT =
   "Hvis du har brug for akut hjælp:\n\n" +
   "- Ring 112 ved akut fare\n" +
   "- Livslinien: 70 201 201 (døgnåben)\n" +
   "- Børne- og Ungetelefonen: 116 111\n\n" +
   "Jeg kan ikke hjælpe i akutte situationer.";
+
+const FORBEHOLD_TEXT =
+  "Her er en kort og nøgtern forklaring af de forbehold, der gælder for brug af hypnoterapi.";
 
 const QUICK_CHIPS = [
   "Hvad er hypnoterapi?",
@@ -82,7 +82,7 @@ export default function Chatbot() {
       {/* Floating launcher */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full border flex items-center justify-center"
         aria-label="Åbn chat"
       >
         💬
@@ -90,26 +90,18 @@ export default function Chatbot() {
 
       {open && (
         <div
-          className={`fixed bottom-24 right-6 border rounded-lg shadow-xl flex flex-col bg-white ${
+          className={`fixed bottom-24 right-6 border rounded-lg flex flex-col bg-white ${
             expanded ? "w-[90vw] h-[80vh]" : "w-96 max-w-[90vw]"
           }`}
         >
           {/* Header */}
           <div className="flex justify-between items-center px-4 py-2 border-b">
             <span className="font-medium">Gaarsdal</span>
-            <div className="flex gap-3 text-sm">
-              <button
-                onClick={() => setExpanded((v) => !v)}
-                aria-label="Forstør / formindsk"
-              >
+            <div className="flex gap-3">
+              <button onClick={() => setExpanded((v) => !v)}>
                 {expanded ? "↙" : "↗"}
               </button>
-              <button
-                onClick={() => setOpen(false)}
-                aria-label="Luk chat"
-              >
-                ✕
-              </button>
+              <button onClick={() => setOpen(false)}>✕</button>
             </div>
           </div>
 
@@ -120,7 +112,7 @@ export default function Chatbot() {
             style={{ maxHeight: expanded ? "100%" : "500px" }}
           >
             {messages.length === 0 && (
-              <p className="text-sm opacity-70">
+              <p className="text-sm">
                 Stil et spørgsmål om Gaarsdal Hypnoterapi.
               </p>
             )}
@@ -132,15 +124,13 @@ export default function Chatbot() {
                   m.role === "user" ? "text-right" : "text-left"
                 } animate-fadeIn`}
               >
-                <div className="inline-block px-3 py-2 rounded text-sm whitespace-pre-wrap border">
+                <div className="inline-block px-3 py-2 rounded border text-sm whitespace-pre-wrap">
                   {m.content}
                 </div>
               </div>
             ))}
 
-            {loading && (
-              <p className="text-sm opacity-60 animate-fadeIn">Skriver…</p>
-            )}
+            {loading && <p className="text-sm">Skriver…</p>}
 
             <div ref={messagesEndRef} />
           </div>
@@ -184,40 +174,25 @@ export default function Chatbot() {
             />
 
             {/* Icon bar */}
-            <div className="mt-2 flex justify-between items-center text-sm opacity-70">
+            <div className="mt-2 flex justify-between items-center text-sm">
               <div className="flex gap-4">
-                <button
-                  onClick={() => setOpen(false)}
-                  title="Luk chat"
-                  aria-label="Luk chat"
-                >
-                  ⌂
+                <button title="Luk chat" onClick={() => setOpen(false)}>
+                  🏠
                 </button>
-
-                <button
-                  onClick={() => sendMessage(CONTACT_TEXT)}
-                  title="Kontakt og praktisk info"
-                  aria-label="Kontakt"
-                >
-                  ⓘ
+                <button title="Kontakt" onClick={() => sendMessage(CONTACT_TEXT)}>
+                  ✉
                 </button>
               </div>
 
               <div className="flex gap-4">
                 <button
-                  onClick={() => sendMessage(ACUTE_HELP_TEXT)}
                   title="Akut hjælp"
-                  aria-label="Akut hjælp"
+                  onClick={() => sendMessage(ACUTE_HELP_TEXT)}
                 >
                   ⚠
                 </button>
-
-                <button
-                  onClick={resetChat}
-                  title="Nulstil samtale"
-                  aria-label="Nulstil samtale"
-                >
-                  ⌫
+                <button title="Nulstil samtale" onClick={resetChat}>
+                  🗑
                 </button>
               </div>
             </div>
