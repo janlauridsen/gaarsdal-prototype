@@ -16,9 +16,7 @@ type Message = {
 };
 
 type Conversation = {
-  id: string;
   messages: Message[];
-  startedAt: number;
 };
 
 /* ---------- konstanter ---------- */
@@ -35,12 +33,8 @@ const WELCOME_MESSAGE: Message = {
 
 /* ---------- helpers ---------- */
 
-function newConversation(): Conversation {
-  return {
-    id: crypto.randomUUID(),
-    messages: [WELCOME_MESSAGE],
-    startedAt: Date.now(),
-  };
+function createConversation(): Conversation {
+  return { messages: [WELCOME_MESSAGE] };
 }
 
 /* ---------- komponent ---------- */
@@ -48,8 +42,10 @@ function newConversation(): Conversation {
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
 
-  // stack + cursor
-  const [stack, setStack] = useState<Conversation[]>([newConversation()]);
+  // stack + cursor (ALTID mindst én samtale)
+  const [stack, setStack] = useState<Conversation[]>(() => [
+    createConversation(),
+  ]);
   const [index, setIndex] = useState(0);
 
   const [input, setInput] = useState("");
@@ -57,7 +53,7 @@ export default function Chatbot() {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  const current = stack[index];
+  const current = stack[index] ?? stack[stack.length - 1];
 
   /* ---------- scroll ---------- */
 
@@ -68,18 +64,20 @@ export default function Chatbot() {
   /* ---------- navigation ---------- */
 
   function pushNewConversation() {
-    const next = newConversation();
-    setStack((prev) => [...prev.slice(0, index + 1), next]);
-    setIndex((prev) => prev + 1);
+    setStack((prev) => {
+      const next = [...prev, createConversation()];
+      setIndex(next.length - 1);
+      return next;
+    });
     setInput("");
   }
 
   function goPrev() {
-    if (index > 0) setIndex(index - 1);
+    setIndex((i) => Math.max(0, i - 1));
   }
 
   function goNext() {
-    if (index < stack.length - 1) setIndex(index + 1);
+    setIndex((i) => Math.min(stack.length - 1, i + 1));
   }
 
   /* ---------- messaging ---------- */
@@ -87,15 +85,14 @@ export default function Chatbot() {
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
-    const userMsg: Message = { role: "user", content: text };
+    setStack((prev) => {
+      const next = [...prev];
+      next[index] = {
+        messages: [...next[index].messages, { role: "user", content: text }],
+      };
+      return next;
+    });
 
-    const updatedStack = [...stack];
-    updatedStack[index] = {
-      ...current,
-      messages: [...current.messages, userMsg],
-    };
-
-    setStack(updatedStack);
     setInput("");
     setLoading(true);
 
@@ -103,22 +100,23 @@ export default function Chatbot() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: updatedStack[index].messages }),
+        body: JSON.stringify({ messages: current.messages }),
       });
 
       const data = await res.json();
       const answer =
         data.answer || "Der opstod en fejl. Prøv igen senere.";
 
-      updatedStack[index] = {
-        ...updatedStack[index],
-        messages: [
-          ...updatedStack[index].messages,
-          { role: "assistant", content: answer },
-        ],
-      };
-
-      setStack([...updatedStack]);
+      setStack((prev) => {
+        const next = [...prev];
+        next[index] = {
+          messages: [
+            ...next[index].messages,
+            { role: "assistant", content: answer },
+          ],
+        };
+        return next;
+      });
     } finally {
       setLoading(false);
     }
@@ -147,15 +145,7 @@ export default function Chatbot() {
       </button>
 
       {open && (
-        <div
-          className="
-            fixed bottom-24 right-6
-            w-96 max-w-[90vw]
-            border rounded-lg
-            bg-bg
-            flex flex-col
-          "
-        >
+        <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] border rounded-lg bg-bg flex flex-col">
           {/* Header */}
           <div className="flex justify-between items-center px-4 py-2 border-b">
             <span className="font-medium">Gaarsdal</span>
@@ -208,46 +198,34 @@ export default function Chatbot() {
               placeholder="Skriv dit spørgsmål…"
             />
 
-            {/* Navigation bar */}
-            <div className="mt-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {/* Ny samtale */}
-                <button
-                  onClick={pushNewConversation}
-                  aria-label="Ny samtale"
-                  title="Ny samtale (nyt emne)"
-                >
+            <div className="mt-3 flex justify-between items-center">
+              <div className="flex gap-2">
+                <button title="Ny samtale" onClick={pushNewConversation}>
                   <PlusIcon className="w-5 h-5" />
                 </button>
 
-                {/* Tidligere */}
                 <button
+                  title="Tidligere samtale"
                   onClick={goPrev}
                   disabled={index === 0}
-                  aria-label="Tidligere samtale"
-                  title="Tidligere samtale"
                   className={index === 0 ? "opacity-30" : ""}
                 >
                   <BackwardIcon className="w-5 h-5" />
                 </button>
 
-                {/* Senere */}
                 <button
+                  title="Senere samtale"
                   onClick={goNext}
                   disabled={index === stack.length - 1}
-                  aria-label="Senere samtale"
-                  title="Senere samtale"
                   className={index === stack.length - 1 ? "opacity-30" : ""}
                 >
                   <ForwardIcon className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Kontakt */}
               <button
+                title="Kontakt"
                 onClick={() => sendMessage(CONTACT_TEXT)}
-                aria-label="Kontakt"
-                title="Kontaktoplysninger"
               >
                 <EnvelopeIcon className="w-5 h-5" />
               </button>
@@ -261,7 +239,6 @@ export default function Chatbot() {
                   className={`w-2 h-2 rounded-full ${
                     i === index ? "bg-accent" : "bg-gray-300"
                   }`}
-                  aria-hidden
                 />
               ))}
             </div>
