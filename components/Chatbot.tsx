@@ -5,10 +5,7 @@ type Message = {
   content: string;
 };
 
-const DUMMY_RESPONSE =
-  "Dette er en foreløbig demo-version af chatbotten. Funktionalitet til svar er endnu ikke aktiveret.";
-
-const DUMMY_CHIPS = [
+const CHIPS = [
   "Hvad er hypnoterapi?",
   "Hvad kan I hjælpe med?",
   "Hvordan kontakter jeg jer?",
@@ -17,19 +14,34 @@ const DUMMY_CHIPS = [
 export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function sendMessage(text: string) {
-    if (!text.trim()) return;
+  async function sendMessage(text: string) {
+    if (!text.trim() || loading) return;
 
-    const userMessage: Message = { role: "user", content: text };
+    const nextMessages: Message[] = [
+      ...messages,
+      { role: "user", content: text },
+    ];
 
-    const assistantMessage: Message = {
-      role: "assistant",
-      content: DUMMY_RESPONSE,
-    };
-
-    setMessages((prev) => [...prev, userMessage, assistantMessage]);
+    setMessages(nextMessages);
     setInput("");
+    setLoading(true);
+
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: nextMessages }),
+    });
+
+    const data = await res.json();
+
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: data.answer || "Ingen respons." },
+    ]);
+
+    setLoading(false);
   }
 
   return (
@@ -44,11 +56,7 @@ export default function Chatbot() {
         {messages.map((m, i) => (
           <div
             key={i}
-            className={
-              m.role === "user"
-                ? "text-right"
-                : "text-left text-gray-800"
-            }
+            className={m.role === "user" ? "text-right" : "text-left"}
           >
             <div
               className={
@@ -61,11 +69,14 @@ export default function Chatbot() {
             </div>
           </div>
         ))}
+
+        {loading && (
+          <p className="text-sm text-gray-500">Skriver…</p>
+        )}
       </div>
 
-      {/* Dummy chips */}
       <div className="flex flex-wrap gap-2 mb-4">
-        {DUMMY_CHIPS.map((chip) => (
+        {CHIPS.map((chip) => (
           <button
             key={chip}
             onClick={() => sendMessage(chip)}
@@ -86,7 +97,8 @@ export default function Chatbot() {
         />
         <button
           onClick={() => sendMessage(input)}
-          className="px-4 py-2 border rounded bg-gray-800 text-white"
+          disabled={loading}
+          className="px-4 py-2 border rounded bg-gray-800 text-white disabled:opacity-50"
         >
           Send
         </button>
