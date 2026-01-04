@@ -55,7 +55,7 @@ Hvis brugeren nævner noget, som **ikke fremgår af den autoriserede viden**:
 - sig nøgternt, at det ligger uden for det, du kan udtale dig om her
 - tilbyd roligt at vende tilbage til emner inden for rammerne
 
----  
+---
 
 AFKLARING AF HJÆLPEOMRÅDER – VIGTIG PRÆCISERING
 
