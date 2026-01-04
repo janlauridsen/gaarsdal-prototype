@@ -125,15 +125,17 @@ export default function Chatbot() {
 
   return (
     <>
-      {/* Launcher – bruger samme primære farve som Kontakt-knap */}
+      {/* Launcher – matcher præcis "Kontakt mig" */}
       <button
         onClick={() => setOpen(true)}
         aria-label="Åbn chat"
         className="
           fixed bottom-6 right-6
           w-14 h-14 rounded-full
-          gaarsdal-primary-button
-          shadow-lg
+          bg-accent text-white
+          shadow
+          hover:bg-accent/90
+          transition
           flex items-center justify-center
         "
       >
