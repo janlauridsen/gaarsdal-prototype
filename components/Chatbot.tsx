@@ -92,3 +92,5 @@ export default function Chatbot() {
         </button>
       </div>
     </div>
+  );
+}
