@@ -8,8 +8,6 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 
-/* ---------- typer ---------- */
-
 type Message = {
   role: "user" | "assistant";
   content: string;
@@ -18,8 +16,6 @@ type Message = {
 type Conversation = {
   messages: Message[];
 };
-
-/* ---------- konstanter ---------- */
 
 const CONTACT_TEXT = "Hvordan kontakter jeg jer?";
 
@@ -31,37 +27,25 @@ const WELCOME_MESSAGE: Message = {
     "Det kan være helt kort eller mere udfoldet. Vi tager det i dit tempo.",
 };
 
-/* ---------- helpers ---------- */
-
 function createConversation(): Conversation {
   return { messages: [WELCOME_MESSAGE] };
 }
 
-/* ---------- komponent ---------- */
-
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
-
-  // stack + cursor (ALTID mindst én samtale)
   const [stack, setStack] = useState<Conversation[]>(() => [
     createConversation(),
   ]);
   const [index, setIndex] = useState(0);
-
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
   const current = stack[index] ?? stack[stack.length - 1];
-
-  /* ---------- scroll ---------- */
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [current.messages, loading]);
-
-  /* ---------- navigation ---------- */
 
   function pushNewConversation() {
     setStack((prev) => {
@@ -79,8 +63,6 @@ export default function Chatbot() {
   function goNext() {
     setIndex((i) => Math.min(stack.length - 1, i + 1));
   }
-
-  /* ---------- messaging ---------- */
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
@@ -122,15 +104,12 @@ export default function Chatbot() {
     }
   }
 
-  /* ---------- render ---------- */
-
   return (
     <>
       {/* Launcher */}
       <button
         onClick={() => setOpen(true)}
         aria-label="Åbn chat"
-        title="Åbn chat"
         className="
           fixed bottom-6 right-6
           w-14 h-14 rounded-full
@@ -145,15 +124,21 @@ export default function Chatbot() {
       </button>
 
       {open && (
-        <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] border rounded-lg bg-bg flex flex-col">
+        <div
+          className="
+            fixed bottom-24 right-6
+            w-96 max-w-[90vw]
+            border border-gray-300
+            rounded-xl
+            shadow-sm
+            bg-bg
+            flex flex-col
+          "
+        >
           {/* Header */}
-          <div className="flex justify-between items-center px-4 py-2 border-b">
+          <div className="flex justify-between items-center px-4 py-3 border-b bg-white rounded-t-xl">
             <span className="font-medium">Gaarsdal</span>
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Luk chat"
-              title="Luk chat"
-            >
+            <button onClick={() => setOpen(false)} aria-label="Luk chat">
               <XMarkIcon className="w-5 h-5" />
             </button>
           </div>
@@ -171,19 +156,18 @@ export default function Chatbot() {
                   m.role === "user" ? "text-right" : "text-left"
                 } animate-fadeIn`}
               >
-                <div className="inline-block px-3 py-2 rounded border bg-white text-sm whitespace-pre-wrap">
+                <div className="inline-block px-4 py-3 rounded-lg border bg-white text-sm whitespace-pre-wrap">
                   {m.content}
                 </div>
               </div>
             ))}
 
             {loading && <p className="text-sm">Skriver…</p>}
-
             <div ref={messagesEndRef} />
           </div>
 
           {/* Input + navigation */}
-          <div className="border-t p-3 bg-bg">
+          <div className="border-t bg-white p-3 rounded-b-xl">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -194,7 +178,7 @@ export default function Chatbot() {
                 }
               }}
               rows={2}
-              className="w-full border rounded px-3 py-2 text-sm resize-none bg-white"
+              className="w-full border rounded-md px-3 py-2 text-sm resize-none"
               placeholder="Skriv dit spørgsmål…"
             />
 
@@ -203,7 +187,6 @@ export default function Chatbot() {
                 <button title="Ny samtale" onClick={pushNewConversation}>
                   <PlusIcon className="w-5 h-5" />
                 </button>
-
                 <button
                   title="Tidligere samtale"
                   onClick={goPrev}
@@ -212,7 +195,6 @@ export default function Chatbot() {
                 >
                   <BackwardIcon className="w-5 h-5" />
                 </button>
-
                 <button
                   title="Senere samtale"
                   onClick={goNext}
@@ -223,10 +205,7 @@ export default function Chatbot() {
                 </button>
               </div>
 
-              <button
-                title="Kontakt"
-                onClick={() => sendMessage(CONTACT_TEXT)}
-              >
+              <button title="Kontakt" onClick={() => sendMessage(CONTACT_TEXT)}>
                 <EnvelopeIcon className="w-5 h-5" />
               </button>
             </div>
