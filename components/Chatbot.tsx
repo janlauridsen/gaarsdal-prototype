@@ -1,131 +1,138 @@
 import { useEffect, useRef, useState } from "react";
 import {
   HomeIcon,
+  PlusIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
   EnvelopeIcon,
-  ExclamationTriangleIcon,
-  TrashIcon,
   ChatBubbleOvalLeftEllipsisIcon,
 } from "@heroicons/react/24/outline";
+
+/* ---------- typer ---------- */
 
 type Message = {
   role: "user" | "assistant";
   content: string;
 };
 
-type Action = {
+type Conversation = {
   id: string;
-  label: string;
-  Icon: React.ComponentType<{ className?: string }>;
-  visible: () => boolean;
-  onClick: () => void;
+  messages: Message[];
+  startedAt: number;
 };
 
+/* ---------- konstanter ---------- */
+
 const CONTACT_TEXT = "Hvordan kontakter jeg jer?";
-const FORBEHOLD_TEXT =
-  "Her er en kort og nøgtern forklaring af de forbehold, der gælder for brug af hypnoterapi.";
 
-const ACUTE_HELP_TEXT =
-  "Hvis du har brug for akut hjælp:\n\n" +
-  "- Ring 112 ved akut fare\n" +
-  "- Livslinien: 70 201 201 (døgnåben)\n" +
-  "- Børne- og Ungetelefonen: 116 111\n\n" +
-  "Jeg kan ikke hjælpe i akutte situationer.";
+const WELCOME_MESSAGE: Message = {
+  role: "assistant",
+  content:
+    "Velkommen – godt at se dig.\n\n" +
+    "Du er velkommen til at stille spørgsmål, dele tanker eller beskrive noget, der fylder. " +
+    "Det kan være helt kort eller mere udfoldet. Vi tager det i dit tempo.",
+};
 
-const QUICK_CHIPS = [
-  "Hvad er hypnoterapi?",
-  "Hvad kan I hjælpe med?",
-];
+/* ---------- helpers ---------- */
+
+function newConversation(): Conversation {
+  return {
+    id: crypto.randomUUID(),
+    messages: [WELCOME_MESSAGE],
+    startedAt: Date.now(),
+  };
+}
+
+/* ---------- komponent ---------- */
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+
+  // stack + cursor
+  const [stack, setStack] = useState<Conversation[]>([newConversation()]);
+  const [index, setIndex] = useState(0);
+
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showForbehold, setShowForbehold] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  const current = stack[index];
+
+  /* ---------- scroll ---------- */
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  }, [current.messages, loading]);
 
-  function resetChat() {
-    setMessages([]);
+  /* ---------- navigation ---------- */
+
+  function pushNewConversation() {
+    const next = newConversation();
+    setStack((prev) => [...prev.slice(0, index + 1), next]);
+    setIndex((prev) => prev + 1);
     setInput("");
-    setLoading(false);
-    setShowForbehold(false);
   }
+
+  function goBack() {
+    if (index > 0) setIndex(index - 1);
+  }
+
+  function goForward() {
+    if (index < stack.length - 1) setIndex(index + 1);
+  }
+
+  function goHome() {
+    setIndex(stack.length - 1);
+  }
+
+  /* ---------- messaging ---------- */
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
-    setShowForbehold(false);
+    const userMsg: Message = { role: "user", content: text };
 
-    const nextMessages: Message[] = [
-      ...messages,
-      { role: "user", content: text },
-    ];
+    const updatedStack = [...stack];
+    updatedStack[index] = {
+      ...current,
+      messages: [...current.messages, userMsg],
+    };
 
-    setMessages(nextMessages);
+    setStack(updatedStack);
     setInput("");
     setLoading(true);
 
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: nextMessages }),
-    });
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: updatedStack[index].messages }),
+      });
 
-    const data = await res.json();
-    const answer = data.answer || "Ingen respons.";
+      const data = await res.json();
+      const answer =
+        data.answer || "Der opstod en fejl. Prøv igen senere.";
 
-    setMessages((prev) => [
-      ...prev,
-      { role: "assistant", content: answer },
-    ]);
+      updatedStack[index] = {
+        ...updatedStack[index],
+        messages: [
+          ...updatedStack[index].messages,
+          { role: "assistant", content: answer },
+        ],
+      };
 
-    if (answer.toLowerCase().includes("læs evt. om forbehold")) {
-      setShowForbehold(true);
+      setStack([...updatedStack]);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
-  const actions: Action[] = [
-    {
-      id: "home",
-      label: "Luk chat",
-      Icon: HomeIcon,
-      visible: () => true,
-      onClick: () => setOpen(false),
-    },
-    {
-      id: "contact",
-      label: "Kontakt",
-      Icon: EnvelopeIcon,
-      visible: () => true,
-      onClick: () => sendMessage(CONTACT_TEXT),
-    },
-    {
-      id: "acute",
-      label: "Akut hjælp",
-      Icon: ExclamationTriangleIcon,
-      visible: () => true,
-      onClick: () => sendMessage(ACUTE_HELP_TEXT),
-    },
-    {
-      id: "reset",
-      label: "Nulstil samtale",
-      Icon: TrashIcon,
-      visible: () => messages.length > 0,
-      onClick: resetChat,
-    },
-  ];
+  /* ---------- render ---------- */
 
   return (
     <>
-      {/* Launcher – matcher præcis "Kontakt mig" */}
+      {/* Launcher */}
       <button
         onClick={() => setOpen(true)}
         aria-label="Åbn chat"
@@ -143,42 +150,26 @@ export default function Chatbot() {
       </button>
 
       {open && (
-        <div
-          className={`fixed bottom-24 right-6 border rounded-lg flex flex-col bg-white ${
-            expanded ? "w-[90vw] h-[80vh]" : "w-96 max-w-[90vw]"
-          }`}
-        >
+        <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] border rounded-lg bg-white flex flex-col">
           {/* Header */}
           <div className="flex justify-between items-center px-4 py-2 border-b">
             <span className="font-medium">Gaarsdal</span>
-            <div className="flex gap-3">
-              <button onClick={() => setExpanded((v) => !v)}>
-                {expanded ? "↙" : "↗"}
-              </button>
-              <button onClick={() => setOpen(false)}>✕</button>
-            </div>
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="Luk chat"
+              className="text-lg"
+            >
+              ✕
+            </button>
           </div>
 
           {/* Messages */}
           <div
             id="gaarsdal-chat-window"
             className="flex-1 overflow-y-auto p-4 space-y-3"
-            style={{ maxHeight: expanded ? "100%" : "500px" }}
+            style={{ maxHeight: "500px" }}
           >
-            {messages.length === 0 && (
-              <div className="text-sm space-y-2">
-                <p><strong>Velkommen – godt at se dig.</strong></p>
-                <p>
-                  Du er velkommen til at stille spørgsmål, dele tanker eller
-                  beskrive noget, der fylder.
-                </p>
-                <p>
-                  Det kan være helt kort eller mere udfoldet. Vi tager det i dit tempo.
-                </p>
-              </div>
-            )}
-
-            {messages.map((m, i) => (
+            {current.messages.map((m, i) => (
               <div
                 key={i}
                 className={`${
@@ -194,28 +185,6 @@ export default function Chatbot() {
             {loading && <p className="text-sm">Skriver…</p>}
 
             <div ref={messagesEndRef} />
-          </div>
-
-          {/* Quick chips */}
-          <div className="px-4 py-2 border-t flex flex-wrap gap-2">
-            {QUICK_CHIPS.map((chip) => (
-              <button
-                key={chip}
-                onClick={() => sendMessage(chip)}
-                className="text-xs px-2 py-1 border rounded"
-              >
-                {chip}
-              </button>
-            ))}
-
-            {showForbehold && (
-              <button
-                onClick={() => sendMessage(FORBEHOLD_TEXT)}
-                className="text-xs px-2 py-1 border rounded"
-              >
-                Forbehold
-              </button>
-            )}
           </div>
 
           {/* Input */}
@@ -234,21 +203,52 @@ export default function Chatbot() {
               placeholder="Skriv dit spørgsmål…"
             />
 
-            {/* Action bar */}
+            {/* Navigation bar */}
             <div className="mt-2 flex justify-between items-center">
-              {actions
-                .filter((a) => a.visible())
-                .map(({ id, Icon, label, onClick }) => (
-                  <button
-                    key={id}
-                    onClick={onClick}
-                    title={label}
-                    aria-label={label}
-                    className="p-1"
-                  >
-                    <Icon className="h-5 w-5" />
-                  </button>
-                ))}
+              <div className="flex gap-2">
+                {/* Ny samtale */}
+                <button onClick={pushNewConversation} aria-label="Ny samtale">
+                  <PlusIcon className="w-5 h-5" />
+                </button>
+
+                {/* Tilbage */}
+                <button
+                  onClick={goBack}
+                  disabled={index === 0}
+                  aria-label="Tilbage"
+                  className={index === 0 ? "opacity-30" : ""}
+                >
+                  <ArrowLeftIcon className="w-5 h-5" />
+                </button>
+
+                {/* Frem */}
+                <button
+                  onClick={goForward}
+                  disabled={index === stack.length - 1}
+                  aria-label="Frem"
+                  className={index === stack.length - 1 ? "opacity-30" : ""}
+                >
+                  <ArrowRightIcon className="w-5 h-5" />
+                </button>
+
+                {/* Home */}
+                <button
+                  onClick={goHome}
+                  disabled={index === stack.length - 1}
+                  aria-label="Home"
+                  className={index === stack.length - 1 ? "opacity-30" : ""}
+                >
+                  <HomeIcon className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Kontakt */}
+              <button
+                onClick={() => sendMessage(CONTACT_TEXT)}
+                aria-label="Kontakt"
+              >
+                <EnvelopeIcon className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
