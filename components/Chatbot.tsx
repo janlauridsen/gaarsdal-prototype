@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
 };
 
-const CHIPS = [
+const CONTACT_TEXT = "Hvordan kontakter jeg jer?";
+const RESET_LABEL = "Nulstil samtale";
+
+const OTHER_CHIPS = [
   "Hvad er hypnoterapi?",
   "Hvad kan I hjælpe med?",
-  "Hvordan kontakter jeg jer?",
 ];
 
 export default function Chatbot() {
@@ -17,6 +19,18 @@ export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  function resetChat() {
+    setMessages([]);
+    setInput("");
+    setLoading(false);
+  }
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
@@ -60,9 +74,7 @@ export default function Chatbot() {
       {open && (
         <div
           className={`fixed bottom-24 right-6 bg-white border rounded-lg shadow-xl flex flex-col ${
-            expanded
-              ? "w-[90vw] h-[80vh]"
-              : "w-96 max-w-[90vw]"
+            expanded ? "w-[90vw] h-[80vh]" : "w-96 max-w-[90vw]"
           }`}
         >
           {/* Header */}
@@ -117,11 +129,27 @@ export default function Chatbot() {
             {loading && (
               <p className="text-sm text-gray-500">Skriver…</p>
             )}
+
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Chips */}
           <div className="px-4 py-2 border-t flex flex-wrap gap-2">
-            {CHIPS.map((chip) => (
+            <button
+              onClick={() => sendMessage(CONTACT_TEXT)}
+              className="text-xs px-2 py-1 border rounded bg-gray-100 hover:bg-gray-200"
+            >
+              Kontakt
+            </button>
+
+            <button
+              onClick={resetChat}
+              className="text-xs px-2 py-1 border rounded hover:bg-gray-100"
+            >
+              {RESET_LABEL}
+            </button>
+
+            {OTHER_CHIPS.map((chip) => (
               <button
                 key={chip}
                 onClick={() => sendMessage(chip)}
