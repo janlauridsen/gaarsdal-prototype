@@ -125,18 +125,16 @@ export default function Chatbot() {
 
   return (
     <>
-      {/* LAUNCHER FIX: tydelig grøn primær handling */}
+      {/* Launcher – bruger samme primære farve som Kontakt-knap */}
       <button
         onClick={() => setOpen(true)}
         aria-label="Åbn chat"
         className="
           fixed bottom-6 right-6
           w-14 h-14 rounded-full
-          bg-green-600 text-white
+          gaarsdal-primary-button
           shadow-lg
           flex items-center justify-center
-          hover:bg-green-700
-          focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2
         "
       >
         <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
@@ -166,9 +164,16 @@ export default function Chatbot() {
             style={{ maxHeight: expanded ? "100%" : "500px" }}
           >
             {messages.length === 0 && (
-              <p className="text-sm">
-                Stil et spørgsmål om Gaarsdal Hypnoterapi.
-              </p>
+              <div className="text-sm space-y-2">
+                <p><strong>Velkommen – godt at se dig.</strong></p>
+                <p>
+                  Du er velkommen til at stille spørgsmål, dele tanker eller
+                  beskrive noget, der fylder.
+                </p>
+                <p>
+                  Det kan være helt kort eller mere udfoldet. Vi tager det i dit tempo.
+                </p>
+              </div>
             )}
 
             {messages.map((m, i) => (
