@@ -100,6 +100,7 @@ export default function Chatbot() {
 
           {/* Messages */}
           <div
+            id="gaarsdal-chat-window"
             className="flex-1 overflow-y-auto p-4 space-y-3"
             style={{ maxHeight: expanded ? "100%" : "500px" }}
           >
@@ -112,16 +113,18 @@ export default function Chatbot() {
             {messages.map((m, i) => (
               <div
                 key={i}
-                className={m.role === "user" ? "text-right" : "text-left"}
+                className={`${
+                  m.role === "user" ? "text-right" : "text-left"
+                } animate-fadeIn`}
               >
-                <div className="inline-block px-3 py-2 rounded text-sm whitespace-pre-wrap bg-gray-100">
+                <div className="inline-block px-3 py-2 rounded text-sm whitespace-pre-wrap border">
                   {m.content}
                 </div>
               </div>
             ))}
 
             {loading && (
-              <p className="text-sm opacity-60">Skriver…</p>
+              <p className="text-sm opacity-60 animate-fadeIn">Skriver…</p>
             )}
 
             <div ref={messagesEndRef} />
@@ -168,10 +171,7 @@ export default function Chatbot() {
             {/* Icon bar */}
             <div className="mt-2 flex justify-between items-center text-sm opacity-70">
               <div className="flex gap-4">
-                <button
-                  onClick={() => setOpen(false)}
-                  title="Luk chat"
-                >
+                <button onClick={() => setOpen(false)} title="Luk chat">
                   🏠
                 </button>
                 <button
@@ -182,10 +182,7 @@ export default function Chatbot() {
                 </button>
               </div>
 
-              <button
-                onClick={resetChat}
-                title="Nulstil samtale"
-              >
+              <button onClick={resetChat} title="Nulstil samtale">
                 🗑
               </button>
             </div>
