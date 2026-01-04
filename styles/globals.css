@@ -35,3 +35,8 @@ html, body {
   background: #D8D5CC;
   border-radius: 6px;
 }
+
+.gaarsdal-primary-button {
+  @apply bg-green-700 text-white hover:bg-green-800;
+}
+
