@@ -13,6 +13,7 @@ const CHIPS = [
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -56,22 +57,40 @@ export default function Chatbot() {
         💬
       </button>
 
-      {/* Chat window */}
       {open && (
-        <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] bg-white border rounded-lg shadow-xl flex flex-col">
+        <div
+          className={`fixed bottom-24 right-6 bg-white border rounded-lg shadow-xl flex flex-col ${
+            expanded
+              ? "w-[90vw] h-[80vh]"
+              : "w-96 max-w-[90vw]"
+          }`}
+        >
           {/* Header */}
-          <div className="flex justify-between items-center px-4 py-2 border-b">
+          <div className="flex items-center justify-between px-4 py-2 border-b">
             <span className="font-medium">Gaarsdal Chat</span>
-            <button
-              onClick={() => setOpen(false)}
-              className="text-sm text-gray-500 hover:text-gray-800"
-            >
-              Luk
-            </button>
+            <div className="flex gap-3 text-gray-500">
+              <button
+                onClick={() => setExpanded((v) => !v)}
+                title={expanded ? "Formindsk" : "Forstør"}
+                className="hover:text-gray-800"
+              >
+                {expanded ? "↙" : "↗"}
+              </button>
+              <button
+                onClick={() => setOpen(false)}
+                title="Luk"
+                className="hover:text-gray-800"
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div
+            className="p-4 space-y-3 overflow-y-auto"
+            style={{ maxHeight: expanded ? "100%" : "500px" }}
+          >
             {messages.length === 0 && (
               <p className="text-sm text-gray-600">
                 Stil et spørgsmål om Gaarsdal Hypnoterapi.
@@ -86,8 +105,8 @@ export default function Chatbot() {
                 <div
                   className={
                     m.role === "user"
-                      ? "inline-block bg-gray-200 px-3 py-2 rounded"
-                      : "inline-block bg-gray-100 px-3 py-2 rounded"
+                      ? "inline-block bg-gray-200 px-3 py-2 rounded text-sm whitespace-pre-wrap"
+                      : "inline-block bg-gray-100 px-3 py-2 rounded text-sm whitespace-pre-wrap"
                   }
                 >
                   {m.content}
