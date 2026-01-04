@@ -6,9 +6,10 @@ type Message = {
 };
 
 const CONTACT_TEXT = "Hvordan kontakter jeg jer?";
-const RESET_LABEL = "Nulstil samtale";
+const FORBEHOLD_TEXT =
+  "Her er en kort og nøgtern forklaring af de forbehold, der gælder for brug af hypnoterapi.";
 
-const OTHER_CHIPS = [
+const QUICK_CHIPS = [
   "Hvad er hypnoterapi?",
   "Hvad kan I hjælpe med?",
 ];
@@ -19,6 +20,7 @@ export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showForbehold, setShowForbehold] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -30,10 +32,13 @@ export default function Chatbot() {
     setMessages([]);
     setInput("");
     setLoading(false);
+    setShowForbehold(false);
   }
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
+
+    setShowForbehold(false);
 
     const nextMessages: Message[] = [
       ...messages,
@@ -51,60 +56,55 @@ export default function Chatbot() {
     });
 
     const data = await res.json();
+    const answer = data.answer || "Ingen respons.";
 
     setMessages((prev) => [
       ...prev,
-      { role: "assistant", content: data.answer || "Ingen respons." },
+      { role: "assistant", content: answer },
     ]);
+
+    if (answer.toLowerCase().includes("læs evt. om forbehold")) {
+      setShowForbehold(true);
+    }
 
     setLoading(false);
   }
 
   return (
     <>
-      {/* Floating button */}
+      {/* Floating launcher */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gray-800 text-white flex items-center justify-center shadow-lg hover:bg-gray-700"
-        aria-label="Åbn chatbot"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center"
+        aria-label="Åbn chat"
       >
         💬
       </button>
 
       {open && (
         <div
-          className={`fixed bottom-24 right-6 bg-white border rounded-lg shadow-xl flex flex-col ${
+          className={`fixed bottom-24 right-6 border rounded-lg shadow-xl flex flex-col bg-white ${
             expanded ? "w-[90vw] h-[80vh]" : "w-96 max-w-[90vw]"
           }`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-2 border-b">
-            <span className="font-medium">Gaarsdal Chat</span>
-            <div className="flex gap-3 text-gray-500">
-              <button
-                onClick={() => setExpanded((v) => !v)}
-                title={expanded ? "Formindsk" : "Forstør"}
-                className="hover:text-gray-800"
-              >
+          <div className="flex justify-between items-center px-4 py-2 border-b">
+            <span className="font-medium">Gaarsdal</span>
+            <div className="flex gap-3 text-sm">
+              <button onClick={() => setExpanded((v) => !v)}>
                 {expanded ? "↙" : "↗"}
               </button>
-              <button
-                onClick={() => setOpen(false)}
-                title="Luk"
-                className="hover:text-gray-800"
-              >
-                ✕
-              </button>
+              <button onClick={() => setOpen(false)}>✕</button>
             </div>
           </div>
 
           {/* Messages */}
           <div
-            className="p-4 space-y-3 overflow-y-auto"
+            className="flex-1 overflow-y-auto p-4 space-y-3"
             style={{ maxHeight: expanded ? "100%" : "500px" }}
           >
             {messages.length === 0 && (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm opacity-70">
                 Stil et spørgsmål om Gaarsdal Hypnoterapi.
               </p>
             )}
@@ -114,54 +114,43 @@ export default function Chatbot() {
                 key={i}
                 className={m.role === "user" ? "text-right" : "text-left"}
               >
-                <div
-                  className={
-                    m.role === "user"
-                      ? "inline-block bg-gray-200 px-3 py-2 rounded text-sm whitespace-pre-wrap"
-                      : "inline-block bg-gray-100 px-3 py-2 rounded text-sm whitespace-pre-wrap"
-                  }
-                >
+                <div className="inline-block px-3 py-2 rounded text-sm whitespace-pre-wrap bg-gray-100">
                   {m.content}
                 </div>
               </div>
             ))}
 
             {loading && (
-              <p className="text-sm text-gray-500">Skriver…</p>
+              <p className="text-sm opacity-60">Skriver…</p>
             )}
 
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Chips */}
+          {/* Quick chips */}
           <div className="px-4 py-2 border-t flex flex-wrap gap-2">
-            <button
-              onClick={() => sendMessage(CONTACT_TEXT)}
-              className="text-xs px-2 py-1 border rounded bg-gray-100 hover:bg-gray-200"
-            >
-              Kontakt
-            </button>
-
-            <button
-              onClick={resetChat}
-              className="text-xs px-2 py-1 border rounded hover:bg-gray-100"
-            >
-              {RESET_LABEL}
-            </button>
-
-            {OTHER_CHIPS.map((chip) => (
+            {QUICK_CHIPS.map((chip) => (
               <button
                 key={chip}
                 onClick={() => sendMessage(chip)}
-                className="text-xs px-2 py-1 border rounded hover:bg-gray-100"
+                className="text-xs px-2 py-1 border rounded"
               >
                 {chip}
               </button>
             ))}
+
+            {showForbehold && (
+              <button
+                onClick={() => sendMessage(FORBEHOLD_TEXT)}
+                className="text-xs px-2 py-1 border rounded"
+              >
+                Forbehold
+              </button>
+            )}
           </div>
 
           {/* Input */}
-          <div className="p-3 border-t flex gap-2">
+          <div className="p-3 border-t">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -170,21 +159,36 @@ export default function Chatbot() {
                   e.preventDefault();
                   sendMessage(input);
                 }
-                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                  // allow newline
-                }
               }}
-              placeholder="Skriv dit spørgsmål…"
               rows={2}
-              className="flex-1 border rounded px-3 py-2 text-sm resize-none"
+              className="w-full border rounded px-3 py-2 text-sm resize-none"
+              placeholder="Skriv dit spørgsmål…"
             />
-            <button
-              onClick={() => sendMessage(input)}
-              disabled={loading}
-              className="px-3 py-2 border rounded bg-gray-800 text-white text-sm disabled:opacity-50"
-            >
-              Send
-            </button>
+
+            {/* Icon bar */}
+            <div className="mt-2 flex justify-between items-center text-sm opacity-70">
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setOpen(false)}
+                  title="Luk chat"
+                >
+                  🏠
+                </button>
+                <button
+                  onClick={() => sendMessage(CONTACT_TEXT)}
+                  title="Kontakt"
+                >
+                  📞
+                </button>
+              </div>
+
+              <button
+                onClick={resetChat}
+                title="Nulstil samtale"
+              >
+                🗑
+              </button>
+            </div>
           </div>
         </div>
       )}
