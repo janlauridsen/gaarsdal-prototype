@@ -1,20 +1,34 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  HomeIcon,
+  EnvelopeIcon,
+  ExclamationTriangleIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
 };
 
+type Action = {
+  id: string;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  visible: () => boolean;
+  onClick: () => void;
+};
+
 const CONTACT_TEXT = "Hvordan kontakter jeg jer?";
+const FORBEHOLD_TEXT =
+  "Her er en kort og nøgtern forklaring af de forbehold, der gælder for brug af hypnoterapi.";
+
 const ACUTE_HELP_TEXT =
   "Hvis du har brug for akut hjælp:\n\n" +
   "- Ring 112 ved akut fare\n" +
   "- Livslinien: 70 201 201 (døgnåben)\n" +
   "- Børne- og Ungetelefonen: 116 111\n\n" +
   "Jeg kan ikke hjælpe i akutte situationer.";
-
-const FORBEHOLD_TEXT =
-  "Her er en kort og nøgtern forklaring af de forbehold, der gælder for brug af hypnoterapi.";
 
 const QUICK_CHIPS = [
   "Hvad er hypnoterapi?",
@@ -77,9 +91,40 @@ export default function Chatbot() {
     setLoading(false);
   }
 
+  const actions: Action[] = [
+    {
+      id: "home",
+      label: "Luk chat",
+      Icon: HomeIcon,
+      visible: () => true,
+      onClick: () => setOpen(false),
+    },
+    {
+      id: "contact",
+      label: "Kontakt",
+      Icon: EnvelopeIcon,
+      visible: () => true,
+      onClick: () => sendMessage(CONTACT_TEXT),
+    },
+    {
+      id: "acute",
+      label: "Akut hjælp",
+      Icon: ExclamationTriangleIcon,
+      visible: () => true,
+      onClick: () => sendMessage(ACUTE_HELP_TEXT),
+    },
+    {
+      id: "reset",
+      label: "Nulstil samtale",
+      Icon: TrashIcon,
+      visible: () => messages.length > 0,
+      onClick: resetChat,
+    },
+  ];
+
   return (
     <>
-      {/* Floating launcher */}
+      {/* Launcher */}
       <button
         onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full border flex items-center justify-center"
@@ -173,28 +218,21 @@ export default function Chatbot() {
               placeholder="Skriv dit spørgsmål…"
             />
 
-            {/* Icon bar */}
-            <div className="mt-2 flex justify-between items-center text-sm">
-              <div className="flex gap-4">
-                <button title="Luk chat" onClick={() => setOpen(false)}>
-                  🏠
-                </button>
-                <button title="Kontakt" onClick={() => sendMessage(CONTACT_TEXT)}>
-                  ✉
-                </button>
-              </div>
-
-              <div className="flex gap-4">
-                <button
-                  title="Akut hjælp"
-                  onClick={() => sendMessage(ACUTE_HELP_TEXT)}
-                >
-                  ⚠
-                </button>
-                <button title="Nulstil samtale" onClick={resetChat}>
-                  🗑
-                </button>
-              </div>
+            {/* Action bar */}
+            <div className="mt-2 flex justify-between items-center">
+              {actions
+                .filter((a) => a.visible())
+                .map(({ id, Icon, label, onClick }) => (
+                  <button
+                    key={id}
+                    onClick={onClick}
+                    title={label}
+                    aria-label={label}
+                    className="p-1"
+                  >
+                    <Icon className="h-5 w-5" />
+                  </button>
+                ))}
             </div>
           </div>
         </div>
