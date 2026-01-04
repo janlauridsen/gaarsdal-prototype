@@ -4,6 +4,7 @@ import {
   EnvelopeIcon,
   ExclamationTriangleIcon,
   TrashIcon,
+  ChatBubbleOvalLeftEllipsisIcon,
 } from "@heroicons/react/24/outline";
 
 type Message = {
@@ -124,13 +125,21 @@ export default function Chatbot() {
 
   return (
     <>
-      {/* Launcher */}
+      {/* LAUNCHER FIX: tydelig grøn primær handling */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full border flex items-center justify-center"
         aria-label="Åbn chat"
+        className="
+          fixed bottom-6 right-6
+          w-14 h-14 rounded-full
+          bg-green-600 text-white
+          shadow-lg
+          flex items-center justify-center
+          hover:bg-green-700
+          focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2
+        "
       >
-        💬
+        <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
       </button>
 
       {open && (
