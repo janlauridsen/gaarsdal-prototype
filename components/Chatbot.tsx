@@ -162,12 +162,21 @@ export default function Chatbot() {
 
           {/* Input */}
           <div className="p-3 border-t flex gap-2">
-            <input
-              type="text"
+            <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
+                  e.preventDefault();
+                  sendMessage(input);
+                }
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                  // allow newline
+                }
+              }}
               placeholder="Skriv dit spørgsmål…"
-              className="flex-1 border rounded px-3 py-2 text-sm"
+              rows={2}
+              className="flex-1 border rounded px-3 py-2 text-sm resize-none"
             />
             <button
               onClick={() => sendMessage(input)}
