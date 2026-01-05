@@ -44,20 +44,6 @@ export default function Chatbot() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [current.messages, loading]);
 
-  function pushNewConversation() {
-    setStack((prev) => [...prev, createConversation()]);
-    setIndex(stack.length);
-    setInput("");
-  }
-
-  function goPrev() {
-    setIndex((i) => Math.max(0, i - 1));
-  }
-
-  function goNext() {
-    setIndex((i) => Math.min(stack.length - 1, i + 1));
-  }
-
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
@@ -85,7 +71,7 @@ export default function Chatbot() {
       });
 
       const data = await res.json();
-      const answer = data?.answer;
+      const answer = data?.answer ?? "";
 
       setStack((prev) => {
         const next = [...prev];
@@ -132,11 +118,11 @@ export default function Chatbot() {
 
           {/* Chat window */}
           <div
-            className={`fixed z-50 bg-bg flex flex-col border border-gray-300 rounded-xl transition-all
+            className={`fixed z-50 bg-bg flex flex-col border border-gray-300 rounded-xl
               ${
                 expanded
-                  ? "top-1/2 left-1/2 w-[90vw] max-w-[720px] h-[80vh] -translate-x-1/2 -translate-y-1/2"
-                  : "bottom-24 right-6 w-96 max-w-[90vw] h-[420px]"
+                  ? "top-1/2 left-1/2 w-[90vw] max-w-[720px] max-h-[85vh] -translate-x-1/2 -translate-y-1/2"
+                  : "bottom-24 right-6 w-96 max-w-[90vw] max-h-[70vh]"
               }`}
           >
             {/* Header */}
@@ -146,7 +132,6 @@ export default function Chatbot() {
                 <button
                   onClick={() => setExpanded((v) => !v)}
                   className="p-3"
-                  title="Udvid"
                 >
                   <ArrowsPointingOutIcon className="w-6 h-6" />
                 </button>
@@ -156,7 +141,6 @@ export default function Chatbot() {
                     setExpanded(false);
                   }}
                   className="p-3"
-                  title="Luk"
                 >
                   <XMarkIcon className="w-6 h-6" />
                 </button>
@@ -164,10 +148,7 @@ export default function Chatbot() {
             </div>
 
             {/* Messages */}
-            <div
-              className="flex-1 overflow-y-auto p-4 space-y-3"
-              style={{ minHeight: 0 }}
-            >
+            <div className="overflow-y-auto p-4 space-y-3">
               {current.messages.length === 0 && (
                 <div className="text-sm whitespace-pre-wrap bg-white border rounded-lg p-4">
                   {UI_WELCOME}
@@ -204,24 +185,6 @@ export default function Chatbot() {
                 className="w-full border rounded-md px-3 py-2 text-sm resize-none"
                 placeholder="Skriv dit spørgsmål…"
               />
-
-              <div className="mt-3 flex justify-between items-center">
-                <div className="flex gap-2">
-                  <button onClick={pushNewConversation}>
-                    <PlusIcon className="w-5 h-5" />
-                  </button>
-                  <button onClick={goPrev} disabled={index === 0}>
-                    <BackwardIcon className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={goNext}
-                    disabled={index === stack.length - 1}
-                  >
-                    <ForwardIcon className="w-5 h-5" />
-                  </button>
-                </div>
-                <EnvelopeIcon className="w-5 h-5" />
-              </div>
             </div>
           </div>
         </>
