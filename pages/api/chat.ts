@@ -2,24 +2,28 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
 
-const SYSTEM_PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
-const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
-const EVALUATOR_PROMPT_PATH = path.join(process.cwd(), "chatbot/evaluator.md");
+const JAN_PROMPT = fs.readFileSync(
+  path.join(process.cwd(), "chatbot/prompt.md"),
+  "utf8"
+);
 
-// === TEST FLAGS ===
-const EVALUATOR_ENABLED = true;
-const EVALUATOR_HINT_ENABLED = true;
+const EVALUATOR_PROMPT = fs.readFileSync(
+  path.join(process.cwd(), "chatbot/evaluator.md"),
+  "utf8"
+);
 
-// === IN-MEMORY HINT (TEST ONLY) ===
-// Lever ét turn frem
-let lastEvaluatorHint: string | null = null;
+const RESHAPE_PROMPT = fs.readFileSync(
+  path.join(process.cwd(), "chatbot/reshape.md"),
+  "utf8"
+);
 
-function loadFile(p: string) {
-  return fs.readFileSync(p, "utf8");
-}
+const FACTS = fs.readFileSync(
+  path.join(process.cwd(), "chatbot/fakta-gaarsdal.md"),
+  "utf8"
+);
 
 async function callOpenAI(messages: any[]) {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -27,124 +31,63 @@ async function callOpenAI(messages: any[]) {
     },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      temperature: 0.4,
+      temperature: 0.3,
       messages,
     }),
   });
 
-  if (!response.ok) {
-    throw new Error("OpenAI request failed");
-  }
-
-  const data = await response.json();
+  const data = await res.json();
   return data.choices?.[0]?.message?.content ?? "";
-}
-
-function extractEvaluatorHint(text: string): string | null {
-  const match = text.match(/\[evaluator-hint:\]([\s\S]*)$/i);
-  if (!match) return null;
-  return match[1].trim();
-}
-
-function stripEvaluatorHint(text: string): string {
-  return text.replace(/\n*\[evaluator-hint:\][\s\S]*$/i, "").trim();
 }
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== "POST") {
-    return res.status(405).end();
-  }
+  if (req.method !== "POST") return res.status(405).end();
 
   const { messages } = req.body;
-
   if (!Array.isArray(messages)) {
     return res.status(400).json({ error: "Invalid messages" });
   }
 
-  const systemPrompt = loadFile(SYSTEM_PROMPT_PATH);
-  const facts = loadFile(FACTS_PATH);
-
-  // ===== JAN / CHATBOT =====
-  const chatMessages: any[] = [
+  /* ---------- STEP 1: JAN (RAW) ---------- */
+  const janRaw = await callOpenAI([
     {
       role: "system",
-      content: `${systemPrompt}\n\n---\n\nAUTORISERET VIDEN:\n${facts}`,
+      content: `${JAN_PROMPT}\n\n---\n\nAUTORISERET VIDEN:\n${FACTS}`,
     },
-  ];
+    ...messages,
+  ]);
 
-  // Indsæt evaluator-hint som system-kontekst (automatisk, ét turn)
-  if (EVALUATOR_HINT_ENABLED && lastEvaluatorHint) {
-    chatMessages.push({
+  /* ---------- STEP 2: EVALUATOR ---------- */
+  const evaluatorOutput = await callOpenAI([
+    {
       role: "system",
-      content: `[evaluator-hint:]\n${lastEvaluatorHint}`,
-    });
-    lastEvaluatorHint = null; // forbruges nu
-  }
+      content: EVALUATOR_PROMPT,
+    },
+    {
+      role: "user",
+      content: `DIALOG:\n${messages
+        .map((m: any) => `${m.role}: ${m.content}`)
+        .join("\n")}\n\nJAN_SVAR:\n${janRaw}`,
+    },
+  ]);
 
-  chatMessages.push(...messages);
+  /* ---------- STEP 3: RESHAPE ---------- */
+  const finalAnswer = await callOpenAI([
+    {
+      role: "system",
+      content: RESHAPE_PROMPT,
+    },
+    {
+      role: "user",
+      content: JSON.stringify({
+        original_answer: janRaw,
+        evaluator: evaluatorOutput,
+      }),
+    },
+  ]);
 
-  let chatbotAnswer = "";
-
-  try {
-    chatbotAnswer = await callOpenAI(chatMessages);
-  } catch {
-    return res.status(500).json({
-      answer: "Der opstod en teknisk fejl. Prøv igen senere.",
-    });
-  }
-
-  let finalAnswer = chatbotAnswer;
-
-  // ===== EVALUATOR =====
-  if (EVALUATOR_ENABLED) {
-    try {
-      const evaluatorPrompt = loadFile(EVALUATOR_PROMPT_PATH);
-
-      const transcript = [
-        ...messages,
-        { role: "assistant", content: chatbotAnswer },
-      ]
-        .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
-        .join("\n\n");
-
-      const evaluatorMessages = [
-        {
-          role: "system",
-          content: evaluatorPrompt,
-        },
-        {
-          role: "user",
-          content: transcript,
-        },
-      ];
-
-      const evaluatorRaw = await callOpenAI(evaluatorMessages);
-
-      // Udtræk evt. hint
-      const hint = extractEvaluatorHint(evaluatorRaw);
-      if (hint && EVALUATOR_HINT_ENABLED) {
-        lastEvaluatorHint = hint;
-      }
-
-      // Fjern hint fra det, der vises i chatten
-      const evaluatorVisible = stripEvaluatorHint(evaluatorRaw);
-
-      if (evaluatorVisible && evaluatorVisible.trim()) {
-        finalAnswer =
-          chatbotAnswer +
-          "\n\n---\n\n" +
-          evaluatorVisible;
-      }
-    } catch {
-      // Evaluator må aldrig kunne vælte chatten
-      finalAnswer = chatbotAnswer;
-    }
-  }
-
-  return res.status(200).json({
-    answer: finalAnswer,
-  });
+  res.status(200).json({ answer: finalAnswer });
 }
