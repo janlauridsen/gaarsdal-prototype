@@ -42,41 +42,20 @@ export default async function handler(
     },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      temperature: 0.2,
+      temperature: 0.4,
       messages: openAiMessages,
-      response_format: { type: "json_object" },
     }),
   });
 
+  if (!response.ok) {
+    return res.status(500).json({
+      answer:
+        "Der opstod en teknisk fejl. Prøv igen eller vend tilbage lidt senere.",
+    });
+  }
+
   const data = await response.json();
-  const raw = data.choices?.[0]?.message?.content;
+  const answer = data.choices?.[0]?.message?.content ?? "";
 
-  if (!raw) {
-    return res.status(200).json({
-      intent: "dialog",
-      response: "Jeg mistede kortvarigt forbindelsen. Vil du gentage det sidste?",
-    });
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-
-    // Minimal validering
-    if (
-      typeof parsed.intent === "string" &&
-      typeof parsed.response === "string"
-    ) {
-      return res.status(200).json(parsed);
-    }
-
-    throw new Error("Invalid shape");
-  } catch (err) {
-    console.error("⚠️ Model returned invalid JSON:", raw);
-
-    return res.status(200).json({
-      intent: "dialog",
-      response:
-        "Jeg vil gerne være sikker på, at jeg forstår dig rigtigt. Kan du uddybe det sidste lidt?",
-    });
-  }
+  return res.status(200).json({ answer });
 }
