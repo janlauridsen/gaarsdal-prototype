@@ -141,100 +141,118 @@ export default function Chatbot() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow flex items-center justify-center"
+          className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-accent text-white shadow flex items-center justify-center"
         >
           <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
         </button>
       )}
 
       {open && (
-        <div
-          className={`fixed z-50 bg-bg flex flex-col border border-gray-300
-            ${
-              expanded && mobile
-                ? "inset-0 rounded-none"
-                : expanded
-                ? "bottom-12 right-12 w-[620px] h-[80vh] rounded-xl"
-                : "bottom-24 right-6 w-96 max-w-[90vw] rounded-xl"
-            }
-          `}
-        >
-          <div className="flex justify-between items-center px-4 py-3 border-b bg-white">
-            <span className="font-medium">Gaarsdal</span>
-            <div className="flex gap-1">
-              <button onClick={() => setExpanded((v) => !v)} className="p-3">
-                <ArrowsPointingOutIcon className="w-6 h-6" />
-              </button>
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  setExpanded(false);
-                }}
-                className="p-3"
-              >
-                <XMarkIcon className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-black/20 z-40"
+            onClick={() => {
+              setOpen(false);
+              setExpanded(false);
+            }}
+          />
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {current.messages.length === 0 && (
-              <div className="text-sm whitespace-pre-wrap bg-white border rounded-lg p-4">
-                {UI_WELCOME}
-              </div>
-            )}
-
-            {current.messages.map((m, i) => (
-              <div
-                key={i}
-                className={m.role === "user" ? "text-right" : "text-left"}
-              >
-                <div className="inline-block px-4 py-3 rounded-lg border bg-white text-sm whitespace-pre-wrap">
-                  {m.content}
-                </div>
-              </div>
-            ))}
-
-            {loading && <p className="text-sm">Skriver…</p>}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className="border-t bg-white p-3">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
-                  e.preventDefault();
-                  sendMessage(input);
-                }
-              }}
-              rows={2}
-              className="w-full border rounded-md px-3 py-2 text-sm resize-none"
-              placeholder="Skriv dit spørgsmål…"
-            />
-
-            <div className="mt-3 flex justify-between items-center">
-              <div className="flex gap-2">
-                <button onClick={pushNewConversation}>
-                  <PlusIcon className="w-5 h-5" />
-                </button>
-                <button onClick={goPrev} disabled={index === 0}>
-                  <BackwardIcon className="w-5 h-5" />
+          {/* Chat window */}
+          <div
+            className={`fixed z-50 bg-bg flex flex-col border border-gray-300
+              ${
+                expanded && mobile
+                  ? "inset-0 rounded-none"
+                  : expanded
+                  ? "bottom-12 right-12 w-[620px] h-[80vh] rounded-xl"
+                  : "bottom-24 right-6 w-96 max-w-[90vw] rounded-xl"
+              }
+            `}
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center px-4 py-3 border-b bg-white">
+              <span className="font-medium">Gaarsdal</span>
+              <div className="flex gap-1">
+                <button onClick={() => setExpanded((v) => !v)} className="p-3">
+                  <ArrowsPointingOutIcon className="w-6 h-6" />
                 </button>
                 <button
-                  onClick={goNext}
-                  disabled={index === stack.length - 1}
+                  onClick={() => {
+                    setOpen(false);
+                    setExpanded(false);
+                  }}
+                  className="p-3"
                 >
-                  <ForwardIcon className="w-5 h-5" />
+                  <XMarkIcon className="w-6 h-6" />
                 </button>
               </div>
-              <button onClick={() => sendMessage("Hvordan kontakter jeg jer?")}>
-                <EnvelopeIcon className="w-5 h-5" />
-              </button>
+            </div>
+
+            {/* Messages */}
+            <div
+              className="flex-1 overflow-y-auto p-4 space-y-3"
+              style={{ minHeight: 0 }}
+            >
+              {current.messages.length === 0 && (
+                <div className="text-sm whitespace-pre-wrap bg-white border rounded-lg p-4">
+                  {UI_WELCOME}
+                </div>
+              )}
+
+              {current.messages.map((m, i) => (
+                <div
+                  key={i}
+                  className={m.role === "user" ? "text-right" : "text-left"}
+                >
+                  <div className="inline-block px-4 py-3 rounded-lg border bg-white text-sm whitespace-pre-wrap">
+                    {m.content}
+                  </div>
+                </div>
+              ))}
+
+              {loading && <p className="text-sm">Skriver…</p>}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input + navigation */}
+            <div className="border-t bg-white p-3">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    sendMessage(input);
+                  }
+                }}
+                rows={2}
+                className="w-full border rounded-md px-3 py-2 text-sm resize-none"
+                placeholder="Skriv dit spørgsmål…"
+              />
+
+              <div className="mt-3 flex justify-between items-center">
+                <div className="flex gap-2">
+                  <button onClick={pushNewConversation}>
+                    <PlusIcon className="w-5 h-5" />
+                  </button>
+                  <button onClick={goPrev} disabled={index === 0}>
+                    <BackwardIcon className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={goNext}
+                    disabled={index === stack.length - 1}
+                  >
+                    <ForwardIcon className="w-5 h-5" />
+                  </button>
+                </div>
+                <button onClick={() => sendMessage("Hvordan kontakter jeg jer?")}>
+                  <EnvelopeIcon className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </>
   );
