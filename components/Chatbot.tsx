@@ -34,13 +34,13 @@ function createConversation(): Conversation {
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [stack, setStack] = useState<Conversation[]>(() => [
     createConversation(),
   ]);
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-
   const [firstOpen, setFirstOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -120,48 +120,51 @@ export default function Chatbot() {
   return (
     <>
       {/* Launcher */}
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="Åbn chat"
-        className="
-          fixed bottom-6 right-6
-          w-14 h-14 rounded-full
-          bg-accent text-white
-          shadow
-          hover:bg-accent/90
-          transition
-          flex items-center justify-center
-        "
-      >
-        <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
-      </button>
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          aria-label="Åbn chat"
+          className="
+            fixed bottom-6 right-6
+            w-14 h-14 rounded-full
+            bg-accent text-white
+            shadow
+            flex items-center justify-center
+          "
+        >
+          <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
+        </button>
+      )}
 
       {open && (
         <div
-          className="
-            fixed bottom-24 right-6
-            w-96 max-w-[90vw]
+          className={`
+            fixed
+            ${expanded ? "inset-0 m-0 rounded-none" : "bottom-24 right-6 w-96 max-w-[90vw]"}
             border border-gray-300
-            rounded-xl
-            shadow-sm
             bg-bg
             flex flex-col
-          "
+            z-50
+          `}
         >
           {/* Header */}
-          <div className="flex justify-between items-center px-4 py-3 border-b bg-white rounded-t-xl">
+          <div className="flex justify-between items-center px-4 py-3 border-b bg-white">
             <span className="font-medium">Gaarsdal</span>
 
             <div className="flex gap-1">
               <button
                 aria-label="Udvid"
                 className="p-3"
+                onClick={() => setExpanded((v) => !v)}
               >
                 <ArrowsPointingOutIcon className="w-6 h-6" />
               </button>
 
               <button
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  setOpen(false);
+                  setExpanded(false);
+                }}
                 aria-label="Luk chat"
                 className="p-3"
               >
@@ -170,36 +173,15 @@ export default function Chatbot() {
             </div>
           </div>
 
-          {/* First-open chips */}
-          {firstOpen && current.messages.length === 1 && (
-            <div className="flex gap-2 px-4 py-2 overflow-x-auto bg-white border-b">
-              <button
-                className="px-3 py-1 rounded-full bg-gray-100 text-sm"
-                onClick={() => sendMessage(CONTACT_TEXT)}
-              >
-                Kontakt
-              </button>
-              <button className="px-3 py-1 rounded-full bg-gray-100 text-sm">
-                Brug af chatbotten
-              </button>
-              <button className="px-3 py-1 rounded-full bg-gray-100 text-sm">
-                Forbehold
-              </button>
-            </div>
-          )}
-
           {/* Messages */}
           <div
             id="gaarsdal-chat-window"
             className="flex-1 overflow-y-auto p-4 space-y-3"
-            style={{ maxHeight: "500px" }}
           >
             {current.messages.map((m, i) => (
               <div
                 key={i}
-                className={`${
-                  m.role === "user" ? "text-right" : "text-left"
-                } animate-fadeIn`}
+                className={`${m.role === "user" ? "text-right" : "text-left"} animate-fadeIn`}
               >
                 <div className="inline-block px-4 py-3 rounded-lg border bg-white text-sm whitespace-pre-wrap">
                   {m.content}
@@ -211,8 +193,25 @@ export default function Chatbot() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input + navigation */}
-          <div className="border-t bg-white p-3 rounded-b-xl">
+          {/* Input + chips + navigation */}
+          <div className="border-t bg-white p-3">
+            {firstOpen && current.messages.length === 1 && (
+              <div className="flex gap-2 mb-2 overflow-x-auto">
+                <button
+                  className="px-3 py-1 rounded-full bg-gray-100 text-sm"
+                  onClick={() => sendMessage(CONTACT_TEXT)}
+                >
+                  Kontakt
+                </button>
+                <button className="px-3 py-1 rounded-full bg-gray-100 text-sm">
+                  Brug af chatbotten
+                </button>
+                <button className="px-3 py-1 rounded-full bg-gray-100 text-sm">
+                  Forbehold
+                </button>
+              </div>
+            )}
+
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -229,42 +228,20 @@ export default function Chatbot() {
 
             <div className="mt-3 flex justify-between items-center">
               <div className="flex gap-2">
-                <button title="Ny samtale" onClick={pushNewConversation}>
+                <button onClick={pushNewConversation}>
                   <PlusIcon className="w-5 h-5" />
                 </button>
-                <button
-                  title="Tidligere samtale"
-                  onClick={goPrev}
-                  disabled={index === 0}
-                  className={index === 0 ? "opacity-30" : ""}
-                >
+                <button onClick={goPrev} disabled={index === 0} className={index === 0 ? "opacity-30" : ""}>
                   <BackwardIcon className="w-5 h-5" />
                 </button>
-                <button
-                  title="Senere samtale"
-                  onClick={goNext}
-                  disabled={index === stack.length - 1}
-                  className={index === stack.length - 1 ? "opacity-30" : ""}
-                >
+                <button onClick={goNext} disabled={index === stack.length - 1} className={index === stack.length - 1 ? "opacity-30" : ""}>
                   <ForwardIcon className="w-5 h-5" />
                 </button>
               </div>
 
-              <button title="Kontakt" onClick={() => sendMessage(CONTACT_TEXT)}>
+              <button onClick={() => sendMessage(CONTACT_TEXT)}>
                 <EnvelopeIcon className="w-5 h-5" />
               </button>
-            </div>
-
-            {/* Stack indicator */}
-            <div className="mt-2 flex justify-center gap-1">
-              {stack.map((_, i) => (
-                <span
-                  key={i}
-                  className={`w-2 h-2 rounded-full ${
-                    i === index ? "bg-accent" : "bg-gray-300"
-                  }`}
-                />
-              ))}
             </div>
           </div>
         </div>
