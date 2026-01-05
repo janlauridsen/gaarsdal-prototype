@@ -24,12 +24,6 @@ function createConversation(): Conversation {
   return { messages: [] };
 }
 
-/**
- * DEBUG ER FAST TIL ON
- * Matcher api/chat.ts
- */
-const DEBUG = true;
-
 const UI_WELCOME =
   "Velkommen – godt at se dig.\n\n" +
   "Du er velkommen til at stille spørgsmål eller beskrive noget, der fylder. " +
@@ -38,9 +32,7 @@ const UI_WELCOME =
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [stack, setStack] = useState<Conversation[]>([
-    createConversation(),
-  ]);
+  const [stack, setStack] = useState<Conversation[]>([createConversation()]);
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -54,30 +46,17 @@ export default function Chatbot() {
 
   function pushNewConversation() {
     setStack((prev) => [...prev, createConversation()]);
-    setIndex((prev) => prev + 1);
+    setIndex(stack.length);
     setInput("");
-  }
-
-  function goPrev() {
-    setIndex((i) => Math.max(0, i - 1));
-  }
-
-  function goNext() {
-    setIndex((i) => Math.min(stack.length - 1, i + 1));
   }
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
-    const userMessage: Message = {
-      role: "user",
-      content: text,
-    };
-
     setStack((prev) => {
       const next = [...prev];
       next[index] = {
-        messages: [...next[index].messages, userMessage],
+        messages: [...next[index].messages, { role: "user", content: text }],
       };
       return next;
     });
@@ -89,43 +68,43 @@ export default function Chatbot() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [...current.messages, userMessage],
-        }),
+        body: JSON.stringify({ messages: current.messages }),
       });
 
       const data = await res.json();
 
-      let assistantMessages: Message[] = [];
+      const debugMessages: Message[] = [];
 
-      if (DEBUG) {
-        assistantMessages = [
-          {
+      if (data.debug) {
+        if (data.jan_raw) {
+          debugMessages.push({
             role: "assistant",
             content: "— JAN (RAW) —\n" + data.jan_raw,
-          },
-          {
+          });
+        }
+        if (data.evaluator) {
+          debugMessages.push({
             role: "assistant",
             content: "— EVALUATOR —\n" + data.evaluator,
-          },
-          {
+          });
+        }
+        if (data.final) {
+          debugMessages.push({
             role: "assistant",
             content: "— JAN (FINAL) —\n" + data.final,
-          },
-        ];
-      } else {
-        assistantMessages = [
-          {
-            role: "assistant",
-            content: data.answer,
-          },
-        ];
+          });
+        }
+      } else if (data.answer) {
+        debugMessages.push({
+          role: "assistant",
+          content: data.answer,
+        });
       }
 
       setStack((prev) => {
         const next = [...prev];
         next[index] = {
-          messages: [...next[index].messages, ...assistantMessages],
+          messages: [...next[index].messages, ...debugMessages],
         };
         return next;
       });
@@ -139,7 +118,7 @@ export default function Chatbot() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-green-700 text-white shadow-lg flex items-center justify-center z-50"
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow flex items-center justify-center z-50"
         >
           <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
         </button>
@@ -147,7 +126,7 @@ export default function Chatbot() {
 
       {open && (
         <>
-          {/* DARK OVERLAY */}
+          {/* Overlay */}
           <div
             className="fixed inset-0 bg-black/30 z-40"
             onClick={() => {
@@ -156,17 +135,18 @@ export default function Chatbot() {
             }}
           />
 
+          {/* Chat window */}
           <div
-            className={`fixed z-50 flex flex-col gaarsdal-chatbot
+            className={`fixed z-50 flex flex-col bg-bg border border-gray-300
               ${
                 expanded
-                  ? "inset-6 max-w-none h-[calc(100vh-3rem)]"
-                  : "bottom-24 right-6 w-[380px] max-w-[90vw] h-[520px]"
+                  ? "inset-4 rounded-xl"
+                  : "bottom-24 right-6 w-96 max-w-[90vw] rounded-xl"
               }
             `}
           >
-            {/* HEADER */}
-            <header className="flex justify-between items-center px-4 py-3">
+            {/* Header */}
+            <div className="flex justify-between items-center px-4 py-3 border-b bg-white rounded-t-xl">
               <span className="font-medium">Gaarsdal</span>
               <div className="flex gap-1">
                 <button
@@ -185,12 +165,12 @@ export default function Chatbot() {
                   <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
-            </header>
+            </div>
 
-            {/* MESSAGES */}
+            {/* Messages */}
             <div
+              className="flex-1 overflow-y-auto p-4 space-y-3"
               id="gaarsdal-chat-window"
-              className="messages flex-1 overflow-y-auto p-4 space-y-3"
             >
               {current.messages.length === 0 && (
                 <div className="text-sm whitespace-pre-wrap bg-white border rounded-lg p-4">
@@ -203,13 +183,7 @@ export default function Chatbot() {
                   key={i}
                   className={m.role === "user" ? "text-right" : "text-left"}
                 >
-                  <div
-                    className={`message inline-block px-4 py-3 rounded-lg border text-sm whitespace-pre-wrap ${
-                      m.role === "user"
-                        ? "user"
-                        : "bot bg-white"
-                    }`}
-                  >
+                  <div className="inline-block px-4 py-3 rounded-lg border bg-white text-sm whitespace-pre-wrap">
                     {m.content}
                   </div>
                 </div>
@@ -219,13 +193,13 @@ export default function Chatbot() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* INPUT */}
-            <footer className="p-3">
+            {/* Input */}
+            <div className="border-t bg-white p-3 rounded-b-xl">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
                     e.preventDefault();
                     sendMessage(input);
                   }
@@ -240,25 +214,47 @@ export default function Chatbot() {
                   <button onClick={pushNewConversation}>
                     <PlusIcon className="w-5 h-5" />
                   </button>
-                  <button onClick={goPrev} disabled={index === 0}>
+                  <button
+                    onClick={() => setIndex((i) => Math.max(0, i - 1))}
+                    disabled={index === 0}
+                    className={index === 0 ? "opacity-30" : ""}
+                  >
                     <BackwardIcon className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={goNext}
+                    onClick={() =>
+                      setIndex((i) => Math.min(stack.length - 1, i + 1))
+                    }
                     disabled={index === stack.length - 1}
+                    className={
+                      index === stack.length - 1 ? "opacity-30" : ""
+                    }
                   >
                     <ForwardIcon className="w-5 h-5" />
                   </button>
                 </div>
-                <button
-                  onClick={() =>
-                    sendMessage("Hvordan kontakter jeg jer?")
-                  }
-                >
+
+                <button onClick={() => sendMessage("Hvordan kontakter jeg jer?")}>
                   <EnvelopeIcon className="w-5 h-5" />
                 </button>
               </div>
-            </footer>
+
+              {/* STACK DOTS – FIXED */}
+              <div className="mt-3 flex justify-center gap-2">
+                {stack.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`w-2.5 h-2.5 rounded-full border
+                      ${
+                        i === index
+                          ? "bg-green-700 border-green-800"
+                          : "bg-gray-300 border-gray-400"
+                      }
+                    `}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </>
       )}
