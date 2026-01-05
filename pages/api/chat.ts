@@ -46,7 +46,7 @@ export default async function handler(
 ) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const { messages } = req.body;
+  const { messages, debug } = req.body;
   if (!Array.isArray(messages)) {
     return res.status(400).json({ error: "Invalid messages" });
   }
@@ -61,11 +61,8 @@ export default async function handler(
   ]);
 
   /* ---------- STEP 2: EVALUATOR ---------- */
-  const evaluatorOutput = await callOpenAI([
-    {
-      role: "system",
-      content: EVALUATOR_PROMPT,
-    },
+  const evaluator = await callOpenAI([
+    { role: "system", content: EVALUATOR_PROMPT },
     {
       role: "user",
       content: `DIALOG:\n${messages
@@ -75,19 +72,24 @@ export default async function handler(
   ]);
 
   /* ---------- STEP 3: RESHAPE ---------- */
-  const finalAnswer = await callOpenAI([
-    {
-      role: "system",
-      content: RESHAPE_PROMPT,
-    },
+  const reshaped = await callOpenAI([
+    { role: "system", content: RESHAPE_PROMPT },
     {
       role: "user",
       content: JSON.stringify({
         original_answer: janRaw,
-        evaluator: evaluatorOutput,
+        evaluator,
       }),
     },
   ]);
 
-  res.status(200).json({ answer: finalAnswer });
+  if (debug) {
+    return res.status(200).json({
+      jan_raw: janRaw,
+      evaluator,
+      final: reshaped,
+    });
+  }
+
+  return res.status(200).json({ answer: reshaped });
 }
