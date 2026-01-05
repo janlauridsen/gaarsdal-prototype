@@ -2,16 +2,28 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
 
-const PROMPT_JAN = path.join(process.cwd(), "chatbot/prompt.md");
-const PROMPT_EVALUATOR = path.join(process.cwd(), "chatbot/evaluator.md");
-const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
+/* =========================
+   Config
+   ========================= */
+
+const DEBUG = true; // HARD-ON som aftalt
+
+const SYSTEM_PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
+const EVALUATOR_PROMPT_PATH = path.join(
+  process.cwd(),
+  "chatbot/evaluator.md"
+);
+
+/* =========================
+   Helpers
+   ========================= */
 
 function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
 }
 
 async function callOpenAI(messages: any[]) {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -24,9 +36,13 @@ async function callOpenAI(messages: any[]) {
     }),
   });
 
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content ?? "";
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content ?? "";
 }
+
+/* =========================
+   Handler
+   ========================= */
 
 export default async function handler(
   req: NextApiRequest,
@@ -42,85 +58,69 @@ export default async function handler(
     return res.status(400).json({ error: "Invalid messages" });
   }
 
-  const janPrompt = loadFile(PROMPT_JAN);
-  const evaluatorPrompt = loadFile(PROMPT_EVALUATOR);
-  const facts = loadFile(FACTS_PATH);
+  const systemPrompt = loadFile(SYSTEM_PROMPT_PATH);
+  const evaluatorPrompt = loadFile(EVALUATOR_PROMPT_PATH);
 
-  /* ============================================================
-     1. JAN – RAW
-     ============================================================ */
+  /* =====================================================
+     STEP 1 · JAN (RAW)
+     ===================================================== */
 
-  const janRawMessages = [
-    {
-      role: "system",
-      content: `${janPrompt}\n\n---\n\nAUTORISERET VIDEN:\n${facts}`,
-    },
+  const janRaw = await callOpenAI([
+    { role: "system", content: systemPrompt },
     ...messages,
-  ];
+  ]);
 
-  const jan_raw = await callOpenAI(janRawMessages);
+  /* =====================================================
+     STEP 2 · EVALUATOR
+     ===================================================== */
 
-  /* ============================================================
-     2. EVALUATOR
-     ============================================================ */
-
-  const evaluatorMessages = [
+  const evaluator = await callOpenAI([
     {
       role: "system",
       content: evaluatorPrompt,
     },
     {
-      role: "user",
-      content: `
-SENESTE CHATBOT-SVAR:
-${jan_raw}
-
-SAMLET DIALOG:
-${messages
-  .map((m: any) => `${m.role.toUpperCase()}: ${m.content}`)
-  .join("\n")}
-      `,
+      role: "assistant",
+      content: janRaw,
     },
-  ];
+  ]);
 
-  const evaluator = await callOpenAI(evaluatorMessages);
+  /* =====================================================
+     STEP 3 · JAN (FINAL)
+     Evaluator hint må påvirke formen – ikke indhold
+     ===================================================== */
 
-  /* ============================================================
-     3. JAN – FINAL (med evaluator-hint indlejret)
-     ============================================================ */
-
-  const janFinalMessages = [
+  const janFinal = await callOpenAI([
     {
       role: "system",
-      content: `${janPrompt}
-
---- 
-AUTORISERET VIDEN:
-${facts}
-
----
-EVALUATOR-FEEDBACK (META – IKKE TIL BRUGEREN):
-${evaluator}
-
-Instruktion:
-- Justér dit svar ud fra evaluator-feedback
-- Bevar din stemme som Jan
-- Svar direkte til brugeren
-- Ingen meta-kommentarer
-`,
+      content: systemPrompt +
+        "\n\n---\n\nDu har modtaget evaluator-feedback nedenfor. " +
+        "Tilpas dit svar i form og fokus, men ændr ikke grundindholdet.",
     },
-    ...messages,
-  ];
+    {
+      role: "assistant",
+      content: janRaw,
+    },
+    {
+      role: "assistant",
+      content: evaluator,
+    },
+  ]);
 
-  const final = await callOpenAI(janFinalMessages);
+  /* =====================================================
+     RESPONSE
+     ===================================================== */
 
-  /* ============================================================
-     DEBUG RESPONSE (ALTID)
-     ============================================================ */
+  if (DEBUG) {
+    return res.status(200).json({
+      jan_raw: janRaw,
+      evaluator,
+      final: janFinal,
+      answer: janFinal,
+    });
+  }
 
   return res.status(200).json({
-    jan_raw,
-    evaluator,
-    final,
+    answer: janFinal,
   });
 }
