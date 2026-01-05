@@ -32,7 +32,7 @@ const UI_WELCOME =
 
 const CONTACT_QUESTION = "Hvordan kontakter jeg jer?";
 
-const DEBUG = true; // 🔥 altid ON i testforløb
+const DEBUG = false; // 🔥 altid ON i testforløb
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
