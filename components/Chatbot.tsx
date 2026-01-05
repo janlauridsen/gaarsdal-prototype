@@ -86,8 +86,7 @@ export default function Chatbot() {
       });
 
       const data = await res.json();
-
-      const answer = data.answer;
+      const answer = data?.answer;
 
       if (typeof answer === "string" && answer.trim()) {
         setStack((prev) => {
@@ -101,7 +100,6 @@ export default function Chatbot() {
           return next;
         });
       } else {
-        // Failsafe: vis noget, hvis API svarer tomt
         setStack((prev) => {
           const next = [...prev];
           next[index] = {
@@ -125,8 +123,7 @@ export default function Chatbot() {
             ...next[index].messages,
             {
               role: "assistant",
-              content:
-                "Der opstod en teknisk fejl. Prøv igen om lidt.",
+              content: "Der opstod en teknisk fejl. Prøv igen om lidt.",
             },
           ],
         };
@@ -142,6 +139,7 @@ export default function Chatbot() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
+          aria-label="Åbn chat"
           className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-accent text-white shadow flex items-center justify-center"
         >
           <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
@@ -150,6 +148,7 @@ export default function Chatbot() {
 
       {open && (
         <>
+          {/* Overlay */}
           <div
             className="fixed inset-0 bg-black/20 z-40"
             onClick={() => {
@@ -158,21 +157,28 @@ export default function Chatbot() {
             }}
           />
 
+          {/* Chat window */}
           <div
             className={`fixed z-50 bg-bg flex flex-col border border-gray-300 rounded-xl
               ${
                 expanded
-                  ? "bottom-12 right-12 w-[620px] h-[80vh]"
+                  ? "inset-12 w-auto h-auto max-h-[85vh]"
                   : "bottom-24 right-6 w-96 max-w-[90vw] max-h-[420px]"
               }`}
           >
+            {/* Header */}
             <div className="flex justify-between items-center px-4 py-3 border-b bg-white">
               <span className="font-medium">Gaarsdal</span>
               <div className="flex gap-1">
-                <button onClick={() => setExpanded((v) => !v)} className="p-3">
+                <button
+                  aria-label="Udvid"
+                  onClick={() => setExpanded((v) => !v)}
+                  className="p-3"
+                >
                   <ArrowsPointingOutIcon className="w-6 h-6" />
                 </button>
                 <button
+                  aria-label="Luk"
                   onClick={() => {
                     setOpen(false);
                     setExpanded(false);
@@ -184,7 +190,11 @@ export default function Chatbot() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {/* Messages */}
+            <div
+              className="flex-1 overflow-y-auto p-4 space-y-3"
+              style={{ minHeight: 0 }}
+            >
               {current.messages.length === 0 && (
                 <div className="text-sm whitespace-pre-wrap bg-white border rounded-lg p-4">
                   {UI_WELCOME}
@@ -206,6 +216,7 @@ export default function Chatbot() {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Input */}
             <div className="border-t bg-white p-3">
               <textarea
                 value={input}
@@ -223,15 +234,22 @@ export default function Chatbot() {
 
               <div className="mt-3 flex justify-between items-center">
                 <div className="flex gap-2">
-                  <button onClick={pushNewConversation}>
+                  <button title="Ny samtale" onClick={pushNewConversation}>
                     <PlusIcon className="w-5 h-5" />
                   </button>
-                  <button onClick={goPrev} disabled={index === 0}>
+                  <button
+                    title="Tidligere samtale"
+                    onClick={goPrev}
+                    disabled={index === 0}
+                    className={index === 0 ? "opacity-30" : ""}
+                  >
                     <BackwardIcon className="w-5 h-5" />
                   </button>
                   <button
+                    title="Senere samtale"
                     onClick={goNext}
                     disabled={index === stack.length - 1}
+                    className={index === stack.length - 1 ? "opacity-30" : ""}
                   >
                     <ForwardIcon className="w-5 h-5" />
                   </button>
