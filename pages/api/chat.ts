@@ -49,14 +49,34 @@ export default async function handler(
   });
 
   const data = await response.json();
-  const raw = data.choices?.[0]?.message?.content ?? "{}";
+  const raw = data.choices?.[0]?.message?.content;
 
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return res.status(500).json({ error: "Invalid model response" });
+  if (!raw) {
+    return res.status(200).json({
+      intent: "dialog",
+      response: "Jeg mistede kortvarigt forbindelsen. Vil du gentage det sidste?",
+    });
   }
 
-  return res.status(200).json(parsed);
+  try {
+    const parsed = JSON.parse(raw);
+
+    // Minimal validering
+    if (
+      typeof parsed.intent === "string" &&
+      typeof parsed.response === "string"
+    ) {
+      return res.status(200).json(parsed);
+    }
+
+    throw new Error("Invalid shape");
+  } catch (err) {
+    console.error("⚠️ Model returned invalid JSON:", raw);
+
+    return res.status(200).json({
+      intent: "dialog",
+      response:
+        "Jeg vil gerne være sikker på, at jeg forstår dig rigtigt. Kan du uddybe det sidste lidt?",
+    });
+  }
 }
