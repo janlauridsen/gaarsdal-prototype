@@ -1,12 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  PlusIcon,
-  BackwardIcon,
-  ForwardIcon,
-  EnvelopeIcon,
   ChatBubbleOvalLeftEllipsisIcon,
   XMarkIcon,
-  ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
 type Message = {
@@ -14,66 +9,24 @@ type Message = {
   content: string;
 };
 
-type Conversation = {
-  messages: Message[];
-};
-
-function createConversation(): Conversation {
-  return { messages: [] };
-}
-
-const UI_WELCOME =
-  "Velkommen – godt at se dig.\n\n" +
-  "Du er velkommen til at stille spørgsmål eller beskrive noget, der fylder. " +
-  "Vi tager det i dit tempo.";
+const debug = true; // 🔒 ALTID ON I TESTFORLØB
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [stack, setStack] = useState<Conversation[]>([createConversation()]);
-  const [index, setIndex] = useState(0);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const current = stack[index];
-
-  const debug =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("debug") === "1";
+  const endRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [current.messages, loading]);
-
-  function pushNewConversation() {
-    setStack((prev) => [...prev, createConversation()]);
-    setIndex(stack.length);
-    setInput("");
-  }
-
-  function goPrev() {
-    setIndex((i) => Math.max(0, i - 1));
-  }
-
-  function goNext() {
-    setIndex((i) => Math.min(stack.length - 1, i + 1));
-  }
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
-    const updatedMessages: Message[] = [
-      ...current.messages,
-      { role: "user", content: text },
-    ];
-
-    setStack((prev) => {
-      const next = [...prev];
-      next[index] = { messages: updatedMessages };
-      return next;
-    });
-
+    const nextMessages = [...messages, { role: "user", content: text }];
+    setMessages(nextMessages);
     setInput("");
     setLoading(true);
 
@@ -81,37 +34,24 @@ export default function Chatbot() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: updatedMessages,
-          debug,
-        }),
+        body: JSON.stringify({ messages: nextMessages }),
       });
 
       const data = await res.json();
 
-      setStack((prev) => {
-        const next = [...prev];
-        const assistantMessages: Message[] = [];
-
-        if (debug) {
-          assistantMessages.push(
-            { role: "assistant", content: "— JAN (RAW) —\n" + data.jan_raw },
-            { role: "assistant", content: "— EVALUATOR —\n" + data.evaluator },
-            { role: "assistant", content: "— JAN (FINAL) —\n" + data.final }
-          );
-        } else {
-          assistantMessages.push({
-            role: "assistant",
-            content: data.answer,
-          });
-        }
-
-        next[index] = {
-          messages: [...updatedMessages, ...assistantMessages],
-        };
-
-        return next;
-      });
+      if (debug) {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: "— JAN (RAW) —\n" + data.jan_raw },
+          { role: "assistant", content: "— EVALUATOR —\n" + data.evaluator },
+          { role: "assistant", content: "— JAN (FINAL) —\n" + data.final },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: data.final },
+        ]);
+      }
     } finally {
       setLoading(false);
     }
@@ -122,71 +62,39 @@ export default function Chatbot() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow flex items-center justify-center z-40"
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-green-700 text-white shadow flex items-center justify-center"
         >
           <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
         </button>
       )}
 
       {open && (
-        <div
-          className={`fixed z-50 flex flex-col bg-bg border border-gray-300
-            ${
-              expanded
-                ? "inset-4 rounded-xl"
-                : "bottom-24 right-6 w-96 max-w-[90vw] h-[520px] rounded-xl"
-            }
-          `}
-        >
-          {/* Header */}
-          <div className="flex justify-between items-center px-4 py-3 border-b bg-white rounded-t-xl">
-            <span className="font-medium">Gaarsdal</span>
-            <div className="flex gap-1">
-              <button
-                onClick={() => setExpanded((v) => !v)}
-                className="p-3"
-                aria-label="Udvid"
-              >
-                <ArrowsPointingOutIcon className="w-6 h-6" />
-              </button>
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  setExpanded(false);
-                }}
-                className="p-3"
-                aria-label="Luk"
-              >
-                <XMarkIcon className="w-6 h-6" />
-              </button>
-            </div>
+        <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] bg-[#F6F5F2] border rounded-xl flex flex-col shadow-lg">
+          <div className="flex justify-between items-center px-4 py-3 border-b bg-white">
+            <span className="font-medium">Gaarsdal (debug)</span>
+            <button onClick={() => setOpen(false)}>
+              <XMarkIcon className="w-5 h-5" />
+            </button>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {current.messages.length === 0 && (
-              <div className="bg-white border rounded-lg p-4 text-sm whitespace-pre-wrap">
-                {UI_WELCOME}
-              </div>
-            )}
-
-            {current.messages.map((m, i) => (
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 text-sm">
+            {messages.map((m, i) => (
               <div
                 key={i}
-                className={m.role === "user" ? "text-right" : "text-left"}
+                className={`whitespace-pre-wrap ${
+                  m.role === "user" ? "text-right" : "text-left"
+                }`}
               >
-                <div className="inline-block px-4 py-3 rounded-lg border bg-white text-sm whitespace-pre-wrap">
+                <div className="inline-block bg-white border rounded-lg px-3 py-2">
                   {m.content}
                 </div>
               </div>
             ))}
-
-            {loading && <p className="text-sm opacity-60">Skriver…</p>}
-            <div ref={messagesEndRef} />
+            {loading && <div>Skriver…</div>}
+            <div ref={endRef} />
           </div>
 
-          {/* Input */}
-          <div className="border-t bg-white p-3 rounded-b-xl">
+          <div className="border-t bg-white p-3">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -198,32 +106,8 @@ export default function Chatbot() {
               }}
               rows={2}
               className="w-full border rounded-md px-3 py-2 text-sm resize-none"
-              placeholder="Skriv dit spørgsmål…"
+              placeholder="Skriv…"
             />
-
-            <div className="mt-3 flex justify-between items-center">
-              <div className="flex gap-2">
-                <button onClick={pushNewConversation} title="Ny samtale">
-                  <PlusIcon className="w-5 h-5" />
-                </button>
-                <button onClick={goPrev} disabled={index === 0}>
-                  <BackwardIcon className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={goNext}
-                  disabled={index === stack.length - 1}
-                >
-                  <ForwardIcon className="w-5 h-5" />
-                </button>
-              </div>
-
-              <button
-                title="Kontakt"
-                onClick={() => sendMessage("Jeg vil gerne i kontakt")}
-              >
-                <EnvelopeIcon className="w-5 h-5" />
-              </button>
-            </div>
           </div>
         </div>
       )}
