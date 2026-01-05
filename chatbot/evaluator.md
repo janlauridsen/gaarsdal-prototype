@@ -80,8 +80,8 @@ Hvis evaluering udføres, SKAL output være præcis dette:
   - <punkt>
 - Fremdrift: lav | middel | høj
 - Naturligt udfald: <hvad dialogen peger imod>
-- Chips: <hvad der kommer fra punk5 Chips>
+- Chips: <hvad der kommer fra punkt 5 Chips>
 
 [evaluator-hint:]
-<ét konkret aktivt hint ELLER præcis teksten nedenfor>
+<ét konkret aktivt hint og chips>
 ```
