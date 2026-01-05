@@ -18,18 +18,29 @@ type Conversation = {
   messages: Message[];
 };
 
-const CONTACT_TEXT = "Hvordan kontakter jeg jer?";
-
-const WELCOME_MESSAGE: Message = {
-  role: "assistant",
-  content:
-    "Velkommen – godt at se dig.\n\n" +
-    "Du er velkommen til at stille spørgsmål, dele tanker eller beskrive noget, der fylder. " +
-    "Det kan være helt kort eller mere udfoldet. Vi tager det i dit tempo.",
-};
-
 function createConversation(): Conversation {
-  return { messages: [WELCOME_MESSAGE] };
+  return { messages: [] };
+}
+
+const UI_WELCOME =
+  "Velkommen – godt at se dig.\n\n" +
+  "Du er velkommen til at stille spørgsmål eller beskrive noget, der fylder. " +
+  "Vi tager det i dit tempo.";
+
+const CONTACT_ANSWER =
+  "Du er velkommen til at kontakte mig direkte.\n\n" +
+  "Telefon: +45 42 80 74 74\n" +
+  "E-mail: jan@gaarsdal.net\n\n" +
+  "Du kan også bruge kontaktformularen på:\nhttps://gaarsdal.net/kontakt";
+
+function isContactIntent(text: string) {
+  const t = text.toLowerCase();
+  return (
+    t.includes("kontakt") ||
+    t.includes("ringe") ||
+    t.includes("skrive") ||
+    t.includes("tale med jan")
+  );
 }
 
 function isMobile() {
@@ -46,30 +57,18 @@ export default function Chatbot() {
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [firstOpen, setFirstOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const current = stack[index] ?? stack[stack.length - 1];
+  const current = stack[index];
   const mobile = isMobile();
-
-  useEffect(() => {
-    const seen = localStorage.getItem("chatbot_seen");
-    if (!seen) {
-      setFirstOpen(true);
-      localStorage.setItem("chatbot_seen", "1");
-    }
-  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [current.messages, loading]);
 
   function pushNewConversation() {
-    setStack((prev) => {
-      const next = [...prev, createConversation()];
-      setIndex(next.length - 1);
-      return next;
-    });
+    setStack((prev) => [...prev, createConversation()]);
+    setIndex(stack.length);
     setInput("");
   }
 
@@ -84,7 +83,22 @@ export default function Chatbot() {
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
-    setFirstOpen(false);
+    // Kontakt short-circuit
+    if (isContactIntent(text)) {
+      setStack((prev) => {
+        const next = [...prev];
+        next[index] = {
+          messages: [
+            ...next[index].messages,
+            { role: "user", content: text },
+            { role: "assistant", content: CONTACT_ANSWER },
+          ],
+        };
+        return next;
+      });
+      setInput("");
+      return;
+    }
 
     setStack((prev) => {
       const next = [...prev];
@@ -105,8 +119,7 @@ export default function Chatbot() {
       });
 
       const data = await res.json();
-      const answer =
-        data.answer || "Der opstod en fejl. Prøv igen senere.";
+      const answer = data.answer ?? "";
 
       setStack((prev) => {
         const next = [...prev];
@@ -125,87 +138,56 @@ export default function Chatbot() {
 
   return (
     <>
-      {/* Launcher */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          aria-label="Åbn chat"
-          className="
-            fixed bottom-6 right-6
-            w-14 h-14 rounded-full
-            bg-accent text-white
-            shadow
-            flex items-center justify-center
-          "
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow flex items-center justify-center"
         >
           <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
         </button>
       )}
 
-      {/* Overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-40"
-          style={{ background: "rgba(0,0,0,0.14)" }}
-          onClick={() => {
-            setOpen(false);
-            setExpanded(false);
-          }}
-        />
-      )}
-
-      {/* Chatbot */}
-      {open && (
-        <div
-          className={`
-            fixed z-50 bg-bg flex flex-col border border-gray-300
-            shadow-[0_24px_48px_rgba(0,0,0,0.18),_0_6px_14px_rgba(0,0,0,0.08)]
+          className={`fixed z-50 bg-bg flex flex-col border border-gray-300
             ${
               expanded && mobile
                 ? "inset-0 rounded-none"
-                : expanded && !mobile
+                : expanded
                 ? "bottom-12 right-12 w-[620px] h-[80vh] rounded-xl"
                 : "bottom-24 right-6 w-96 max-w-[90vw] rounded-xl"
             }
           `}
         >
-          {/* Header */}
           <div className="flex justify-between items-center px-4 py-3 border-b bg-white">
             <span className="font-medium">Gaarsdal</span>
-
             <div className="flex gap-1">
-              <button
-                className="p-3"
-                aria-label="Udvid"
-                onClick={() => setExpanded((v) => !v)}
-              >
+              <button onClick={() => setExpanded((v) => !v)} className="p-3">
                 <ArrowsPointingOutIcon className="w-6 h-6" />
               </button>
-
               <button
-                className="p-3"
-                aria-label="Luk chat"
                 onClick={() => {
                   setOpen(false);
                   setExpanded(false);
                 }}
+                className="p-3"
               >
                 <XMarkIcon className="w-6 h-6" />
               </button>
             </div>
           </div>
 
-          {/* Messages */}
-          <div
-            id="gaarsdal-chat-window"
-            className="flex-1 overflow-y-auto p-4 space-y-3"
-          >
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {current.messages.length === 0 && (
+              <div className="text-sm whitespace-pre-wrap bg-white border rounded-lg p-4">
+                {UI_WELCOME}
+              </div>
+            )}
+
             {current.messages.map((m, i) => (
               <div
                 key={i}
-                className={`${
-                  m.role === "user" ? "text-right" : "text-left"
-                } animate-fadeIn`}
+                className={m.role === "user" ? "text-right" : "text-left"}
               >
                 <div className="inline-block px-4 py-3 rounded-lg border bg-white text-sm whitespace-pre-wrap">
                   {m.content}
@@ -217,25 +199,7 @@ export default function Chatbot() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input + chips + navigation */}
           <div className="border-t bg-white p-3">
-            {firstOpen && current.messages.length === 1 && (
-              <div className="flex gap-2 mb-2 overflow-x-auto">
-                <button
-                  className="px-3 py-1 rounded-full bg-gray-100 text-sm"
-                  onClick={() => sendMessage(CONTACT_TEXT)}
-                >
-                  Kontakt
-                </button>
-                <button className="px-3 py-1 rounded-full bg-gray-100 text-sm">
-                  Brug af chatbotten
-                </button>
-                <button className="px-3 py-1 rounded-full bg-gray-100 text-sm">
-                  Forbehold
-                </button>
-              </div>
-            )}
-
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -255,23 +219,17 @@ export default function Chatbot() {
                 <button onClick={pushNewConversation}>
                   <PlusIcon className="w-5 h-5" />
                 </button>
-                <button
-                  onClick={goPrev}
-                  disabled={index === 0}
-                  className={index === 0 ? "opacity-30" : ""}
-                >
+                <button onClick={goPrev} disabled={index === 0}>
                   <BackwardIcon className="w-5 h-5" />
                 </button>
                 <button
                   onClick={goNext}
                   disabled={index === stack.length - 1}
-                  className={index === stack.length - 1 ? "opacity-30" : ""}
                 >
                   <ForwardIcon className="w-5 h-5" />
                 </button>
               </div>
-
-              <button onClick={() => sendMessage(CONTACT_TEXT)}>
+              <button onClick={() => sendMessage("Hvordan kontakter jeg jer?")}>
                 <EnvelopeIcon className="w-5 h-5" />
               </button>
             </div>
