@@ -63,11 +63,14 @@ export default function Chatbot() {
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
+    const updatedMessages: Message[] = [
+      ...current.messages,
+      { role: "user", content: text },
+    ];
+
     setStack((prev) => {
       const next = [...prev];
-      next[index] = {
-        messages: [...next[index].messages, { role: "user", content: text }],
-      };
+      next[index] = { messages: updatedMessages };
       return next;
     });
 
@@ -79,7 +82,7 @@ export default function Chatbot() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: current.messages,
+          messages: updatedMessages,
           debug,
         }),
       });
@@ -88,21 +91,25 @@ export default function Chatbot() {
 
       setStack((prev) => {
         const next = [...prev];
-        const msgs: Message[] = [];
+        const assistantMessages: Message[] = [];
 
         if (debug) {
-          msgs.push(
+          assistantMessages.push(
             { role: "assistant", content: "— JAN (RAW) —\n" + data.jan_raw },
             { role: "assistant", content: "— EVALUATOR —\n" + data.evaluator },
             { role: "assistant", content: "— JAN (FINAL) —\n" + data.final }
           );
         } else {
-          msgs.push({ role: "assistant", content: data.answer });
+          assistantMessages.push({
+            role: "assistant",
+            content: data.answer,
+          });
         }
 
         next[index] = {
-          messages: [...next[index].messages, ...msgs],
+          messages: [...updatedMessages, ...assistantMessages],
         };
+
         return next;
       });
     } finally {
