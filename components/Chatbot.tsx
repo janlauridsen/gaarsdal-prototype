@@ -27,27 +27,6 @@ const UI_WELCOME =
   "Du er velkommen til at stille spørgsmål eller beskrive noget, der fylder. " +
   "Vi tager det i dit tempo.";
 
-const CONTACT_ANSWER =
-  "Du er velkommen til at kontakte mig direkte.\n\n" +
-  "Telefon: +45 42 80 74 74\n" +
-  "E-mail: jan@gaarsdal.net\n\n" +
-  "Du kan også bruge kontaktformularen på:\nhttps://gaarsdal.net/kontakt";
-
-function isContactIntent(text: string) {
-  const t = text.toLowerCase();
-  return (
-    t.includes("kontakt") ||
-    t.includes("ringe") ||
-    t.includes("skrive") ||
-    t.includes("tale med jan")
-  );
-}
-
-function isMobile() {
-  if (typeof window === "undefined") return false;
-  return window.matchMedia("(max-width: 768px)").matches;
-}
-
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -60,7 +39,6 @@ export default function Chatbot() {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const current = stack[index];
-  const mobile = isMobile();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -83,23 +61,6 @@ export default function Chatbot() {
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
-    // Kontakt short-circuit
-    if (isContactIntent(text)) {
-      setStack((prev) => {
-        const next = [...prev];
-        next[index] = {
-          messages: [
-            ...next[index].messages,
-            { role: "user", content: text },
-            { role: "assistant", content: CONTACT_ANSWER },
-          ],
-        };
-        return next;
-      });
-      setInput("");
-      return;
-    }
-
     setStack((prev) => {
       const next = [...prev];
       next[index] = {
@@ -119,18 +80,25 @@ export default function Chatbot() {
       });
 
       const data = await res.json();
-      const answer = data.answer ?? "";
 
-      setStack((prev) => {
-        const next = [...prev];
-        next[index] = {
-          messages: [
-            ...next[index].messages,
-            { role: "assistant", content: answer },
-          ],
-        };
-        return next;
-      });
+      // 🔑 HER ER RETTELSEN
+      const responseText =
+        typeof data === "object" && data.response
+          ? data.response
+          : "";
+
+      if (responseText) {
+        setStack((prev) => {
+          const next = [...prev];
+          next[index] = {
+            messages: [
+              ...next[index].messages,
+              { role: "assistant", content: responseText },
+            ],
+          };
+          return next;
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -159,17 +127,7 @@ export default function Chatbot() {
           />
 
           {/* Chat window */}
-          <div
-            className={`fixed z-50 bg-bg flex flex-col border border-gray-300
-              ${
-                expanded && mobile
-                  ? "inset-0 rounded-none"
-                  : expanded
-                  ? "bottom-12 right-12 w-[620px] h-[80vh] rounded-xl"
-                  : "bottom-24 right-6 w-96 max-w-[90vw] rounded-xl"
-              }
-            `}
-          >
+          <div className="fixed bottom-24 right-6 z-50 w-96 max-w-[90vw] h-[70vh] bg-bg flex flex-col border border-gray-300 rounded-xl">
             {/* Header */}
             <div className="flex justify-between items-center px-4 py-3 border-b bg-white">
               <span className="font-medium">Gaarsdal</span>
@@ -215,7 +173,7 @@ export default function Chatbot() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input + navigation */}
+            {/* Input */}
             <div className="border-t bg-white p-3">
               <textarea
                 value={input}
@@ -246,9 +204,7 @@ export default function Chatbot() {
                     <ForwardIcon className="w-5 h-5" />
                   </button>
                 </div>
-                <button onClick={() => sendMessage("Hvordan kontakter jeg jer?")}>
-                  <EnvelopeIcon className="w-5 h-5" />
-                </button>
+                <EnvelopeIcon className="w-5 h-5" />
               </div>
             </div>
           </div>
