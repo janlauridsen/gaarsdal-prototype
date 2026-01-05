@@ -9,7 +9,7 @@ type Message = {
   content: string;
 };
 
-const debug = true; // 🔒 ALTID ON I TESTFORLØB
+const debug = true; // ALTID ON I TESTFORLØB
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
@@ -25,7 +25,12 @@ export default function Chatbot() {
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
-    const nextMessages = [...messages, { role: "user", content: text }];
+    const userMessage: Message = {
+      role: "user",
+      content: text,
+    };
+
+    const nextMessages: Message[] = [...messages, userMessage];
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
@@ -40,17 +45,28 @@ export default function Chatbot() {
       const data = await res.json();
 
       if (debug) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: "— JAN (RAW) —\n" + data.jan_raw },
-          { role: "assistant", content: "— EVALUATOR —\n" + data.evaluator },
-          { role: "assistant", content: "— JAN (FINAL) —\n" + data.final },
-        ]);
+        const assistantMessages: Message[] = [
+          {
+            role: "assistant",
+            content: "— JAN (RAW) —\n" + data.jan_raw,
+          },
+          {
+            role: "assistant",
+            content: "— EVALUATOR —\n" + data.evaluator,
+          },
+          {
+            role: "assistant",
+            content: "— JAN (FINAL) —\n" + data.final,
+          },
+        ];
+
+        setMessages((prev) => [...prev, ...assistantMessages]);
       } else {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: data.final },
-        ]);
+        const finalMessage: Message = {
+          role: "assistant",
+          content: data.final,
+        };
+        setMessages((prev) => [...prev, finalMessage]);
       }
     } finally {
       setLoading(false);
