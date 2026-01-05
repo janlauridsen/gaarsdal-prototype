@@ -9,9 +9,13 @@ const EVALUATOR_PROMPT_PATH = path.join(
   "chatbot/evaluator.md"
 );
 
-// === TEST FLAG ===
-// Slå fra ved at sætte til false
-const EVALUATOR_ENABLED = true;
+// ===== TEST FLAGS =====
+const EVALUATOR_ENABLED = true;       // slå evaluator helt fra/til
+const EVALUATOR_HINT_ENABLED = true;  // slå hints fra/til
+
+// ===== IN-MEMORY HINT (TEST ONLY) =====
+// Lever kun ét turn frem
+let lastEvaluatorHint: string | null = null;
 
 function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
@@ -39,6 +43,16 @@ async function callOpenAI(messages: any[]) {
   return data.choices?.[0]?.message?.content ?? "";
 }
 
+function extractEvaluatorHint(text: string): string | null {
+  const match = text.match(/\[evaluator-hint:\]([\s\S]*)$/i);
+  if (!match) return null;
+  return match[1].trim();
+}
+
+function stripEvaluatorHint(text: string): string {
+  return text.replace(/\n*\[evaluator-hint:\][\s\S]*$/i, "").trim();
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -56,14 +70,24 @@ export default async function handler(
   const systemPrompt = loadFile(SYSTEM_PROMPT_PATH);
   const facts = loadFile(FACTS_PATH);
 
-  // === JAN / CHATBOT ===
-  const chatMessages = [
+  // ===== JAN / CHATBOT =====
+  const chatMessages: any[] = [
     {
       role: "system",
       content: `${systemPrompt}\n\n---\n\nAUTORISERET VIDEN:\n${facts}`,
     },
-    ...messages,
   ];
+
+  // Indsæt evaluator-hint som system-kontekst (kun ét turn)
+  if (EVALUATOR_HINT_ENABLED && lastEvaluatorHint) {
+    chatMessages.push({
+      role: "system",
+      content: `[evaluator-hint:]\n${lastEvaluatorHint}`,
+    });
+    lastEvaluatorHint = null; // forbruges nu
+  }
+
+  chatMessages.push(...messages);
 
   let chatbotAnswer = "";
 
@@ -71,14 +95,13 @@ export default async function handler(
     chatbotAnswer = await callOpenAI(chatMessages);
   } catch {
     return res.status(500).json({
-      answer:
-        "Der opstod en teknisk fejl. Prøv igen senere.",
+      answer: "Der opstod en teknisk fejl. Prøv igen senere.",
     });
   }
 
   let finalAnswer = chatbotAnswer;
 
-  // === EVALUATOR (TEST MODE) ===
+  // ===== EVALUATOR (TEST MODE) =====
   if (EVALUATOR_ENABLED) {
     try {
       const evaluatorPrompt = loadFile(EVALUATOR_PROMPT_PATH);
@@ -101,13 +124,22 @@ export default async function handler(
         },
       ];
 
-      const evaluatorAnswer = await callOpenAI(evaluatorMessages);
+      const evaluatorRaw = await callOpenAI(evaluatorMessages);
 
-      if (evaluatorAnswer && evaluatorAnswer.trim()) {
+      // Udtræk evt. hint
+      const hint = extractEvaluatorHint(evaluatorRaw);
+      if (hint && EVALUATOR_HINT_ENABLED) {
+        lastEvaluatorHint = hint;
+      }
+
+      // Fjern hint fra det, der vises i chatten
+      const evaluatorVisible = stripEvaluatorHint(evaluatorRaw);
+
+      if (evaluatorVisible && evaluatorVisible.trim()) {
         finalAnswer =
           chatbotAnswer +
           "\n\n---\n\n" +
-          evaluatorAnswer;
+          evaluatorVisible;
       }
     } catch {
       // Evaluator må aldrig kunne vælte chatten
