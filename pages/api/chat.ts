@@ -2,23 +2,29 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
 
-const SYSTEM_PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
-const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
-const EVALUATOR_PROMPT_PATH = path.join(
-  process.cwd(),
-  "chatbot/evaluator.md"
-);
-const RESHAPE_PROMPT_PATH = path.join(
-  process.cwd(),
-  "chatbot/reshape.md"
-);
+/**
+ * DEBUG MODE
+ * Fast ON under lukket testforløb
+ */
+const DEBUG = true;
 
-function loadFile(p: string) {
+/**
+ * Prompt paths
+ */
+const PROMPT_JAN = path.join(process.cwd(), "chatbot/prompt.md");
+const PROMPT_EVALUATOR = path.join(process.cwd(), "chatbot/evaluator.md");
+const PROMPT_RESHAPE = path.join(process.cwd(), "chatbot/reshape.md");
+const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
+
+/**
+ * Helpers
+ */
+function load(p: string) {
   return fs.readFileSync(p, "utf8");
 }
 
 async function callOpenAI(messages: any[]) {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -26,15 +32,18 @@ async function callOpenAI(messages: any[]) {
     },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      temperature: 0.2,
+      temperature: 0.3,
       messages,
     }),
   });
 
-  const data = await response.json();
+  const data = await res.json();
   return data.choices?.[0]?.message?.content ?? "";
 }
 
+/**
+ * API handler
+ */
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -49,30 +58,30 @@ export default async function handler(
     return res.status(400).json({ error: "Invalid messages" });
   }
 
-  // DEBUG ER ALTID ON I DETTE FORLØB
-  const debug = true;
+  /**
+   * LOAD PROMPTS
+   */
+  const janPrompt = load(PROMPT_JAN);
+  const evaluatorPrompt = load(PROMPT_EVALUATOR);
+  const reshapePrompt = load(PROMPT_RESHAPE);
+  const facts = load(FACTS_PATH);
 
-  const systemPrompt = loadFile(SYSTEM_PROMPT_PATH);
-  const facts = loadFile(FACTS_PATH);
-  const evaluatorPrompt = loadFile(EVALUATOR_PROMPT_PATH);
-  const reshapePrompt = loadFile(RESHAPE_PROMPT_PATH);
-
-  /* -----------------------------
-     1. JAN (RAW)
-     ----------------------------- */
-  const janRawMessages = [
+  /**
+   * 1. JAN – RAW
+   */
+  const janMessages = [
     {
       role: "system",
-      content: `${systemPrompt}\n\n---\n\nAUTORISERET VIDEN:\n${facts}`,
+      content: `${janPrompt}\n\n---\n\nAUTORISERET VIDEN:\n${facts}`,
     },
     ...messages,
   ];
 
-  const jan_raw = await callOpenAI(janRawMessages);
+  const janRaw = await callOpenAI(janMessages);
 
-  /* -----------------------------
-     2. EVALUATOR
-     ----------------------------- */
+  /**
+   * 2. EVALUATOR
+   */
   const evaluatorMessages = [
     {
       role: "system",
@@ -80,20 +89,23 @@ export default async function handler(
     },
     {
       role: "user",
-      content:
-        "DIALOG:\n\n" +
-        messages
-          .map((m: any) => `${m.role.toUpperCase()}: ${m.content}`)
-          .join("\n\n") +
-        `\n\nJAN (RAW):\n${jan_raw}`,
+      content: `
+DIALOG:
+${messages
+  .map((m: any) => `${m.role.toUpperCase()}: ${m.content}`)
+  .join("\n")}
+
+SENESTE JAN-SVAR:
+${janRaw}
+`,
     },
   ];
 
   const evaluator = await callOpenAI(evaluatorMessages);
 
-  /* -----------------------------
-     3. JAN (FINAL / RESHAPED)
-     ----------------------------- */
+  /**
+   * 3. RESHAPE (JAN FINAL)
+   */
   const reshapeMessages = [
     {
       role: "system",
@@ -101,24 +113,32 @@ export default async function handler(
     },
     {
       role: "user",
-      content: `JAN (RAW):\n${jan_raw}\n\nEVALUATOR:\n${evaluator}`,
+      content: `
+JAN (RAW):
+${janRaw}
+
+EVALUATOR:
+${evaluator}
+`,
     },
   ];
 
-  const final = await callOpenAI(reshapeMessages);
+  const finalAnswer = await callOpenAI(reshapeMessages);
 
-  /* -----------------------------
-     RESPONSE
-     ----------------------------- */
-  if (debug) {
+  /**
+   * RESPONSE
+   */
+  if (DEBUG) {
     return res.status(200).json({
-      jan_raw,
+      jan_raw: janRaw,
       evaluator,
-      final,
+      final: finalAnswer,
+      answer: finalAnswer,
+      debug: true,
     });
   }
 
   return res.status(200).json({
-    answer: final,
+    answer: finalAnswer,
   });
 }
