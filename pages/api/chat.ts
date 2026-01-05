@@ -4,17 +4,14 @@ import path from "path";
 
 const SYSTEM_PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
 const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
-const EVALUATOR_PROMPT_PATH = path.join(
-  process.cwd(),
-  "chatbot/evaluator.md"
-);
+const EVALUATOR_PROMPT_PATH = path.join(process.cwd(), "chatbot/evaluator.md");
 
-// ===== TEST FLAGS =====
-const EVALUATOR_ENABLED = true;       // slå evaluator helt fra/til
-const EVALUATOR_HINT_ENABLED = true;  // slå hints fra/til
+// === TEST FLAGS ===
+const EVALUATOR_ENABLED = true;
+const EVALUATOR_HINT_ENABLED = true;
 
-// ===== IN-MEMORY HINT (TEST ONLY) =====
-// Lever kun ét turn frem
+// === IN-MEMORY HINT (TEST ONLY) ===
+// Lever ét turn frem
 let lastEvaluatorHint: string | null = null;
 
 function loadFile(p: string) {
@@ -78,7 +75,7 @@ export default async function handler(
     },
   ];
 
-  // Indsæt evaluator-hint som system-kontekst (kun ét turn)
+  // Indsæt evaluator-hint som system-kontekst (automatisk, ét turn)
   if (EVALUATOR_HINT_ENABLED && lastEvaluatorHint) {
     chatMessages.push({
       role: "system",
@@ -101,7 +98,7 @@ export default async function handler(
 
   let finalAnswer = chatbotAnswer;
 
-  // ===== EVALUATOR (TEST MODE) =====
+  // ===== EVALUATOR =====
   if (EVALUATOR_ENABLED) {
     try {
       const evaluatorPrompt = loadFile(EVALUATOR_PROMPT_PATH);
