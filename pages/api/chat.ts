@@ -2,48 +2,33 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
 
-/**
- * DEBUG MODE
- * Fast ON under lukket testforløb
- */
-const DEBUG = false;
+/* =========================
+   Paths
+   ========================= */
 
-/**
- * Prompt paths
- */
-const PROMPT_JAN = path.join(process.cwd(), "chatbot/prompt.md");
-const PROMPT_EVALUATOR = path.join(process.cwd(), "chatbot/evaluator.md");
-const PROMPT_RESHAPE = path.join(process.cwd(), "chatbot/reshape.md");
-const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
+const SYSTEM_PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
+const EVALUATOR_PROMPT_PATH = path.join(
+  process.cwd(),
+  "chatbot/evaluator.md"
+);
 
-/**
- * Helpers
- */
-function load(p: string) {
+/* =========================
+   Helpers
+   ========================= */
+
+function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
 }
 
-async function callOpenAI(messages: any[]) {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.3,
-      messages,
-    }),
-  });
+type ChatMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
 
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? "";
-}
+/* =========================
+   API handler
+   ========================= */
 
-/**
- * API handler
- */
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -58,35 +43,44 @@ export default async function handler(
     return res.status(400).json({ error: "Invalid messages" });
   }
 
-  /**
-   * LOAD PROMPTS
-   */
-  const janPrompt = load(PROMPT_JAN);
-  const evaluatorPrompt = load(PROMPT_EVALUATOR);
-  const reshapePrompt = load(PROMPT_RESHAPE);
-  const facts = load(FACTS_PATH);
+  const systemPrompt = loadFile(SYSTEM_PROMPT_PATH);
+  const evaluatorPrompt = loadFile(EVALUATOR_PROMPT_PATH);
 
-  /**
-   * 1. JAN – RAW
-   */
-  const janMessages = [
-    {
-      role: "system",
-      content: `${janPrompt}\n\n---\n\nAUTORISERET VIDEN:\n${facts}`,
-    },
+  /* =====================================================
+     1. JAN (RAW)
+     ===================================================== */
+
+  const janRawMessages: ChatMessage[] = [
+    { role: "system", content: systemPrompt },
     ...messages,
   ];
 
-  const janRaw = await callOpenAI(janMessages);
-
-  /**
-   * 2. EVALUATOR
-   */
-  const evaluatorMessages = [
+  const janRawResponse = await fetch(
+    "https://api.openai.com/v1/chat/completions",
     {
-      role: "system",
-      content: evaluatorPrompt,
-    },
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.3,
+        messages: janRawMessages,
+      }),
+    }
+  );
+
+  const janRawData = await janRawResponse.json();
+  const jan_raw =
+    janRawData.choices?.[0]?.message?.content?.trim() ?? "";
+
+  /* =====================================================
+     2. EVALUATOR
+     ===================================================== */
+
+  const evaluatorMessages: ChatMessage[] = [
+    { role: "system", content: evaluatorPrompt },
     {
       role: "user",
       content: `
@@ -95,50 +89,85 @@ ${messages
   .map((m: any) => `${m.role.toUpperCase()}: ${m.content}`)
   .join("\n")}
 
-SENESTE JAN-SVAR:
-${janRaw}
-`,
+JAN (RAW):
+${jan_raw}
+      `.trim(),
     },
   ];
 
-  const evaluator = await callOpenAI(evaluatorMessages);
+  const evaluatorResponse = await fetch(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.0,
+        messages: evaluatorMessages,
+      }),
+    }
+  );
 
-  /**
-   * 3. RESHAPE (JAN FINAL)
-   */
-  const reshapeMessages = [
+  const evaluatorData = await evaluatorResponse.json();
+  const evaluator =
+    evaluatorData.choices?.[0]?.message?.content?.trim() ?? "";
+
+  /* =====================================================
+     3. JAN (FINAL) – evaluator reshapes answer
+     ===================================================== */
+
+  const janFinalMessages: ChatMessage[] = [
+    { role: "system", content: systemPrompt },
     {
-      role: "system",
-      content: reshapePrompt,
-    },
-    {
-      role: "user",
+      role: "assistant",
       content: `
-JAN (RAW):
-${janRaw}
+DU HAR MODTAGET EN INTERN EVALUATOR.
+BRUG DEN TIL AT JUSTERE DIT SVAR.
 
 EVALUATOR:
 ${evaluator}
-`,
+
+OPGAVE:
+- Skriv ét samlet svar til brugeren
+- Ingen meta, ingen evaluator-tekst
+- Naturlig Jan-stemme
+      `.trim(),
     },
+    ...messages,
   ];
 
-  const finalAnswer = await callOpenAI(reshapeMessages);
+  const janFinalResponse = await fetch(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.25,
+        messages: janFinalMessages,
+      }),
+    }
+  );
 
-  /**
-   * RESPONSE
-   */
-  if (DEBUG) {
-    return res.status(200).json({
-      jan_raw: janRaw,
-      evaluator,
-      final: finalAnswer,
-      answer: finalAnswer,
-      debug: true,
-    });
-  }
+  const janFinalData = await janFinalResponse.json();
+  const final =
+    janFinalData.choices?.[0]?.message?.content?.trim() ?? "";
+
+  /* =====================================================
+     DEBUG = ON (hard)
+     ===================================================== */
 
   return res.status(200).json({
-    answer: finalAnswer,
+    answer: final, // det UI bruger
+    jan_raw,
+    evaluator,
+    final,
+    debug: true,
   });
 }
