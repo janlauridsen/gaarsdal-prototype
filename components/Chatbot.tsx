@@ -74,7 +74,6 @@ export default function Chatbot() {
     setLoading(true);
 
     try {
-      // Send KUN dialogbeskeder til backend
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -88,18 +87,51 @@ export default function Chatbot() {
 
       const data = await res.json();
 
-      if (data?.response) {
+      const answer = data.answer;
+
+      if (typeof answer === "string" && answer.trim()) {
         setStack((prev) => {
           const next = [...prev];
           next[index] = {
             messages: [
               ...next[index].messages,
-              { role: "assistant", content: data.response },
+              { role: "assistant", content: answer },
+            ],
+          };
+          return next;
+        });
+      } else {
+        // Failsafe: vis noget, hvis API svarer tomt
+        setStack((prev) => {
+          const next = [...prev];
+          next[index] = {
+            messages: [
+              ...next[index].messages,
+              {
+                role: "assistant",
+                content:
+                  "Jeg fik ikke formuleret et svar. Vil du prøve at sige det igen?",
+              },
             ],
           };
           return next;
         });
       }
+    } catch {
+      setStack((prev) => {
+        const next = [...prev];
+        next[index] = {
+          messages: [
+            ...next[index].messages,
+            {
+              role: "assistant",
+              content:
+                "Der opstod en teknisk fejl. Prøv igen om lidt.",
+            },
+          ],
+        };
+        return next;
+      });
     } finally {
       setLoading(false);
     }
@@ -118,7 +150,6 @@ export default function Chatbot() {
 
       {open && (
         <>
-          {/* Overlay */}
           <div
             className="fixed inset-0 bg-black/20 z-40"
             onClick={() => {
@@ -127,7 +158,6 @@ export default function Chatbot() {
             }}
           />
 
-          {/* Chat window */}
           <div
             className={`fixed z-50 bg-bg flex flex-col border border-gray-300 rounded-xl
               ${
@@ -136,7 +166,6 @@ export default function Chatbot() {
                   : "bottom-24 right-6 w-96 max-w-[90vw] max-h-[420px]"
               }`}
           >
-            {/* Header */}
             <div className="flex justify-between items-center px-4 py-3 border-b bg-white">
               <span className="font-medium">Gaarsdal</span>
               <div className="flex gap-1">
@@ -155,11 +184,7 @@ export default function Chatbot() {
               </div>
             </div>
 
-            {/* Messages */}
-            <div
-              className="flex-1 overflow-y-auto p-4 space-y-3"
-              style={{ minHeight: 0 }}
-            >
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {current.messages.length === 0 && (
                 <div className="text-sm whitespace-pre-wrap bg-white border rounded-lg p-4">
                   {UI_WELCOME}
@@ -181,7 +206,6 @@ export default function Chatbot() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
             <div className="border-t bg-white p-3">
               <textarea
                 value={input}
