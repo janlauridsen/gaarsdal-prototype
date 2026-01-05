@@ -50,6 +50,7 @@ export default function Chatbot() {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const current = stack[index] ?? stack[stack.length - 1];
+  const mobile = isMobile();
 
   useEffect(() => {
     const seen = localStorage.getItem("chatbot_seen");
@@ -122,10 +123,9 @@ export default function Chatbot() {
     }
   }
 
-  const mobile = isMobile();
-
   return (
     <>
+      {/* Launcher */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
@@ -142,10 +142,24 @@ export default function Chatbot() {
         </button>
       )}
 
+      {/* Overlay */}
+      {open && (
+        <div
+          className="fixed inset-0 z-40"
+          style={{ background: "rgba(0,0,0,0.14)" }}
+          onClick={() => {
+            setOpen(false);
+            setExpanded(false);
+          }}
+        />
+      )}
+
+      {/* Chatbot */}
       {open && (
         <div
           className={`
             fixed z-50 bg-bg flex flex-col border border-gray-300
+            shadow-[0_24px_48px_rgba(0,0,0,0.18),_0_6px_14px_rgba(0,0,0,0.08)]
             ${
               expanded && mobile
                 ? "inset-0 rounded-none"
@@ -203,7 +217,7 @@ export default function Chatbot() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input + chips */}
+          {/* Input + chips + navigation */}
           <div className="border-t bg-white p-3">
             {firstOpen && current.messages.length === 1 && (
               <div className="flex gap-2 mb-2 overflow-x-auto">
@@ -241,10 +255,18 @@ export default function Chatbot() {
                 <button onClick={pushNewConversation}>
                   <PlusIcon className="w-5 h-5" />
                 </button>
-                <button onClick={goPrev} disabled={index === 0} className={index === 0 ? "opacity-30" : ""}>
+                <button
+                  onClick={goPrev}
+                  disabled={index === 0}
+                  className={index === 0 ? "opacity-30" : ""}
+                >
                   <BackwardIcon className="w-5 h-5" />
                 </button>
-                <button onClick={goNext} disabled={index === stack.length - 1} className={index === stack.length - 1 ? "opacity-30" : ""}>
+                <button
+                  onClick={goNext}
+                  disabled={index === stack.length - 1}
+                  className={index === stack.length - 1 ? "opacity-30" : ""}
+                >
                   <ForwardIcon className="w-5 h-5" />
                 </button>
               </div>
