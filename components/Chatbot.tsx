@@ -61,7 +61,6 @@ export default function Chatbot() {
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
-    // Tilføj brugerbesked lokalt
     setStack((prev) => {
       const next = [...prev];
       next[index] = {
@@ -88,34 +87,6 @@ export default function Chatbot() {
       const data = await res.json();
       const answer = data?.answer;
 
-      if (typeof answer === "string" && answer.trim()) {
-        setStack((prev) => {
-          const next = [...prev];
-          next[index] = {
-            messages: [
-              ...next[index].messages,
-              { role: "assistant", content: answer },
-            ],
-          };
-          return next;
-        });
-      } else {
-        setStack((prev) => {
-          const next = [...prev];
-          next[index] = {
-            messages: [
-              ...next[index].messages,
-              {
-                role: "assistant",
-                content:
-                  "Jeg fik ikke formuleret et svar. Vil du prøve at sige det igen?",
-              },
-            ],
-          };
-          return next;
-        });
-      }
-    } catch {
       setStack((prev) => {
         const next = [...prev];
         next[index] = {
@@ -123,7 +94,10 @@ export default function Chatbot() {
             ...next[index].messages,
             {
               role: "assistant",
-              content: "Der opstod en teknisk fejl. Prøv igen om lidt.",
+              content:
+                typeof answer === "string" && answer.trim()
+                  ? answer
+                  : "Jeg fik ikke formuleret et svar. Vil du prøve igen?",
             },
           ],
         };
@@ -139,7 +113,6 @@ export default function Chatbot() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          aria-label="Åbn chat"
           className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-accent text-white shadow flex items-center justify-center"
         >
           <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
@@ -150,7 +123,7 @@ export default function Chatbot() {
         <>
           {/* Overlay */}
           <div
-            className="fixed inset-0 bg-black/20 z-40"
+            className="fixed inset-0 bg-black/30 z-40"
             onClick={() => {
               setOpen(false);
               setExpanded(false);
@@ -159,11 +132,11 @@ export default function Chatbot() {
 
           {/* Chat window */}
           <div
-            className={`fixed z-50 bg-bg flex flex-col border border-gray-300 rounded-xl
+            className={`fixed z-50 bg-bg flex flex-col border border-gray-300 rounded-xl transition-all
               ${
                 expanded
-                  ? "inset-12 w-auto h-auto max-h-[85vh]"
-                  : "bottom-24 right-6 w-96 max-w-[90vw] max-h-[420px]"
+                  ? "top-1/2 left-1/2 w-[90vw] max-w-[720px] h-[80vh] -translate-x-1/2 -translate-y-1/2"
+                  : "bottom-24 right-6 w-96 max-w-[90vw] h-[420px]"
               }`}
           >
             {/* Header */}
@@ -171,19 +144,19 @@ export default function Chatbot() {
               <span className="font-medium">Gaarsdal</span>
               <div className="flex gap-1">
                 <button
-                  aria-label="Udvid"
                   onClick={() => setExpanded((v) => !v)}
                   className="p-3"
+                  title="Udvid"
                 >
                   <ArrowsPointingOutIcon className="w-6 h-6" />
                 </button>
                 <button
-                  aria-label="Luk"
                   onClick={() => {
                     setOpen(false);
                     setExpanded(false);
                   }}
                   className="p-3"
+                  title="Luk"
                 >
                   <XMarkIcon className="w-6 h-6" />
                 </button>
@@ -234,22 +207,15 @@ export default function Chatbot() {
 
               <div className="mt-3 flex justify-between items-center">
                 <div className="flex gap-2">
-                  <button title="Ny samtale" onClick={pushNewConversation}>
+                  <button onClick={pushNewConversation}>
                     <PlusIcon className="w-5 h-5" />
                   </button>
-                  <button
-                    title="Tidligere samtale"
-                    onClick={goPrev}
-                    disabled={index === 0}
-                    className={index === 0 ? "opacity-30" : ""}
-                  >
+                  <button onClick={goPrev} disabled={index === 0}>
                     <BackwardIcon className="w-5 h-5" />
                   </button>
                   <button
-                    title="Senere samtale"
                     onClick={goNext}
                     disabled={index === stack.length - 1}
-                    className={index === stack.length - 1 ? "opacity-30" : ""}
                   >
                     <ForwardIcon className="w-5 h-5" />
                   </button>
