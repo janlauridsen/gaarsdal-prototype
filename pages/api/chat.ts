@@ -44,6 +44,7 @@ export default async function handler(
       model: "gpt-4o-mini",
       temperature: 0.2,
       messages: openAiMessages,
+      response_format: { type: "json_object" },
     }),
   });
 
@@ -57,5 +58,5 @@ export default async function handler(
     return res.status(500).json({ error: "Invalid model response" });
   }
 
-  res.status(200).json(parsed);
+  return res.status(200).json(parsed);
 }
