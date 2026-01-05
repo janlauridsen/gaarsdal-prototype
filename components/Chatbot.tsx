@@ -14,140 +14,216 @@ type Message = {
 };
 
 type Conversation = {
-  id: string;
   messages: Message[];
 };
 
-export default function Chatbot() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [input, setInput] = useState("");
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [index, setIndex] = useState(0);
-  const [stack, setStack] = useState<number[]>([]);
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+const CONTACT_TEXT = "Hvordan kontakter jeg jer?";
 
-  const conversation = conversations[index];
+const WELCOME_MESSAGE: Message = {
+  role: "assistant",
+  content:
+    "Velkommen – godt at se dig.\n\n" +
+    "Du er velkommen til at stille spørgsmål, dele tanker eller beskrive noget, der fylder. " +
+    "Det kan være helt kort eller mere udfoldet. Vi tager det i dit tempo.",
+};
+
+function createConversation(): Conversation {
+  return { messages: [WELCOME_MESSAGE] };
+}
+
+export default function Chatbot() {
+  const [open, setOpen] = useState(false);
+  const [stack, setStack] = useState<Conversation[]>(() => [
+    createConversation(),
+  ]);
+  const [index, setIndex] = useState(0);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const current = stack[index] ?? stack[stack.length - 1];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conversation]);
+  }, [current.messages, loading]);
 
-  async function sendMessage() {
-    if (!input.trim()) return;
-
-    const newMessage: Message = { role: "user", content: input };
-    const updatedConversation: Conversation = {
-      id: conversation?.id ?? crypto.randomUUID(),
-      messages: [...(conversation?.messages ?? []), newMessage],
-    };
-
-    const updatedConversations = [...conversations];
-    updatedConversations[index] = updatedConversation;
-
-    setConversations(updatedConversations);
+  function pushNewConversation() {
+    setStack((prev) => {
+      const next = [...prev, createConversation()];
+      setIndex(next.length - 1);
+      return next;
+    });
     setInput("");
+  }
 
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: updatedConversation.messages }),
+  function goPrev() {
+    setIndex((i) => Math.max(0, i - 1));
+  }
+
+  function goNext() {
+    setIndex((i) => Math.min(stack.length - 1, i + 1));
+  }
+
+  async function sendMessage(text: string) {
+    if (!text.trim() || loading) return;
+
+    setStack((prev) => {
+      const next = [...prev];
+      next[index] = {
+        messages: [...next[index].messages, { role: "user", content: text }],
+      };
+      return next;
     });
 
-    const data = await res.json();
+    setInput("");
+    setLoading(true);
 
-    updatedConversation.messages.push({
-      role: "assistant",
-      content: data.message,
-    });
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: current.messages }),
+      });
 
-    setConversations([...updatedConversations]);
+      const data = await res.json();
+      const answer =
+        data.answer || "Der opstod en fejl. Prøv igen senere.";
+
+      setStack((prev) => {
+        const next = [...prev];
+        next[index] = {
+          messages: [
+            ...next[index].messages,
+            { role: "assistant", content: answer },
+          ],
+        };
+        return next;
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <div className="gaarsdal-chatbot">
-      <>
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 bg-green-700 text-white p-3 rounded-full shadow-lg"
+    <>
+      {/* Launcher */}
+      <button
+        onClick={() => setOpen(true)}
+        aria-label="Åbn chat"
+        className="
+          fixed bottom-6 right-6
+          w-14 h-14 rounded-full
+          bg-accent text-white
+          shadow
+          hover:bg-accent/90
+          transition
+          flex items-center justify-center
+        "
+      >
+        <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
+      </button>
+
+      {open && (
+        <div
+          className="
+            fixed bottom-24 right-6
+            w-96 max-w-[90vw]
+            border border-gray-300
+            rounded-xl
+            shadow-sm
+            bg-bg
+            flex flex-col
+          "
         >
-          <ChatBubbleOvalLeftEllipsisIcon className="w-6 h-6" />
-        </button>
+          {/* Header */}
+          <div className="flex justify-between items-center px-4 py-3 border-b bg-white rounded-t-xl">
+            <span className="font-medium">Gaarsdal</span>
+            <button onClick={() => setOpen(false)} aria-label="Luk chat">
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
 
-        {isOpen && (
-          <div className="fixed inset-0 z-50 flex items-end justify-end p-6">
-            <div className="w-full max-w-md h-[80vh] bg-white rounded-xl shadow-xl flex flex-col">
-              <header className="flex items-center justify-between p-4">
-                <span className="font-semibold">Chat</span>
-                <button onClick={() => setIsOpen(false)}>
-                  <XMarkIcon className="w-5 h-5" />
-                </button>
-              </header>
-
+          {/* Messages */}
+          <div
+            id="gaarsdal-chat-window"
+            className="flex-1 overflow-y-auto p-4 space-y-3"
+            style={{ maxHeight: "500px" }}
+          >
+            {current.messages.map((m, i) => (
               <div
-                id="gaarsdal-chat-window"
-                className="messages flex-1 overflow-y-auto p-4 space-y-3"
+                key={i}
+                className={`${
+                  m.role === "user" ? "text-right" : "text-left"
+                } animate-fadeIn`}
               >
-                {conversation?.messages.map((m, i) => (
-                  <div
-                    key={i}
-                    className={`message ${
-                      m.role === "user" ? "user ml-auto" : "bot mr-auto"
-                    } max-w-[80%] p-3 rounded-lg animate-fadeIn`}
-                  >
-                    {m.content}
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
+                <div className="inline-block px-4 py-3 rounded-lg border bg-white text-sm whitespace-pre-wrap">
+                  {m.content}
+                </div>
               </div>
+            ))}
 
-              <footer className="p-4 flex gap-2">
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                  className="flex-1 border rounded-lg px-3 py-2"
-                  placeholder="Skriv her…"
-                />
-                <button
-                  onClick={sendMessage}
-                  className="gaarsdal-primary-button px-4 rounded-lg"
-                >
-                  Send
+            {loading && <p className="text-sm">Skriver…</p>}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input + navigation */}
+          <div className="border-t bg-white p-3 rounded-b-xl">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
+                  e.preventDefault();
+                  sendMessage(input);
+                }
+              }}
+              rows={2}
+              className="w-full border rounded-md px-3 py-2 text-sm resize-none"
+              placeholder="Skriv dit spørgsmål…"
+            />
+
+            <div className="mt-3 flex justify-between items-center">
+              <div className="flex gap-2">
+                <button title="Ny samtale" onClick={pushNewConversation}>
+                  <PlusIcon className="w-5 h-5" />
                 </button>
-              </footer>
-
-              <div className="flex items-center justify-between p-3 border-t">
                 <button
-                  onClick={() => setIndex(Math.max(index - 1, 0))}
+                  title="Tidligere samtale"
+                  onClick={goPrev}
                   disabled={index === 0}
+                  className={index === 0 ? "opacity-30" : ""}
                 >
                   <BackwardIcon className="w-5 h-5" />
                 </button>
-
-                <div className="flex gap-1">
-                  {stack.map((_, i) => (
-                    <span
-                      key={i}
-                      className={`w-2 h-2 rounded-full ${
-                        i === index ? "bg-accent" : "bg-gray-300"
-                      }`}
-                    />
-                  ))}
-                </div>
-
                 <button
-                  onClick={() =>
-                    setIndex(Math.min(index + 1, conversations.length - 1))
-                  }
-                  disabled={index >= conversations.length - 1}
+                  title="Senere samtale"
+                  onClick={goNext}
+                  disabled={index === stack.length - 1}
+                  className={index === stack.length - 1 ? "opacity-30" : ""}
                 >
                   <ForwardIcon className="w-5 h-5" />
                 </button>
               </div>
+
+              <button title="Kontakt" onClick={() => sendMessage(CONTACT_TEXT)}>
+                <EnvelopeIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Stack indicator */}
+            <div className="mt-2 flex justify-center gap-1">
+              {stack.map((_, i) => (
+                <span
+                  key={i}
+                  className={`w-2 h-2 rounded-full ${
+                    i === index ? "bg-accent" : "bg-gray-300"
+                  }`}
+                />
+              ))}
             </div>
           </div>
-        )}
-      </>
-    </div>
+        </div>
+      )}
+    </>
   );
 }
