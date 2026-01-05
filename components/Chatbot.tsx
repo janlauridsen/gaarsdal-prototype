@@ -32,6 +32,11 @@ function createConversation(): Conversation {
   return { messages: [WELCOME_MESSAGE] };
 }
 
+function isMobile() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(max-width: 768px)").matches;
+}
+
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -117,9 +122,10 @@ export default function Chatbot() {
     }
   }
 
+  const mobile = isMobile();
+
   return (
     <>
-      {/* Launcher */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
@@ -139,12 +145,14 @@ export default function Chatbot() {
       {open && (
         <div
           className={`
-            fixed
-            ${expanded ? "inset-0 m-0 rounded-none" : "bottom-24 right-6 w-96 max-w-[90vw]"}
-            border border-gray-300
-            bg-bg
-            flex flex-col
-            z-50
+            fixed z-50 bg-bg flex flex-col border border-gray-300
+            ${
+              expanded && mobile
+                ? "inset-0 rounded-none"
+                : expanded && !mobile
+                ? "bottom-12 right-12 w-[620px] h-[80vh] rounded-xl"
+                : "bottom-24 right-6 w-96 max-w-[90vw] rounded-xl"
+            }
           `}
         >
           {/* Header */}
@@ -153,20 +161,20 @@ export default function Chatbot() {
 
             <div className="flex gap-1">
               <button
-                aria-label="Udvid"
                 className="p-3"
+                aria-label="Udvid"
                 onClick={() => setExpanded((v) => !v)}
               >
                 <ArrowsPointingOutIcon className="w-6 h-6" />
               </button>
 
               <button
+                className="p-3"
+                aria-label="Luk chat"
                 onClick={() => {
                   setOpen(false);
                   setExpanded(false);
                 }}
-                aria-label="Luk chat"
-                className="p-3"
               >
                 <XMarkIcon className="w-6 h-6" />
               </button>
@@ -181,7 +189,9 @@ export default function Chatbot() {
             {current.messages.map((m, i) => (
               <div
                 key={i}
-                className={`${m.role === "user" ? "text-right" : "text-left"} animate-fadeIn`}
+                className={`${
+                  m.role === "user" ? "text-right" : "text-left"
+                } animate-fadeIn`}
               >
                 <div className="inline-block px-4 py-3 rounded-lg border bg-white text-sm whitespace-pre-wrap">
                   {m.content}
@@ -193,7 +203,7 @@ export default function Chatbot() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input + chips + navigation */}
+          {/* Input + chips */}
           <div className="border-t bg-white p-3">
             {firstOpen && current.messages.length === 1 && (
               <div className="flex gap-2 mb-2 overflow-x-auto">
