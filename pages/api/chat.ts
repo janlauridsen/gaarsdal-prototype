@@ -2,27 +2,17 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
 
-/**
- * DEBUG ER FAST TIL ON
- * Ingen env-variabel.
- * Ingen toggles.
- */
-const DEBUG = true;
-
-/**
- * Prompt paths
- */
 const SYSTEM_PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
+const EVALUATOR_PROMPT_PATH = path.join(process.cwd(), "chatbot/evaluator.md");
 const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
-const EVALUATOR_PATH = path.join(process.cwd(), "chatbot/evaluator.md");
+
+// DEBUG ER FAST TIL ON I DETTE TESTFORLØB
+const DEBUG = true;
 
 function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
 }
 
-/**
- * Type guards
- */
 type ChatMessage = {
   role: "system" | "user" | "assistant";
   content: string;
@@ -36,18 +26,18 @@ export default async function handler(
     return res.status(405).end();
   }
 
-  const { messages } = req.body;
+  const { messages } = req.body as { messages: ChatMessage[] };
 
   if (!Array.isArray(messages)) {
-    return res.status(400).json({ error: "Invalid messages payload" });
+    return res.status(400).json({ error: "Invalid messages" });
   }
 
   const systemPrompt = loadFile(SYSTEM_PROMPT_PATH);
+  const evaluatorPrompt = loadFile(EVALUATOR_PROMPT_PATH);
   const facts = loadFile(FACTS_PATH);
-  const evaluatorPrompt = loadFile(EVALUATOR_PATH);
 
   /**
-   * 1. JAN (RAW)
+   * 1) JAN – RAW
    */
   const janRawMessages: ChatMessage[] = [
     {
@@ -57,7 +47,7 @@ export default async function handler(
     ...messages,
   ];
 
-  const rawResponse = await fetch(
+  const janRawResponse = await fetch(
     "https://api.openai.com/v1/chat/completions",
     {
       method: "POST",
@@ -73,16 +63,13 @@ export default async function handler(
     }
   );
 
-  const rawData = await rawResponse.json();
-  const janRaw =
-    rawData?.choices?.[0]?.message?.content ??
-    "FEJL: Ingen RAW-respons";
+  const janRawData = await janRawResponse.json();
+  const jan_raw =
+    janRawData.choices?.[0]?.message?.content ??
+    "FEJL: Tomt RAW-svar";
 
   /**
-   * 2. EVALUATOR
-   * Evaluator får:
-   * - seneste brugerinput
-   * - Jan RAW
+   * 2) EVALUATOR
    */
   const evaluatorMessages: ChatMessage[] = [
     {
@@ -91,13 +78,7 @@ export default async function handler(
     },
     {
       role: "user",
-      content:
-        "SENESTE BRUGERINPUT:\n" +
-        messages[messages.length - 1]?.content,
-    },
-    {
-      role: "assistant",
-      content: "JAN (RAW):\n" + janRaw,
+      content: jan_raw,
     },
   ];
 
@@ -111,7 +92,7 @@ export default async function handler(
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        temperature: 0,
+        temperature: 0.2,
         messages: evaluatorMessages,
       }),
     }
@@ -119,36 +100,24 @@ export default async function handler(
 
   const evaluatorData = await evaluatorResponse.json();
   const evaluator =
-    evaluatorData?.choices?.[0]?.message?.content ??
-    "[evaluator:]\nFEJL: Ingen evaluator-output";
+    evaluatorData.choices?.[0]?.message?.content ??
+    "[evaluator:]\nIngen evaluering.";
 
   /**
-   * 3. JAN (FINAL)
-   * Jan får RAW + evaluator-output og skal reshapes
+   * 3) JAN – FINAL (RAW + EVALUATOR → reshaped)
    */
   const janFinalMessages: ChatMessage[] = [
     {
       role: "system",
-      content: `${systemPrompt}\n\n---\n\nAUTORISERET VIDEN:\n${facts}`,
-    },
-    {
-      role: "assistant",
-      content: "JAN (RAW):\n" + janRaw,
-    },
-    {
-      role: "assistant",
-      content: "EVALUATOR:\n" + evaluator,
+      content: `${systemPrompt}\n\n---\n\nAUTORISERET VIDEN:\n${facts}\n\n---\n\nDU FÅR NUVÆRENDE RAW-SVAR OG EVALUATOR-FEEDBACK.\nOmskriv svaret til et bedre, mere menneskeligt og mere afklaret slut-svar.\nEvaluator-hints må bruges frit.\nReturnér KUN det færdige svar.`,
     },
     {
       role: "user",
-      content:
-        "Omskriv nu svaret til ét samlet, naturligt Jan-svar til brugeren.\n" +
-        "Indarbejd evaluatorens pointer hvis relevante.\n" +
-        "Vis IKKE evaluator eller meta.",
+      content: `RAW:\n${jan_raw}\n\nEVALUATOR:\n${evaluator}`,
     },
   ];
 
-  const finalResponse = await fetch(
+  const janFinalResponse = await fetch(
     "https://api.openai.com/v1/chat/completions",
     {
       method: "POST",
@@ -158,33 +127,31 @@ export default async function handler(
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        temperature: 0.25,
+        temperature: 0.35,
         messages: janFinalMessages,
       }),
     }
   );
 
-  const finalData = await finalResponse.json();
-  const janFinal =
-    finalData?.choices?.[0]?.message?.content ??
-    "FEJL: Ingen FINAL-respons";
+  const janFinalData = await janFinalResponse.json();
+  const final =
+    janFinalData.choices?.[0]?.message?.content ??
+    "FEJL: Tomt FINAL-svar";
 
   /**
-   * 4. SVAR TIL FRONTEND
-   * DEBUG = ON → returnér alt
+   * RESPONSE TIL FRONTEND
+   * Debug er altid ON her
    */
   if (DEBUG) {
     return res.status(200).json({
-      jan_raw: janRaw,
+      jan_raw,
       evaluator,
-      final: janFinal,
+      final,
     });
   }
 
-  /**
-   * (Ikke i brug lige nu)
-   */
+  // fallback (bruges ikke pt)
   return res.status(200).json({
-    answer: janFinal,
+    answer: final,
   });
 }
