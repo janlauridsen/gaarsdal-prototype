@@ -1,176 +1,126 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  XMarkIcon,
-  ArrowsPointingOutIcon,
-  ChatBubbleOvalLeftEllipsisIcon,
-} from "@heroicons/react/24/outline";
+import type { NextApiRequest, NextApiResponse } from "next";
+import fs from "fs";
+import path from "path";
 
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-};
+/* =========================
+   Config
+   ========================= */
 
-export default function Chatbot() {
-  const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+const DEBUG = true; // HARD-ON som aftalt
 
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+const SYSTEM_PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
+const EVALUATOR_PROMPT_PATH = path.join(
+  process.cwd(),
+  "chatbot/evaluator.md"
+);
 
-  // DEBUG ER ALTID ON
-  const debug = true;
+/* =========================
+   Helpers
+   ========================= */
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+function loadFile(p: string) {
+  return fs.readFileSync(p, "utf8");
+}
 
-  async function sendMessage(text: string) {
-    if (!text.trim()) return;
+async function callOpenAI(messages: any[]) {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      temperature: 0.3,
+      messages,
+    }),
+  });
 
-    const nextMessages: Message[] = [
-      ...messages,
-      { role: "user", content: text },
-    ];
-    setMessages(nextMessages);
-    setInput("");
-    setLoading(true);
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content ?? "";
+}
 
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages }),
-      });
+/* =========================
+   Handler
+   ========================= */
 
-      const data = await res.json();
-
-      if (debug) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: "— JAN (RAW) —\n" + data.jan_raw },
-          { role: "assistant", content: "— EVALUATOR —\n" + data.evaluator },
-          { role: "assistant", content: "— JAN (FINAL) —\n" + data.final },
-        ]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: data.answer },
-        ]);
-      }
-    } finally {
-      setLoading(false);
-    }
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== "POST") {
+    return res.status(405).end();
   }
 
-  return (
-    <>
-      {/* FAB */}
-      {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center"
-        >
-          <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
-        </button>
-      )}
+  const { messages } = req.body;
 
-      {/* OVERLAY */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/40"
-          onClick={() => {
-            setOpen(false);
-            setExpanded(false);
-          }}
-        />
-      )}
+  if (!Array.isArray(messages)) {
+    return res.status(400).json({ error: "Invalid messages" });
+  }
 
-      {/* CHAT WINDOW */}
-      {open && (
-        <div
-          className={`fixed z-50 flex flex-col bg-bg border border-gray-300 shadow-xl
-          ${
-            expanded
-              ? "inset-6 rounded-xl"
-              : "bottom-24 right-6 w-[420px] max-w-[90vw] rounded-xl"
-          }`}
-        >
-          {/* HEADER */}
-          <div className="flex items-center justify-between px-4 py-3 border-b bg-white rounded-t-xl">
-            <span className="font-medium">
-              Gaarsdal {debug && "(debug)"}
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setExpanded((v) => !v)}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <ArrowsPointingOutIcon className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  setExpanded(false);
-                }}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+  const systemPrompt = loadFile(SYSTEM_PROMPT_PATH);
+  const evaluatorPrompt = loadFile(EVALUATOR_PROMPT_PATH);
 
-          {/* MESSAGES */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-bg">
-            {messages.map((m, i) => {
-              const isDebug =
-                m.content.startsWith("— JAN") ||
-                m.content.startsWith("— EVALUATOR");
+  /* =====================================================
+     STEP 1 · JAN (RAW)
+     ===================================================== */
 
-              return (
-                <div
-                  key={i}
-                  className={m.role === "user" ? "text-right" : "text-left"}
-                >
-                  <div
-                    className={`inline-block px-4 py-3 rounded-lg text-sm whitespace-pre-wrap border
-                      ${
-                        isDebug
-                          ? "bg-gray-100 border-dashed border-gray-400 text-gray-800"
-                          : "bg-white border-gray-300"
-                      }`}
-                  >
-                    {m.content}
-                  </div>
-                </div>
-              );
-            })}
+  const janRaw = await callOpenAI([
+    { role: "system", content: systemPrompt },
+    ...messages,
+  ]);
 
-            {loading && (
-              <div className="text-sm text-gray-500">Skriver…</div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+  /* =====================================================
+     STEP 2 · EVALUATOR
+     ===================================================== */
 
-          {/* INPUT */}
-          <div className="border-t bg-white p-3 rounded-b-xl">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage(input);
-                }
-              }}
-              rows={2}
-              className="w-full border rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring"
-              placeholder="Skriv dit spørgsmål…"
-            />
-          </div>
-        </div>
-      )}
-    </>
-  );
+  const evaluator = await callOpenAI([
+    {
+      role: "system",
+      content: evaluatorPrompt,
+    },
+    {
+      role: "assistant",
+      content: janRaw,
+    },
+  ]);
+
+  /* =====================================================
+     STEP 3 · JAN (FINAL)
+     Evaluator hint må påvirke formen – ikke indhold
+     ===================================================== */
+
+  const janFinal = await callOpenAI([
+    {
+      role: "system",
+      content: systemPrompt +
+        "\n\n---\n\nDu har modtaget evaluator-feedback nedenfor. " +
+        "Tilpas dit svar i form og fokus, men ændr ikke grundindholdet.",
+    },
+    {
+      role: "assistant",
+      content: janRaw,
+    },
+    {
+      role: "assistant",
+      content: evaluator,
+    },
+  ]);
+
+  /* =====================================================
+     RESPONSE
+     ===================================================== */
+
+  if (DEBUG) {
+    return res.status(200).json({
+      jan_raw: janRaw,
+      evaluator,
+      final: janFinal,
+      answer: janFinal,
+    });
+  }
+
+  return res.status(200).json({
+    answer: janFinal,
+  });
 }
