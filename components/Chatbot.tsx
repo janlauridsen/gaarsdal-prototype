@@ -10,7 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 type Message = {
-  role: "user" | "assistant";
+  role: "system" | "user" | "assistant";
   content: string;
 };
 
@@ -18,14 +18,17 @@ type Conversation = {
   messages: Message[];
 };
 
-function createConversation(): Conversation {
-  return { messages: [] };
-}
+const WELCOME_MESSAGE: Message = {
+  role: "system",
+  content:
+    "Velkommen – godt at se dig.\n\n" +
+    "Du er velkommen til at stille spørgsmål eller beskrive noget, der fylder. " +
+    "Vi tager det i dit tempo.",
+};
 
-const UI_WELCOME =
-  "Velkommen – godt at se dig.\n\n" +
-  "Du er velkommen til at stille spørgsmål eller beskrive noget, der fylder. " +
-  "Vi tager det i dit tempo.";
+function createConversation(): Conversation {
+  return { messages: [WELCOME_MESSAGE] };
+}
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
@@ -81,19 +84,13 @@ export default function Chatbot() {
 
       const data = await res.json();
 
-      // 🔑 HER ER RETTELSEN
-      const responseText =
-        typeof data === "object" && data.response
-          ? data.response
-          : "";
-
-      if (responseText) {
+      if (data?.response) {
         setStack((prev) => {
           const next = [...prev];
           next[index] = {
             messages: [
               ...next[index].messages,
-              { role: "assistant", content: responseText },
+              { role: "assistant", content: data.response },
             ],
           };
           return next;
@@ -127,7 +124,14 @@ export default function Chatbot() {
           />
 
           {/* Chat window */}
-          <div className="fixed bottom-24 right-6 z-50 w-96 max-w-[90vw] h-[70vh] bg-bg flex flex-col border border-gray-300 rounded-xl">
+          <div
+            className={`fixed z-50 bg-bg flex flex-col border border-gray-300 rounded-xl
+              ${
+                expanded
+                  ? "bottom-12 right-12 w-[620px] h-[80vh]"
+                  : "bottom-24 right-6 w-96 max-w-[90vw] max-h-[420px]"
+              }`}
+          >
             {/* Header */}
             <div className="flex justify-between items-center px-4 py-3 border-b bg-white">
               <span className="font-medium">Gaarsdal</span>
@@ -152,12 +156,6 @@ export default function Chatbot() {
               className="flex-1 overflow-y-auto p-4 space-y-3"
               style={{ minHeight: 0 }}
             >
-              {current.messages.length === 0 && (
-                <div className="text-sm whitespace-pre-wrap bg-white border rounded-lg p-4">
-                  {UI_WELCOME}
-                </div>
-              )}
-
               {current.messages.map((m, i) => (
                 <div
                   key={i}
