@@ -6,7 +6,7 @@ import path from "path";
  * DEBUG MODE
  * Fast ON under lukket testforløb
  */
-const DEBUG = true;
+const DEBUG = false;
 
 /**
  * Prompt paths
