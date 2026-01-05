@@ -6,6 +6,7 @@ import {
   EnvelopeIcon,
   ChatBubbleOvalLeftEllipsisIcon,
   XMarkIcon,
+  ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
 type Message = {
@@ -40,8 +41,18 @@ export default function Chatbot() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [firstOpen, setFirstOpen] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const current = stack[index] ?? stack[stack.length - 1];
+
+  useEffect(() => {
+    const seen = localStorage.getItem("chatbot_seen");
+    if (!seen) {
+      setFirstOpen(true);
+      localStorage.setItem("chatbot_seen", "1");
+    }
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -66,6 +77,8 @@ export default function Chatbot() {
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
+
+    setFirstOpen(false);
 
     setStack((prev) => {
       const next = [...prev];
@@ -138,10 +151,42 @@ export default function Chatbot() {
           {/* Header */}
           <div className="flex justify-between items-center px-4 py-3 border-b bg-white rounded-t-xl">
             <span className="font-medium">Gaarsdal</span>
-            <button onClick={() => setOpen(false)} aria-label="Luk chat">
-              <XMarkIcon className="w-5 h-5" />
-            </button>
+
+            <div className="flex gap-1">
+              <button
+                aria-label="Udvid"
+                className="p-3"
+              >
+                <ArrowsPointingOutIcon className="w-6 h-6" />
+              </button>
+
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Luk chat"
+                className="p-3"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
           </div>
+
+          {/* First-open chips */}
+          {firstOpen && current.messages.length === 1 && (
+            <div className="flex gap-2 px-4 py-2 overflow-x-auto bg-white border-b">
+              <button
+                className="px-3 py-1 rounded-full bg-gray-100 text-sm"
+                onClick={() => sendMessage(CONTACT_TEXT)}
+              >
+                Kontakt
+              </button>
+              <button className="px-3 py-1 rounded-full bg-gray-100 text-sm">
+                Brug af chatbotten
+              </button>
+              <button className="px-3 py-1 rounded-full bg-gray-100 text-sm">
+                Forbehold
+              </button>
+            </div>
+          )}
 
           {/* Messages */}
           <div
