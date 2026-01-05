@@ -2,19 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-/* =====================================================
+/* =========================
    Base
-   ===================================================== */
+   ========================= */
 
 html,
 body {
-  background: #efede7;
-  color: #2c2a28;
+  background: #EFEDE7;
+  color: #2C2A28;
 }
 
-/* =====================================================
-   Text utilities
-   ===================================================== */
+/* =========================
+   Typography helpers
+   ========================= */
 
 .text-h1 {
   font-size: 48px;
@@ -26,9 +26,9 @@ body {
   line-height: 1.7;
 }
 
-/* =====================================================
+/* =========================
    Animations
-   ===================================================== */
+   ========================= */
 
 @keyframes fadeIn {
   from {
@@ -42,93 +42,167 @@ body {
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.25s ease-out;
+  animation: fadeIn 0.2s ease-out;
 }
 
-/* =====================================================
-   Scrollbar
-   ===================================================== */
+/* =========================
+   Scroll
+   ========================= */
+
+#gaarsdal-chat-window {
+  scroll-behavior: smooth;
+}
 
 ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d8d5cc;
+  background: #D8D5CC;
   border-radius: 6px;
 }
 
-/* =====================================================
-   Chatbot – korrekt koblet til Chatbot.tsx
-   ===================================================== */
+/* =========================
+   Overlay (baggrund mørk)
+   ========================= */
 
-/* Overlay (mørk baggrund) */
 .gaarsdal-overlay {
-  background: rgba(0, 0, 0, 0.4);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 40;
 }
 
-/* Chat container */
+/* =========================
+   Chatbot container
+   ========================= */
+
 .gaarsdal-chatbot {
-  background: #f6f5f2;
+  position: fixed;
+  z-index: 50;
+  background: #F6F5F2;
   border-radius: 20px;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow:
     0 20px 40px rgba(0, 0, 0, 0.08),
     0 4px 10px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* Header */
-.gaarsdal-chatbot-header {
-  background: #eceae4;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+/* =========================
+   Header
+   ========================= */
+
+.gaarsdal-chatbot header {
+  background: #ECEAE4;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-/* Messages area */
-.gaarsdal-chatbot-messages {
-  background: #f6f5f2;
+/* =========================
+   Messages
+   ========================= */
+
+.gaarsdal-chatbot .messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #F6F5F2;
   font-size: 15px;
   line-height: 1.6;
 }
 
-/* Base message bubble */
-.gaarsdal-message {
-  animation: fadeIn 0.2s ease-out;
+/* Bot message */
+
+.gaarsdal-chatbot .message.bot {
+  background: #FFFFFF;
   border-radius: 14px;
-  padding: 12px 16px;
-  max-width: 90%;
-  word-wrap: break-word;
-}
-
-/* User message */
-.gaarsdal-message-user {
-  background: #4a5d54;
-  color: #ffffff;
-  margin-left: auto;
-}
-
-/* Assistant message */
-.gaarsdal-message-assistant {
-  background: #ffffff;
+  padding: 12px 14px;
+  max-width: 85%;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
-/* Debug blocks */
-.gaarsdal-message-debug {
-  background: #f0f0f0;
-  border: 1px dashed #999;
-  color: #333;
+/* User message */
+
+.gaarsdal-chatbot .message.user {
+  background: #4A5D54;
+  color: #FFFFFF;
+  border-radius: 14px;
+  padding: 12px 14px;
+  max-width: 85%;
+  margin-left: auto;
+}
+
+/* =========================
+   Debug blocks
+   ========================= */
+
+.gaarsdal-debug {
+  background: #F0EFEA;
+  border: 1px dashed rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 12px;
   font-size: 13px;
   white-space: pre-wrap;
 }
 
-/* Input area */
-.gaarsdal-chatbot-footer {
-  background: #eceae4;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+/* =========================
+   Footer / Input
+   ========================= */
+
+.gaarsdal-chatbot footer {
+  background: #ECEAE4;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 12px;
 }
 
-/* Input focus */
-.gaarsdal-chatbot-footer textarea:focus {
+.gaarsdal-chatbot textarea,
+.gaarsdal-chatbot input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #D8D5CC;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.gaarsdal-chatbot textarea:focus,
+.gaarsdal-chatbot input:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(74, 93, 84, 0.25);
+}
+
+/* =========================
+   Stack dots (synlige igen)
+   ========================= */
+
+.gaarsdal-stack-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 0;
+}
+
+.gaarsdal-stack-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #C7C4BC;
+}
+
+.gaarsdal-stack-dot.active {
+  background: #4A5D54;
+}
+
+/* =========================
+   Buttons / icons
+   ========================= */
+
+.gaarsdal-icon-btn {
+  opacity: 0.85;
+  transition: opacity 0.15s ease;
+}
+
+.gaarsdal-icon-btn:hover {
+  opacity: 1;
 }
