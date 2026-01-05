@@ -10,7 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 type Message = {
-  role: "system" | "user" | "assistant";
+  role: "user" | "assistant";
   content: string;
 };
 
@@ -18,16 +18,13 @@ type Conversation = {
   messages: Message[];
 };
 
-const WELCOME_MESSAGE: Message = {
-  role: "system",
-  content:
-    "Velkommen – godt at se dig.\n\n" +
-    "Du er velkommen til at stille spørgsmål eller beskrive noget, der fylder. " +
-    "Vi tager det i dit tempo.",
-};
+const UI_WELCOME =
+  "Velkommen – godt at se dig.\n\n" +
+  "Du er velkommen til at stille spørgsmål eller beskrive noget, der fylder. " +
+  "Vi tager det i dit tempo.";
 
 function createConversation(): Conversation {
-  return { messages: [WELCOME_MESSAGE] };
+  return { messages: [] };
 }
 
 export default function Chatbot() {
@@ -64,6 +61,7 @@ export default function Chatbot() {
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
+    // Tilføj brugerbesked lokalt
     setStack((prev) => {
       const next = [...prev];
       next[index] = {
@@ -76,10 +74,16 @@ export default function Chatbot() {
     setLoading(true);
 
     try {
+      // Send KUN dialogbeskeder til backend
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: current.messages }),
+        body: JSON.stringify({
+          messages: current.messages.concat({
+            role: "user",
+            content: text,
+          }),
+        }),
       });
 
       const data = await res.json();
@@ -156,6 +160,12 @@ export default function Chatbot() {
               className="flex-1 overflow-y-auto p-4 space-y-3"
               style={{ minHeight: 0 }}
             >
+              {current.messages.length === 0 && (
+                <div className="text-sm whitespace-pre-wrap bg-white border rounded-lg p-4">
+                  {UI_WELCOME}
+                </div>
+              )}
+
               {current.messages.map((m, i) => (
                 <div
                   key={i}
