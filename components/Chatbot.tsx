@@ -1,24 +1,17 @@
 /**
  * Chatbot.tsx
- * ------------------------------------------------------------
- * Version: 6.3
+ * Version: 6.4
  *
- * ÆNDRINGER I DENNE VERSION (KUN META – INGEN LOGIKÆNDRINGER):
- * - Introducerer session-metadata pr. samtale (Conversation.meta)
- * - Stabil session-id
- * - Automatisk titel baseret på første brugerbesked
- * - createdAt / lastActiveAt timestamps
- * - turnCount (afledt)
- * - status: active | idle (UI-signal)
- * - Tooltips på stack-prikker baseret på metadata
+ * Ændringer ift 6.1:
+ * - Evaluator-chips vises under seneste bot-svar
+ * - Chips er rene UI-hints (ingen ny AI-runde)
+ * - Klik på chip indsætter tekst og sender besked
  *
- * BEVIDST IKKE ÆNDRET:
- * - AI-flow
- * - Evaluator
- * - Debug
- * - Stack-logik
- * - UI-layout, styles, autoscroll, limits
- * ------------------------------------------------------------
+ * Bevidst uændret:
+ * - Prompt
+ * - Flow-logik
+ * - Evaluator-logik
+ * - API-kontrakt
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -32,32 +25,15 @@ import {
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
-/* =========================
-   Types
-   ========================= */
-
 type Message = {
   role: "user" | "assistant";
   content: string;
-};
-
-type SessionMeta = {
-  id: string;
-  title: string;
-  createdAt: number;
-  lastActiveAt: number;
-  status: "active" | "idle";
-  turnCount: number;
+  evaluatorChips?: string[];
 };
 
 type Conversation = {
-  meta: SessionMeta;
   messages: Message[];
 };
-
-/* =========================
-   Constants
-   ========================= */
 
 const UI_WELCOME =
   "Velkommen – godt at se dig.\n\n" +
@@ -67,44 +43,14 @@ const UI_WELCOME =
 const DEBUG = false;
 const MAX_SESSIONS = 5;
 
-/* =========================
-   Helpers
-   ========================= */
-
-function createConversation(index: number): Conversation {
-  const now = Date.now();
-
-  return {
-    meta: {
-      id: crypto.randomUUID(),
-      title: `Samtale ${index + 1}`,
-      createdAt: now,
-      lastActiveAt: now,
-      status: "idle",
-      turnCount: 0,
-    },
-    messages: [],
-  };
+function createConversation(): Conversation {
+  return { messages: [] };
 }
-
-function deriveTitleFromText(text: string): string {
-  return text
-    .trim()
-    .split(/\s+/)
-    .slice(0, 6)
-    .join(" ");
-}
-
-/* =========================
-   Component
-   ========================= */
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [stack, setStack] = useState<Conversation[]>([
-    createConversation(0),
-  ]);
+  const [stack, setStack] = useState<Conversation[]>([createConversation()]);
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -112,55 +58,23 @@ export default function Chatbot() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const current = stack[index];
 
-  /* =========================
-     Effects
-     ========================= */
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [current.messages, loading]);
 
-  useEffect(() => {
-    setStack((prev) =>
-      prev.map((c, i) => ({
-        ...c,
-        meta: {
-          ...c.meta,
-          status: i === index ? "active" : "idle",
-        },
-      }))
-    );
-  }, [index]);
-
-  /* =========================
-     Navigation
-     ========================= */
-
   function pushNewConversation() {
     if (stack.length >= MAX_SESSIONS) return;
-
-    setStack((prev) => [
-      ...prev,
-      createConversation(prev.length),
-    ]);
+    setStack((prev) => [...prev, createConversation()]);
     setIndex(stack.length);
     setInput("");
   }
 
   function clearCurrentConversation() {
     setStack((prev) => {
-      if (prev.length === 1) {
-        return [createConversation(0)];
-      }
-
+      if (prev.length === 1) return [createConversation()];
       const next = prev.filter((_, i) => i !== index);
-
-      return next.map((c, i) => ({
-        ...c,
-        meta: { ...c.meta, title: `Samtale ${i + 1}` },
-      }));
+      return next.length ? next : [createConversation()];
     });
-
     setIndex((i) => Math.max(0, i - 1));
     setInput("");
   }
@@ -173,38 +87,16 @@ export default function Chatbot() {
     setIndex((i) => Math.min(stack.length - 1, i + 1));
   }
 
-  /* =========================
-     Messaging
-     ========================= */
-
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
-    const now = Date.now();
     const userMessage: Message = { role: "user", content: text };
 
     setStack((prev) => {
       const next = [...prev];
-      const convo = next[index];
-
-      const isFirstUserMessage =
-        convo.messages.filter((m) => m.role === "user").length === 0;
-
       next[index] = {
-        ...convo,
-        meta: {
-          ...convo.meta,
-          title: isFirstUserMessage
-            ? deriveTitleFromText(text)
-            : convo.meta.title,
-          lastActiveAt: now,
-          turnCount: Math.floor(
-            (convo.messages.length + 1) / 2
-          ),
-        },
-        messages: [...convo.messages, userMessage],
+        messages: [...next[index].messages, userMessage],
       };
-
       return next;
     });
 
@@ -223,25 +115,19 @@ export default function Chatbot() {
 
       const data = await res.json();
 
+      const assistantMessage: Message = {
+        role: "assistant",
+        content: data.answer ?? "",
+        evaluatorChips: Array.isArray(data.evaluator?.chips)
+          ? data.evaluator.chips.slice(0, 3)
+          : [],
+      };
+
       setStack((prev) => {
         const next = [...prev];
-        const convo = next[index];
-
         next[index] = {
-          ...convo,
-          meta: {
-            ...convo.meta,
-            lastActiveAt: Date.now(),
-            turnCount: Math.floor(
-              (convo.messages.length + 2) / 2
-            ),
-          },
-          messages: [
-            ...convo.messages,
-            { role: "assistant", content: data.answer ?? "" },
-          ],
+          messages: [...next[index].messages, assistantMessage],
         };
-
         return next;
       });
     } finally {
@@ -249,9 +135,9 @@ export default function Chatbot() {
     }
   }
 
-  /* =========================
-     Render
-     ========================= */
+  function handleChipClick(label: string) {
+    sendMessage(label);
+  }
 
   return (
     <>
@@ -314,24 +200,48 @@ export default function Chatbot() {
                 </div>
               )}
 
-              {current.messages.map((m, i) => (
-                <div
-                  key={i}
-                  className={`flex ${
-                    m.role === "user"
-                      ? "justify-end"
-                      : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`message ${
-                      m.role === "user" ? "user" : "bot"
-                    } px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
-                  >
-                    {m.content}
+              {current.messages.map((m, i) => {
+                const isLastBot =
+                  m.role === "assistant" &&
+                  i === current.messages.length - 1;
+
+                return (
+                  <div key={i} className="space-y-2">
+                    <div
+                      className={`flex ${
+                        m.role === "user"
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`message ${
+                          m.role === "user" ? "user" : "bot"
+                        } px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
+                      >
+                        {m.content}
+                      </div>
+                    </div>
+
+                    {isLastBot &&
+                      m.evaluatorChips &&
+                      m.evaluatorChips.length > 0 && (
+                        <div className="flex gap-2 flex-wrap pl-2">
+                          {m.evaluatorChips.map((chip, ci) => (
+                            <button
+                              key={ci}
+                              onClick={() => handleChipClick(chip)}
+                              className="text-xs px-3 py-1 rounded-full border bg-white hover:bg-gray-100"
+                              title="Forslag"
+                            >
+                              {chip}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {loading && (
                 <div className="text-sm opacity-60">Skriver…</div>
@@ -387,9 +297,7 @@ export default function Chatbot() {
                     disabled={index === stack.length - 1}
                     title="Næste samtale"
                     className={
-                      index === stack.length - 1
-                        ? "opacity-40"
-                        : ""
+                      index === stack.length - 1 ? "opacity-40" : ""
                     }
                   >
                     <ForwardIcon className="w-5 h-5" />
@@ -404,17 +312,13 @@ export default function Chatbot() {
                 </div>
 
                 <div className="flex gap-1">
-                  {stack.map((c, i) => (
+                  {stack.map((_, i) => (
                     <button
-                      key={c.meta.id}
+                      key={i}
                       onClick={() => setIndex(i)}
-                      title={`${c.meta.title}\nSidst aktiv: ${new Date(
-                        c.meta.lastActiveAt
-                      ).toLocaleString()}`}
+                      title={`Samtale ${i + 1}`}
                       className={`w-2 h-2 rounded-full ${
-                        i === index
-                          ? "bg-accent"
-                          : "bg-gray-300"
+                        i === index ? "bg-accent" : "bg-gray-300"
                       }`}
                     />
                   ))}
