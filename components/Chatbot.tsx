@@ -23,7 +23,9 @@ const UI_WELCOME =
   "Du er velkommen til at skrive frit. " +
   "Beskriv gerne det, der fylder mest for dig lige nu.";
 
-const DEBUG = true;
+/* === HARD RULES === */
+const DEBUG = false;        // ← SKIFT HER. Intet andet.
+const MAX_SESSIONS = 5;     // ← Absolut limit
 
 function createConversation(): Conversation {
   return { messages: [] };
@@ -31,7 +33,6 @@ function createConversation(): Conversation {
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [stack, setStack] = useState<Conversation[]>([createConversation()]);
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState("");
@@ -40,11 +41,16 @@ export default function Chatbot() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const current = stack[index];
 
+  /* === AUTOSCROLL === */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [current.messages, loading]);
 
+  /* === STACK CONTROL === */
+
   function pushNewConversation() {
+    if (stack.length >= MAX_SESSIONS) return;
+
     setStack((prev) => [...prev, createConversation()]);
     setIndex(stack.length);
     setInput("");
@@ -63,6 +69,8 @@ export default function Chatbot() {
   function goNext() {
     setIndex((i) => Math.min(stack.length - 1, i + 1));
   }
+
+  /* === SEND MESSAGE === */
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
@@ -94,18 +102,33 @@ export default function Chatbot() {
 
       setStack((prev) => {
         const next = [...prev];
-        next[index] = {
-          messages: [
-            ...next[index].messages,
-            { role: "assistant", content: data.answer ?? "" },
-          ],
-        };
+
+        if (DEBUG && data.jan_raw && data.evaluator && data.final) {
+          next[index] = {
+            messages: [
+              ...next[index].messages,
+              { role: "assistant", content: "— JAN (RAW) —\n" + data.jan_raw },
+              { role: "assistant", content: "— EVALUATOR —\n" + data.evaluator },
+              { role: "assistant", content: "— JAN (FINAL) —\n" + data.final },
+            ],
+          };
+        } else {
+          next[index] = {
+            messages: [
+              ...next[index].messages,
+              { role: "assistant", content: data.answer ?? "" },
+            ],
+          };
+        }
+
         return next;
       });
     } finally {
       setLoading(false);
     }
   }
+
+  /* === UI === */
 
   return (
     <>
@@ -128,38 +151,25 @@ export default function Chatbot() {
           />
 
           {/* Chat window */}
-          <div
-            className={`fixed z-50 bg-bg border border-gray-300 shadow flex flex-col gaarsdal-chatbot
-              ${
-                expanded
-                  ? "inset-6 rounded-xl"
-                  : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] rounded-xl"
-              }`}
-          >
+          <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] bg-bg border border-gray-300 rounded-xl shadow flex flex-col z-50 gaarsdal-chatbot">
             {/* Header */}
             <header className="flex justify-between items-center px-4 py-3">
               <span className="font-medium">Gaarsdal</span>
 
               <div className="flex items-center gap-2">
-                {/* Enlarge */}
                 <button
                   title="Udvid"
                   aria-label="Udvid vindue"
-                  onClick={() => setExpanded((v) => !v)}
-                  className="text-gray-600 hover:text-gray-800 transition"
+                  className="text-gray-600 hover:text-gray-800"
                 >
                   <ArrowsPointingOutIcon className="w-5 h-5" />
                 </button>
 
-                {/* Close */}
                 <button
-                  onClick={() => {
-                    setOpen(false);
-                    setExpanded(false);
-                  }}
+                  onClick={() => setOpen(false)}
                   title="Luk"
                   aria-label="Luk chat"
-                  className="text-gray-600 hover:text-gray-800 transition"
+                  className="text-gray-600 hover:text-gray-800"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
@@ -212,7 +222,20 @@ export default function Chatbot() {
 
               <div className="mt-3 flex justify-between items-center">
                 <div className="flex gap-3 items-center">
-                  <button onClick={pushNewConversation} title="Ny samtale">
+                  <button
+                    onClick={pushNewConversation}
+                    disabled={stack.length >= MAX_SESSIONS}
+                    title={
+                      stack.length >= MAX_SESSIONS
+                        ? "Maks. 5 samtaler. Slet én for at oprette ny."
+                        : "Ny samtale"
+                    }
+                    className={
+                      stack.length >= MAX_SESSIONS
+                        ? "opacity-30 cursor-not-allowed"
+                        : ""
+                    }
+                  >
                     <PlusIcon className="w-5 h-5" />
                   </button>
 
@@ -220,11 +243,6 @@ export default function Chatbot() {
                     onClick={goPrev}
                     disabled={index === 0}
                     title="Forrige samtale"
-                    className={`transition ${
-                      index === 0
-                        ? "opacity-30 cursor-not-allowed"
-                        : "hover:opacity-80"
-                    }`}
                   >
                     <BackwardIcon className="w-5 h-5" />
                   </button>
@@ -233,29 +251,28 @@ export default function Chatbot() {
                     onClick={goNext}
                     disabled={index === stack.length - 1}
                     title="Næste samtale"
-                    className={`transition ${
-                      index === stack.length - 1
-                        ? "opacity-30 cursor-not-allowed"
-                        : "hover:opacity-80"
-                    }`}
                   >
                     <ForwardIcon className="w-5 h-5" />
                   </button>
 
-                  <button onClick={clearConversation} title="Ryd samtaler">
+                  <button
+                    onClick={clearConversation}
+                    title="Ryd alle samtaler"
+                  >
                     <TrashIcon className="w-5 h-5" />
                   </button>
                 </div>
 
                 {/* Stack dots */}
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   {stack.map((_, i) => (
                     <button
                       key={i}
                       onClick={() => setIndex(i)}
-                      title={`Samtale ${i + 1}`}
-                      className={`w-2 h-2 rounded-full ${
-                        i === index ? "bg-accent" : "bg-gray-300"
+                      title={`Gå til samtale ${i + 1}`}
+                      aria-label={`Samtale ${i + 1}`}
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        i === index ? "bg-accent" : "bg-gray-300 hover:bg-gray-400"
                       }`}
                     />
                   ))}
