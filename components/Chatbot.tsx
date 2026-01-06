@@ -5,6 +5,7 @@ import {
   PlusIcon,
   BackwardIcon,
   ForwardIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 
 type Message = {
@@ -21,7 +22,7 @@ const UI_WELCOME =
   "Du er velkommen til at skrive frit. " +
   "Beskriv gerne det, der fylder mest for dig lige nu.";
 
-const DEBUG = false; // ← kan sættes true lokalt ved behov
+const DEBUG = false;
 
 function createConversation(): Conversation {
   return { messages: [] };
@@ -47,6 +48,12 @@ export default function Chatbot() {
     setInput("");
   }
 
+  function clearConversation() {
+    setStack([createConversation()]);
+    setIndex(0);
+    setInput("");
+  }
+
   function goPrev() {
     setIndex((i) => Math.max(0, i - 1));
   }
@@ -60,7 +67,6 @@ export default function Chatbot() {
 
     const userMessage: Message = { role: "user", content: text };
 
-    // 1. Opdater UI med brugerens input
     setStack((prev) => {
       const next = [...prev];
       next[index] = {
@@ -73,7 +79,6 @@ export default function Chatbot() {
     setLoading(true);
 
     try {
-      // 2. Send KUN rigtige messages til API
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -85,15 +90,13 @@ export default function Chatbot() {
 
       const data = await res.json();
 
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: data.answer ?? "",
-      };
-
       setStack((prev) => {
         const next = [...prev];
         next[index] = {
-          messages: [...next[index].messages, assistantMessage],
+          messages: [
+            ...next[index].messages,
+            { role: "assistant", content: data.answer ?? "" },
+          ],
         };
         return next;
       });
@@ -115,88 +118,116 @@ export default function Chatbot() {
       )}
 
       {open && (
-        <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] bg-bg border border-gray-300 rounded-xl shadow flex flex-col z-50 gaarsdal-chatbot">
-          {/* Header */}
-          <header className="flex justify-between items-center px-4 py-3">
-            <span className="font-medium">Gaarsdal</span>
-            <button onClick={() => setOpen(false)} aria-label="Luk chat">
-              <XMarkIcon className="w-5 h-5" />
-            </button>
-          </header>
-
-          {/* Messages */}
+        <>
+          {/* Overlay */}
           <div
-            id="gaarsdal-chat-window"
-            className="flex-1 overflow-y-auto p-4 space-y-3 messages"
-          >
-            {/* UI-only welcome */}
-            {current.messages.length === 0 && (
-              <div className="message bot whitespace-pre-wrap p-4">
-                {UI_WELCOME}
-              </div>
-            )}
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => setOpen(false)}
+          />
 
-            {current.messages.map((m, i) => (
-              <div
-                key={i}
-                className={`message ${
-                  m.role === "user" ? "user text-right ml-auto" : "bot"
-                } inline-block px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
+          {/* Chat window */}
+          <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] bg-bg border border-gray-300 rounded-xl shadow flex flex-col z-50 gaarsdal-chatbot">
+            {/* Header */}
+            <header className="flex justify-between items-center px-4 py-3">
+              <span className="font-medium">Gaarsdal</span>
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Luk chat"
+                title="Luk"
               >
-                {m.content}
-              </div>
-            ))}
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </header>
 
-            {loading && <div className="text-sm opacity-60">Skriver…</div>}
-            <div ref={messagesEndRef} />
-          </div>
+            {/* Messages */}
+            <div
+              id="gaarsdal-chat-window"
+              className="flex-1 overflow-y-auto p-4 space-y-3 messages"
+            >
+              {current.messages.length === 0 && (
+                <div className="message bot whitespace-pre-wrap p-4">
+                  {UI_WELCOME}
+                </div>
+              )}
 
-          {/* Input */}
-          <footer className="p-3">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage(input);
-                }
-              }}
-              rows={2}
-              className="w-full border rounded-md px-3 py-2 text-sm resize-none"
-              placeholder="Skriv her…"
-            />
-
-            <div className="mt-3 flex justify-between items-center">
-              <div className="flex gap-2">
-                <button onClick={pushNewConversation} title="Ny samtale">
-                  <PlusIcon className="w-5 h-5" />
-                </button>
-                <button onClick={goPrev} disabled={index === 0}>
-                  <BackwardIcon className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={goNext}
-                  disabled={index === stack.length - 1}
+              {current.messages.map((m, i) => (
+                <div
+                  key={i}
+                  className={`message ${
+                    m.role === "user" ? "user text-right ml-auto" : "bot"
+                  } inline-block px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
                 >
-                  <ForwardIcon className="w-5 h-5" />
-                </button>
-              </div>
+                  {m.content}
+                </div>
+              ))}
 
-              {/* Stack dots */}
-              <div className="flex gap-1">
-                {stack.map((_, i) => (
-                  <span
-                    key={i}
-                    className={`w-2 h-2 rounded-full ${
-                      i === index ? "bg-accent" : "bg-gray-300"
-                    }`}
-                  />
-                ))}
-              </div>
+              {loading && (
+                <div className="text-sm opacity-60">Skriver…</div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
-          </footer>
-        </div>
+
+            {/* Input + navigation */}
+            <footer className="p-3 border-t">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage(input);
+                  }
+                }}
+                rows={2}
+                className="w-full border rounded-md px-3 py-2 text-sm resize-none"
+                placeholder="Skriv her…"
+              />
+
+              <div className="mt-3 flex justify-between items-center">
+                <div className="flex gap-3 items-center">
+                  <button
+                    onClick={pushNewConversation}
+                    title="Ny samtale"
+                  >
+                    <PlusIcon className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={goPrev}
+                    disabled={index === 0}
+                    title="Forrige samtale"
+                  >
+                    <BackwardIcon className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={goNext}
+                    disabled={index === stack.length - 1}
+                    title="Næste samtale"
+                  >
+                    <ForwardIcon className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={clearConversation}
+                    title="Ryd samtaler"
+                  >
+                    <TrashIcon className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Stack dots */}
+                <div className="flex gap-1">
+                  {stack.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`w-2 h-2 rounded-full ${
+                        i === index ? "bg-accent" : "bg-gray-300"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </footer>
+          </div>
+        </>
       )}
     </>
   );
