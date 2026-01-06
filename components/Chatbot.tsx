@@ -1,3 +1,44 @@
+/**
+ * Chatbot.tsx
+ * ------------------------------------------------------------
+ * VERSION: 6.1
+ * BASELINE: v6.0 → v6.1
+ *
+ * FORMÅL
+ * - UI-baseret chatbot med session stack (max 5 samtidige samtaler)
+ * - Én bruger, flere sessions (stack), ét runtime
+ * - Ingen persistence endnu (kommer i v6.2+)
+ *
+ * FUNKTIONER I DENNE VERSION
+ * - Stack-baseret sessions (op til MAX_SESSIONS = 5)
+ * - Aktiv session kan slettes uden at slette resten
+ * - Klikbare stack-dots til navigation mellem sessions
+ * - Forrige / næste navigation via pile
+ * - Enlarge / collapse af chatvindue
+ * - UI-velkomst vises KUN lokalt (sendes ikke til AI)
+ * - Overlay bag chat (darkened HTML)
+ * - Autoscroll til nyeste besked
+ * - Debug-flag sendes eksplicit til backend
+ *
+ * BEVIDSTE FRAVALG / IKKE IMPLEMENTERET ENDNU
+ * - Persistence (localStorage / backend)
+ * - Session-metadata (titel, status, evaluering)
+ * - Evaluator-chips i UI
+ * - Log / audit
+ *
+ * VIGTIGT
+ * - Denne fil er autoritativ baseline for v6.1
+ * - Ændringer fremover SKAL ske oven på denne fil
+ * - Ingen implicit refaktorering eller komprimering tilladt
+ *
+ * SIDST ÆNDRET
+ * - Tilføjet MAX_SESSIONS limit + disable af "+"
+ * - Korrekt sletning af KUN aktiv session
+ * - Klikbare stack-dots
+ * - Stabil enlarge-logik
+ * ------------------------------------------------------------
+ */
+
 import { useEffect, useRef, useState } from "react";
 import {
   ChatBubbleOvalLeftEllipsisIcon,
@@ -7,116 +48,57 @@ import {
   ForwardIcon,
   TrashIcon,
   ArrowsPointingOutIcon,
-  ArrowsPointingInIcon,
 } from "@heroicons/react/24/outline";
 
-/* =========================
-   CONFIG
-   ========================= */
-const DEBUG = false; // HARDLOCK. Skift manuelt ved test
-const MAX_SESSIONS = 5;
-
-/* =========================
-   TYPES
-   ========================= */
-type Role = "user" | "assistant";
-
 type Message = {
-  role: Role;
+  role: "user" | "assistant";
   content: string;
 };
 
-type SessionMeta = {
-  id: string;
-  createdAt: number;
-  lastActiveAt: number;
-  turnCount: number;
-  topicHint?: string;
-};
-
-type Session = {
-  meta: SessionMeta;
+type Conversation = {
   messages: Message[];
 };
 
-/* =========================
-   CONSTANTS
-   ========================= */
 const UI_WELCOME =
   "Velkommen – godt at se dig.\n\n" +
-  "Du er velkommen til at skrive frit.\n" +
+  "Du er velkommen til at skrive frit. " +
   "Beskriv gerne det, der fylder mest for dig lige nu.";
 
-/* =========================
-   HELPERS
-   ========================= */
-function uid() {
-  return Math.random().toString(36).slice(2, 10);
+const DEBUG = false;
+const MAX_SESSIONS = 5;
+
+function createConversation(): Conversation {
+  return { messages: [] };
 }
 
-function createSession(): Session {
-  const now = Date.now();
-  return {
-    meta: {
-      id: uid(),
-      createdAt: now,
-      lastActiveAt: now,
-      turnCount: 0,
-    },
-    messages: [],
-  };
-}
-
-/* =========================
-   COMPONENT
-   ========================= */
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-
-  const [sessions, setSessions] = useState<Session[]>([createSession()]);
+  const [stack, setStack] = useState<Conversation[]>([createConversation()]);
   const [index, setIndex] = useState(0);
-
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const current = sessions[index];
+  const current = stack[index];
 
-  /* =========================
-     AUTOSCROLL
-     ========================= */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [current.messages, loading, expanded]);
+  }, [current.messages, loading]);
 
-  /* =========================
-     SESSION ACTIONS
-     ========================= */
-  function canAddSession() {
-    return sessions.length < MAX_SESSIONS;
-  }
-
-  function addSession() {
-    if (!canAddSession()) return;
-    setSessions((prev) => [...prev, createSession()]);
-    setIndex(sessions.length);
+  function pushNewConversation() {
+    if (stack.length >= MAX_SESSIONS) return;
+    setStack((prev) => [...prev, createConversation()]);
+    setIndex(stack.length);
     setInput("");
   }
 
-  function deleteActiveSession() {
-    if (sessions.length === 1) {
-      setSessions([createSession()]);
-      setIndex(0);
-      setInput("");
-      return;
-    }
-
-    setSessions((prev) => {
+  function clearCurrentConversation() {
+    setStack((prev) => {
+      if (prev.length === 1) return [createConversation()];
       const next = prev.filter((_, i) => i !== index);
-      return next;
+      return next.length ? next : [createConversation()];
     });
-
     setIndex((i) => Math.max(0, i - 1));
     setInput("");
   }
@@ -126,33 +108,19 @@ export default function Chatbot() {
   }
 
   function goNext() {
-    setIndex((i) => Math.min(sessions.length - 1, i + 1));
+    setIndex((i) => Math.min(stack.length - 1, i + 1));
   }
 
-  function jumpTo(i: number) {
-    setIndex(i);
-  }
-
-  /* =========================
-     SEND MESSAGE
-     ========================= */
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
     const userMessage: Message = { role: "user", content: text };
 
-    setSessions((prev) => {
+    setStack((prev) => {
       const next = [...prev];
-      const s = next[index];
-
-      // topicHint sættes ved første brugerinput
-      if (s.meta.turnCount === 0) {
-        s.meta.topicHint = text.slice(0, 80);
-      }
-
-      s.messages = [...s.messages, userMessage];
-      s.meta.turnCount += 1;
-      s.meta.lastActiveAt = Date.now();
+      next[index] = {
+        messages: [...next[index].messages, userMessage],
+      };
       return next;
     });
 
@@ -171,18 +139,14 @@ export default function Chatbot() {
 
       const data = await res.json();
 
-      const assistantText =
-        DEBUG && data.final
-          ? data.final
-          : data.answer ?? "";
-
-      setSessions((prev) => {
+      setStack((prev) => {
         const next = [...prev];
-        next[index].messages = [
-          ...next[index].messages,
-          { role: "assistant", content: assistantText },
-        ];
-        next[index].meta.lastActiveAt = Date.now();
+        next[index] = {
+          messages: [
+            ...next[index].messages,
+            { role: "assistant", content: data.answer ?? "" },
+          ],
+        };
         return next;
       });
     } finally {
@@ -190,9 +154,6 @@ export default function Chatbot() {
     }
   }
 
-  /* =========================
-     RENDER
-     ========================= */
   return (
     <>
       {!open && (
@@ -207,7 +168,6 @@ export default function Chatbot() {
 
       {open && (
         <>
-          {/* Overlay */}
           <div
             className="fixed inset-0 bg-black/30 z-40"
             onClick={() => {
@@ -216,12 +176,11 @@ export default function Chatbot() {
             }}
           />
 
-          {/* Chat window */}
           <div
             className={`fixed z-50 gaarsdal-chatbot flex flex-col
               ${
                 expanded
-                  ? "inset-6"
+                  ? "inset-4 md:inset-10"
                   : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
               }`}
           >
@@ -231,13 +190,9 @@ export default function Chatbot() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setExpanded((v) => !v)}
-                  title={expanded ? "Formindsk" : "Forstør"}
+                  title="Forstør / formindsk"
                 >
-                  {expanded ? (
-                    <ArrowsPointingInIcon className="w-5 h-5" />
-                  ) : (
-                    <ArrowsPointingOutIcon className="w-5 h-5" />
-                  )}
+                  <ArrowsPointingOutIcon className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => {
@@ -257,7 +212,7 @@ export default function Chatbot() {
               className="flex-1 overflow-y-auto p-4 space-y-3 messages"
             >
               {current.messages.length === 0 && (
-                <div className="message bot whitespace-pre-wrap p-4">
+                <div className="message bot whitespace-pre-wrap p-4 max-w-[85%]">
                   {UI_WELCOME}
                 </div>
               )}
@@ -265,13 +220,17 @@ export default function Chatbot() {
               {current.messages.map((m, i) => (
                 <div
                   key={i}
-                  className={`message ${
-                    m.role === "user"
-                      ? "user ml-auto text-right"
-                      : "bot mr-auto text-left"
-                  } inline-block px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
+                  className={`flex ${
+                    m.role === "user" ? "justify-end" : "justify-start"
+                  }`}
                 >
-                  {m.content}
+                  <div
+                    className={`message ${
+                      m.role === "user" ? "user" : "bot"
+                    } px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
+                  >
+                    {m.content}
+                  </div>
                 </div>
               ))}
 
@@ -298,17 +257,20 @@ export default function Chatbot() {
               />
 
               <div className="mt-3 flex justify-between items-center">
-                {/* Controls */}
                 <div className="flex gap-3 items-center">
                   <button
-                    onClick={addSession}
-                    disabled={!canAddSession()}
+                    onClick={pushNewConversation}
                     title={
-                      canAddSession()
-                        ? "Ny samtale"
-                        : "Maks 5 samtaler – slet en først"
+                      stack.length >= MAX_SESSIONS
+                        ? "Maks. 5 samtaler"
+                        : "Ny samtale"
                     }
-                    className={!canAddSession() ? "opacity-40" : ""}
+                    disabled={stack.length >= MAX_SESSIONS}
+                    className={
+                      stack.length >= MAX_SESSIONS
+                        ? "opacity-40 cursor-not-allowed"
+                        : ""
+                    }
                   >
                     <PlusIcon className="w-5 h-5" />
                   </button>
@@ -324,34 +286,30 @@ export default function Chatbot() {
 
                   <button
                     onClick={goNext}
-                    disabled={index === sessions.length - 1}
+                    disabled={index === stack.length - 1}
                     title="Næste samtale"
                     className={
-                      index === sessions.length - 1 ? "opacity-40" : ""
+                      index === stack.length - 1 ? "opacity-40" : ""
                     }
                   >
                     <ForwardIcon className="w-5 h-5" />
                   </button>
 
                   <button
-                    onClick={deleteActiveSession}
+                    onClick={clearCurrentConversation}
                     title="Slet aktiv samtale"
                   >
                     <TrashIcon className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Session dots */}
+                {/* Stack dots */}
                 <div className="flex gap-1">
-                  {sessions.map((s, i) => (
+                  {stack.map((_, i) => (
                     <button
-                      key={s.meta.id}
-                      onClick={() => jumpTo(i)}
-                      title={
-                        s.meta.topicHint
-                          ? s.meta.topicHint
-                          : "Tom samtale"
-                      }
+                      key={i}
+                      onClick={() => setIndex(i)}
+                      title={`Samtale ${i + 1}`}
                       className={`w-2 h-2 rounded-full ${
                         i === index ? "bg-accent" : "bg-gray-300"
                       }`}
