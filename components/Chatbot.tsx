@@ -6,6 +6,7 @@ import {
   BackwardIcon,
   ForwardIcon,
   TrashIcon,
+  ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
 type Message = {
@@ -30,6 +31,7 @@ function createConversation(): Conversation {
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [stack, setStack] = useState<Conversation[]>([createConversation()]);
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState("");
@@ -112,7 +114,6 @@ export default function Chatbot() {
           onClick={() => setOpen(true)}
           className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow flex items-center justify-center"
           aria-label="Åbn chat"
-          title="Åbn chat"
         >
           <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
         </button>
@@ -127,18 +128,34 @@ export default function Chatbot() {
           />
 
           {/* Chat window */}
-          <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] bg-bg border border-gray-300 rounded-xl shadow flex flex-col z-50 gaarsdal-chatbot">
+          <div
+            className={`fixed z-50 gaarsdal-chatbot flex flex-col
+              ${
+                expanded
+                  ? "inset-6"
+                  : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
+              }`}
+          >
             {/* Header */}
             <header className="flex justify-between items-center px-4 py-3">
               <span className="font-medium">Gaarsdal</span>
-              <button
-                onClick={() => setOpen(false)}
-                aria-label="Luk chat"
-                title="Luk"
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setExpanded((v) => !v)}
+                  title="Udvid / sammentræk"
+                >
+                  <ArrowsPointingOutIcon className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setExpanded(false);
+                  }}
+                  title="Luk"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
             </header>
 
             {/* Messages */}
@@ -156,7 +173,9 @@ export default function Chatbot() {
                 <div
                   key={i}
                   className={`message ${
-                    m.role === "user" ? "user text-right ml-auto" : "bot"
+                    m.role === "user"
+                      ? "user text-right ml-auto"
+                      : "bot"
                   } inline-block px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
                 >
                   {m.content}
@@ -187,22 +206,13 @@ export default function Chatbot() {
 
               <div className="mt-3 flex justify-between items-center">
                 <div className="flex gap-3 items-center">
-                  <button
-                    onClick={pushNewConversation}
-                    title="Ny samtale"
-                    className="text-accent hover:opacity-80"
-                  >
+                  <button onClick={pushNewConversation} title="Ny samtale">
                     <PlusIcon className="w-5 h-5" />
                   </button>
                   <button
                     onClick={goPrev}
                     disabled={index === 0}
                     title="Forrige samtale"
-                    className={`${
-                      index === 0
-                        ? "text-gray-300"
-                        : "text-accent hover:opacity-80"
-                    }`}
                   >
                     <BackwardIcon className="w-5 h-5" />
                   </button>
@@ -210,18 +220,12 @@ export default function Chatbot() {
                     onClick={goNext}
                     disabled={index === stack.length - 1}
                     title="Næste samtale"
-                    className={`${
-                      index === stack.length - 1
-                        ? "text-gray-300"
-                        : "text-accent hover:opacity-80"
-                    }`}
                   >
                     <ForwardIcon className="w-5 h-5" />
                   </button>
                   <button
                     onClick={clearConversation}
-                    title="Ryd samtaler"
-                    className="text-gray-600 hover:text-red-600"
+                    title="Ryd alle samtaler"
                   >
                     <TrashIcon className="w-5 h-5" />
                   </button>
@@ -230,12 +234,17 @@ export default function Chatbot() {
                 {/* Stack dots */}
                 <div className="flex gap-1">
                   {stack.map((_, i) => (
-                    <span
+                    <button
                       key={i}
-                      title={`Samtale ${i + 1}`}
-                      className={`w-2 h-2 rounded-full cursor-default ${
-                        i === index ? "bg-accent" : "bg-gray-300"
-                      }`}
+                      onClick={() => setIndex(i)}
+                      title={`Gå til samtale ${i + 1}`}
+                      aria-label={`Samtale ${i + 1}`}
+                      className={`w-2.5 h-2.5 rounded-full transition
+                        ${
+                          i === index
+                            ? "bg-accent"
+                            : "bg-gray-300 hover:bg-gray-400"
+                        }`}
                     />
                   ))}
                 </div>
