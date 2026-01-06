@@ -10,10 +10,15 @@ import {
   ArrowsPointingInIcon,
 } from "@heroicons/react/24/outline";
 
-/* ======================
-   Types
-====================== */
+/* =========================
+   CONFIG
+   ========================= */
+const DEBUG = false; // HARDLOCK. Skift manuelt ved test
+const MAX_SESSIONS = 5;
 
+/* =========================
+   TYPES
+   ========================= */
 type Role = "user" | "assistant";
 
 type Message = {
@@ -21,84 +26,99 @@ type Message = {
   content: string;
 };
 
-type Conversation = {
+type SessionMeta = {
   id: string;
+  createdAt: number;
+  lastActiveAt: number;
+  turnCount: number;
+  topicHint?: string;
+};
+
+type Session = {
+  meta: SessionMeta;
   messages: Message[];
 };
 
-/* ======================
-   Config
-====================== */
-
-const MAX_SESSIONS = 5;
-const DEBUG = false;
-
+/* =========================
+   CONSTANTS
+   ========================= */
 const UI_WELCOME =
   "Velkommen – godt at se dig.\n\n" +
   "Du er velkommen til at skrive frit.\n" +
   "Beskriv gerne det, der fylder mest for dig lige nu.";
 
-/* ======================
-   Helpers
-====================== */
+/* =========================
+   HELPERS
+   ========================= */
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
+}
 
-function createConversation(): Conversation {
+function createSession(): Session {
+  const now = Date.now();
   return {
-    id: crypto.randomUUID(),
+    meta: {
+      id: uid(),
+      createdAt: now,
+      lastActiveAt: now,
+      turnCount: 0,
+    },
     messages: [],
   };
 }
 
-/* ======================
-   Component
-====================== */
-
+/* =========================
+   COMPONENT
+   ========================= */
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
-  const [stack, setStack] = useState<Conversation[]>([
-    createConversation(),
-  ]);
+  const [sessions, setSessions] = useState<Session[]>([createSession()]);
   const [index, setIndex] = useState(0);
+
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const current = stack[index];
+  const current = sessions[index];
 
-  /* ======================
-     Autoscroll
-  ====================== */
-
+  /* =========================
+     AUTOSCROLL
+     ========================= */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [current.messages, loading]);
+  }, [current.messages, loading, expanded]);
 
-  /* ======================
-     Stack controls
-  ====================== */
+  /* =========================
+     SESSION ACTIONS
+     ========================= */
+  function canAddSession() {
+    return sessions.length < MAX_SESSIONS;
+  }
 
-  function pushNewConversation() {
-    if (stack.length >= MAX_SESSIONS) return;
-    setStack((prev) => [...prev, createConversation()]);
-    setIndex(stack.length);
+  function addSession() {
+    if (!canAddSession()) return;
+    setSessions((prev) => [...prev, createSession()]);
+    setIndex(sessions.length);
     setInput("");
   }
 
-  function deleteCurrentConversation() {
-    if (stack.length === 1) {
-      setStack([createConversation()]);
+  function deleteActiveSession() {
+    if (sessions.length === 1) {
+      setSessions([createSession()]);
       setIndex(0);
       setInput("");
       return;
     }
 
-    setStack((prev) => {
+    setSessions((prev) => {
       const next = prev.filter((_, i) => i !== index);
-      setIndex(Math.max(0, index - 1));
       return next;
     });
+
+    setIndex((i) => Math.max(0, i - 1));
+    setInput("");
   }
 
   function goPrev() {
@@ -106,27 +126,33 @@ export default function Chatbot() {
   }
 
   function goNext() {
-    setIndex((i) => Math.min(stack.length - 1, i + 1));
+    setIndex((i) => Math.min(sessions.length - 1, i + 1));
   }
 
-  /* ======================
-     Messaging
-  ====================== */
+  function jumpTo(i: number) {
+    setIndex(i);
+  }
 
+  /* =========================
+     SEND MESSAGE
+     ========================= */
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
-    const userMessage: Message = {
-      role: "user",
-      content: text.trim(),
-    };
+    const userMessage: Message = { role: "user", content: text };
 
-    setStack((prev) => {
+    setSessions((prev) => {
       const next = [...prev];
-      next[index] = {
-        ...next[index],
-        messages: [...next[index].messages, userMessage],
-      };
+      const s = next[index];
+
+      // topicHint sættes ved første brugerinput
+      if (s.meta.turnCount === 0) {
+        s.meta.topicHint = text.slice(0, 80);
+      }
+
+      s.messages = [...s.messages, userMessage];
+      s.meta.turnCount += 1;
+      s.meta.lastActiveAt = Date.now();
       return next;
     });
 
@@ -145,15 +171,18 @@ export default function Chatbot() {
 
       const data = await res.json();
 
-      setStack((prev) => {
+      const assistantText =
+        DEBUG && data.final
+          ? data.final
+          : data.answer ?? "";
+
+      setSessions((prev) => {
         const next = [...prev];
-        next[index] = {
-          ...next[index],
-          messages: [
-            ...next[index].messages,
-            { role: "assistant", content: data.answer ?? "" },
-          ],
-        };
+        next[index].messages = [
+          ...next[index].messages,
+          { role: "assistant", content: assistantText },
+        ];
+        next[index].meta.lastActiveAt = Date.now();
         return next;
       });
     } finally {
@@ -161,10 +190,9 @@ export default function Chatbot() {
     }
   }
 
-  /* ======================
-     Render
-  ====================== */
-
+  /* =========================
+     RENDER
+     ========================= */
   return (
     <>
       {!open && (
@@ -190,20 +218,20 @@ export default function Chatbot() {
 
           {/* Chat window */}
           <div
-            className={`fixed z-50 gaarsdal-chatbot bg-bg border border-gray-300 shadow flex flex-col
+            className={`fixed z-50 gaarsdal-chatbot flex flex-col
               ${
                 expanded
-                  ? "inset-6 rounded-xl"
-                  : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] rounded-xl"
+                  ? "inset-6"
+                  : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
               }`}
           >
             {/* Header */}
             <header className="flex justify-between items-center px-4 py-3">
               <span className="font-medium">Gaarsdal</span>
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-2">
                 <button
                   onClick={() => setExpanded((v) => !v)}
-                  title={expanded ? "Formindsk" : "Udvid"}
+                  title={expanded ? "Formindsk" : "Forstør"}
                 >
                   {expanded ? (
                     <ArrowsPointingInIcon className="w-5 h-5" />
@@ -241,7 +269,7 @@ export default function Chatbot() {
                     m.role === "user"
                       ? "user ml-auto text-right"
                       : "bot mr-auto text-left"
-                  } max-w-[85%] px-4 py-3 whitespace-pre-wrap`}
+                  } inline-block px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
                 >
                   {m.content}
                 </div>
@@ -250,11 +278,10 @@ export default function Chatbot() {
               {loading && (
                 <div className="text-sm opacity-60">Skriver…</div>
               )}
-
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Footer */}
+            {/* Input + navigation */}
             <footer className="p-3 border-t">
               <textarea
                 value={input}
@@ -271,16 +298,17 @@ export default function Chatbot() {
               />
 
               <div className="mt-3 flex justify-between items-center">
+                {/* Controls */}
                 <div className="flex gap-3 items-center">
                   <button
-                    onClick={pushNewConversation}
-                    disabled={stack.length >= MAX_SESSIONS}
-                    title="Ny samtale"
-                    className={
-                      stack.length >= MAX_SESSIONS
-                        ? "opacity-30 cursor-not-allowed"
-                        : ""
+                    onClick={addSession}
+                    disabled={!canAddSession()}
+                    title={
+                      canAddSession()
+                        ? "Ny samtale"
+                        : "Maks 5 samtaler – slet en først"
                     }
+                    className={!canAddSession() ? "opacity-40" : ""}
                   >
                     <PlusIcon className="w-5 h-5" />
                   </button>
@@ -288,38 +316,42 @@ export default function Chatbot() {
                   <button
                     onClick={goPrev}
                     disabled={index === 0}
-                    title="Forrige"
-                    className={index === 0 ? "opacity-30" : ""}
+                    title="Forrige samtale"
+                    className={index === 0 ? "opacity-40" : ""}
                   >
                     <BackwardIcon className="w-5 h-5" />
                   </button>
 
                   <button
                     onClick={goNext}
-                    disabled={index === stack.length - 1}
-                    title="Næste"
+                    disabled={index === sessions.length - 1}
+                    title="Næste samtale"
                     className={
-                      index === stack.length - 1 ? "opacity-30" : ""
+                      index === sessions.length - 1 ? "opacity-40" : ""
                     }
                   >
                     <ForwardIcon className="w-5 h-5" />
                   </button>
 
                   <button
-                    onClick={deleteCurrentConversation}
-                    title="Slet denne samtale"
+                    onClick={deleteActiveSession}
+                    title="Slet aktiv samtale"
                   >
                     <TrashIcon className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Stack dots */}
+                {/* Session dots */}
                 <div className="flex gap-1">
-                  {stack.map((_, i) => (
+                  {sessions.map((s, i) => (
                     <button
-                      key={i}
-                      onClick={() => setIndex(i)}
-                      title={`Samtale ${i + 1}`}
+                      key={s.meta.id}
+                      onClick={() => jumpTo(i)}
+                      title={
+                        s.meta.topicHint
+                          ? s.meta.topicHint
+                          : "Tom samtale"
+                      }
                       className={`w-2 h-2 rounded-full ${
                         i === index ? "bg-accent" : "bg-gray-300"
                       }`}
