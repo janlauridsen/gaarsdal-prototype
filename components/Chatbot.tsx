@@ -23,7 +23,7 @@ const UI_WELCOME =
   "Du er velkommen til at skrive frit. " +
   "Beskriv gerne det, der fylder mest for dig lige nu.";
 
-const DEBUG = false;
+const DEBUG = true;
 const MAX_SESSIONS = 5;
 
 function createConversation(): Conversation {
