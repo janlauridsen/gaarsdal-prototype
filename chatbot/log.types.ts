@@ -1,14 +1,10 @@
-// chatbot/log.types.ts
-
-export type TurnStatus = "ok" | "error";
-
-export interface TurnLog {
-  timestamp: string;      // ISO timestamp
-  session_id: string;     // UI session id
-  turn_id: number;        // løbende pr. session
-  user_text: string;      // sidste brugerinput
-  answer: string;         // model-output
-  latency_ms: number;     // ms
-  status: TurnStatus;     // ok | error
-  error?: string;         // kun ved error
-}
+export type TurnLog = {
+  timestamp: string;
+  session_id: string;
+  turn_id: number;
+  user_text: string;
+  answer: string;
+  latency_ms: number;
+  status: "ok" | "error";
+  error?: string;
+};
