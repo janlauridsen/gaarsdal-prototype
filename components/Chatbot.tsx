@@ -6,34 +6,56 @@ import {
   BackwardIcon,
   ForwardIcon,
   TrashIcon,
-  ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
+/* ======================
+   Types
+====================== */
+
+type Role = "user" | "assistant";
+
 type Message = {
-  role: "user" | "assistant";
+  role: Role;
   content: string;
 };
 
 type Conversation = {
+  id: string;
   messages: Message[];
 };
 
+/* ======================
+   Config (v5.2 locked)
+====================== */
+
+const MAX_SESSIONS = 5;
+const DEBUG = false;
+
 const UI_WELCOME =
   "Velkommen – godt at se dig.\n\n" +
-  "Du er velkommen til at skrive frit. " +
+  "Du er velkommen til at skrive frit.\n" +
   "Beskriv gerne det, der fylder mest for dig lige nu.";
 
-const DEBUG = false;
-const MAX_SESSIONS = 5;
+/* ======================
+   Helpers
+====================== */
 
 function createConversation(): Conversation {
-  return { messages: [] };
+  return {
+    id: crypto.randomUUID(),
+    messages: [],
+  };
 }
+
+/* ======================
+   Component
+====================== */
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [stack, setStack] = useState<Conversation[]>([createConversation()]);
+  const [stack, setStack] = useState<Conversation[]>([
+    createConversation(),
+  ]);
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,21 +63,40 @@ export default function Chatbot() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const current = stack[index];
 
+  /* ======================
+     Autoscroll
+  ====================== */
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [current.messages, loading]);
 
+  /* ======================
+     Stack controls
+  ====================== */
+
   function pushNewConversation() {
     if (stack.length >= MAX_SESSIONS) return;
+
     setStack((prev) => [...prev, createConversation()]);
     setIndex(stack.length);
     setInput("");
   }
 
-  function clearConversation() {
-    setStack([createConversation()]);
-    setIndex(0);
-    setInput("");
+  function deleteCurrentConversation() {
+    if (stack.length === 1) {
+      setStack([createConversation()]);
+      setIndex(0);
+      setInput("");
+      return;
+    }
+
+    setStack((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      const nextIndex = Math.max(0, index - 1);
+      setIndex(nextIndex);
+      return next;
+    });
   }
 
   function goPrev() {
@@ -66,14 +107,22 @@ export default function Chatbot() {
     setIndex((i) => Math.min(stack.length - 1, i + 1));
   }
 
+  /* ======================
+     Messaging
+  ====================== */
+
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
 
-    const userMessage: Message = { role: "user", content: text };
+    const userMessage: Message = {
+      role: "user",
+      content: text.trim(),
+    };
 
     setStack((prev) => {
       const next = [...prev];
       next[index] = {
+        ...next[index],
         messages: [...next[index].messages, userMessage],
       };
       return next;
@@ -94,13 +143,16 @@ export default function Chatbot() {
 
       const data = await res.json();
 
+      const assistantMessage: Message = {
+        role: "assistant",
+        content: data.answer ?? "",
+      };
+
       setStack((prev) => {
         const next = [...prev];
         next[index] = {
-          messages: [
-            ...next[index].messages,
-            { role: "assistant", content: data.answer ?? "" },
-          ],
+          ...next[index],
+          messages: [...next[index].messages, assistantMessage],
         };
         return next;
       });
@@ -109,7 +161,9 @@ export default function Chatbot() {
     }
   }
 
-  const maxReached = stack.length >= MAX_SESSIONS;
+  /* ======================
+     Render
+  ====================== */
 
   return (
     <>
@@ -132,33 +186,17 @@ export default function Chatbot() {
           />
 
           {/* Chat window */}
-          <div
-            className={`fixed z-50 gaarsdal-chatbot flex flex-col border border-gray-300
-              ${
-                expanded
-                  ? "inset-6 rounded-xl"
-                  : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] rounded-xl"
-              }
-            `}
-          >
+          <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] bg-bg border border-gray-300 rounded-xl shadow flex flex-col z-50 gaarsdal-chatbot">
             {/* Header */}
             <header className="flex justify-between items-center px-4 py-3">
               <span className="font-medium">Gaarsdal</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setExpanded((v) => !v)}
-                  title="Udvid / formindsk"
-                >
-                  <ArrowsPointingOutIcon className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setOpen(false)}
-                  aria-label="Luk chat"
-                  title="Luk"
-                >
-                  <XMarkIcon className="w-5 h-5" />
-                </button>
-              </div>
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Luk chat"
+                title="Luk"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
             </header>
 
             {/* Messages */}
@@ -175,29 +213,24 @@ export default function Chatbot() {
               {current.messages.map((m, i) => (
                 <div
                   key={i}
-                  className={`flex ${
-                    m.role === "user" ? "justify-end" : "justify-start"
-                  }`}
+                  className={`message ${
+                    m.role === "user"
+                      ? "user ml-auto text-right"
+                      : "bot mr-auto text-left"
+                  } max-w-[85%] px-4 py-3 whitespace-pre-wrap`}
                 >
-                  <div
-                    className={`message px-4 py-3 max-w-[85%] whitespace-pre-wrap ${
-                      m.role === "user"
-                        ? "user bg-[#4A5D54] text-white rounded-2xl rounded-br-sm"
-                        : "bot bg-white text-[#2C2A28] rounded-2xl rounded-bl-sm"
-                    }`}
-                  >
-                    {m.content}
-                  </div>
+                  {m.content}
                 </div>
               ))}
 
               {loading && (
                 <div className="text-sm opacity-60">Skriver…</div>
               )}
+
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input + navigation */}
+            {/* Input + nav */}
             <footer className="p-3 border-t">
               <textarea
                 value={input}
@@ -217,15 +250,11 @@ export default function Chatbot() {
                 <div className="flex gap-3 items-center">
                   <button
                     onClick={pushNewConversation}
-                    disabled={maxReached}
-                    title={
-                      maxReached
-                        ? "Maks 5 samtaler – slet én først"
-                        : "Ny samtale"
-                    }
+                    title="Ny samtale"
+                    disabled={stack.length >= MAX_SESSIONS}
                     className={
-                      maxReached
-                        ? "text-gray-300 cursor-not-allowed"
+                      stack.length >= MAX_SESSIONS
+                        ? "opacity-30 cursor-not-allowed"
                         : ""
                     }
                   >
@@ -235,20 +264,26 @@ export default function Chatbot() {
                   <button
                     onClick={goPrev}
                     disabled={index === 0}
-                    title="Forrige samtale"
+                    title="Forrige"
+                    className={index === 0 ? "opacity-30" : ""}
                   >
                     <BackwardIcon className="w-5 h-5" />
                   </button>
+
                   <button
                     onClick={goNext}
                     disabled={index === stack.length - 1}
-                    title="Næste samtale"
+                    title="Næste"
+                    className={
+                      index === stack.length - 1 ? "opacity-30" : ""
+                    }
                   >
                     <ForwardIcon className="w-5 h-5" />
                   </button>
+
                   <button
-                    onClick={clearConversation}
-                    title="Slet aktiv samtale"
+                    onClick={deleteCurrentConversation}
+                    title="Slet denne samtale"
                   >
                     <TrashIcon className="w-5 h-5" />
                   </button>
