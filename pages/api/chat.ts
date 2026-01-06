@@ -62,13 +62,20 @@ export default async function handler(
       timestamp: new Date().toISOString(),
       session_id: sessionId ?? "unknown",
       turn_id: userMessages.length,
+
       user_text: lastUserText,
       answer,
+
       latency_ms: Date.now() - startedAt,
       status: "ok",
+
+      // === Observability ===
+      evaluator_present: Boolean(data.evaluator),
+      chips_present: Array.isArray(data.evaluator?.chips),
+      chip_clicked: null,
     };
 
-    await writeTurnLog(logEntry);
+    writeTurnLog(logEntry);
 
     return res.status(200).json({ answer });
   } catch (err: any) {
@@ -76,14 +83,20 @@ export default async function handler(
       timestamp: new Date().toISOString(),
       session_id: req.body?.sessionId ?? "unknown",
       turn_id: -1,
+
       user_text: "",
       answer: "",
+
       latency_ms: Date.now() - startedAt,
       status: "error",
       error: String(err),
+
+      evaluator_present: false,
+      chips_present: false,
+      chip_clicked: null,
     };
 
-    await writeTurnLog(errorLog);
+    writeTurnLog(errorLog);
 
     return res.status(500).json({ error: "Internal server error" });
   }
