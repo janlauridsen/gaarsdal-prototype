@@ -1,10 +1,18 @@
+// chatbot/logWriter.ts
 import { Redis } from "@upstash/redis";
 import { TurnLog } from "./log.types";
 
 const redis = Redis.fromEnv();
 
-export async function writeTurnLog(entry: TurnLog) {
-  const key = `chatlog:${entry.session_id}`;
-  await redis.rpush(key, JSON.stringify(entry));
+function keyForSession(sessionId: string) {
+  return `chatlog:${sessionId}`;
 }
 
+export async function writeTurnLog(entry: TurnLog) {
+  const key = keyForSession(entry.session_id);
+
+  // append som NDJSON-linje
+  await redis.rpush(key, JSON.stringify(entry));
+
+  // ingen TTL her (kan tilføjes senere bevidst)
+}
