@@ -1,41 +1,33 @@
 /**
  * Chatbot.tsx
  * ------------------------------------------------------------
- * VERSION: 6.1
- * BASELINE: v6.0 → v6.1
+ * Version: v6.2
+ * Baseline: v6.1 (funktionelt uændret)
  *
  * FORMÅL
- * - UI-baseret chatbot med session stack (max 5 samtidige samtaler)
- * - Én bruger, flere sessions (stack), ét runtime
- * - Ingen persistence endnu (kommer i v6.2+)
+ * - UI for Gaarsdal Chatbot
+ * - Håndterer:
+ *   - åbning/lukning af chatbot
+ *   - stack af samtaler (max 5)
+ *   - navigation mellem samtaler
+ *   - sletning af aktiv samtale
+ *   - udvid / normal visning
  *
- * FUNKTIONER I DENNE VERSION
- * - Stack-baseret sessions (op til MAX_SESSIONS = 5)
- * - Aktiv session kan slettes uden at slette resten
- * - Klikbare stack-dots til navigation mellem sessions
- * - Forrige / næste navigation via pile
- * - Enlarge / collapse af chatvindue
- * - UI-velkomst vises KUN lokalt (sendes ikke til AI)
- * - Overlay bag chat (darkened HTML)
- * - Autoscroll til nyeste besked
- * - Debug-flag sendes eksplicit til backend
+ * DESIGNPRINCIPPER
+ * - UI må ALDRIG sende velkomsttekst til AI
+ * - Første AI-input er altid brugerens første besked
+ * - Stack = sessions set fra brugerens perspektiv
+ * - Alle sessions tilhører samme bruger
  *
- * BEVIDSTE FRAVALG / IKKE IMPLEMENTERET ENDNU
- * - Persistence (localStorage / backend)
- * - Session-metadata (titel, status, evaluering)
- * - Evaluator-chips i UI
- * - Log / audit
+ * BEVIDSTE BEGRÆNSNINGER (ENDNU IKKE LØST)
+ * - Ingen persistence (localStorage / backend)
+ * - Ingen session-metadata (titel, status, sidst aktiv)
+ * - Ingen evaluator-chips i UI
+ * - Ingen logging
  *
- * VIGTIGT
- * - Denne fil er autoritativ baseline for v6.1
- * - Ændringer fremover SKAL ske oven på denne fil
- * - Ingen implicit refaktorering eller komprimering tilladt
+ * ÆNDRINGER I v6.2
+ * - Kun dokumentation (ingen funktionelle ændringer)
  *
- * SIDST ÆNDRET
- * - Tilføjet MAX_SESSIONS limit + disable af "+"
- * - Korrekt sletning af KUN aktiv session
- * - Klikbare stack-dots
- * - Stabil enlarge-logik
  * ------------------------------------------------------------
  */
 
@@ -184,7 +176,6 @@ export default function Chatbot() {
                   : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
               }`}
           >
-            {/* Header */}
             <header className="flex justify-between items-center px-4 py-3">
               <span className="font-medium">Gaarsdal</span>
               <div className="flex gap-2">
@@ -206,7 +197,6 @@ export default function Chatbot() {
               </div>
             </header>
 
-            {/* Messages */}
             <div
               id="gaarsdal-chat-window"
               className="flex-1 overflow-y-auto p-4 space-y-3 messages"
@@ -240,7 +230,6 @@ export default function Chatbot() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input + navigation */}
             <footer className="p-3 border-t">
               <textarea
                 value={input}
@@ -303,7 +292,6 @@ export default function Chatbot() {
                   </button>
                 </div>
 
-                {/* Stack dots */}
                 <div className="flex gap-1">
                   {stack.map((_, i) => (
                     <button
