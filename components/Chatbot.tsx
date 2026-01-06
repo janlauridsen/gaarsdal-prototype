@@ -6,6 +6,8 @@ import {
   BackwardIcon,
   ForwardIcon,
   TrashIcon,
+  ArrowsPointingOutIcon,
+  ArrowsPointingInIcon,
 } from "@heroicons/react/24/outline";
 
 /* ======================
@@ -25,7 +27,7 @@ type Conversation = {
 };
 
 /* ======================
-   Config (v5.2 locked)
+   Config
 ====================== */
 
 const MAX_SESSIONS = 5;
@@ -53,6 +55,8 @@ function createConversation(): Conversation {
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
   const [stack, setStack] = useState<Conversation[]>([
     createConversation(),
   ]);
@@ -77,7 +81,6 @@ export default function Chatbot() {
 
   function pushNewConversation() {
     if (stack.length >= MAX_SESSIONS) return;
-
     setStack((prev) => [...prev, createConversation()]);
     setIndex(stack.length);
     setInput("");
@@ -93,8 +96,7 @@ export default function Chatbot() {
 
     setStack((prev) => {
       const next = prev.filter((_, i) => i !== index);
-      const nextIndex = Math.max(0, index - 1);
-      setIndex(nextIndex);
+      setIndex(Math.max(0, index - 1));
       return next;
     });
   }
@@ -143,16 +145,14 @@ export default function Chatbot() {
 
       const data = await res.json();
 
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: data.answer ?? "",
-      };
-
       setStack((prev) => {
         const next = [...prev];
         next[index] = {
           ...next[index],
-          messages: [...next[index].messages, assistantMessage],
+          messages: [
+            ...next[index].messages,
+            { role: "assistant", content: data.answer ?? "" },
+          ],
         };
         return next;
       });
@@ -182,21 +182,45 @@ export default function Chatbot() {
           {/* Overlay */}
           <div
             className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setOpen(false);
+              setExpanded(false);
+            }}
           />
 
           {/* Chat window */}
-          <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] bg-bg border border-gray-300 rounded-xl shadow flex flex-col z-50 gaarsdal-chatbot">
+          <div
+            className={`fixed z-50 gaarsdal-chatbot bg-bg border border-gray-300 shadow flex flex-col
+              ${
+                expanded
+                  ? "inset-6 rounded-xl"
+                  : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] rounded-xl"
+              }`}
+          >
             {/* Header */}
             <header className="flex justify-between items-center px-4 py-3">
               <span className="font-medium">Gaarsdal</span>
-              <button
-                onClick={() => setOpen(false)}
-                aria-label="Luk chat"
-                title="Luk"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
+              <div className="flex gap-2 items-center">
+                <button
+                  onClick={() => setExpanded((v) => !v)}
+                  title={expanded ? "Formindsk" : "Udvid"}
+                >
+                  {expanded ? (
+                    <ArrowsPointingInIcon className="w-5 h-5" />
+                  ) : (
+                    <ArrowsPointingOutIcon className="w-5 h-5" />
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setExpanded(false);
+                  }}
+                  title="Luk"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
             </header>
 
             {/* Messages */}
@@ -230,7 +254,7 @@ export default function Chatbot() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input + nav */}
+            {/* Footer */}
             <footer className="p-3 border-t">
               <textarea
                 value={input}
@@ -250,8 +274,8 @@ export default function Chatbot() {
                 <div className="flex gap-3 items-center">
                   <button
                     onClick={pushNewConversation}
-                    title="Ny samtale"
                     disabled={stack.length >= MAX_SESSIONS}
+                    title="Ny samtale"
                     className={
                       stack.length >= MAX_SESSIONS
                         ? "opacity-30 cursor-not-allowed"
