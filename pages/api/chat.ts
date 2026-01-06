@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
-import { writeTurnLog } from "../../chatbot/logWriter";
 
 // Paths
 const SYSTEM_PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
@@ -59,32 +58,36 @@ export default async function handler(
     const data = await response.json();
     const answer = data.choices?.[0]?.message?.content ?? "";
 
-    // LOG – SUCCESS
-    writeTurnLog({
-      timestamp: new Date().toISOString(),
-      session_id: sessionId ?? "unknown",
-      turn_id: userMessages.length, // ✅ rettet felt
-      model: "gpt-4o-mini",
-      user_text: lastUserMessage,
-      answer,
-      latency_ms: Date.now() - startTime,
-      status: "ok",
-    });
+    // OBSERVABILITY – SUCCESS (cloud-safe)
+    console.info(
+      "[TURN]",
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        session_id: sessionId ?? "unknown",
+        turn_id: userMessages.length,
+        user_text: lastUserMessage,
+        answer,
+        latency_ms: Date.now() - startTime,
+        status: "ok",
+      })
+    );
 
     return res.status(200).json({ answer });
   } catch (err: any) {
-    // LOG – ERROR
-    writeTurnLog({
-      timestamp: new Date().toISOString(),
-      session_id: req.body?.sessionId ?? "unknown",
-      turn_id: -1, // ✅ rettet felt
-      model: "gpt-4o-mini",
-      user_text: "",
-      answer: "",
-      latency_ms: Date.now() - startTime,
-      status: "error",
-      error: String(err),
-    });
+    // OBSERVABILITY – ERROR
+    console.error(
+      "[TURN_ERROR]",
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        session_id: req.body?.sessionId ?? "unknown",
+        turn_id: -1,
+        user_text: "",
+        answer: "",
+        latency_ms: Date.now() - startTime,
+        status: "error",
+        error: String(err),
+      })
+    );
 
     return res.status(500).json({ error: "Internal server error" });
   }
