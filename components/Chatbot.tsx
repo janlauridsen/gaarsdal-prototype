@@ -112,6 +112,7 @@ export default function Chatbot() {
           onClick={() => setOpen(true)}
           className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow flex items-center justify-center"
           aria-label="Åbn chat"
+          title="Åbn chat"
         >
           <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
         </button>
@@ -134,6 +135,7 @@ export default function Chatbot() {
                 onClick={() => setOpen(false)}
                 aria-label="Luk chat"
                 title="Luk"
+                className="text-gray-600 hover:text-gray-900"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -188,6 +190,7 @@ export default function Chatbot() {
                   <button
                     onClick={pushNewConversation}
                     title="Ny samtale"
+                    className="text-accent hover:opacity-80"
                   >
                     <PlusIcon className="w-5 h-5" />
                   </button>
@@ -195,6 +198,11 @@ export default function Chatbot() {
                     onClick={goPrev}
                     disabled={index === 0}
                     title="Forrige samtale"
+                    className={`${
+                      index === 0
+                        ? "text-gray-300"
+                        : "text-accent hover:opacity-80"
+                    }`}
                   >
                     <BackwardIcon className="w-5 h-5" />
                   </button>
@@ -202,12 +210,18 @@ export default function Chatbot() {
                     onClick={goNext}
                     disabled={index === stack.length - 1}
                     title="Næste samtale"
+                    className={`${
+                      index === stack.length - 1
+                        ? "text-gray-300"
+                        : "text-accent hover:opacity-80"
+                    }`}
                   >
                     <ForwardIcon className="w-5 h-5" />
                   </button>
                   <button
                     onClick={clearConversation}
                     title="Ryd samtaler"
+                    className="text-gray-600 hover:text-red-600"
                   >
                     <TrashIcon className="w-5 h-5" />
                   </button>
@@ -218,7 +232,8 @@ export default function Chatbot() {
                   {stack.map((_, i) => (
                     <span
                       key={i}
-                      className={`w-2 h-2 rounded-full ${
+                      title={`Samtale ${i + 1}`}
+                      className={`w-2 h-2 rounded-full cursor-default ${
                         i === index ? "bg-accent" : "bg-gray-300"
                       }`}
                     />
