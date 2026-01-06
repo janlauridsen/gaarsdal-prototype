@@ -63,7 +63,7 @@ export default async function handler(
     writeTurnLog({
       timestamp: new Date().toISOString(),
       session_id: sessionId ?? "unknown",
-      turn_index: userMessages.length,
+      turn_id: userMessages.length, // ✅ rettet felt
       model: "gpt-4o-mini",
       user_text: lastUserMessage,
       answer,
@@ -77,7 +77,7 @@ export default async function handler(
     writeTurnLog({
       timestamp: new Date().toISOString(),
       session_id: req.body?.sessionId ?? "unknown",
-      turn_index: -1,
+      turn_id: -1, // ✅ rettet felt
       model: "gpt-4o-mini",
       user_text: "",
       answer: "",
