@@ -1,12 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import fs from "fs";
 import path from "path";
+import fs from "fs";
+import { TurnLog } from "../../chatbot/log.types";
 
-// Paths
 const SYSTEM_PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
 const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
 
-// Utils
 function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
 }
@@ -15,15 +14,12 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== "POST") {
-    return res.status(405).end();
-  }
+  if (req.method !== "POST") return res.status(405).end();
 
-  const startTime = Date.now();
+  const startedAt = Date.now();
 
   try {
     const { messages, sessionId } = req.body;
-
     if (!Array.isArray(messages)) {
       return res.status(400).json({ error: "Invalid messages" });
     }
@@ -40,7 +36,7 @@ export default async function handler(
     ];
 
     const userMessages = messages.filter((m) => m.role === "user");
-    const lastUserMessage = userMessages.at(-1)?.content ?? "";
+    const lastUserText = userMessages.at(-1)?.content ?? "";
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -58,37 +54,30 @@ export default async function handler(
     const data = await response.json();
     const answer = data.choices?.[0]?.message?.content ?? "";
 
-    // OBSERVABILITY – SUCCESS (cloud-safe)
-    console.info(
-      "[TURN]",
-      JSON.stringify({
-        timestamp: new Date().toISOString(),
-        session_id: sessionId ?? "unknown",
-        turn_id: userMessages.length,
-        user_text: lastUserMessage,
-        answer,
-        latency_ms: Date.now() - startTime,
-        status: "ok",
-      })
-    );
+    const turnLog: TurnLog = {
+      timestamp: new Date().toISOString(),
+      session_id: sessionId ?? "unknown",
+      turn_id: userMessages.length,
+      user_text: lastUserText,
+      answer,
+      latency_ms: Date.now() - startedAt,
+      status: "ok",
+    };
 
-    return res.status(200).json({ answer });
+    // OBS: returnér log midlertidigt for observability
+    return res.status(200).json({ answer, turnLog });
   } catch (err: any) {
-    // OBSERVABILITY – ERROR
-    console.error(
-      "[TURN_ERROR]",
-      JSON.stringify({
-        timestamp: new Date().toISOString(),
-        session_id: req.body?.sessionId ?? "unknown",
-        turn_id: -1,
-        user_text: "",
-        answer: "",
-        latency_ms: Date.now() - startTime,
-        status: "error",
-        error: String(err),
-      })
-    );
+    const turnLog: TurnLog = {
+      timestamp: new Date().toISOString(),
+      session_id: req.body?.sessionId ?? "unknown",
+      turn_id: -1,
+      user_text: "",
+      answer: "",
+      latency_ms: Date.now() - startedAt,
+      status: "error",
+      error: String(err),
+    };
 
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error", turnLog });
   }
 }
