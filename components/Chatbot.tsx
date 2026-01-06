@@ -1,17 +1,17 @@
 /**
  * Chatbot.tsx
- * Version: 6.4
+ * Version: 6.4.1
  *
- * Ændringer ift 6.1:
- * - Evaluator-chips vises under seneste bot-svar
- * - Chips er rene UI-hints (ingen ny AI-runde)
- * - Klik på chip indsætter tekst og sender besked
+ * Ændringer ift 6.4:
+ * - Hver samtale har nu stabil session-id (UUID)
+ * - sessionId sendes til API ved hvert turn
  *
  * Bevidst uændret:
  * - Prompt
  * - Flow-logik
  * - Evaluator-logik
- * - API-kontrakt
+ * - UI-layout
+ * - Chips-adfærd
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -32,6 +32,7 @@ type Message = {
 };
 
 type Conversation = {
+  id: string;
   messages: Message[];
 };
 
@@ -44,7 +45,10 @@ const DEBUG = false;
 const MAX_SESSIONS = 5;
 
 function createConversation(): Conversation {
-  return { messages: [] };
+  return {
+    id: crypto.randomUUID(),
+    messages: [],
+  };
 }
 
 export default function Chatbot() {
@@ -95,6 +99,7 @@ export default function Chatbot() {
     setStack((prev) => {
       const next = [...prev];
       next[index] = {
+        ...next[index],
         messages: [...next[index].messages, userMessage],
       };
       return next;
@@ -109,6 +114,7 @@ export default function Chatbot() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [...current.messages, userMessage],
+          sessionId: current.id,
           debug: DEBUG,
         }),
       });
@@ -126,6 +132,7 @@ export default function Chatbot() {
       setStack((prev) => {
         const next = [...prev];
         next[index] = {
+          ...next[index],
           messages: [...next[index].messages, assistantMessage],
         };
         return next;
