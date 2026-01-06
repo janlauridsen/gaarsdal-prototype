@@ -6,6 +6,7 @@ import {
   BackwardIcon,
   ForwardIcon,
   TrashIcon,
+  ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
 type Message = {
@@ -30,6 +31,7 @@ function createConversation(): Conversation {
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [stack, setStack] = useState<Conversation[]>([createConversation()]);
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState("");
@@ -126,17 +128,42 @@ export default function Chatbot() {
           />
 
           {/* Chat window */}
-          <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] bg-bg border border-gray-300 rounded-xl shadow flex flex-col z-50 gaarsdal-chatbot">
+          <div
+            className={`fixed z-50 bg-bg border border-gray-300 shadow flex flex-col gaarsdal-chatbot
+              ${
+                expanded
+                  ? "inset-6 rounded-xl"
+                  : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] rounded-xl"
+              }`}
+          >
             {/* Header */}
             <header className="flex justify-between items-center px-4 py-3">
               <span className="font-medium">Gaarsdal</span>
-              <button
-                onClick={() => setOpen(false)}
-                aria-label="Luk chat"
-                title="Luk"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
+
+              <div className="flex items-center gap-2">
+                {/* Enlarge */}
+                <button
+                  title="Udvid"
+                  aria-label="Udvid vindue"
+                  onClick={() => setExpanded((v) => !v)}
+                  className="text-gray-600 hover:text-gray-800 transition"
+                >
+                  <ArrowsPointingOutIcon className="w-5 h-5" />
+                </button>
+
+                {/* Close */}
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setExpanded(false);
+                  }}
+                  title="Luk"
+                  aria-label="Luk chat"
+                  className="text-gray-600 hover:text-gray-800 transition"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
             </header>
 
             {/* Messages */}
@@ -184,7 +211,6 @@ export default function Chatbot() {
               />
 
               <div className="mt-3 flex justify-between items-center">
-                {/* Navigation icons */}
                 <div className="flex gap-3 items-center">
                   <button onClick={pushNewConversation} title="Ny samtale">
                     <PlusIcon className="w-5 h-5" />
@@ -216,26 +242,20 @@ export default function Chatbot() {
                     <ForwardIcon className="w-5 h-5" />
                   </button>
 
-                  <button
-                    onClick={clearConversation}
-                    title="Ryd samtaler"
-                  >
+                  <button onClick={clearConversation} title="Ryd samtaler">
                     <TrashIcon className="w-5 h-5" />
                   </button>
                 </div>
 
                 {/* Stack dots */}
-                <div className="flex gap-1">
+                <div className="flex gap-2">
                   {stack.map((_, i) => (
                     <button
                       key={i}
                       onClick={() => setIndex(i)}
-                      title={`Gå til samtale ${i + 1}`}
-                      aria-label={`Samtale ${i + 1}`}
-                      className={`w-2.5 h-2.5 rounded-full transition ${
-                        i === index
-                          ? "bg-accent"
-                          : "bg-gray-300 hover:bg-gray-400"
+                      title={`Samtale ${i + 1}`}
+                      className={`w-2 h-2 rounded-full ${
+                        i === index ? "bg-accent" : "bg-gray-300"
                       }`}
                     />
                   ))}
