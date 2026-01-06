@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
-import { writeTurnLog } from "@/chatbot/logWriter";
+import { writeTurnLog } from "../../chatbot/logWriter";
 
 // Paths
 const SYSTEM_PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
