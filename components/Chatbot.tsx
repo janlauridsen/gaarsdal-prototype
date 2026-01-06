@@ -23,7 +23,7 @@ const UI_WELCOME =
   "Du er velkommen til at skrive frit. " +
   "Beskriv gerne det, der fylder mest for dig lige nu.";
 
-const DEBUG = true;
+const DEBUG = false;
 const MAX_SESSIONS = 5;
 
 function createConversation(): Conversation {
@@ -108,6 +108,8 @@ export default function Chatbot() {
       setLoading(false);
     }
   }
+
+  const maxReached = stack.length >= MAX_SESSIONS;
 
   return (
     <>
@@ -215,15 +217,21 @@ export default function Chatbot() {
                 <div className="flex gap-3 items-center">
                   <button
                     onClick={pushNewConversation}
-                    disabled={stack.length >= MAX_SESSIONS}
+                    disabled={maxReached}
                     title={
-                      stack.length >= MAX_SESSIONS
-                        ? "Maks 5 samtaler – slet først"
+                      maxReached
+                        ? "Maks 5 samtaler – slet én først"
                         : "Ny samtale"
+                    }
+                    className={
+                      maxReached
+                        ? "text-gray-300 cursor-not-allowed"
+                        : ""
                     }
                   >
                     <PlusIcon className="w-5 h-5" />
                   </button>
+
                   <button
                     onClick={goPrev}
                     disabled={index === 0}
@@ -238,7 +246,10 @@ export default function Chatbot() {
                   >
                     <ForwardIcon className="w-5 h-5" />
                   </button>
-                  <button onClick={clearConversation} title="Slet aktiv samtale">
+                  <button
+                    onClick={clearConversation}
+                    title="Slet aktiv samtale"
+                  >
                     <TrashIcon className="w-5 h-5" />
                   </button>
                 </div>
