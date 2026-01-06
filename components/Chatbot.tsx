@@ -32,6 +32,7 @@ function createConversation(): Conversation {
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [stack, setStack] = useState<Conversation[]>([createConversation()]);
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState("");
@@ -58,11 +59,7 @@ export default function Chatbot() {
       return;
     }
 
-    setStack((prev) => {
-      const next = prev.filter((_, i) => i !== index);
-      return next;
-    });
-
+    setStack((prev) => prev.filter((_, i) => i !== index));
     setIndex((i) => Math.max(0, i - 1));
   }
 
@@ -104,25 +101,12 @@ export default function Chatbot() {
 
       setStack((prev) => {
         const next = [...prev];
-
-        if (DEBUG && data.jan_raw && data.evaluator && data.final) {
-          next[index] = {
-            messages: [
-              ...next[index].messages,
-              { role: "assistant", content: "— JAN (RAW) —\n" + data.jan_raw },
-              { role: "assistant", content: "— EVALUATOR —\n" + data.evaluator },
-              { role: "assistant", content: "— JAN (FINAL) —\n" + data.final },
-            ],
-          };
-        } else {
-          next[index] = {
-            messages: [
-              ...next[index].messages,
-              { role: "assistant", content: data.answer ?? "" },
-            ],
-          };
-        }
-
+        next[index] = {
+          messages: [
+            ...next[index].messages,
+            { role: "assistant", content: data.answer ?? "" },
+          ],
+        };
         return next;
       });
     } finally {
@@ -145,19 +129,38 @@ export default function Chatbot() {
         <>
           <div
             className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setOpen(false);
+              setExpanded(false);
+            }}
           />
 
-          <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] bg-bg border border-gray-300 rounded-xl shadow-xl flex flex-col z-50 gaarsdal-chatbot">
+          <div
+            className={`fixed z-50 gaarsdal-chatbot flex flex-col bg-bg border border-gray-300 shadow-xl
+              ${
+                expanded
+                  ? "inset-4 rounded-xl"
+                  : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] rounded-xl"
+              }
+            `}
+          >
             <header className="flex justify-between items-center px-4 py-3">
               <span className="font-medium">Gaarsdal</span>
 
               <div className="flex gap-2">
-                <button className="p-1 rounded hover:shadow transition bg-transparent">
+                <button
+                  onClick={() => setExpanded((v) => !v)}
+                  title={expanded ? "Formindsk" : "Forstør"}
+                  className="p-1 rounded hover:shadow transition bg-transparent"
+                >
                   <ArrowsPointingOutIcon className="w-5 h-5" />
                 </button>
+
                 <button
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    setOpen(false);
+                    setExpanded(false);
+                  }}
                   className="p-1 rounded hover:shadow transition bg-transparent"
                 >
                   <XMarkIcon className="w-5 h-5" />
