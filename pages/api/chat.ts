@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import path from "path";
 import fs from "fs";
+import path from "path";
+import { writeTurnLog } from "../../chatbot/logWriter";
 import { TurnLog } from "../../chatbot/log.types";
 
 const SYSTEM_PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
@@ -14,12 +15,15 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== "POST") return res.status(405).end();
+  if (req.method !== "POST") {
+    return res.status(405).end();
+  }
 
   const startedAt = Date.now();
 
   try {
     const { messages, sessionId } = req.body;
+
     if (!Array.isArray(messages)) {
       return res.status(400).json({ error: "Invalid messages" });
     }
@@ -54,7 +58,7 @@ export default async function handler(
     const data = await response.json();
     const answer = data.choices?.[0]?.message?.content ?? "";
 
-    const turnLog: TurnLog = {
+    const logEntry: TurnLog = {
       timestamp: new Date().toISOString(),
       session_id: sessionId ?? "unknown",
       turn_id: userMessages.length,
@@ -64,10 +68,11 @@ export default async function handler(
       status: "ok",
     };
 
-    // OBS: returnér log midlertidigt for observability
-    return res.status(200).json({ answer, turnLog });
+    await writeTurnLog(logEntry);
+
+    return res.status(200).json({ answer });
   } catch (err: any) {
-    const turnLog: TurnLog = {
+    const errorLog: TurnLog = {
       timestamp: new Date().toISOString(),
       session_id: req.body?.sessionId ?? "unknown",
       turn_id: -1,
@@ -78,6 +83,8 @@ export default async function handler(
       error: String(err),
     };
 
-    return res.status(500).json({ error: "Internal server error", turnLog });
+    await writeTurnLog(errorLog);
+
+    return res.status(500).json({ error: "Internal server error" });
   }
 }
