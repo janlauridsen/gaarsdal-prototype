@@ -5,6 +5,10 @@ import { writeTurnLog } from "../../chatbot/logWriter";
 import { TurnLog } from "../../chatbot/log.types";
 
 const SYSTEM_PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
+const EVALUATOR_PROMPT_PATH = path.join(
+  process.cwd(),
+  "chatbot/evaluator.md"
+);
 const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
 
 function loadFile(p: string) {
@@ -39,12 +43,24 @@ export default async function handler(
     }
 
     const systemPrompt = loadFile(SYSTEM_PROMPT_PATH);
+    const evaluatorPrompt = loadFile(EVALUATOR_PROMPT_PATH);
     const facts = loadFile(FACTS_PATH);
 
     const openAiMessages = [
       {
         role: "system",
-        content: `${systemPrompt}\n\n---\n\nAUTORISERET VIDEN:\n${facts}`,
+        content: `
+${systemPrompt}
+
+---
+
+${evaluatorPrompt}
+
+---
+
+AUTORISERET VIDEN:
+${facts}
+        `.trim(),
       },
       ...messages,
     ];
@@ -60,7 +76,7 @@ export default async function handler(
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          Authorization: \`Bearer \${process.env.OPENAI_API_KEY}\`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -111,7 +127,7 @@ export default async function handler(
 
     return res.status(200).json({
       answer: janFinal,
-      evaluator: evaluatorText ?? null, // kun debug/observability
+      evaluator: evaluatorText ?? null, // kun debug / observability
     });
   } catch (err: any) {
     const errorLog: TurnLog = {
