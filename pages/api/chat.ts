@@ -4,33 +4,104 @@ import path from "path";
 import { writeTurnLog } from "../../chatbot/logWriter";
 import { TurnLog } from "../../chatbot/log.types";
 
+/* =========
+   GLOBAL TOGGLE
+   ========= */
+const ENABLE_AI_CALL_LOGGING =
+  process.env.ENABLE_AI_CALL_LOGGING === "true";
+
+/* =========
+   PATHS
+   ========= */
 const PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
 const EVALUATOR_PATH = path.join(process.cwd(), "chatbot/evaluator.md");
 const RESHAPE_PATH = path.join(process.cwd(), "chatbot/reshape.md");
 const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
 
+const AI_CALL_LOG_PATH = path.join(
+  process.cwd(),
+  "chatbot",
+  "ai-call.log.jsonl"
+);
+
+/* =========
+   HELPERS
+   ========= */
 function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
 }
 
-async function callOpenAI(messages: any[]) {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.2,
-      messages,
-    }),
-  } as RequestInit);
+type AiCallLog = {
+  timestamp: string;
+  session_id: string;
+  turn_id: number;
+  call_id: string;
+  model: string;
+  temperature: number;
+  request_messages: any[];
+  response_raw: any;
+  response_text: string;
+  latency_ms: number;
+};
 
-  const json = await res.json();
-  return json?.choices?.[0]?.message?.content?.trim() ?? "";
+async function logAiCall(entry: AiCallLog) {
+  if (!ENABLE_AI_CALL_LOGGING) return;
+  fs.appendFileSync(AI_CALL_LOG_PATH, JSON.stringify(entry) + "\n");
 }
 
+async function callOpenAI(params: {
+  call_id: string;
+  session_id: string;
+  turn_id: number;
+  messages: any[];
+}) {
+  const startedAt = Date.now();
+
+  const model = "gpt-4o-mini";
+  const temperature = 0.2;
+
+  const response = await fetch(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        temperature,
+        messages: params.messages,
+      }),
+    } as RequestInit
+  );
+
+  const raw = await response.json();
+
+  const text =
+    raw?.choices?.[0]?.message?.content?.trim() ?? "";
+
+  const latency = Date.now() - startedAt;
+
+  await logAiCall({
+    timestamp: new Date().toISOString(),
+    session_id: params.session_id,
+    turn_id: params.turn_id,
+    call_id: params.call_id,
+    model,
+    temperature,
+    request_messages: params.messages,
+    response_raw: raw,
+    response_text: text,
+    latency_ms: latency,
+  });
+
+  return text;
+}
+
+/* =========
+   API HANDLER
+   ========= */
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -53,63 +124,60 @@ export default async function handler(
     const reshapePrompt = loadFile(RESHAPE_PATH);
     const facts = loadFile(FACTS_PATH);
 
-    const userMessages = messages.filter((m: any) => m.role === "user");
+    const userMessages = messages.filter(
+      (m: any) => m.role === "user"
+    );
     const lastUserText = userMessages.at(-1)?.content ?? "";
     const turnId = userMessages.length;
 
     /* =========
        CALL 1 · JAN RAW
        ========= */
-    const janStarted = Date.now();
-
-    const janRaw = await callOpenAI([
-      {
-        role: "system",
-        content: `
+    const janRaw = await callOpenAI({
+      call_id: "jan_raw",
+      session_id: sessionId ?? "unknown",
+      turn_id: turnId,
+      messages: [
+        {
+          role: "system",
+          content: `
 ${prompt}
 
 ---
 
 AUTORISERET VIDEN:
 ${facts}
-        `.trim(),
-      },
-      ...messages,
-    ]);
-
-    const janLatency = Date.now() - janStarted;
+          `.trim(),
+        },
+        ...messages,
+      ],
+    });
 
     /* =========
        CALL 2 · EVALUATOR
        ========= */
-    const evalStarted = Date.now();
-
-    const evaluatorText = await callOpenAI([
-      {
-        role: "system",
-        content: evaluatorPrompt,
-      },
-      {
-        role: "user",
-        content: janRaw,
-      },
-    ]);
-
-    const evalLatency = Date.now() - evalStarted;
+    const evaluatorText = await callOpenAI({
+      call_id: "evaluator",
+      session_id: sessionId ?? "unknown",
+      turn_id: turnId,
+      messages: [
+        { role: "system", content: evaluatorPrompt },
+        { role: "user", content: janRaw },
+      ],
+    });
 
     /* =========
        CALL 3 · RESHAPE
        ========= */
-    const reshapeStarted = Date.now();
-
-    const janFinal = await callOpenAI([
-      {
-        role: "system",
-        content: reshapePrompt,
-      },
-      {
-        role: "user",
-        content: `
+    const janFinal = await callOpenAI({
+      call_id: "reshape",
+      session_id: sessionId ?? "unknown",
+      turn_id: turnId,
+      messages: [
+        { role: "system", content: reshapePrompt },
+        {
+          role: "user",
+          content: `
 JAN RAW:
 ${janRaw}
 
@@ -117,14 +185,13 @@ ${janRaw}
 
 EVALUATOR:
 ${evaluatorText}
-        `.trim(),
-      },
-    ]);
-
-    const reshapeLatency = Date.now() - reshapeStarted;
+          `.trim(),
+        },
+      ],
+    });
 
     /* =========
-       LOGGING
+       TURN LOG
        ========= */
     const logEntry: TurnLog = {
       timestamp: new Date().toISOString(),
@@ -151,11 +218,6 @@ ${evaluatorText}
 
     return res.status(200).json({
       answer: janFinal,
-      debug: {
-        jan_latency: janLatency,
-        evaluator_latency: evalLatency,
-        reshape_latency: reshapeLatency,
-      },
     });
   } catch (err: any) {
     const errorLog: TurnLog = {
