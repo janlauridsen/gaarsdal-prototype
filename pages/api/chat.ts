@@ -65,18 +65,18 @@ ${facts}
       ...messages,
     ];
 
-    const userMessages = messages.filter((m) => m.role === "user");
+    const userMessages = messages.filter((m: any) => m.role === "user");
     const lastUserText = userMessages.at(-1)?.content ?? "";
 
     /* =========
        JAN (RAW)
        ========= */
-    const rawResponse = await fetch(
+    const response = await fetch(
       "https://api.openai.com/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          Authorization: \`Bearer \${process.env.OPENAI_API_KEY}\`,
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -84,23 +84,19 @@ ${facts}
           temperature: 0.2,
           messages: openAiMessages,
         }),
-      }
+      } as RequestInit // 👈 VIGTIG TS-FIX
     );
 
-    const rawData = await rawResponse.json();
+    const rawData = await response.json();
+
     const janRaw =
-      rawData.choices?.[0]?.message?.content?.trim() ?? "";
+      rawData?.choices?.[0]?.message?.content?.trim() ?? "";
 
     /* =========
        Evaluator observability (TEXT ONLY)
        ========= */
     const evaluatorText = extractEvaluator(janRaw);
 
-    /* =========
-       RESHAPE
-       =========
-       (kører implicit via systemprompt – derfor identisk her)
-    */
     const janFinal = janRaw;
 
     const logEntry: TurnLog = {
@@ -127,7 +123,7 @@ ${facts}
 
     return res.status(200).json({
       answer: janFinal,
-      evaluator: evaluatorText ?? null, // kun debug / observability
+      evaluator: evaluatorText ?? null,
     });
   } catch (err: any) {
     const errorLog: TurnLog = {
