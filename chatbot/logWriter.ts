@@ -1,9 +1,20 @@
+// chatbot/logWriter.ts
+import { Redis } from "@upstash/redis";
 import { TurnLog } from "./log.types";
 
-/*
-  Udvidet log entry.
-  TurnLog er uændret.
-*/
+const redis = Redis.fromEnv();
+
+/* =========
+   PRIMARY TURN LOG (UÆNDRET)
+   ========= */
+export async function writeTurnLog(entry: TurnLog) {
+  const key = `chatlog:${entry.session_id}`;
+  await redis.rpush(key, JSON.stringify(entry));
+}
+
+/* =========
+   AI CALL LOG (NY, ISOLERET)
+   ========= */
 export type AiCallLogEntry = {
   timestamp: string;
   session_id: string;
@@ -17,34 +28,9 @@ export type AiCallLogEntry = {
   latency_ms: number;
 };
 
-/*
-  Samlet log payload.
-  TurnLog er primary.
-  ai_calls er optional.
-*/
-export type ExtendedTurnLog = TurnLog & {
-  ai_calls?: AiCallLogEntry[];
-};
-
-/*
-  ÉN writer.
-  Cloud-safe.
-*/
-export async function writeTurnLog(
-  entry: ExtendedTurnLog
-): Promise<void> {
-  /*
-    BEVIDST:
-    - Ingen fs
-    - Ingen antagelser
-    - Brug din eksisterende persistens her
-  */
-
-  // EKSEMPEL (pseudo – behold din egen implementation):
-  // await db.insert("turn_logs", entry);
-
-  console.log(
-    "[TURN LOG]",
-    JSON.stringify(entry, null, 2)
-  );
+export async function writeAiCallLog(
+  entry: AiCallLogEntry
+) {
+  const key = `chatlog:${entry.session_id}:turn:${entry.turn_id}:ai`;
+  await redis.rpush(key, JSON.stringify(entry));
 }
