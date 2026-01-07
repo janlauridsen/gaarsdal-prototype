@@ -14,6 +14,9 @@ export type TurnLog = {
   // Bagudkompatibilitet (bruges stadig af UI)
   answer: string;
 
+  // 👇 NYT: rå evaluator-output (kun observability)
+  evaluator_text?: string;
+
   // Evaluator / chips observability
   evaluator_present: boolean;
   chips_present: boolean;
