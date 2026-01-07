@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import {
   writeTurnLog,
+  writeAiCallLog,
   AiCallLogEntry,
 } from "../../chatbot/logWriter";
 import { TurnLog } from "../../chatbot/log.types";
@@ -33,7 +34,6 @@ async function callOpenAI(params: {
   session_id: string;
   turn_id: number;
   messages: any[];
-  aiCallLogs: AiCallLogEntry[];
 }) {
   const startedAt = Date.now();
 
@@ -64,7 +64,7 @@ async function callOpenAI(params: {
   const latency = Date.now() - startedAt;
 
   if (ENABLE_AI_CALL_LOGGING) {
-    params.aiCallLogs.push({
+    const aiLog: AiCallLogEntry = {
       timestamp: new Date().toISOString(),
       session_id: params.session_id,
       turn_id: params.turn_id,
@@ -75,7 +75,9 @@ async function callOpenAI(params: {
       response_raw: raw,
       response_text: text,
       latency_ms: latency,
-    });
+    };
+
+    await writeAiCallLog(aiLog);
   }
 
   return text;
@@ -112,8 +114,6 @@ export default async function handler(
     const lastUserText = userMessages.at(-1)?.content ?? "";
     const turnId = userMessages.length;
 
-    const aiCallLogs: AiCallLogEntry[] = [];
-
     /* =========
        CALL 1 · JAN RAW
        ========= */
@@ -121,7 +121,6 @@ export default async function handler(
       call_id: "jan_raw",
       session_id: sessionId ?? "unknown",
       turn_id: turnId,
-      aiCallLogs,
       messages: [
         {
           role: "system",
@@ -145,7 +144,6 @@ ${facts}
       call_id: "evaluator",
       session_id: sessionId ?? "unknown",
       turn_id: turnId,
-      aiCallLogs,
       messages: [
         { role: "system", content: evaluatorPrompt },
         { role: "user", content: janRaw },
@@ -159,7 +157,6 @@ ${facts}
       call_id: "reshape",
       session_id: sessionId ?? "unknown",
       turn_id: turnId,
-      aiCallLogs,
       messages: [
         { role: "system", content: reshapePrompt },
         {
@@ -178,11 +175,9 @@ ${evaluatorText}
     });
 
     /* =========
-       TURN LOG (PRIMARY + AI CALLS)
+       TURN LOG (PRIMARY)
        ========= */
-    const logEntry: TurnLog & {
-      ai_calls?: AiCallLogEntry[];
-    } = {
+    const logEntry: TurnLog = {
       timestamp: new Date().toISOString(),
       session_id: sessionId ?? "unknown",
       turn_id: turnId,
@@ -201,10 +196,6 @@ ${evaluatorText}
 
       latency_ms: Date.now() - startedAt,
       status: "ok",
-
-      ...(ENABLE_AI_CALL_LOGGING
-        ? { ai_calls: aiCallLogs }
-        : {}),
     };
 
     await writeTurnLog(logEntry);
