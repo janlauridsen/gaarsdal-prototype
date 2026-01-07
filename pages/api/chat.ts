@@ -4,25 +4,31 @@ import path from "path";
 import { writeTurnLog } from "../../chatbot/logWriter";
 import { TurnLog } from "../../chatbot/log.types";
 
-const SYSTEM_PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
-const EVALUATOR_PROMPT_PATH = path.join(
-  process.cwd(),
-  "chatbot/evaluator.md"
-);
+const PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
+const EVALUATOR_PATH = path.join(process.cwd(), "chatbot/evaluator.md");
+const RESHAPE_PATH = path.join(process.cwd(), "chatbot/reshape.md");
 const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
 
 function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
 }
 
-/* =========
-   Evaluator text extraction (runtime-neutral)
-   ========= */
-function extractEvaluator(text: string): string | null {
-  const match = text.match(
-    /\[evaluator:\][\s\S]*?\[evaluator-hint:\][\s\S]*/i
-  );
-  return match ? match[0].trim() : null;
+async function callOpenAI(messages: any[]) {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      temperature: 0.2,
+      messages,
+    }),
+  } as RequestInit);
+
+  const json = await res.json();
+  return json?.choices?.[0]?.message?.content?.trim() ?? "";
 }
 
 export default async function handler(
@@ -42,19 +48,25 @@ export default async function handler(
       return res.status(400).json({ error: "Invalid messages" });
     }
 
-    const systemPrompt = loadFile(SYSTEM_PROMPT_PATH);
-    const evaluatorPrompt = loadFile(EVALUATOR_PROMPT_PATH);
+    const prompt = loadFile(PROMPT_PATH);
+    const evaluatorPrompt = loadFile(EVALUATOR_PATH);
+    const reshapePrompt = loadFile(RESHAPE_PATH);
     const facts = loadFile(FACTS_PATH);
 
-    const openAiMessages = [
+    const userMessages = messages.filter((m: any) => m.role === "user");
+    const lastUserText = userMessages.at(-1)?.content ?? "";
+    const turnId = userMessages.length;
+
+    /* =========
+       CALL 1 · JAN RAW
+       ========= */
+    const janStarted = Date.now();
+
+    const janRaw = await callOpenAI([
       {
         role: "system",
         content: `
-${systemPrompt}
-
----
-
-${evaluatorPrompt}
+${prompt}
 
 ---
 
@@ -63,46 +75,61 @@ ${facts}
         `.trim(),
       },
       ...messages,
-    ];
+    ]);
 
-    const userMessages = messages.filter((m: any) => m.role === "user");
-    const lastUserText = userMessages.at(-1)?.content ?? "";
+    const janLatency = Date.now() - janStarted;
 
     /* =========
-       JAN (RAW)
+       CALL 2 · EVALUATOR
        ========= */
-    const response = await fetch(
-      "https://api.openai.com/v1/chat/completions",
+    const evalStarted = Date.now();
+
+    const evaluatorText = await callOpenAI([
       {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          temperature: 0.2,
-          messages: openAiMessages,
-        }),
-      } as RequestInit // 👈 VIGTIG TS-FIX
-    );
+        role: "system",
+        content: evaluatorPrompt,
+      },
+      {
+        role: "user",
+        content: janRaw,
+      },
+    ]);
 
-    const rawData = await response.json();
-
-    const janRaw =
-      rawData?.choices?.[0]?.message?.content?.trim() ?? "";
+    const evalLatency = Date.now() - evalStarted;
 
     /* =========
-       Evaluator observability (TEXT ONLY)
+       CALL 3 · RESHAPE
        ========= */
-    const evaluatorText = extractEvaluator(janRaw);
+    const reshapeStarted = Date.now();
 
-    const janFinal = janRaw;
+    const janFinal = await callOpenAI([
+      {
+        role: "system",
+        content: reshapePrompt,
+      },
+      {
+        role: "user",
+        content: `
+JAN RAW:
+${janRaw}
 
+---
+
+EVALUATOR:
+${evaluatorText}
+        `.trim(),
+      },
+    ]);
+
+    const reshapeLatency = Date.now() - reshapeStarted;
+
+    /* =========
+       LOGGING
+       ========= */
     const logEntry: TurnLog = {
       timestamp: new Date().toISOString(),
       session_id: sessionId ?? "unknown",
-      turn_id: userMessages.length,
+      turn_id: turnId,
 
       user_text: lastUserText,
 
@@ -112,6 +139,7 @@ ${facts}
 
       evaluator_text: evaluatorText,
       evaluator_present: Boolean(evaluatorText),
+
       chips_present: false,
       chip_clicked: null,
 
@@ -123,7 +151,11 @@ ${facts}
 
     return res.status(200).json({
       answer: janFinal,
-      evaluator: evaluatorText ?? null,
+      debug: {
+        jan_latency: janLatency,
+        evaluator_latency: evalLatency,
+        reshape_latency: reshapeLatency,
+      },
     });
   } catch (err: any) {
     const errorLog: TurnLog = {
@@ -138,6 +170,7 @@ ${facts}
 
       evaluator_text: null,
       evaluator_present: false,
+
       chips_present: false,
       chip_clicked: null,
 
