@@ -11,6 +11,16 @@ function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
 }
 
+/* =========
+   Evaluator text extraction (runtime-neutral)
+   ========= */
+function extractEvaluator(text: string): string | null {
+  const match = text.match(
+    /\[evaluator:\][\s\S]*?\[evaluator-hint:\][\s\S]*/i
+  );
+  return match ? match[0].trim() : null;
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -66,17 +76,16 @@ export default async function handler(
       rawData.choices?.[0]?.message?.content?.trim() ?? "";
 
     /* =========
+       Evaluator observability (TEXT ONLY)
+       ========= */
+    const evaluatorText = extractEvaluator(janRaw);
+
+    /* =========
        RESHAPE
        =========
-       NB: her bruger du allerede reshape.md i dit systemprompt.
-       Derfor er janRaw → janFinal i praksis allerede sket.
-       Vi logger bare forskellen eksplicit.
+       (kører implicit via systemprompt – derfor identisk her)
     */
-
-    const janFinal = janRaw; // ← hvis reshape kører separat, indsæt den her
-
-    const evaluatorPresent = Boolean(rawData.evaluator);
-    const chipsPresent = Boolean(rawData.evaluator?.chips?.length);
+    const janFinal = janRaw;
 
     const logEntry: TurnLog = {
       timestamp: new Date().toISOString(),
@@ -89,8 +98,9 @@ export default async function handler(
       jan_final: janFinal,
       answer: janFinal,
 
-      evaluator_present: evaluatorPresent,
-      chips_present: chipsPresent,
+      evaluator_text: evaluatorText,
+      evaluator_present: Boolean(evaluatorText),
+      chips_present: false,
       chip_clicked: null,
 
       latency_ms: Date.now() - startedAt,
@@ -101,7 +111,7 @@ export default async function handler(
 
     return res.status(200).json({
       answer: janFinal,
-      evaluator: rawData.evaluator ?? null,
+      evaluator: evaluatorText ?? null, // kun debug/observability
     });
   } catch (err: any) {
     const errorLog: TurnLog = {
@@ -114,6 +124,7 @@ export default async function handler(
       jan_final: "",
       answer: "",
 
+      evaluator_text: null,
       evaluator_present: false,
       chips_present: false,
       chip_clicked: null,
