@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
-import { writeTurnLog } from "../../chatbot/logWriter";
+import {
+  writeTurnLog,
+  AiCallLogEntry,
+} from "../../chatbot/logWriter";
 import { TurnLog } from "../../chatbot/log.types";
 
 /* =========
@@ -18,42 +21,19 @@ const EVALUATOR_PATH = path.join(process.cwd(), "chatbot/evaluator.md");
 const RESHAPE_PATH = path.join(process.cwd(), "chatbot/reshape.md");
 const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
 
-const AI_CALL_LOG_PATH = path.join(
-  process.cwd(),
-  "chatbot",
-  "ai-call.log.jsonl"
-);
-
-/* =========
-   HELPERS
-   ========= */
 function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
 }
 
-type AiCallLog = {
-  timestamp: string;
-  session_id: string;
-  turn_id: number;
-  call_id: string;
-  model: string;
-  temperature: number;
-  request_messages: any[];
-  response_raw: any;
-  response_text: string;
-  latency_ms: number;
-};
-
-async function logAiCall(entry: AiCallLog) {
-  if (!ENABLE_AI_CALL_LOGGING) return;
-  fs.appendFileSync(AI_CALL_LOG_PATH, JSON.stringify(entry) + "\n");
-}
-
+/* =========
+   OPENAI CALL
+   ========= */
 async function callOpenAI(params: {
   call_id: string;
   session_id: string;
   turn_id: number;
   messages: any[];
+  aiCallLogs: AiCallLogEntry[];
 }) {
   const startedAt = Date.now();
 
@@ -83,18 +63,20 @@ async function callOpenAI(params: {
 
   const latency = Date.now() - startedAt;
 
-  await logAiCall({
-    timestamp: new Date().toISOString(),
-    session_id: params.session_id,
-    turn_id: params.turn_id,
-    call_id: params.call_id,
-    model,
-    temperature,
-    request_messages: params.messages,
-    response_raw: raw,
-    response_text: text,
-    latency_ms: latency,
-  });
+  if (ENABLE_AI_CALL_LOGGING) {
+    params.aiCallLogs.push({
+      timestamp: new Date().toISOString(),
+      session_id: params.session_id,
+      turn_id: params.turn_id,
+      call_id: params.call_id,
+      model,
+      temperature,
+      request_messages: params.messages,
+      response_raw: raw,
+      response_text: text,
+      latency_ms: latency,
+    });
+  }
 
   return text;
 }
@@ -130,6 +112,8 @@ export default async function handler(
     const lastUserText = userMessages.at(-1)?.content ?? "";
     const turnId = userMessages.length;
 
+    const aiCallLogs: AiCallLogEntry[] = [];
+
     /* =========
        CALL 1 · JAN RAW
        ========= */
@@ -137,6 +121,7 @@ export default async function handler(
       call_id: "jan_raw",
       session_id: sessionId ?? "unknown",
       turn_id: turnId,
+      aiCallLogs,
       messages: [
         {
           role: "system",
@@ -160,6 +145,7 @@ ${facts}
       call_id: "evaluator",
       session_id: sessionId ?? "unknown",
       turn_id: turnId,
+      aiCallLogs,
       messages: [
         { role: "system", content: evaluatorPrompt },
         { role: "user", content: janRaw },
@@ -173,6 +159,7 @@ ${facts}
       call_id: "reshape",
       session_id: sessionId ?? "unknown",
       turn_id: turnId,
+      aiCallLogs,
       messages: [
         { role: "system", content: reshapePrompt },
         {
@@ -191,9 +178,11 @@ ${evaluatorText}
     });
 
     /* =========
-       TURN LOG
+       TURN LOG (PRIMARY + AI CALLS)
        ========= */
-    const logEntry: TurnLog = {
+    const logEntry: TurnLog & {
+      ai_calls?: AiCallLogEntry[];
+    } = {
       timestamp: new Date().toISOString(),
       session_id: sessionId ?? "unknown",
       turn_id: turnId,
@@ -212,6 +201,10 @@ ${evaluatorText}
 
       latency_ms: Date.now() - startedAt,
       status: "ok",
+
+      ...(ENABLE_AI_CALL_LOGGING
+        ? { ai_calls: aiCallLogs }
+        : {}),
     };
 
     await writeTurnLog(logEntry);
