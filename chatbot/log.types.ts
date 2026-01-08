@@ -1,5 +1,7 @@
 // chatbot/log.types.ts
 
+export type ExecutionContext = "live" | "replay" | "test";
+
 export type StopSignal =
   | "afklaring_opnået"
   | "bruger_lukker_dialog"
@@ -7,9 +9,40 @@ export type StopSignal =
   | null;
 
 export type TurnLog = {
+  /* ───────── Core ───────── */
+
+  /**
+   * Hvornår log-entry er skabt
+   * ISO timestamp
+   */
   timestamp: string;
+
+  /**
+   * Hvordan dette turn blev eksekveret
+   * live = rigtig bruger
+   * replay = afspilning
+   * test = manuel / CI
+   */
+  execution_context?: ExecutionContext;
+
   session_id: string;
   turn_id: number;
+
+  /* ───────── Versionering ───────── */
+
+  /**
+   * Kodeversion (git tag el. commit)
+   */
+  code_version?: string;
+
+  /**
+   * Prompt-versioner
+   */
+  prompt_version?: string;
+  evaluator_version?: string;
+  reshape_version?: string;
+
+  /* ───────── Indhold ───────── */
 
   user_text: string;
 
@@ -23,47 +56,45 @@ export type TurnLog = {
   chips_present: boolean;
   chip_clicked: string | null;
 
-  // ─────────────────────────────
-  // TRIN 1 · OBSERVABILITY
-  // (ingen styring, kun måling)
-  // ─────────────────────────────
+  /* ─────────────────────────────
+     TRIN 1 · OBSERVABILITY
+     (ingen styring, kun måling)
+     ───────────────────────────── */
 
-  /**
-   * Hvornår brugeren sidst skrev noget
-   * ISO timestamp
-   */
   last_user_at?: string;
-
-  /**
-   * Hvor gammel sessionen er ved dette turn
-   * i millisekunder
-   */
   session_age_ms?: number;
-
-  /**
-   * Hvornår dialogen betragtes som udløbet
-   * ISO timestamp
-   */
   dialogue_expires_at?: string;
 
   /**
-   * Om brugeren på noget tidspunkt
-   * er blevet præsenteret for et
-   * "genoptag / start ny"-valg
+   * Om brugeren er blevet tilbudt
+   * genoptag / start ny
    */
   resume_prompted?: boolean;
 
   /**
+   * Brugerens valg, hvis relevant
+   */
+  resume_choice?: "resume" | "new" | null;
+
+  /**
    * Stop-signal observeret i dette turn
-   * (fra evaluator / reshape)
    */
   stop_signal?: StopSignal;
 
   /**
-   * Om et stop-signal faktisk blev
-   * anvendt i flowet
+   * Om stop-signal blev anvendt
    */
   stop_applied?: boolean;
+
+  /* ───────── UX-telemetri ───────── */
+
+  user_message_length?: number;
+  ai_message_length?: number;
+
+  time_since_last_turn_ms?: number;
+  turn_count_total?: number;
+
+  /* ───────── Drift ───────── */
 
   latency_ms: number;
   status: "ok" | "error";
