@@ -167,8 +167,8 @@ export default function Chatbot() {
             <header className="flex justify-between items-center px-4 py-3">
               <div className="flex items-center gap-2">
                 <img
-                  src="/ja.gif"
-                  alt="Jan – Gaarsdal Hypnoterapi"
+                  src="/jan.gif"
+                  alt=""
                   width={24}
                   height={24}
                   className="rounded-full opacity-80"
