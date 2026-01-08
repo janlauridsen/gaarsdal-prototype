@@ -32,13 +32,6 @@ export default function Header({
       <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo / titel */}
         <div className="flex items-center gap-2 text-text font-sans text-lg font-medium">
-          <img
-            src="/jan.gif"
-            alt="Jan - Gaarsdal Hypnoterapi"
-            width={32}
-            height={32}
-            className="rounded-full opacity-80"
-          />
           <Link href="/">
             <a className="hover:opacity-90">{siteTitle}</a>
           </Link>
