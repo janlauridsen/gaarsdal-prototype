@@ -1,17 +1,12 @@
 /**
  * Chatbot.tsx
- * Version: 6.4.1
+ * TRIN 3 – Session-resume UX
  *
- * Ændringer ift 6.4:
- * - Hver samtale har nu stabil session-id (UUID)
- * - sessionId sendes til API ved hvert turn
+ * Additiv ændring:
+ * - Ét flag pr. conversation: requiresResumeConfirmation
+ * - Ét UI-branch før input
  *
- * Bevidst uændret:
- * - Prompt
- * - Flow-logik
- * - Evaluator-logik
- * - UI-layout
- * - Chips-adfærd
+ * Intet andet ændret.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -34,6 +29,10 @@ type Message = {
 type Conversation = {
   id: string;
   messages: Message[];
+  // ─────────────────────────
+  // TRIN 3 · SESSION FLAG
+  // ─────────────────────────
+  requiresResumeConfirmation?: boolean;
 };
 
 const UI_WELCOME =
@@ -48,6 +47,7 @@ function createConversation(): Conversation {
   return {
     id: crypto.randomUUID(),
     messages: [],
+    requiresResumeConfirmation: false,
   };
 }
 
@@ -134,6 +134,8 @@ export default function Chatbot() {
         next[index] = {
           ...next[index],
           messages: [...next[index].messages, assistantMessage],
+          requiresResumeConfirmation:
+            data.requires_resume_confirmation ?? false,
         };
         return next;
       });
@@ -201,54 +203,94 @@ export default function Chatbot() {
               id="gaarsdal-chat-window"
               className="flex-1 overflow-y-auto p-4 space-y-3 messages"
             >
-              {current.messages.length === 0 && (
-                <div className="message bot whitespace-pre-wrap p-4 max-w-[85%]">
-                  {UI_WELCOME}
+              {current.requiresResumeConfirmation && (
+                <div className="p-4 border rounded bg-yellow-50 text-sm">
+                  <p className="mb-2">
+                    Denne samtale er fra tidligere. Vil du genoptage den eller
+                    starte en ny?
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setStack((prev) => {
+                          const next = [...prev];
+                          next[index] = {
+                            ...next[index],
+                            requiresResumeConfirmation: false,
+                          };
+                          return next;
+                        });
+                      }}
+                      className="px-3 py-1 border rounded"
+                    >
+                      Genoptag
+                    </button>
+                    <button
+                      onClick={() => {
+                        setStack((prev) => {
+                          const next = [...prev];
+                          next[index] = createConversation();
+                          return next;
+                        });
+                      }}
+                      className="px-3 py-1 border rounded"
+                    >
+                      Start ny
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {current.messages.map((m, i) => {
-                const isLastBot =
-                  m.role === "assistant" &&
-                  i === current.messages.length - 1;
-
-                return (
-                  <div key={i} className="space-y-2">
-                    <div
-                      className={`flex ${
-                        m.role === "user"
-                          ? "justify-end"
-                          : "justify-start"
-                      }`}
-                    >
-                      <div
-                        className={`message ${
-                          m.role === "user" ? "user" : "bot"
-                        } px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
-                      >
-                        {m.content}
-                      </div>
-                    </div>
-
-                    {isLastBot &&
-                      m.evaluatorChips &&
-                      m.evaluatorChips.length > 0 && (
-                        <div className="flex gap-2 flex-wrap pl-2">
-                          {m.evaluatorChips.map((chip, ci) => (
-                            <button
-                              key={ci}
-                              onClick={() => handleChipClick(chip)}
-                              className="text-xs px-3 py-1 rounded-full border bg-white hover:bg-gray-100"
-                              title="Forslag"
-                            >
-                              {chip}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+              {!current.requiresResumeConfirmation &&
+                current.messages.length === 0 && (
+                  <div className="message bot whitespace-pre-wrap p-4 max-w-[85%]">
+                    {UI_WELCOME}
                   </div>
-                );
-              })}
+                )}
+
+              {!current.requiresResumeConfirmation &&
+                current.messages.map((m, i) => {
+                  const isLastBot =
+                    m.role === "assistant" &&
+                    i === current.messages.length - 1;
+
+                  return (
+                    <div key={i} className="space-y-2">
+                      <div
+                        className={`flex ${
+                          m.role === "user"
+                            ? "justify-end"
+                            : "justify-start"
+                        }`}
+                      >
+                        <div
+                          className={`message ${
+                            m.role === "user" ? "user" : "bot"
+                          } px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
+                        >
+                          {m.content}
+                        </div>
+                      </div>
+
+                      {isLastBot &&
+                        m.evaluatorChips &&
+                        m.evaluatorChips.length > 0 && (
+                          <div className="flex gap-2 flex-wrap pl-2">
+                            {m.evaluatorChips.map((chip, ci) => (
+                              <button
+                                key={ci}
+                                onClick={() => handleChipClick(chip)}
+                                className="text-xs px-3 py-1 rounded-full border bg-white hover:bg-gray-100"
+                                title="Forslag"
+                              >
+                                {chip}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                    </div>
+                  );
+                })}
 
               {loading && (
                 <div className="text-sm opacity-60">Skriver…</div>
@@ -269,6 +311,7 @@ export default function Chatbot() {
                 rows={2}
                 className="w-full border rounded-md px-3 py-2 text-sm resize-none"
                 placeholder="Skriv her…"
+                disabled={current.requiresResumeConfirmation}
               />
 
               <div className="mt-3 flex justify-between items-center">
