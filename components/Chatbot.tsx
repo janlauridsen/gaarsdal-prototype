@@ -1,13 +1,3 @@
-/**
- * Chatbot.tsx
- * TRIN 3 – Session-resume UX
- *
- * Additiv ændring:
- * - Avatar i chatbot-header (Jan)
- *
- * Intet andet ændret.
- */
-
 import { useEffect, useRef, useState } from "react";
 import {
   ChatBubbleOvalLeftEllipsisIcon,
@@ -149,7 +139,7 @@ export default function Chatbot() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent text-white shadow flex items-center justify-center"
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full gaarsdal-launcher flex items-center justify-center"
           aria-label="Åbn chat"
         >
           <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
@@ -177,11 +167,11 @@ export default function Chatbot() {
             <header className="flex justify-between items-center px-4 py-3">
               <div className="flex items-center gap-2">
                 <img
-                  src="/jan.gif"
-                  alt="Jan the man"
-                  width={32}
-                  height={32}
-                  className="rounded-full opacity-90"
+                  src="/JanAvatarGray.png"
+                  alt="Jan – Gaarsdal Hypnoterapi"
+                  width={24}
+                  height={24}
+                  className="rounded-full opacity-80"
                 />
                 <span className="font-medium">Gaarsdal</span>
               </div>
@@ -288,7 +278,6 @@ export default function Chatbot() {
                                 key={ci}
                                 onClick={() => handleChipClick(chip)}
                                 className="text-xs px-3 py-1 rounded-full border bg-white hover:bg-gray-100"
-                                title="Forslag"
                               >
                                 {chip}
                               </button>
@@ -307,6 +296,18 @@ export default function Chatbot() {
 
             {/* FOOTER */}
             <footer className="p-3 border-t">
+              {/* STACK DOTS – GENINDSAT */}
+              <div className="gaarsdal-stack-dots mb-2">
+                {stack.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`gaarsdal-stack-dot ${
+                      i === index ? "active" : ""
+                    }`}
+                  />
+                ))}
+              </div>
+
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -327,16 +328,7 @@ export default function Chatbot() {
                   <button
                     onClick={pushNewConversation}
                     disabled={stack.length >= MAX_SESSIONS}
-                    title={
-                      stack.length >= MAX_SESSIONS
-                        ? "Maks. 5 samtaler"
-                        : "Ny samtale"
-                    }
-                    className={
-                      stack.length >= MAX_SESSIONS
-                        ? "opacity-40 cursor-not-allowed"
-                        : ""
-                    }
+                    title="Ny samtale"
                   >
                     <PlusIcon className="w-5 h-5" />
                   </button>
@@ -345,7 +337,6 @@ export default function Chatbot() {
                     onClick={goPrev}
                     disabled={index === 0}
                     title="Forrige samtale"
-                    className={index === 0 ? "opacity-40" : ""}
                   >
                     <BackwardIcon className="w-5 h-5" />
                   </button>
@@ -354,9 +345,6 @@ export default function Chatbot() {
                     onClick={goNext}
                     disabled={index === stack.length - 1}
                     title="Næste samtale"
-                    className={
-                      index === stack.length - 1 ? "opacity-40" : ""
-                    }
                   >
                     <ForwardIcon className="w-5 h-5" />
                   </button>
