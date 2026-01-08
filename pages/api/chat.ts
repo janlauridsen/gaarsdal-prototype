@@ -10,6 +10,14 @@ import { TurnLog } from "../../chatbot/log.types";
 import { Redis } from "@upstash/redis";
 
 /* =========
+   VERSIONERING (FAST)
+   ========= */
+const CODE_VERSION = "backend@v7.0.3";
+const PROMPT_VERSION = "prompt@v7.0.3";
+const EVALUATOR_VERSION = "evaluator@v7.0.3";
+const RESHAPE_VERSION = "reshape@v7.0.3";
+
+/* =========
    REDIS (SESSION OBSERVATION)
    ========= */
 const redis = Redis.fromEnv();
@@ -21,7 +29,7 @@ const ENABLE_AI_CALL_LOGGING =
   process.env.ENABLE_AI_CALL_LOGGING === "true";
 
 /* =========
-   SESSION CONFIG (TRIN 2)
+   SESSION CONFIG
    ========= */
 const SESSION_TIMEOUT_HOURS = 24;
 
@@ -80,12 +88,21 @@ async function callOpenAI(params: {
       session_id: params.session_id,
       turn_id: params.turn_id,
       call_id: params.call_id,
+
+      execution_context: "live",
+
+      code_version: CODE_VERSION,
+      prompt_version: PROMPT_VERSION,
+      evaluator_version: EVALUATOR_VERSION,
+      reshape_version: RESHAPE_VERSION,
+
       model,
       temperature,
       request_messages: params.messages,
       response_raw: raw,
       response_text: text,
       latency_ms: latency,
+      status: "ok",
     };
 
     await writeAiCallLog(aiLog);
@@ -126,7 +143,7 @@ export default async function handler(
     const turnId = userMessages.length;
 
     /* =========
-       TRIN 2 · SESSION OBSERVATION (ADDIVT)
+       SESSION OBSERVATION
        ========= */
     const now = Date.now();
     const sessionKey = `session:last_user_at:${sessionId}`;
@@ -144,14 +161,12 @@ export default async function handler(
       ? now - new Date(previousLastUserAt).getTime()
       : 0;
 
-    const dialogueExpiresAt = previousLastUserAt
-      ? new Date(
-          new Date(previousLastUserAt).getTime() +
-            SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
-        ).toISOString()
-      : new Date(
-          now + SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
-        ).toISOString();
+    const dialogueExpiresAt = new Date(
+      (previousLastUserAt
+        ? new Date(previousLastUserAt).getTime()
+        : now) +
+        SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
+    ).toISOString();
 
     const requiresResumeConfirmation =
       Boolean(previousLastUserAt) &&
@@ -218,12 +233,19 @@ ${evaluatorText}
     });
 
     /* =========
-       TURN LOG (PRIMARY)
+       TURN LOG
        ========= */
     const logEntry: TurnLog = {
       timestamp: new Date().toISOString(),
+      execution_context: "live",
+
       session_id: sessionId ?? "unknown",
       turn_id: turnId,
+
+      code_version: CODE_VERSION,
+      prompt_version: PROMPT_VERSION,
+      evaluator_version: EVALUATOR_VERSION,
+      reshape_version: RESHAPE_VERSION,
 
       user_text: lastUserText,
 
@@ -237,13 +259,14 @@ ${evaluatorText}
       chips_present: false,
       chip_clicked: null,
 
-      // ─────────────────────────
-      // TRIN 1 + 2 · OBSERVABILITY
-      // ─────────────────────────
       last_user_at: lastUserAt,
       session_age_ms: sessionAgeMs,
       dialogue_expires_at: dialogueExpiresAt,
       resume_prompted: false,
+
+      user_message_length: lastUserText.length,
+      ai_message_length: janFinal.length,
+      turn_count_total: turnId,
 
       latency_ms: Date.now() - startedAt,
       status: "ok",
@@ -258,6 +281,8 @@ ${evaluatorText}
   } catch (err: any) {
     const errorLog: TurnLog = {
       timestamp: new Date().toISOString(),
+      execution_context: "live",
+
       session_id: req.body?.sessionId ?? "unknown",
       turn_id: -1,
 
