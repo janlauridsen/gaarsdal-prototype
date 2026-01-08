@@ -33,7 +33,7 @@ export default function Header({
         {/* Logo / titel */}
         <div className="flex items-center gap-2 text-text font-sans text-lg font-medium">
           <img
-            src="/JanAvatarGray.png"
+            src="/jan.gif"
             alt=""
             width={20}
             height={20}
