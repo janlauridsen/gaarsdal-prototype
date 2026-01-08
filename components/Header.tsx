@@ -34,7 +34,7 @@ export default function Header({
         <div className="flex items-center gap-2 text-text font-sans text-lg font-medium">
           <img
             src="/jan.gif"
-            alt=""
+            alt="Jan - Gaarsdal Hypnoterapi"
             width={32}
             height={32}
             className="rounded-full opacity-80"
