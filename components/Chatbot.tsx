@@ -178,9 +178,9 @@ export default function Chatbot() {
               <div className="flex items-center gap-2">
                 <img
                   src="/jan.gif"
-                  alt=""
-                  width={28}
-                  height={28}
+                  alt="Jan the man"
+                  width={32}
+                  height={32}
                   className="rounded-full opacity-90"
                 />
                 <span className="font-medium">Gaarsdal</span>
