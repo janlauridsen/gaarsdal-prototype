@@ -168,7 +168,7 @@ export default function Chatbot() {
               <div className="flex items-center gap-2">
                 <img
                   src="/jan.gif"
-                  alt=""
+                  alt="Jan – Gaarsdal Hypnoterapi"
                   width={24}
                   height={24}
                   className="rounded-full opacity-80"
@@ -180,6 +180,7 @@ export default function Chatbot() {
                 <button
                   onClick={() => setExpanded((v) => !v)}
                   title="Forstør / formindsk"
+                  className="gaarsdal-icon-btn"
                 >
                   <ArrowsPointingOutIcon className="w-5 h-5" />
                 </button>
@@ -189,6 +190,7 @@ export default function Chatbot() {
                     setExpanded(false);
                   }}
                   title="Luk"
+                  className="gaarsdal-icon-btn"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
@@ -296,7 +298,6 @@ export default function Chatbot() {
 
             {/* FOOTER */}
             <footer className="p-3 border-t">
-              {/* STACK DOTS – GENINDSAT */}
               <div className="gaarsdal-stack-dots mb-2">
                 {stack.map((_, i) => (
                   <div
@@ -329,6 +330,7 @@ export default function Chatbot() {
                     onClick={pushNewConversation}
                     disabled={stack.length >= MAX_SESSIONS}
                     title="Ny samtale"
+                    className="gaarsdal-icon-btn disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <PlusIcon className="w-5 h-5" />
                   </button>
@@ -337,6 +339,7 @@ export default function Chatbot() {
                     onClick={goPrev}
                     disabled={index === 0}
                     title="Forrige samtale"
+                    className="gaarsdal-icon-btn disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <BackwardIcon className="w-5 h-5" />
                   </button>
@@ -345,6 +348,7 @@ export default function Chatbot() {
                     onClick={goNext}
                     disabled={index === stack.length - 1}
                     title="Næste samtale"
+                    className="gaarsdal-icon-btn disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <ForwardIcon className="w-5 h-5" />
                   </button>
@@ -352,6 +356,7 @@ export default function Chatbot() {
                   <button
                     onClick={clearCurrentConversation}
                     title="Slet aktiv samtale"
+                    className="gaarsdal-icon-btn"
                   >
                     <TrashIcon className="w-5 h-5" />
                   </button>
