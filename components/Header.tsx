@@ -35,8 +35,8 @@ export default function Header({
           <img
             src="/jan.gif"
             alt=""
-            width={20}
-            height={20}
+            width={32}
+            height={32}
             className="rounded-full opacity-80"
           />
           <Link href="/">
