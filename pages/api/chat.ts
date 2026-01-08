@@ -7,12 +7,23 @@ import {
   AiCallLogEntry,
 } from "../../chatbot/logWriter";
 import { TurnLog } from "../../chatbot/log.types";
+import { Redis } from "@upstash/redis";
+
+/* =========
+   REDIS (SESSION OBSERVATION)
+   ========= */
+const redis = Redis.fromEnv();
 
 /* =========
    GLOBAL TOGGLE
    ========= */
 const ENABLE_AI_CALL_LOGGING =
   process.env.ENABLE_AI_CALL_LOGGING === "true";
+
+/* =========
+   SESSION CONFIG (TRIN 2)
+   ========= */
+const SESSION_TIMEOUT_HOURS = 24;
 
 /* =========
    PATHS
@@ -115,6 +126,38 @@ export default async function handler(
     const turnId = userMessages.length;
 
     /* =========
+       TRIN 2 · SESSION OBSERVATION (ADDIVT)
+       ========= */
+    const now = Date.now();
+    const sessionKey = `session:last_user_at:${sessionId}`;
+
+    const previousLastUserAt =
+      sessionId ? await redis.get<string>(sessionKey) : null;
+
+    const lastUserAt = new Date(now).toISOString();
+
+    if (sessionId) {
+      await redis.set(sessionKey, lastUserAt);
+    }
+
+    const sessionAgeMs = previousLastUserAt
+      ? now - new Date(previousLastUserAt).getTime()
+      : 0;
+
+    const dialogueExpiresAt = previousLastUserAt
+      ? new Date(
+          new Date(previousLastUserAt).getTime() +
+            SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
+        ).toISOString()
+      : new Date(
+          now + SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
+        ).toISOString();
+
+    const requiresResumeConfirmation =
+      Boolean(previousLastUserAt) &&
+      now > new Date(dialogueExpiresAt).getTime();
+
+    /* =========
        CALL 1 · JAN RAW
        ========= */
     const janRaw = await callOpenAI({
@@ -194,6 +237,14 @@ ${evaluatorText}
       chips_present: false,
       chip_clicked: null,
 
+      // ─────────────────────────
+      // TRIN 1 + 2 · OBSERVABILITY
+      // ─────────────────────────
+      last_user_at: lastUserAt,
+      session_age_ms: sessionAgeMs,
+      dialogue_expires_at: dialogueExpiresAt,
+      resume_prompted: false,
+
       latency_ms: Date.now() - startedAt,
       status: "ok",
     };
@@ -202,6 +253,7 @@ ${evaluatorText}
 
     return res.status(200).json({
       answer: janFinal,
+      requires_resume_confirmation: requiresResumeConfirmation,
     });
   } catch (err: any) {
     const errorLog: TurnLog = {
