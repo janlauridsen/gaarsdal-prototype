@@ -6,7 +6,8 @@
  * - Ét flag pr. conversation: requiresResumeConfirmation
  * - Ét UI-branch før input
  *
- * Intet andet ændret.
+ * UI-justering:
+ * - resume-box class (ingen logikændring)
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -29,9 +30,6 @@ type Message = {
 type Conversation = {
   id: string;
   messages: Message[];
-  // ─────────────────────────
-  // TRIN 3 · SESSION FLAG
-  // ─────────────────────────
   requiresResumeConfirmation?: boolean;
 };
 
@@ -171,14 +169,13 @@ export default function Chatbot() {
           />
 
           <div
-            className={`fixed z-50 gaarsdal-chatbot flex flex-col
-              ${
-                expanded
-                  ? "inset-4 md:inset-10"
-                  : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
-              }`}
+            className={`fixed z-50 gaarsdal-chatbot flex flex-col ${
+              expanded
+                ? "inset-4 md:inset-10"
+                : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
+            }`}
           >
-            <header className="flex justify-between items-center px-4 py-3">
+            <header className="flex justify-between items-center">
               <span className="font-medium">Gaarsdal</span>
               <div className="flex gap-2">
                 <button
@@ -201,10 +198,10 @@ export default function Chatbot() {
 
             <div
               id="gaarsdal-chat-window"
-              className="flex-1 overflow-y-auto p-4 space-y-3 messages"
+              className="flex-1 overflow-y-auto messages"
             >
               {current.requiresResumeConfirmation && (
-                <div className="p-4 border rounded bg-yellow-50 text-sm">
+                <div className="resume-box mb-3">
                   <p className="mb-2">
                     Denne samtale er fra tidligere. Vil du genoptage den eller
                     starte en ny?
@@ -221,7 +218,7 @@ export default function Chatbot() {
                           return next;
                         });
                       }}
-                      className="px-3 py-1 border rounded"
+                      className="px-3 py-1 border rounded text-sm"
                     >
                       Genoptag
                     </button>
@@ -233,7 +230,7 @@ export default function Chatbot() {
                           return next;
                         });
                       }}
-                      className="px-3 py-1 border rounded"
+                      className="px-3 py-1 border rounded text-sm"
                     >
                       Start ny
                     </button>
@@ -243,7 +240,7 @@ export default function Chatbot() {
 
               {!current.requiresResumeConfirmation &&
                 current.messages.length === 0 && (
-                  <div className="message bot whitespace-pre-wrap p-4 max-w-[85%]">
+                  <div className="message bot whitespace-pre-wrap">
                     {UI_WELCOME}
                   </div>
                 )}
@@ -266,7 +263,7 @@ export default function Chatbot() {
                         <div
                           className={`message ${
                             m.role === "user" ? "user" : "bot"
-                          } px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
+                          } whitespace-pre-wrap`}
                         >
                           {m.content}
                         </div>
@@ -281,7 +278,6 @@ export default function Chatbot() {
                                 key={ci}
                                 onClick={() => handleChipClick(chip)}
                                 className="text-xs px-3 py-1 rounded-full border bg-white hover:bg-gray-100"
-                                title="Forslag"
                               >
                                 {chip}
                               </button>
@@ -293,12 +289,12 @@ export default function Chatbot() {
                 })}
 
               {loading && (
-                <div className="text-sm opacity-60">Skriver…</div>
+                <div className="text-sm opacity-60 px-2">Skriver…</div>
               )}
               <div ref={messagesEndRef} />
             </div>
 
-            <footer className="p-3 border-t">
+            <footer>
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -309,7 +305,7 @@ export default function Chatbot() {
                   }
                 }}
                 rows={2}
-                className="w-full border rounded-md px-3 py-2 text-sm resize-none"
+                className="w-full border rounded-md px-3 py-2 resize-none"
                 placeholder="Skriv her…"
                 disabled={current.requiresResumeConfirmation}
               />
@@ -319,16 +315,6 @@ export default function Chatbot() {
                   <button
                     onClick={pushNewConversation}
                     disabled={stack.length >= MAX_SESSIONS}
-                    title={
-                      stack.length >= MAX_SESSIONS
-                        ? "Maks. 5 samtaler"
-                        : "Ny samtale"
-                    }
-                    className={
-                      stack.length >= MAX_SESSIONS
-                        ? "opacity-40 cursor-not-allowed"
-                        : ""
-                    }
                   >
                     <PlusIcon className="w-5 h-5" />
                   </button>
@@ -336,8 +322,6 @@ export default function Chatbot() {
                   <button
                     onClick={goPrev}
                     disabled={index === 0}
-                    title="Forrige samtale"
-                    className={index === 0 ? "opacity-40" : ""}
                   >
                     <BackwardIcon className="w-5 h-5" />
                   </button>
@@ -345,18 +329,11 @@ export default function Chatbot() {
                   <button
                     onClick={goNext}
                     disabled={index === stack.length - 1}
-                    title="Næste samtale"
-                    className={
-                      index === stack.length - 1 ? "opacity-40" : ""
-                    }
                   >
                     <ForwardIcon className="w-5 h-5" />
                   </button>
 
-                  <button
-                    onClick={clearCurrentConversation}
-                    title="Slet aktiv samtale"
-                  >
+                  <button onClick={clearCurrentConversation}>
                     <TrashIcon className="w-5 h-5" />
                   </button>
                 </div>
@@ -366,7 +343,6 @@ export default function Chatbot() {
                     <button
                       key={i}
                       onClick={() => setIndex(i)}
-                      title={`Samtale ${i + 1}`}
                       className={`w-2 h-2 rounded-full ${
                         i === index ? "bg-accent" : "bg-gray-300"
                       }`}
