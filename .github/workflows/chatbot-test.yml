@@ -17,6 +17,6 @@ jobs:
         run: |
           node ./tests/run-basic-test.js
         env:
-          CHATBOT_URL: CHATBOT_URL: https://gaarsdal-prototype.vercel.app/api/chat
+          CHATBOT_URL: https://gaarsdal-prototype-ba8o3b4xa-jan-lauridsens-projects.vercel.app/api/chat
           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
