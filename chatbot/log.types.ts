@@ -13,11 +13,23 @@ export type SoftFeedbackSignal =
   | "session_stalling"
   | null;
 
+/**
+ * TurnLog
+ * ─────────────────────────────
+ * Append-only log pr. turn
+ * Ingen felt slettes.
+ */
 export type TurnLog = {
+  // ───────────────
+  // Identitet
+  // ───────────────
   timestamp: string;
   session_id: string;
   turn_id: number;
 
+  // ───────────────
+  // Bruger / svar
+  // ───────────────
   user_text: string;
 
   jan_raw: string;
@@ -30,20 +42,34 @@ export type TurnLog = {
   chips_present: boolean;
   chip_clicked: string | null;
 
+  // ─────────────────────────────
+  // SESSION OBSERVATION
+  // ─────────────────────────────
   last_user_at?: string;
   session_age_ms?: number;
   dialogue_expires_at?: string;
   resume_prompted?: boolean;
 
+  // ─────────────────────────────
+  // TRIN A · RÅ MÅLINGER
+  // ─────────────────────────────
   turn_index?: number;
   user_message_length?: number;
   ai_message_length?: number;
 
+  // ─────────────────────────────
+  // TRIN A · TURN-OBSERVATION
+  // (ingen fortolkning)
+  // ─────────────────────────────
   turn_observation?: {
     question_count?: number;
     topic_hash?: string;
   };
 
+  // ─────────────────────────────
+  // TRIN B · AFLEDTE INDIKATORER
+  // (passive, ikke-styrende)
+  // ─────────────────────────────
   turn_indicators?: {
     progression_state?: "stalled" | "advancing" | "closing";
     alignment_state?: "low" | "medium" | "high";
@@ -52,8 +78,11 @@ export type TurnLog = {
     stop_signal_candidate?: StopSignal;
   };
 
+  // ─────────────────────────────
+  // TRIN C.5 · SESSION HEALTH (LET)
+  // ─────────────────────────────
   session_health?: {
-    score: number;
+    score: number; // 0–100
     factors: {
       avg_load?: "low" | "medium" | "high";
       high_load_turns?: number;
@@ -62,7 +91,8 @@ export type TurnLog = {
   };
 
   // ─────────────────────────────
-  // TRIN C.6 · BLØD FEEDBACK (PASSIV)
+  // TRIN C.6 · BLØD FEEDBACK
+  // (kun signal, ingen styring)
   // ─────────────────────────────
   soft_feedback?: {
     signal: SoftFeedbackSignal;
@@ -70,6 +100,9 @@ export type TurnLog = {
     based_on_turns: number;
   };
 
+  // ───────────────
+  // System
+  // ───────────────
   latency_ms: number;
   status: "ok" | "error";
   error?: string;
