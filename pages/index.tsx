@@ -8,7 +8,7 @@ export default function Home() {
       {/* HERO */}
       <section className="py-32 text-center px-6">
         <h1 className="text-h1 font-light mb-6 max-w-3xl mx-auto">
-          Hypnoterapi – en rolig og struktureret tilgang
+          Hypnoterapi – i en struktureret tilgang
         </h1>
 
         <p className="text-base-lg text-muted max-w-2xl mx-auto mb-10">
