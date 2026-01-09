@@ -1,13 +1,14 @@
+// pages/api/chat.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
+import { Redis } from "@upstash/redis";
 import {
   writeTurnLog,
   writeAiCallLog,
   AiCallLogEntry,
 } from "../../chatbot/logWriter";
 import { TurnLog } from "../../chatbot/log.types";
-import { Redis } from "@upstash/redis";
 
 /* =========
    REDIS
@@ -15,7 +16,7 @@ import { Redis } from "@upstash/redis";
 const redis = Redis.fromEnv();
 
 /* =========
-   GLOBAL TOGGLE
+   GLOBAL TOGGLES
    ========= */
 const ENABLE_AI_CALL_LOGGING =
   process.env.ENABLE_AI_CALL_LOGGING === "true";
@@ -35,7 +36,10 @@ const INDICATOR_PATH = path.join(
   process.cwd(),
   "chatbot/turn-indicator.md"
 );
-const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
+const FACTS_PATH = path.join(
+  process.cwd(),
+  "chatbot/fakta-gaarsdal.md"
+);
 
 function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
@@ -90,7 +94,6 @@ async function callOpenAI(params: {
       response_text: text,
       latency_ms: latency,
     };
-
     await writeAiCallLog(aiLog);
   }
 
@@ -138,7 +141,6 @@ export default async function handler(
       sessionId ? await redis.get<string>(sessionKey) : null;
 
     const lastUserAt = new Date(now).toISOString();
-
     if (sessionId) {
       await redis.set(sessionKey, lastUserAt);
     }
@@ -188,34 +190,6 @@ ${facts}
     });
 
     /* =========
-       CALL 2B · TURN INDICATOR
-       ========= */
-    const indicatorText = await callOpenAI({
-      call_id: "turn_indicator",
-      session_id: sessionId ?? "unknown",
-      turn_id: turnIndex,
-      messages: [
-        { role: "system", content: indicatorPrompt },
-        {
-          role: "user",
-          content: JSON.stringify({
-            user_text: lastUserText,
-            ai_text: janRaw,
-            user_message_length: lastUserText.length,
-            ai_message_length: janRaw.length,
-          }),
-        },
-      ],
-    });
-
-    let turnIndicators: any = null;
-    try {
-      turnIndicators = JSON.parse(indicatorText);
-    } catch {
-      turnIndicators = null;
-    }
-
-    /* =========
        CALL 3 · RESHAPE
        ========= */
     const janFinal = await callOpenAI({
@@ -238,6 +212,35 @@ ${evaluatorText}
         },
       ],
     });
+
+    /* =========
+       CALL 4 · TURN INDICATOR (PASSIV)
+       ========= */
+    let turnIndicators: TurnLog["turn_indicators"] | undefined;
+
+    try {
+      const indicatorRaw = await callOpenAI({
+        call_id: "turn_indicator",
+        session_id: sessionId ?? "unknown",
+        turn_id: turnIndex,
+        messages: [
+          { role: "system", content: indicatorPrompt },
+          {
+            role: "user",
+            content: JSON.stringify({
+              user_text: lastUserText,
+              ai_text: janFinal,
+              user_message_length: lastUserText.length,
+              ai_message_length: janFinal.length,
+            }),
+          },
+        ],
+      });
+
+      turnIndicators = JSON.parse(indicatorRaw);
+    } catch {
+      turnIndicators = undefined;
+    }
 
     /* =========
        TURN LOG
@@ -268,7 +271,7 @@ ${evaluatorText}
       dialogue_expires_at: dialogueExpiresAt,
       resume_prompted: false,
 
-      turn_indicators: turnIndicators ?? undefined,
+      turn_indicators: turnIndicators,
 
       latency_ms: Date.now() - startedAt,
       status: "ok",
@@ -302,7 +305,6 @@ ${evaluatorText}
     };
 
     await writeTurnLog(errorLog);
-
     return res.status(500).json({ error: "Internal server error" });
   }
 }
