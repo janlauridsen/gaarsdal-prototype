@@ -35,10 +35,10 @@ export type TurnObservation = {
  * TurnIndicators
  * ─────────────────────────────
  * Rå, tekniske indikatorer pr. turn.
- * Bruges til belastning og heuristik.
+ * load_estimate er kategorisk, ikke numerisk.
  */
 export type TurnIndicators = {
-  load_estimate?: number;
+  load_estimate?: "low" | "medium" | "high" | string;
 };
 
 /**
