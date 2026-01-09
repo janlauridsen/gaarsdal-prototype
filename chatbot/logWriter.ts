@@ -15,7 +15,7 @@ export async function writeTurnLog(entry: TurnLog) {
 /* =========
    AI CALL LOG
    ========= */
-type AiCallLogEntry = {
+export type AiCallLogEntry = {
   session_id: string;
   turn_id: number;
   call_id: string;
