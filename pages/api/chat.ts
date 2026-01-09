@@ -10,14 +10,6 @@ import { TurnLog } from "../../chatbot/log.types";
 import { Redis } from "@upstash/redis";
 
 /* =========
-   VERSIONERING (FAST)
-   ========= */
-const CODE_VERSION = "backend@v7.0.3";
-const PROMPT_VERSION = "prompt@v7.0.3";
-const EVALUATOR_VERSION = "evaluator@v7.0.3";
-const RESHAPE_VERSION = "reshape@v7.0.3";
-
-/* =========
    REDIS (SESSION OBSERVATION)
    ========= */
 const redis = Redis.fromEnv();
@@ -76,7 +68,6 @@ async function callOpenAI(params: {
   );
 
   const raw = await response.json();
-
   const text =
     raw?.choices?.[0]?.message?.content?.trim() ?? "";
 
@@ -88,21 +79,12 @@ async function callOpenAI(params: {
       session_id: params.session_id,
       turn_id: params.turn_id,
       call_id: params.call_id,
-
-      execution_context: "live",
-
-      code_version: CODE_VERSION,
-      prompt_version: PROMPT_VERSION,
-      evaluator_version: EVALUATOR_VERSION,
-      reshape_version: RESHAPE_VERSION,
-
       model,
       temperature,
       request_messages: params.messages,
       response_raw: raw,
       response_text: text,
       latency_ms: latency,
-      status: "ok",
     };
 
     await writeAiCallLog(aiLog);
@@ -140,7 +122,8 @@ export default async function handler(
       (m: any) => m.role === "user"
     );
     const lastUserText = userMessages.at(-1)?.content ?? "";
-    const turnId = userMessages.length;
+
+    const turnIndex = userMessages.length;
 
     /* =========
        SESSION OBSERVATION
@@ -162,15 +145,8 @@ export default async function handler(
       : 0;
 
     const dialogueExpiresAt = new Date(
-      (previousLastUserAt
-        ? new Date(previousLastUserAt).getTime()
-        : now) +
-        SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
+      now + SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
     ).toISOString();
-
-    const requiresResumeConfirmation =
-      Boolean(previousLastUserAt) &&
-      now > new Date(dialogueExpiresAt).getTime();
 
     /* =========
        CALL 1 · JAN RAW
@@ -178,7 +154,7 @@ export default async function handler(
     const janRaw = await callOpenAI({
       call_id: "jan_raw",
       session_id: sessionId ?? "unknown",
-      turn_id: turnId,
+      turn_id: turnIndex,
       messages: [
         {
           role: "system",
@@ -201,7 +177,7 @@ ${facts}
     const evaluatorText = await callOpenAI({
       call_id: "evaluator",
       session_id: sessionId ?? "unknown",
-      turn_id: turnId,
+      turn_id: turnIndex,
       messages: [
         { role: "system", content: evaluatorPrompt },
         { role: "user", content: janRaw },
@@ -214,7 +190,7 @@ ${facts}
     const janFinal = await callOpenAI({
       call_id: "reshape",
       session_id: sessionId ?? "unknown",
-      turn_id: turnId,
+      turn_id: turnIndex,
       messages: [
         { role: "system", content: reshapePrompt },
         {
@@ -237,15 +213,8 @@ ${evaluatorText}
        ========= */
     const logEntry: TurnLog = {
       timestamp: new Date().toISOString(),
-      execution_context: "live",
-
       session_id: sessionId ?? "unknown",
-      turn_id: turnId,
-
-      code_version: CODE_VERSION,
-      prompt_version: PROMPT_VERSION,
-      evaluator_version: EVALUATOR_VERSION,
-      reshape_version: RESHAPE_VERSION,
+      turn_id: turnIndex,
 
       user_text: lastUserText,
 
@@ -259,14 +228,20 @@ ${evaluatorText}
       chips_present: false,
       chip_clicked: null,
 
+      // ─────────────────────────
+      // RÅ MÅLINGER
+      // ─────────────────────────
+      turn_index: turnIndex,
+      user_message_length: lastUserText.length,
+      ai_message_length: janFinal.length,
+
+      // ─────────────────────────
+      // SESSION OBSERVATION
+      // ─────────────────────────
       last_user_at: lastUserAt,
       session_age_ms: sessionAgeMs,
       dialogue_expires_at: dialogueExpiresAt,
       resume_prompted: false,
-
-      user_message_length: lastUserText.length,
-      ai_message_length: janFinal.length,
-      turn_count_total: turnId,
 
       latency_ms: Date.now() - startedAt,
       status: "ok",
@@ -276,13 +251,10 @@ ${evaluatorText}
 
     return res.status(200).json({
       answer: janFinal,
-      requires_resume_confirmation: requiresResumeConfirmation,
     });
   } catch (err: any) {
     const errorLog: TurnLog = {
       timestamp: new Date().toISOString(),
-      execution_context: "live",
-
       session_id: req.body?.sessionId ?? "unknown",
       turn_id: -1,
 
