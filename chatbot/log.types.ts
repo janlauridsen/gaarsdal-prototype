@@ -9,9 +9,12 @@ export type StopSignal =
 /**
  * TurnLog
  * ─────────────────────────────
- * Append-only log pr. turn
- * Ingen felter her styrer adfærd.
- * Alt er observation eller afledt metadata.
+ * Append-only log pr. turn.
+ *
+ * PRINCIP:
+ * - Felter kan være udfyldt uden at være brugt.
+ * - Ingen felter slettes – kun udfases.
+ * - Future-use felter må IKKE påvirke runtime-adfærd.
  */
 export type TurnLog = {
   // ───────────────
@@ -37,7 +40,7 @@ export type TurnLog = {
   chip_clicked: string | null;
 
   // ─────────────────────────────
-  // SESSION OBSERVATION
+  // SESSION OBSERVATION (AKTIV)
   // ─────────────────────────────
   last_user_at?: string;
   session_age_ms?: number;
@@ -45,15 +48,15 @@ export type TurnLog = {
   resume_prompted?: boolean;
 
   // ─────────────────────────────
-  // TRIN A · RÅ MÅLINGER
+  // TRIN A · RÅ MÅLINGER (AKTIV)
   // ─────────────────────────────
   turn_index?: number;
   user_message_length?: number;
   ai_message_length?: number;
 
   // ─────────────────────────────
-  // TRIN A · TURN-OBSERVATION
-  // (ingen fortolkning)
+  // TRIN A · TURN-OBSERVATION (AKTIV)
+  // Objektive, billige målinger
   // ─────────────────────────────
   turn_observation?: {
     question_count?: number;
@@ -61,23 +64,23 @@ export type TurnLog = {
   };
 
   // ─────────────────────────────
-  // TRIN B · AFLEDTE INDIKATORER
-  // (passive, ikke-styrende)
+  // TRIN B · AFLEDTE INDIKATORER (AKTIV, PASSIV)
+  // Må IKKE styre flow direkte
   // ─────────────────────────────
   turn_indicators?: {
-    progression_state?: "stalled" | "advancing" | "closing";
-    alignment_state?: "low" | "medium" | "high";
-    stability_state?: "stable" | "drifting";
-    load_estimate?: "low" | "medium" | "high";
-    stop_signal_candidate?: StopSignal;
+    progression_state?: "stalled" | "advancing" | "closing"; // future-use
+    alignment_state?: "low" | "medium" | "high";             // future-use
+    stability_state?: "stable" | "drifting";                 // future-use
+    load_estimate?: "low" | "medium" | "high";               // AKTIV
+    stop_signal_candidate?: StopSignal;                      // future-use
   };
 
   // ─────────────────────────────
-  // TRIN C · SESSION HEALTH (PASSIV)
-  // (kun observation, ingen feedback)
+  // SESSION-LEVEL (AKTIV, PASSIV)
+  // Kun opsamling – ingen kontrol
   // ─────────────────────────────
   session_health?: {
-    score: number; // 0–1
+    score: number;
     factors: {
       avg_load?: "low" | "medium" | "high";
       high_load_turns?: number;
