@@ -1,4 +1,3 @@
-
 // chatbot/log.types.ts
 
 export type StopSignal =
@@ -10,8 +9,7 @@ export type StopSignal =
 /**
  * TurnLog
  * ─────────────────────────────
- * Primær, append-only log pr. turn
- * Alle nye felter er optionelle
+ * Append-only log pr. turn
  */
 export type TurnLog = {
   // ───────────────
@@ -37,7 +35,7 @@ export type TurnLog = {
   chip_clicked: string | null;
 
   // ─────────────────────────────
-  // TRIN 1 · OBSERVABILITY (session)
+  // SESSION OBSERVATION
   // ─────────────────────────────
   last_user_at?: string;
   session_age_ms?: number;
@@ -45,56 +43,31 @@ export type TurnLog = {
   resume_prompted?: boolean;
 
   // ─────────────────────────────
-  // TRIN 3 · RÅ MÅLINGER (turn)
-  // (objektive, billige)
+  // TRIN A · RÅ MÅLINGER
   // ─────────────────────────────
   turn_index?: number;
   user_message_length?: number;
   ai_message_length?: number;
 
   // ─────────────────────────────
-  // TRIN 4 · TURN-OBSERVATIONER
+  // TRIN A · TURN-OBSERVATION
   // (ingen fortolkning)
   // ─────────────────────────────
   turn_observation?: {
     question_count?: number;
     topic_hash?: string;
-    repetition_score?: number;
   };
 
   // ─────────────────────────────
-  // TRIN 5 · AFLEDTE INDIKATORER
-  // (AI-baseret, ikke-styrende)
+  // TRIN B · AFLEDTE INDIKATORER
+  // (passive, ikke-styrende)
   // ─────────────────────────────
   turn_indicators?: {
     progression_state?: "stalled" | "advancing" | "closing";
     alignment_state?: "low" | "medium" | "high";
     stability_state?: "stable" | "drifting";
     load_estimate?: "low" | "medium" | "high";
-    intent_state?:
-      | "info"
-      | "afklaring"
-      | "beslutning"
-      | "handling"
-      | "afslutning";
     stop_signal_candidate?: StopSignal;
-  };
-
-  // ─────────────────────────────
-  // TRIN 6 · FLOW-JUSTERING
-  // (kun registrering – ingen styring)
-  // ─────────────────────────────
-  flow_adjustment?: {
-    applied?: boolean;
-    strategy?:
-      | "none"
-      | "summarize_only"
-      | "reduce_questions"
-      | "shorten_response"
-      | "simplify_language"
-      | "clarify_one_point"
-      | "choose_one_topic"
-      | "pause_or_close";
   };
 
   // ───────────────
