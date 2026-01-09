@@ -6,18 +6,12 @@ export type StopSignal =
   | "overgang_til_handling"
   | null;
 
-export type SoftFeedbackSignal =
-  | "repeated_high_load"
-  | "repeated_low_progression"
-  | "repeated_misalignment"
-  | "session_stalling"
-  | null;
+export type LoadLevel = "low" | "medium" | "high";
 
 /**
  * TurnLog
  * ─────────────────────────────
  * Append-only log pr. turn
- * Ingen felt slettes.
  */
 export type TurnLog = {
   // ───────────────
@@ -59,7 +53,6 @@ export type TurnLog = {
 
   // ─────────────────────────────
   // TRIN A · TURN-OBSERVATION
-  // (ingen fortolkning)
   // ─────────────────────────────
   turn_observation?: {
     question_count?: number;
@@ -68,36 +61,30 @@ export type TurnLog = {
 
   // ─────────────────────────────
   // TRIN B · AFLEDTE INDIKATORER
-  // (passive, ikke-styrende)
   // ─────────────────────────────
   turn_indicators?: {
     progression_state?: "stalled" | "advancing" | "closing";
     alignment_state?: "low" | "medium" | "high";
     stability_state?: "stable" | "drifting";
-    load_estimate?: "low" | "medium" | "high";
+    load_estimate?: LoadLevel;
     stop_signal_candidate?: StopSignal;
   };
 
   // ─────────────────────────────
-  // TRIN C.5 · SESSION HEALTH (LET)
+  // TRIN C · SESSION-NIVEAU (blød)
   // ─────────────────────────────
   session_health?: {
-    score: number; // 0–100
+    score: number;
     factors: {
-      avg_load?: "low" | "medium" | "high";
+      avg_load?: LoadLevel;
       high_load_turns?: number;
       turn_count?: number;
     };
   };
 
-  // ─────────────────────────────
-  // TRIN C.6 · BLØD FEEDBACK
-  // (kun signal, ingen styring)
-  // ─────────────────────────────
   soft_feedback?: {
-    signal: SoftFeedbackSignal;
-    confidence: "low" | "medium" | "high";
-    based_on_turns: number;
+    note: string;
+    severity: "info" | "warning";
   };
 
   // ───────────────
