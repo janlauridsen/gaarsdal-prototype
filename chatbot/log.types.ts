@@ -1,5 +1,30 @@
 // chatbot/log.types.ts
 
+export type StopSignal =
+  | "afklaring_opnået"
+  | "bruger_lukker_dialog"
+  | "overgang_til_handling"
+  | null;
+
+/**
+ * CQCState
+ * ─────────────────────────────
+ * Conversation Quality Control
+ * Observerende kvalitets-tilstand pr. turn.
+ */
+export type CQCState = {
+  progress?: "good" | "neutral" | "stagnating";
+  redundancy?: "low" | "rising" | "high";
+  responsiveness?: "high" | "drifting";
+  closure?: "possible" | "blocked";
+  meta_noise?: "low" | "elevated";
+};
+
+/**
+ * TurnLog
+ * ─────────────────────────────
+ * Append-only log pr. turn.
+ */
 export type TurnLog = {
   // ───────────────
   // Identitet
@@ -34,19 +59,17 @@ export type TurnLog = {
   evaluator_hints?: string[];
   evaluator_chips?: string[];
 
-  cqc?: {
-    progress?: "good" | "neutral" | "stagnating";
-    redundancy?: "low" | "rising" | "high";
-    responsiveness?: "high" | "drifting";
-    closure?: "possible" | "blocked";
-    meta_noise?: "low" | "elevated";
-  };
+  /**
+   * CQC
+   * Observerende kvalitetsvurdering pr. turn.
+   */
+  cqc?: CQCState;
 
   // ───────────────
   // Session
   // ───────────────
   session?: {
-    stop_signal?: string | null;
+    stop_signal?: StopSignal;
     health?: {
       score: number;
       factors: {
