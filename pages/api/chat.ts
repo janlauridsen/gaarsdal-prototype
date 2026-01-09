@@ -34,7 +34,7 @@ function loadFile(p: string) {
 }
 
 /* =========
-   HELPERS (A + B)
+   HELPERS · TRIN A + B
    ========= */
 function countQuestions(text: string): number {
   return (text.match(/\?/g) || []).length;
@@ -56,37 +56,27 @@ function estimateLoad(len: number): "low" | "medium" | "high" {
 }
 
 /* =========
-   TRIN C.5 · SESSION HEALTH (PASSIV)
+   TRIN C.5 · SESSION HEALTH
    ========= */
 function computeSessionHealth(turns: TurnLog[]) {
   const turnCount = turns.length;
-  if (turnCount === 0) {
-    return {
-      score: 100,
-      factors: { turn_count: 0 },
-    };
-  }
+  if (turnCount === 0) return null;
 
-  const loads = turns
-    .map((t) => t.turn_indicators?.load_estimate)
-    .filter(Boolean) as ("low" | "medium" | "high")[];
+  const highLoadTurns = turns.filter(
+    (t) => t.turn_indicators?.load_estimate === "high"
+  ).length;
 
-  const highLoadTurns = loads.filter((l) => l === "high").length;
+  const avgLoad =
+    highLoadTurns / turnCount > 0.5
+      ? "high"
+      : highLoadTurns > 0
+      ? "medium"
+      : "low";
 
-  let avgLoad: "low" | "medium" | "high" = "low";
-  if (loads.length) {
-    const weight =
-      loads.reduce((s, l) => s + (l === "high" ? 3 : l === "medium" ? 2 : 1), 0) /
-      loads.length;
-    avgLoad = weight >= 2.5 ? "high" : weight >= 1.8 ? "medium" : "low";
-  }
-
-  // Simpel, transparent score
-  let score = 100;
-  score -= highLoadTurns * 10;        // mange tunge svar = dårligere UX
-  score -= Math.max(0, turnCount - 6) * 5; // meget lange sessions koster lidt
-
-  score = Math.max(0, Math.min(100, score));
+  const score = Math.max(
+    0,
+    100 - highLoadTurns * 15 - Math.max(0, turnCount - 5) * 5
+  );
 
   return {
     score,
@@ -96,6 +86,41 @@ function computeSessionHealth(turns: TurnLog[]) {
       turn_count: turnCount,
     },
   };
+}
+
+/* =========
+   TRIN C.6 · BLØD FEEDBACK
+   ========= */
+function detectSoftFeedback(turns: TurnLog[]) {
+  if (turns.length < 3) return null;
+
+  const last = turns.slice(-3);
+
+  const highLoadCount = last.filter(
+    (t) => t.turn_indicators?.load_estimate === "high"
+  ).length;
+
+  if (highLoadCount >= 2) {
+    return {
+      signal: "repeated_high_load" as const,
+      confidence: highLoadCount === 3 ? "high" : "medium",
+      based_on_turns: highLoadCount,
+    };
+  }
+
+  const stalledCount = last.filter(
+    (t) => t.turn_indicators?.progression_state === "stalled"
+  ).length;
+
+  if (stalledCount >= 2) {
+    return {
+      signal: "session_stalling" as const,
+      confidence: stalledCount === 3 ? "high" : "medium",
+      based_on_turns: stalledCount,
+    };
+  }
+
+  return null;
 }
 
 /* =========
@@ -146,7 +171,6 @@ async function callOpenAI(params: {
       response_text: text,
       latency_ms: latency,
     };
-
     await writeAiCallLog(aiLog);
   }
 
@@ -166,7 +190,6 @@ export default async function handler(
 
   try {
     const { messages, sessionId } = req.body;
-
     if (!Array.isArray(messages)) {
       return res.status(400).json({ error: "Invalid messages" });
     }
@@ -199,6 +222,16 @@ export default async function handler(
     const dialogueExpiresAt = new Date(
       now + SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
     ).toISOString();
+
+    /* LOAD EXISTING TURNS */
+    const existingTurnsRaw =
+      sessionId
+        ? await redis.lrange(`chatlog:${sessionId}`, 0, -1)
+        : [];
+
+    const existingTurns: TurnLog[] = existingTurnsRaw.map((r) =>
+      JSON.parse(r)
+    );
 
     /* CALLS */
     const janRaw = await callOpenAI({
@@ -237,24 +270,30 @@ export default async function handler(
       ],
     });
 
-    /* ───────────────
-       SESSION HEALTH
-       ─────────────── */
-    const existingTurnsRaw = sessionId
-      ? await redis.lrange(`chatlog:${sessionId}`, 0, -1)
-      : [];
+    /* INDICATORS */
+    const loadEstimate = estimateLoad(janFinal.length);
 
-    const existingTurns: TurnLog[] = existingTurnsRaw
-      .map((r) => {
-        try {
-          return JSON.parse(r);
-        } catch {
-          return null;
-        }
-      })
-      .filter(Boolean) as TurnLog[];
+    const tempTurn: TurnLog = {
+      timestamp: "",
+      session_id: sessionId,
+      turn_id: turnIndex,
+      user_text: lastUserText,
+      jan_raw: "",
+      jan_final: "",
+      answer: "",
+      evaluator_text: null,
+      evaluator_present: false,
+      chips_present: false,
+      chip_clicked: null,
+      turn_indicators: { load_estimate: loadEstimate },
+      latency_ms: 0,
+      status: "ok",
+    };
 
-    const sessionHealth = computeSessionHealth(existingTurns);
+    const allTurns = [...existingTurns, tempTurn];
+
+    const sessionHealth = computeSessionHealth(allTurns);
+    const softFeedback = detectSoftFeedback(allTurns);
 
     /* LOG */
     const logEntry: TurnLog = {
@@ -283,10 +322,11 @@ export default async function handler(
       },
 
       turn_indicators: {
-        load_estimate: estimateLoad(janFinal.length),
+        load_estimate: loadEstimate,
       },
 
-      session_health: sessionHealth,
+      session_health: sessionHealth ?? undefined,
+      soft_feedback: softFeedback ?? undefined,
 
       last_user_at: lastUserAt,
       session_age_ms: sessionAgeMs,
@@ -298,7 +338,6 @@ export default async function handler(
     };
 
     await writeTurnLog(logEntry);
-
     return res.status(200).json({ answer: janFinal });
   } catch (err: any) {
     const errorLog: TurnLog = {
