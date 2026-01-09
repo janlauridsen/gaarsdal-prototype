@@ -1,0 +1,13 @@
+{
+  "name": "basic_sanity",
+  "session_id": "test_basic_v1",
+  "turns": [
+    "hej",
+    "jeg er lidt stresset",
+    "ok tak"
+  ],
+  "assertions": {
+    "max_avg_load": "medium"
+  }
+}
+
