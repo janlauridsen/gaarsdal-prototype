@@ -19,7 +19,7 @@ function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
 }
 
-/* TRIN A helpers */
+/* TRIN A */
 function countQuestions(text: string): number {
   return (text.match(/\?/g) || []).length;
 }
@@ -37,7 +37,7 @@ function estimateLoad(len: number): "low" | "medium" | "high" {
   return "high";
 }
 
-/* TRIN C helper (ingen sideeffekter) */
+/* TRIN C */
 function computeControlSignal(input: {
   recentUserTexts: string[];
   recentLoads: Array<"low" | "medium" | "high">;
@@ -45,15 +45,24 @@ function computeControlSignal(input: {
   const { recentUserTexts, recentLoads } = input;
 
   const shortReplies = recentUserTexts.filter(t => t.trim().length <= 8).length >= 2;
-  const repeatedLoadHigh = recentLoads.filter(l => l === "high").length >= 2;
+  const repeatedHigh = recentLoads.filter(l => l === "high").length >= 2;
 
-  if (shortReplies) {
-    return { mode: "close", reason: "gentagne bekræftelser/korte svar" };
-  }
-  if (repeatedLoadHigh) {
-    return { mode: "simplify", reason: "gentagne høje belastninger" };
-  }
+  if (shortReplies) return { mode: "close", reason: "gentagne korte svar" };
+  if (repeatedHigh) return { mode: "simplify", reason: "gentagen høj belastning" };
   return { mode: "normal", reason: "ingen mønster" };
+}
+
+function reshapeHintFor(mode: "normal" | "simplify" | "clarify" | "close"): string {
+  switch (mode) {
+    case "simplify":
+      return "Hold svaret kort. Ét fokus. Undgå spørgsmål.";
+    case "clarify":
+      return "Afklar ét punkt. Stil højst ét simpelt spørgsmål.";
+    case "close":
+      return "Afslut roligt uden at åbne nye spor.";
+    default:
+      return "";
+  }
 }
 
 /* OPENAI */
@@ -129,7 +138,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       now + SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
     ).toISOString();
 
-    // Calls
+    // JAN RAW
     const janRaw = await callOpenAI({
       call_id: "jan_raw",
       session_id: sessionId,
@@ -140,6 +149,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ],
     });
 
+    // EVALUATOR
     const evaluatorText = await callOpenAI({
       call_id: "evaluator",
       session_id: sessionId,
@@ -150,23 +160,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ],
     });
 
+    // TRIN A
+    const loadEstimate = estimateLoad(janRaw.length);
+    const recentUserTexts = userMessages.slice(-3).map((m: any) => m.content);
+    const control = computeControlSignal({
+      recentUserTexts,
+      recentLoads: [loadEstimate],
+    });
+
+    // RESHAPE med C.2 hint
+    const controlHint = reshapeHintFor(control.mode);
     const janFinal = await callOpenAI({
       call_id: "reshape",
       session_id: sessionId,
       turn_id: turnIndex,
       messages: [
-        { role: "system", content: reshapePrompt },
-        { role: "user", content: `JAN RAW:\n${janRaw}\n\nEVALUATOR:\n${evaluatorText}` },
+        {
+          role: "system",
+          content: controlHint
+            ? `${reshapePrompt}\n\nSTILSIGNAL:\n${controlHint}`
+            : reshapePrompt,
+        },
+        {
+          role: "user",
+          content: `JAN RAW:\n${janRaw}\n\nEVALUATOR:\n${evaluatorText}`,
+        },
       ],
     });
-
-    // TRIN A
-    const loadEstimate = estimateLoad(janFinal.length);
-
-    // TRIN C (kun beregning + log)
-    const recentUserTexts = userMessages.slice(-3).map((m: any) => m.content);
-    const recentLoads = [loadEstimate]; // minimal nu, udvides senere
-    const control = computeControlSignal({ recentUserTexts, recentLoads });
 
     const logEntry: TurnLog = {
       timestamp: new Date().toISOString(),
@@ -194,7 +214,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
 
       turn_indicators: {
-        load_estimate: loadEstimate,
+        load_estimate: estimateLoad(janFinal.length),
       },
 
       control_signal: {
