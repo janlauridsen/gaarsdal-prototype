@@ -1,39 +1,5 @@
 // chatbot/log.types.ts
 
-export type StopSignal =
-  | "afklaring_opnået"
-  | "bruger_lukker_dialog"
-  | "overgang_til_handling"
-  | null;
-
-/**
- * CQCState
- * ─────────────────────────────
- * Conversation Quality Control
- * Observerende kvalitets-tilstand pr. turn.
- *
- * PRINCIP:
- * - Snapshot, ikke score
- * - Ingen aggregering her
- * - Bruges kun til analyse og Reshape-disciplin
- */
-export type CQCState = {
-  progress?: "good" | "neutral" | "stagnating";
-  redundancy?: "low" | "rising" | "high";
-  responsiveness?: "high" | "drifting";
-  closure?: "possible" | "blocked";
-  meta_noise?: "low" | "elevated";
-};
-
-/**
- * TurnLog
- * ─────────────────────────────
- * Append-only log pr. turn.
- *
- * PRINCIP:
- * - Felter kan være udfyldt uden at være brugt.
- * - Ingen felter slettes – kun udfases.
- */
 export type TurnLog = {
   // ───────────────
   // Identitet
@@ -43,11 +9,22 @@ export type TurnLog = {
   timestamp: string;
 
   // ───────────────
-  // Bruger / AI
+  // Bruger / AI (kanoniske felter)
   // ───────────────
   user_input: string;
   jan_raw_output: string;
   jan_final_output: string;
+
+  /**
+   * Runtime aliases
+   * ─────────────────
+   * Bruges af chat.ts.
+   * Bevares for kompatibilitet.
+   */
+  user_text?: string;
+  jan_raw?: string;
+  jan_final?: string;
+  answer?: string;
 
   // ───────────────
   // Evaluator
@@ -57,18 +34,19 @@ export type TurnLog = {
   evaluator_hints?: string[];
   evaluator_chips?: string[];
 
-  /**
-   * CQC
-   * Observerende kvalitetsvurdering pr. turn.
-   * Må være undefined hvis evaluator ikke er aktiv.
-   */
-  cqc?: CQCState;
+  cqc?: {
+    progress?: "good" | "neutral" | "stagnating";
+    redundancy?: "low" | "rising" | "high";
+    responsiveness?: "high" | "drifting";
+    closure?: "possible" | "blocked";
+    meta_noise?: "low" | "elevated";
+  };
 
   // ───────────────
-  // Session (afledt)
+  // Session
   // ───────────────
   session?: {
-    stop_signal?: StopSignal;
+    stop_signal?: string | null;
     health?: {
       score: number;
       factors: {
