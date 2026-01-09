@@ -34,7 +34,7 @@ function loadFile(p: string) {
 }
 
 /* =========
-   HELPERS (AKTIVE, DETERMINISTISKE)
+   HELPERS
    ========= */
 function countQuestions(text: string): number {
   return (text.match(/\?/g) || []).length;
@@ -193,7 +193,7 @@ export default async function handler(
       ],
     });
 
-    /* SESSION HEALTH (PASSIV OPSAMLING) */
+    /* SESSION HEALTH (STRUKTURERET) */
     const load = estimateLoad(janFinal.length);
     const sessionHealth = {
       score: load === "high" ? 0.6 : load === "medium" ? 0.8 : 1.0,
@@ -210,36 +210,41 @@ export default async function handler(
       session_id: sessionId,
       turn_id: turnIndex,
 
-      user_text: lastUserText,
-      jan_raw: janRaw,
-      jan_final: janFinal,
-      answer: janFinal,
+      user_input: lastUserText,
+      jan_raw_output: janRaw,
+      jan_final_output: janFinal,
 
-      evaluator_text: evaluatorText,
       evaluator_present: Boolean(evaluatorText),
+      evaluator_summary: undefined,
+      evaluator_hints: undefined,
+      evaluator_chips: undefined,
 
-      chips_present: false,
-      chip_clicked: null,
-
-      turn_index: turnIndex,
-      user_message_length: lastUserText.length,
-      ai_message_length: janFinal.length,
-
-      turn_observation: {
-        question_count: countQuestions(janFinal),
-        topic_hash: simpleTopicHash(lastUserText),
+      session: {
+        health: sessionHealth,
       },
 
-      turn_indicators: {
-        load_estimate: load,
+      telemetry: {
+        answer: janFinal,
+        evaluator_text: evaluatorText,
+
+        turn_index: turnIndex,
+        user_message_length: lastUserText.length,
+        ai_message_length: janFinal.length,
+
+        turn_observation: {
+          question_count: countQuestions(janFinal),
+          topic_hash: simpleTopicHash(lastUserText),
+        },
+
+        turn_indicators: {
+          load_estimate: load,
+        },
+
+        last_user_at: lastUserAt,
+        session_age_ms: sessionAgeMs,
+        dialogue_expires_at: dialogueExpiresAt,
+        resume_prompted: false,
       },
-
-      session_health: sessionHealth,
-
-      last_user_at: lastUserAt,
-      session_age_ms: sessionAgeMs,
-      dialogue_expires_at: dialogueExpiresAt,
-      resume_prompted: false,
 
       latency_ms: Date.now() - startedAt,
       status: "ok",
@@ -253,15 +258,15 @@ export default async function handler(
       session_id: req.body?.sessionId ?? "unknown",
       turn_id: -1,
 
-      user_text: "",
-      jan_raw: "",
-      jan_final: "",
-      answer: "",
+      user_input: "",
+      jan_raw_output: "",
+      jan_final_output: "",
 
-      evaluator_text: null,
       evaluator_present: false,
-      chips_present: false,
-      chip_clicked: null,
+
+      telemetry: {
+        error: String(err),
+      },
 
       latency_ms: Date.now(),
       status: "error",
