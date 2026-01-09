@@ -41,9 +41,8 @@ export type TurnLog = {
   jan_final_output: string;
 
   /**
-   * Runtime aliases
-   * ─────────────────
-   * Bruges af chat.ts.
+   * Runtime aliases (chat.ts)
+   * ─────────────────────────
    * Bevares for kompatibilitet.
    */
   user_text?: string;
@@ -51,8 +50,11 @@ export type TurnLog = {
   jan_final?: string;
   answer?: string;
 
+  evaluator_text?: string;
+  chips_present?: boolean;
+
   // ───────────────
-  // Evaluator
+  // Evaluator (struktureret)
   // ───────────────
   evaluator_present: boolean;
   evaluator_summary?: string;
