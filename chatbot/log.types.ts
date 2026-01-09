@@ -1,49 +1,28 @@
 // chatbot/log.types.ts
 
-export type ExecutionContext = "live" | "replay" | "test";
-
 export type StopSignal =
   | "afklaring_opnået"
   | "bruger_lukker_dialog"
   | "overgang_til_handling"
   | null;
 
+/**
+ * TurnLog
+ * ─────────────────────────────
+ * Primær, append-only log pr. turn
+ * Alle nye felter er optionelle
+ */
 export type TurnLog = {
-  /* ───────── Core ───────── */
-
-  /**
-   * Hvornår log-entry er skabt
-   * ISO timestamp
-   */
+  // ───────────────
+  // Identitet
+  // ───────────────
   timestamp: string;
-
-  /**
-   * Hvordan dette turn blev eksekveret
-   * live = rigtig bruger
-   * replay = afspilning
-   * test = manuel / CI
-   */
-  execution_context?: ExecutionContext;
-
   session_id: string;
   turn_id: number;
 
-  /* ───────── Versionering ───────── */
-
-  /**
-   * Kodeversion (git tag el. commit)
-   */
-  code_version?: string;
-
-  /**
-   * Prompt-versioner
-   */
-  prompt_version?: string;
-  evaluator_version?: string;
-  reshape_version?: string;
-
-  /* ───────── Indhold ───────── */
-
+  // ───────────────
+  // Bruger / svar
+  // ───────────────
   user_text: string;
 
   jan_raw: string;
@@ -56,46 +35,63 @@ export type TurnLog = {
   chips_present: boolean;
   chip_clicked: string | null;
 
-  /* ─────────────────────────────
-     TRIN 1 · OBSERVABILITY
-     (ingen styring, kun måling)
-     ───────────────────────────── */
-
+  // ─────────────────────────────
+  // TRIN 1 · OBSERVABILITY (session)
+  // ─────────────────────────────
   last_user_at?: string;
   session_age_ms?: number;
   dialogue_expires_at?: string;
-
-  /**
-   * Om brugeren er blevet tilbudt
-   * genoptag / start ny
-   */
   resume_prompted?: boolean;
 
-  /**
-   * Brugerens valg, hvis relevant
-   */
-  resume_choice?: "resume" | "new" | null;
-
-  /**
-   * Stop-signal observeret i dette turn
-   */
-  stop_signal?: StopSignal;
-
-  /**
-   * Om stop-signal blev anvendt
-   */
-  stop_applied?: boolean;
-
-  /* ───────── UX-telemetri ───────── */
-
+  // ─────────────────────────────
+  // TRIN 3 · RÅ MÅLINGER (turn)
+  // (objektive, billige)
+  // ─────────────────────────────
+  turn_index?: number;
   user_message_length?: number;
   ai_message_length?: number;
 
-  time_since_last_turn_ms?: number;
-  turn_count_total?: number;
+  // ─────────────────────────────
+  // TRIN 4 · TURN-OBSERVATIONER
+  // (ingen fortolkning)
+  // ─────────────────────────────
+  turn_observation?: {
+    question_count?: number;
+    topic_hash?: string;
+  };
 
-  /* ───────── Drift ───────── */
+  // ─────────────────────────────
+  // TRIN 5 · AFLEDTE INDIKATORER
+  // (passive, ikke-styrende)
+  // ─────────────────────────────
+  turn_indicators?: {
+    progression_state?: "stalled" | "advancing" | "closing";
+    alignment_state?: "low" | "medium" | "high";
+    stability_state?: "stable" | "drifting";
+    load_estimate?: "low" | "medium" | "high";
+    stop_signal_candidate?: StopSignal;
+  };
 
+  // ─────────────────────────────
+  // TRIN 6 · FLOW-JUSTERING
+  // (kun registrering)
+  // ─────────────────────────────
+  flow_adjustment?: {
+    applied?: boolean;
+    strategy?:
+      | "none"
+      | "summarize_only"
+      | "reduce_questions"
+      | "shorten_response"
+      | "simplify_language"
+      | "clarify_one_point"
+      | "choose_one_topic"
+      | "pause_or_close";
+  };
+
+  // ───────────────
+  // System
+  // ───────────────
   latency_ms: number;
   status: "ok" | "error";
   error?: string;
