@@ -1,15 +1,29 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
-import { writeTurnLog, writeAiCallLog, AiCallLogEntry } from "../../chatbot/logWriter";
+import {
+  writeTurnLog,
+  writeAiCallLog,
+  AiCallLogEntry,
+} from "../../chatbot/logWriter";
 import { TurnLog } from "../../chatbot/log.types";
 import { Redis } from "@upstash/redis";
 
+/* =========
+   REDIS
+   ========= */
 const redis = Redis.fromEnv();
 
+/* =========
+   CONFIG
+   ========= */
 const SESSION_TIMEOUT_HOURS = 24;
-const ENABLE_AI_CALL_LOGGING = process.env.ENABLE_AI_CALL_LOGGING === "true";
+const ENABLE_AI_CALL_LOGGING =
+  process.env.ENABLE_AI_CALL_LOGGING === "true";
 
+/* =========
+   PATHS
+   ========= */
 const PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
 const EVALUATOR_PATH = path.join(process.cwd(), "chatbot/evaluator.md");
 const RESHAPE_PATH = path.join(process.cwd(), "chatbot/reshape.md");
@@ -19,10 +33,13 @@ function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
 }
 
-/* TRIN A */
+/* =========
+   HELPERS (A + B)
+   ========= */
 function countQuestions(text: string): number {
   return (text.match(/\?/g) || []).length;
 }
+
 function simpleTopicHash(text: string): string {
   return text
     .toLowerCase()
@@ -31,41 +48,59 @@ function simpleTopicHash(text: string): string {
     .slice(0, 5)
     .join("_");
 }
+
 function estimateLoad(len: number): "low" | "medium" | "high" {
   if (len < 300) return "low";
   if (len < 700) return "medium";
   return "high";
 }
 
-/* TRIN C */
-function computeControlSignal(input: {
-  recentUserTexts: string[];
-  recentLoads: Array<"low" | "medium" | "high">;
-}): { mode: "normal" | "simplify" | "clarify" | "close"; reason: string } {
-  const { recentUserTexts, recentLoads } = input;
-
-  const shortReplies = recentUserTexts.filter(t => t.trim().length <= 8).length >= 2;
-  const repeatedHigh = recentLoads.filter(l => l === "high").length >= 2;
-
-  if (shortReplies) return { mode: "close", reason: "gentagne korte svar" };
-  if (repeatedHigh) return { mode: "simplify", reason: "gentagen høj belastning" };
-  return { mode: "normal", reason: "ingen mønster" };
-}
-
-function reshapeHintFor(mode: "normal" | "simplify" | "clarify" | "close"): string {
-  switch (mode) {
-    case "simplify":
-      return "Hold svaret kort. Ét fokus. Undgå spørgsmål.";
-    case "clarify":
-      return "Afklar ét punkt. Stil højst ét simpelt spørgsmål.";
-    case "close":
-      return "Afslut roligt uden at åbne nye spor.";
-    default:
-      return "";
+/* =========
+   TRIN C.5 · SESSION HEALTH (PASSIV)
+   ========= */
+function computeSessionHealth(turns: TurnLog[]) {
+  const turnCount = turns.length;
+  if (turnCount === 0) {
+    return {
+      score: 100,
+      factors: { turn_count: 0 },
+    };
   }
+
+  const loads = turns
+    .map((t) => t.turn_indicators?.load_estimate)
+    .filter(Boolean) as ("low" | "medium" | "high")[];
+
+  const highLoadTurns = loads.filter((l) => l === "high").length;
+
+  let avgLoad: "low" | "medium" | "high" = "low";
+  if (loads.length) {
+    const weight =
+      loads.reduce((s, l) => s + (l === "high" ? 3 : l === "medium" ? 2 : 1), 0) /
+      loads.length;
+    avgLoad = weight >= 2.5 ? "high" : weight >= 1.8 ? "medium" : "low";
+  }
+
+  // Simpel, transparent score
+  let score = 100;
+  score -= highLoadTurns * 10;        // mange tunge svar = dårligere UX
+  score -= Math.max(0, turnCount - 6) * 5; // meget lange sessions koster lidt
+
+  score = Math.max(0, Math.min(100, score));
+
+  return {
+    score,
+    factors: {
+      avg_load: avgLoad,
+      high_load_turns: highLoadTurns,
+      turn_count: turnCount,
+    },
+  };
 }
 
-/* OPENAI */
+/* =========
+   OPENAI CALL
+   ========= */
 async function callOpenAI(params: {
   call_id: string;
   session_id: string;
@@ -76,17 +111,26 @@ async function callOpenAI(params: {
   const model = "gpt-4o-mini";
   const temperature = 0.2;
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ model, temperature, messages: params.messages }),
-  } as RequestInit);
+  const response = await fetch(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        temperature,
+        messages: params.messages,
+      }),
+    } as RequestInit
+  );
 
   const raw = await response.json();
-  const text = raw?.choices?.[0]?.message?.content?.trim() ?? "";
+  const text =
+    raw?.choices?.[0]?.message?.content?.trim() ?? "";
+
   const latency = Date.now() - startedAt;
 
   if (ENABLE_AI_CALL_LOGGING) {
@@ -102,18 +146,27 @@ async function callOpenAI(params: {
       response_text: text,
       latency_ms: latency,
     };
+
     await writeAiCallLog(aiLog);
   }
+
   return text;
 }
 
-/* API */
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+/* =========
+   API HANDLER
+   ========= */
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== "POST") return res.status(405).end();
+
   const startedAt = Date.now();
 
   try {
     const { messages, sessionId } = req.body;
+
     if (!Array.isArray(messages)) {
       return res.status(400).json({ error: "Invalid messages" });
     }
@@ -123,33 +176,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const reshapePrompt = loadFile(RESHAPE_PATH);
     const facts = loadFile(FACTS_PATH);
 
-    const userMessages = messages.filter((m: any) => m.role === "user");
+    const userMessages = messages.filter(
+      (m: any) => m.role === "user"
+    );
     const lastUserText = userMessages.at(-1)?.content ?? "";
     const turnIndex = userMessages.length;
 
-    // Session observation
+    /* SESSION OBSERVATION */
     const now = Date.now();
     const sessionKey = `session:last_user_at:${sessionId}`;
-    const prev = sessionId ? await redis.get<string>(sessionKey) : null;
+    const prev = sessionId
+      ? await redis.get<string>(sessionKey)
+      : null;
+
     const lastUserAt = new Date(now).toISOString();
     if (sessionId) await redis.set(sessionKey, lastUserAt);
-    const sessionAgeMs = prev ? now - new Date(prev).getTime() : 0;
+
+    const sessionAgeMs = prev
+      ? now - new Date(prev).getTime()
+      : 0;
+
     const dialogueExpiresAt = new Date(
       now + SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
     ).toISOString();
 
-    // JAN RAW
+    /* CALLS */
     const janRaw = await callOpenAI({
       call_id: "jan_raw",
       session_id: sessionId,
       turn_id: turnIndex,
       messages: [
-        { role: "system", content: `${prompt}\n\nAUTORISERET VIDEN:\n${facts}` },
+        {
+          role: "system",
+          content: `${prompt}\n\nAUTORISERET VIDEN:\n${facts}`,
+        },
         ...messages,
       ],
     });
 
-    // EVALUATOR
     const evaluatorText = await callOpenAI({
       call_id: "evaluator",
       session_id: sessionId,
@@ -160,27 +224,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ],
     });
 
-    // TRIN A
-    const loadEstimate = estimateLoad(janRaw.length);
-    const recentUserTexts = userMessages.slice(-3).map((m: any) => m.content);
-    const control = computeControlSignal({
-      recentUserTexts,
-      recentLoads: [loadEstimate],
-    });
-
-    // RESHAPE med C.2 hint
-    const controlHint = reshapeHintFor(control.mode);
     const janFinal = await callOpenAI({
       call_id: "reshape",
       session_id: sessionId,
       turn_id: turnIndex,
       messages: [
-        {
-          role: "system",
-          content: controlHint
-            ? `${reshapePrompt}\n\nSTILSIGNAL:\n${controlHint}`
-            : reshapePrompt,
-        },
+        { role: "system", content: reshapePrompt },
         {
           role: "user",
           content: `JAN RAW:\n${janRaw}\n\nEVALUATOR:\n${evaluatorText}`,
@@ -188,6 +237,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ],
     });
 
+    /* ───────────────
+       SESSION HEALTH
+       ─────────────── */
+    const existingTurnsRaw = sessionId
+      ? await redis.lrange(`chatlog:${sessionId}`, 0, -1)
+      : [];
+
+    const existingTurns: TurnLog[] = existingTurnsRaw
+      .map((r) => {
+        try {
+          return JSON.parse(r);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean) as TurnLog[];
+
+    const sessionHealth = computeSessionHealth(existingTurns);
+
+    /* LOG */
     const logEntry: TurnLog = {
       timestamp: new Date().toISOString(),
       session_id: sessionId,
@@ -217,10 +286,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         load_estimate: estimateLoad(janFinal.length),
       },
 
-      control_signal: {
-        mode: control.mode,
-        reason: control.reason,
-      },
+      session_health: sessionHealth,
 
       last_user_at: lastUserAt,
       session_age_ms: sessionAgeMs,
@@ -232,6 +298,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     await writeTurnLog(logEntry);
+
     return res.status(200).json({ answer: janFinal });
   } catch (err: any) {
     const errorLog: TurnLog = {
@@ -250,6 +317,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       status: "error",
       error: String(err),
     };
+
     await writeTurnLog(errorLog);
     return res.status(500).json({ error: "Internal server error" });
   }
