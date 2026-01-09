@@ -10,7 +10,7 @@ import { TurnLog } from "../../chatbot/log.types";
 import { Redis } from "@upstash/redis";
 
 /* =========
-   REDIS (SESSION OBSERVATION)
+   REDIS
    ========= */
 const redis = Redis.fromEnv();
 
@@ -94,6 +94,56 @@ async function callOpenAI(params: {
 }
 
 /* =========
+   ASYNC SESSION STATE UPDATE
+   (fire-and-forget)
+   ========= */
+async function updateSessionState(params: {
+  sessionId: string;
+  turnIndex: number;
+  userLen: number;
+  aiLen: number;
+  latency: number;
+}) {
+  const key = `session:state:${params.sessionId}`;
+
+  const existing =
+    (await redis.get<any>(key)) ?? {
+      turn_count: 0,
+      avg_user_len: 0,
+      avg_ai_len: 0,
+      recent_latency_ms: 0,
+      stall_counter: 0,
+      progression_hint: "advancing",
+      topic_shift_count: 0,
+      drift_flag: false,
+      closing_hint: false,
+    };
+
+  const turnCount = existing.turn_count + 1;
+
+  const avgUserLen =
+    (existing.avg_user_len * existing.turn_count +
+      params.userLen) /
+    turnCount;
+
+  const avgAiLen =
+    (existing.avg_ai_len * existing.turn_count +
+      params.aiLen) /
+    turnCount;
+
+  const nextState = {
+    ...existing,
+    turn_count: turnCount,
+    avg_user_len: Math.round(avgUserLen),
+    avg_ai_len: Math.round(avgAiLen),
+    recent_latency_ms: params.latency,
+    updated_at: new Date().toISOString(),
+  };
+
+  await redis.set(key, nextState);
+}
+
+/* =========
    API HANDLER
    ========= */
 export default async function handler(
@@ -122,7 +172,6 @@ export default async function handler(
       (m: any) => m.role === "user"
     );
     const lastUserText = userMessages.at(-1)?.content ?? "";
-
     const turnIndex = userMessages.length;
 
     /* =========
@@ -130,23 +179,11 @@ export default async function handler(
        ========= */
     const now = Date.now();
     const sessionKey = `session:last_user_at:${sessionId}`;
-
-    const previousLastUserAt =
-      sessionId ? await redis.get<string>(sessionKey) : null;
-
     const lastUserAt = new Date(now).toISOString();
 
     if (sessionId) {
       await redis.set(sessionKey, lastUserAt);
     }
-
-    const sessionAgeMs = previousLastUserAt
-      ? now - new Date(previousLastUserAt).getTime()
-      : 0;
-
-    const dialogueExpiresAt = new Date(
-      now + SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
-    ).toISOString();
 
     /* =========
        CALL 1 · JAN RAW
@@ -228,26 +265,30 @@ ${evaluatorText}
       chips_present: false,
       chip_clicked: null,
 
-      // ─────────────────────────
-      // RÅ MÅLINGER
-      // ─────────────────────────
       turn_index: turnIndex,
       user_message_length: lastUserText.length,
       ai_message_length: janFinal.length,
 
-      // ─────────────────────────
-      // SESSION OBSERVATION
-      // ─────────────────────────
       last_user_at: lastUserAt,
-      session_age_ms: sessionAgeMs,
-      dialogue_expires_at: dialogueExpiresAt,
-      resume_prompted: false,
 
       latency_ms: Date.now() - startedAt,
       status: "ok",
     };
 
     await writeTurnLog(logEntry);
+
+    /* =========
+       ASYNC SESSION UPDATE
+       ========= */
+    if (sessionId) {
+      updateSessionState({
+        sessionId,
+        turnIndex,
+        userLen: lastUserText.length,
+        aiLen: janFinal.length,
+        latency: Date.now() - startedAt,
+      }).catch(() => {});
+    }
 
     return res.status(200).json({
       answer: janFinal,
