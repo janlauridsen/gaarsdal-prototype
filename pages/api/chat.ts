@@ -1,9 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
+import {
+  writeTurnLog,
+  writeAiCallLog,
+  AiCallLogEntry,
+} from "../../chatbot/logWriter";
+import { TurnLog } from "../../chatbot/log.types";
 import { Redis } from "@upstash/redis";
-import { writeTurnLog, writeAiCallLog, AiCallLogEntry } from "../../chatbot/logWriter";
-import { TurnLog, LoadLevel } from "../../chatbot/log.types";
 
 /* =========
    REDIS
@@ -14,7 +18,8 @@ const redis = Redis.fromEnv();
    CONFIG
    ========= */
 const SESSION_TIMEOUT_HOURS = 24;
-const ENABLE_AI_CALL_LOGGING = process.env.ENABLE_AI_CALL_LOGGING === "true";
+const ENABLE_AI_CALL_LOGGING =
+  process.env.ENABLE_AI_CALL_LOGGING === "true";
 
 /* =========
    PATHS
@@ -29,7 +34,7 @@ function loadFile(p: string) {
 }
 
 /* =========
-   HELPERS
+   HELPERS · TRIN A + B
    ========= */
 function countQuestions(text: string): number {
   return (text.match(/\?/g) || []).length;
@@ -44,10 +49,52 @@ function simpleTopicHash(text: string): string {
     .join("_");
 }
 
-function estimateLoad(len: number): LoadLevel {
+function estimateLoad(len: number): "low" | "medium" | "high" {
   if (len < 300) return "low";
   if (len < 700) return "medium";
   return "high";
+}
+
+/* =========
+   TRIN C · SESSION HEALTH (PASSIV)
+   ========= */
+function computeSessionHealth(
+  loads: Array<"low" | "medium" | "high">
+) {
+  const turnCount = loads.length;
+  const highLoadTurns = loads.filter((l) => l === "high").length;
+
+  let avgLoad: "low" | "medium" | "high" | undefined = undefined;
+  if (turnCount > 0) {
+    const counts = {
+      low: loads.filter((l) => l === "low").length,
+      medium: loads.filter((l) => l === "medium").length,
+      high: loads.filter((l) => l === "high").length,
+    };
+
+    avgLoad =
+      counts.high >= counts.medium && counts.high >= counts.low
+        ? "high"
+        : counts.medium >= counts.low
+        ? "medium"
+        : "low";
+  }
+
+  let score = 1.0;
+  score -= 0.1 * highLoadTurns;
+  if (turnCount > 6) {
+    score -= 0.05 * (turnCount - 6);
+  }
+  score = Math.max(0, Math.min(1, score));
+
+  return {
+    score,
+    factors: {
+      avg_load: avgLoad,
+      high_load_turns: highLoadTurns,
+      turn_count: turnCount,
+    },
+  };
 }
 
 /* =========
@@ -63,21 +110,26 @@ async function callOpenAI(params: {
   const model = "gpt-4o-mini";
   const temperature = 0.2;
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      temperature,
-      messages: params.messages,
-    }),
-  } as RequestInit);
+  const response = await fetch(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        temperature,
+        messages: params.messages,
+      }),
+    } as RequestInit
+  );
 
   const raw = await response.json();
-  const text = raw?.choices?.[0]?.message?.content?.trim() ?? "";
+  const text =
+    raw?.choices?.[0]?.message?.content?.trim() ?? "";
+
   const latency = Date.now() - startedAt;
 
   if (ENABLE_AI_CALL_LOGGING) {
@@ -93,6 +145,7 @@ async function callOpenAI(params: {
       response_text: text,
       latency_ms: latency,
     };
+
     await writeAiCallLog(aiLog);
   }
 
@@ -102,13 +155,17 @@ async function callOpenAI(params: {
 /* =========
    API HANDLER
    ========= */
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== "POST") return res.status(405).end();
 
   const startedAt = Date.now();
 
   try {
     const { messages, sessionId } = req.body;
+
     if (!Array.isArray(messages)) {
       return res.status(400).json({ error: "Invalid messages" });
     }
@@ -118,18 +175,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const reshapePrompt = loadFile(RESHAPE_PATH);
     const facts = loadFile(FACTS_PATH);
 
-    const userMessages = messages.filter((m: any) => m.role === "user");
+    const userMessages = messages.filter(
+      (m: any) => m.role === "user"
+    );
     const lastUserText = userMessages.at(-1)?.content ?? "";
     const turnIndex = userMessages.length;
 
     /* SESSION OBSERVATION */
     const now = Date.now();
     const sessionKey = `session:last_user_at:${sessionId}`;
-    const prev = sessionId ? await redis.get<string>(sessionKey) : null;
+    const prev = sessionId
+      ? await redis.get<string>(sessionKey)
+      : null;
+
     const lastUserAt = new Date(now).toISOString();
     if (sessionId) await redis.set(sessionKey, lastUserAt);
 
-    const sessionAgeMs = prev ? now - new Date(prev).getTime() : 0;
+    const sessionAgeMs = prev
+      ? now - new Date(prev).getTime()
+      : 0;
+
     const dialogueExpiresAt = new Date(
       now + SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
     ).toISOString();
@@ -140,7 +205,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       session_id: sessionId,
       turn_id: turnIndex,
       messages: [
-        { role: "system", content: `${prompt}\n\nAUTORISERET VIDEN:\n${facts}` },
+        {
+          role: "system",
+          content: `${prompt}\n\nAUTORISERET VIDEN:\n${facts}`,
+        },
         ...messages,
       ],
     });
@@ -168,19 +236,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ],
     });
 
-    /* TRIN C · SESSION HEALTH (blød, lokal) */
-    const load = estimateLoad(janFinal.length);
-    const highLoadTurns = load === "high" ? 1 : 0;
+    /* LOAD + SESSION HEALTH */
+    const loadEstimate = estimateLoad(janFinal.length);
 
-    const sessionHealth = {
-      score: load === "high" ? 0.6 : load === "medium" ? 0.8 : 1,
-      factors: {
-        avg_load: load,
-        high_load_turns: highLoadTurns,
-        turn_count: turnIndex,
-      },
-    };
+    const loadsKey = `session:loads:${sessionId}`;
+    await redis.rpush(loadsKey, loadEstimate);
+    const loads = (await redis.lrange(loadsKey, 0, -1)) as Array<
+      "low" | "medium" | "high"
+    >;
 
+    const sessionHealth = computeSessionHealth(loads);
+
+    /* LOG */
     const logEntry: TurnLog = {
       timestamp: new Date().toISOString(),
       session_id: sessionId,
@@ -207,7 +274,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
 
       turn_indicators: {
-        load_estimate: load,
+        load_estimate: loadEstimate,
       },
 
       session_health: sessionHealth,
@@ -222,21 +289,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     await writeTurnLog(logEntry);
+
     return res.status(200).json({ answer: janFinal });
   } catch (err: any) {
     const errorLog: TurnLog = {
       timestamp: new Date().toISOString(),
       session_id: req.body?.sessionId ?? "unknown",
       turn_id: -1,
+
       user_text: "",
       jan_raw: "",
       jan_final: "",
       answer: "",
+
       evaluator_text: null,
       evaluator_present: false,
+
       chips_present: false,
       chip_clicked: null,
-      latency_ms: Date.now(),
+
+      latency_ms: Date.now() - startedAt,
       status: "error",
       error: String(err),
     };
