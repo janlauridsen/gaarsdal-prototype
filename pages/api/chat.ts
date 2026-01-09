@@ -1,13 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
-import {
-  writeTurnLog,
-  writeAiCallLog,
-  AiCallLogEntry,
-} from "../../chatbot/logWriter";
-import { TurnLog } from "../../chatbot/log.types";
 import { Redis } from "@upstash/redis";
+import { writeTurnLog, writeAiCallLog, AiCallLogEntry } from "../../chatbot/logWriter";
+import { TurnLog, LoadLevel } from "../../chatbot/log.types";
 
 /* =========
    REDIS
@@ -18,8 +14,7 @@ const redis = Redis.fromEnv();
    CONFIG
    ========= */
 const SESSION_TIMEOUT_HOURS = 24;
-const ENABLE_AI_CALL_LOGGING =
-  process.env.ENABLE_AI_CALL_LOGGING === "true";
+const ENABLE_AI_CALL_LOGGING = process.env.ENABLE_AI_CALL_LOGGING === "true";
 
 /* =========
    PATHS
@@ -34,7 +29,7 @@ function loadFile(p: string) {
 }
 
 /* =========
-   HELPERS · TRIN A + B
+   HELPERS
    ========= */
 function countQuestions(text: string): number {
   return (text.match(/\?/g) || []).length;
@@ -49,78 +44,10 @@ function simpleTopicHash(text: string): string {
     .join("_");
 }
 
-function estimateLoad(len: number): "low" | "medium" | "high" {
+function estimateLoad(len: number): LoadLevel {
   if (len < 300) return "low";
   if (len < 700) return "medium";
   return "high";
-}
-
-/* =========
-   TRIN C.5 · SESSION HEALTH
-   ========= */
-function computeSessionHealth(turns: TurnLog[]) {
-  const turnCount = turns.length;
-  if (turnCount === 0) return null;
-
-  const highLoadTurns = turns.filter(
-    (t) => t.turn_indicators?.load_estimate === "high"
-  ).length;
-
-  const avgLoad =
-    highLoadTurns / turnCount > 0.5
-      ? "high"
-      : highLoadTurns > 0
-      ? "medium"
-      : "low";
-
-  const score = Math.max(
-    0,
-    100 - highLoadTurns * 15 - Math.max(0, turnCount - 5) * 5
-  );
-
-  return {
-    score,
-    factors: {
-      avg_load: avgLoad,
-      high_load_turns: highLoadTurns,
-      turn_count: turnCount,
-    },
-  };
-}
-
-/* =========
-   TRIN C.6 · BLØD FEEDBACK
-   ========= */
-function detectSoftFeedback(turns: TurnLog[]) {
-  if (turns.length < 3) return null;
-
-  const last = turns.slice(-3);
-
-  const highLoadCount = last.filter(
-    (t) => t.turn_indicators?.load_estimate === "high"
-  ).length;
-
-  if (highLoadCount >= 2) {
-    return {
-      signal: "repeated_high_load" as const,
-      confidence: highLoadCount === 3 ? "high" : "medium",
-      based_on_turns: highLoadCount,
-    };
-  }
-
-  const stalledCount = last.filter(
-    (t) => t.turn_indicators?.progression_state === "stalled"
-  ).length;
-
-  if (stalledCount >= 2) {
-    return {
-      signal: "session_stalling" as const,
-      confidence: stalledCount === 3 ? "high" : "medium",
-      based_on_turns: stalledCount,
-    };
-  }
-
-  return null;
 }
 
 /* =========
@@ -136,26 +63,21 @@ async function callOpenAI(params: {
   const model = "gpt-4o-mini";
   const temperature = 0.2;
 
-  const response = await fetch(
-    "https://api.openai.com/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        temperature,
-        messages: params.messages,
-      }),
-    } as RequestInit
-  );
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      temperature,
+      messages: params.messages,
+    }),
+  } as RequestInit);
 
   const raw = await response.json();
-  const text =
-    raw?.choices?.[0]?.message?.content?.trim() ?? "";
-
+  const text = raw?.choices?.[0]?.message?.content?.trim() ?? "";
   const latency = Date.now() - startedAt;
 
   if (ENABLE_AI_CALL_LOGGING) {
@@ -180,10 +102,7 @@ async function callOpenAI(params: {
 /* =========
    API HANDLER
    ========= */
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
 
   const startedAt = Date.now();
@@ -199,39 +118,21 @@ export default async function handler(
     const reshapePrompt = loadFile(RESHAPE_PATH);
     const facts = loadFile(FACTS_PATH);
 
-    const userMessages = messages.filter(
-      (m: any) => m.role === "user"
-    );
+    const userMessages = messages.filter((m: any) => m.role === "user");
     const lastUserText = userMessages.at(-1)?.content ?? "";
     const turnIndex = userMessages.length;
 
     /* SESSION OBSERVATION */
     const now = Date.now();
     const sessionKey = `session:last_user_at:${sessionId}`;
-    const prev = sessionId
-      ? await redis.get<string>(sessionKey)
-      : null;
-
+    const prev = sessionId ? await redis.get<string>(sessionKey) : null;
     const lastUserAt = new Date(now).toISOString();
     if (sessionId) await redis.set(sessionKey, lastUserAt);
 
-    const sessionAgeMs = prev
-      ? now - new Date(prev).getTime()
-      : 0;
-
+    const sessionAgeMs = prev ? now - new Date(prev).getTime() : 0;
     const dialogueExpiresAt = new Date(
       now + SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
     ).toISOString();
-
-    /* LOAD EXISTING TURNS */
-    const existingTurnsRaw =
-      sessionId
-        ? await redis.lrange(`chatlog:${sessionId}`, 0, -1)
-        : [];
-
-    const existingTurns: TurnLog[] = existingTurnsRaw.map((r) =>
-      JSON.parse(r)
-    );
 
     /* CALLS */
     const janRaw = await callOpenAI({
@@ -239,10 +140,7 @@ export default async function handler(
       session_id: sessionId,
       turn_id: turnIndex,
       messages: [
-        {
-          role: "system",
-          content: `${prompt}\n\nAUTORISERET VIDEN:\n${facts}`,
-        },
+        { role: "system", content: `${prompt}\n\nAUTORISERET VIDEN:\n${facts}` },
         ...messages,
       ],
     });
@@ -270,32 +168,19 @@ export default async function handler(
       ],
     });
 
-    /* INDICATORS */
-    const loadEstimate = estimateLoad(janFinal.length);
+    /* TRIN C · SESSION HEALTH (blød, lokal) */
+    const load = estimateLoad(janFinal.length);
+    const highLoadTurns = load === "high" ? 1 : 0;
 
-    const tempTurn: TurnLog = {
-      timestamp: "",
-      session_id: sessionId,
-      turn_id: turnIndex,
-      user_text: lastUserText,
-      jan_raw: "",
-      jan_final: "",
-      answer: "",
-      evaluator_text: null,
-      evaluator_present: false,
-      chips_present: false,
-      chip_clicked: null,
-      turn_indicators: { load_estimate: loadEstimate },
-      latency_ms: 0,
-      status: "ok",
+    const sessionHealth = {
+      score: load === "high" ? 0.6 : load === "medium" ? 0.8 : 1,
+      factors: {
+        avg_load: load,
+        high_load_turns: highLoadTurns,
+        turn_count: turnIndex,
+      },
     };
 
-    const allTurns = [...existingTurns, tempTurn];
-
-    const sessionHealth = computeSessionHealth(allTurns);
-    const softFeedback = detectSoftFeedback(allTurns);
-
-    /* LOG */
     const logEntry: TurnLog = {
       timestamp: new Date().toISOString(),
       session_id: sessionId,
@@ -322,11 +207,10 @@ export default async function handler(
       },
 
       turn_indicators: {
-        load_estimate: loadEstimate,
+        load_estimate: load,
       },
 
-      session_health: sessionHealth ?? undefined,
-      soft_feedback: softFeedback ?? undefined,
+      session_health: sessionHealth,
 
       last_user_at: lastUserAt,
       session_age_ms: sessionAgeMs,
