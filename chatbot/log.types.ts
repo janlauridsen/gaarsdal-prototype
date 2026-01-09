@@ -21,6 +21,17 @@ export type CQCState = {
 };
 
 /**
+ * TurnObservation
+ * ─────────────────────────────
+ * Lav-niveau runtime-observationer.
+ * Ingen fortolkning. Ingen scoring.
+ */
+export type TurnObservation = {
+  question_count?: number;
+  topic_hash?: string;
+};
+
+/**
  * TurnLog
  * ─────────────────────────────
  * Append-only log pr. turn.
@@ -44,7 +55,6 @@ export type TurnLog = {
    * Runtime aliases / telemetry (chat.ts)
    * ────────────────────────────────────
    * Bevares for kompatibilitet.
-   * Skal konsolideres senere.
    */
   user_text?: string;
   jan_raw?: string;
@@ -58,6 +68,11 @@ export type TurnLog = {
   turn_index?: number;
   user_message_length?: number;
   ai_message_length?: number;
+
+  /**
+   * Turn-level observation
+   */
+  turn_observation?: TurnObservation;
 
   // ───────────────
   // Evaluator (struktureret)
@@ -75,7 +90,7 @@ export type TurnLog = {
 
   // ───────────────
   // Session
-  // ───────────────
+   // ───────────────
   session?: {
     stop_signal?: StopSignal;
     health?: {
