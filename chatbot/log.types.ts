@@ -24,7 +24,6 @@ export type CQCState = {
  * TurnObservation
  * ─────────────────────────────
  * Lav-niveau runtime-observationer.
- * Ingen fortolkning. Ingen scoring.
  */
 export type TurnObservation = {
   question_count?: number;
@@ -35,10 +34,19 @@ export type TurnObservation = {
  * TurnIndicators
  * ─────────────────────────────
  * Rå, tekniske indikatorer pr. turn.
- * load_estimate er kategorisk, ikke numerisk.
  */
 export type TurnIndicators = {
   load_estimate?: "low" | "medium" | "high" | string;
+};
+
+/**
+ * SessionHealthSnapshot
+ * ─────────────────────────────
+ * Runtime snapshot af session health.
+ */
+export type SessionHealthSnapshot = {
+  score?: number;
+  factors?: Record<string, unknown>;
 };
 
 /**
@@ -63,9 +71,6 @@ export type TurnLog = {
 
   /**
    * Runtime aliases / telemetry (chat.ts)
-   * ────────────────────────────────────
-   * Bevares for kompatibilitet.
-   * Skal konsolideres senere.
    */
   user_text?: string;
   jan_raw?: string;
@@ -90,6 +95,13 @@ export type TurnLog = {
    */
   turn_indicators?: TurnIndicators;
 
+  /**
+   * Session runtime snapshot (alias)
+   */
+  session_health?: SessionHealthSnapshot;
+  last_user_at?: string;
+  session_age_ms?: number;
+
   // ───────────────
   // Evaluator (struktureret)
   // ───────────────
@@ -105,7 +117,7 @@ export type TurnLog = {
   cqc?: CQCState;
 
   // ───────────────
-  // Session
+  // Session (struktureret)
   // ───────────────
   session?: {
     stop_signal?: StopSignal;
@@ -126,3 +138,4 @@ export type TurnLog = {
   status: "ok" | "error";
   error?: string;
 };
+
