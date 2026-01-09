@@ -70,6 +70,21 @@ export type TurnLog = {
     stop_signal_candidate?: StopSignal;
   };
 
+  // ─────────────────────────────
+  // TRIN C · SESSION-SIGNALER
+  // (aggregerede, read-only)
+  // ─────────────────────────────
+  session_indicators?: {
+    turns_count?: number;
+    avg_ai_length?: number;
+    load_trend?: "down" | "flat" | "up";
+    progression_trend?: "stalled" | "advancing" | "closing";
+    repeated_topic_count?: number;
+    repeated_hint_count?: number;
+    acknowledgement_turns?: number;
+    latency_trend?: "down" | "flat" | "up";
+  };
+
   // ───────────────
   // System
   // ───────────────
