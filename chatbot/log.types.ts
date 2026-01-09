@@ -57,6 +57,7 @@ export type TurnLog = {
 
   turn_index?: number;
   user_message_length?: number;
+  ai_message_length?: number;
 
   // ───────────────
   // Evaluator (struktureret)
