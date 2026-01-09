@@ -12,18 +12,13 @@ export type StopSignal =
  * Append-only log pr. turn
  */
 export type TurnLog = {
-  // ───────────────
   // Identitet
-  // ───────────────
   timestamp: string;
   session_id: string;
   turn_id: number;
 
-  // ───────────────
   // Bruger / svar
-  // ───────────────
   user_text: string;
-
   jan_raw: string;
   jan_final: string;
   answer: string;
@@ -34,34 +29,24 @@ export type TurnLog = {
   chips_present: boolean;
   chip_clicked: string | null;
 
-  // ─────────────────────────────
-  // SESSION OBSERVATION
-  // ─────────────────────────────
+  // Session observation
   last_user_at?: string;
   session_age_ms?: number;
   dialogue_expires_at?: string;
   resume_prompted?: boolean;
 
-  // ─────────────────────────────
   // TRIN A · RÅ MÅLINGER
-  // ─────────────────────────────
   turn_index?: number;
   user_message_length?: number;
   ai_message_length?: number;
 
-  // ─────────────────────────────
   // TRIN A · TURN-OBSERVATION
-  // (ingen fortolkning)
-  // ─────────────────────────────
   turn_observation?: {
     question_count?: number;
     topic_hash?: string;
   };
 
-  // ─────────────────────────────
   // TRIN B · AFLEDTE INDIKATORER
-  // (passive, ikke-styrende)
-  // ─────────────────────────────
   turn_indicators?: {
     progression_state?: "stalled" | "advancing" | "closing";
     alignment_state?: "low" | "medium" | "high";
@@ -70,24 +55,13 @@ export type TurnLog = {
     stop_signal_candidate?: StopSignal;
   };
 
-  // ─────────────────────────────
-  // TRIN C · SESSION-SIGNALER
-  // (aggregerede, read-only)
-  // ─────────────────────────────
-  session_indicators?: {
-    turns_count?: number;
-    avg_ai_length?: number;
-    load_trend?: "down" | "flat" | "up";
-    progression_trend?: "stalled" | "advancing" | "closing";
-    repeated_topic_count?: number;
-    repeated_hint_count?: number;
-    acknowledgement_turns?: number;
-    latency_trend?: "down" | "flat" | "up";
+  // TRIN C · KONTROL-SIGNAL (NY)
+  control_signal?: {
+    mode?: "normal" | "simplify" | "clarify" | "close";
+    reason?: string;
   };
 
-  // ───────────────
   // System
-  // ───────────────
   latency_ms: number;
   status: "ok" | "error";
   error?: string;
