@@ -1,0 +1,22 @@
+name: Chatbot sanity test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - V8.0-Chatbot-testing-methods-v0.1
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run chatbot test
+        run: |
+          node ./tests/run-basic-test.js
+        env:
+          CHATBOT_URL: CHATBOT_URL: https://gaarsdal-prototype.vercel.app/api/chat
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
