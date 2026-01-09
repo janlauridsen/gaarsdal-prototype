@@ -31,6 +31,10 @@ const SESSION_TIMEOUT_HOURS = 24;
 const PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
 const EVALUATOR_PATH = path.join(process.cwd(), "chatbot/evaluator.md");
 const RESHAPE_PATH = path.join(process.cwd(), "chatbot/reshape.md");
+const INDICATOR_PATH = path.join(
+  process.cwd(),
+  "chatbot/turn-indicator.md"
+);
 const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
 
 function loadFile(p: string) {
@@ -94,56 +98,6 @@ async function callOpenAI(params: {
 }
 
 /* =========
-   ASYNC SESSION STATE UPDATE
-   (fire-and-forget)
-   ========= */
-async function updateSessionState(params: {
-  sessionId: string;
-  turnIndex: number;
-  userLen: number;
-  aiLen: number;
-  latency: number;
-}) {
-  const key = `session:state:${params.sessionId}`;
-
-  const existing =
-    (await redis.get<any>(key)) ?? {
-      turn_count: 0,
-      avg_user_len: 0,
-      avg_ai_len: 0,
-      recent_latency_ms: 0,
-      stall_counter: 0,
-      progression_hint: "advancing",
-      topic_shift_count: 0,
-      drift_flag: false,
-      closing_hint: false,
-    };
-
-  const turnCount = existing.turn_count + 1;
-
-  const avgUserLen =
-    (existing.avg_user_len * existing.turn_count +
-      params.userLen) /
-    turnCount;
-
-  const avgAiLen =
-    (existing.avg_ai_len * existing.turn_count +
-      params.aiLen) /
-    turnCount;
-
-  const nextState = {
-    ...existing,
-    turn_count: turnCount,
-    avg_user_len: Math.round(avgUserLen),
-    avg_ai_len: Math.round(avgAiLen),
-    recent_latency_ms: params.latency,
-    updated_at: new Date().toISOString(),
-  };
-
-  await redis.set(key, nextState);
-}
-
-/* =========
    API HANDLER
    ========= */
 export default async function handler(
@@ -166,6 +120,7 @@ export default async function handler(
     const prompt = loadFile(PROMPT_PATH);
     const evaluatorPrompt = loadFile(EVALUATOR_PATH);
     const reshapePrompt = loadFile(RESHAPE_PATH);
+    const indicatorPrompt = loadFile(INDICATOR_PATH);
     const facts = loadFile(FACTS_PATH);
 
     const userMessages = messages.filter(
@@ -179,11 +134,22 @@ export default async function handler(
        ========= */
     const now = Date.now();
     const sessionKey = `session:last_user_at:${sessionId}`;
+    const previousLastUserAt =
+      sessionId ? await redis.get<string>(sessionKey) : null;
+
     const lastUserAt = new Date(now).toISOString();
 
     if (sessionId) {
       await redis.set(sessionKey, lastUserAt);
     }
+
+    const sessionAgeMs = previousLastUserAt
+      ? now - new Date(previousLastUserAt).getTime()
+      : 0;
+
+    const dialogueExpiresAt = new Date(
+      now + SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
+    ).toISOString();
 
     /* =========
        CALL 1 · JAN RAW
@@ -220,6 +186,34 @@ ${facts}
         { role: "user", content: janRaw },
       ],
     });
+
+    /* =========
+       CALL 2B · TURN INDICATOR
+       ========= */
+    const indicatorText = await callOpenAI({
+      call_id: "turn_indicator",
+      session_id: sessionId ?? "unknown",
+      turn_id: turnIndex,
+      messages: [
+        { role: "system", content: indicatorPrompt },
+        {
+          role: "user",
+          content: JSON.stringify({
+            user_text: lastUserText,
+            ai_text: janRaw,
+            user_message_length: lastUserText.length,
+            ai_message_length: janRaw.length,
+          }),
+        },
+      ],
+    });
+
+    let turnIndicators: any = null;
+    try {
+      turnIndicators = JSON.parse(indicatorText);
+    } catch {
+      turnIndicators = null;
+    }
 
     /* =========
        CALL 3 · RESHAPE
@@ -270,25 +264,17 @@ ${evaluatorText}
       ai_message_length: janFinal.length,
 
       last_user_at: lastUserAt,
+      session_age_ms: sessionAgeMs,
+      dialogue_expires_at: dialogueExpiresAt,
+      resume_prompted: false,
+
+      turn_indicators: turnIndicators ?? undefined,
 
       latency_ms: Date.now() - startedAt,
       status: "ok",
     };
 
     await writeTurnLog(logEntry);
-
-    /* =========
-       ASYNC SESSION UPDATE
-       ========= */
-    if (sessionId) {
-      updateSessionState({
-        sessionId,
-        turnIndex,
-        userLen: lastUserText.length,
-        aiLen: janFinal.length,
-        latency: Date.now() - startedAt,
-      }).catch(() => {});
-    }
 
     return res.status(200).json({
       answer: janFinal,
