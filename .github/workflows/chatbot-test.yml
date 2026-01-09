@@ -19,7 +19,8 @@ jobs:
       - name: Run chatbot test
         run: |
           node ./tests/run-basic-test.js
-        env:
+       env:
           CHATBOT_URL: https://gaarsdal-prototype-ba8o3b4xa-jan-lauridsens-projects.vercel.app/api/chat
           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-          UPSTASH_REST_TOKEN: ${{ secrets.UPSTASH_REST_TOKEN }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+
