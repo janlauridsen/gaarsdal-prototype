@@ -1,5 +1,4 @@
 import fs from "fs";
-import fetch from "node-fetch";
 import { Redis } from "@upstash/redis";
 
 const scenario = JSON.parse(
@@ -8,7 +7,7 @@ const scenario = JSON.parse(
 
 const redis = Redis.fromEnv();
 
-async function sleep(ms) {
+function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
@@ -35,7 +34,7 @@ async function run() {
   // Vent på Redis writes
   await sleep(1500);
 
-  // NOTE: tilpas key hvis dit log-key-format er anderledes
+  // TILPAS HVIS KEY-FORMAT ER ANDERLEDES
   const key = `turnlog:${scenario.session_id}`;
   const logs = await redis.lrange(key, -1, -1);
 
@@ -57,4 +56,3 @@ run().catch(err => {
   console.error("FAIL:", err.message);
   process.exit(1);
 });
-
