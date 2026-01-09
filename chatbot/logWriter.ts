@@ -16,14 +16,19 @@ export async function writeTurnLog(entry: TurnLog) {
    AI CALL LOG
    ========= */
 export type AiCallLogEntry = {
+  timestamp: string;
+
   session_id: string;
   turn_id: number;
+
   call_id: string;
   model: string;
   temperature: number;
+
   request_messages: any[];
   response_raw: any;
   response_text: string;
+
   latency_ms: number;
 };
 
