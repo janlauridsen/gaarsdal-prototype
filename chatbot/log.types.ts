@@ -12,13 +12,18 @@ export type StopSignal =
  * Append-only log pr. turn
  */
 export type TurnLog = {
+  // ───────────────
   // Identitet
+  // ───────────────
   timestamp: string;
   session_id: string;
   turn_id: number;
 
+  // ───────────────
   // Bruger / svar
+  // ───────────────
   user_text: string;
+
   jan_raw: string;
   jan_final: string;
   answer: string;
@@ -29,24 +34,32 @@ export type TurnLog = {
   chips_present: boolean;
   chip_clicked: string | null;
 
-  // Session observation
+  // ─────────────────────────────
+  // SESSION OBSERVATION
+  // ─────────────────────────────
   last_user_at?: string;
   session_age_ms?: number;
   dialogue_expires_at?: string;
   resume_prompted?: boolean;
 
+  // ─────────────────────────────
   // TRIN A · RÅ MÅLINGER
+  // ─────────────────────────────
   turn_index?: number;
   user_message_length?: number;
   ai_message_length?: number;
 
+  // ─────────────────────────────
   // TRIN A · TURN-OBSERVATION
+  // ─────────────────────────────
   turn_observation?: {
     question_count?: number;
     topic_hash?: string;
   };
 
+  // ─────────────────────────────
   // TRIN B · AFLEDTE INDIKATORER
+  // ─────────────────────────────
   turn_indicators?: {
     progression_state?: "stalled" | "advancing" | "closing";
     alignment_state?: "low" | "medium" | "high";
@@ -55,13 +68,21 @@ export type TurnLog = {
     stop_signal_candidate?: StopSignal;
   };
 
-  // TRIN C · KONTROL-SIGNAL (NY)
-  control_signal?: {
-    mode?: "normal" | "simplify" | "clarify" | "close";
-    reason?: string;
+  // ─────────────────────────────
+  // TRIN C.5 · SESSION HEALTH (PASSIV)
+  // ─────────────────────────────
+  session_health?: {
+    score: number;              // 0–100
+    factors: {
+      avg_load?: "low" | "medium" | "high";
+      high_load_turns?: number;
+      turn_count?: number;
+    };
   };
 
+  // ───────────────
   // System
+  // ───────────────
   latency_ms: number;
   status: "ok" | "error";
   error?: string;
