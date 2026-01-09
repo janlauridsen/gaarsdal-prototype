@@ -9,8 +9,8 @@ export type StopSignal =
 /**
  * CQCState
  * ─────────────────────────────
- * Conversation Quality Control
- * Observerende kvalitets-tilstand pr. turn.
+ * Conversation Quality Control.
+ * Normativ kvalitetsvurdering pr. turn.
  */
 export type CQCState = {
   progress?: "good" | "neutral" | "stagnating";
@@ -21,104 +21,39 @@ export type CQCState = {
 };
 
 /**
- * TurnObservation
+ * RuntimeTelemetry
  * ─────────────────────────────
- * Lav-niveau runtime-observationer.
+ * Ustruktureret runtime-data.
+ * Eksperimentel. Append-only. Ikke normativ.
  */
-export type TurnObservation = {
-  question_count?: number;
-  topic_hash?: string;
-};
-
-/**
- * TurnIndicators
- * ─────────────────────────────
- * Rå, tekniske indikatorer pr. turn.
- */
-export type TurnIndicators = {
-  load_estimate?: "low" | "medium" | "high" | string;
-};
-
-/**
- * SessionHealthSnapshot
- * ─────────────────────────────
- * Runtime snapshot af session health.
- */
-export type SessionHealthSnapshot = {
-  score?: number;
-  factors?: Record<string, unknown>;
-};
+export type RuntimeTelemetry = Record<string, unknown>;
 
 /**
  * TurnLog
  * ─────────────────────────────
- * Append-only log pr. turn.
+ * Stabil, normativ kontrakt.
  */
 export type TurnLog = {
-  // ───────────────
   // Identitet
-  // ───────────────
   session_id: string;
   turn_id: number;
   timestamp: string;
 
-  // ───────────────
-  // Bruger / AI (kanoniske felter)
-  // ───────────────
+  // Kanonisk indhold
   user_input: string;
   jan_raw_output: string;
   jan_final_output: string;
 
-  /**
-   * Runtime aliases / telemetry (chat.ts)
-   */
-  user_text?: string;
-  jan_raw?: string;
-  jan_final?: string;
-  answer?: string;
-
-  evaluator_text?: string;
-  chips_present?: boolean;
-  chip_clicked?: string | null;
-
-  turn_index?: number;
-  user_message_length?: number;
-  ai_message_length?: number;
-
-  /**
-   * Turn-level observation
-   */
-  turn_observation?: TurnObservation;
-
-  /**
-   * Turn-level indicators
-   */
-  turn_indicators?: TurnIndicators;
-
-  /**
-   * Session runtime snapshot (alias)
-   */
-  session_health?: SessionHealthSnapshot;
-  last_user_at?: string;
-  session_age_ms?: number;
-
-  // ───────────────
   // Evaluator (struktureret)
-  // ───────────────
   evaluator_present: boolean;
   evaluator_summary?: string;
   evaluator_hints?: string[];
   evaluator_chips?: string[];
 
-  /**
-   * CQC
-   * Observerende kvalitetsvurdering pr. turn.
-   */
+  // CQC (struktureret)
   cqc?: CQCState;
 
-  // ───────────────
   // Session (struktureret)
-  // ───────────────
   session?: {
     stop_signal?: StopSignal;
     health?: {
@@ -131,11 +66,11 @@ export type TurnLog = {
     };
   };
 
-  // ───────────────
+  // Runtime telemetry (ALT andet)
+  telemetry?: RuntimeTelemetry;
+
   // System
-  // ───────────────
   latency_ms: number;
   status: "ok" | "error";
   error?: string;
 };
-
