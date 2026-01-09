@@ -34,7 +34,7 @@ function loadFile(p: string) {
 }
 
 /* =========
-   HELPERS · TRIN A + B
+   HELPERS (AKTIVE, DETERMINISTISKE)
    ========= */
 function countQuestions(text: string): number {
   return (text.match(/\?/g) || []).length;
@@ -53,48 +53,6 @@ function estimateLoad(len: number): "low" | "medium" | "high" {
   if (len < 300) return "low";
   if (len < 700) return "medium";
   return "high";
-}
-
-/* =========
-   TRIN C · SESSION HEALTH (PASSIV)
-   ========= */
-function computeSessionHealth(
-  loads: Array<"low" | "medium" | "high">
-) {
-  const turnCount = loads.length;
-  const highLoadTurns = loads.filter((l) => l === "high").length;
-
-  let avgLoad: "low" | "medium" | "high" | undefined = undefined;
-  if (turnCount > 0) {
-    const counts = {
-      low: loads.filter((l) => l === "low").length,
-      medium: loads.filter((l) => l === "medium").length,
-      high: loads.filter((l) => l === "high").length,
-    };
-
-    avgLoad =
-      counts.high >= counts.medium && counts.high >= counts.low
-        ? "high"
-        : counts.medium >= counts.low
-        ? "medium"
-        : "low";
-  }
-
-  let score = 1.0;
-  score -= 0.1 * highLoadTurns;
-  if (turnCount > 6) {
-    score -= 0.05 * (turnCount - 6);
-  }
-  score = Math.max(0, Math.min(1, score));
-
-  return {
-    score,
-    factors: {
-      avg_load: avgLoad,
-      high_load_turns: highLoadTurns,
-      turn_count: turnCount,
-    },
-  };
 }
 
 /* =========
@@ -145,7 +103,6 @@ async function callOpenAI(params: {
       response_text: text,
       latency_ms: latency,
     };
-
     await writeAiCallLog(aiLog);
   }
 
@@ -236,16 +193,16 @@ export default async function handler(
       ],
     });
 
-    /* LOAD + SESSION HEALTH */
-    const loadEstimate = estimateLoad(janFinal.length);
-
-    const loadsKey = `session:loads:${sessionId}`;
-    await redis.rpush(loadsKey, loadEstimate);
-    const loads = (await redis.lrange(loadsKey, 0, -1)) as Array<
-      "low" | "medium" | "high"
-    >;
-
-    const sessionHealth = computeSessionHealth(loads);
+    /* SESSION HEALTH (PASSIV OPSAMLING) */
+    const load = estimateLoad(janFinal.length);
+    const sessionHealth = {
+      score: load === "high" ? 0.6 : load === "medium" ? 0.8 : 1.0,
+      factors: {
+        avg_load: load,
+        high_load_turns: load === "high" ? 1 : 0,
+        turn_count: turnIndex,
+      },
+    };
 
     /* LOG */
     const logEntry: TurnLog = {
@@ -274,7 +231,7 @@ export default async function handler(
       },
 
       turn_indicators: {
-        load_estimate: loadEstimate,
+        load_estimate: load,
       },
 
       session_health: sessionHealth,
@@ -289,7 +246,6 @@ export default async function handler(
     };
 
     await writeTurnLog(logEntry);
-
     return res.status(200).json({ answer: janFinal });
   } catch (err: any) {
     const errorLog: TurnLog = {
@@ -304,11 +260,10 @@ export default async function handler(
 
       evaluator_text: null,
       evaluator_present: false,
-
       chips_present: false,
       chip_clicked: null,
 
-      latency_ms: Date.now() - startedAt,
+      latency_ms: Date.now(),
       status: "error",
       error: String(err),
     };
