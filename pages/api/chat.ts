@@ -1,7 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
-import { writeTurnLog, writeAiCallLog, AiCallLogEntry } from "../../chatbot/logWriter";
+import {
+  writeTurnLog,
+  writeAiCallLog,
+  AiCallLogEntry,
+} from "../../chatbot/logWriter";
 import { TurnLog } from "../../chatbot/log.types";
 import { Redis } from "@upstash/redis";
 
@@ -14,7 +18,8 @@ const redis = Redis.fromEnv();
    CONFIG
    ========= */
 const SESSION_TIMEOUT_HOURS = 24;
-const ENABLE_AI_CALL_LOGGING = process.env.ENABLE_AI_CALL_LOGGING === "true";
+const ENABLE_AI_CALL_LOGGING =
+  process.env.ENABLE_AI_CALL_LOGGING === "true";
 
 /* =========
    PATHS
@@ -63,17 +68,26 @@ async function callOpenAI(params: {
   const model = "gpt-4o-mini";
   const temperature = 0.2;
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ model, temperature, messages }),
-  } as RequestInit);
+  const response = await fetch(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        temperature,
+        messages: params.messages, // ← FIX
+      }),
+    } as RequestInit
+  );
 
   const raw = await response.json();
-  const text = raw?.choices?.[0]?.message?.content?.trim() ?? "";
+  const text =
+    raw?.choices?.[0]?.message?.content?.trim() ?? "";
+
   const latency = Date.now() - startedAt;
 
   if (ENABLE_AI_CALL_LOGGING) {
@@ -89,6 +103,7 @@ async function callOpenAI(params: {
       response_text: text,
       latency_ms: latency,
     };
+
     await writeAiCallLog(aiLog);
   }
 
@@ -98,13 +113,17 @@ async function callOpenAI(params: {
 /* =========
    API HANDLER
    ========= */
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== "POST") return res.status(405).end();
 
   const startedAt = Date.now();
 
   try {
     const { messages, sessionId } = req.body;
+
     if (!Array.isArray(messages)) {
       return res.status(400).json({ error: "Invalid messages" });
     }
@@ -114,18 +133,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const reshapePrompt = loadFile(RESHAPE_PATH);
     const facts = loadFile(FACTS_PATH);
 
-    const userMessages = messages.filter((m: any) => m.role === "user");
+    const userMessages = messages.filter(
+      (m: any) => m.role === "user"
+    );
     const lastUserText = userMessages.at(-1)?.content ?? "";
     const turnIndex = userMessages.length;
 
     /* SESSION OBSERVATION */
     const now = Date.now();
     const sessionKey = `session:last_user_at:${sessionId}`;
-    const prev = sessionId ? await redis.get<string>(sessionKey) : null;
+    const prev = sessionId
+      ? await redis.get<string>(sessionKey)
+      : null;
+
     const lastUserAt = new Date(now).toISOString();
     if (sessionId) await redis.set(sessionKey, lastUserAt);
 
-    const sessionAgeMs = prev ? now - new Date(prev).getTime() : 0;
+    const sessionAgeMs = prev
+      ? now - new Date(prev).getTime()
+      : 0;
+
     const dialogueExpiresAt = new Date(
       now + SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
     ).toISOString();
@@ -136,7 +163,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       session_id: sessionId,
       turn_id: turnIndex,
       messages: [
-        { role: "system", content: `${prompt}\n\nAUTORISERET VIDEN:\n${facts}` },
+        {
+          role: "system",
+          content: `${prompt}\n\nAUTORISERET VIDEN:\n${facts}`,
+        },
         ...messages,
       ],
     });
@@ -157,15 +187,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       turn_id: turnIndex,
       messages: [
         { role: "system", content: reshapePrompt },
-        { role: "user", content: `JAN RAW:\n${janRaw}\n\nEVALUATOR:\n${evaluatorText}` },
+        {
+          role: "user",
+          content: `JAN RAW:\n${janRaw}\n\nEVALUATOR:\n${evaluatorText}`,
+        },
       ],
     });
 
-    /* TRIN A + B */
-    const topicHash = simpleTopicHash(lastUserText);
-    const questionCount = countQuestions(janFinal);
-    const loadEstimate = estimateLoad(janFinal.length);
-
+    /* LOG */
     const logEntry: TurnLog = {
       timestamp: new Date().toISOString(),
       session_id: sessionId,
@@ -187,12 +216,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ai_message_length: janFinal.length,
 
       turn_observation: {
-        question_count: questionCount,
-        topic_hash: topicHash,
+        question_count: countQuestions(janFinal),
+        topic_hash: simpleTopicHash(lastUserText),
       },
 
       turn_indicators: {
-        load_estimate: loadEstimate,
+        load_estimate: estimateLoad(janFinal.length),
       },
 
       last_user_at: lastUserAt,
@@ -205,6 +234,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     await writeTurnLog(logEntry);
+
     return res.status(200).json({ answer: janFinal });
   } catch (err: any) {
     const errorLog: TurnLog = {
