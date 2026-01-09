@@ -1,3 +1,4 @@
+
 // chatbot/log.types.ts
 
 export type StopSignal =
@@ -58,23 +59,30 @@ export type TurnLog = {
   turn_observation?: {
     question_count?: number;
     topic_hash?: string;
+    repetition_score?: number;
   };
 
   // ─────────────────────────────
   // TRIN 5 · AFLEDTE INDIKATORER
-  // (passive, ikke-styrende)
+  // (AI-baseret, ikke-styrende)
   // ─────────────────────────────
   turn_indicators?: {
     progression_state?: "stalled" | "advancing" | "closing";
     alignment_state?: "low" | "medium" | "high";
     stability_state?: "stable" | "drifting";
     load_estimate?: "low" | "medium" | "high";
+    intent_state?:
+      | "info"
+      | "afklaring"
+      | "beslutning"
+      | "handling"
+      | "afslutning";
     stop_signal_candidate?: StopSignal;
   };
 
   // ─────────────────────────────
   // TRIN 6 · FLOW-JUSTERING
-  // (kun registrering)
+  // (kun registrering – ingen styring)
   // ─────────────────────────────
   flow_adjustment?: {
     applied?: boolean;
