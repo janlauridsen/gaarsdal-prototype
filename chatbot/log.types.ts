@@ -32,6 +32,16 @@ export type TurnObservation = {
 };
 
 /**
+ * TurnIndicators
+ * ─────────────────────────────
+ * Rå, tekniske indikatorer pr. turn.
+ * Bruges til belastning og heuristik.
+ */
+export type TurnIndicators = {
+  load_estimate?: number;
+};
+
+/**
  * TurnLog
  * ─────────────────────────────
  * Append-only log pr. turn.
@@ -55,6 +65,7 @@ export type TurnLog = {
    * Runtime aliases / telemetry (chat.ts)
    * ────────────────────────────────────
    * Bevares for kompatibilitet.
+   * Skal konsolideres senere.
    */
   user_text?: string;
   jan_raw?: string;
@@ -74,6 +85,11 @@ export type TurnLog = {
    */
   turn_observation?: TurnObservation;
 
+  /**
+   * Turn-level indicators
+   */
+  turn_indicators?: TurnIndicators;
+
   // ───────────────
   // Evaluator (struktureret)
   // ───────────────
@@ -90,7 +106,7 @@ export type TurnLog = {
 
   // ───────────────
   // Session
-   // ───────────────
+  // ───────────────
   session?: {
     stop_signal?: StopSignal;
     health?: {
