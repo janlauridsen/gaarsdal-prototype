@@ -1,7 +1,6 @@
 // scripts/replay-test-cases.js
 
 import { readFileSync } from "fs";
-import fetch from "node-fetch";
 
 /* =========
    ENV
@@ -51,17 +50,14 @@ async function replay() {
       }
 
       const text = await res.text();
-
       if (!text) {
-        throw new Error(
-          `Tomt svar fra chat.ts (${testCase.case_id})`
-        );
+        throw new Error(`Tomt svar fra chat.ts (${testCase.case_id})`);
       }
 
       let json;
       try {
         json = JSON.parse(text);
-      } catch (err) {
+      } catch {
         throw new Error(
           `Ugyldigt JSON-svar fra chat.ts (${testCase.case_id}): ${text}`
         );
