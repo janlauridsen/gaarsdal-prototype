@@ -1,65 +1,95 @@
-import { Redis } from "@upstash/redis";
+// scripts/replay-test-cases.js
 
-const redis = Redis.fromEnv();
+import { readFileSync } from "fs";
+import fetch from "node-fetch";
 
-const CHAT_URL = process.env.CHATBOT_URL;
-const TEST_CASES_KEY = "testcases:v1";
-
-if (!CHAT_URL) {
+/* =========
+   ENV
+   ========= */
+const CHATBOT_URL = process.env.CHATBOT_URL;
+if (!CHATBOT_URL) {
   throw new Error("CHATBOT_URL er ikke sat");
 }
 
+/* =========
+   LOAD TEST CASES
+   ========= */
+const raw = readFileSync("./tests/test-cases.json", "utf8");
+const testCases = JSON.parse(raw);
+
+/* =========
+   REPLAY
+   ========= */
 async function replay() {
   console.log("Replay test cases: START");
 
-  const cases = await redis.get(TEST_CASES_KEY);
-
-  if (!Array.isArray(cases)) {
-    throw new Error("Ingen test-cases fundet i Redis");
-  }
-
-  for (const testCase of cases) {
-    const sessionId = `test_${testCase.case_id}`;
+  for (const testCase of testCases) {
     console.log(`\n▶️  Kører test-case: ${testCase.case_id}`);
 
     let messages = [];
 
     for (const turn of testCase.turns) {
-      messages.push({
-        role: "user",
-        content: turn.content,
-      });
+      messages.push(turn);
 
-      const res = await fetch(CHAT_URL, {
+      const res = await fetch(CHATBOT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          sessionId,
+          sessionId: `test_${testCase.case_id}`,
           messages,
         }),
       });
 
-      const json = await res.json();
-
-      if (!json.answer) {
+      /* ---------- HARD CONTRACT CHECK ---------- */
+      if (!res.ok) {
+        const text = await res.text();
         throw new Error(
-          `Ingen answer for ${testCase.case_id}`
+          `HTTP ${res.status} fra chat.ts (${testCase.case_id}): ${text}`
         );
       }
 
+      const text = await res.text();
+
+      if (!text) {
+        throw new Error(
+          `Tomt svar fra chat.ts (${testCase.case_id})`
+        );
+      }
+
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (err) {
+        throw new Error(
+          `Ugyldigt JSON-svar fra chat.ts (${testCase.case_id}): ${text}`
+        );
+      }
+
+      if (!json.answer) {
+        throw new Error(
+          `Manglende 'answer' i svar (${testCase.case_id})`
+        );
+      }
+
+      /* ---------- FEED BACK INTO DIALOG ---------- */
       messages.push({
         role: "assistant",
         content: json.answer,
       });
     }
+
+    console.log(`✅  Færdig: ${testCase.case_id}`);
   }
 
-  console.log("\nReplay færdig.");
+  console.log("\nReplay test cases: FÆRDIG");
 }
 
+/* =========
+   RUN
+   ========= */
 replay().catch((err) => {
-  console.error("FEJL under replay:", err);
+  console.error("FEJL under replay:", err.message);
   process.exit(1);
 });
