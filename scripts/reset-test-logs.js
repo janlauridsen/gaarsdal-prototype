@@ -5,7 +5,7 @@ const redis = Redis.fromEnv();
 async function resetTestLogs() {
   console.log("Reset test logs: START");
 
-  const keys = await redis.keys("turnlog:test_*");
+  const keys = await redis.keys("chatlog:test_*");
 
   if (!keys || keys.length === 0) {
     console.log("Ingen test-logs fundet. Intet slettet.");
