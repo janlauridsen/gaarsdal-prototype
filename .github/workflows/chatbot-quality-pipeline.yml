@@ -1,0 +1,62 @@
+name: Chatbot Quality Pipeline (A1–A5)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 0. Checkout repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 1. Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # A1. Reset gamle test-logs
+      - name: A1 – Reset test logs
+        run: node scripts/reset-test-logs.js
+        env:
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+
+      # A2. Load test-cases
+      - name: A2 – Load test cases
+        run: node scripts/load-test-cases.js
+        env:
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+
+      # A3. Replay test-cases mod systemet
+      - name: A3 – Replay test cases
+        run: node scripts/replay-test-cases.js
+        env:
+          CHATBOT_URL: ${{ secrets.CHATBOT_URL }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+
+      # A4. Maskinel CQC-analyse
+      - name: A4 – Analyze CQC logs
+        run: node scripts/analyze-cqc-logs.js > a4-analysis.json
+        env:
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+
+      # A5. Menneskelig beslutnings-opsummering
+      - name: A5 – Summarize CQC analysis
+        run: node scripts/a5-summarize-cqc.js a4-analysis.json > a5-summary.json
+
+      # Upload artifacts (A4 + A5)
+      - name: Upload CQC artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cqc-quality-report
+          path: |
+            a4-analysis.json
+            a5-summary.json
