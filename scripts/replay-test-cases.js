@@ -1,5 +1,4 @@
 import { Redis } from "@upstash/redis";
-import fetch from "node-fetch";
 
 const redis = Redis.fromEnv();
 
