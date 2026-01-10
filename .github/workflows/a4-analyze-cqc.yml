@@ -1,0 +1,24 @@
+name: A4 – Analyze CQC signals
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - V8.0-Chatbot-testing-methods-v0.1
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run A4 CQC analysis
+        run: node scripts/analyze-cqc-logs.js
+        env:
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
