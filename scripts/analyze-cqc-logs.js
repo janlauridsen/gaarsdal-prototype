@@ -9,33 +9,36 @@
 import { Redis } from "@upstash/redis";
 
 const redis = Redis.fromEnv();
-
 const TEST_SESSION_PREFIX = "test_";
 
 function classifyProgress(turns) {
   if (turns.length < 3) return "insufficient_data";
 
   let unchanged = 0;
+
   for (let i = 1; i < turns.length; i++) {
     const prev = turns[i - 1];
     const curr = turns[i];
 
-    if (
+    const sameLoad =
       prev.turn_indicators?.load_estimate ===
-        curr.turn_indicators?.load_estimate &&
+      curr.turn_indicators?.load_estimate;
+
+    const sameChips =
       JSON.stringify(prev.telemetry?.chips || []) ===
-        JSON.stringify(curr.telemetry?.chips || [])
-    ) {
+      JSON.stringify(curr.telemetry?.chips || []);
+
+    if (sameLoad && sameChips) {
       unchanged++;
     }
   }
 
-  if (unchanged >= 2) return "stalled";
-  return "advancing";
+  return unchanged >= 2 ? "stalled" : "advancing";
 }
 
 function classifyBoundary(turns) {
   const chipCounts = {};
+
   for (const t of turns) {
     const chips = t.telemetry?.chips || [];
     for (const c of chips) {
@@ -66,16 +69,15 @@ async function analyze() {
   console.log("A4 analyse: START");
 
   const keys = await redis.keys("chatlog:*");
-  const testKeys = keys.filter((k) =>
-    k.includes(TEST_SESSION_PREFIX)
-  );
+  const testKeys = keys.filter((k) => k.includes(TEST_SESSION_PREFIX));
 
   const sessions = {};
 
   for (const key of testKeys) {
     const logs = await redis.lrange(key, 0, -1);
+
     for (const raw of logs) {
-      const entry = JSON.parse(raw);
+      const entry = typeof raw === "string" ? JSON.parse(raw) : raw;
       const sid = entry.session_id;
 
       if (!sessions[sid]) sessions[sid] = [];
@@ -101,11 +103,10 @@ async function analyze() {
       },
       evidence: {
         turn_count: turns.length,
-        avg_load: turns.map(
+        load_sequence: turns.map(
           (t) => t.turn_indicators?.load_estimate
         ),
-        repeated_chips:
-          boundary === "repeated",
+        repeated_chips: boundary === "repeated",
       },
     });
   }
