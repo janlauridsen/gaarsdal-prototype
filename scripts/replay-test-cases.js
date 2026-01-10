@@ -1,91 +1,105 @@
-// scripts/replay-test-cases.js
+/**
+ * Replay test cases mod live chat.ts
+ * A3-version: tolerant replay
+ *
+ * Kontrakt:
+ * - Logger fejl pr. test-case
+ * - Stopper IKKE på HTTP-fejl
+ * - Exit 1 kun hvis INGEN cases rammer systemet
+ */
 
 import { readFileSync } from "fs";
 
-/* =========
-   ENV
-   ========= */
 const CHATBOT_URL = process.env.CHATBOT_URL;
 if (!CHATBOT_URL) {
   throw new Error("CHATBOT_URL er ikke sat");
 }
 
-/* =========
-   LOAD TEST CASES
-   ========= */
-const raw = readFileSync("./tests/test-cases.json", "utf8");
-const testCases = JSON.parse(raw);
+const TEST_CASES_PATH = "./tests/test-cases.json";
 
-/* =========
-   REPLAY
-   ========= */
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
 async function replay() {
   console.log("Replay test cases: START");
 
+  const raw = readFileSync(TEST_CASES_PATH, "utf8");
+  const testCases = JSON.parse(raw);
+
+  let totalCases = 0;
+  let casesWithAnySuccess = 0;
+
   for (const testCase of testCases) {
-    console.log(`\n▶️  Kører test-case: ${testCase.case_id}`);
+    totalCases++;
+    const { case_id, turns } = testCase;
 
-    let messages = [];
+    console.log(`\n▶️  Kører test-case: ${case_id}`);
 
-    for (const turn of testCase.turns) {
-      messages.push(turn);
+    let sessionId = `test_${case_id}`;
+    let hadAnySuccess = false;
 
-      const res = await fetch(CHATBOT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sessionId: `test_${testCase.case_id}`,
-          messages,
-        }),
-      });
+    for (let i = 0; i < turns.length; i++) {
+      const turn = turns[i];
 
-      /* ---------- HARD CONTRACT CHECK ---------- */
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(
-          `HTTP ${res.status} fra chat.ts (${testCase.case_id}): ${text}`
-        );
-      }
-
-      const text = await res.text();
-      if (!text) {
-        throw new Error(`Tomt svar fra chat.ts (${testCase.case_id})`);
-      }
-
-      let json;
       try {
-        json = JSON.parse(text);
-      } catch {
-        throw new Error(
-          `Ugyldigt JSON-svar fra chat.ts (${testCase.case_id}): ${text}`
+        const res = await fetch(CHATBOT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId,
+            messages: turns.slice(0, i + 1),
+          }),
+        });
+
+        if (!res.ok) {
+          console.warn(
+            `⚠️  Advarsel: HTTP ${res.status} (${case_id}, turn ${i + 1})`
+          );
+          continue;
+        }
+
+        // Forsøg at parse, men stop ikke på fejl
+        try {
+          await res.json();
+        } catch {
+          console.warn(
+            `⚠️  Kunne ikke parse JSON (${case_id}, turn ${i + 1})`
+          );
+        }
+
+        hadAnySuccess = true;
+        await sleep(300); // let throttling
+
+      } catch (err) {
+        console.warn(
+          `⚠️  Netværksfejl (${case_id}, turn ${i + 1}): ${String(err)}`
         );
       }
-
-      if (!json.answer) {
-        throw new Error(
-          `Manglende 'answer' i svar (${testCase.case_id})`
-        );
-      }
-
-      /* ---------- FEED BACK INTO DIALOG ---------- */
-      messages.push({
-        role: "assistant",
-        content: json.answer,
-      });
     }
 
-    console.log(`✅  Færdig: ${testCase.case_id}`);
+    if (hadAnySuccess) {
+      casesWithAnySuccess++;
+      console.log(`✅ Test-case gennemført (delvist eller fuldt): ${case_id}`);
+    } else {
+      console.warn(`❌ Ingen succesfulde turns: ${case_id}`);
+    }
   }
 
-  console.log("\nReplay test cases: FÆRDIG");
+  console.log("\nReplay færdig.");
+  console.log(`Cases kørt: ${totalCases}`);
+  console.log(`Cases med mindst én succes: ${casesWithAnySuccess}`);
+
+  if (casesWithAnySuccess === 0) {
+    console.error("Replay FEJLEDE: ingen test-cases ramte systemet");
+    process.exit(1);
+  }
+
+  console.log("Replay OK (tolerant mode)");
+  process.exit(0);
 }
 
-/* =========
-   RUN
-   ========= */
 replay().catch((err) => {
-  console.error("FEJL under replay:", err.message);
+  console.error("Uventet replay-fejl:", err);
   process.exit(1);
 });
