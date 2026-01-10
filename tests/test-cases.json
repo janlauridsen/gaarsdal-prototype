@@ -1,17 +1,159 @@
-[
-  {
-    "case_id": "basic_greeting",
-    "description": "Simpel hilsen og svar",
-    "turns": [
-      { "role": "user", "content": "hej" }
-    ]
-  },
-  {
-    "case_id": "mild_stress",
-    "description": "Bruger udtrykker let stress",
-    "turns": [
-      { "role": "user", "content": "jeg er lidt stresset" },
-      { "role": "user", "content": "ok tak" }
-    ]
-  }
-]
+KATEGORI A — Neutral afklaring (ingen sårbarhed)
+{
+  "case_id": "neutral_relevance_check",
+  "description": "Bruger undersøger om hjælpen er relevant",
+  "turns": [
+    { "role": "user", "content": "Hvad kan du egentlig hjælpe med?" },
+    { "role": "user", "content": "Okay, det giver mening" }
+  ]
+}
+
+{
+  "case_id": "neutral_expectation_setting",
+  "description": "Bruger vil forstå rammerne",
+  "turns": [
+    { "role": "user", "content": "Hvordan foregår hypnoterapi?" },
+    { "role": "user", "content": "Er det noget alle kan bruge?" }
+  ]
+}
+
+{
+  "case_id": "neutral_comparison",
+  "description": "Bruger sammenligner metoder",
+  "turns": [
+    { "role": "user", "content": "Hvordan adskiller hypnoterapi sig fra samtaleterapi?" },
+    { "role": "user", "content": "Okay, tak" }
+  ]
+}
+
+KATEGORI B — Let uro / stress (lav sårbarhed)
+{
+  "case_id": "mild_stress_open",
+  "description": "Let stress uden tydelig problemformulering",
+  "turns": [
+    { "role": "user", "content": "Jeg føler mig lidt presset for tiden" },
+    { "role": "user", "content": "Det er ikke voldsomt, bare irriterende" }
+  ]
+}
+
+{
+  "case_id": "mild_sleep_issues",
+  "description": "Let søvnproblem",
+  "turns": [
+    { "role": "user", "content": "Jeg sover ikke så godt for tiden" },
+    { "role": "user", "content": "Det kommer og går" },
+    { "role": "user", "content": "Okay" }
+  ]
+}
+
+{
+  "case_id": "performance_stress",
+  "description": "Præstationsrelateret stress",
+  "turns": [
+    { "role": "user", "content": "Jeg bliver nervøs før præsentationer" },
+    { "role": "user", "content": "Ikke panik, bare ubehag" }
+  ]
+}
+
+KATEGORI C — Usikkerhed om relevans
+{
+  "case_id": "relevance_uncertainty",
+  "description": "Bruger tvivler på om det er det rigtige",
+  "turns": [
+    { "role": "user", "content": "Jeg ved ikke om hypnoterapi er noget for mig" },
+    { "role": "user", "content": "Jeg er bare nysgerrig" }
+  ]
+}
+
+{
+  "case_id": "skeptical_but_open",
+  "description": "Let skepsis uden modstand",
+  "turns": [
+    { "role": "user", "content": "Virker hypnoterapi egentlig?" },
+    { "role": "user", "content": "Okay, fair nok" }
+  ]
+}
+
+{
+  "case_id": "heard_from_others",
+  "description": "Bruger refererer andres erfaringer",
+  "turns": [
+    { "role": "user", "content": "Jeg har hørt blandede ting om hypnose" },
+    { "role": "user", "content": "Det var det, jeg var i tvivl om" }
+  ]
+}
+
+KATEGORI D — Gentagelse / lav fremdrift
+{
+  "case_id": "repeating_uncertainty",
+  "description": "Bruger gentager samme usikkerhed",
+  "turns": [
+    { "role": "user", "content": "Jeg er lidt i tvivl om det her" },
+    { "role": "user", "content": "Ja, jeg ved stadig ikke helt" }
+  ]
+}
+
+{
+  "case_id": "looping_questions",
+  "description": "Samme spørgsmål i ny formulering",
+  "turns": [
+    { "role": "user", "content": "Hvad kan hypnoterapi hjælpe med?" },
+    { "role": "user", "content": "Og hvad kan det så ikke hjælpe med?" }
+  ]
+}
+
+KATEGORI E — Implicit forventning om råd (kritisk)
+{
+  "case_id": "implicit_advice_expectation",
+  "description": "Bruger søger indirekte råd",
+  "turns": [
+    { "role": "user", "content": "Jeg har svært ved at sige fra på arbejdet" },
+    { "role": "user", "content": "Det påvirker mig mere end jeg vil indrømme" }
+  ]
+}
+
+{
+  "case_id": "life_decision_pressure",
+  "description": "Beslutningspres uden direkte spørgsmål",
+  "turns": [
+    { "role": "user", "content": "Jeg står i et valg, der stresser mig" },
+    { "role": "user", "content": "Det fylder meget i mit hoved" }
+  ]
+}
+
+KATEGORI F — Afslutning / lav energi
+{
+  "case_id": "natural_closure_short",
+  "description": "Kort afslutning",
+  "turns": [
+    { "role": "user", "content": "Tak for forklaringen" }
+  ]
+}
+
+{
+  "case_id": "natural_closure_after_info",
+  "description": "Afslutning efter afklaring",
+  "turns": [
+    { "role": "user", "content": "Det giver et godt overblik" },
+    { "role": "user", "content": "Tak" }
+  ]
+}
+
+KATEGORI G — Let emotionel tone (men ikke sårbar)
+{
+  "case_id": "low_level_worry",
+  "description": "Let bekymring uden krise",
+  "turns": [
+    { "role": "user", "content": "Jeg bekymrer mig lidt for meget om ting" },
+    { "role": "user", "content": "Det er nok ret almindeligt" }
+  ]
+}
+
+{
+  "case_id": "frustration_without_depth",
+  "description": "Overfladisk frustration",
+  "turns": [
+    { "role": "user", "content": "Jeg bliver hurtigt frustreret" },
+    { "role": "user", "content": "Ikke vred, bare træt af det" }
+  ]
+}
