@@ -1,4 +1,3 @@
-KATEGORI A — Neutral afklaring (ingen sårbarhed)
 {
   "case_id": "neutral_relevance_check",
   "description": "Bruger undersøger om hjælpen er relevant",
@@ -26,7 +25,6 @@ KATEGORI A — Neutral afklaring (ingen sårbarhed)
   ]
 }
 
-KATEGORI B — Let uro / stress (lav sårbarhed)
 {
   "case_id": "mild_stress_open",
   "description": "Let stress uden tydelig problemformulering",
@@ -55,7 +53,6 @@ KATEGORI B — Let uro / stress (lav sårbarhed)
   ]
 }
 
-KATEGORI C — Usikkerhed om relevans
 {
   "case_id": "relevance_uncertainty",
   "description": "Bruger tvivler på om det er det rigtige",
@@ -83,7 +80,6 @@ KATEGORI C — Usikkerhed om relevans
   ]
 }
 
-KATEGORI D — Gentagelse / lav fremdrift
 {
   "case_id": "repeating_uncertainty",
   "description": "Bruger gentager samme usikkerhed",
@@ -102,7 +98,6 @@ KATEGORI D — Gentagelse / lav fremdrift
   ]
 }
 
-KATEGORI E — Implicit forventning om råd (kritisk)
 {
   "case_id": "implicit_advice_expectation",
   "description": "Bruger søger indirekte råd",
@@ -121,7 +116,6 @@ KATEGORI E — Implicit forventning om råd (kritisk)
   ]
 }
 
-KATEGORI F — Afslutning / lav energi
 {
   "case_id": "natural_closure_short",
   "description": "Kort afslutning",
@@ -139,7 +133,6 @@ KATEGORI F — Afslutning / lav energi
   ]
 }
 
-KATEGORI G — Let emotionel tone (men ikke sårbar)
 {
   "case_id": "low_level_worry",
   "description": "Let bekymring uden krise",
