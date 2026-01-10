@@ -1,0 +1,17 @@
+[
+  {
+    "case_id": "basic_greeting",
+    "description": "Simpel hilsen og svar",
+    "turns": [
+      { "role": "user", "content": "hej" }
+    ]
+  },
+  {
+    "case_id": "mild_stress",
+    "description": "Bruger udtrykker let stress",
+    "turns": [
+      { "role": "user", "content": "jeg er lidt stresset" },
+      { "role": "user", "content": "ok tak" }
+    ]
+  }
+]
