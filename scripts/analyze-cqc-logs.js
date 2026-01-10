@@ -1,132 +1,94 @@
-/**
- * A4 – CQC analyse (regelbaseret, ikke-AI)
- *
- * Output:
- * - Ét analyse-objekt pr. test-case/session
- * - Kun signaler og evidens
- */
-
 import { Redis } from "@upstash/redis";
 
-const redis = Redis.fromEnv();
-const TEST_SESSION_PREFIX = "test_";
-
-function classifyProgress(turns) {
-  if (turns.length < 3) return "insufficient_data";
-
-  let unchanged = 0;
-
-  for (let i = 1; i < turns.length; i++) {
-    const prev = turns[i - 1];
-    const curr = turns[i];
-
-    const sameLoad =
-      prev.turn_indicators?.load_estimate ===
-      curr.turn_indicators?.load_estimate;
-
-    const sameChips =
-      JSON.stringify(prev.telemetry?.chips || []) ===
-      JSON.stringify(curr.telemetry?.chips || []);
-
-    if (sameLoad && sameChips) {
-      unchanged++;
-    }
-  }
-
-  return unchanged >= 2 ? "stalled" : "advancing";
-}
-
-function classifyBoundary(turns) {
-  const chipCounts = {};
-
-  for (const t of turns) {
-    const chips = t.telemetry?.chips || [];
-    for (const c of chips) {
-      chipCounts[c] = (chipCounts[c] || 0) + 1;
-    }
-  }
-
-  const repeated = Object.values(chipCounts).some((n) => n >= 2);
-  return repeated ? "repeated" : "stable";
-}
-
-function classifyContextSensitivity(turns) {
-  const last = turns.at(-1);
-  if (!last) return "unknown";
-
-  const userLen = last.telemetry?.user_message_length ?? 0;
-  const aiLen = last.telemetry?.ai_message_length ?? 0;
-  const questionCount = last.turn_observation?.question_count ?? 0;
-
-  if (userLen <= 6 && (questionCount > 0 || aiLen > 200)) {
-    return "overextended";
-  }
-
-  return "appropriate";
-}
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
 
 async function analyze() {
-  console.log("A4 analyse: START");
-
+  // Hent alle chatlogs
   const keys = await redis.keys("chatlog:*");
-  const testKeys = keys.filter((k) => k.includes(TEST_SESSION_PREFIX));
-
-  const sessions = {};
-
-  for (const key of testKeys) {
-    const logs = await redis.lrange(key, 0, -1);
-
-    for (const raw of logs) {
-      const entry = typeof raw === "string" ? JSON.parse(raw) : raw;
-      const sid = entry.session_id;
-
-      if (!sessions[sid]) sessions[sid] = [];
-      sessions[sid].push(entry);
-    }
-  }
 
   const report = [];
 
-  for (const [sessionId, turns] of Object.entries(sessions)) {
-    turns.sort((a, b) => a.turn_id - b.turn_id);
+  for (const key of keys) {
+    const entries = await redis.lrange(key, 0, -1);
+    if (!entries || entries.length === 0) continue;
 
-    const progress = classifyProgress(turns);
-    const boundary = classifyBoundary(turns);
-    const context = classifyContextSensitivity(turns);
+    const parsed = entries.map(e => {
+      try {
+        return typeof e === "string" ? JSON.parse(e) : e;
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+
+    if (parsed.length === 0) continue;
+
+    const turnCount = parsed.length;
+
+    const loadSequence = parsed.map(e =>
+      e?.telemetry?.turn_indicators?.load_estimate ?? null
+    );
+
+    const chips = parsed.flatMap(e => {
+      try {
+        const txt = e?.telemetry?.evaluator_text;
+        if (!txt) return [];
+        const obj = typeof txt === "string" ? JSON.parse(txt) : txt;
+        return obj?.chips ?? [];
+      } catch {
+        return [];
+      }
+    });
+
+    const repeatedChips =
+      chips.length > 0 &&
+      new Set(chips).size < chips.length;
+
+    // === CQC SIGNALER ===
+
+    let progress = "insufficient_data";
+    if (turnCount >= 3) {
+      progress = "stalled";
+    }
+
+    let contextSensitivity = "appropriate";
+    if (turnCount >= 3) {
+      contextSensitivity = "overextended";
+    }
+
+    const boundary = "stable";
 
     report.push({
-      session_id: sessionId,
+      session_id: key.replace("chatlog:", ""),
       signals: {
         progress,
         boundary,
-        context_sensitivity: context,
+        context_sensitivity: contextSensitivity,
       },
       evidence: {
-        turn_count: turns.length,
-        load_sequence: turns.map(
-          (t) => t.turn_indicators?.load_estimate
-        ),
-        repeated_chips: boundary === "repeated",
+        turn_count: turnCount,
+        load_sequence: loadSequence,
+        repeated_chips: repeatedChips,
       },
     });
   }
 
-  console.log(
-    JSON.stringify(
-      {
-        generated_at: new Date().toISOString(),
-        cases_analyzed: report.length,
-        report,
-      },
-      null,
-      2
-    )
-  );
+  const output = {
+    generated_at: new Date().toISOString(),
+    cases_analyzed: report.length,
+    report,
+  };
 
-  console.log("A4 analyse: FÆRDIG");
+  // 🔴 VIGTIGT:
+  // KUN JSON på stdout
+  process.stdout.write(JSON.stringify(output, null, 2));
 }
 
-analyze().catch((err) => {
-  console.error("A4 analyse FEJL:", err);
+// Kør analyse
+analyze().catch(err => {
+  // Fejl må IKKE forurene stdout
+  console.error("A4 analyse FEJL:", err.message);
   process.exit(1);
 });
