@@ -1,13 +1,5 @@
-name: Chatbot sanity test
-
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - V8.0-Chatbot-testing-methods-v0.1
-
 jobs:
-  test:
+  analyze:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,10 +8,18 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run chatbot test
+      - name: Run A4 analysis
         run: |
-          node ./tests/run-basic-test.js
-        env:
-          CHATBOT_URL: https://gaarsdal-prototype-ba8o3b4xa-jan-lauridsens-projects.vercel.app/api/chat
-          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          node scripts/analyze-cqc-logs.js > a4.json
+
+      - name: Run A5 summary
+        run: |
+          node scripts/a5-summarize-cqc.js a4.json > a5-summary.json
+
+      - name: Upload A4 + A5 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cqc-analysis
+          path: |
+            a4.json
+            a5-summary.json
