@@ -1,0 +1,51 @@
+{
+  "version": "v7.3",
+  "description": "Thresholds for session- og turn-evaluering. Ingen styring, kun klassifikation.",
+
+  "message_length": {
+    "user": {
+      "short": { "max": 40 },
+      "medium": { "max": 120 },
+      "long": { "min": 121 }
+    },
+    "ai": {
+      "short": { "max": 250 },
+      "medium": { "max": 650 },
+      "long": { "min": 651 }
+    }
+  },
+
+  "load_estimate": {
+    "low": {
+      "ai_message_length_max": 300
+    },
+    "medium": {
+      "ai_message_length_max": 700
+    },
+    "high": {
+      "ai_message_length_min": 701
+    }
+  },
+
+  "progression": {
+    "stalled": {
+      "same_topic_turns_min": 3
+    },
+    "closing": {
+      "affirmative_short_reply_max_chars": 15
+    }
+  },
+
+  "questions": {
+    "many": {
+      "question_count_min": 3
+    }
+  },
+
+  "stability": {
+    "topic_drift": {
+      "topic_change_window": 3,
+      "topic_change_min": 2
+    }
+  }
+}

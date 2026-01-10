@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Chatbot from "../components/Chatbot";
 
 export default function Home() {
   return (
@@ -7,7 +8,7 @@ export default function Home() {
       {/* HERO */}
       <section className="py-32 text-center px-6">
         <h1 className="text-h1 font-light mb-6 max-w-3xl mx-auto">
-          Hypnoterapi – en rolig og struktureret tilgang
+          Hypnoterapi – i en struktureret tilgang
         </h1>
 
         <p className="text-base-lg text-muted max-w-2xl mx-auto mb-10">
@@ -43,7 +44,6 @@ export default function Home() {
         </p>
 
         <div className="grid md:grid-cols-3 gap-10 max-w-5xl mx-auto">
-
           {[
             {
               title: "Stress og indre uro",
@@ -84,7 +84,6 @@ export default function Home() {
               <p className="text-muted text-sm leading-relaxed">{item.text}</p>
             </div>
           ))}
-
         </div>
       </section>
 
@@ -119,7 +118,6 @@ export default function Home() {
         </h2>
 
         <div className="grid md:grid-cols-3 gap-10 max-w-5xl mx-auto">
-
           {[
             {
               step: "1. Samtale",
@@ -142,37 +140,11 @@ export default function Home() {
               <p className="text-muted text-sm leading-relaxed">{item.text}</p>
             </div>
           ))}
-
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-24 px-6 text-center">
-        <div className="bg-white border border-gray-200 p-12 rounded-2xl shadow-sm max-w-3xl mx-auto">
-          <h2 className="text-h2 font-light mb-6">
-            Ønsker du at afklare, om hypnoterapi kan være relevant?
-          </h2>
-
-          <p className="text-base-lg text-muted max-w-2xl mx-auto mb-10">
-            Du er velkommen til at tage kontakt for spørgsmål eller
-            en indledende afklaring.
-          </p>
-
-          <div className="flex justify-center gap-4">
-            <Link href="/kontakt">
-              <a className="bg-accent text-white px-6 py-3 rounded-lg shadow hover:bg-accent/90 transition">
-                Kontakt mig
-              </a>
-            </Link>
-
-            <Link href="/hypnoterapi">
-              <a className="border border-accent text-accent px-6 py-3 rounded-lg hover:bg-accent/10 transition">
-                Læs mere
-              </a>
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* CHATBOT ICON */}
+      <Chatbot />
 
     </main>
   );
