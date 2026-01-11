@@ -6,36 +6,59 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-const OUTPUT_FILE = "exports/session-logs.jsonl";
+const OUTPUT_DIR = "exports";
+const OUTPUT_FILE = `${OUTPUT_DIR}/session-logs.jsonl`;
 
+/**
+ * Bestem kilde uden heuristik.
+ * Brug kun allerede eksisterende signaler i log-entry.
+ */
 function detectSource(entry) {
-  // Brug kun eksisterende signaler
-  // Justér disse checks efter faktiske felter i log.types.ts
   if (entry?.meta?.replay === true) return "replay";
   if (entry?.meta?.test_case_id) return "test";
   return "live";
 }
 
 async function exportLogs() {
-  const keys = await redis.keys("chatlog:*");
-  fs.mkdirSync("exports", { recursive: true });
+  console.log("Starter log-eksport fra Redis");
+
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
   const stream = fs.createWriteStream(OUTPUT_FILE, { flags: "w" });
 
+  // Forventet key-format: chatlog:<sessionId>
+  const keys = await redis.keys("chatlog:*");
+
+  console.log(`Fundet sessions: ${keys.length}`);
+
   for (const key of keys) {
     const sessionId = key.replace("chatlog:", "");
-    const entries = await redis.lrange(key, 0, -1);
-    if (!entries || entries.length === 0) continue;
+
+    let entries;
+    try {
+      entries = await redis.lrange(key, 0, -1);
+    } catch (err) {
+      console.warn(`Kunne ikke læse session ${sessionId}: ${err.message}`);
+      continue;
+    }
+
+    if (!Array.isArray(entries) || entries.length === 0) continue;
 
     entries.forEach((raw, index) => {
-      const entry = typeof raw === "string" ? JSON.parse(raw) : raw;
+      let entry;
+      try {
+        entry = typeof raw === "string" ? JSON.parse(raw) : raw;
+      } catch {
+        console.warn(`Kunne ikke parse log-entry i session ${sessionId}`);
+        return;
+      }
 
       const line = {
         session_id: sessionId,
         turn_index: index,
-        role: entry.role,
-        content: entry.content,
-        timestamp: entry.timestamp,
+        role: entry.role ?? null,
+        content: entry.content ?? null,
+        timestamp: entry.timestamp ?? null,
         source: detectSource(entry),
       };
 
@@ -47,7 +70,7 @@ async function exportLogs() {
   console.log(`Eksport færdig: ${OUTPUT_FILE}`);
 }
 
-exportLogs().catch(err => {
-  console.error("Export FEJL:", err.message);
+exportLogs().catch((err) => {
+  console.error("Export FEJL:", err);
   process.exit(1);
 });
