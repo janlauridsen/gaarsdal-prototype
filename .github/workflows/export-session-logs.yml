@@ -1,4 +1,4 @@
-name: Export session logs (JSONL)
+name: Export session logs V2 (JSONL)
 
 on:
   workflow_dispatch:
