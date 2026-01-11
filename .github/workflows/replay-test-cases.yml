@@ -2,9 +2,6 @@ name: Replay test cases
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - "**"
 
 jobs:
   replay:
