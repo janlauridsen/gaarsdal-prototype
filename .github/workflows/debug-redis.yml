@@ -15,7 +15,7 @@ jobs:
         run: npm install
 
       - name: debug redis 
-        run: node scripts/debug_redis.js
+        run: node scripts/debug-redis.js
         env:
           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
