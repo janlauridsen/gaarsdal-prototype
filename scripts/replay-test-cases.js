@@ -14,7 +14,6 @@
  */
 
 import { readFileSync } from "fs";
-import { randomUUID } from "crypto";
 
 let CHATBOT_URL = process.env.CHATBOT_URL;
 if (!CHATBOT_URL) {
@@ -29,18 +28,14 @@ if (!CHATBOT_URL.endsWith("/api/chat")) {
 const TEST_CASES_PATH = "./tests/test-cases.json";
 const REQUEST_TIMEOUT_MS = 20_000;
 
-// ÉT run-id pr. replay-kørsel
+// Ét run-id pr. replay-kørsel
 const RUN_ID = new Date().toISOString().replace(/[:.]/g, "-");
 
-function sleep(ms: number) {
+function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function fetchFireAndForget(
-  url: string,
-  options: RequestInit,
-  timeoutMs: number
-) {
+async function fetchFireAndForget(url, options, timeoutMs) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -74,7 +69,7 @@ async function replay() {
 
     console.log(`\n▶️  Kører test-case: ${case_id}`);
 
-    // Kritisk ændring: entydig session pr. run
+    // Kritisk: entydig session pr. run
     const sessionId = `test_${case_id}::${RUN_ID}`;
     let hadAnySuccess = false;
 
@@ -103,8 +98,8 @@ async function replay() {
         hadAnySuccess = true;
         await sleep(300);
 
-      } catch (err: any) {
-        if (err?.name === "AbortError") {
+      } catch (err) {
+        if (err && err.name === "AbortError") {
           console.warn(
             `⏱ Timeout (${case_id}, turn ${i + 1}) efter ${REQUEST_TIMEOUT_MS}ms`
           );
