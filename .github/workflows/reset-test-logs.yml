@@ -19,11 +19,13 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
             "https://api.vercel.com/v6/deployments?projectId=prj_aqTwhsR1jsUZ9JgEEsaOdfaTDGs7&limit=20")
 
-          URL=$(echo "$RESPONSE" | jq -r \
-            '.deployments[]
-             | select(.meta.githubCommitRef=="'"$GITHUB_REF_NAME"'")
-             | select(.state=="READY")
-             | .url' | head -n 1)
+          URL=$(echo "$RESPONSE" | jq -r '
+            (.deployments // [])
+            | .[]
+            | select(.meta.githubCommitRef=="'"$GITHUB_REF_NAME"'")
+            | select(.state=="READY")
+            | .url
+          ' | head -n 1)
 
           if [ -z "$URL" ] || [ "$URL" = "null" ]; then
             echo "ERROR: No preview deployment found for branch $GITHUB_REF_NAME"
