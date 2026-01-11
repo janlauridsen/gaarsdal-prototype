@@ -5,7 +5,8 @@
  * Kontrakt:
  * - Logger fejl pr. test-case
  * - Stopper IKKE på HTTP-fejl
- * - Stopper ALDRIG på hængende requests
+ * - Stopper ALDRIG på streaming/hæng
+ * - Læser IKKE response body
  * - Exit 1 kun hvis INGEN cases rammer systemet
  */
 
@@ -28,17 +29,21 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function fetchWithTimeout(url, options, timeoutMs) {
+async function fetchFireAndForget(url, options, timeoutMs) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    return await fetch(url, {
+    const res = await fetch(url, {
       ...options,
       signal: controller.signal,
     });
+
+    // Vi læser INTET fra body
+    return res;
   } finally {
     clearTimeout(id);
+    controller.abort(); // luk forbindelsen eksplicit
   }
 }
 
@@ -63,7 +68,7 @@ async function replay() {
 
     for (let i = 0; i < turns.length; i++) {
       try {
-        const res = await fetchWithTimeout(
+        const res = await fetchFireAndForget(
           CHATBOT_URL,
           {
             method: "POST",
@@ -81,14 +86,6 @@ async function replay() {
             `⚠️  HTTP ${res.status} (${case_id}, turn ${i + 1})`
           );
           continue;
-        }
-
-        try {
-          await res.json();
-        } catch {
-          console.warn(
-            `⚠️  Kunne ikke parse JSON (${case_id}, turn ${i + 1})`
-          );
         }
 
         hadAnySuccess = true;
