@@ -5,6 +5,7 @@
  * Kontrakt:
  * - Logger fejl pr. test-case
  * - Stopper IKKE på HTTP-fejl
+ * - Stopper ALDRIG på hængende requests
  * - Exit 1 kun hvis INGEN cases rammer systemet
  */
 
@@ -15,15 +16,30 @@ if (!CHATBOT_URL) {
   throw new Error("CHATBOT_URL er ikke sat");
 }
 
-// Normalisér endpoint: kræv /api/chat
+// Kræv /api/chat
 if (!CHATBOT_URL.endsWith("/api/chat")) {
   CHATBOT_URL = CHATBOT_URL.replace(/\/$/, "") + "/api/chat";
 }
 
 const TEST_CASES_PATH = "./tests/test-cases.json";
+const REQUEST_TIMEOUT_MS = 20_000;
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+async function fetchWithTimeout(url, options, timeoutMs) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(id);
+  }
 }
 
 async function replay() {
@@ -42,23 +58,27 @@ async function replay() {
 
     console.log(`\n▶️  Kører test-case: ${case_id}`);
 
-    let sessionId = `test_${case_id}`;
+    const sessionId = `test_${case_id}`;
     let hadAnySuccess = false;
 
     for (let i = 0; i < turns.length; i++) {
       try {
-        const res = await fetch(CHATBOT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId,
-            messages: turns.slice(0, i + 1),
-          }),
-        });
+        const res = await fetchWithTimeout(
+          CHATBOT_URL,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sessionId,
+              messages: turns.slice(0, i + 1),
+            }),
+          },
+          REQUEST_TIMEOUT_MS
+        );
 
         if (!res.ok) {
           console.warn(
-            `⚠️  Advarsel: HTTP ${res.status} (${case_id}, turn ${i + 1})`
+            `⚠️  HTTP ${res.status} (${case_id}, turn ${i + 1})`
           );
           continue;
         }
@@ -75,9 +95,15 @@ async function replay() {
         await sleep(300);
 
       } catch (err) {
-        console.warn(
-          `⚠️  Netværksfejl (${case_id}, turn ${i + 1}): ${String(err)}`
-        );
+        if (err.name === "AbortError") {
+          console.warn(
+            `⏱ Timeout (${case_id}, turn ${i + 1}) efter ${REQUEST_TIMEOUT_MS}ms`
+          );
+        } else {
+          console.warn(
+            `⚠️  Netværksfejl (${case_id}, turn ${i + 1}): ${String(err)}`
+          );
+        }
       }
     }
 
