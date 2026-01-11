@@ -1,53 +1,49 @@
 /**
- * Replay test cases mod live chat.ts
- * A4-version: deterministisk session-isolering
+ * Replay test cases mod live /api/chat
+ * JS-only. Ingen TS-syntaks.
  *
- * Kontrakt:
- * - HVER replay-run får sit eget run_id
- * - session_id = `${testcase_id}::${run_id}`
- * - Ingen afhængighed af Redis-reset
- * - Logger fejl pr. test-case
- * - Stopper IKKE på HTTP-fejl
- * - Stopper ALDRIG på streaming/hæng
- * - Læser IKKE response body
- * - Exit 1 kun hvis INGEN cases rammer systemet
+ * Designmål:
+ * - Tolerant replay
+ * - Stopper aldrig på hængende requests
+ * - Ingen afhængighed af Redis cleanup
+ * - Hvert run er isoleret via run_id
  */
 
 import { readFileSync } from "fs";
+import crypto from "crypto";
 
 let CHATBOT_URL = process.env.CHATBOT_URL;
 if (!CHATBOT_URL) {
   throw new Error("CHATBOT_URL er ikke sat");
 }
 
-// Kræv /api/chat
 if (!CHATBOT_URL.endsWith("/api/chat")) {
   CHATBOT_URL = CHATBOT_URL.replace(/\/$/, "") + "/api/chat";
 }
 
 const TEST_CASES_PATH = "./tests/test-cases.json";
 const REQUEST_TIMEOUT_MS = 20_000;
+const TURN_DELAY_MS = 300;
 
-// Ét run-id pr. replay-kørsel
-const RUN_ID = new Date().toISOString().replace(/[:.]/g, "-");
+// Unik run-id → permanent Redis-sikkerhed
+const RUN_ID = crypto.randomUUID();
 
 function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function fetchFireAndForget(url, options, timeoutMs) {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch(url, {
       ...options,
       signal: controller.signal,
     });
-
     return res;
   } finally {
-    clearTimeout(id);
+    clearTimeout(timeout);
     controller.abort();
   }
 }
@@ -69,8 +65,8 @@ async function replay() {
 
     console.log(`\n▶️  Kører test-case: ${case_id}`);
 
-    // Kritisk: entydig session pr. run
-    const sessionId = `test_${case_id}::${RUN_ID}`;
+    // Session-id er nu entydig pr. run
+    const sessionId = `replay:${RUN_ID}:${case_id}`;
     let hadAnySuccess = false;
 
     for (let i = 0; i < turns.length; i++) {
@@ -96,7 +92,7 @@ async function replay() {
         }
 
         hadAnySuccess = true;
-        await sleep(300);
+        await sleep(TURN_DELAY_MS);
 
       } catch (err) {
         if (err && err.name === "AbortError") {
@@ -113,7 +109,7 @@ async function replay() {
 
     if (hadAnySuccess) {
       casesWithAnySuccess++;
-      console.log(`✅ Test-case ramt systemet: ${case_id}`);
+      console.log(`✅ Test-case gennemført (delvist eller fuldt): ${case_id}`);
     } else {
       console.warn(`❌ Ingen succesfulde turns: ${case_id}`);
     }
@@ -128,7 +124,7 @@ async function replay() {
     process.exit(1);
   }
 
-  console.log("Replay OK");
+  console.log("Replay OK (tolerant mode)");
   process.exit(0);
 }
 
