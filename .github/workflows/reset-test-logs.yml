@@ -2,18 +2,23 @@ name: Reset test logs
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - "**"
 
 jobs:
   reset:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Resolve Vercel preview URL
         shell: bash
         run: |
-          echo "Resolving Vercel preview for branch: $GITHUB_REF_NAME"
+          echo "Resolving Vercel preview URL"
+          echo "Branch: $GITHUB_REF_NAME"
 
           RESPONSE=$(curl -s \
             -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
@@ -22,13 +27,15 @@ jobs:
           URL=$(echo "$RESPONSE" | jq -r '
             (.deployments // [])
             | .[]
-            | select(.meta.githubCommitRef=="'"$GITHUB_REF_NAME"'")
             | select(.state=="READY")
+            | select(.meta.githubCommitRef=="'"$GITHUB_REF_NAME"'")
             | .url
           ' | head -n 1)
 
           if [ -z "$URL" ] || [ "$URL" = "null" ]; then
-            echo "ERROR: No preview deployment found for branch $GITHUB_REF_NAME"
+            echo "ERROR: No READY preview deployment found for branch $GITHUB_REF_NAME"
+            echo "Raw API response:"
+            echo "$RESPONSE" | jq '.'
             exit 1
           fi
 
