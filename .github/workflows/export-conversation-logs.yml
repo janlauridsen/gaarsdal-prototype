@@ -1,4 +1,4 @@
-name: Export conversation logs (with meta)
+name: Export raw session logs
 
 on:
   workflow_dispatch:
@@ -14,14 +14,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Export conversation logs from Redis
+      - name: Export raw session logs from Redis
         run: node scripts/export-session-logs.js
         env:
           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
 
-      - name: Upload conversation logs
+      - name: Upload raw session logs
         uses: actions/upload-artifact@v4
         with:
-          name: conversation-logs
-          path: exports/conversation-logs.jsonl
+          name: raw-session-logs
+          path: exports/raw-session-logs.jsonl
