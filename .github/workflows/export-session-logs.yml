@@ -1,0 +1,27 @@
+name: Export session logs (JSONL)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Export session logs from Redis
+        run: node scripts/export-session-logs.js
+        env:
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+
+      - name: Upload exported logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: session-logs
+          path: exports/session-logs.jsonl
