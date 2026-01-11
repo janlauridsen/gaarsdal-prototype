@@ -56,7 +56,7 @@ function estimateLoad(len: number): "low" | "medium" | "high" {
 }
 
 /* =========
-   OPENAI CALL
+   OPENAI CALL (HARDENED)
    ========= */
 async function callOpenAI(params: {
   call_id: string;
@@ -68,27 +68,39 @@ async function callOpenAI(params: {
   const model = "gpt-4o-mini";
   const temperature = 0.2;
 
-  const response = await fetch(
-    "https://api.openai.com/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        temperature,
-        messages: params.messages,
-      }),
-    } as RequestInit
-  );
-
-  const raw = await response.json();
-  const text =
-    raw?.choices?.[0]?.message?.content?.trim() ?? "";
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      temperature,
+      messages: params.messages,
+    }),
+  } as RequestInit);
 
   const latency = Date.now() - startedAt;
+  const rawText = await res.text();
+
+  if (!res.ok) {
+    throw new Error(
+      `OpenAI HTTP ${res.status}: ${rawText.slice(0, 200)}`
+    );
+  }
+
+  let raw: any;
+  try {
+    raw = JSON.parse(rawText);
+  } catch {
+    throw new Error(
+      `OpenAI returned non-JSON response: ${rawText.slice(0, 200)}`
+    );
+  }
+
+  const text =
+    raw?.choices?.[0]?.message?.content?.trim() ?? "";
 
   if (ENABLE_AI_CALL_LOGGING) {
     const aiLog: AiCallLogEntry = {
@@ -120,33 +132,29 @@ export default async function handler(
 
   const startedAt = Date.now();
 
+  const { messages, sessionId } = req.body ?? {};
+  if (!sessionId || !Array.isArray(messages)) {
+    return res.status(400).json({ error: "Invalid payload" });
+  }
+
+  const userMessages = messages.filter(
+    (m: any) => m.role === "user"
+  );
+  const lastUserText = userMessages.at(-1)?.content ?? "";
+  const turnIndex = userMessages.length;
+
   try {
-    const { messages, sessionId } = req.body;
-
-    if (!Array.isArray(messages)) {
-      return res.status(400).json({ error: "Invalid messages" });
-    }
-
     const prompt = loadFile(PROMPT_PATH);
     const evaluatorPrompt = loadFile(EVALUATOR_PATH);
     const reshapePrompt = loadFile(RESHAPE_PATH);
     const facts = loadFile(FACTS_PATH);
 
-    const userMessages = messages.filter(
-      (m: any) => m.role === "user"
-    );
-    const lastUserText = userMessages.at(-1)?.content ?? "";
-    const turnIndex = userMessages.length;
-
     /* SESSION OBSERVATION */
     const now = Date.now();
     const sessionKey = `session:last_user_at:${sessionId}`;
-    const prev = sessionId
-      ? await redis.get<string>(sessionKey)
-      : null;
-
+    const prev = await redis.get<string>(sessionKey);
     const lastUserAt = new Date(now).toISOString();
-    if (sessionId) await redis.set(sessionKey, lastUserAt);
+    await redis.set(sessionKey, lastUserAt);
 
     const sessionAgeMs = prev
       ? now - new Date(prev).getTime()
@@ -193,7 +201,7 @@ export default async function handler(
       ],
     });
 
-    /* SESSION HEALTH (STRUKTURERET) */
+    /* SESSION HEALTH */
     const load = estimateLoad(janFinal.length);
     const sessionHealth = {
       score: load === "high" ? 0.6 : load === "medium" ? 0.8 : 1.0,
@@ -215,9 +223,6 @@ export default async function handler(
       jan_final_output: janFinal,
 
       evaluator_present: Boolean(evaluatorText),
-      evaluator_summary: undefined,
-      evaluator_hints: undefined,
-      evaluator_chips: undefined,
 
       session: {
         health: sessionHealth,
@@ -226,20 +231,16 @@ export default async function handler(
       telemetry: {
         answer: janFinal,
         evaluator_text: evaluatorText,
-
         turn_index: turnIndex,
         user_message_length: lastUserText.length,
         ai_message_length: janFinal.length,
-
         turn_observation: {
           question_count: countQuestions(janFinal),
           topic_hash: simpleTopicHash(lastUserText),
         },
-
         turn_indicators: {
           load_estimate: load,
         },
-
         last_user_at: lastUserAt,
         session_age_ms: sessionAgeMs,
         dialogue_expires_at: dialogueExpiresAt,
@@ -255,10 +256,10 @@ export default async function handler(
   } catch (err: any) {
     const errorLog: TurnLog = {
       timestamp: new Date().toISOString(),
-      session_id: req.body?.sessionId ?? "unknown",
-      turn_id: -1,
+      session_id: sessionId,
+      turn_id: turnIndex,
 
-      user_input: "",
+      user_input: lastUserText,
       jan_raw_output: "",
       jan_final_output: "",
 
@@ -268,7 +269,7 @@ export default async function handler(
         error: String(err),
       },
 
-      latency_ms: Date.now(),
+      latency_ms: Date.now() - startedAt,
       status: "error",
       error: String(err),
     };
