@@ -10,9 +10,14 @@
 
 import { readFileSync } from "fs";
 
-const CHATBOT_URL = process.env.CHATBOT_URL;
+let CHATBOT_URL = process.env.CHATBOT_URL;
 if (!CHATBOT_URL) {
   throw new Error("CHATBOT_URL er ikke sat");
+}
+
+// Normalisér endpoint: kræv /api/chat
+if (!CHATBOT_URL.endsWith("/api/chat")) {
+  CHATBOT_URL = CHATBOT_URL.replace(/\/$/, "") + "/api/chat";
 }
 
 const TEST_CASES_PATH = "./tests/test-cases.json";
@@ -23,6 +28,7 @@ function sleep(ms) {
 
 async function replay() {
   console.log("Replay test cases: START");
+  console.log("API endpoint:", CHATBOT_URL);
 
   const raw = readFileSync(TEST_CASES_PATH, "utf8");
   const testCases = JSON.parse(raw);
@@ -40,8 +46,6 @@ async function replay() {
     let hadAnySuccess = false;
 
     for (let i = 0; i < turns.length; i++) {
-      const turn = turns[i];
-
       try {
         const res = await fetch(CHATBOT_URL, {
           method: "POST",
@@ -59,7 +63,6 @@ async function replay() {
           continue;
         }
 
-        // Forsøg at parse, men stop ikke på fejl
         try {
           await res.json();
         } catch {
@@ -69,7 +72,7 @@ async function replay() {
         }
 
         hadAnySuccess = true;
-        await sleep(300); // let throttling
+        await sleep(300);
 
       } catch (err) {
         console.warn(
