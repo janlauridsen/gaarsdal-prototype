@@ -1,0 +1,27 @@
+name: Export conversation logs (with meta)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Export conversation logs from Redis
+        run: node scripts/export-session-logs.js
+        env:
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+
+      - name: Upload conversation logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: conversation-logs
+          path: exports/conversation-logs.jsonl
