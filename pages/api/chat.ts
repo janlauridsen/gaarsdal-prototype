@@ -35,6 +35,10 @@ const INTERPRETER_PATH = path.join(
   process.cwd(),
   "chatbot/conversation-interpreter.prompt.md"
 );
+const PRE_MODE_PATH = path.join(
+  process.cwd(),
+  "chatbot/pre-mode.prompt.md"
+);
 
 function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
@@ -70,15 +74,13 @@ function stripJsonFences(raw: string): string {
     .trim();
 }
 
-function detectCrisis(
-  text: string,
-  emotionalLoad?: string
-): boolean {
+function detectCrisis(text: string, emotionalLoad?: string): boolean {
   const t = text.toLowerCase();
   const keywords =
     t.includes("kræft") ||
     t.includes("dødsangst") ||
-    t.includes("børn");
+    t.includes("jeg vil dø") ||
+    t.includes("selvmord");
   return emotionalLoad === "high" || keywords;
 }
 
@@ -169,8 +171,11 @@ export default async function handler(
     const reshapePrompt = loadFile(RESHAPE_PATH);
     const facts = loadFile(FACTS_PATH);
     const interpreterPrompt = loadFile(INTERPRETER_PATH);
+    const preModePrompt = loadFile(PRE_MODE_PATH);
 
-    /* SESSION */
+    /* =========
+       SESSION
+       ========= */
     const now = Date.now();
     const sessionKey = `session:last_user_at:${sessionId}`;
     const prev = await redis.get<string>(sessionKey);
@@ -186,7 +191,44 @@ export default async function handler(
     ).toISOString();
 
     /* =========
-       INTERPRETER (READ ONLY)
+       PRE-MODE (SYNC)
+       ========= */
+    let preMode: {
+      phase: "intro" | "exploration" | "critical" | "closing";
+      confidence: number;
+      rationale: string[];
+    } | null = null;
+
+    try {
+      llmCalls++;
+      const raw = await callOpenAI({
+        call_id: "pre_mode",
+        session_id: sessionId,
+        turn_id: turnIndex,
+        messages: [
+          { role: "system", content: preModePrompt },
+          {
+            role: "user",
+            content: JSON.stringify({
+              user_input: lastUserText,
+              last_assistant_message:
+                messages.at(-2)?.role === "assistant"
+                  ? messages.at(-2)?.content
+                  : null,
+            }),
+          },
+        ],
+      });
+
+      preMode = JSON.parse(stripJsonFences(raw));
+    } catch {
+      preMode = null;
+    }
+
+    const phase = preMode?.phase ?? "unknown";
+
+    /* =========
+       READ SESSION INTERPRETER (ASYNC STATE)
        ========= */
     let interpreterParsed: any = null;
     let interpreterRaw = "";
@@ -203,9 +245,6 @@ export default async function handler(
         interpreterParsed = null;
       }
     }
-
-    const mode: string =
-      interpreterParsed?.phase ?? "unknown";
 
     const emotionalLoad: string =
       interpreterParsed?.user_state?.emotional_load ?? "unknown";
@@ -243,37 +282,30 @@ ${JSON.stringify(interpreterParsed, null, 2)}`
     });
 
     /* =========
-       EVALUATOR DECISION (MODE OVERLAY)
+       EVALUATOR DECISION (PRE-MODE FIRST)
        ========= */
 
-    // --- eksisterende heuristik (URØRT) ---
+    // legacy heuristik (URØRT)
     const legacySkipEvaluator =
       interpreterParsed?.suggested_mode === "light" &&
       emotionalLoad === "low" &&
       lastUserText.length < 120;
 
-    // --- nyt overlay (additivt) ---
-    let evaluatorByMode = true;
+    let evaluatorByPreMode = true;
 
-    if (mode === "intro" || mode === "closing") {
-      evaluatorByMode = false;
+    if (phase === "intro" || phase === "closing") {
+      evaluatorByPreMode = false;
     }
-    if (mode === "critical" || mode === "exploration") {
-      evaluatorByMode = true;
+    if (phase === "critical" || phase === "exploration") {
+      evaluatorByPreMode = true;
     }
-    if (mode === "unknown") {
-      evaluatorByMode = true;
-    }
-
-    // --- sikkerheds-overrides ---
     if (emotionalLoad === "high" || crisisFlag) {
-      evaluatorByMode = true;
+      evaluatorByPreMode = true;
     }
 
-    // --- endelig beslutning ---
     const skipEvaluator =
-      !evaluatorByMode ||
-      (mode === "intro" && legacySkipEvaluator);
+      !evaluatorByPreMode ||
+      (phase === "intro" && legacySkipEvaluator);
 
     /* =========
        EVALUATOR (OPTIONAL)
@@ -333,12 +365,14 @@ ${evaluatorText}`,
       telemetry: {
         answer: janFinal,
         evaluator_text: evaluatorText,
+        pre_mode: preMode,
         interpreter: {
           raw: interpreterRaw,
           parsed: interpreterParsed,
         },
-        suggested_mode: interpreterParsed?.suggested_mode ?? "unknown",
-        mode,
+        suggested_mode:
+          interpreterParsed?.suggested_mode ?? "unknown",
+        phase,
         llm_calls_count: llmCalls,
         crisis_flag: crisisFlag,
         turn_index: turnIndex,
@@ -365,7 +399,7 @@ ${evaluatorText}`,
     res.status(200).json({ answer: janFinal });
 
     /* =========
-       INTERPRETER (ASYNC WRITE)
+       POST-INTERPRETER (ASYNC)
        ========= */
     (async () => {
       try {
