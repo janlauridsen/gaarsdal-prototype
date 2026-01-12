@@ -63,6 +63,30 @@ function estimateLoad(len: number): "low" | "medium" | "high" {
 }
 
 /* =========
+   DEBUG – INTERPRETER RAW (MIDLER­TIDIG)
+   ========= */
+async function writeInterpreterRawDebug(
+  sessionId: string,
+  turnId: number,
+  raw: string
+) {
+  const entry: AiCallLogEntry = {
+    timestamp: new Date().toISOString(),
+    session_id: sessionId,
+    turn_id: turnId,
+    call_id: "interpreter_raw_debug",
+    model: "unknown",
+    temperature: 0,
+    request_messages: [],
+    response_raw: raw,
+    response_text: raw,
+    latency_ms: 0,
+  };
+
+  await writeAiCallLog(entry);
+}
+
+/* =========
    OPENAI CALL (HARDENED)
    ========= */
 async function callOpenAI(params: {
@@ -173,17 +197,45 @@ export default async function handler(
     ).toISOString();
 
     /* =========
-       LOAD PREVIOUS INTERPRETER CONTEXT (★ CHANGED)
+       INTERPRETER (SAFE)
        ========= */
     let interpreterContext: any = null;
-    const cached = await redis.get<string>(
-      `interpreter:context:${sessionId}`
-    );
-    if (cached) {
-      try {
-        interpreterContext = JSON.parse(cached);
-      } catch {
-        interpreterContext = null;
+    let interpreterRaw: string | null = null;
+
+    try {
+      interpreterRaw = await callOpenAI({
+        call_id: "interpreter",
+        session_id: sessionId,
+        turn_id: turnIndex,
+        messages: [
+          { role: "system", content: interpreterPrompt },
+          {
+            role: "user",
+            content: JSON.stringify({
+              messages,
+              session_age_ms: sessionAgeMs,
+            }),
+          },
+        ],
+      });
+
+      interpreterContext = JSON.parse(interpreterRaw);
+      await redis.set(
+        `interpreter:context:${sessionId}`,
+        JSON.stringify(interpreterContext)
+      );
+    } catch (err) {
+      interpreterContext = null;
+
+      if (
+        ENABLE_AI_CALL_LOGGING &&
+        typeof interpreterRaw === "string"
+      ) {
+        await writeInterpreterRawDebug(
+          sessionId,
+          turnIndex,
+          interpreterRaw
+        );
       }
     }
 
@@ -300,44 +352,7 @@ ${evaluatorText}`,
     };
 
     await writeTurnLog(logEntry);
-
-    /* =========
-       RETURN TO USER EARLY (★ CHANGED)
-       ========= */
-    res.status(200).json({ answer: janFinal });
-
-    /* =========
-       INTERPRETER – POST RESPONSE (★ CHANGED)
-       ========= */
-    (async () => {
-      try {
-        const interpreterRaw = await callOpenAI({
-          call_id: "interpreter",
-          session_id: sessionId,
-          turn_id: turnIndex,
-          messages: [
-            { role: "system", content: interpreterPrompt },
-            {
-              role: "user",
-              content: JSON.stringify({
-                messages,
-                session_age_ms: sessionAgeMs,
-              }),
-            },
-          ],
-        });
-
-        const parsed = JSON.parse(interpreterRaw);
-        await redis.set(
-          `interpreter:context:${sessionId}`,
-          JSON.stringify(parsed)
-        );
-      } catch {
-        // silent by design
-      }
-    })();
-
-    return;
+    return res.status(200).json({ answer: janFinal });
   } catch (err: any) {
     const errorLog: TurnLog = {
       timestamp: new Date().toISOString(),
