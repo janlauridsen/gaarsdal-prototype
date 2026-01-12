@@ -18,6 +18,9 @@ export type CQCState = {
   responsiveness?: "sharp" | "adequate" | "slow";
   contextSensitivity?: "high" | "medium" | "low";
   metaNoise?: "low" | "medium" | "high";
+
+  // ⬇️ MINIMAL ADDITIV RETTELSE
+  redundancy?: "low" | "medium" | "high";
 };
 
 /**
