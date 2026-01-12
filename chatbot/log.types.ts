@@ -17,9 +17,14 @@ export type CQCState = {
   boundaryControl?: "clear" | "leaky" | "overrestrictive";
   responsiveness?: "sharp" | "adequate" | "slow";
   contextSensitivity?: "high" | "medium" | "low";
+
+  // eksisterende camelCase
   metaNoise?: "low" | "medium" | "high";
 
-  // ⬇️ MINIMAL ADDITIV RETTELSE
+  // ⬇️ additiv alias for faktisk mapper-brug
+  meta_noise?: "low" | "medium" | "high" | "elevated";
+
+  // tidligere tilføjet
   redundancy?: "low" | "medium" | "high";
 };
 
@@ -42,9 +47,9 @@ export interface EvaluatorLog {
  * Må ikke være normativt eller handlingsanvisende.
  */
 export interface SessionInterpreterSnapshot {
-  version: string; // kontrakt-version
-  generatedAt: string; // ISO timestamp
-  sessionHash: string; // hash af historikgrundlag
+  version: string;
+  generatedAt: string;
+  sessionHash: string;
 
   state: {
     phase: "intro" | "main" | "closing" | "unknown";
@@ -78,10 +83,5 @@ export interface TurnLog {
   latencyMs: number;
   createdAt: string;
 
-  /**
-   * Session-niveau fortolkningssignal,
-   * som var gældende for denne turn.
-   * Valgfrit og ikke turn-blokerende.
-   */
   sessionInterpreter?: SessionInterpreterSnapshot;
 }
