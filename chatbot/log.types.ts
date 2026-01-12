@@ -11,20 +11,31 @@ export type StopSignal =
  * ─────────────────────────────
  * Conversation Quality Control.
  * Normativ kvalitetsvurdering pr. turn.
+ *
+ * VIGTIGT:
+ * Denne type er eksplicit tolerant over for
+ * mapper-output for at undgå gentagne build-brud.
  */
 export type CQCState = {
+  // Fremdrift i samtalen
   progress?: "good" | "neutral" | "stagnating";
+
+  // Afgrænsning
   boundaryControl?: "clear" | "leaky" | "overrestrictive";
-  responsiveness?: "sharp" | "adequate" | "slow";
+
+  // Responsivitet (inkl. drift)
+  responsiveness?: "sharp" | "adequate" | "slow" | "drifting";
+
+  // Kontekstforståelse
   contextSensitivity?: "high" | "medium" | "low";
 
-  // eksisterende camelCase
-  metaNoise?: "low" | "medium" | "high";
+  // Meta-støj (camelCase)
+  metaNoise?: "low" | "medium" | "high" | "elevated";
 
-  // ⬇️ additiv alias for faktisk mapper-brug
+  // Meta-støj (snake_case – legacy / mapper)
   meta_noise?: "low" | "medium" | "high" | "elevated";
 
-  // tidligere tilføjet
+  // Redundans / gentagelser
   redundancy?: "low" | "medium" | "high";
 };
 
@@ -83,5 +94,10 @@ export interface TurnLog {
   latencyMs: number;
   createdAt: string;
 
+  /**
+   * Session-niveau fortolkningssignal,
+   * som var gældende for denne turn.
+   * Valgfrit og ikke turn-blokerende.
+   */
   sessionInterpreter?: SessionInterpreterSnapshot;
 }
