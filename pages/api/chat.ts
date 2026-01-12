@@ -186,39 +186,22 @@ export default async function handler(
     ).toISOString();
 
     /* =========
-       INTERPRETER
+       INTERPRETER (READ ONLY)
        ========= */
-    let interpreterRaw = "";
     let interpreterParsed: any = null;
+    let interpreterRaw = "";
 
-    try {
-      llmCalls++;
-      interpreterRaw = await callOpenAI({
-        call_id: "interpreter",
-        session_id: sessionId,
-        turn_id: turnIndex,
-        messages: [
-          { role: "system", content: interpreterPrompt },
-          {
-            role: "user",
-            content: JSON.stringify({
-              messages,
-              session_age_ms: sessionAgeMs,
-            }),
-          },
-        ],
-      });
+    const cached = await redis.get<string>(
+      `interpreter:context:${sessionId}`
+    );
 
-      interpreterParsed = JSON.parse(
-        stripJsonFences(interpreterRaw)
-      );
-
-      await redis.set(
-        `interpreter:context:${sessionId}`,
-        JSON.stringify(interpreterParsed)
-      );
-    } catch {
-      interpreterParsed = null;
+    if (cached) {
+      try {
+        interpreterParsed = JSON.parse(cached);
+        interpreterRaw = cached;
+      } catch {
+        interpreterParsed = null;
+      }
     }
 
     const suggestedMode =
@@ -348,7 +331,40 @@ ${evaluatorText}`,
     };
 
     await writeTurnLog(logEntry);
-    return res.status(200).json({ answer: janFinal });
+    res.status(200).json({ answer: janFinal });
+
+    /* =========
+       INTERPRETER (ASYNC WRITE)
+       ========= */
+    (async () => {
+      try {
+        llmCalls++;
+        const raw = await callOpenAI({
+          call_id: "interpreter",
+          session_id: sessionId,
+          turn_id: turnIndex,
+          messages: [
+            { role: "system", content: interpreterPrompt },
+            {
+              role: "user",
+              content: JSON.stringify({
+                messages,
+                session_age_ms: sessionAgeMs,
+              }),
+            },
+          ],
+        });
+
+        const parsed = JSON.parse(stripJsonFences(raw));
+
+        await redis.set(
+          `interpreter:context:${sessionId}`,
+          JSON.stringify(parsed)
+        );
+      } catch {
+        /* non-blocking */
+      }
+    })();
   } catch (err: any) {
     const errorLog: TurnLog = {
       timestamp: new Date().toISOString(),
