@@ -36,35 +36,6 @@ const INTERPRETER_PATH = path.join(
   "chatbot/conversation-interpreter.prompt.md"
 );
 
-/* =========
-   DEBUG (MIDLER­TIDIG)
-   ========= */
-const INTERPRETER_DEBUG_PATH = path.join(
-  process.cwd(),
-  "chatbot/_debug_interpreter_raw.log"
-);
-
-function writeInterpreterRawDebug(
-  sessionId: string,
-  turnId: number,
-  raw: string
-) {
-  try {
-    const entry = {
-      timestamp: new Date().toISOString(),
-      session_id: sessionId,
-      turn_id: turnId,
-      raw,
-    };
-    fs.appendFileSync(
-      INTERPRETER_DEBUG_PATH,
-      JSON.stringify(entry) + "\n"
-    );
-  } catch {
-    // debug må aldrig påvirke runtime
-  }
-}
-
 function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
 }
@@ -202,12 +173,14 @@ export default async function handler(
     ).toISOString();
 
     /* =========
-       INTERPRETER (SAFE)
+       INTERPRETER (DEBUG-SAFE)
        ========= */
     let interpreterContext: any = null;
+    let interpreterRaw: string | null = null;
+    let interpreterError: string | null = null;
 
     try {
-      const interpreterRaw = await callOpenAI({
+      interpreterRaw = await callOpenAI({
         call_id: "interpreter",
         session_id: sessionId,
         turn_id: turnIndex,
@@ -223,19 +196,14 @@ export default async function handler(
         ],
       });
 
-      // 🔍 MIDLER­TIDIG DEBUG
-      writeInterpreterRawDebug(
-        sessionId,
-        turnIndex,
-        interpreterRaw
-      );
-
       interpreterContext = JSON.parse(interpreterRaw);
+
       await redis.set(
         `interpreter:context:${sessionId}`,
         JSON.stringify(interpreterContext)
       );
-    } catch {
+    } catch (err: any) {
+      interpreterError = String(err);
       interpreterContext = null;
     }
 
@@ -330,7 +298,13 @@ ${evaluatorText}`,
       telemetry: {
         answer: janFinal,
         evaluator_text: evaluatorText,
-        interpreter_context: interpreterContext,
+
+        interpreter: {
+          raw: interpreterRaw,
+          parsed: interpreterContext,
+          error: interpreterError,
+        },
+
         turn_index: turnIndex,
         user_message_length: lastUserText.length,
         ai_message_length: janFinal.length,
