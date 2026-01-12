@@ -1,13 +1,16 @@
+// pages/api/chat.ts
+
 import type { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
+import { Redis } from "@upstash/redis";
+
 import {
   writeTurnLog,
   writeAiCallLog,
   AiCallLogEntry,
 } from "../../chatbot/logWriter";
 import { TurnLog } from "../../chatbot/log.types";
-import { Redis } from "@upstash/redis";
 
 /* =========
    REDIS
@@ -28,6 +31,10 @@ const PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
 const EVALUATOR_PATH = path.join(process.cwd(), "chatbot/evaluator.md");
 const RESHAPE_PATH = path.join(process.cwd(), "chatbot/reshape.md");
 const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
+const INTERPRETER_PATH = path.join(
+  process.cwd(),
+  "chatbot/conversation-interpreter.prompt.md"
+);
 
 function loadFile(p: string) {
   return fs.readFileSync(p, "utf8");
@@ -148,6 +155,7 @@ export default async function handler(
     const evaluatorPrompt = loadFile(EVALUATOR_PATH);
     const reshapePrompt = loadFile(RESHAPE_PATH);
     const facts = loadFile(FACTS_PATH);
+    const interpreterPrompt = loadFile(INTERPRETER_PATH);
 
     /* SESSION OBSERVATION */
     const now = Date.now();
@@ -164,31 +172,68 @@ export default async function handler(
       now + SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
     ).toISOString();
 
-    /* INTERPRETER CONTEXT (CRITICAL FIX) */
-    const interpreterContextRaw = await redis.get(
-      `interpreter:context:${sessionId}`
-    );
+    /* =========
+       INTERPRETER (SAFE)
+       ========= */
+    let interpreterContext: any = null;
 
-    const interpreterBlock =
-      typeof interpreterContextRaw === "string" &&
-      interpreterContextRaw.trim().length > 0
-        ? `\n\nINTERPRETER_CONTEXT:\n${interpreterContextRaw}`
-        : "";
+    try {
+      const interpreterRaw = await callOpenAI({
+        call_id: "interpreter",
+        session_id: sessionId,
+        turn_id: turnIndex,
+        messages: [
+          { role: "system", content: interpreterPrompt },
+          {
+            role: "user",
+            content: JSON.stringify({
+              messages,
+              session_age_ms: sessionAgeMs,
+            }),
+          },
+        ],
+      });
 
-    /* CALLS */
+      interpreterContext = JSON.parse(interpreterRaw);
+      await redis.set(
+        `interpreter:context:${sessionId}`,
+        JSON.stringify(interpreterContext)
+      );
+    } catch {
+      interpreterContext = null;
+    }
+
+    /* =========
+       JAN RAW
+       ========= */
+    const janRawMessages = [
+      {
+        role: "system",
+        content: `${prompt}
+
+AUTORISERET VIDEN:
+${facts}
+
+${
+  interpreterContext
+    ? `INTERPRETER_CONTEXT:
+${JSON.stringify(interpreterContext, null, 2)}`
+    : ""
+}`,
+      },
+      ...messages,
+    ];
+
     const janRaw = await callOpenAI({
       call_id: "jan_raw",
       session_id: sessionId,
       turn_id: turnIndex,
-      messages: [
-        {
-          role: "system",
-          content: `${prompt}${interpreterBlock}\n\nAUTORISERET VIDEN:\n${facts}`,
-        },
-        ...messages,
-      ],
+      messages: janRawMessages,
     });
 
+    /* =========
+       EVALUATOR
+       ========= */
     const evaluatorText = await callOpenAI({
       call_id: "evaluator",
       session_id: sessionId,
@@ -199,6 +244,9 @@ export default async function handler(
       ],
     });
 
+    /* =========
+       RESHAPE
+       ========= */
     const janFinal = await callOpenAI({
       call_id: "reshape",
       session_id: sessionId,
@@ -207,23 +255,20 @@ export default async function handler(
         { role: "system", content: reshapePrompt },
         {
           role: "user",
-          content: `JAN RAW:\n${janRaw}\n\nEVALUATOR:\n${evaluatorText}`,
+          content: `JAN RAW:
+${janRaw}
+
+EVALUATOR:
+${evaluatorText}`,
         },
       ],
     });
 
-    /* SESSION HEALTH */
+    /* =========
+       LOG
+       ========= */
     const load = estimateLoad(janFinal.length);
-    const sessionHealth = {
-      score: load === "high" ? 0.6 : load === "medium" ? 0.8 : 1.0,
-      factors: {
-        avg_load: load,
-        high_load_turns: load === "high" ? 1 : 0,
-        turn_count: turnIndex,
-      },
-    };
 
-    /* LOG */
     const logEntry: TurnLog = {
       timestamp: new Date().toISOString(),
       session_id: sessionId,
@@ -236,12 +281,20 @@ export default async function handler(
       evaluator_present: Boolean(evaluatorText),
 
       session: {
-        health: sessionHealth,
+        health: {
+          score: load === "high" ? 0.6 : load === "medium" ? 0.8 : 1.0,
+          factors: {
+            avg_load: load,
+            high_load_turns: load === "high" ? 1 : 0,
+            turn_count: turnIndex,
+          },
+        },
       },
 
       telemetry: {
         answer: janFinal,
         evaluator_text: evaluatorText,
+        interpreter_context: interpreterContext,
         turn_index: turnIndex,
         user_message_length: lastUserText.length,
         ai_message_length: janFinal.length,
