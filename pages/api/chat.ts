@@ -12,6 +12,9 @@ import {
 } from "../../chatbot/logWriter";
 import { TurnLog } from "../../chatbot/log.types";
 
+// ⬇️ MIDLER­TIDIG DEBUG WRITER
+import { writeInterpreterRawDebug } from "../../chatbot/interpreterDebugWriter";
+
 /* =========
    REDIS
    ========= */
@@ -63,31 +66,7 @@ function estimateLoad(len: number): "low" | "medium" | "high" {
 }
 
 /* =========
-   DEBUG – INTERPRETER RAW (MIDLER­TIDIG)
-   ========= */
-async function writeInterpreterRawDebug(
-  sessionId: string,
-  turnId: number,
-  raw: string
-) {
-  const entry: AiCallLogEntry = {
-    timestamp: new Date().toISOString(),
-    session_id: sessionId,
-    turn_id: turnId,
-    call_id: "interpreter_raw_debug",
-    model: "unknown",
-    temperature: 0,
-    request_messages: [],
-    response_raw: raw,
-    response_text: raw,
-    latency_ms: 0,
-  };
-
-  await writeAiCallLog(entry);
-}
-
-/* =========
-   OPENAI CALL (HARDENED)
+   OPENAI CALL
    ========= */
 async function callOpenAI(params: {
   call_id: string;
@@ -197,7 +176,7 @@ export default async function handler(
     ).toISOString();
 
     /* =========
-       INTERPRETER (SAFE)
+       INTERPRETER
        ========= */
     let interpreterContext: any = null;
     let interpreterRaw: string | null = null;
@@ -219,24 +198,23 @@ export default async function handler(
         ],
       });
 
-      interpreterContext = JSON.parse(interpreterRaw);
-      await redis.set(
-        `interpreter:context:${sessionId}`,
-        JSON.stringify(interpreterContext)
-      );
-    } catch (err) {
-      interpreterContext = null;
-
-      if (
-        ENABLE_AI_CALL_LOGGING &&
-        typeof interpreterRaw === "string"
-      ) {
+      // ⬇️ DEBUG: LOG RAW INTERPRETER OUTPUT ÉN GANG
+      if (ENABLE_AI_CALL_LOGGING) {
         await writeInterpreterRawDebug(
           sessionId,
           turnIndex,
           interpreterRaw
         );
       }
+
+      interpreterContext = JSON.parse(interpreterRaw);
+
+      await redis.set(
+        `interpreter:context:${sessionId}`,
+        JSON.stringify(interpreterContext)
+      );
+    } catch {
+      interpreterContext = null;
     }
 
     /* =========
