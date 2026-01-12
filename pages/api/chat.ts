@@ -63,7 +63,7 @@ function estimateLoad(len: number): "low" | "medium" | "high" {
 }
 
 /* =========
-   OPENAI CALL (HARDENED)
+   OPENAI CALL
    ========= */
 async function callOpenAI(params: {
   call_id: string;
@@ -97,15 +97,7 @@ async function callOpenAI(params: {
     );
   }
 
-  let raw: any;
-  try {
-    raw = JSON.parse(rawText);
-  } catch {
-    throw new Error(
-      `OpenAI returned non-JSON response: ${rawText.slice(0, 200)}`
-    );
-  }
-
+  const raw = JSON.parse(rawText);
   const text =
     raw?.choices?.[0]?.message?.content?.trim() ?? "";
 
@@ -157,7 +149,9 @@ export default async function handler(
     const facts = loadFile(FACTS_PATH);
     const interpreterPrompt = loadFile(INTERPRETER_PATH);
 
-    /* SESSION OBSERVATION */
+    /* =========
+       SESSION META
+       ========= */
     const now = Date.now();
     const sessionKey = `session:last_user_at:${sessionId}`;
     const prev = await redis.get<string>(sessionKey);
@@ -173,10 +167,10 @@ export default async function handler(
     ).toISOString();
 
     /* =========
-       INTERPRETER (DEBUG-SAFE)
+       INTERPRETER
        ========= */
-    let interpreterContext: any = null;
     let interpreterRaw: string | null = null;
+    let interpreterParsed: any = null;
     let interpreterError: string | null = null;
 
     try {
@@ -196,16 +190,21 @@ export default async function handler(
         ],
       });
 
-      interpreterContext = JSON.parse(interpreterRaw);
+      try {
+        interpreterParsed = JSON.parse(interpreterRaw);
+      } catch (e: any) {
+        interpreterError = e?.message ?? "parse_error";
+      }
 
       await redis.set(
         `interpreter:context:${sessionId}`,
-        JSON.stringify(interpreterContext)
+        JSON.stringify(interpreterParsed ?? null)
       );
-    } catch (err: any) {
-      interpreterError = String(err);
-      interpreterContext = null;
+    } catch (e: any) {
+      interpreterError = e?.message ?? "interpreter_failed";
     }
+
+    const suggestedMode = interpreterParsed?.suggested_mode ?? "default";
 
     /* =========
        JAN RAW
@@ -219,11 +218,15 @@ AUTORISERET VIDEN:
 ${facts}
 
 ${
-  interpreterContext
+  interpreterParsed
     ? `INTERPRETER_CONTEXT:
-${JSON.stringify(interpreterContext, null, 2)}`
+${JSON.stringify(interpreterParsed, null, 2)}`
     : ""
-}`,
+}
+
+MODE_HINT:
+${suggestedMode}
+`,
       },
       ...messages,
     ];
@@ -236,17 +239,23 @@ ${JSON.stringify(interpreterContext, null, 2)}`
     });
 
     /* =========
-       EVALUATOR
+       EVALUATOR (SKIP FOR LIGHT)
        ========= */
-    const evaluatorText = await callOpenAI({
-      call_id: "evaluator",
-      session_id: sessionId,
-      turn_id: turnIndex,
-      messages: [
-        { role: "system", content: evaluatorPrompt },
-        { role: "user", content: janRaw },
-      ],
-    });
+    let evaluatorText = "";
+    const skipEvaluator =
+      suggestedMode === "light" && lastUserText.length < 80;
+
+    if (!skipEvaluator) {
+      evaluatorText = await callOpenAI({
+        call_id: "evaluator",
+        session_id: sessionId,
+        turn_id: turnIndex,
+        messages: [
+          { role: "system", content: evaluatorPrompt },
+          { role: "user", content: janRaw },
+        ],
+      });
+    }
 
     /* =========
        RESHAPE
@@ -263,7 +272,10 @@ ${JSON.stringify(interpreterContext, null, 2)}`
 ${janRaw}
 
 EVALUATOR:
-${evaluatorText}`,
+${evaluatorText}
+
+MODE:
+${suggestedMode}`,
         },
       ],
     });
@@ -282,7 +294,7 @@ ${evaluatorText}`,
       jan_raw_output: janRaw,
       jan_final_output: janFinal,
 
-      evaluator_present: Boolean(evaluatorText),
+      evaluator_present: !skipEvaluator,
 
       session: {
         health: {
@@ -298,13 +310,11 @@ ${evaluatorText}`,
       telemetry: {
         answer: janFinal,
         evaluator_text: evaluatorText,
-
         interpreter: {
           raw: interpreterRaw,
-          parsed: interpreterContext,
+          parsed: interpreterParsed,
           error: interpreterError,
         },
-
         turn_index: turnIndex,
         user_message_length: lastUserText.length,
         ai_message_length: janFinal.length,
@@ -332,17 +342,13 @@ ${evaluatorText}`,
       timestamp: new Date().toISOString(),
       session_id: sessionId,
       turn_id: turnIndex,
-
       user_input: lastUserText,
       jan_raw_output: "",
       jan_final_output: "",
-
       evaluator_present: false,
-
       telemetry: {
         error: String(err),
       },
-
       latency_ms: Date.now() - startedAt,
       status: "error",
       error: String(err),
