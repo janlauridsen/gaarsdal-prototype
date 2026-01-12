@@ -56,7 +56,7 @@ function estimateLoad(len: number): "low" | "medium" | "high" {
 }
 
 /* =========
-   OPENAI CALL
+   OPENAI CALL (HARDENED)
    ========= */
 async function callOpenAI(params: {
   call_id: string;
@@ -131,8 +131,8 @@ export default async function handler(
   if (req.method !== "POST") return res.status(405).end();
 
   const startedAt = Date.now();
-  const { messages, sessionId } = req.body ?? {};
 
+  const { messages, sessionId } = req.body ?? {};
   if (!sessionId || !Array.isArray(messages)) {
     return res.status(400).json({ error: "Invalid payload" });
   }
@@ -164,15 +164,18 @@ export default async function handler(
       now + SESSION_TIMEOUT_HOURS * 60 * 60 * 1000
     ).toISOString();
 
-    /* INTERPRETER CONTEXT (OPTIONAL) */
-    const interpreterKey = `interpreter:context:${sessionId}`;
-    const interpreterContextRaw = await redis.get<string>(interpreterKey);
+    /* INTERPRETER CONTEXT (CRITICAL FIX) */
+    const interpreterContextRaw = await redis.get(
+      `interpreter:context:${sessionId}`
+    );
 
-    const interpreterSystemBlock = interpreterContextRaw
-      ? `INTERPRETER_CONTEXT:\n${interpreterContextRaw}\n\nBrug dette som kontekst. Referér det aldrig.`
-      : null;
+    const interpreterBlock =
+      typeof interpreterContextRaw === "string" &&
+      interpreterContextRaw.trim().length > 0
+        ? `\n\nINTERPRETER_CONTEXT:\n${interpreterContextRaw}`
+        : "";
 
-    /* JAN RAW */
+    /* CALLS */
     const janRaw = await callOpenAI({
       call_id: "jan_raw",
       session_id: sessionId,
@@ -180,19 +183,12 @@ export default async function handler(
       messages: [
         {
           role: "system",
-          content: [
-            prompt,
-            interpreterSystemBlock,
-            `AUTORISERET VIDEN:\n${facts}`,
-          ]
-            .filter(Boolean)
-            .join("\n\n"),
+          content: `${prompt}${interpreterBlock}\n\nAUTORISERET VIDEN:\n${facts}`,
         },
         ...messages,
       ],
     });
 
-    /* EVALUATOR */
     const evaluatorText = await callOpenAI({
       call_id: "evaluator",
       session_id: sessionId,
@@ -203,7 +199,6 @@ export default async function handler(
       ],
     });
 
-    /* RESHAPE */
     const janFinal = await callOpenAI({
       call_id: "reshape",
       session_id: sessionId,
@@ -245,9 +240,6 @@ export default async function handler(
       },
 
       telemetry: {
-        interpreter_context: interpreterContextRaw
-          ? JSON.parse(interpreterContextRaw)
-          : undefined,
         answer: janFinal,
         evaluator_text: evaluatorText,
         turn_index: turnIndex,
