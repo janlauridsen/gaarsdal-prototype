@@ -173,34 +173,18 @@ export default async function handler(
     ).toISOString();
 
     /* =========
-       INTERPRETER (SAFE)
+       LOAD PREVIOUS INTERPRETER CONTEXT (★ CHANGED)
        ========= */
     let interpreterContext: any = null;
-
-    try {
-      const interpreterRaw = await callOpenAI({
-        call_id: "interpreter",
-        session_id: sessionId,
-        turn_id: turnIndex,
-        messages: [
-          { role: "system", content: interpreterPrompt },
-          {
-            role: "user",
-            content: JSON.stringify({
-              messages,
-              session_age_ms: sessionAgeMs,
-            }),
-          },
-        ],
-      });
-
-      interpreterContext = JSON.parse(interpreterRaw);
-      await redis.set(
-        `interpreter:context:${sessionId}`,
-        JSON.stringify(interpreterContext)
-      );
-    } catch {
-      interpreterContext = null;
+    const cached = await redis.get<string>(
+      `interpreter:context:${sessionId}`
+    );
+    if (cached) {
+      try {
+        interpreterContext = JSON.parse(cached);
+      } catch {
+        interpreterContext = null;
+      }
     }
 
     /* =========
@@ -316,7 +300,44 @@ ${evaluatorText}`,
     };
 
     await writeTurnLog(logEntry);
-    return res.status(200).json({ answer: janFinal });
+
+    /* =========
+       RETURN TO USER EARLY (★ CHANGED)
+       ========= */
+    res.status(200).json({ answer: janFinal });
+
+    /* =========
+       INTERPRETER – POST RESPONSE (★ CHANGED)
+       ========= */
+    (async () => {
+      try {
+        const interpreterRaw = await callOpenAI({
+          call_id: "interpreter",
+          session_id: sessionId,
+          turn_id: turnIndex,
+          messages: [
+            { role: "system", content: interpreterPrompt },
+            {
+              role: "user",
+              content: JSON.stringify({
+                messages,
+                session_age_ms: sessionAgeMs,
+              }),
+            },
+          ],
+        });
+
+        const parsed = JSON.parse(interpreterRaw);
+        await redis.set(
+          `interpreter:context:${sessionId}`,
+          JSON.stringify(parsed)
+        );
+      } catch {
+        // silent by design
+      }
+    })();
+
+    return;
   } catch (err: any) {
     const errorLog: TurnLog = {
       timestamp: new Date().toISOString(),
