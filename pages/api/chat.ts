@@ -62,6 +62,26 @@ function estimateLoad(len: number): "low" | "medium" | "high" {
   return "high";
 }
 
+function stripJsonFences(raw: string): string {
+  return raw
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
+}
+
+function detectCrisis(
+  text: string,
+  emotionalLoad?: string
+): boolean {
+  const t = text.toLowerCase();
+  const keywords =
+    t.includes("kræft") ||
+    t.includes("dødsangst") ||
+    t.includes("børn");
+  return emotionalLoad === "high" || keywords;
+}
+
 /* =========
    OPENAI CALL
    ========= */
@@ -130,6 +150,7 @@ export default async function handler(
   if (req.method !== "POST") return res.status(405).end();
 
   const startedAt = Date.now();
+  let llmCalls = 0;
 
   const { messages, sessionId } = req.body ?? {};
   if (!sessionId || !Array.isArray(messages)) {
@@ -149,9 +170,7 @@ export default async function handler(
     const facts = loadFile(FACTS_PATH);
     const interpreterPrompt = loadFile(INTERPRETER_PATH);
 
-    /* =========
-       SESSION META
-       ========= */
+    /* SESSION */
     const now = Date.now();
     const sessionKey = `session:last_user_at:${sessionId}`;
     const prev = await redis.get<string>(sessionKey);
@@ -169,11 +188,11 @@ export default async function handler(
     /* =========
        INTERPRETER
        ========= */
-    let interpreterRaw: string | null = null;
+    let interpreterRaw = "";
     let interpreterParsed: any = null;
-    let interpreterError: string | null = null;
 
     try {
+      llmCalls++;
       interpreterRaw = await callOpenAI({
         call_id: "interpreter",
         session_id: sessionId,
@@ -190,29 +209,40 @@ export default async function handler(
         ],
       });
 
-      try {
-        interpreterParsed = JSON.parse(interpreterRaw);
-      } catch (e: any) {
-        interpreterError = e?.message ?? "parse_error";
-      }
+      interpreterParsed = JSON.parse(
+        stripJsonFences(interpreterRaw)
+      );
 
       await redis.set(
         `interpreter:context:${sessionId}`,
-        JSON.stringify(interpreterParsed ?? null)
+        JSON.stringify(interpreterParsed)
       );
-    } catch (e: any) {
-      interpreterError = e?.message ?? "interpreter_failed";
+    } catch {
+      interpreterParsed = null;
     }
 
-    const suggestedMode = interpreterParsed?.suggested_mode ?? "default";
+    const suggestedMode =
+      interpreterParsed?.suggested_mode ?? "unknown";
+    const emotionalLoad =
+      interpreterParsed?.user_state?.emotional_load ?? "unknown";
+
+    const crisisFlag = detectCrisis(
+      lastUserText,
+      emotionalLoad
+    );
 
     /* =========
        JAN RAW
        ========= */
-    const janRawMessages = [
-      {
-        role: "system",
-        content: `${prompt}
+    llmCalls++;
+    const janRaw = await callOpenAI({
+      call_id: "jan_raw",
+      session_id: sessionId,
+      turn_id: turnIndex,
+      messages: [
+        {
+          role: "system",
+          content: `${prompt}
 
 AUTORISERET VIDEN:
 ${facts}
@@ -222,30 +252,23 @@ ${
     ? `INTERPRETER_CONTEXT:
 ${JSON.stringify(interpreterParsed, null, 2)}`
     : ""
-}
-
-MODE_HINT:
-${suggestedMode}
-`,
-      },
-      ...messages,
-    ];
-
-    const janRaw = await callOpenAI({
-      call_id: "jan_raw",
-      session_id: sessionId,
-      turn_id: turnIndex,
-      messages: janRawMessages,
+}`,
+        },
+        ...messages,
+      ],
     });
 
     /* =========
-       EVALUATOR (SKIP FOR LIGHT)
+       EVALUATOR (OPTIONAL)
        ========= */
     let evaluatorText = "";
     const skipEvaluator =
-      suggestedMode === "light" && lastUserText.length < 80;
+      suggestedMode === "light" &&
+      emotionalLoad === "low" &&
+      lastUserText.length < 120;
 
     if (!skipEvaluator) {
+      llmCalls++;
       evaluatorText = await callOpenAI({
         call_id: "evaluator",
         session_id: sessionId,
@@ -260,6 +283,7 @@ ${suggestedMode}
     /* =========
        RESHAPE
        ========= */
+    llmCalls++;
     const janFinal = await callOpenAI({
       call_id: "reshape",
       session_id: sessionId,
@@ -272,10 +296,7 @@ ${suggestedMode}
 ${janRaw}
 
 EVALUATOR:
-${evaluatorText}
-
-MODE:
-${suggestedMode}`,
+${evaluatorText}`,
         },
       ],
     });
@@ -296,25 +317,16 @@ ${suggestedMode}`,
 
       evaluator_present: !skipEvaluator,
 
-      session: {
-        health: {
-          score: load === "high" ? 0.6 : load === "medium" ? 0.8 : 1.0,
-          factors: {
-            avg_load: load,
-            high_load_turns: load === "high" ? 1 : 0,
-            turn_count: turnIndex,
-          },
-        },
-      },
-
       telemetry: {
         answer: janFinal,
         evaluator_text: evaluatorText,
         interpreter: {
           raw: interpreterRaw,
           parsed: interpreterParsed,
-          error: interpreterError,
         },
+        suggested_mode: suggestedMode,
+        llm_calls_count: llmCalls,
+        crisis_flag: crisisFlag,
         turn_index: turnIndex,
         user_message_length: lastUserText.length,
         ai_message_length: janFinal.length,
@@ -346,9 +358,7 @@ ${suggestedMode}`,
       jan_raw_output: "",
       jan_final_output: "",
       evaluator_present: false,
-      telemetry: {
-        error: String(err),
-      },
+      telemetry: { error: String(err) },
       latency_ms: Date.now() - startedAt,
       status: "error",
       error: String(err),
