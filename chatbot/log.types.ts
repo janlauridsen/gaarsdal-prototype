@@ -14,63 +14,71 @@ export type StopSignal =
  */
 export type CQCState = {
   progress?: "good" | "neutral" | "stagnating";
-  redundancy?: "low" | "rising" | "high";
-  responsiveness?: "high" | "drifting";
-  closure?: "possible" | "blocked";
-  meta_noise?: "low" | "elevated";
+  boundaryControl?: "clear" | "leaky" | "overrestrictive";
+  responsiveness?: "sharp" | "adequate" | "slow";
+  contextSensitivity?: "high" | "medium" | "low";
+  metaNoise?: "low" | "medium" | "high";
 };
 
 /**
- * RuntimeTelemetry
+ * EvaluatorLog
  * ─────────────────────────────
- * Ustruktureret runtime-data.
- * Eksperimentel. Append-only. Ikke normativ.
+ * Snævert metasignal baseret udelukkende på JAN RAW output.
  */
-export type RuntimeTelemetry = Record<string, unknown>;
+export interface EvaluatorLog {
+  stopSignal?: StopSignal;
+  cqc?: CQCState;
+  notes?: string;
+}
+
+/**
+ * SessionInterpreterSnapshot
+ * ─────────────────────────────
+ * Asynkront, session-bundet fortolkningssignal.
+ * Produceres uden kendskab til aktuelt brugerinput.
+ * Må ikke være normativt eller handlingsanvisende.
+ */
+export interface SessionInterpreterSnapshot {
+  version: string; // kontrakt-version
+  generatedAt: string; // ISO timestamp
+  sessionHash: string; // hash af historikgrundlag
+
+  state: {
+    phase: "intro" | "main" | "closing" | "unknown";
+
+    dialogCharacter: {
+      technicalLevel: "low" | "medium" | "high";
+      intentStability: "exploratory" | "focused" | "resolved";
+    };
+
+    establishedContext: string[];
+    constraints: string[];
+  };
+}
 
 /**
  * TurnLog
  * ─────────────────────────────
- * Stabil, normativ kontrakt.
+ * Primær sandhedsenhed for replay og CQC.
  */
-export type TurnLog = {
-  // Identitet
-  session_id: string;
-  turn_id: number;
-  timestamp: string;
+export interface TurnLog {
+  id: string;
+  sessionId: string;
 
-  // Kanonisk indhold
-  user_input: string;
-  jan_raw_output: string;
-  jan_final_output: string;
+  userInput: string;
 
-  // Evaluator (struktureret)
-  evaluator_present: boolean;
-  evaluator_summary?: string;
-  evaluator_hints?: string[];
-  evaluator_chips?: string[];
+  janRawOutput: string;
+  finalOutput: string;
 
-  // CQC (struktureret)
-  cqc?: CQCState;
+  evaluator?: EvaluatorLog;
 
-  // Session (struktureret)
-  session?: {
-    stop_signal?: StopSignal;
-    health?: {
-      score: number;
-      factors: {
-        avg_load?: "low" | "medium" | "high";
-        high_load_turns?: number;
-        turn_count?: number;
-      };
-    };
-  };
+  latencyMs: number;
+  createdAt: string;
 
-  // Runtime telemetry (ALT andet)
-  telemetry?: RuntimeTelemetry;
-
-  // System
-  latency_ms: number;
-  status: "ok" | "error";
-  error?: string;
-};
+  /**
+   * Session-niveau fortolkningssignal,
+   * som var gældende for denne turn.
+   * Valgfrit og ikke turn-blokerende.
+   */
+  sessionInterpreter?: SessionInterpreterSnapshot;
+}
