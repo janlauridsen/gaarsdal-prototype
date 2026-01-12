@@ -10,15 +10,9 @@ export type StopSignal =
  * CQCState
  * ─────────────────────────────
  * Conversation Quality Control.
- * Form-hegn for kvalitative signaler.
- *
- * Bevidst tolerant:
- * - Kendte felter er typede
- * - Ukendte / nye signaler tillades
- *   uden build-brud
+ * Bevidst tolerant form-hegn.
  */
 export type CQCState = {
-  /* Kendte, stabiliserede signaler */
   progress?: "good" | "neutral" | "stagnating";
   boundaryControl?: "clear" | "leaky" | "overrestrictive";
   responsiveness?: "sharp" | "adequate" | "slow" | "drifting";
@@ -28,17 +22,13 @@ export type CQCState = {
   meta_noise?: "low" | "medium" | "high" | "elevated";
 
   redundancy?: "low" | "medium" | "high";
-
   closure?: "possible" | "likely" | "confirmed";
 
-  /* Åbent signalrum for mapper / fremtidige felter */
   [key: string]: unknown;
 };
 
 /**
  * EvaluatorLog
- * ─────────────────────────────
- * Snævert metasignal baseret udelukkende på JAN RAW output.
  */
 export interface EvaluatorLog {
   stopSignal?: StopSignal;
@@ -48,10 +38,6 @@ export interface EvaluatorLog {
 
 /**
  * SessionInterpreterSnapshot
- * ─────────────────────────────
- * Asynkront, session-bundet fortolkningssignal.
- * Produceres uden kendskab til aktuelt brugerinput.
- * Må ikke være normativt eller handlingsanvisende.
  */
 export interface SessionInterpreterSnapshot {
   version: string;
@@ -60,12 +46,10 @@ export interface SessionInterpreterSnapshot {
 
   state: {
     phase: "intro" | "main" | "closing" | "unknown";
-
     dialogCharacter: {
       technicalLevel: "low" | "medium" | "high";
       intentStability: "exploratory" | "focused" | "resolved";
     };
-
     establishedContext: string[];
     constraints: string[];
   };
@@ -74,21 +58,49 @@ export interface SessionInterpreterSnapshot {
 /**
  * TurnLog
  * ─────────────────────────────
- * Primær sandhedsenhed for replay og CQC.
+ * Wire-format logstruktur.
+ * Matcher faktisk runtime-brug.
  */
 export interface TurnLog {
-  id: string;
-  sessionId: string;
+  /* Identitet */
+  id?: string;
 
-  userInput: string;
+  sessionId?: string;
+  session_id?: string;
 
-  janRawOutput: string;
-  finalOutput: string;
+  turnId?: number;
+  turn_id?: number;
 
+  /* Input / output */
+  userInput?: string;
+  user_input?: string;
+
+  janRawOutput?: string;
+  jan_raw_output?: string;
+
+  finalOutput?: string;
+  jan_final_output?: string;
+
+  /* Evaluator */
   evaluator?: EvaluatorLog;
+  evaluator_present?: boolean;
 
-  latencyMs: number;
-  createdAt: string;
+  /* Telemetry */
+  telemetry?: any;
 
+  /* Timing */
+  latencyMs?: number;
+  latency_ms?: number;
+
+  createdAt?: string;
+  timestamp?: string;
+
+  status?: "ok" | "error";
+  error?: string;
+
+  /* Session interpreter (fase-1) */
   sessionInterpreter?: SessionInterpreterSnapshot;
+
+  /* Fremtidssikring */
+  [key: string]: unknown;
 }
