@@ -204,9 +204,10 @@ export default async function handler(
       }
     }
 
-    const suggestedMode =
-      interpreterParsed?.suggested_mode ?? "unknown";
-    const emotionalLoad =
+    const mode: string =
+      interpreterParsed?.phase ?? "unknown";
+
+    const emotionalLoad: string =
       interpreterParsed?.user_state?.emotional_load ?? "unknown";
 
     const crisisFlag = detectCrisis(
@@ -242,13 +243,42 @@ ${JSON.stringify(interpreterParsed, null, 2)}`
     });
 
     /* =========
+       EVALUATOR DECISION (MODE OVERLAY)
+       ========= */
+
+    // --- eksisterende heuristik (URØRT) ---
+    const legacySkipEvaluator =
+      interpreterParsed?.suggested_mode === "light" &&
+      emotionalLoad === "low" &&
+      lastUserText.length < 120;
+
+    // --- nyt overlay (additivt) ---
+    let evaluatorByMode = true;
+
+    if (mode === "intro" || mode === "closing") {
+      evaluatorByMode = false;
+    }
+    if (mode === "critical" || mode === "exploration") {
+      evaluatorByMode = true;
+    }
+    if (mode === "unknown") {
+      evaluatorByMode = true;
+    }
+
+    // --- sikkerheds-overrides ---
+    if (emotionalLoad === "high" || crisisFlag) {
+      evaluatorByMode = true;
+    }
+
+    // --- endelig beslutning ---
+    const skipEvaluator =
+      !evaluatorByMode ||
+      (mode === "intro" && legacySkipEvaluator);
+
+    /* =========
        EVALUATOR (OPTIONAL)
        ========= */
     let evaluatorText = "";
-    const skipEvaluator =
-      suggestedMode === "light" &&
-      emotionalLoad === "low" &&
-      lastUserText.length < 120;
 
     if (!skipEvaluator) {
       llmCalls++;
@@ -307,7 +337,8 @@ ${evaluatorText}`,
           raw: interpreterRaw,
           parsed: interpreterParsed,
         },
-        suggested_mode: suggestedMode,
+        suggested_mode: interpreterParsed?.suggested_mode ?? "unknown",
+        mode,
         llm_calls_count: llmCalls,
         crisis_flag: crisisFlag,
         turn_index: turnIndex,
