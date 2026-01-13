@@ -1,58 +1,61 @@
 // guided-chat/nodes.ts
 
 import { Chip } from "./chips";
+import { NodeId } from "./node-router";
 
-export type NodeType = "menu" | "ai_dialog" | "terminal";
-
-export type GuidedNode = {
-  id: string;
-  type: NodeType;
-  prompt?: string;            // kun for ai_dialog
-  text?: string;              // fast tekst til menu / terminal
-  chips: Chip[];              // autoriserede valg
-  next?: Record<Chip, string>; // chip -> næste node
+export type NodeConfig = {
+  id: NodeId;
+  title?: string;
+  message: string;
+  chips: Chip[];
+  prompt?: string; // kun reference, ikke load
+  terminal?: boolean;
 };
 
-export const NODES: Record<string, GuidedNode> = {
+export const NODES: Record<NodeId, NodeConfig> = {
   ROOT: {
     id: "ROOT",
-    type: "menu",
-    text: "Vælg en mulighed for at fortsætte.",
-    chips: ["CONTACT", "FACTS_HYPNO", "TRIAGE_RELEVANCE"],
-    next: {
-      CONTACT: "CONTACT_NODE",
-      FACTS_HYPNO: "FACTS_NODE",
-      TRIAGE_RELEVANCE: "TRIAGE_NODE",
-    },
+    message: "Vælg en mulighed for at fortsætte.",
+    chips: ["FACTS_HYPNO", "TRIAGE_RELEVANCE", "CONTACT"],
   },
 
-  CONTACT_NODE: {
-    id: "CONTACT_NODE",
-    type: "terminal",
-    text: "Her er kontaktoplysningerne.",
-    chips: ["BACK_TO_ROOT"],
-    next: {
-      BACK_TO_ROOT: "ROOT",
-    },
-  },
-
-  FACTS_NODE: {
-    id: "FACTS_NODE",
-    type: "ai_dialog",
+  FACTS: {
+    id: "FACTS",
+    message: "Her kan du læse generel, nøgtern information om hypnoterapi.",
+    chips: ["TRIAGE_RELEVANCE", "CONTACT", "BACK_TO_ROOT"],
     prompt: "facts-hypno.prompt.md",
-    chips: ["BACK_TO_ROOT"],
-    next: {
-      BACK_TO_ROOT: "ROOT",
-    },
   },
 
-  TRIAGE_NODE: {
-    id: "TRIAGE_NODE",
-    type: "ai_dialog",
+  TRIAGE: {
+    id: "TRIAGE",
+    message:
+      "Lad os afklare, om hypnoterapi kan være relevant for dig. Du kan skrive frit.",
+    chips: ["CONTACT", "BACK_TO_ROOT"],
     prompt: "triage-relevance.prompt.md",
+  },
+
+  CONTACT: {
+    id: "CONTACT",
+    message:
+      "Her finder du kontaktinformation og mulighed for at tage næste skridt.",
     chips: ["BACK_TO_ROOT"],
-    next: {
-      BACK_TO_ROOT: "ROOT",
-    },
+    prompt: "contact.prompt.md",
+    terminal: true,
+  },
+
+  TRIAGE_DONE: {
+    id: "TRIAGE_DONE",
+    message:
+      "Tak. Ud fra det beskrevne er hypnose enten relevant eller ikke relevant. Du vælger selv næste skridt.",
+    chips: ["CONTACT", "BACK_TO_ROOT"],
+    terminal: true,
+  },
+
+  OFFRAMP: {
+    id: "OFFRAMP",
+    message:
+      "Dette falder uden for, hvad denne chatbot kan hjælpe med.",
+    chips: ["BACK_TO_ROOT"],
+    terminal: true,
   },
 };
