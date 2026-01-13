@@ -56,16 +56,12 @@ export default function Chatbot() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const current = stack[index];
 
-  /* =====================
-     AUTO SCROLL
-  ===================== */
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [current.messages, loading]);
 
   /* =====================
-     UI INIT → ROOT NODE
+     UI INIT → ROOT
   ===================== */
 
   useEffect(() => {
@@ -82,67 +78,39 @@ export default function Chatbot() {
     })
       .then((res) => res.json())
       .then((data) => {
+        const assistantMessage: Message = {
+          role: "assistant",
+          content:
+            data.message ??
+            "Velkommen. Du kan vælge en mulighed herunder eller skrive frit.",
+          chips: data.chips ?? [],
+        };
+
         setStack((prev) => {
           const next = [...prev];
           next[index] = {
             ...next[index],
-            messages: [
-              {
-                role: "assistant",
-                content:
-                  data.message ??
-                  "Velkommen. Du kan vælge en mulighed herunder eller skrive frit.",
-                chips: data.chips ?? [],
-              },
-            ],
+            messages: [assistantMessage],
           };
           return next;
         });
       })
-      .catch(() => {
-        /* silent */
-      });
+      .catch(() => {});
   }, [open]);
 
   /* =====================
-     NAVIGATION
-  ===================== */
-
-  function pushNewConversation() {
-    if (stack.length >= MAX_SESSIONS) return;
-    setStack((prev) => [...prev, createConversation()]);
-    setIndex(stack.length);
-    setInput("");
-  }
-
-  function clearCurrentConversation() {
-    setStack((prev) =>
-      prev.length === 1
-        ? [createConversation()]
-        : prev.filter((_, i) => i !== index)
-    );
-    setIndex((i) => Math.max(0, i - 1));
-    setInput("");
-  }
-
-  function goPrev() {
-    setIndex((i) => Math.max(0, i - 1));
-  }
-
-  function goNext() {
-    setIndex((i) => Math.min(stack.length - 1, i + 1));
-  }
-
-  /* =====================
-     SEND MESSAGE / CHIP
+     SEND
   ===================== */
 
   async function send(text?: string, chip?: string) {
     if (loading) return;
     if (!text && !chip) return;
 
-    const userMessage =
-      text && !chip ? { role: "user", content: text } : null;
+    /* 🔧 FIX: explicit type */
+    const userMessage: Message | null =
+      text && !chip
+        ? { role: "user", content: text }
+        : null;
 
     if (userMessage) {
       setStack((prev) => {
@@ -164,7 +132,6 @@ export default function Chatbot() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId: current.id,
-          currentNode: undefined,
           text,
           chip,
         }),
@@ -291,16 +258,28 @@ export default function Chatbot() {
               />
 
               <div className="mt-3 flex gap-3">
-                <button onClick={pushNewConversation}>
+                <button onClick={() => setStack([...stack, createConversation()])}>
                   <PlusIcon className="w-5 h-5" />
                 </button>
-                <button onClick={goPrev}>
+                <button onClick={() => setIndex((i) => Math.max(0, i - 1))}>
                   <BackwardIcon className="w-5 h-5" />
                 </button>
-                <button onClick={goNext}>
+                <button
+                  onClick={() =>
+                    setIndex((i) => Math.min(stack.length - 1, i + 1))
+                  }
+                >
                   <ForwardIcon className="w-5 h-5" />
                 </button>
-                <button onClick={clearCurrentConversation}>
+                <button
+                  onClick={() =>
+                    setStack((prev) =>
+                      prev.length === 1
+                        ? [createConversation()]
+                        : prev.filter((_, i) => i !== index)
+                    )
+                  }
+                >
                   <TrashIcon className="w-5 h-5" />
                 </button>
               </div>
