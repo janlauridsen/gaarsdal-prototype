@@ -5,9 +5,9 @@ import { NodeId, ROUTES } from "../../guided-chat/node-router";
 import { NODES } from "../../guided-chat/nodes";
 import { mapFreeTextToChip } from "../../guided-chat/free-text-router";
 
-import { writeTurnLog } from "../../../logging/logWriter";
-import { TurnLog } from "../../../logging/log.types";
-import { runPostAnalysis } from "../../../postanalysis/postanalysis";
+import { writeTurnLog } from "../../logging/logWriter";
+import { TurnLog } from "../../logging/log.types";
+import { runPostAnalysis } from "../../postanalysis/postanalysis";
 
 /* =====================
    CONFIG
@@ -87,7 +87,6 @@ export default async function handler(
   const nodeConfig = NODES[nodeTo];
 
   if (!nodeConfig) {
-    // hard safety – should never happen
     return res.status(500).json({ error: "Invalid node state" });
   }
 
