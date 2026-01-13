@@ -7,7 +7,7 @@ import { mapFreeTextToChip } from "../../guided-chat/free-text-router";
 
 import { writeTurnLog } from "../../guided-chat/logging/logWriter";
 import { TurnLog } from "../../guided-chat/logging/log.types";
-import { runPostAnalysis } from "../../guided-chat/postanalysis/postanalysis";
+import { writePostAnalysis } from "../../guided-chat/postanalysis/postanalysis";
 
 /* =====================
    CONFIG
@@ -121,10 +121,10 @@ export default async function handler(
 
   /* =====================
      POST-ANALYSIS (ASYNC)
-     – NO SIDE EFFECTS
+     – LOG ONLY, NO SIDE EFFECTS
   ===================== */
 
-  runPostAnalysis({
+  writePostAnalysis({
     session_id: sessionId,
     turn_id: Date.now(),
     chip: resolvedChip,
