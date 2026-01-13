@@ -85,6 +85,20 @@ function detectCrisis(text: string, emotionalLoad?: string): boolean {
 }
 
 /* =========
+   PROMPT SELECTION (PHASE-BASED)
+   ========= */
+function selectJanPrompt(
+  basePrompt: string,
+  phase: string
+): string {
+  return `${basePrompt}
+
+[SESSION PHASE: ${phase.toUpperCase()}]
+Tilpas tone, fremdrift og afgrænsning til denne fase.
+`;
+}
+
+/* =========
    OPENAI CALL
    ========= */
 async function callOpenAI(params: {
@@ -166,7 +180,7 @@ export default async function handler(
   const turnIndex = userMessages.length;
 
   try {
-    const prompt = loadFile(PROMPT_PATH);
+    const basePrompt = loadFile(PROMPT_PATH);
     const evaluatorPrompt = loadFile(EVALUATOR_PATH);
     const reshapePrompt = loadFile(RESHAPE_PATH);
     const facts = loadFile(FACTS_PATH);
@@ -191,13 +205,9 @@ export default async function handler(
     ).toISOString();
 
     /* =========
-       PRE-MODE (SYNC)
+       PRE-MODE
        ========= */
-    let preMode: {
-      phase: "intro" | "exploration" | "critical" | "closing";
-      confidence: number;
-      rationale: string[];
-    } | null = null;
+    let preMode: any = null;
 
     try {
       llmCalls++;
@@ -228,7 +238,7 @@ export default async function handler(
     const phase = preMode?.phase ?? "unknown";
 
     /* =========
-       READ SESSION INTERPRETER (ASYNC STATE)
+       INTERPRETER (READ-ONLY)
        ========= */
     let interpreterParsed: any = null;
     let interpreterRaw = "";
@@ -241,12 +251,10 @@ export default async function handler(
       try {
         interpreterParsed = JSON.parse(cached);
         interpreterRaw = cached;
-      } catch {
-        interpreterParsed = null;
-      }
+      } catch {}
     }
 
-    const emotionalLoad: string =
+    const emotionalLoad =
       interpreterParsed?.user_state?.emotional_load ?? "unknown";
 
     const crisisFlag = detectCrisis(
@@ -255,9 +263,12 @@ export default async function handler(
     );
 
     /* =========
-       JAN RAW
+       JAN RAW (PHASE-AWARE PROMPT)
        ========= */
     llmCalls++;
+
+    const janPrompt = selectJanPrompt(basePrompt, phase);
+
     const janRaw = await callOpenAI({
       call_id: "jan_raw",
       session_id: sessionId,
@@ -265,7 +276,7 @@ export default async function handler(
       messages: [
         {
           role: "system",
-          content: `${prompt}
+          content: `${janPrompt}
 
 AUTORISERET VIDEN:
 ${facts}
@@ -282,35 +293,17 @@ ${JSON.stringify(interpreterParsed, null, 2)}`
     });
 
     /* =========
-       EVALUATOR DECISION (PRE-MODE FIRST)
-       ========= */
-
-    // legacy heuristik (URØRT)
-    const legacySkipEvaluator =
-      interpreterParsed?.suggested_mode === "light" &&
-      emotionalLoad === "low" &&
-      lastUserText.length < 120;
-
-    let evaluatorByPreMode = true;
-
-    if (phase === "intro" || phase === "closing") {
-      evaluatorByPreMode = false;
-    }
-    if (phase === "critical" || phase === "exploration") {
-      evaluatorByPreMode = true;
-    }
-    if (emotionalLoad === "high" || crisisFlag) {
-      evaluatorByPreMode = true;
-    }
-
-    const skipEvaluator =
-      !evaluatorByPreMode ||
-      (phase === "intro" && legacySkipEvaluator);
-
-    /* =========
-       EVALUATOR (OPTIONAL)
+       EVALUATOR (UNCHANGED)
        ========= */
     let evaluatorText = "";
+    let skipEvaluator = false;
+
+    if (phase === "intro" || phase === "closing") {
+      skipEvaluator = true;
+    }
+    if (emotionalLoad === "high" || crisisFlag) {
+      skipEvaluator = false;
+    }
 
     if (!skipEvaluator) {
       llmCalls++;
@@ -347,7 +340,7 @@ ${evaluatorText}`,
     });
 
     /* =========
-       LOG
+       LOGGING (UNCHANGED)
        ========= */
     const load = estimateLoad(janFinal.length);
 
@@ -355,13 +348,10 @@ ${evaluatorText}`,
       timestamp: new Date().toISOString(),
       session_id: sessionId,
       turn_id: turnIndex,
-
       user_input: lastUserText,
       jan_raw_output: janRaw,
       jan_final_output: janFinal,
-
       evaluator_present: !skipEvaluator,
-
       telemetry: {
         answer: janFinal,
         evaluator_text: evaluatorText,
@@ -370,8 +360,6 @@ ${evaluatorText}`,
           raw: interpreterRaw,
           parsed: interpreterParsed,
         },
-        suggested_mode:
-          interpreterParsed?.suggested_mode ?? "unknown",
         phase,
         llm_calls_count: llmCalls,
         crisis_flag: crisisFlag,
@@ -390,46 +378,12 @@ ${evaluatorText}`,
         dialogue_expires_at: dialogueExpiresAt,
         resume_prompted: false,
       },
-
       latency_ms: Date.now() - startedAt,
       status: "ok",
     };
 
     await writeTurnLog(logEntry);
     res.status(200).json({ answer: janFinal });
-
-    /* =========
-       POST-INTERPRETER (ASYNC)
-       ========= */
-    (async () => {
-      try {
-        llmCalls++;
-        const raw = await callOpenAI({
-          call_id: "interpreter",
-          session_id: sessionId,
-          turn_id: turnIndex,
-          messages: [
-            { role: "system", content: interpreterPrompt },
-            {
-              role: "user",
-              content: JSON.stringify({
-                messages,
-                session_age_ms: sessionAgeMs,
-              }),
-            },
-          ],
-        });
-
-        const parsed = JSON.parse(stripJsonFences(raw));
-
-        await redis.set(
-          `interpreter:context:${sessionId}`,
-          JSON.stringify(parsed)
-        );
-      } catch {
-        /* non-blocking */
-      }
-    })();
   } catch (err: any) {
     const errorLog: TurnLog = {
       timestamp: new Date().toISOString(),
