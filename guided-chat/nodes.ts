@@ -16,9 +16,9 @@ export type NodeConfig = {
   title?: string;
   message: string;
   chips: Chip[];
-  prompt?: string; // reference til prompt-fil (loades andetsteds)
+  prompt?: string;
   terminal?: boolean;
-  kind?: NodeKind; // default = MENU
+  kind?: NodeKind;
 };
 
 export const NODES: Record<NodeId, NodeConfig> = {
@@ -64,5 +64,12 @@ export const NODES: Record<NodeId, NodeConfig> = {
     chips: ["CONTACT", "BACK_TO_ROOT"],
     terminal: true,
   },
-};
 
+  EXIT: {
+    id: "EXIT",
+    kind: "STATIC",
+    message: "Samtalen er afsluttet.",
+    chips: [],
+    terminal: true,
+  },
+};
