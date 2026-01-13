@@ -64,13 +64,5 @@ export const NODES: Record<NodeId, NodeConfig> = {
     chips: ["CONTACT", "BACK_TO_ROOT"],
     terminal: true,
   },
-
-  OFFRAMP: {
-    id: "OFFRAMP",
-    kind: "STATIC",
-    message:
-      "Dette falder uden for, hvad denne chatbot kan hjælpe med.",
-    chips: ["BACK_TO_ROOT"],
-    terminal: true,
-  },
 };
+
