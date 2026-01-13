@@ -7,6 +7,7 @@ import { mapFreeTextToChip } from "../../guided-chat/free-text-router";
 
 import { writeTurnLog } from "../../guided-chat/logging/logWriter";
 import { TurnLog } from "../../guided-chat/logging/log.types";
+
 import { writePostAnalysis } from "../../guided-chat/postanalysis/postanalysis";
 
 /* =====================
@@ -103,7 +104,7 @@ export default async function handler(
   };
 
   /* =====================
-     LOGGING
+     LOGGING (TURN)
   ===================== */
 
   const logEntry: TurnLog = {
@@ -121,16 +122,26 @@ export default async function handler(
 
   /* =====================
      POST-ANALYSIS (ASYNC)
-     – LOG ONLY, NO SIDE EFFECTS
+     – OBSERVER ONLY
   ===================== */
 
   writePostAnalysis({
     session_id: sessionId,
     turn_id: Date.now(),
     chip: resolvedChip,
-    node_from: nodeFrom,
-    node_to: nodeTo,
-    free_text: text ?? null,
+    analysis: {
+      scope_match: true,
+      ambiguity_level: "low",
+    },
+    hypotheses: [],
+    flags: {
+      medical_risk: false,
+      off_scope: false,
+    },
+    meta: {
+      model_version: "v10.0",
+      analysis_version: "v1",
+    },
   }).catch(() => {
     /* fail-silent by design */
   });
