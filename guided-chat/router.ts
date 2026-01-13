@@ -1,39 +1,76 @@
-import { NODE_TABLE } from "./nodeTable";
-import { triageStep } from "./triage/engine";
+// guided-chat/router.ts
 
-export type Input =
-  | { kind: "CLICK"; target: string }
-  | { kind: "TEXT"; text: string };
+import { Chip } from "./chips";
+import { NodeId, ROUTES } from "./node-router";
+import { NODES, NodeConfig } from "./nodes";
 
-export type Session = {
-  node: string;
-  triage?: any;
+/* =====================
+   INPUT TYPES
+===================== */
+
+export type RouterInput =
+  | { kind: "chip"; chip: Chip }
+  | { kind: "text"; text: string };
+
+export type RouterResult = {
+  nodeId: NodeId;
+  node: NodeConfig;
+  reason: "chip" | "text" | "fallback";
 };
 
-export function route(session: Session, input: Input) {
-  // direkte hop altid tilladt
-  if (input.kind === "CLICK") {
-    return { session: { node: input.target } };
-  }
+/* =====================
+   ROUTER
+===================== */
 
-  const node = NODE_TABLE[session.node];
+export function route(
+  currentNodeId: NodeId,
+  input: RouterInput
+): RouterResult {
+  const currentNode = NODES[currentNodeId];
 
-  if (node.type === "DIALOG" && session.node === "TRIAGE") {
-    const res = triageStep(
-      session.triage ?? { state: "T0_START", answers: {} },
-      input.text
-    );
+  // --- CHIP NAVIGATION ---
+  if (input.kind === "chip") {
+    const nextNodeId = ROUTES[currentNodeId]?.[input.chip];
 
-    if (res.outcome) {
-      return { session: { node: "TRIAGE_DONE" }, outcome: res.outcome };
+    if (nextNodeId) {
+      return {
+        nodeId: nextNodeId,
+        node: NODES[nextNodeId],
+        reason: "chip",
+      };
     }
 
+    // chip ikke tilladt i denne node
     return {
-      session: { node: "TRIAGE", triage: res.ctx },
-      question: res.question,
+      nodeId: currentNodeId,
+      node: currentNode,
+      reason: "fallback",
     };
   }
 
-  // fritekst uden for dialog → fortolk som evt. menu-intent
-  return { session };
+  // --- FREE TEXT ---
+  if (input.kind === "text") {
+    // Hvis noden er dialog, bliver vi i noden
+    if (currentNode.kind === "DIALOG") {
+      return {
+        nodeId: currentNodeId,
+        node: currentNode,
+        reason: "text",
+      };
+    }
+
+    // Fritekst i ikke-dialog → fallback (brug chips)
+    return {
+      nodeId: currentNodeId,
+      node: currentNode,
+      reason: "fallback",
+    };
+  }
+
+  // --- SAFETY ---
+  return {
+    nodeId: currentNodeId,
+    node: currentNode,
+    reason: "fallback",
+  };
 }
