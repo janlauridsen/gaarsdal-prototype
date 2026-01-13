@@ -5,9 +5,9 @@ import { NodeId, ROUTES } from "../../guided-chat/node-router";
 import { NODES } from "../../guided-chat/nodes";
 import { mapFreeTextToChip } from "../../guided-chat/free-text-router";
 
-import { writeTurnLog } from "../../logging/logWriter";
-import { TurnLog } from "../../logging/log.types";
-import { runPostAnalysis } from "../../postanalysis/postanalysis";
+import { writeTurnLog } from "../../guided-chat/logging/logWriter";
+import { TurnLog } from "../../guided-chat/logging/log.types";
+import { runPostAnalysis } from "../../guided-chat/postanalysis/postanalysis";
 
 /* =====================
    CONFIG
