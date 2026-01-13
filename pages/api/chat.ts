@@ -76,21 +76,31 @@ export default async function handler(
     return res.status(400).json({ error: "Missing sessionId" });
   }
 
-  const currentNode: NodeId = nodeId ?? "ROOT";
-  const node = NODES[currentNode];
+  const currentNodeId: NodeId = nodeId ?? "ROOT";
+  const currentNode = NODES[currentNodeId];
 
-  if (!node) {
+  if (!currentNode) {
     return res.status(400).json({ error: "Invalid node" });
   }
 
   /* =====================
-     NODE TRANSITION
+     NODE TRANSITION LOGIC
   ===================== */
 
-  let nextNodeId = currentNode;
+  let nextNodeId: NodeId = currentNodeId;
 
+  // Chips har altid prioritet
   if (chip && isChip(chip)) {
-    nextNodeId = resolveNextNode(currentNode, chip);
+    nextNodeId = resolveNextNode(currentNodeId, chip);
+  }
+
+  // Fri tekst i DIALOG → bliv i noden
+  if (
+    !chip &&
+    text &&
+    currentNode.kind === "DIALOG"
+  ) {
+    nextNodeId = currentNodeId;
   }
 
   const nextNode = NODES[nextNodeId];
@@ -114,7 +124,7 @@ export default async function handler(
     kind: nextNode.kind ?? "MENU",
     message: nextNode.message,
     chips: nextNode.chips,
-    prompt: promptText, // UI kan vælge at vise / skjule
+    prompt: promptText,
     terminal: nextNode.terminal ?? false,
   };
 
@@ -125,17 +135,18 @@ export default async function handler(
   const log: TurnLog = {
     timestamp: nowISO(),
     session_id: sessionId,
-    turn_id: Date.now(), // simpelt og stabilt i fase 1
+    turn_id: Date.now(),
     user_input: chip ?? text ?? "",
     jan_raw_output: "",
     jan_final_output: response.message,
     evaluator_present: false,
     telemetry: {
-      node_from: currentNode,
+      node_from: currentNodeId,
       node_to: nextNodeId,
+      node_kind: currentNode.kind ?? "MENU",
       chip: chip ?? null,
       free_text: text ?? null,
-      node_kind: nextNode.kind ?? "MENU",
+      dialog_active: currentNode.kind === "DIALOG",
     },
     latency_ms: Date.now() - startedAt,
     status: "ok",
@@ -145,4 +156,3 @@ export default async function handler(
 
   return res.status(200).json(response);
 }
-
