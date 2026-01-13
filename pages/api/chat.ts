@@ -257,7 +257,7 @@ export default async function handler(
     );
 
     /* =========
-       JAN RAW (DETERMINISTIC PROMPT)
+       JAN RAW
        ========= */
     llmCalls++;
 
@@ -313,23 +313,27 @@ ${JSON.stringify(interpreterParsed, null, 2)}`
     }
 
     /* =========
-       RESHAPE
+       RESHAPE  ✅ KORRIGERET
        ========= */
     llmCalls++;
+
+    const reshapeInput =
+      !skipEvaluator && evaluatorText.trim().length > 0
+        ? `JAN RAW:
+${janRaw}
+
+EVALUATOR:
+${evaluatorText}`
+        : `JAN RAW:
+${janRaw}`;
+
     const janFinal = await callOpenAI({
       call_id: "reshape",
       session_id: sessionId,
       turn_id: turnIndex,
       messages: [
         { role: "system", content: reshapePrompt },
-        {
-          role: "user",
-          content: `JAN RAW:
-${janRaw}
-
-EVALUATOR:
-${evaluatorText}`,
-        },
+        { role: "user", content: reshapeInput },
       ],
     });
 
