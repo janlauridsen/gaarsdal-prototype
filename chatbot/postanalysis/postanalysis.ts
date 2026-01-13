@@ -1,4 +1,6 @@
-{
+import { V10Chip } from "../chips"
+
+export type PostAnalysisEntry = {
   session_id: string
   turn_id: number
   chip: V10Chip
