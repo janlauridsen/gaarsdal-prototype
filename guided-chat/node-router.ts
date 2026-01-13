@@ -4,36 +4,39 @@ import { Chip } from "./chips";
 
 export type NodeId =
   | "ROOT"
+  | "CONTACT"
   | "FACTS"
   | "TRIAGE"
-  | "CONTACT"
   | "TRIAGE_DONE"
-  | "OFFRAMP";
+  | "EXIT";
 
-export type NodeRoute = {
-  from: NodeId;
-  via: Chip;
-  to: NodeId;
+type RouteTable = {
+  [node in NodeId]: Partial<Record<Chip, NodeId>>;
 };
 
-export const NODE_ROUTES: NodeRoute[] = [
-  // Root menu
-  { from: "ROOT", via: "FACTS_HYPNO", to: "FACTS" },
-  { from: "ROOT", via: "TRIAGE_RELEVANCE", to: "TRIAGE" },
-  { from: "ROOT", via: "CONTACT", to: "CONTACT" },
+export const ROUTES: RouteTable = {
+  ROOT: {
+    CONTACT: "CONTACT",
+    FACTS_HYPNO: "FACTS",
+    TRIAGE_RELEVANCE: "TRIAGE",
+  },
 
-  // Facts
-  { from: "FACTS", via: "BACK_TO_ROOT", to: "ROOT" },
-  { from: "FACTS", via: "TRIAGE_RELEVANCE", to: "TRIAGE" },
-  { from: "FACTS", via: "CONTACT", to: "CONTACT" },
+  CONTACT: {
+    BACK_TO_ROOT: "ROOT",
+  },
 
-  // Triage
-  { from: "TRIAGE", via: "CONTACT", to: "CONTACT" },
-  { from: "TRIAGE", via: "BACK_TO_ROOT", to: "ROOT" },
+  FACTS: {
+    BACK_TO_ROOT: "ROOT",
+  },
 
-  // Triage outcomes (dummy for nu)
-  { from: "TRIAGE", via: "FACTS_HYPNO", to: "TRIAGE_DONE" },
+  TRIAGE: {
+    BACK_TO_ROOT: "ROOT",
+  },
 
-  // Fallback
-  { from: "TRIAGE_DONE", via: "BACK_TO_ROOT", to: "ROOT" },
-];
+  TRIAGE_DONE: {
+    CONTACT: "CONTACT",
+    BACK_TO_ROOT: "ROOT",
+  },
+
+  EXIT: {},
+};
