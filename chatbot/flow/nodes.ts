@@ -31,7 +31,7 @@ export const FLOW_NODES: Record<NodeId, FlowNode> = {
     promptFile: "prompts/contact.prompt.md",
     allowedChips: ["BACK_TO_ROOT"],
     description:
-      "Ren kontakt- og henvisningsinformation. Ingen dialog.",
+      "Ren kontakt- og henvisningsinformation.",
   },
 
   FACTS_HYPNO: {
@@ -39,7 +39,7 @@ export const FLOW_NODES: Record<NodeId, FlowNode> = {
     promptFile: "prompts/facts-hypno.prompt.md",
     allowedChips: ["BACK_TO_ROOT"],
     description:
-      "Generel, faktuel viden om hypnoterapi. Ingen rådgivning.",
+      "Generel faktuel viden om hypnoterapi.",
   },
 
   TRIAGE_RELEVANCE: {
@@ -47,6 +47,6 @@ export const FLOW_NODES: Record<NodeId, FlowNode> = {
     promptFile: "prompts/triage.prompt.md",
     allowedChips: ["BACK_TO_ROOT"],
     description:
-      "Sandsynlighedsvurdering. Må stille faste afklarende spørgsmål.",
+      "Sandsynlighedsvurdering. Ingen behandling.",
   },
 };
