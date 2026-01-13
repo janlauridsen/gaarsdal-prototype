@@ -10,24 +10,23 @@ import {
 } from "@heroicons/react/24/outline";
 
 /* =====================
-   TYPER
+   TYPES
 ===================== */
 
-type ViewState = {
-  node: string;
-  kind: "MENU" | "STATIC" | "DIALOG";
-  message: string;
-  chips: string[];
-  terminal: boolean;
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+  chips?: string[];
 };
 
 type Conversation = {
   id: string;
-  view?: ViewState;
+  messages: Message[];
 };
 
-const UI_WELCOME =
-  "Velkommen.\n\nVælg en mulighed herunder for at fortsætte.";
+/* =====================
+   CONFIG
+===================== */
 
 const MAX_SESSIONS = 5;
 
@@ -38,6 +37,7 @@ const MAX_SESSIONS = 5;
 function createConversation(): Conversation {
   return {
     id: crypto.randomUUID(),
+    messages: [],
   };
 }
 
@@ -48,41 +48,80 @@ function createConversation(): Conversation {
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [stack, setStack] = useState<Conversation[]>([
-    createConversation(),
-  ]);
+  const [stack, setStack] = useState<Conversation[]>([createConversation()]);
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [currentNode, setCurrentNode] = useState<string>("ROOT");
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const current = stack[index];
 
+  /* =====================
+     AUTO SCROLL
+  ===================== */
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [current.view, loading]);
+  }, [current.messages, loading]);
 
   /* =====================
-     SESSION CONTROLS
+     UI INIT → ROOT NODE
+  ===================== */
+
+  useEffect(() => {
+    if (!open) return;
+    if (current.messages.length > 0) return;
+
+    fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: current.id,
+        currentNode: "ROOT",
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setStack((prev) => {
+          const next = [...prev];
+          next[index] = {
+            ...next[index],
+            messages: [
+              {
+                role: "assistant",
+                content:
+                  data.message ??
+                  "Velkommen. Du kan vælge en mulighed herunder eller skrive frit.",
+                chips: data.chips ?? [],
+              },
+            ],
+          };
+          return next;
+        });
+      })
+      .catch(() => {
+        /* silent */
+      });
+  }, [open]);
+
+  /* =====================
+     NAVIGATION
   ===================== */
 
   function pushNewConversation() {
     if (stack.length >= MAX_SESSIONS) return;
     setStack((prev) => [...prev, createConversation()]);
     setIndex(stack.length);
-    setCurrentNode("ROOT");
     setInput("");
   }
 
   function clearCurrentConversation() {
-    setStack((prev) => {
-      if (prev.length === 1) return [createConversation()];
-      const next = prev.filter((_, i) => i !== index);
-      return next.length ? next : [createConversation()];
-    });
+    setStack((prev) =>
+      prev.length === 1
+        ? [createConversation()]
+        : prev.filter((_, i) => i !== index)
+    );
     setIndex((i) => Math.max(0, i - 1));
-    setCurrentNode("ROOT");
     setInput("");
   }
 
@@ -95,11 +134,28 @@ export default function Chatbot() {
   }
 
   /* =====================
-     CORE API CALL
+     SEND MESSAGE / CHIP
   ===================== */
 
-  async function send(payload: { text?: string; chip?: string }) {
+  async function send(text?: string, chip?: string) {
     if (loading) return;
+    if (!text && !chip) return;
+
+    const userMessage =
+      text && !chip ? { role: "user", content: text } : null;
+
+    if (userMessage) {
+      setStack((prev) => {
+        const next = [...prev];
+        next[index] = {
+          ...next[index],
+          messages: [...next[index].messages, userMessage],
+        };
+        return next;
+      });
+    }
+
+    setInput("");
     setLoading(true);
 
     try {
@@ -108,23 +164,28 @@ export default function Chatbot() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId: current.id,
-          currentNode,
-          ...payload,
+          currentNode: undefined,
+          text,
+          chip,
         }),
       });
 
-      const data: ViewState = await res.json();
+      const data = await res.json();
+
+      const assistantMessage: Message = {
+        role: "assistant",
+        content: data.message ?? "",
+        chips: data.chips ?? [],
+      };
 
       setStack((prev) => {
         const next = [...prev];
         next[index] = {
           ...next[index],
-          view: data,
+          messages: [...next[index].messages, assistantMessage],
         };
         return next;
       });
-
-      setCurrentNode(data.node);
     } finally {
       setLoading(false);
     }
@@ -140,7 +201,6 @@ export default function Chatbot() {
         <button
           onClick={() => setOpen(true)}
           className="fixed bottom-6 right-6 w-14 h-14 rounded-full gaarsdal-launcher flex items-center justify-center"
-          aria-label="Åbn chat"
         >
           <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
         </button>
@@ -165,68 +225,52 @@ export default function Chatbot() {
           >
             {/* HEADER */}
             <header className="flex justify-between items-center px-4 py-3">
-              <div className="flex items-center gap-2">
-                <img
-                  src="/jan.gif"
-                  alt="Gaarsdal"
-                  width={24}
-                  height={24}
-                  className="rounded-full opacity-80"
-                />
-                <span className="font-medium">Gaarsdal</span>
-              </div>
-
+              <span className="font-medium">Gaarsdal</span>
               <div className="flex gap-2">
-                <button
-                  onClick={() => setExpanded((v) => !v)}
-                  className="gaarsdal-icon-btn"
-                >
+                <button onClick={() => setExpanded((v) => !v)}>
                   <ArrowsPointingOutIcon className="w-5 h-5" />
                 </button>
-                <button
-                  onClick={() => {
-                    setOpen(false);
-                    setExpanded(false);
-                  }}
-                  className="gaarsdal-icon-btn"
-                >
+                <button onClick={() => setOpen(false)}>
                   <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
             </header>
 
-            {/* BODY */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {!current.view && (
-                <div className="message bot whitespace-pre-wrap">
-                  {UI_WELCOME}
+            {/* MESSAGES */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {current.messages.map((m, i) => (
+                <div key={i} className="space-y-2">
+                  <div
+                    className={`flex ${
+                      m.role === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`message ${
+                        m.role === "user" ? "user" : "bot"
+                      } px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
+                    >
+                      {m.content}
+                    </div>
+                  </div>
+
+                  {m.role === "assistant" && m.chips && m.chips.length > 0 && (
+                    <div className="flex gap-2 flex-wrap pl-2">
+                      {m.chips.map((c, ci) => (
+                        <button
+                          key={ci}
+                          onClick={() => send(undefined, c)}
+                          className="text-xs px-3 py-1 rounded-full border bg-white"
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
 
-              {current.view && (
-                <>
-                  <div className="message bot whitespace-pre-wrap">
-                    {current.view.message}
-                  </div>
-
-                  <div className="flex gap-2 flex-wrap">
-                    {current.view.chips.map((chip) => (
-                      <button
-                        key={chip}
-                        onClick={() => send({ chip })}
-                        className="text-sm px-3 py-1 rounded-full border bg-white hover:bg-gray-100"
-                      >
-                        {chip}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {loading && (
-                <div className="text-sm opacity-60">Skriver…</div>
-              )}
-
+              {loading && <div className="text-sm opacity-60">Skriver…</div>}
               <div ref={messagesEndRef} />
             </div>
 
@@ -238,26 +282,22 @@ export default function Chatbot() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
-                    send({ text: input });
-                    setInput("");
+                    send(input);
                   }
                 }}
                 rows={2}
                 className="w-full border rounded-md px-3 py-2 text-sm resize-none"
-                placeholder="Skriv her…"
+                placeholder="Skriv frit her…"
               />
 
               <div className="mt-3 flex gap-3">
                 <button onClick={pushNewConversation}>
                   <PlusIcon className="w-5 h-5" />
                 </button>
-                <button onClick={goPrev} disabled={index === 0}>
+                <button onClick={goPrev}>
                   <BackwardIcon className="w-5 h-5" />
                 </button>
-                <button
-                  onClick={goNext}
-                  disabled={index === stack.length - 1}
-                >
+                <button onClick={goNext}>
                   <ForwardIcon className="w-5 h-5" />
                 </button>
                 <button onClick={clearCurrentConversation}>
