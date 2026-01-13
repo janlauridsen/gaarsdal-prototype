@@ -48,7 +48,7 @@ export default async function handler(
     chip,
     text,
   }: {
-    sessionId: string;
+    sessionId?: string;
     currentNode?: NodeId;
     chip?: Chip;
     text?: string;
@@ -87,6 +87,11 @@ export default async function handler(
 
   const nodeConfig = NODES[nodeTo];
 
+  if (!nodeConfig) {
+    // hard safety – should never happen
+    return res.status(500).json({ error: "Invalid node state" });
+  }
+
   /* =====================
      RESPONSE PAYLOAD
   ===================== */
@@ -124,7 +129,7 @@ export default async function handler(
   runPostAnalysis({
     session_id: sessionId,
     turn_id: Date.now(),
-    chip: resolvedChip ?? null,
+    chip: resolvedChip,
     node_from: nodeFrom,
     node_to: nodeTo,
     free_text: text ?? null,
