@@ -1,25 +1,25 @@
-import { V10Chip } from "../chips"
+import type { Chip } from "../flow/chips";
 
 export type PostAnalysisEntry = {
-  session_id: string
-  turn_id: number
-  chip: V10Chip
+  session_id: string;
+  turn_id: number;
+  chip: Chip;
 
   analysis: {
-    intent_guess?: string        // løs hypotese
-    scope_match: boolean         // var svaret inden for 1–3
-    ambiguity_level: "low" | "medium" | "high"
-    safety_notes?: string[]
-  }
+    intent_guess?: string;
+    scope_match: boolean;
+    ambiguity_level: "low" | "medium" | "high";
+    safety_notes?: string[];
+  };
 
-  hypotheses: string[]           // fx “søvn + stress-relateret”
+  hypotheses: string[];
   flags: {
-    medical_risk: boolean
-    off_scope: boolean
-  }
+    medical_risk: boolean;
+    off_scope: boolean;
+  };
 
   meta: {
-    model_version: "v10.0"
-    analysis_version: "v1"
-  }
-}
+    model_version: "v10.0";
+    analysis_version: "v1";
+  };
+};
