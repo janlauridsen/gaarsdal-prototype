@@ -27,7 +27,13 @@ const ENABLE_AI_CALL_LOGGING =
 /* =========
    PATHS
    ========= */
-const PROMPT_PATH = path.join(process.cwd(), "chatbot/prompt.md");
+const JAN_PROMPTS: Record<string, string> = {
+  intro: path.join(process.cwd(), "chatbot/jan-intro.prompt.md"),
+  exploration: path.join(process.cwd(), "chatbot/jan-exploration.prompt.md"),
+  critical: path.join(process.cwd(), "chatbot/jan-critical.prompt.md"),
+  closing: path.join(process.cwd(), "chatbot/jan-closing.prompt.md"),
+};
+
 const EVALUATOR_PATH = path.join(process.cwd(), "chatbot/evaluator.md");
 const RESHAPE_PATH = path.join(process.cwd(), "chatbot/reshape.md");
 const FACTS_PATH = path.join(process.cwd(), "chatbot/fakta-gaarsdal.md");
@@ -82,20 +88,6 @@ function detectCrisis(text: string, emotionalLoad?: string): boolean {
     t.includes("jeg vil dø") ||
     t.includes("selvmord");
   return emotionalLoad === "high" || keywords;
-}
-
-/* =========
-   PROMPT SELECTION (PHASE-BASED)
-   ========= */
-function selectJanPrompt(
-  basePrompt: string,
-  phase: string
-): string {
-  return `${basePrompt}
-
-[SESSION PHASE: ${phase.toUpperCase()}]
-Tilpas tone, fremdrift og afgrænsning til denne fase.
-`;
 }
 
 /* =========
@@ -180,7 +172,6 @@ export default async function handler(
   const turnIndex = userMessages.length;
 
   try {
-    const basePrompt = loadFile(PROMPT_PATH);
     const evaluatorPrompt = loadFile(EVALUATOR_PATH);
     const reshapePrompt = loadFile(RESHAPE_PATH);
     const facts = loadFile(FACTS_PATH);
@@ -235,7 +226,10 @@ export default async function handler(
       preMode = null;
     }
 
-    const phase = preMode?.phase ?? "unknown";
+    const phase: string =
+      preMode?.phase && JAN_PROMPTS[preMode.phase]
+        ? preMode.phase
+        : "exploration";
 
     /* =========
        INTERPRETER (READ-ONLY)
@@ -263,11 +257,11 @@ export default async function handler(
     );
 
     /* =========
-       JAN RAW (PHASE-AWARE PROMPT)
+       JAN RAW (DETERMINISTIC PROMPT)
        ========= */
     llmCalls++;
 
-    const janPrompt = selectJanPrompt(basePrompt, phase);
+    const janPrompt = loadFile(JAN_PROMPTS[phase]);
 
     const janRaw = await callOpenAI({
       call_id: "jan_raw",
@@ -293,7 +287,7 @@ ${JSON.stringify(interpreterParsed, null, 2)}`
     });
 
     /* =========
-       EVALUATOR (UNCHANGED)
+       EVALUATOR
        ========= */
     let evaluatorText = "";
     let skipEvaluator = false;
@@ -340,7 +334,7 @@ ${evaluatorText}`,
     });
 
     /* =========
-       LOGGING (UNCHANGED)
+       LOGGING
        ========= */
     const load = estimateLoad(janFinal.length);
 
@@ -384,6 +378,39 @@ ${evaluatorText}`,
 
     await writeTurnLog(logEntry);
     res.status(200).json({ answer: janFinal });
+
+    /* =========
+       POST-INTERPRETER (ASYNC)
+       ========= */
+    (async () => {
+      try {
+        llmCalls++;
+        const raw = await callOpenAI({
+          call_id: "interpreter",
+          session_id: sessionId,
+          turn_id: turnIndex,
+          messages: [
+            { role: "system", content: interpreterPrompt },
+            {
+              role: "user",
+              content: JSON.stringify({
+                messages,
+                session_age_ms: sessionAgeMs,
+              }),
+            },
+          ],
+        });
+
+        const parsed = JSON.parse(stripJsonFences(raw));
+
+        await redis.set(
+          `interpreter:context:${sessionId}`,
+          JSON.stringify(parsed)
+        );
+      } catch {
+        /* non-blocking */
+      }
+    })();
   } catch (err: any) {
     const errorLog: TurnLog = {
       timestamp: new Date().toISOString(),
