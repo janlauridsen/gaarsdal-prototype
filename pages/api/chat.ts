@@ -20,10 +20,7 @@ const DEFAULT_NODE: NodeId = "ROOT";
    HELPERS
 ===================== */
 
-function resolveNextNode(
-  current: NodeId,
-  chip: Chip
-): NodeId {
+function resolveNextNode(current: NodeId, chip: Chip): NodeId {
   const route = ROUTES[current];
   return route?.[chip] ?? current;
 }
@@ -121,30 +118,31 @@ export default async function handler(
   await writeTurnLog(logEntry);
 
   /* =====================
-     POST-ANALYSIS (ASYNC)
-     – OBSERVER ONLY
+     POST-ANALYSIS (SYNC, FAIL-SILENT)
   ===================== */
 
-  writePostAnalysis({
-    session_id: sessionId,
-    turn_id: Date.now(),
-    chip: resolvedChip,
-    analysis: {
-      scope_match: true,
-      ambiguity_level: "low",
-    },
-    hypotheses: [],
-    flags: {
-      medical_risk: false,
-      off_scope: false,
-    },
-    meta: {
-      model_version: "v10.0",
-      analysis_version: "v1",
-    },
-  }).catch(() => {
-    /* fail-silent by design */
-  });
+  try {
+    writePostAnalysis({
+      session_id: sessionId,
+      turn_id: Date.now(),
+      chip: resolvedChip,
+      analysis: {
+        scope_match: true,
+        ambiguity_level: "low",
+      },
+      hypotheses: [],
+      flags: {
+        medical_risk: false,
+        off_scope: false,
+      },
+      meta: {
+        model_version: "v10.0",
+        analysis_version: "v1",
+      },
+    });
+  } catch {
+    /* intentionally silent */
+  }
 
   /* =====================
      RESPONSE
