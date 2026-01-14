@@ -1,42 +1,58 @@
-// guided-chat/node-router.ts
+/**
+ * guided-chat/node-router.ts
+ *
+ * Rolle:
+ * - Eksplicit navigation mellem noder
+ * - Ingen logik
+ * - Ingen fortolkning
+ * - Kun routing
+ *
+ * Version:
+ * - V10.3
+ */
 
-import { Chip } from "./chips";
+/* =====================
+   NODE ID
+===================== */
 
 export type NodeId =
   | "ROOT"
-  | "CONTACT"
-  | "FACTS"
+  | "INFO"
   | "TRIAGE"
-  | "TRIAGE_DONE"
-  | "EXIT";
+  | "CONTACT";
 
-type RouteTable = {
-  [node in NodeId]: Partial<Record<Chip, NodeId>>;
-};
+/* =====================
+   ROUTES
+===================== */
 
-export const ROUTES: RouteTable = {
+/**
+ * ROUTES definerer entydigt:
+ * currentNode + chipLabel → nextNode
+ *
+ * Hvis et opslag mangler:
+ * - engine falder tilbage til currentNode
+ */
+export const ROUTES: Record<
+  NodeId,
+  Record<string, NodeId>
+> = {
   ROOT: {
-    CONTACT: "CONTACT",
-    FACTS_HYPNO: "FACTS",
-    TRIAGE_RELEVANCE: "TRIAGE",
+    "Læs om hypnoterapi": "INFO",
+    "Er hypnoterapi relevant for mig?": "TRIAGE",
+    "Kontakt": "CONTACT",
   },
 
-  CONTACT: {
-    BACK_TO_ROOT: "ROOT",
-  },
-
-  FACTS: {
-    BACK_TO_ROOT: "ROOT",
+  INFO: {
+    "Kontakt": "CONTACT",
+    "Er hypnoterapi relevant for mig?": "TRIAGE",
   },
 
   TRIAGE: {
-    BACK_TO_ROOT: "ROOT",
+    "Ja": "CONTACT",
+    "Nej": "ROOT",
   },
 
-  TRIAGE_DONE: {
-    CONTACT: "CONTACT",
-    BACK_TO_ROOT: "ROOT",
+  CONTACT: {
+    "Tilbage": "ROOT",
   },
-
-  EXIT: {},
 };
