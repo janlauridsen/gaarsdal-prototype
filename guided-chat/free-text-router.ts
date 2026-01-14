@@ -1,46 +1,39 @@
-import { Chip } from "./chips";
-import { NodeId } from "./node-router";
-import { NODES } from "./nodes";
+import { ResolvedIntent } from "./intents";
+import { NodeConfig } from "./nodes";
 
-type Rule = {
-  keywords: string[];
-  chip: Chip;
+type Params = {
+  text: string;
+  node: NodeConfig;
 };
 
-const RULES: Rule[] = [
-  {
-    chip: "CONTACT",
-    keywords: ["kontakt", "book", "tid", "ring", "mail"],
-  },
-  {
-    chip: "FACTS_HYPNO",
-    keywords: ["hvad er hypnose", "hypnoterapi", "fakta", "hvordan virker"],
-  },
-  {
-    chip: "TRIAGE_RELEVANCE",
-    keywords: ["kan det hjælpe", "er det relevant", "for mig", "virker det"],
-  },
-  {
-    chip: "BACK_TO_ROOT",
-    keywords: ["tilbage", "menu", "start", "forside"],
-  },
-];
+export function resolveFreeTextIntent({
+  text,
+  node,
+}: Params): ResolvedIntent | null {
+  const t = text.toLowerCase();
 
-export function mapFreeTextToChip(
-  text: string,
-  currentNode: NodeId
-): Chip | null {
-  const normalized = text.toLowerCase();
+  /* CHIP MATCH */
+  for (const chip of node.navigation.chips) {
+    if (t.includes(chip.toLowerCase())) {
+      return { kind: "CHIP", chipId: chip };
+    }
+  }
 
-  const allowedChips = NODES[currentNode]?.chips ?? [];
+  /* PARENTESE */
+  for (const n of node.navigation.freeText.allowParentesTo ?? []) {
+    if (t.includes(n.toLowerCase())) {
+      return { kind: "PARENTESE", nodeId: n };
+    }
+  }
 
-  for (const rule of RULES) {
-    if (!allowedChips.includes(rule.chip)) continue;
-
-    for (const kw of rule.keywords) {
-      if (normalized.includes(kw)) {
-        return rule.chip;
-      }
+  /* NEW SESSION */
+  if (node.navigation.freeText.allowNewSession) {
+    if (
+      t.includes("ny samtale") ||
+      t.includes("nyt fokus") ||
+      t.includes("forfra")
+    ) {
+      return { kind: "NEW_SESSION" };
     }
   }
 
