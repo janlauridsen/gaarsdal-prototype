@@ -1,102 +1,56 @@
 /**
- * guided-chat/free-text-router.ts
+ * guided-chat/signals.ts
  *
  * Rolle:
- * - Adapter fra rå fritekst til ResolvedIntent
+ * - Formelle signaler udledt af brugerinput
  * - Ingen handlinger
- * - Ingen state
- * - Ingen viden om engine, guards, stack eller UI
+ * - Ingen guards
+ * - Ingen routing
  *
  * Version:
- * - V10.3
- * - FASE 4 · STEP 3
+ * - V10.4
  */
 
-import { ResolvedIntent } from "./intents";
-import { NodeConfig } from "./nodes";
-
 /* =====================
-   PUBLIC API
+   SIGNAL TYPES
 ===================== */
 
-export function resolveFreeTextIntent(
-  text: string,
-  node: NodeConfig
-): ResolvedIntent | null {
-  const normalized = normalize(text);
-
-  /* =====================
-     1. CHIP MATCH (HØJEST PRIORITET)
-  ===================== */
-
-  for (const chip of node.navigation.chips) {
-    const chipNorm = normalize(chip);
-    if (normalized.includes(chipNorm)) {
-      return {
-        kind: "CHIP",
-        chipId: chip,
-      };
+/**
+ * Signal er et forslag om intention.
+ * Det er ikke en handling.
+ */
+export type Signal =
+  | {
+      type: "NAVIGATE";
+      chip: string;
     }
-  }
-
-  /* =====================
-     2. PARENTESE MATCH
-  ===================== */
-
-  for (const nodeId of node.navigation.freeText.allowParentesTo) {
-    const nodeNorm = normalize(nodeId);
-    if (normalized.includes(nodeNorm)) {
-      return {
-        kind: "PARENTESE",
-        nodeId,
-      };
+  | {
+      type: "PARENTESE";
+      nodeId: string;
     }
-  }
-
-  /* =====================
-     3. NY SAMTALE (SIGNAL)
-  ===================== */
-
-  if (node.navigation.freeText.allowNewSession) {
-    if (matchesNewSessionSignal(normalized)) {
-      return {
-        kind: "NEW_SESSION",
-      };
+  | {
+      type: "NEW_SESSION_SIGNAL";
     }
-  }
+  | {
+      type: "NONE";
+    };
 
-  /* =====================
-     INGEN FORTOLKNING
-  ===================== */
+/* =====================
+   RESULT TYPE
+===================== */
 
-  return null;
-}
+export type SignalResult = {
+  signal: Signal;
+  confidence: "high" | "medium" | "low";
+};
 
 /* =====================
    HELPERS
 ===================== */
 
-function normalize(input: string): string {
-  return input
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, " ");
-}
-
-/**
- * Matcher signal om nyt fokus / ny samtale.
- * Bemærk:
- * - Dette er ikke en handling
- * - Kun et signal der kræver senere validering
- */
-function matchesNewSessionSignal(normalized: string): boolean {
-  const signals = [
-    "ny samtale",
-    "nyt fokus",
-    "forfra",
-    "start forfra",
-    "noget andet",
-  ];
-
-  return signals.some((s) => normalized.includes(s));
+export function noneSignal(): SignalResult {
+  return {
+    signal: { type: "NONE" },
+    confidence: "low",
+  };
 }
