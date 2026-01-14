@@ -64,17 +64,26 @@ export default async function handler(
 
   let resolvedSignal: any = null;
 
+  /* ---------- CHIP (explicit) ---------- */
   if (chip) {
-    // Explicit chip always wins
-    const next =
-      ROUTES[nodeFrom]?.[chip] ?? nodeFrom;
+    if (nodeConfig.chips?.includes(chip)) {
+      const next =
+        ROUTES[nodeFrom]?.[chip] ?? nodeFrom;
 
-    action = { type: "NODE_HOP", to: next };
+      action = { type: "NODE_HOP", to: next };
+    } else {
+      // Ugyldig chip i denne node
+      action = { type: "FALLBACK" };
+    }
+
+  /* ---------- FREE TEXT ---------- */
   } else if (text) {
     const signalResult = resolveFreeTextSignal(text, nodeConfig);
     resolvedSignal = signalResult;
 
     action = decideActionFromSignal(signalResult, nodeConfig);
+
+  /* ---------- NOTHING ---------- */
   } else {
     action = { type: "FALLBACK" };
   }
@@ -109,7 +118,6 @@ export default async function handler(
   }
 
   const nextNodeConfig = NODES[nodeTo];
-
   if (!nextNodeConfig) {
     return res.status(500).json({ error: "Invalid next node" });
   }
