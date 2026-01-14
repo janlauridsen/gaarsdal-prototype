@@ -216,4 +216,5 @@ body {
   border: 1px solid rgba(0, 0, 0, 0.08);
   padding: 10px 12px;
   line-height: 1.4;
+  min-height: 44px;
 }
