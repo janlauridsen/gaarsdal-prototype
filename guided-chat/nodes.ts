@@ -1,12 +1,41 @@
+/**
+ * guided-chat/nodes.ts
+ *
+ * Rolle:
+ * - Ren node-konfiguration
+ * - Ingen logik
+ * - Ingen state
+ * - Ingen triage-engine
+ *
+ * Version:
+ * - V10.3
+ * - FASE 4 · STEP 1
+ */
+
 export type NodeKind = "MENU" | "STATIC" | "DIALOG";
 
 export type FreeTextConfig = {
-  allowParentesTo?: string[];
+  /**
+   * Node-ids der må åbnes som parentes (midlertidigt sidespor)
+   */
+  allowParentesTo: string[];
+
+  /**
+   * Om denne node må foreslå opstart af ny samtale (nyt stack-entry)
+   * Bemærk: Dette er kun tilladelse til at foreslå, aldrig auto-start
+   */
   allowNewSession: boolean;
 };
 
 export type NodeNavigation = {
+  /**
+   * Chips der vises i UI og kan navigeres til
+   */
   chips: string[];
+
+  /**
+   * Fritekst-kontrakt for noden
+   */
   freeText: FreeTextConfig;
 };
 
@@ -21,14 +50,12 @@ export type NodeConfig = {
 
 /**
  * NODE DEFINITIONS
- * Version: V10.3 / FASE 4
  *
  * Regler:
  * - Alle navigationsmuligheder er eksplicitte
- * - Fritekst må kun føre til eksisterende chips eller konfigurerede spring
+ * - Fritekst må kun føre til eksisterende chips eller tilladte spring
  * - Ingen implicitte noder
  */
-
 export const NODES: Record<string, NodeConfig> = {
   ROOT: {
     id: "ROOT",
