@@ -7,6 +7,10 @@ import {
   ForwardIcon,
   TrashIcon,
   ArrowsPointingOutIcon,
+  HomeIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
 /* =====================
@@ -23,12 +27,6 @@ type Conversation = {
   id: string;
   messages: Message[];
 };
-
-/* =====================
-   CONFIG
-===================== */
-
-const MAX_SESSIONS = 5;
 
 /* =====================
    HELPERS
@@ -61,7 +59,7 @@ export default function Chatbot() {
   }, [current.messages, loading]);
 
   /* =====================
-     UI INIT → ROOT
+     INIT → ROOT
   ===================== */
 
   useEffect(() => {
@@ -78,19 +76,19 @@ export default function Chatbot() {
     })
       .then((res) => res.json())
       .then((data) => {
-        const assistantMessage: Message = {
-          role: "assistant",
-          content:
-            data.message ??
-            "Velkommen. Du kan vælge en mulighed herunder eller skrive frit.",
-          chips: data.chips ?? [],
-        };
-
         setStack((prev) => {
           const next = [...prev];
           next[index] = {
             ...next[index],
-            messages: [assistantMessage],
+            messages: [
+              {
+                role: "assistant",
+                content:
+                  data.message ??
+                  "Velkommen. Du kan vælge en mulighed herunder eller skrive frit.",
+                chips: data.chips ?? [],
+              },
+            ],
           };
           return next;
         });
@@ -106,19 +104,10 @@ export default function Chatbot() {
     if (loading) return;
     if (!text && !chip) return;
 
-    /* 🔧 FIX: explicit type */
-    const userMessage: Message | null =
-      text && !chip
-        ? { role: "user", content: text }
-        : null;
-
-    if (userMessage) {
+    if (text && !chip) {
       setStack((prev) => {
         const next = [...prev];
-        next[index] = {
-          ...next[index],
-          messages: [...next[index].messages, userMessage],
-        };
+        next[index].messages.push({ role: "user", content: text });
         return next;
       });
     }
@@ -139,18 +128,13 @@ export default function Chatbot() {
 
       const data = await res.json();
 
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: data.message ?? "",
-        chips: data.chips ?? [],
-      };
-
       setStack((prev) => {
         const next = [...prev];
-        next[index] = {
-          ...next[index],
-          messages: [...next[index].messages, assistantMessage],
-        };
+        next[index].messages.push({
+          role: "assistant",
+          content: data.message ?? "",
+          chips: data.chips ?? [],
+        });
         return next;
       });
     } finally {
@@ -167,7 +151,7 @@ export default function Chatbot() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full gaarsdal-launcher flex items-center justify-center"
+          className="fixed bottom-6 right-6 w-14 h-14 gaarsdal-launcher flex items-center justify-center"
         >
           <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
         </button>
@@ -176,7 +160,7 @@ export default function Chatbot() {
       {open && (
         <>
           <div
-            className="fixed inset-0 bg-black/30 z-40"
+            className="gaarsdal-overlay"
             onClick={() => {
               setOpen(false);
               setExpanded(false);
@@ -184,65 +168,66 @@ export default function Chatbot() {
           />
 
           <div
-            className={`fixed z-50 gaarsdal-chatbot flex flex-col ${
+            className={`gaarsdal-chatbot ${
               expanded
                 ? "inset-4 md:inset-10"
                 : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
-            }`}
+            } fixed flex flex-col`}
           >
             {/* HEADER */}
-            <header className="flex justify-between items-center px-4 py-3">
-              <span className="font-medium">Gaarsdal</span>
-              <div className="flex gap-2">
-                <button onClick={() => setExpanded((v) => !v)}>
+            <header className="flex justify-between items-center">
+              <span>Gaarsdal</span>
+              <div className="flex gap-1">
+                <button
+                  className="gaarsdal-icon-btn"
+                  onClick={() => setExpanded((v) => !v)}
+                >
                   <ArrowsPointingOutIcon className="w-5 h-5" />
                 </button>
-                <button onClick={() => setOpen(false)}>
+                <button
+                  className="gaarsdal-icon-btn"
+                  onClick={() => setOpen(false)}
+                >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
             </header>
 
             {/* MESSAGES */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="messages">
               {current.messages.map((m, i) => (
-                <div key={i} className="space-y-2">
+                <div key={i}>
                   <div
-                    className={`flex ${
-                      m.role === "user" ? "justify-end" : "justify-start"
-                    }`}
+                    className={`message ${m.role === "user" ? "user" : "bot"}`}
                   >
-                    <div
-                      className={`message ${
-                        m.role === "user" ? "user" : "bot"
-                      } px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
-                    >
-                      {m.content}
-                    </div>
+                    {m.content}
                   </div>
-
-                  {m.role === "assistant" && m.chips && m.chips.length > 0 && (
-                    <div className="flex gap-2 flex-wrap pl-2">
-                      {m.chips.map((c, ci) => (
-                        <button
-                          key={ci}
-                          onClick={() => send(undefined, c)}
-                          className="text-xs px-3 py-1 rounded-full border bg-white"
-                        >
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
               ))}
-
               {loading && <div className="text-sm opacity-60">Skriver…</div>}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* FOOTER */}
-            <footer className="p-3 border-t">
+            {/* CHIPS */}
+            {current.messages.at(-1)?.chips && (
+              <div className="px-4 pb-2 flex gap-2 flex-wrap">
+                {current.messages
+                  .at(-1)!
+                  .chips!.slice(0, 4)
+                  .map((c, i) => (
+                    <button
+                      key={i}
+                      onClick={() => send(undefined, c)}
+                      className="text-xs px-3 py-1 rounded-full border bg-white"
+                    >
+                      {c}
+                    </button>
+                  ))}
+              </div>
+            )}
+
+            {/* INPUT */}
+            <footer>
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -253,35 +238,66 @@ export default function Chatbot() {
                   }
                 }}
                 rows={2}
-                className="w-full border rounded-md px-3 py-2 text-sm resize-none"
                 placeholder="Skriv frit her…"
               />
 
-              <div className="mt-3 flex gap-3">
-                <button onClick={() => setStack([...stack, createConversation()])}>
-                  <PlusIcon className="w-5 h-5" />
-                </button>
-                <button onClick={() => setIndex((i) => Math.max(0, i - 1))}>
-                  <BackwardIcon className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() =>
-                    setIndex((i) => Math.min(stack.length - 1, i + 1))
-                  }
-                >
-                  <ForwardIcon className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() =>
-                    setStack((prev) =>
-                      prev.length === 1
-                        ? [createConversation()]
-                        : prev.filter((_, i) => i !== index)
-                    )
-                  }
-                >
-                  <TrashIcon className="w-5 h-5" />
-                </button>
+              {/* BOTTOM BAR */}
+              <div className="mt-2 flex justify-between items-center">
+                {/* LAG A – TRYGHED */}
+                <div className="flex gap-1">
+                  <button className="gaarsdal-icon-btn">
+                    <HomeIcon className="w-5 h-5" />
+                  </button>
+                  <button className="gaarsdal-icon-btn">
+                    <EnvelopeIcon className="w-5 h-5" />
+                  </button>
+                  <button className="gaarsdal-icon-btn">
+                    <PhoneIcon className="w-5 h-5" />
+                  </button>
+                  <button className="gaarsdal-icon-btn">
+                    <ExclamationTriangleIcon className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* LAG B – STACK */}
+                <div className="flex gap-1">
+                  <button
+                    className="gaarsdal-icon-btn"
+                    onClick={() =>
+                      setStack((s) =>
+                        s.length < 5 ? [...s, createConversation()] : s
+                      )
+                    }
+                  >
+                    <PlusIcon className="w-5 h-5" />
+                  </button>
+                  <button
+                    className="gaarsdal-icon-btn"
+                    onClick={() => setIndex((i) => Math.max(0, i - 1))}
+                  >
+                    <BackwardIcon className="w-5 h-5" />
+                  </button>
+                  <button
+                    className="gaarsdal-icon-btn"
+                    onClick={() =>
+                      setIndex((i) => Math.min(stack.length - 1, i + 1))
+                    }
+                  >
+                    <ForwardIcon className="w-5 h-5" />
+                  </button>
+                  <button
+                    className="gaarsdal-icon-btn"
+                    onClick={() =>
+                      setStack((s) =>
+                        s.length === 1
+                          ? [createConversation()]
+                          : s.filter((_, i) => i !== index)
+                      )
+                    }
+                  >
+                    <TrashIcon className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </footer>
           </div>
