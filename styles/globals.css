@@ -197,3 +197,16 @@ body {
   border-radius: 9999px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
 }
+
+/* =========================
+   Header / Footer rounding
+   ========================= */
+.gaarsdal-chatbot-header {
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.gaarsdal-chatbot-footer {
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
