@@ -176,22 +176,26 @@ export default function Chatbot() {
           >
             {/* HEADER */}
             <header className="gaarsdal-chatbot-header flex justify-between items-center">
-              <span>Gaarsdal</span>
-              <div className="flex gap-1">
-                <button
-                  className="gaarsdal-icon-btn"
-                  onClick={() => setExpanded((v) => !v)}
-                >
-                  <ArrowsPointingOutIcon className="w-5 h-5" />
-                </button>
-                <button
-                  className="gaarsdal-icon-btn"
-                  onClick={() => setOpen(false)}
-                >
-                  <XMarkIcon className="w-5 h-5" />
-                </button>
-              </div>
-            </header>
+  <div className="flex items-center gap-2">
+    <ChatBubbleOvalLeftEllipsisIcon className="w-5 h-5 opacity-60" />
+    <span>Gaarsdal</span>
+  </div>
+
+  <div className="flex gap-1">
+    <button
+      className="gaarsdal-icon-btn"
+      onClick={() => setExpanded((v) => !v)}
+    >
+      <ArrowsPointingOutIcon className="w-5 h-5" />
+    </button>
+    <button
+      className="gaarsdal-icon-btn"
+      onClick={() => setOpen(false)}
+    >
+      <XMarkIcon className="w-5 h-5" />
+    </button>
+  </div>
+</header>
 
             {/* MESSAGES */}
             <div className="messages">
