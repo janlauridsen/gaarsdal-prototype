@@ -160,6 +160,15 @@ export default function Chatbot() {
   }
 
   /* =====================
+     STATE HELPERS
+  ===================== */
+
+  const canAdd = stack.length < MAX_SESSIONS;
+  const canPrev = index > 0;
+  const canNext = index < stack.length - 1;
+  const canDelete = stack.length > 1;
+
+  /* =====================
      RENDER
   ===================== */
 
@@ -273,7 +282,19 @@ export default function Chatbot() {
                 placeholder="Skriv frit her…"
               />
 
-              {/* Primary actions */}
+              {/* STACK DOTS */}
+              <div className="gaarsdal-stack-dots">
+                {stack.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`gaarsdal-stack-dot ${
+                      i === index ? "active" : ""
+                    }`}
+                  />
+                ))}
+              </div>
+
+              {/* ICON ROW */}
               <div className="flex justify-between">
                 <div className="flex gap-3">
                   <button title="Tilbage til start">
@@ -290,18 +311,56 @@ export default function Chatbot() {
                   </button>
                 </div>
 
-                {/* Stack controls */}
                 <div className="flex gap-3">
-                  <button title="Ny samtale">
+                  <button
+                    title="Ny samtale"
+                    disabled={!canAdd}
+                    className={`gaarsdal-icon-btn ${
+                      !canAdd ? "opacity-30 cursor-not-allowed" : ""
+                    }`}
+                    onClick={() =>
+                      canAdd &&
+                      setStack((s) => [...s, createConversation()])
+                    }
+                  >
                     <PlusIcon className="w-5 h-5" />
                   </button>
-                  <button title="Forrige samtale">
+
+                  <button
+                    title="Forrige samtale"
+                    disabled={!canPrev}
+                    className={`gaarsdal-icon-btn ${
+                      !canPrev ? "opacity-30 cursor-not-allowed" : ""
+                    }`}
+                    onClick={() => canPrev && setIndex((i) => i - 1)}
+                  >
                     <BackwardIcon className="w-5 h-5" />
                   </button>
-                  <button title="Næste samtale">
+
+                  <button
+                    title="Næste samtale"
+                    disabled={!canNext}
+                    className={`gaarsdal-icon-btn ${
+                      !canNext ? "opacity-30 cursor-not-allowed" : ""
+                    }`}
+                    onClick={() => canNext && setIndex((i) => i + 1)}
+                  >
                     <ForwardIcon className="w-5 h-5" />
                   </button>
-                  <button title="Slet samtale">
+
+                  <button
+                    title="Slet samtale"
+                    disabled={!canDelete}
+                    className={`gaarsdal-icon-btn ${
+                      !canDelete ? "opacity-30 cursor-not-allowed" : ""
+                    }`}
+                    onClick={() =>
+                      canDelete &&
+                      setStack((prev) =>
+                        prev.filter((_, i) => i !== index)
+                      )
+                    }
+                  >
                     <TrashIcon className="w-5 h-5" />
                   </button>
                 </div>
