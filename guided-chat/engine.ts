@@ -10,11 +10,20 @@
  * - V10.4
  */
 
-import { Action } from "./intents";
-import { runGuards } from "./guards";
+import { NodeId, ROUTES } from "./node-router";
 import { NodeConfig } from "./nodes";
-import { ROUTES } from "./node-router";
 import { SignalResult } from "./signals";
+import { runGuards } from "./guards";
+
+/* =====================
+   ACTION TYPES
+===================== */
+
+export type Action =
+  | { type: "NODE_HOP"; to: NodeId }
+  | { type: "OPEN_PARENTESE"; to: NodeId }
+  | { type: "REQUEST_NEW_SESSION_CONFIRMATION" }
+  | { type: "FALLBACK" };
 
 /* =====================
    PUBLIC API
@@ -31,7 +40,7 @@ export function decideActionFromSignal(
   }
 
   /* =====================
-     MAP SIGNAL → INTENT-LIKE SHAPE
+     INTENT SHAPE
   ===================== */
 
   let intent: any = null;
@@ -54,8 +63,8 @@ export function decideActionFromSignal(
      GUARDS
   ===================== */
 
-  const guardResult = runGuards(intent, node);
-  if (guardResult.status !== "ALLOW") {
+  const guard = runGuards(intent, node);
+  if (guard.status !== "ALLOW") {
     return { type: "FALLBACK" };
   }
 
@@ -65,14 +74,13 @@ export function decideActionFromSignal(
 
   switch (signal.type) {
     case "NAVIGATE": {
-      const next =
+      const next: NodeId =
         ROUTES[node.id]?.[signal.chip] ?? node.id;
-
       return { type: "NODE_HOP", to: next };
     }
 
     case "PARENTESE":
-      return { type: "OPEN_PARENTESE", to: signal.nodeId };
+      return { type: "OPEN_PARENTESE", to: signal.nodeId as NodeId };
 
     case "NEW_SESSION_SIGNAL":
       return { type: "REQUEST_NEW_SESSION_CONFIRMATION" };
