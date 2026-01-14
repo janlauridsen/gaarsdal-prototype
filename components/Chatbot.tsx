@@ -7,10 +7,6 @@ import {
   ForwardIcon,
   TrashIcon,
   ArrowsPointingOutIcon,
-  HomeIcon,
-  EnvelopeIcon,
-  PhoneIcon,
-  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
 /* =====================
@@ -58,6 +54,10 @@ export default function Chatbot() {
   const [loading, setLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  /** 🔒 KILDE TIL SANDHED FOR NODE */
+  const currentNodeRef = useRef<string>("ROOT");
+
   const current = stack[index];
 
   useEffect(() => {
@@ -65,12 +65,14 @@ export default function Chatbot() {
   }, [current.messages, loading]);
 
   /* =====================
-     UI INIT → ROOT
+     INIT → ROOT
   ===================== */
 
   useEffect(() => {
     if (!open) return;
     if (current.messages.length > 0) return;
+
+    currentNodeRef.current = "ROOT";
 
     fetch("/api/chat", {
       method: "POST",
@@ -82,6 +84,8 @@ export default function Chatbot() {
     })
       .then((res) => res.json())
       .then((data) => {
+        currentNodeRef.current = data.node;
+
         const assistantMessage: Message = {
           role: "assistant",
           content:
@@ -103,22 +107,23 @@ export default function Chatbot() {
   }, [open]);
 
   /* =====================
-     SEND
+     SEND (KONTRAKTFAST)
   ===================== */
 
-  async function send(text?: string, chip?: string) {
+  async function send(params: { text?: string; chip?: string }) {
     if (loading) return;
-    if (!text && !chip) return;
+    if (!params.text && !params.chip) return;
 
-    const userMessage =
-      text && !chip ? { role: "user" as const, content: text } : null;
-
-    if (userMessage) {
+    /* USER MESSAGE (kun ved tekst) */
+    if (params.text) {
       setStack((prev) => {
         const next = [...prev];
         next[index] = {
           ...next[index],
-          messages: [...next[index].messages, userMessage],
+          messages: [
+            ...next[index].messages,
+            { role: "user", content: params.text },
+          ],
         };
         return next;
       });
@@ -133,12 +138,16 @@ export default function Chatbot() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId: current.id,
-          text,
-          chip,
+          currentNode: currentNodeRef.current,
+          text: params.text ?? null,
+          chip: params.chip ?? null,
         }),
       });
 
       const data = await res.json();
+
+      /** 🔒 opdater node */
+      currentNodeRef.current = data.node;
 
       const assistantMessage: Message = {
         role: "assistant",
@@ -160,15 +169,6 @@ export default function Chatbot() {
   }
 
   /* =====================
-     STATE HELPERS
-  ===================== */
-
-  const canAdd = stack.length < MAX_SESSIONS;
-  const canPrev = index > 0;
-  const canNext = index < stack.length - 1;
-  const canDelete = stack.length > 1;
-
-  /* =====================
      RENDER
   ===================== */
 
@@ -176,7 +176,6 @@ export default function Chatbot() {
     <>
       {!open && (
         <button
-          title="Åbn chat"
           onClick={() => setOpen(true)}
           className="fixed bottom-6 right-6 w-14 h-14 rounded-full gaarsdal-launcher flex items-center justify-center"
         >
@@ -200,27 +199,16 @@ export default function Chatbot() {
                 ? "inset-4 md:inset-10"
                 : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
             }`}
+            onClick={(e) => e.stopPropagation()}
           >
             {/* HEADER */}
             <header className="flex justify-between items-center px-4 py-3">
-              <div className="flex items-center gap-2">
-                <img
-                  src="/jan.gif"
-                  alt="Hjælp"
-                  title="Hjælp og dialog"
-                  className="w-6 h-6"
-                />
-                <span className="font-medium">Gaarsdal</span>
-              </div>
-
+              <span className="font-medium">Gaarsdal</span>
               <div className="flex gap-2">
-                <button
-                  title={expanded ? "Sammentræk chat" : "Udvid chat"}
-                  onClick={() => setExpanded((v) => !v)}
-                >
+                <button onClick={() => setExpanded((v) => !v)}>
                   <ArrowsPointingOutIcon className="w-5 h-5" />
                 </button>
-                <button title="Luk chat" onClick={() => setOpen(false)}>
+                <button onClick={() => setOpen(false)}>
                   <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
@@ -244,37 +232,39 @@ export default function Chatbot() {
                     </div>
                   </div>
 
-                  {m.role === "assistant" && m.chips && m.chips.length > 0 && (
-                    <div className="flex gap-2 flex-wrap pl-2">
-                      {m.chips.map((c, ci) => (
-                        <button
-                          key={ci}
-                          title={`Vælg: ${c}`}
-                          onClick={() => send(undefined, c)}
-                          className="text-xs px-3 py-1 rounded-full border bg-white"
-                        >
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  {m.role === "assistant" &&
+                    m.chips &&
+                    m.chips.length > 0 && (
+                      <div className="flex gap-2 flex-wrap pl-2">
+                        {m.chips.map((c, ci) => (
+                          <button
+                            key={ci}
+                            onClick={() => send({ chip: c })}
+                            className="text-xs px-3 py-1 rounded-full border bg-white"
+                          >
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                 </div>
               ))}
 
-              {loading && <div className="text-sm opacity-60">Skriver…</div>}
+              {loading && (
+                <div className="text-sm opacity-60">Skriver…</div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
             {/* FOOTER */}
-            <footer className="p-3 border-t space-y-2">
+            <footer className="p-3 border-t">
               <textarea
-                title="Skriv frit"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
-                    send(input);
+                    send({ text: input });
                   }
                 }}
                 rows={2}
@@ -282,88 +272,54 @@ export default function Chatbot() {
                 placeholder="Skriv frit her…"
               />
 
-              {/* STACK DOTS */}
-              <div className="gaarsdal-stack-dots">
-                {stack.map((_, i) => (
-                  <span
-                    key={i}
-                    className={`gaarsdal-stack-dot ${
-                      i === index ? "active" : ""
-                    }`}
-                  />
-                ))}
-              </div>
+              <div className="mt-3 flex gap-3">
+                <button
+                  disabled={stack.length >= MAX_SESSIONS}
+                  className="gaarsdal-icon-btn disabled:opacity-30"
+                  onClick={() =>
+                    setStack((prev) =>
+                      prev.length < MAX_SESSIONS
+                        ? [...prev, createConversation()]
+                        : prev
+                    )
+                  }
+                >
+                  <PlusIcon className="w-5 h-5" />
+                </button>
 
-              {/* ICON ROW */}
-              <div className="flex justify-between">
-                <div className="flex gap-3">
-                  <button title="Tilbage til start">
-                    <HomeIcon className="w-5 h-5" />
-                  </button>
-                  <button title="Send e-mail">
-                    <EnvelopeIcon className="w-5 h-5" />
-                  </button>
-                  <button title="Ring op">
-                    <PhoneIcon className="w-5 h-5" />
-                  </button>
-                  <button title="Akut hjælp">
-                    <ExclamationTriangleIcon className="w-5 h-5" />
-                  </button>
-                </div>
+                <button
+                  disabled={index === 0}
+                  className="gaarsdal-icon-btn disabled:opacity-30"
+                  onClick={() => setIndex((i) => Math.max(0, i - 1))}
+                >
+                  <BackwardIcon className="w-5 h-5" />
+                </button>
 
-                <div className="flex gap-3">
-                  <button
-                    title="Ny samtale"
-                    disabled={!canAdd}
-                    className={`gaarsdal-icon-btn ${
-                      !canAdd ? "opacity-30 cursor-not-allowed" : ""
-                    }`}
-                    onClick={() =>
-                      canAdd &&
-                      setStack((s) => [...s, createConversation()])
-                    }
-                  >
-                    <PlusIcon className="w-5 h-5" />
-                  </button>
+                <button
+                  disabled={index === stack.length - 1}
+                  className="gaarsdal-icon-btn disabled:opacity-30"
+                  onClick={() =>
+                    setIndex((i) =>
+                      Math.min(stack.length - 1, i + 1)
+                    )
+                  }
+                >
+                  <ForwardIcon className="w-5 h-5" />
+                </button>
 
-                  <button
-                    title="Forrige samtale"
-                    disabled={!canPrev}
-                    className={`gaarsdal-icon-btn ${
-                      !canPrev ? "opacity-30 cursor-not-allowed" : ""
-                    }`}
-                    onClick={() => canPrev && setIndex((i) => i - 1)}
-                  >
-                    <BackwardIcon className="w-5 h-5" />
-                  </button>
-
-                  <button
-                    title="Næste samtale"
-                    disabled={!canNext}
-                    className={`gaarsdal-icon-btn ${
-                      !canNext ? "opacity-30 cursor-not-allowed" : ""
-                    }`}
-                    onClick={() => canNext && setIndex((i) => i + 1)}
-                  >
-                    <ForwardIcon className="w-5 h-5" />
-                  </button>
-
-                  <button
-                    title="Slet samtale"
-                    disabled={!canDelete}
-                    className={`gaarsdal-icon-btn ${
-                      !canDelete ? "opacity-30 cursor-not-allowed" : ""
-                    }`}
-                    onClick={() =>
-                      canDelete &&
-                      setStack((prev) =>
-                        prev.filter((_, i) => i !== index)
-                      )
-                    }
-                  >
-                    <TrashIcon className="w-5 h-5" />
-                  </button>
-                </div>
+                <button
+                  disabled={stack.length === 1}
+                  className="gaarsdal-icon-btn disabled:opacity-30"
+                  onClick={() =>
+                    setStack((prev) =>
+                      prev.length === 1
+                        ? prev
+                        : prev.filter((_, i) => i !== index)
+                    )
+                  }
+                >
+                  <TrashIcon className="w-5 h-5" />
+                </button>
               </div>
             </footer>
           </div>
