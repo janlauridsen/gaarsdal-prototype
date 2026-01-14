@@ -182,6 +182,7 @@ export default function Chatbot() {
 
       {open && (
         <>
+          {/* OVERLAY – klik udenfor lukker */}
           <div
             className="gaarsdal-overlay"
             onClick={() => {
@@ -190,21 +191,19 @@ export default function Chatbot() {
             }}
           />
 
+          {/* CHATBOT – stopper klik-bubbling */}
           <div
             className={`gaarsdal-chatbot fixed flex flex-col ${
               expanded
                 ? "inset-4 md:inset-10"
                 : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
             }`}
+            onClick={(e) => e.stopPropagation()}
           >
             {/* HEADER */}
             <header className="gaarsdal-chatbot-header flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <img
-                  src="/jan.gif"
-                  alt="Chat"
-                  className="w-6 h-6"
-                />
+                <img src="/jan.gif" alt="Chat" className="w-6 h-6" />
                 <span>Gaarsdal</span>
               </div>
 
