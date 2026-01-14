@@ -70,7 +70,7 @@ export default function Chatbot() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [current?.messages, loading]);
+  }, [current.messages, loading]);
 
   /* =====================
      INIT → ROOT
@@ -166,7 +166,7 @@ export default function Chatbot() {
   }
 
   /* =====================
-     DELETE SESSION (FIX)
+     DELETE SESSION
   ===================== */
 
   function deleteCurrentSession() {
@@ -179,6 +179,14 @@ export default function Chatbot() {
       return next;
     });
   }
+
+  /* =====================
+     DERIVED: LAST ASSISTANT CHIPS
+  ===================== */
+
+  const lastAssistant = [...current.messages]
+    .reverse()
+    .find((m) => m.role === "assistant" && m.chips && m.chips.length > 0);
 
   /* =====================
      RENDER
@@ -246,6 +254,21 @@ export default function Chatbot() {
               {loading && <div className="text-sm opacity-60">Skriver…</div>}
               <div ref={messagesEndRef} />
             </div>
+
+            {/* CHIPS (GENOPRETTET) */}
+            {lastAssistant && (
+              <div className="px-4 pb-2 flex gap-2 flex-wrap">
+                {lastAssistant.chips!.map((c, i) => (
+                  <button
+                    key={i}
+                    onClick={() => send(undefined, c)}
+                    className="text-xs px-3 py-1 rounded-full border bg-white"
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* FOOTER */}
             <footer className="gaarsdal-chatbot-footer">
