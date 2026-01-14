@@ -1,167 +1,330 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import { useEffect, useRef, useState } from "react";
+import {
+  ChatBubbleOvalLeftEllipsisIcon,
+  XMarkIcon,
+  PlusIcon,
+  BackwardIcon,
+  ForwardIcon,
+  TrashIcon,
+  ArrowsPointingOutIcon,
+} from "@heroicons/react/24/outline";
 
-import { NODES, NodeConfig } from "../../guided-chat/nodes";
-import { NodeId, ROUTES } from "../../guided-chat/node-router";
+/* =====================
+   TYPES
+===================== */
 
-import { resolveFreeTextSignal } from "../../guided-chat/free-text-router";
-import { decideActionFromSignal } from "../../guided-chat/engine";
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+  chips?: string[];
+};
 
-import { writeTurnLog } from "../../guided-chat/logging/logWriter";
-import { TurnLog } from "../../guided-chat/logging/log.types";
+type Conversation = {
+  id: string;
+  messages: Message[];
+};
 
 /* =====================
    CONFIG
 ===================== */
 
-const DEFAULT_NODE: NodeId = "ROOT";
-
-const FALLBACK_MESSAGE =
-  "Du kan vælge en mulighed herunder eller skrive frit.";
+const MAX_SESSIONS = 5;
 
 /* =====================
-   API HANDLER
+   HELPERS
 ===================== */
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).end();
-  }
+function createConversation(): Conversation {
+  return {
+    id: crypto.randomUUID(),
+    messages: [],
+  };
+}
 
-  const startedAt = Date.now();
+/* =====================
+   COMPONENT
+===================== */
 
-  const {
-    sessionId,
-    currentNode,
-    text,
-    chip,
-  }: {
-    sessionId?: string;
-    currentNode?: NodeId;
-    text?: string;
-    chip?: string;
-  } = req.body ?? {};
+export default function Chatbot() {
+  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [stack, setStack] = useState<Conversation[]>([createConversation()]);
+  const [index, setIndex] = useState(0);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  if (!sessionId) {
-    return res.status(400).json({ error: "Missing sessionId" });
-  }
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  const nodeFrom: NodeId = currentNode ?? DEFAULT_NODE;
-  const nodeConfig: NodeConfig | undefined = NODES[nodeFrom];
+  /** 🔒 KILDE TIL SANDHED FOR NODE */
+  const currentNodeRef = useRef<string>("ROOT");
 
-  if (!nodeConfig) {
-    return res.status(500).json({ error: "Invalid node" });
-  }
+  const current = stack[index];
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [current.messages, loading]);
 
   /* =====================
-     ACTION RESOLUTION
+     INIT → ROOT
   ===================== */
 
-  let action:
-    | { type: "NODE_HOP"; to: NodeId }
-    | { type: "OPEN_PARENTESE"; to: NodeId }
-    | { type: "REQUEST_NEW_SESSION_CONFIRMATION" }
-    | { type: "FALLBACK" };
+  useEffect(() => {
+    if (!open) return;
+    if (current.messages.length > 0) return;
 
-  let resolvedSignal: any = null;
+    currentNodeRef.current = "ROOT";
 
-  /* ---------- CHIP (explicit) ---------- */
-  if (chip) {
-    if (nodeConfig.chips?.includes(chip)) {
-      const next =
-        ROUTES[nodeFrom]?.[chip] ?? nodeFrom;
+    fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: current.id,
+        currentNode: "ROOT",
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        currentNodeRef.current = data.node;
 
-      action = { type: "NODE_HOP", to: next };
-    } else {
-      action = { type: "FALLBACK" };
+        const assistantMessage: Message = {
+          role: "assistant",
+          content:
+            data.message ??
+            "Velkommen. Du kan vælge en mulighed herunder eller skrive frit.",
+          chips: data.chips ?? [],
+        };
+
+        setStack((prev) => {
+          const next = [...prev];
+          next[index] = {
+            ...next[index],
+            messages: [assistantMessage],
+          };
+          return next;
+        });
+      })
+      .catch(() => {});
+  }, [open]);
+
+  /* =====================
+     SEND (KONTRAKTFAST)
+  ===================== */
+
+  async function send(params: { text?: string; chip?: string }) {
+    if (loading) return;
+    if (!params.text && !params.chip) return;
+
+    /* USER MESSAGE (kun ved tekst) */
+    if (params.text) {
+      setStack((prev) => {
+        const next = [...prev];
+        next[index] = {
+          ...next[index],
+          messages: [
+            ...next[index].messages,
+            { role: "user", content: params.text },
+          ],
+        };
+        return next;
+      });
     }
 
-  /* ---------- FREE TEXT ---------- */
-  } else if (text) {
-    const signalResult = resolveFreeTextSignal(text, nodeConfig);
-    resolvedSignal = signalResult;
+    setInput("");
+    setLoading(true);
 
-    action = decideActionFromSignal(signalResult, nodeConfig);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: current.id,
+          currentNode: currentNodeRef.current,
+          text: params.text ?? null,
+          chip: params.chip ?? null,
+        }),
+      });
 
-  /* ---------- NOTHING ---------- */
-  } else {
-    action = { type: "FALLBACK" };
+      const data = await res.json();
+
+      /** 🔒 opdater node */
+      currentNodeRef.current = data.node;
+
+      const assistantMessage: Message = {
+        role: "assistant",
+        content: data.message ?? "",
+        chips: data.chips ?? [],
+      };
+
+      setStack((prev) => {
+        const next = [...prev];
+        next[index] = {
+          ...next[index],
+          messages: [...next[index].messages, assistantMessage],
+        };
+        return next;
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   /* =====================
-     NODE TRANSITION
+     RENDER
   ===================== */
 
-  let nodeTo: NodeId = nodeFrom;
-  let responseMessage: string | null = null;
-  let responseChips: string[] | null = null;
+  return (
+    <>
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full gaarsdal-launcher flex items-center justify-center"
+        >
+          <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
+        </button>
+      )}
 
-  switch (action.type) {
-    case "NODE_HOP":
-      nodeTo = action.to;
-      break;
+      {open && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/30 z-40"
+            onClick={() => {
+              setOpen(false);
+              setExpanded(false);
+            }}
+          />
 
-    case "OPEN_PARENTESE":
-      nodeTo = action.to;
-      responseChips = ["Tilbage til samtalen"];
-      break;
+          <div
+            className={`fixed z-50 gaarsdal-chatbot flex flex-col ${
+              expanded
+                ? "inset-4 md:inset-10"
+                : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* HEADER */}
+            <header className="flex justify-between items-center px-4 py-3">
+              <span className="font-medium">Gaarsdal</span>
+              <div className="flex gap-2">
+                <button onClick={() => setExpanded((v) => !v)}>
+                  <ArrowsPointingOutIcon className="w-5 h-5" />
+                </button>
+                <button onClick={() => setOpen(false)}>
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+            </header>
 
-    case "REQUEST_NEW_SESSION_CONFIRMATION":
-      responseMessage =
-        "Det lyder som et nyt emne.\nVil du starte en ny samtale om dette, eller fortsætte her?";
-      responseChips = ["Start ny samtale", "Fortsæt her"];
-      break;
+            {/* MESSAGES */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {current.messages.map((m, i) => (
+                <div key={i} className="space-y-2">
+                  <div
+                    className={`flex ${
+                      m.role === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`message ${
+                        m.role === "user" ? "user" : "bot"
+                      } px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
+                    >
+                      {m.content}
+                    </div>
+                  </div>
 
-    case "FALLBACK":
-    default:
-      break;
-  }
+                  {m.role === "assistant" &&
+                    m.chips &&
+                    m.chips.length > 0 && (
+                      <div className="flex gap-2 flex-wrap pl-2">
+                        {m.chips.map((c, ci) => (
+                          <button
+                            key={ci}
+                            onClick={() => send({ chip: c })}
+                            className="text-xs px-3 py-1 rounded-full border bg-white"
+                          >
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                </div>
+              ))}
 
-  const nextNodeConfig = NODES[nodeTo];
-  if (!nextNodeConfig) {
-    return res.status(500).json({ error: "Invalid next node" });
-  }
+              {loading && (
+                <div className="text-sm opacity-60">Skriver…</div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
 
-  /* =====================
-     RESPONSE PAYLOAD
-  ===================== */
+            {/* FOOTER */}
+            <footer className="p-3 border-t">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    send({ text: input });
+                  }
+                }}
+                rows={2}
+                className="w-full border rounded-md px-3 py-2 text-sm resize-none"
+                placeholder="Skriv frit her…"
+              />
 
-  const payload = {
-    node: nodeTo,
-    kind: nextNodeConfig.kind,
-    message:
-      responseMessage ??
-      nextNodeConfig.message ??
-      FALLBACK_MESSAGE,
-    chips:
-      responseChips ??
-      nextNodeConfig.chips ??
-      [],
-  };
+              <div className="mt-3 flex gap-3">
+                <button
+                  disabled={stack.length >= MAX_SESSIONS}
+                  className="gaarsdal-icon-btn disabled:opacity-30"
+                  onClick={() =>
+                    setStack((prev) =>
+                      prev.length < MAX_SESSIONS
+                        ? [...prev, createConversation()]
+                        : prev
+                    )
+                  }
+                >
+                  <PlusIcon className="w-5 h-5" />
+                </button>
 
-  /* =====================
-     LOGGING
-  ===================== */
+                <button
+                  disabled={index === 0}
+                  className="gaarsdal-icon-btn disabled:opacity-30"
+                  onClick={() => setIndex((i) => Math.max(0, i - 1))}
+                >
+                  <BackwardIcon className="w-5 h-5" />
+                </button>
 
-  const logEntry: TurnLog = {
-    timestamp: new Date().toISOString(),
-    session_id: sessionId,
-    node_from: nodeFrom,
-    node_to: nodeTo,
-    raw_text: text ?? null,
-    chip_explicit: chip ?? null,
-    signal: resolvedSignal?.signal?.type ?? null,
-    action: action.type,
-    latency_ms: Date.now() - startedAt,
-  };
+                <button
+                  disabled={index === stack.length - 1}
+                  className="gaarsdal-icon-btn disabled:opacity-30"
+                  onClick={() =>
+                    setIndex((i) =>
+                      Math.min(stack.length - 1, i + 1)
+                    )
+                  }
+                >
+                  <ForwardIcon className="w-5 h-5" />
+                </button>
 
-  await writeTurnLog(logEntry);
-
-  /* =====================
-     RESPONSE
-  ===================== */
-
-  return res.status(200).json(payload);
+                <button
+                  disabled={stack.length === 1}
+                  className="gaarsdal-icon-btn disabled:opacity-30"
+                  onClick={() =>
+                    setStack((prev) =>
+                      prev.length === 1
+                        ? prev
+                        : prev.filter((_, i) => i !== index)
+                    )
+                  }
+                >
+                  <TrashIcon className="w-5 h-5" />
+                </button>
+              </div>
+            </footer>
+          </div>
+        </>
+      )}
+    </>
+  );
 }
