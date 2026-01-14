@@ -168,14 +168,14 @@ export default function Chatbot() {
           />
 
           <div
-            className={`gaarsdal-chatbot ${
+            className={`gaarsdal-chatbot fixed flex flex-col ${
               expanded
                 ? "inset-4 md:inset-10"
                 : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
-            } fixed flex flex-col`}
+            }`}
           >
             {/* HEADER */}
-            <header className="flex justify-between items-center">
+            <header className="gaarsdal-chatbot-header flex justify-between items-center">
               <span>Gaarsdal</span>
               <div className="flex gap-1">
                 <button
@@ -196,12 +196,8 @@ export default function Chatbot() {
             {/* MESSAGES */}
             <div className="messages">
               {current.messages.map((m, i) => (
-                <div key={i}>
-                  <div
-                    className={`message ${m.role === "user" ? "user" : "bot"}`}
-                  >
-                    {m.content}
-                  </div>
+                <div key={i} className={`message ${m.role}`}>
+                  {m.content}
                 </div>
               ))}
               {loading && <div className="text-sm opacity-60">Skriver…</div>}
@@ -226,8 +222,8 @@ export default function Chatbot() {
               </div>
             )}
 
-            {/* INPUT */}
-            <footer>
+            {/* FOOTER */}
+            <footer className="gaarsdal-chatbot-footer">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -241,10 +237,10 @@ export default function Chatbot() {
                 placeholder="Skriv frit her…"
               />
 
-              {/* BOTTOM BAR */}
-              <div className="mt-2 flex justify-between items-center">
-                {/* LAG A – TRYGHED */}
-                <div className="flex gap-1">
+              {/* BOTTOM HEADER */}
+              <div className="mt-3 space-y-2">
+                {/* LAG A */}
+                <div className="flex justify-center gap-2">
                   <button className="gaarsdal-icon-btn">
                     <HomeIcon className="w-5 h-5" />
                   </button>
@@ -259,8 +255,20 @@ export default function Chatbot() {
                   </button>
                 </div>
 
-                {/* LAG B – STACK */}
-                <div className="flex gap-1">
+                {/* STACK DOTS */}
+                <div className="gaarsdal-stack-dots">
+                  {stack.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`gaarsdal-stack-dot ${
+                        i === index ? "active" : ""
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {/* LAG B */}
+                <div className="flex justify-center gap-2">
                   <button
                     className="gaarsdal-icon-btn"
                     onClick={() =>
