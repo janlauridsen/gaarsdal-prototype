@@ -1,343 +1,206 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  ChatBubbleOvalLeftEllipsisIcon,
-  XMarkIcon,
-  PlusIcon,
-  BackwardIcon,
-  ForwardIcon,
-  TrashIcon,
-  ArrowsPointingOutIcon,
-  HomeIcon,
-  EnvelopeIcon,
-  PhoneIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* =====================
-   TYPES
-===================== */
-
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-  chips?: string[];
-};
-
-type Conversation = {
-  id: string;
-  messages: Message[];
-};
-
-/* =====================
-   CONFIG
-===================== */
-
-const MAX_SESSIONS = 5;
-
-/* =====================
-   HELPERS
-===================== */
-
-function createConversation(): Conversation {
-  return {
-    id: crypto.randomUUID(),
-    messages: [],
-  };
+html,
+body {
+  background: #EFEDE7;
+  color: #2C2A28;
 }
 
-/* =====================
-   COMPONENT
-===================== */
+/* =========================
+   Typography
+========================= */
+.text-h1 {
+  font-size: 48px;
+  line-height: 1.2;
+}
 
-export default function Chatbot() {
-  const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [stack, setStack] = useState<Conversation[]>([createConversation()]);
-  const [index, setIndex] = useState(0);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+.text-base-lg {
+  font-size: 18px;
+  line-height: 1.7;
+}
 
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const current = stack[index];
-
-  const canGoBack = index > 0;
-  const canGoForward = index < stack.length - 1;
-  const canAdd = stack.length < MAX_SESSIONS;
-  const canDelete = stack.length > 1;
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [current.messages, loading]);
-
-  /* =====================
-     INIT → ROOT
-  ===================== */
-
-  useEffect(() => {
-    if (!open) return;
-    if (current.messages.length > 0) return;
-
-    fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId: current.id,
-        currentNode: "ROOT",
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setStack((prev) => {
-          const next = [...prev];
-          next[index] = {
-            ...next[index],
-            messages: [
-              {
-                role: "assistant",
-                content:
-                  data.message ??
-                  "Velkommen. Du kan vælge en mulighed herunder eller skrive frit.",
-                chips: data.chips ?? [],
-              },
-            ],
-          };
-          return next;
-        });
-      })
-      .catch(() => {});
-  }, [open]);
-
-  /* =====================
-     SEND
-  ===================== */
-
-  async function send(text?: string, chip?: string) {
-    if (loading) return;
-    if (!text && !chip) return;
-
-    if (text && !chip) {
-      setStack((prev) => {
-        const next = [...prev];
-        next[index].messages.push({ role: "user", content: text });
-        return next;
-      });
-    }
-
-    setInput("");
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: current.id,
-          text,
-          chip,
-        }),
-      });
-
-      const data = await res.json();
-
-      setStack((prev) => {
-        const next = [...prev];
-        next[index].messages.push({
-          role: "assistant",
-          content: data.message ?? "",
-          chips: data.chips ?? [],
-        });
-        return next;
-      });
-    } finally {
-      setLoading(false);
-    }
+/* =========================
+   Animations
+========================= */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-  /* =====================
-     RENDER
-  ===================== */
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
 
-  return (
-    <>
-      {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 gaarsdal-launcher flex items-center justify-center"
-        >
-          <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
-        </button>
-      )}
+/* =========================
+   Scroll
+========================= */
+#gaarsdal-chat-window {
+  scroll-behavior: smooth;
+}
 
-      {open && (
-        <>
-          <div
-            className="gaarsdal-overlay"
-            onClick={() => {
-              setOpen(false);
-              setExpanded(false);
-            }}
-          />
+/* =========================
+   Scrollbar
+========================= */
+::-webkit-scrollbar {
+  width: 6px;
+}
 
-          <div
-            className={`gaarsdal-chatbot fixed flex flex-col ${
-              expanded
-                ? "inset-4 md:inset-10"
-                : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
-            }`}
-          >
-            {/* HEADER */}
-            <header className="gaarsdal-chatbot-header flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <img
-                  src="/jan.gif"
-                  alt="Chat"
-                  className="w-5 h-5 opacity-70"
-                />
-                <span>Gaarsdal</span>
-              </div>
+::-webkit-scrollbar-thumb {
+  background: #D8D5CC;
+  border-radius: 6px;
+}
 
-              <div className="flex gap-1">
-                <button
-                  className="gaarsdal-icon-btn"
-                  onClick={() => setExpanded((v) => !v)}
-                >
-                  <ArrowsPointingOutIcon className="w-5 h-5" />
-                </button>
-                <button
-                  className="gaarsdal-icon-btn"
-                  onClick={() => setOpen(false)}
-                >
-                  <XMarkIcon className="w-5 h-5" />
-                </button>
-              </div>
-            </header>
+/* =========================
+   Overlay
+========================= */
+.gaarsdal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 30;
+}
 
-            {/* MESSAGES */}
-            <div className="messages">
-              {current.messages.map((m, i) => (
-                <div key={i} className={`message ${m.role}`}>
-                  {m.content}
-                </div>
-              ))}
-              {loading && <div className="text-sm opacity-60">Skriver…</div>}
-              <div ref={messagesEndRef} />
-            </div>
+/* =========================
+   Chatbot Shell
+========================= */
+.gaarsdal-chatbot {
+  position: fixed;
+  z-index: 40;
+  background: #F6F5F2;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.08),
+    0 4px 10px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+}
 
-            {/* CHIPS */}
-            {current.messages.at(-1)?.chips && (
-              <div className="px-4 pb-2 flex gap-2 flex-wrap">
-                {current.messages
-                  .at(-1)!
-                  .chips!.slice(0, 4)
-                  .map((c, i) => (
-                    <button
-                      key={i}
-                      onClick={() => send(undefined, c)}
-                      className="text-xs px-3 py-1 rounded-full border bg-white"
-                    >
-                      {c}
-                    </button>
-                  ))}
-              </div>
-            )}
+/* =========================
+   Header
+========================= */
+.gaarsdal-chatbot-header {
+  background: #ECEAE4;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 10px 14px;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
 
-            {/* FOOTER */}
-            <footer className="gaarsdal-chatbot-footer">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    send(input);
-                  }
-                }}
-                rows={2}
-                placeholder="Skriv frit her…"
-              />
+.gaarsdal-chatbot-header span {
+  font-size: 14px;
+  font-weight: 500;
+}
 
-              <div className="mt-3 space-y-2">
-                {/* LAG A */}
-                <div className="flex justify-center gap-2">
-                  <button className="gaarsdal-icon-btn">
-                    <HomeIcon className="w-5 h-5" />
-                  </button>
-                  <button className="gaarsdal-icon-btn">
-                    <EnvelopeIcon className="w-5 h-5" />
-                  </button>
-                  <button className="gaarsdal-icon-btn">
-                    <PhoneIcon className="w-5 h-5" />
-                  </button>
-                  <button className="gaarsdal-icon-btn">
-                    <ExclamationTriangleIcon className="w-5 h-5" />
-                  </button>
-                </div>
+/* =========================
+   Messages
+========================= */
+.gaarsdal-chatbot .messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  background: #F6F5F2;
+}
 
-                {/* STACK DOTS */}
-                <div className="gaarsdal-stack-dots">
-                  {stack.map((_, i) => (
-                    <div
-                      key={i}
-                      className={`gaarsdal-stack-dot ${
-                        i === index ? "active" : ""
-                      }`}
-                    />
-                  ))}
-                </div>
+.gaarsdal-chatbot .message {
+  max-width: 78%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  margin-bottom: 8px;
+  animation: fadeIn 0.18s ease-out;
+  font-size: 14.5px;
+  line-height: 1.55;
+}
 
-                {/* LAG B */}
-                <div className="flex justify-center gap-2">
-                  <button
-                    className={`gaarsdal-icon-btn ${
-                      !canAdd ? "opacity-30 pointer-events-none" : ""
-                    }`}
-                    onClick={() =>
-                      canAdd &&
-                      setStack((s) => [...s, createConversation()])
-                    }
-                  >
-                    <PlusIcon className="w-5 h-5" />
-                  </button>
+.gaarsdal-chatbot .message.bot {
+  background: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
 
-                  <button
-                    className={`gaarsdal-icon-btn ${
-                      !canGoBack ? "opacity-30 pointer-events-none" : ""
-                    }`}
-                    onClick={() => canGoBack && setIndex(index - 1)}
-                  >
-                    <BackwardIcon className="w-5 h-5" />
-                  </button>
+.gaarsdal-chatbot .message.user {
+  background: #51665C;
+  color: #FFFFFF;
+  margin-left: auto;
+  padding: 10px 14px;
+  font-size: 14px;
+}
 
-                  <button
-                    className={`gaarsdal-icon-btn ${
-                      !canGoForward ? "opacity-30 pointer-events-none" : ""
-                    }`}
-                    onClick={() =>
-                      canGoForward && setIndex(index + 1)
-                    }
-                  >
-                    <ForwardIcon className="w-5 h-5" />
-                  </button>
+/* =========================
+   Footer
+========================= */
+.gaarsdal-chatbot-footer {
+  background: #ECEAE4;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 10px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
 
-                  <button
-                    className={`gaarsdal-icon-btn ${
-                      !canDelete ? "opacity-30 pointer-events-none" : ""
-                    }`}
-                    onClick={() =>
-                      canDelete &&
-                      setStack((s) =>
-                        s.filter((_, i) => i !== index)
-                      )
-                    }
-                  >
-                    <TrashIcon className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            </footer>
-          </div>
-        </>
-      )}
-    </>
-  );
+.gaarsdal-chatbot footer textarea {
+  width: 100%;
+  background: #F6F5F2;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 12px 14px;
+  resize: none;
+  min-height: 44px;
+}
+
+.gaarsdal-chatbot footer textarea:focus {
+  outline: none;
+  border-color: rgba(74, 93, 84, 0.25);
+}
+
+/* =========================
+   Stack dots
+========================= */
+.gaarsdal-stack-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 0;
+}
+
+.gaarsdal-stack-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #CFCBC1;
+}
+
+.gaarsdal-stack-dot.active {
+  background: #4A5D54;
+}
+
+/* =========================
+   Icon buttons
+========================= */
+.gaarsdal-icon-btn {
+  padding: 6px;
+  border-radius: 8px;
+  color: #4A5D54;
+}
+
+.gaarsdal-icon-btn:hover {
+  background: rgba(74, 93, 84, 0.08);
+}
+
+/* =========================
+   Floating launcher
+========================= */
+.gaarsdal-launcher {
+  background: #4A5D54;
+  color: #FFFFFF;
+  border-radius: 9999px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
 }
