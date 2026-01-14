@@ -170,6 +170,7 @@ export default function Chatbot() {
     <>
       {!open && (
         <button
+          type="button"
           onClick={() => setOpen(true)}
           className="fixed bottom-6 right-6 w-14 h-14 gaarsdal-launcher flex items-center justify-center"
         >
@@ -200,6 +201,7 @@ export default function Chatbot() {
               <span className="font-medium">Gaarsdal</span>
               <div className="flex gap-2">
                 <button
+                  type="button"
                   className="gaarsdal-icon-btn"
                   title="Udvid / sammentræk"
                   onClick={() => setExpanded((v) => !v)}
@@ -207,6 +209,7 @@ export default function Chatbot() {
                   <ArrowsPointingOutIcon className="w-5 h-5" />
                 </button>
                 <button
+                  type="button"
                   className="gaarsdal-icon-btn"
                   title="Luk"
                   onClick={() => setOpen(false)}
@@ -239,6 +242,7 @@ export default function Chatbot() {
                       {m.chips.map((c, ci) => (
                         <button
                           key={ci}
+                          type="button"
                           onClick={() => send({ chip: c })}
                           className="text-xs px-3 py-1 rounded-full border bg-white"
                         >
@@ -274,10 +278,10 @@ export default function Chatbot() {
 
               {/* PRIMARY ACTIONS */}
               <div className="flex justify-center gap-4">
-                <button className="gaarsdal-icon-btn" title="Til start">🏠</button>
-                <button className="gaarsdal-icon-btn" title="Send mail">✉️</button>
-                <button className="gaarsdal-icon-btn" title="Ring op">📞</button>
-                <button className="gaarsdal-icon-btn" title="Akut hjælp">⚠️</button>
+                <button type="button" className="gaarsdal-icon-btn" title="Til start">🏠</button>
+                <button type="button" className="gaarsdal-icon-btn" title="Send mail">✉️</button>
+                <button type="button" className="gaarsdal-icon-btn" title="Ring op">📞</button>
+                <button type="button" className="gaarsdal-icon-btn" title="Akut hjælp">⚠️</button>
               </div>
 
               {/* STACK DOTS */}
@@ -295,6 +299,7 @@ export default function Chatbot() {
               {/* STACK CONTROLS */}
               <div className="flex justify-center gap-4">
                 <button
+                  type="button"
                   disabled={stack.length >= MAX_SESSIONS}
                   className="gaarsdal-icon-btn disabled:opacity-30"
                   title="Ny samtale"
@@ -310,6 +315,7 @@ export default function Chatbot() {
                 </button>
 
                 <button
+                  type="button"
                   disabled={index === 0}
                   className="gaarsdal-icon-btn disabled:opacity-30"
                   title="Forrige samtale"
@@ -319,6 +325,7 @@ export default function Chatbot() {
                 </button>
 
                 <button
+                  type="button"
                   disabled={index === stack.length - 1}
                   className="gaarsdal-icon-btn disabled:opacity-30"
                   title="Næste samtale"
@@ -332,6 +339,7 @@ export default function Chatbot() {
                 </button>
 
                 <button
+                  type="button"
                   disabled={stack.length === 1}
                   className="gaarsdal-icon-btn disabled:opacity-30"
                   title="Slet samtale"
