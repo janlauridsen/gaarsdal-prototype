@@ -15,6 +15,9 @@ import { TurnLog } from "../../guided-chat/logging/log.types";
 
 const DEFAULT_NODE: NodeId = "ROOT";
 
+const FALLBACK_MESSAGE =
+  "Du kan vælge en mulighed herunder eller skrive frit.";
+
 /* =====================
    API HANDLER
 ===================== */
@@ -72,7 +75,6 @@ export default async function handler(
 
       action = { type: "NODE_HOP", to: next };
     } else {
-      // Ugyldig chip i denne node
       action = { type: "FALLBACK" };
     }
 
@@ -131,10 +133,12 @@ export default async function handler(
     kind: nextNodeConfig.kind,
     message:
       responseMessage ??
-      nextNodeConfig.message,
+      nextNodeConfig.message ??
+      FALLBACK_MESSAGE,
     chips:
       responseChips ??
-      nextNodeConfig.chips,
+      nextNodeConfig.chips ??
+      [],
   };
 
   /* =====================
