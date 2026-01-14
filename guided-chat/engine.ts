@@ -2,69 +2,80 @@
  * guided-chat/engine.ts
  *
  * Rolle:
- * - Central beslutningsmotor
- * - Intent → Guards → Action
+ * - Signal → Guards → Action
  * - Ingen UI
- * - Ingen fritekst-parsing
  * - Ingen side effects
  *
  * Version:
- * - V10.3
- * - FASE 4 · STEP 5
+ * - V10.4
  */
 
-import { ResolvedIntent, Action } from "./intents";
+import { Action } from "./intents";
 import { runGuards } from "./guards";
 import { NodeConfig } from "./nodes";
 import { ROUTES } from "./node-router";
+import { SignalResult } from "./signals";
 
 /* =====================
    PUBLIC API
 ===================== */
 
-/**
- * decideAction
- *
- * Returnerer præcis én Action for et input.
- * Hvis intent er null eller blokeres → FALLBACK.
- */
-export function decideAction(
-  intent: ResolvedIntent | null,
+export function decideActionFromSignal(
+  signalResult: SignalResult,
   node: NodeConfig
 ): Action {
-  if (!intent) {
+  const { signal } = signalResult;
+
+  if (signal.type === "NONE") {
     return { type: "FALLBACK" };
   }
 
-  const guardResult = runGuards(intent, node);
+  /* =====================
+     MAP SIGNAL → INTENT-LIKE SHAPE
+  ===================== */
 
+  let intent: any = null;
+
+  switch (signal.type) {
+    case "NAVIGATE":
+      intent = { kind: "CHIP", chipId: signal.chip };
+      break;
+
+    case "PARENTESE":
+      intent = { kind: "PARENTESE", nodeId: signal.nodeId };
+      break;
+
+    case "NEW_SESSION_SIGNAL":
+      intent = { kind: "NEW_SESSION" };
+      break;
+  }
+
+  /* =====================
+     GUARDS
+  ===================== */
+
+  const guardResult = runGuards(intent, node);
   if (guardResult.status !== "ALLOW") {
     return { type: "FALLBACK" };
   }
 
-  switch (intent.kind) {
-    case "CHIP": {
-      const nextNode =
-        ROUTES[node.id]?.[intent.chipId] ?? node.id;
+  /* =====================
+     ACTION
+  ===================== */
 
-      return {
-        type: "NODE_HOP",
-        to: nextNode,
-      };
+  switch (signal.type) {
+    case "NAVIGATE": {
+      const next =
+        ROUTES[node.id]?.[signal.chip] ?? node.id;
+
+      return { type: "NODE_HOP", to: next };
     }
 
-    case "PARENTESE": {
-      return {
-        type: "OPEN_PARENTESE",
-        to: intent.nodeId,
-      };
-    }
+    case "PARENTESE":
+      return { type: "OPEN_PARENTESE", to: signal.nodeId };
 
-    case "NEW_SESSION": {
-      return {
-        type: "REQUEST_NEW_SESSION_CONFIRMATION",
-      };
-    }
+    case "NEW_SESSION_SIGNAL":
+      return { type: "REQUEST_NEW_SESSION_CONFIRMATION" };
 
     default:
       return { type: "FALLBACK" };
