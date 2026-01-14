@@ -54,8 +54,6 @@ export default function Chatbot() {
   const [loading, setLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
-  /** 🔒 KILDE TIL SANDHED FOR NODE */
   const currentNodeRef = useRef<string>("ROOT");
 
   const current = stack[index];
@@ -86,19 +84,17 @@ export default function Chatbot() {
       .then((data) => {
         currentNodeRef.current = data.node;
 
-        const assistantMessage: Message = {
-          role: "assistant",
-          content:
-            data.message ??
-            "Velkommen. Du kan vælge en mulighed herunder eller skrive frit.",
-          chips: data.chips ?? [],
-        };
-
         setStack((prev) => {
           const next = [...prev];
           next[index] = {
             ...next[index],
-            messages: [assistantMessage],
+            messages: [
+              {
+                role: "assistant",
+                content: data.message,
+                chips: data.chips ?? [],
+              },
+            ],
           };
           return next;
         });
@@ -107,14 +103,13 @@ export default function Chatbot() {
   }, [open]);
 
   /* =====================
-     SEND (KONTRAKTFAST)
+     SEND
   ===================== */
 
   async function send(params: { text?: string; chip?: string }) {
     if (loading) return;
     if (!params.text && !params.chip) return;
 
-    /* USER MESSAGE (kun ved tekst) */
     if (params.text) {
       setStack((prev) => {
         const next = [...prev];
@@ -145,21 +140,20 @@ export default function Chatbot() {
       });
 
       const data = await res.json();
-
-      /** 🔒 opdater node */
       currentNodeRef.current = data.node;
-
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: data.message ?? "",
-        chips: data.chips ?? [],
-      };
 
       setStack((prev) => {
         const next = [...prev];
         next[index] = {
           ...next[index],
-          messages: [...next[index].messages, assistantMessage],
+          messages: [
+            ...next[index].messages,
+            {
+              role: "assistant",
+              content: data.message,
+              chips: data.chips ?? [],
+            },
+          ],
         };
         return next;
       });
@@ -177,7 +171,7 @@ export default function Chatbot() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full gaarsdal-launcher flex items-center justify-center"
+          className="fixed bottom-6 right-6 w-14 h-14 gaarsdal-launcher flex items-center justify-center"
         >
           <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
         </button>
@@ -205,10 +199,18 @@ export default function Chatbot() {
             <header className="flex justify-between items-center px-4 py-3">
               <span className="font-medium">Gaarsdal</span>
               <div className="flex gap-2">
-                <button onClick={() => setExpanded((v) => !v)}>
+                <button
+                  className="gaarsdal-icon-btn"
+                  title="Udvid / sammentræk"
+                  onClick={() => setExpanded((v) => !v)}
+                >
                   <ArrowsPointingOutIcon className="w-5 h-5" />
                 </button>
-                <button onClick={() => setOpen(false)}>
+                <button
+                  className="gaarsdal-icon-btn"
+                  title="Luk"
+                  onClick={() => setOpen(false)}
+                >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
@@ -226,27 +228,25 @@ export default function Chatbot() {
                     <div
                       className={`message ${
                         m.role === "user" ? "user" : "bot"
-                      } px-4 py-3 max-w-[85%] whitespace-pre-wrap`}
+                      }`}
                     >
                       {m.content}
                     </div>
                   </div>
 
-                  {m.role === "assistant" &&
-                    m.chips &&
-                    m.chips.length > 0 && (
-                      <div className="flex gap-2 flex-wrap pl-2">
-                        {m.chips.map((c, ci) => (
-                          <button
-                            key={ci}
-                            onClick={() => send({ chip: c })}
-                            className="text-xs px-3 py-1 rounded-full border bg-white"
-                          >
-                            {c}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                  {m.role === "assistant" && m.chips?.length ? (
+                    <div className="flex gap-2 flex-wrap pl-2">
+                      {m.chips.map((c, ci) => (
+                        <button
+                          key={ci}
+                          onClick={() => send({ chip: c })}
+                          className="text-xs px-3 py-1 rounded-full border bg-white"
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               ))}
 
@@ -257,7 +257,7 @@ export default function Chatbot() {
             </div>
 
             {/* FOOTER */}
-            <footer className="p-3 border-t">
+            <footer className="p-3 border-t space-y-2">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -272,10 +272,32 @@ export default function Chatbot() {
                 placeholder="Skriv frit her…"
               />
 
-              <div className="mt-3 flex gap-3">
+              {/* PRIMARY ACTIONS */}
+              <div className="flex justify-center gap-4">
+                <button className="gaarsdal-icon-btn" title="Til start">🏠</button>
+                <button className="gaarsdal-icon-btn" title="Send mail">✉️</button>
+                <button className="gaarsdal-icon-btn" title="Ring op">📞</button>
+                <button className="gaarsdal-icon-btn" title="Akut hjælp">⚠️</button>
+              </div>
+
+              {/* STACK DOTS */}
+              <div className="gaarsdal-stack-dots">
+                {stack.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`gaarsdal-stack-dot ${
+                      i === index ? "active" : ""
+                    }`}
+                  />
+                ))}
+              </div>
+
+              {/* STACK CONTROLS */}
+              <div className="flex justify-center gap-4">
                 <button
                   disabled={stack.length >= MAX_SESSIONS}
                   className="gaarsdal-icon-btn disabled:opacity-30"
+                  title="Ny samtale"
                   onClick={() =>
                     setStack((prev) =>
                       prev.length < MAX_SESSIONS
@@ -290,6 +312,7 @@ export default function Chatbot() {
                 <button
                   disabled={index === 0}
                   className="gaarsdal-icon-btn disabled:opacity-30"
+                  title="Forrige samtale"
                   onClick={() => setIndex((i) => Math.max(0, i - 1))}
                 >
                   <BackwardIcon className="w-5 h-5" />
@@ -298,6 +321,7 @@ export default function Chatbot() {
                 <button
                   disabled={index === stack.length - 1}
                   className="gaarsdal-icon-btn disabled:opacity-30"
+                  title="Næste samtale"
                   onClick={() =>
                     setIndex((i) =>
                       Math.min(stack.length - 1, i + 1)
@@ -310,6 +334,7 @@ export default function Chatbot() {
                 <button
                   disabled={stack.length === 1}
                   className="gaarsdal-icon-btn disabled:opacity-30"
+                  title="Slet samtale"
                   onClick={() =>
                     setStack((prev) =>
                       prev.length === 1
