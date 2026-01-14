@@ -1,31 +1,25 @@
-// guided-chat/node-ui.ts
+/**
+ * guided-chat/node-ui.ts
+ *
+ * ⚠️ DEPRECATED
+ *
+ * UI-modellen for noder håndteres nu dynamisk
+ * via API-respons (message + chips).
+ *
+ * Denne fil bevares udelukkende for kompatibilitet
+ * og må ikke indeholde node-specifik logik.
+ *
+ * Version:
+ * - V10.3
+ */
 
-import { NodeId } from "./node-router";
 import { Chip } from "./chips";
+import { NodeId } from "./node-router";
 
-export const NODE_CHIPS: Record<NodeId, Chip[]> = {
-  ROOT: [
-    "CONTACT",
-    "FACTS_HYPNO",
-    "TRIAGE_RELEVANCE",
-  ],
-
-  CONTACT: [
-    "BACK_TO_ROOT",
-  ],
-
-  FACTS: [
-    "BACK_TO_ROOT",
-  ],
-
-  TRIAGE: [
-    "BACK_TO_ROOT",
-  ],
-
-  TRIAGE_DONE: [
-    "CONTACT",
-    "BACK_TO_ROOT",
-  ],
-
-  EXIT: [],
-};
+/**
+ * Legacy placeholder.
+ * Returnerer altid tomt chip-sæt.
+ */
+export function getNodeChips(_node: NodeId): Chip[] {
+  return [];
+}
