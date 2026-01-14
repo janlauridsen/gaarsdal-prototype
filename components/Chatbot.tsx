@@ -54,6 +54,8 @@ export default function Chatbot() {
   const [loading, setLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  /** 🔒 Source of truth for current node */
   const currentNodeRef = useRef<string>("ROOT");
 
   const current = stack[index];
@@ -100,7 +102,7 @@ export default function Chatbot() {
         });
       })
       .catch(() => {});
-  }, [open]);
+  }, [open, current.id, index, current.messages.length]);
 
   /* =====================
      SEND
@@ -180,6 +182,7 @@ export default function Chatbot() {
 
       {open && (
         <>
+          {/* BACKDROP */}
           <div
             className="fixed inset-0 bg-black/30 z-40"
             onClick={() => {
@@ -188,6 +191,7 @@ export default function Chatbot() {
             }}
           />
 
+          {/* CHAT WINDOW */}
           <div
             className={`fixed z-50 gaarsdal-chatbot flex flex-col ${
               expanded
@@ -237,20 +241,23 @@ export default function Chatbot() {
                     </div>
                   </div>
 
-                  {m.role === "assistant" && m.chips?.length ? (
+                  {m.role === "assistant" && m.chips?.length > 0 && (
                     <div className="flex gap-2 flex-wrap pl-2">
                       {m.chips.map((c, ci) => (
                         <button
                           key={ci}
                           type="button"
-                          onClick={() => send({ chip: c })}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            send({ chip: c });
+                          }}
                           className="text-xs px-3 py-1 rounded-full border bg-white"
                         >
                           {c}
                         </button>
                       ))}
                     </div>
-                  ) : null}
+                  )}
                 </div>
               ))}
 
@@ -275,14 +282,6 @@ export default function Chatbot() {
                 className="w-full border rounded-md px-3 py-2 text-sm resize-none"
                 placeholder="Skriv frit her…"
               />
-
-              {/* PRIMARY ACTIONS */}
-              <div className="flex justify-center gap-4">
-                <button type="button" className="gaarsdal-icon-btn" title="Til start">🏠</button>
-                <button type="button" className="gaarsdal-icon-btn" title="Send mail">✉️</button>
-                <button type="button" className="gaarsdal-icon-btn" title="Ring op">📞</button>
-                <button type="button" className="gaarsdal-icon-btn" title="Akut hjælp">⚠️</button>
-              </div>
 
               {/* STACK DOTS */}
               <div className="gaarsdal-stack-dots">
