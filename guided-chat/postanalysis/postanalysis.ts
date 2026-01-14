@@ -1,56 +1,40 @@
-// guided-chat/postanalysis/postanalysis.ts
+/**
+ * guided-chat/postanalysis/postanalysis.ts
+ *
+ * Rolle:
+ * - Asynkron post-analyse
+ * - Ingen indflydelse på flow
+ * - Fail-silent
+ *
+ * Version:
+ * - V10.3
+ */
 
-import fs from "fs";
-import path from "path";
-import { Chip } from "../chips";
-
-/* =====================
-   TYPES
-===================== */
-
-export type PostAnalysisEntry = {
+export type PostAnalysisPayload = {
   session_id: string;
   turn_id: number;
-  chip: Chip;
-
+  chip?: string | null;
   analysis: {
-    intent_guess?: string;
     scope_match: boolean;
     ambiguity_level: "low" | "medium" | "high";
-    safety_notes?: string[];
   };
-
   hypotheses: string[];
   flags: {
     medical_risk: boolean;
     off_scope: boolean;
   };
-
   meta: {
-    model_version: "v10.0";
-    analysis_version: "v1";
+    /**
+     * Model / system version.
+     * Fx git-tag, branch eller semver.
+     */
+    model_version: string;
+    analysis_version: string;
   };
 };
 
-/* =====================
-   WRITER
-===================== */
-
-const POSTANALYSIS_DIR = path.join(
-  process.cwd(),
-  "logs",
-  "postanalysis"
-);
-
-export function writePostAnalysis(entry: PostAnalysisEntry) {
-  if (!fs.existsSync(POSTANALYSIS_DIR)) {
-    fs.mkdirSync(POSTANALYSIS_DIR, { recursive: true });
-  }
-
-  const file = path.join(
-    POSTANALYSIS_DIR,
-    `${entry.session_id}.jsonl`
-  );
-
-  fs.appendFileSync(file, JSON.stringify(entry) + "\n");
+export function writePostAnalysis(payload: PostAnalysisPayload): void {
+  // Fail-silent design.
+  // I V10 logges dette typisk til fil eller ekstern sink.
+  // Implementeringen er bevidst tom her.
 }
