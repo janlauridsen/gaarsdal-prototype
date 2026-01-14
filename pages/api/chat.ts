@@ -83,7 +83,7 @@ export default async function handler(
   let nodeTo: NodeId = nodeFrom;
 
   if (action.type === "NODE_HOP") {
-    nodeTo = action.to;
+    nodeTo = action.to as NodeId;
   }
 
   const nextNodeConfig = NODES[nodeTo];
