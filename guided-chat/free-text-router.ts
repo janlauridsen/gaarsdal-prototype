@@ -1,56 +1,96 @@
 /**
- * guided-chat/signals.ts
+ * guided-chat/free-text-router.ts
  *
  * Rolle:
- * - Formelle signaler udledt af brugerinput
+ * - Fri tekst → SignalResult
  * - Ingen handlinger
  * - Ingen guards
- * - Ingen routing
  *
  * Version:
  * - V10.4
  */
 
+import { NodeConfig } from "./nodes";
+import { SignalResult, noneSignal } from "./signals";
+
 /* =====================
-   SIGNAL TYPES
+   PUBLIC API
 ===================== */
 
-/**
- * Signal er et forslag om intention.
- * Det er ikke en handling.
- */
-export type Signal =
-  | {
-      type: "NAVIGATE";
-      chip: string;
+export function resolveFreeTextSignal(
+  text: string,
+  node: NodeConfig
+): SignalResult {
+  const normalized = normalize(text);
+
+  /* =====================
+     1. NAVIGATION (chip match)
+  ===================== */
+
+  for (const chip of node.chips ?? []) {
+    if (normalized.includes(normalize(chip))) {
+      return {
+        signal: { type: "NAVIGATE", chip },
+        confidence: "high",
+      };
     }
-  | {
-      type: "PARENTESE";
-      nodeId: string;
+  }
+
+  /* =====================
+     2. PARENTESE
+  ===================== */
+
+  const parentesTargets = node.navigation?.freeText?.allowParentesTo ?? [];
+
+  for (const nodeId of parentesTargets) {
+    if (normalized.includes(normalize(nodeId))) {
+      return {
+        signal: { type: "PARENTESE", nodeId },
+        confidence: "medium",
+      };
     }
-  | {
-      type: "NEW_SESSION_SIGNAL";
-    }
-  | {
-      type: "NONE";
+  }
+
+  /* =====================
+     3. NEW SESSION SIGNAL
+  ===================== */
+
+  if (
+    node.navigation?.freeText?.allowNewSession &&
+    matchesNewSessionSignal(normalized)
+  ) {
+    return {
+      signal: { type: "NEW_SESSION_SIGNAL" },
+      confidence: "medium",
     };
+  }
 
-/* =====================
-   RESULT TYPE
-===================== */
+  /* =====================
+     NONE
+  ===================== */
 
-export type SignalResult = {
-  signal: Signal;
-  confidence: "high" | "medium" | "low";
-};
+  return noneSignal();
+}
 
 /* =====================
    HELPERS
 ===================== */
 
-export function noneSignal(): SignalResult {
-  return {
-    signal: { type: "NONE" },
-    confidence: "low",
-  };
+function normalize(input: string): string {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function matchesNewSessionSignal(normalized: string): boolean {
+  const signals = [
+    "ny samtale",
+    "nyt emne",
+    "noget andet",
+    "start forfra",
+    "skift fokus",
+  ];
+
+  return signals.some((s) => normalized.includes(s));
 }
