@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import {
   ChatBubbleOvalLeftEllipsisIcon,
   XMarkIcon,
@@ -63,10 +62,6 @@ export default function Chatbot() {
 
   const current = stack[index];
 
-  /* =====================
-     AUTOSCROLL
-  ===================== */
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [current.messages, loading]);
@@ -109,7 +104,7 @@ export default function Chatbot() {
         });
       })
       .catch(() => {});
-  }, [open]);
+  }, [open, current, index]);
 
   /* =====================
      SEND
@@ -190,7 +185,7 @@ export default function Chatbot() {
       {open && (
         <>
           <div
-            className="fixed inset-0 bg-black/30 z-40"
+            className="gaarsdal-overlay"
             onClick={() => {
               setOpen(false);
               setExpanded(false);
@@ -206,23 +201,13 @@ export default function Chatbot() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* HEADER */}
-            <header className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Image
-                  src="/jan.gif"
-                  alt="Jan"
-                  width={32}
-                  height={32}
-                  className="rounded-full"
-                />
-                <span className="font-medium">Gaarsdal</span>
-              </div>
-
+            <header className="gaarsdal-chatbot-header flex justify-between items-center">
+              <span className="font-medium">Gaarsdal</span>
               <div className="flex gap-2">
                 <button
                   type="button"
                   className="gaarsdal-icon-btn"
-                  title="Udvid"
+                  title="Udvid / sammentræk"
                   onClick={() => setExpanded((v) => !v)}
                 >
                   <ArrowsPointingOutIcon className="w-5 h-5" />
@@ -239,25 +224,19 @@ export default function Chatbot() {
             </header>
 
             {/* MESSAGES */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="messages">
               {current.messages.map((m, i) => (
-                <div key={i} className="space-y-2">
+                <div key={i}>
                   <div
-                    className={`flex ${
-                      m.role === "user" ? "justify-end" : "justify-start"
+                    className={`message ${
+                      m.role === "user" ? "user" : "bot"
                     }`}
                   >
-                    <div
-                      className={`message ${
-                        m.role === "user" ? "user" : "bot"
-                      }`}
-                    >
-                      {m.content}
-                    </div>
+                    {m.content}
                   </div>
 
                   {m.role === "assistant" && m.chips?.length ? (
-                    <div className="flex gap-2 flex-wrap pl-2">
+                    <div className="flex gap-2 flex-wrap mt-2">
                       {m.chips.map((c, ci) => (
                         <button
                           key={ci}
@@ -272,11 +251,15 @@ export default function Chatbot() {
                   ) : null}
                 </div>
               ))}
+
+              {loading && (
+                <div className="text-sm opacity-60 mt-2">Skriver…</div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
             {/* FOOTER */}
-            <footer className="p-3 border-t space-y-3">
+            <footer className="gaarsdal-chatbot-footer">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -286,25 +269,100 @@ export default function Chatbot() {
                     send({ text: input });
                   }
                 }}
-                rows={2}
-                className="w-full border rounded-md px-3 py-2 text-sm resize-none"
                 placeholder="Skriv frit her…"
               />
 
-              {/* PRIMARY ICON ACTIONS */}
-              <div className="flex justify-center gap-5">
+              {/* PRIMARY ICONS */}
+              <div className="flex justify-center gap-4 mt-2">
                 <HomeIcon className="w-5 h-5" />
                 <EnvelopeIcon className="w-5 h-5" />
                 <PhoneIcon className="w-5 h-5" />
                 <ExclamationTriangleIcon className="w-5 h-5" />
               </div>
 
+              {/* STACK DOTS */}
+              <div className="gaarsdal-stack-dots">
+                {stack.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`gaarsdal-stack-dot ${
+                      i === index ? "active" : ""
+                    }`}
+                  />
+                ))}
+              </div>
+
               {/* STACK CONTROLS */}
               <div className="flex justify-center gap-4">
-                <PlusIcon className="w-5 h-5" />
-                <BackwardIcon className="w-5 h-5" />
-                <ForwardIcon className="w-5 h-5" />
-                <TrashIcon className="w-5 h-5" />
+                <button
+                  type="button"
+                  disabled={stack.length >= MAX_SESSIONS}
+                  className={`gaarsdal-icon-btn ${
+                    stack.length >= MAX_SESSIONS
+                      ? "gaarsdal-icon-disabled"
+                      : ""
+                  }`}
+                  title="Ny samtale"
+                  onClick={() =>
+                    setStack((prev) =>
+                      prev.length < MAX_SESSIONS
+                        ? [...prev, createConversation()]
+                        : prev
+                    )
+                  }
+                >
+                  <PlusIcon className="w-5 h-5" />
+                </button>
+
+                <button
+                  type="button"
+                  disabled={index === 0}
+                  className={`gaarsdal-icon-btn ${
+                    index === 0 ? "gaarsdal-icon-disabled" : ""
+                  }`}
+                  title="Forrige"
+                  onClick={() => setIndex((i) => Math.max(0, i - 1))}
+                >
+                  <BackwardIcon className="w-5 h-5" />
+                </button>
+
+                <button
+                  type="button"
+                  disabled={index === stack.length - 1}
+                  className={`gaarsdal-icon-btn ${
+                    index === stack.length - 1
+                      ? "gaarsdal-icon-disabled"
+                      : ""
+                  }`}
+                  title="Næste"
+                  onClick={() =>
+                    setIndex((i) =>
+                      Math.min(stack.length - 1, i + 1)
+                    )
+                  }
+                >
+                  <ForwardIcon className="w-5 h-5" />
+                </button>
+
+                <button
+                  type="button"
+                  disabled={stack.length === 1}
+                  className={`gaarsdal-icon-btn ${
+                    stack.length === 1
+                      ? "gaarsdal-icon-disabled"
+                      : ""
+                  }`}
+                  title="Slet"
+                  onClick={() =>
+                    setStack((prev) =>
+                      prev.length === 1
+                        ? prev
+                        : prev.filter((_, i) => i !== index)
+                    )
+                  }
+                >
+                  <TrashIcon className="w-5 h-5" />
+                </button>
               </div>
             </footer>
           </div>
