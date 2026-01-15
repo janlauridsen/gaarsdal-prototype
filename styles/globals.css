@@ -2,9 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* =====================
+/* =========================
    BASE
-===================== */
+========================= */
 
 html,
 body {
@@ -12,9 +12,9 @@ body {
   color: #2C2A28;
 }
 
-/* =====================
+/* =========================
    OVERLAY
-===================== */
+========================= */
 
 .gaarsdal-overlay {
   position: fixed;
@@ -23,9 +23,9 @@ body {
   z-index: 30;
 }
 
-/* =====================
+/* =========================
    CHATBOT SHELL
-===================== */
+========================= */
 
 .gaarsdal-chatbot {
   z-index: 40;
@@ -39,9 +39,9 @@ body {
   flex-direction: column;
 }
 
-/* =====================
+/* =========================
    HEADER
-===================== */
+========================= */
 
 .gaarsdal-chatbot-header {
   background: #ECEAE4;
@@ -49,14 +49,11 @@ body {
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
-/* =====================
+/* =========================
    MESSAGES
-===================== */
+========================= */
 
 .gaarsdal-chatbot .messages {
   flex: 1;
@@ -71,6 +68,7 @@ body {
   border-radius: 14px;
   font-size: 14.5px;
   line-height: 1.55;
+  margin-bottom: 8px;
 }
 
 .gaarsdal-chatbot .message.bot {
@@ -83,9 +81,9 @@ body {
   margin-left: auto;
 }
 
-/* =====================
-   FOOTER (LOCKED LAYOUT)
-===================== */
+/* =========================
+   FOOTER
+========================= */
 
 .gaarsdal-chatbot-footer {
   background: #ECEAE4;
@@ -93,13 +91,9 @@ body {
   border-top: 1px solid rgba(0, 0, 0, 0.05);
   border-bottom-left-radius: 20px;
   border-bottom-right-radius: 20px;
-
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
-.gaarsdal-chatbot footer textarea {
+.gaarsdal-chatbot-footer textarea {
   width: 100%;
   background: #F6F5F2;
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -107,16 +101,17 @@ body {
   padding: 12px 14px;
   min-height: 44px;
   resize: none;
+  font-size: 14px;
 }
 
-.gaarsdal-chatbot footer textarea:focus {
+.gaarsdal-chatbot-footer textarea:focus {
   outline: none;
   border-color: rgba(74, 93, 84, 0.25);
 }
 
-/* =====================
-   STACK DOTS (VISIBLE)
-===================== */
+/* =========================
+   STACK DOTS
+========================= */
 
 .gaarsdal-stack-dots {
   display: flex;
@@ -136,9 +131,9 @@ body {
   background: #4A5D54;
 }
 
-/* =====================
+/* =========================
    ICON BUTTONS
-===================== */
+========================= */
 
 .gaarsdal-icon-btn {
   padding: 6px;
@@ -153,31 +148,40 @@ body {
   background: rgba(74, 93, 84, 0.08);
 }
 
-/* =====================
-   DISABLED STATE (SOURCE OF TRUTH)
-===================== */
-
-.gaarsdal-icon-btn:disabled {
+/* Disabled state – MUST be explicit class */
+.gaarsdal-icon-disabled {
   opacity: 0.35;
   pointer-events: none;
-  cursor: default;
 }
 
-.gaarsdal-icon-btn:disabled svg {
+.gaarsdal-icon-disabled svg {
   stroke: #9E9B94;
 }
 
-.gaarsdal-icon-btn:disabled:hover {
+.gaarsdal-icon-disabled:hover {
   background: transparent;
 }
 
-/* =====================
+/* =========================
    FLOATING LAUNCHER
-===================== */
+========================= */
 
 .gaarsdal-launcher {
   background: #4A5D54;
   color: #FFFFFF;
   border-radius: 9999px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+}
+
+/* =========================
+   SCROLLBAR (OPTIONAL, SAFE)
+========================= */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D8D5CC;
+  border-radius: 6px;
 }
