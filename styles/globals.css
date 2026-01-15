@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =====================
+   BASE
+===================== */
+
 html,
 body {
   background: #EFEDE7;
@@ -9,8 +13,9 @@ body {
 }
 
 /* =====================
-   Overlay
+   OVERLAY
 ===================== */
+
 .gaarsdal-overlay {
   position: fixed;
   inset: 0;
@@ -19,8 +24,9 @@ body {
 }
 
 /* =====================
-   Chatbot shell
+   CHATBOT SHELL
 ===================== */
+
 .gaarsdal-chatbot {
   z-index: 40;
   background: #F6F5F2;
@@ -34,8 +40,9 @@ body {
 }
 
 /* =====================
-   Header
+   HEADER
 ===================== */
+
 .gaarsdal-chatbot-header {
   background: #ECEAE4;
   padding: 10px 14px;
@@ -48,8 +55,9 @@ body {
 }
 
 /* =====================
-   Messages
+   MESSAGES
 ===================== */
+
 .gaarsdal-chatbot .messages {
   flex: 1;
   overflow-y: auto;
@@ -76,14 +84,19 @@ body {
 }
 
 /* =====================
-   Footer
+   FOOTER (LOCKED LAYOUT)
 ===================== */
+
 .gaarsdal-chatbot-footer {
   background: #ECEAE4;
   padding: 10px;
   border-top: 1px solid rgba(0, 0, 0, 0.05);
   border-bottom-left-radius: 20px;
   border-bottom-right-radius: 20px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .gaarsdal-chatbot footer textarea {
@@ -102,8 +115,9 @@ body {
 }
 
 /* =====================
-   Stack dots (ALDRIG skjult)
+   STACK DOTS (VISIBLE)
 ===================== */
+
 .gaarsdal-stack-dots {
   display: flex;
   justify-content: center;
@@ -123,23 +137,26 @@ body {
 }
 
 /* =====================
-   Icon buttons
+   ICON BUTTONS
 ===================== */
+
 .gaarsdal-icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 6px;
   border-radius: 8px;
   color: #4A5D54;
-  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .gaarsdal-icon-btn:hover {
   background: rgba(74, 93, 84, 0.08);
 }
 
-/* 🔒 RIGTIG disabled-tilstand */
+/* =====================
+   DISABLED STATE (SOURCE OF TRUTH)
+===================== */
+
 .gaarsdal-icon-btn:disabled {
   opacity: 0.35;
   pointer-events: none;
@@ -155,8 +172,9 @@ body {
 }
 
 /* =====================
-   Floating launcher
+   FLOATING LAUNCHER
 ===================== */
+
 .gaarsdal-launcher {
   background: #4A5D54;
   color: #FFFFFF;
