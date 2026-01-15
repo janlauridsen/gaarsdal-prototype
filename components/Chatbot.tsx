@@ -7,10 +7,6 @@ import {
   ForwardIcon,
   TrashIcon,
   ArrowsPointingOutIcon,
-  HomeIcon,
-  EnvelopeIcon,
-  PhoneIcon,
-  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
 /* =====================
@@ -52,15 +48,23 @@ function createConversation(): Conversation {
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [stack, setStack] = useState<Conversation[]>([createConversation()]);
+
+  const [stack, setStack] = useState<Conversation[]>([
+    createConversation(),
+  ]);
   const [index, setIndex] = useState(0);
+
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const currentNodeRef = useRef<string>("ROOT");
 
-  const current = stack[index];
+  const current = stack[index] ?? stack[0];
+
+  /* =====================
+     SCROLL
+  ===================== */
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -104,7 +108,7 @@ export default function Chatbot() {
         });
       })
       .catch(() => {});
-  }, [open, current, index]);
+  }, [open]);
 
   /* =====================
      SEND
@@ -154,7 +158,7 @@ export default function Chatbot() {
             ...next[index].messages,
             {
               role: "assistant",
-              content: data.message ?? "",
+              content: data.message,
               chips: data.chips ?? [],
             },
           ],
@@ -167,6 +171,28 @@ export default function Chatbot() {
   }
 
   /* =====================
+     STACK CONTROLS (SAFE)
+  ===================== */
+
+  function addConversation() {
+    if (stack.length >= MAX_SESSIONS) return;
+
+    setStack((prev) => [...prev, createConversation()]);
+    setIndex(stack.length);
+  }
+
+  function removeConversation() {
+    if (stack.length === 1) return;
+
+    setStack((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      const nextIndex = Math.max(0, index - 1);
+      setIndex(nextIndex);
+      return next;
+    });
+  }
+
+  /* =====================
      RENDER
   ===================== */
 
@@ -175,8 +201,8 @@ export default function Chatbot() {
       {!open && (
         <button
           type="button"
-          onClick={() => setOpen(true)}
           className="fixed bottom-6 right-6 w-14 h-14 gaarsdal-launcher flex items-center justify-center"
+          onClick={() => setOpen(true)}
         >
           <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
         </button>
@@ -193,7 +219,7 @@ export default function Chatbot() {
           />
 
           <div
-            className={`fixed z-50 gaarsdal-chatbot flex flex-col ${
+            className={`gaarsdal-chatbot fixed flex flex-col ${
               expanded
                 ? "inset-4 md:inset-10"
                 : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
@@ -202,12 +228,20 @@ export default function Chatbot() {
           >
             {/* HEADER */}
             <header className="gaarsdal-chatbot-header flex justify-between items-center">
-              <span className="font-medium">Gaarsdal</span>
+              <div className="flex items-center gap-2">
+                <img
+                  src="/jan.gif"
+                  alt="Jan"
+                  className="w-6 h-6 rounded-full"
+                />
+                <span className="font-medium text-sm">Gaarsdal</span>
+              </div>
+
               <div className="flex gap-2">
                 <button
                   type="button"
                   className="gaarsdal-icon-btn"
-                  title="Udvid / sammentræk"
+                  title="Udvid"
                   onClick={() => setExpanded((v) => !v)}
                 >
                   <ArrowsPointingOutIcon className="w-5 h-5" />
@@ -236,13 +270,13 @@ export default function Chatbot() {
                   </div>
 
                   {m.role === "assistant" && m.chips?.length ? (
-                    <div className="flex gap-2 flex-wrap mt-2">
+                    <div className="flex gap-2 flex-wrap pl-2 mt-2">
                       {m.chips.map((c, ci) => (
                         <button
                           key={ci}
                           type="button"
-                          onClick={() => send({ chip: c })}
                           className="text-xs px-3 py-1 rounded-full border bg-white"
+                          onClick={() => send({ chip: c })}
                         >
                           {c}
                         </button>
@@ -253,8 +287,11 @@ export default function Chatbot() {
               ))}
 
               {loading && (
-                <div className="text-sm opacity-60 mt-2">Skriver…</div>
+                <div className="text-sm opacity-60 mt-2">
+                  Skriver…
+                </div>
               )}
+
               <div ref={messagesEndRef} />
             </div>
 
@@ -273,11 +310,11 @@ export default function Chatbot() {
               />
 
               {/* PRIMARY ICONS */}
-              <div className="flex justify-center gap-4 mt-2">
-                <HomeIcon className="w-5 h-5" />
-                <EnvelopeIcon className="w-5 h-5" />
-                <PhoneIcon className="w-5 h-5" />
-                <ExclamationTriangleIcon className="w-5 h-5" />
+              <div className="flex justify-center gap-4 mt-3">
+                <span className="gaarsdal-icon-btn" title="Forside">🏠</span>
+                <span className="gaarsdal-icon-btn" title="Mail">✉️</span>
+                <span className="gaarsdal-icon-btn" title="Telefon">📞</span>
+                <span className="gaarsdal-icon-btn" title="Akut">⚠️</span>
               </div>
 
               {/* STACK DOTS */}
@@ -296,30 +333,24 @@ export default function Chatbot() {
               <div className="flex justify-center gap-4">
                 <button
                   type="button"
-                  disabled={stack.length >= MAX_SESSIONS}
-                  className={`gaarsdal-icon-btn ${
+                  className={
                     stack.length >= MAX_SESSIONS
-                      ? "gaarsdal-icon-disabled"
-                      : ""
-                  }`}
-                  title="Ny samtale"
-                  onClick={() =>
-                    setStack((prev) =>
-                      prev.length < MAX_SESSIONS
-                        ? [...prev, createConversation()]
-                        : prev
-                    )
+                      ? "gaarsdal-icon-btn gaarsdal-icon-disabled"
+                      : "gaarsdal-icon-btn"
                   }
+                  title="Ny samtale"
+                  onClick={addConversation}
                 >
                   <PlusIcon className="w-5 h-5" />
                 </button>
 
                 <button
                   type="button"
-                  disabled={index === 0}
-                  className={`gaarsdal-icon-btn ${
-                    index === 0 ? "gaarsdal-icon-disabled" : ""
-                  }`}
+                  className={
+                    index === 0
+                      ? "gaarsdal-icon-btn gaarsdal-icon-disabled"
+                      : "gaarsdal-icon-btn"
+                  }
                   title="Forrige"
                   onClick={() => setIndex((i) => Math.max(0, i - 1))}
                 >
@@ -328,12 +359,11 @@ export default function Chatbot() {
 
                 <button
                   type="button"
-                  disabled={index === stack.length - 1}
-                  className={`gaarsdal-icon-btn ${
+                  className={
                     index === stack.length - 1
-                      ? "gaarsdal-icon-disabled"
-                      : ""
-                  }`}
+                      ? "gaarsdal-icon-btn gaarsdal-icon-disabled"
+                      : "gaarsdal-icon-btn"
+                  }
                   title="Næste"
                   onClick={() =>
                     setIndex((i) =>
@@ -346,20 +376,13 @@ export default function Chatbot() {
 
                 <button
                   type="button"
-                  disabled={stack.length === 1}
-                  className={`gaarsdal-icon-btn ${
+                  className={
                     stack.length === 1
-                      ? "gaarsdal-icon-disabled"
-                      : ""
-                  }`}
-                  title="Slet"
-                  onClick={() =>
-                    setStack((prev) =>
-                      prev.length === 1
-                        ? prev
-                        : prev.filter((_, i) => i !== index)
-                    )
+                      ? "gaarsdal-icon-btn gaarsdal-icon-disabled"
+                      : "gaarsdal-icon-btn"
                   }
+                  title="Slet"
+                  onClick={removeConversation}
                 >
                   <TrashIcon className="w-5 h-5" />
                 </button>
