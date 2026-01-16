@@ -19,7 +19,7 @@ export interface SummaryViewConfig {
 export const SUMMARY_VIEWS: SummaryViewConfig[] = [
   {
     id: "initial_understanding",
-    scope: "session",
+    scope: "task",
     includedMetaDomains: [
       "initial_intent",
       "problem_model"
