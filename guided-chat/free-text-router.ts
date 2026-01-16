@@ -1,11 +1,9 @@
 // guided-chat/free-text-router.ts
 
-import { SignalResult, noneSignal } from "./signals";
-
 /**
- * Fritekst-routing er udfaset.
- * Al fritekst behandles nu som recovery-input i engine.
+ * Fritekst-routing er fuldt udfaset.
+ * Bevares kun som kompatibilitetsstub.
  */
-export function resolveFreeTextSignal(): SignalResult {
-  return noneSignal;
+export function resolveFreeTextSignal() {
+  return null;
 }
