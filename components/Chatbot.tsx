@@ -12,6 +12,7 @@ import {
   PhoneIcon,
   EnvelopeIcon,
   ExclamationTriangleIcon,
+  ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
 type EngineResponse = {
@@ -38,6 +39,7 @@ function createConversation(): Conversation {
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [stack, setStack] = useState<Conversation[]>([
     createConversation(),
   ]);
@@ -52,11 +54,9 @@ export default function Chatbot() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [current.messages, loading]);
 
-  /** 🔹 INITIAL KICKOFF */
   useEffect(() => {
     if (!open) return;
     if (current.messages.length > 0) return;
-
     send({ actionId: "home" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -96,7 +96,7 @@ export default function Chatbot() {
         const next = [...prev];
         next[index].messages.push({
           role: "assistant",
-          content: data.message ?? "",
+          content: data.message ?? " ",
           actions: data.actions,
         });
         return next;
@@ -118,19 +118,34 @@ export default function Chatbot() {
       )}
 
       {open && (
-        <div className="fixed bottom-24 right-6 w-96 h-[70vh] gaarsdal-chatbot">
-          <header className="gaarsdal-chatbot-header flex justify-between">
-            <span>Gaarsdal</span>
-            <button onClick={() => setOpen(false)}>
-              <XMarkIcon className="w-5 h-5" />
-            </button>
+        <div
+          className={`fixed gaarsdal-chatbot flex flex-col ${
+            expanded
+              ? "inset-4 md:inset-10"
+              : "bottom-24 right-6 w-96 h-[70vh]"
+          }`}
+        >
+          <header className="gaarsdal-chatbot-header flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <img src="/jan.gif" className="w-6 h-6 rounded-full" />
+              <span>Gaarsdal</span>
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={() => setExpanded(v => !v)}>
+                <ArrowsPointingOutIcon className="w-5 h-5" />
+              </button>
+              <button onClick={() => setOpen(false)}>
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
           </header>
 
           <div className="messages">
             {current.messages.map((m, i) => (
               <div key={i}>
                 <div className={`message ${m.role}`}>
-                  {m.content || " "}
+                  {m.content}
                 </div>
 
                 {m.role === "assistant" &&
@@ -163,7 +178,6 @@ export default function Chatbot() {
               placeholder="Skriv her…"
             />
 
-            {/* 🔹 GLOBAL INTENTS */}
             <div className="flex justify-center gap-4 mt-3">
               <button onClick={() => send({ actionId: "home" })}><HomeIcon className="w-5 h-5" /></button>
               <button onClick={() => send({ actionId: "contact_mail" })}><EnvelopeIcon className="w-5 h-5" /></button>
@@ -171,7 +185,6 @@ export default function Chatbot() {
               <button onClick={() => send({ actionId: "emergency" })}><ExclamationTriangleIcon className="w-5 h-5" /></button>
             </div>
 
-            {/* 🔹 TASK CONTROLS */}
             <div className="flex justify-center gap-4 mt-2">
               <button onClick={() => send({ actionId: "create_task" })}><PlusIcon className="w-5 h-5" /></button>
               <button onClick={() => send({ actionId: "switch_task" })}><BackwardIcon className="w-5 h-5" /></button>
