@@ -1,56 +1,33 @@
-/**
- * guided-chat/signals.ts
- *
- * Rolle:
- * - Formelle signaler udledt af brugerinput
- * - Ingen handlinger
- * - Ingen guards
- * - Ingen routing
- *
- * Version:
- * - V10.4
- */
+// guided-chat/signals.ts
 
-/* =====================
-   SIGNAL TYPES
-===================== */
+import { getSignalConfig } from "./config/signal-config";
 
-/**
- * Signal er et forslag om intention.
- * Det er ikke en handling.
- */
-export type Signal =
-  | {
-      type: "NAVIGATE";
-      chip: string;
-    }
-  | {
-      type: "PARENTESE";
-      nodeId: string;
-    }
-  | {
-      type: "NEW_SESSION_SIGNAL";
-    }
-  | {
-      type: "NONE";
-    };
+export interface Signal {
+  type: string;
+  payload?: unknown;
+  source: "ui" | "system";
+}
 
-/* =====================
-   RESULT TYPE
-===================== */
+export function createSignal(
+  type: string,
+  payload: unknown,
+  source: "ui" | "system"
+): Signal {
+  const config = getSignalConfig(type);
 
-export type SignalResult = {
-  signal: Signal;
-  confidence: "high" | "medium" | "low";
-};
+  if (!config) {
+    throw new Error(`Unknown signal type: ${type}`);
+  }
 
-/* =====================
-   HELPERS
-===================== */
+  if (!config.allowedSources.includes(source)) {
+    throw new Error(
+      `Signal '${type}' not allowed from source '${source}'`
+    );
+  }
 
-export function noneSignal(): SignalResult {
   return {
-    signal: { type: "NONE" },
-    confidence: "low",
+    type,
+    payload,
+    source
   };
 }
