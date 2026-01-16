@@ -9,7 +9,11 @@ import { SessionState } from "./session/session.types";
 
 /**
  * Eneste offentlige indgang til chatbot-kernen.
- * Aktiverer signal-prioritering, confidence-triggers og opsummering.
+ * Samler:
+ * - confidence-triggers
+ * - signal-prioritering
+ * - recovery-håndtering
+ * - opsummering
  */
 export function runChatbotEngine(
   signal: Signal,
@@ -18,15 +22,16 @@ export function runChatbotEngine(
   // 1) Confidence-baserede system-signaler
   const systemSignal = evaluateConfidenceTriggers(session);
 
-  // 2) Vælg autoritativt signal
+  // 2) Vælg autoritativt signal (session kræves nu)
   const selectedSignal = handleSignal(
-    systemSignal ? [systemSignal, signal] : signal
+    systemSignal ? [systemSignal, signal] : signal,
+    session
   );
 
-  // 3) Kør eksisterende engine
+  // 3) Kør engine (tasks, globale intents, states)
   const result = runEngine(selectedSignal, session);
 
-  // 4) Evt. opsummering som state-output
+  // 4) Evt. opsummering som output
   const summary = maybeBuildSummary(session);
 
   if (summary) {
