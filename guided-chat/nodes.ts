@@ -2,52 +2,50 @@
 
 import { START_STATE_DATA } from "./config/state-start";
 import { SELECT_TOPIC_STATE_DATA } from "./config/state-select-topic";
+import { ROOT_STATE_DATA } from "./config/state-root";
+import { TRIAGE_STATE_DATA } from "./config/state-triage";
 
 /**
- * Midlertidig adapter.
- * Data-drevne states + eksisterende runtime-logik.
+ * Midlertidigt adapter-lag.
+ * Alle states har nu deklarativ semantik.
+ * Runtime-logik forbliver uændret.
  */
+
+function renderFromStateData(stateData: any) {
+  return {
+    text: stateData.ui_projection.text,
+    chips: stateData.allowed_actions.map((actionId: string) => ({
+      actionId
+    }))
+  };
+}
 
 export const nodes = {
   start: {
     id: START_STATE_DATA.id,
-
-    render() {
-      return {
-        text: START_STATE_DATA.ui_projection.text,
-        chips: START_STATE_DATA.allowed_actions.map(actionId => ({
-          actionId
-        }))
-      };
-    },
-
-    onEnter(context: any) {
-      return context;
-    },
-
-    onSignal(signal: any, context: any) {
-      return context;
-    }
+    render: () => renderFromStateData(START_STATE_DATA),
+    onEnter: (context: any) => context,
+    onSignal: (signal: any, context: any) => context
   },
 
   select_topic: {
     id: SELECT_TOPIC_STATE_DATA.id,
+    render: () => renderFromStateData(SELECT_TOPIC_STATE_DATA),
+    onEnter: (context: any) => context,
+    onSignal: (signal: any, context: any) => context
+  },
 
-    render() {
-      return {
-        text: SELECT_TOPIC_STATE_DATA.ui_projection.text,
-        chips: SELECT_TOPIC_STATE_DATA.allowed_actions.map(actionId => ({
-          actionId
-        }))
-      };
-    },
+  ROOT: {
+    id: ROOT_STATE_DATA.id,
+    render: () => renderFromStateData(ROOT_STATE_DATA),
+    onEnter: (context: any) => context,
+    onSignal: (signal: any, context: any) => context
+  },
 
-    onEnter(context: any) {
-      return context;
-    },
-
-    onSignal(signal: any, context: any) {
-      return context;
-    }
+  TRIAGE: {
+    id: TRIAGE_STATE_DATA.id,
+    render: () => renderFromStateData(TRIAGE_STATE_DATA),
+    onEnter: (context: any) => context,
+    onSignal: (signal: any, context: any) => context
   }
 };
