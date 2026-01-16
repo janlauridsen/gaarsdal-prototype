@@ -10,8 +10,16 @@ export interface MetaValue {
 
 export type MetaStore = Record<string, MetaValue>;
 
-export interface SessionState {
+export interface TaskState {
+  taskId: string;
+  taskType: string;
+  currentState: string;
   meta: MetaStore;
+}
+
+export interface SessionState {
+  activeTaskId: string;
+  tasks: Record<string, TaskState>;
   confidence: {
     problem_understanding: number;
     state_alignment: number;
