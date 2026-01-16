@@ -8,27 +8,21 @@ import {
   BackwardIcon,
   ForwardIcon,
   TrashIcon,
+  HomeIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
-type EngineOutput = {
-  output?: {
-    type: "summary";
-    payload: {
-      purpose: string;
-      data: Record<string, unknown>;
-    };
-  };
+type EngineResponse = {
   message?: string;
-  actions?: Array<{
-    actionId: string;
-    label: string;
-  }>;
+  actions?: { actionId: string; label: string }[];
 };
 
 type Message = {
   role: "user" | "assistant";
   content: string;
-  actions?: EngineOutput["actions"];
+  actions?: EngineResponse["actions"];
 };
 
 type Conversation = {
@@ -39,10 +33,7 @@ type Conversation = {
 const MAX_SESSIONS = 5;
 
 function createConversation(): Conversation {
-  return {
-    id: crypto.randomUUID(),
-    messages: [],
-  };
+  return { id: crypto.randomUUID(), messages: [] };
 }
 
 export default function Chatbot() {
@@ -61,20 +52,26 @@ export default function Chatbot() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [current.messages, loading]);
 
+  /** 🔹 INITIAL KICKOFF */
+  useEffect(() => {
+    if (!open) return;
+    if (current.messages.length > 0) return;
+
+    send({ actionId: "home" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   async function send(params: { text?: string; actionId?: string }) {
     if (loading) return;
     if (!params.text && !params.actionId) return;
 
     if (params.text) {
-      setStack((prev) => {
+      setStack(prev => {
         const next = [...prev];
-        next[index] = {
-          ...next[index],
-          messages: [
-            ...next[index].messages,
-            { role: "user", content: params.text },
-          ],
-        };
+        next[index].messages.push({
+          role: "user",
+          content: params.text!,
+        });
         return next;
       });
     }
@@ -93,41 +90,20 @@ export default function Chatbot() {
         }),
       });
 
-      const data: EngineOutput = await res.json();
+      const data: EngineResponse = await res.json();
 
-      setStack((prev) => {
+      setStack(prev => {
         const next = [...prev];
-        next[index] = {
-          ...next[index],
-          messages: [
-            ...next[index].messages,
-            {
-              role: "assistant",
-              content:
-                data.output?.payload.purpose ??
-                data.message ??
-                "",
-              actions: data.actions,
-            },
-          ],
-        };
+        next[index].messages.push({
+          role: "assistant",
+          content: data.message ?? "",
+          actions: data.actions,
+        });
         return next;
       });
     } finally {
       setLoading(false);
     }
-  }
-
-  function addConversation() {
-    if (stack.length >= MAX_SESSIONS) return;
-    setStack((prev) => [...prev, createConversation()]);
-    setIndex(stack.length);
-  }
-
-  function removeConversation() {
-    if (stack.length === 1) return;
-    setStack((prev) => prev.filter((_, i) => i !== index));
-    setIndex((i) => Math.max(0, i - 1));
   }
 
   return (
@@ -154,16 +130,14 @@ export default function Chatbot() {
             {current.messages.map((m, i) => (
               <div key={i}>
                 <div className={`message ${m.role}`}>
-                  {m.content}
+                  {m.content || " "}
                 </div>
 
                 {m.role === "assistant" &&
-                  m.actions?.map((a) => (
+                  m.actions?.map(a => (
                     <button
                       key={a.actionId}
-                      onClick={() =>
-                        send({ actionId: a.actionId })
-                      }
+                      onClick={() => send({ actionId: a.actionId })}
                       className="text-xs px-3 py-1 rounded-full border bg-white mr-2 mt-2"
                     >
                       {a.label}
@@ -172,19 +146,15 @@ export default function Chatbot() {
               </div>
             ))}
 
-            {loading && (
-              <div className="text-sm opacity-60">
-                Skriver…
-              </div>
-            )}
+            {loading && <div className="text-sm opacity-60">Skriver…</div>}
             <div ref={messagesEndRef} />
           </div>
 
           <footer className="gaarsdal-chatbot-footer">
             <textarea
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   send({ text: input });
@@ -193,19 +163,20 @@ export default function Chatbot() {
               placeholder="Skriv her…"
             />
 
+            {/* 🔹 GLOBAL INTENTS */}
             <div className="flex justify-center gap-4 mt-3">
-              <button onClick={addConversation}>
-                <PlusIcon className="w-5 h-5" />
-              </button>
-              <button onClick={() => setIndex((i) => Math.max(0, i - 1))}>
-                <BackwardIcon className="w-5 h-5" />
-              </button>
-              <button onClick={() => setIndex((i) => Math.min(stack.length - 1, i + 1))}>
-                <ForwardIcon className="w-5 h-5" />
-              </button>
-              <button onClick={removeConversation}>
-                <TrashIcon className="w-5 h-5" />
-              </button>
+              <button onClick={() => send({ actionId: "home" })}><HomeIcon className="w-5 h-5" /></button>
+              <button onClick={() => send({ actionId: "contact_mail" })}><EnvelopeIcon className="w-5 h-5" /></button>
+              <button onClick={() => send({ actionId: "contact_phone" })}><PhoneIcon className="w-5 h-5" /></button>
+              <button onClick={() => send({ actionId: "emergency" })}><ExclamationTriangleIcon className="w-5 h-5" /></button>
+            </div>
+
+            {/* 🔹 TASK CONTROLS */}
+            <div className="flex justify-center gap-4 mt-2">
+              <button onClick={() => send({ actionId: "create_task" })}><PlusIcon className="w-5 h-5" /></button>
+              <button onClick={() => send({ actionId: "switch_task" })}><BackwardIcon className="w-5 h-5" /></button>
+              <button onClick={() => send({ actionId: "switch_task" })}><ForwardIcon className="w-5 h-5" /></button>
+              <button onClick={() => send({ actionId: "close_task" })}><TrashIcon className="w-5 h-5" /></button>
             </div>
           </footer>
         </div>
