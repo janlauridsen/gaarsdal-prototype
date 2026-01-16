@@ -1,35 +1,18 @@
 // guided-chat/session/session.reducer.ts
 
-import { GuidedSession } from "./session.types";
-import { NodeId } from "../node-router";
-import { Chip } from "../chips";
+import { SessionState } from "./session.types";
+import { CONFIDENCE_CONFIG } from "../config/confidence-config";
 
-type ReducerInput = {
-  nextNode: NodeId;
-  chip?: Chip;
-  text?: string;
-};
+function initializeConfidence(): SessionState["confidence"] {
+  return CONFIDENCE_CONFIG.reduce((acc, cfg) => {
+    acc[cfg.dimension] = cfg.initialValue;
+    return acc;
+  }, {} as SessionState["confidence"]);
+}
 
-export function reduceSession(
-  session: GuidedSession,
-  input: ReducerInput
-): GuidedSession {
-  const now = new Date().toISOString();
-
+export function createInitialSessionState(): SessionState {
   return {
-    ...session,
-    current_node: input.nextNode,
-    updated_at: now,
-    history: [
-      ...session.history,
-      {
-        node: session.current_node,
-        input: {
-          chip: input.chip,
-          text: input.text,
-        },
-        timestamp: now,
-      },
-    ],
+    meta: {},
+    confidence: initializeConfidence()
   };
 }
