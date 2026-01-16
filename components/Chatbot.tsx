@@ -26,37 +26,31 @@ type Message = {
   actions?: EngineResponse["actions"];
 };
 
-type Conversation = {
-  id: string;
-  messages: Message[];
-};
-
-const MAX_SESSIONS = 5;
-
-function createConversation(): Conversation {
-  return { id: crypto.randomUUID(), messages: [] };
-}
-
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [stack, setStack] = useState<Conversation[]>([
-    createConversation(),
-  ]);
-  const [index, setIndex] = useState(0);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const sessionIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const current = stack[index];
+
+  /** ✅ CLIENT-ONLY SESSION INIT */
+  useEffect(() => {
+    if (!sessionIdRef.current) {
+      sessionIdRef.current = Math.random().toString(36).slice(2);
+    }
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [current.messages, loading]);
+  }, [messages, loading]);
 
+  /** INITIAL SYSTEM KICK */
   useEffect(() => {
     if (!open) return;
-    if (current.messages.length > 0) return;
+    if (messages.length > 0) return;
     send({ actionId: "home" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -64,20 +58,10 @@ export default function Chatbot() {
   async function send(params: { text?: string; actionId?: string }) {
     if (loading) return;
     if (!params.text && !params.actionId) return;
+    if (!sessionIdRef.current) return;
 
     if (params.text) {
-      setStack(prev => {
-        const next = [...prev];
-        const convo = next[index];
-        next[index] = {
-          ...convo,
-          messages: [
-            ...convo.messages,
-            { role: "user", content: params.text! },
-          ],
-        };
-        return next;
-      });
+      setMessages(m => [...m, { role: "user", content: params.text! }]);
     }
 
     setInput("");
@@ -88,7 +72,7 @@ export default function Chatbot() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sessionId: current.id,
+          sessionId: sessionIdRef.current,
           text: params.text ?? null,
           actionId: params.actionId ?? null,
         }),
@@ -96,22 +80,14 @@ export default function Chatbot() {
 
       const data: EngineResponse = await res.json();
 
-      setStack(prev => {
-        const next = [...prev];
-        const convo = next[index];
-        next[index] = {
-          ...convo,
-          messages: [
-            ...convo.messages,
-            {
-              role: "assistant",
-              content: data.message ?? "",
-              actions: data.actions,
-            },
-          ],
-        };
-        return next;
-      });
+      setMessages(m => [
+        ...m,
+        {
+          role: "assistant",
+          content: data.message ?? "",
+          actions: data.actions,
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -153,12 +129,9 @@ export default function Chatbot() {
           </header>
 
           <div className="messages">
-            {current.messages.map((m, i) => (
+            {messages.map((m, i) => (
               <div key={i}>
-                <div className={`message ${m.role}`}>
-                  {m.content}
-                </div>
-
+                <div className={`message ${m.role}`}>{m.content}</div>
                 {m.role === "assistant" &&
                   m.actions?.map(a => (
                     <button
@@ -171,7 +144,6 @@ export default function Chatbot() {
                   ))}
               </div>
             ))}
-
             {loading && <div className="text-sm opacity-60">Skriver…</div>}
             <div ref={messagesEndRef} />
           </div>
