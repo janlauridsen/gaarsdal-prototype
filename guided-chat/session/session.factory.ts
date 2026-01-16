@@ -1,15 +1,10 @@
 // guided-chat/session/session.factory.ts
 
-import { GuidedSession } from "./session.types";
+/**
+ * Session factory er udfaset.
+ * Session initialiseres nu via createInitialSessionState.
+ */
 
-export function createSession(session_id: string): GuidedSession {
-  const now = new Date().toISOString();
-
-  return {
-    session_id,
-    created_at: now,
-    updated_at: now,
-    current_node: "ROOT",
-    history: [],
-  };
+export function createSession() {
+  return null;
 }
