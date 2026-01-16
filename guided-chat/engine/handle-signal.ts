@@ -2,19 +2,33 @@
 
 import { Signal } from "../signals";
 import { getSignalConfig } from "../config/signal-config";
+import { prioritizeSignals } from "./prioritize-signals";
 
 /**
  * Central indgang til engine.
- * Alle signaler skal igennem denne funktion.
+ * Modtager ét eller flere signaler og vælger ét autoritativt.
  */
-export function handleSignal(signal: Signal): Signal {
-  const config = getSignalConfig(signal.type);
+export function handleSignal(
+  signalOrSignals: Signal | Signal[]
+): Signal {
+  const signals = Array.isArray(signalOrSignals)
+    ? signalOrSignals
+    : [signalOrSignals];
 
-  if (!config) {
-    throw new Error(`Signal '${signal.type}' has no configuration`);
+  // Valider alle signaler
+  for (const signal of signals) {
+    const config = getSignalConfig(signal.type);
+    if (!config) {
+      throw new Error(`Signal '${signal.type}' mangler konfiguration`);
+    }
   }
 
-  // Prioritet og klassifikation er nu entydigt defineret her.
-  // I dette trin ændres ingen adfærd – kun centralisering.
-  return signal;
+  // Prioritér
+  const [selected] = prioritizeSignals(signals);
+
+  if (!selected) {
+    throw new Error("Ingen signaler tilgængelige efter prioritering");
+  }
+
+  return selected;
 }
