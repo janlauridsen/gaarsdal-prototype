@@ -1,20 +1,21 @@
 // guided-chat/session/session.types.ts
 
-import { NodeId } from "../node-router";
-import { Chip } from "../chips";
+import { MetaPersistence } from "../config/meta-domains";
 
-export type GuidedSession = {
-  session_id: string;
-  created_at: string;
-  updated_at: string;
+export interface MetaValue {
+  value: unknown;
+  updatedFromState: string;
+  timestamp: number;
+}
 
-  current_node: NodeId;
-  history: {
-    node: NodeId;
-    input?: {
-      chip?: Chip;
-      text?: string;
-    };
-    timestamp: string;
-  }[];
-};
+export type MetaStore = Record<string, MetaValue>;
+
+export interface SessionState {
+  meta: MetaStore;
+  confidence: {
+    problem_understanding: number;
+    state_alignment: number;
+    signal_clarity: number;
+    stability: number;
+  };
+}
