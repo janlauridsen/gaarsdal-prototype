@@ -2,16 +2,24 @@
 
 import { Signal } from "./signals";
 import { handleSignal } from "./engine/handle-signal";
-
-// Eksisterende engine-funktionalitet importeres uændret
+import { evaluateConfidenceTriggers } from "./engine/confidence-triggers";
 import { runEngine } from "./engine/run-engine";
+import { SessionState } from "./session/session.types";
 
 /**
  * Eneste offentlige indgang til chatbot-kernen.
+ * Indfører confidence-baserede system-signaler.
  */
-export function runChatbotEngine(signal: Signal) {
-  const validatedSignal = handleSignal(signal);
+export function runChatbotEngine(
+  signal: Signal,
+  session: SessionState
+) {
+  // Først: confidence-baserede triggers
+  const systemSignal = evaluateConfidenceTriggers(session);
 
-  // Al eksisterende logik fortsætter herfra
-  return runEngine(validatedSignal);
+  const selectedSignal = handleSignal(
+    systemSignal ? [systemSignal, signal] : signal
+  );
+
+  return runEngine(selectedSignal, session);
 }
