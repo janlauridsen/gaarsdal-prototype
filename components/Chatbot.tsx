@@ -68,10 +68,14 @@ export default function Chatbot() {
     if (params.text) {
       setStack(prev => {
         const next = [...prev];
-        next[index].messages.push({
-          role: "user",
-          content: params.text!,
-        });
+        const convo = next[index];
+        next[index] = {
+          ...convo,
+          messages: [
+            ...convo.messages,
+            { role: "user", content: params.text! },
+          ],
+        };
         return next;
       });
     }
@@ -94,11 +98,18 @@ export default function Chatbot() {
 
       setStack(prev => {
         const next = [...prev];
-        next[index].messages.push({
-          role: "assistant",
-          content: data.message ?? " ",
-          actions: data.actions,
-        });
+        const convo = next[index];
+        next[index] = {
+          ...convo,
+          messages: [
+            ...convo.messages,
+            {
+              role: "assistant",
+              content: data.message ?? "",
+              actions: data.actions,
+            },
+          ],
+        };
         return next;
       });
     } finally {
