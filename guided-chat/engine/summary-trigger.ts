@@ -15,12 +15,14 @@ export interface SummaryOutput {
 }
 
 /**
- * Vælger evt. en opsummering baseret på confidence og tilgængelig meta.
- * Returnerer null hvis ingen opsummering skal vises nu.
+ * Vælger evt. en opsummering baseret på confidence og aktiv task-meta.
  */
 export function maybeBuildSummary(
   session: SessionState
 ): SummaryOutput | null {
+  const task = session.tasks[session.activeTaskId];
+  if (!task) return null;
+
   for (const view of SUMMARY_VIEWS) {
     const cfg = getConfidenceConfig(
       view.requiredConfidence.dimension as any
@@ -36,14 +38,17 @@ export function maybeBuildSummary(
       continue;
     }
 
-    // Tjek at mindst ét meta-domæne findes
+    // Tjek at mindst ét meta-domæne findes på aktiv task
     const hasAnyMeta = view.includedMetaDomains.some(
-      d => Boolean(session.meta[d])
+      d => Boolean(task.meta[d])
     );
 
     if (!hasAnyMeta) continue;
 
-    const summary = buildSummary(view, session);
+    const summary = buildSummary(view, {
+      ...session,
+      meta: task.meta
+    } as any);
 
     return {
       type: "summary",
