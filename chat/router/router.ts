@@ -1,11 +1,10 @@
-import { RouterContext, RouteResult } from "./types"
-import { getNode } from "../nodes/registry"
+import { NodeId } from "../kernel"
 
-export function route(context: RouterContext): RouteResult {
-  const node = getNode(context.state.active_node)
+export type RouterContext = {
+  active_node: NodeId
+}
 
-  return {
-    nodeId: node.id,
-    allowedExits: node.allowed_exits,
-  }
+export type RouteResult = {
+  nodeId: NodeId
+  allowedExits: NodeId[]
 }
