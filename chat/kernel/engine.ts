@@ -180,7 +180,8 @@ function applyTransition(
       return state
     }
 
-    const previous = state.parentese_stack[state.parentese_stack.length - 1]
+    const previous =
+      state.parentese_stack[state.parentese_stack.length - 1]
 
     return {
       ...state,
@@ -192,20 +193,30 @@ function applyTransition(
     }
   }
 
-  // NODE_HOP
+  // -----------------------------
+  // NODE_HOP (PATCHET v2.1)
+  // -----------------------------
+
   const node = getNode(state.active_node)
   if (transition.to && !node.allowed_exits.includes(transition.to)) {
     throw new Error("transition.to not allowed")
   }
 
+  const targetNode = transition.to
+    ? getNode(transition.to)
+    : null
+
   return {
     ...state,
     revision: state.revision + 1,
     active_node: transition.to ?? state.active_node,
-    allowed_transitions: transition.to
-      ? getNode(transition.to).allowed_exits
+    allowed_transitions: targetNode
+      ? targetNode.allowed_exits
       : state.allowed_transitions,
-    status: state.status,
+    status:
+      targetNode && targetNode.kind === "TERMINAL"
+        ? "completed"
+        : state.status,
     meta: nextMeta,
     parentese_stack: state.parentese_stack,
   }
