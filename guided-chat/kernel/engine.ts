@@ -5,19 +5,12 @@ import {
   InputSignal,
   Transition,
 } from "./types";
+import { NODES } from "./nodes";
 
-/**
- * PURE KERNEL ENGINE
- *
- * Implements exactly one real rule:
- * - EXPLICIT_TRANSITION to allowed node
- * Everything else is rejected.
- */
 export function runKernel(
   state: ConversationState,
   input: InputSignal
 ): { state: ConversationState; transition: Transition } {
-  // Only explicit transitions are supported at this stage
   if (input.type !== "EXPLICIT_TRANSITION") {
     return {
       state,
@@ -29,15 +22,26 @@ export function runKernel(
     };
   }
 
-  // Validate against allowed transitions
-  if (!state.allowed_transitions.includes(input.target)) {
+  const node = NODES[state.active_node];
+  if (!node) {
+    return {
+      state,
+      transition: {
+        type: "REJECT",
+        from: state.active_node,
+        reason: "Unknown active node",
+      },
+    };
+  }
+
+  if (!node.allowed_transitions.includes(input.target)) {
     return {
       state,
       transition: {
         type: "REJECT",
         from: state.active_node,
         to: input.target,
-        reason: "Target not allowed from current state",
+        reason: "Target not allowed from current node",
       },
     };
   }
