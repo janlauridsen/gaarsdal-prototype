@@ -2,7 +2,7 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 
-import { NODES, NodeConfig } from "../../guided-chat/nodes";
+import { nodes, NodeConfig } from "../../guided-chat/nodes";
 import { NodeId, ROUTES } from "../../guided-chat/node-router";
 
 import { resolveFreeTextSignal } from "../../guided-chat/free-text-router";
@@ -51,7 +51,7 @@ export default async function handler(
   }
 
   const nodeFrom: NodeId = currentNode ?? DEFAULT_NODE;
-  const nodeConfig: NodeConfig | undefined = NODES[nodeFrom];
+  const nodeConfig: NodeConfig | undefined = nodes[nodeFrom];
 
   if (!nodeConfig) {
     return res.status(500).json({ error: "Invalid node" });
@@ -69,7 +69,6 @@ export default async function handler(
 
   let resolvedSignal: any = null;
 
-  // CHIP (eksplicit)
   if (chip) {
     if (nodeConfig.chips?.includes(chip)) {
       const next =
@@ -80,14 +79,12 @@ export default async function handler(
       action = { type: "FALLBACK" };
     }
 
-  // FRITEKST
   } else if (text) {
     const signalResult = resolveFreeTextSignal(text, nodeConfig);
     resolvedSignal = signalResult;
 
     action = decideActionFromSignal(signalResult, nodeConfig);
 
-  // INGEN INPUT
   } else {
     action = { type: "FALLBACK" };
   }
@@ -121,13 +118,13 @@ export default async function handler(
       break;
   }
 
-  const nextNodeConfig = NODES[nodeTo];
+  const nextNodeConfig = nodes[nodeTo];
   if (!nextNodeConfig) {
     return res.status(500).json({ error: "Invalid next node" });
   }
 
   /* =====================
-     RESPONSE PAYLOAD
+     RESPONSE
   ===================== */
 
   const payload = {
@@ -144,7 +141,7 @@ export default async function handler(
   };
 
   /* =====================
-     LOGGING (TURN-LEVEL)
+     LOGGING
   ===================== */
 
   const logEntry: TurnLog = {
@@ -160,10 +157,6 @@ export default async function handler(
   };
 
   await writeTurnLog(logEntry);
-
-  /* =====================
-     RESPONSE
-  ===================== */
 
   return res.status(200).json(payload);
 }
