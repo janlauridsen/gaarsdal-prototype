@@ -1,7 +1,5 @@
 "use client";
 
-// components/Chatbot.tsx
-
 import { useEffect, useRef, useState } from "react";
 import {
   ChatBubbleOvalLeftEllipsisIcon,
@@ -22,58 +20,106 @@ type Message = {
   content: string;
 };
 
-let sessionCounter = 0;
+type Conversation = {
+  id: string;
+  messages: Message[];
+};
 
-function createSessionId() {
-  sessionCounter += 1;
-  return `session_${sessionCounter}`;
+let conversationCounter = 0;
+function createConversation(): Conversation {
+  conversationCounter += 1;
+  return { id: `conv_${conversationCounter}`, messages: [] };
 }
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+
+  const [stack, setStack] = useState<Conversation[]>([
+    createConversation(),
+  ]);
+  const [index, setIndex] = useState(0);
+
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const sessionIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  /* INIT */
+  const current = stack[index];
+  const hasMultiple = stack.length > 1;
+
+  /* INIT SYSTEM MESSAGE */
   useEffect(() => {
     if (!open) return;
-    if (sessionIdRef.current) return;
+    if (current.messages.length > 0) return;
 
-    sessionIdRef.current = createSessionId();
-
-    setMessages([
-      {
-        role: "assistant",
-        content: "Velkommen. Vælg en mulighed herunder eller skriv frit.",
-      },
-    ]);
+    setStack((prev) => {
+      const next = [...prev];
+      next[index] = {
+        ...next[index],
+        messages: [
+          {
+            role: "assistant",
+            content:
+              "Velkommen. Vælg en mulighed herunder eller skriv frit.",
+          },
+        ],
+      };
+      return next;
+    });
   }, [open]);
 
   /* SCROLL */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  }, [current.messages, loading]);
 
+  /* SEND */
   async function send(text: string) {
     if (!text || loading) return;
 
-    setMessages((m) => [...m, { role: "user", content: text }]);
+    setStack((prev) => {
+      const next = [...prev];
+      next[index] = {
+        ...next[index],
+        messages: [
+          ...next[index].messages,
+          { role: "user", content: text },
+        ],
+      };
+      return next;
+    });
+
     setInput("");
     setLoading(true);
 
-    // Midlertidig echo – engine kobles på senere
     setTimeout(() => {
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", content: "Modtaget." },
-      ]);
+      setStack((prev) => {
+        const next = [...prev];
+        next[index] = {
+          ...next[index],
+          messages: [
+            ...next[index].messages,
+            { role: "assistant", content: "Modtaget." },
+          ],
+        };
+        return next;
+      });
       setLoading(false);
-    }, 400);
+    }, 300);
+  }
+
+  /* STACK CONTROLS */
+  function addConversation() {
+    setStack((prev) => [...prev, createConversation()]);
+    setIndex(stack.length);
+  }
+
+  function removeConversation() {
+    if (!hasMultiple) return;
+
+    setStack((prev) => prev.filter((_, i) => i !== index));
+    setIndex((i) => Math.max(0, i - 1));
   }
 
   return (
@@ -108,7 +154,14 @@ export default function Chatbot() {
           >
             {/* HEADER */}
             <header className="gaarsdal-chatbot-header flex justify-between items-center">
-              <span className="font-medium text-sm">Gaarsdal</span>
+              <div className="flex items-center gap-2">
+                <img
+                  src="/jan.gif"
+                  alt="Jan"
+                  className="w-6 h-6 rounded-full"
+                />
+                <span className="font-medium text-sm">Gaarsdal</span>
+              </div>
 
               <div className="flex gap-2">
                 <button
@@ -128,17 +181,21 @@ export default function Chatbot() {
 
             {/* MESSAGES */}
             <div className="messages">
-              {messages.map((m, i) => (
+              {current.messages.map((m, i) => (
                 <div
                   key={i}
-                  className={`message ${m.role === "user" ? "user" : "bot"}`}
+                  className={`message ${
+                    m.role === "user" ? "user" : "bot"
+                  }`}
                 >
                   {m.content}
                 </div>
               ))}
 
               {loading && (
-                <div className="text-sm opacity-60 mt-2">Skriver…</div>
+                <div className="text-sm opacity-60 mt-2">
+                  Skriver…
+                </div>
               )}
 
               <div ref={messagesEndRef} />
@@ -158,6 +215,7 @@ export default function Chatbot() {
                 placeholder="Skriv frit her…"
               />
 
+              {/* PRIMARY ICONS */}
               <div className="flex justify-center gap-4 mt-3">
                 <HomeIcon className="w-5 h-5" />
                 <EnvelopeIcon className="w-5 h-5" />
@@ -165,11 +223,59 @@ export default function Chatbot() {
                 <ExclamationTriangleIcon className="w-5 h-5" />
               </div>
 
-              <div className="flex justify-center gap-4 mt-2">
-                <PlusIcon className="w-5 h-5 opacity-40" />
-                <BackwardIcon className="w-5 h-5 opacity-40" />
-                <ForwardIcon className="w-5 h-5 opacity-40" />
-                <TrashIcon className="w-5 h-5 opacity-40" />
+              {/* STACK CONTROLS */}
+              <div className="flex justify-center gap-4 mt-3">
+                <button
+                  className="gaarsdal-icon-btn"
+                  title="Ny samtale"
+                  onClick={addConversation}
+                >
+                  <PlusIcon className="w-5 h-5" />
+                </button>
+
+                <button
+                  className={
+                    hasMultiple
+                      ? "gaarsdal-icon-btn"
+                      : "gaarsdal-icon-btn gaarsdal-icon-disabled"
+                  }
+                  title="Forrige"
+                  onClick={() =>
+                    hasMultiple &&
+                    setIndex((i) => Math.max(0, i - 1))
+                  }
+                >
+                  <BackwardIcon className="w-5 h-5" />
+                </button>
+
+                <button
+                  className={
+                    hasMultiple
+                      ? "gaarsdal-icon-btn"
+                      : "gaarsdal-icon-btn gaarsdal-icon-disabled"
+                  }
+                  title="Næste"
+                  onClick={() =>
+                    hasMultiple &&
+                    setIndex((i) =>
+                      Math.min(stack.length - 1, i + 1)
+                    )
+                  }
+                >
+                  <ForwardIcon className="w-5 h-5" />
+                </button>
+
+                <button
+                  className={
+                    hasMultiple
+                      ? "gaarsdal-icon-btn"
+                      : "gaarsdal-icon-btn gaarsdal-icon-disabled"
+                  }
+                  title="Slet"
+                  onClick={removeConversation}
+                >
+                  <TrashIcon className="w-5 h-5" />
+                </button>
               </div>
             </footer>
           </div>
