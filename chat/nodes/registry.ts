@@ -9,17 +9,58 @@ type Node = {
 }
 
 const RAW_REGISTRY: Record<NodeId, Node> = {
-  START: {
-    id: "START",
+  HOME: {
+    id: "HOME",
     kind: "MENU",
-    goal: "entry",
-    allowed_exits: ["END"],
+    goal: "root",
+    allowed_exits: ["GEN_HYPNO", "TRIAGE", "BOOKING"],
     meta_domains_written: [],
   },
-  END: {
-    id: "END",
+
+  GEN_HYPNO: {
+    id: "GEN_HYPNO",
+    kind: "DIALOG",
+    goal: "Generelt om hypnoterapi",
+    allowed_exits: ["HOME"],
+    meta_domains_written: [],
+  },
+
+  TRIAGE: {
+    id: "TRIAGE",
+    kind: "DIALOG",
+    goal: "Triage",
+    allowed_exits: ["HOME"],
+    meta_domains_written: [],
+  },
+
+  BOOKING: {
+    id: "BOOKING",
+    kind: "MENU",
+    goal: "Booking",
+    allowed_exits: ["MAIL", "TLF"],
+    meta_domains_written: [],
+  },
+
+  MAIL: {
+    id: "MAIL",
     kind: "TERMINAL",
-    goal: "end",
+    goal: "Mail kontakt",
+    allowed_exits: [],
+    meta_domains_written: [],
+  },
+
+  TLF: {
+    id: "TLF",
+    kind: "TERMINAL",
+    goal: "Telefon kontakt",
+    allowed_exits: [],
+    meta_domains_written: [],
+  },
+
+  AKUT: {
+    id: "AKUT",
+    kind: "TERMINAL",
+    goal: "Akut",
     allowed_exits: [],
     meta_domains_written: [],
   },
