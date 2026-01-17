@@ -4,6 +4,7 @@ import {
   Transition,
   KernelResult,
   LogEvent,
+  MetaStore,
 } from "./types"
 import { getNode } from "../nodes/registry"
 
@@ -81,6 +82,31 @@ function buildTransition(
   }
 }
 
+function applyMetaDelta(
+  state: ConversationState,
+  transition: Transition
+): MetaStore {
+  if (!transition.meta_delta) return state.meta
+  if (transition.type === "REJECT") {
+    throw new Error("meta_delta not allowed on REJECT")
+  }
+
+  const node = getNode(state.active_node)
+  const next: MetaStore = { ...state.meta }
+
+  for (const [domain, value] of Object.entries(transition.meta_delta)) {
+    if (!node.meta_domains_written.includes(domain)) {
+      throw new Error(`meta domain not writable: ${domain}`)
+    }
+    next[domain] = {
+      value,
+      source_node: state.active_node,
+    }
+  }
+
+  return next
+}
+
 function applyTransition(
   state: ConversationState,
   transition: Transition
@@ -91,11 +117,14 @@ function applyTransition(
     throw new Error("transition.from mismatch")
   }
 
+  const nextMeta = applyMetaDelta(state, transition)
+
   if (transition.type === "PAUSE") {
     return {
       ...state,
       revision: state.revision + 1,
       status: "paused",
+      meta: nextMeta,
     }
   }
 
@@ -104,6 +133,7 @@ function applyTransition(
       ...state,
       revision: state.revision + 1,
       status: "active",
+      meta: nextMeta,
     }
   }
 
@@ -112,6 +142,7 @@ function applyTransition(
       ...state,
       revision: state.revision + 1,
       status: "completed",
+      meta: nextMeta,
     }
   }
 
@@ -129,6 +160,7 @@ function applyTransition(
       ? getNode(transition.to).allowed_exits
       : state.allowed_transitions,
     status: state.status,
+    meta: nextMeta,
   }
 }
 
