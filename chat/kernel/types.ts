@@ -7,6 +7,11 @@ export type ConversationStatus =
   | "completed"
   | "rejected"
 
+export type MetaStore = Record<
+  MetaDomain,
+  { value: unknown; source_node: NodeId }
+>
+
 export type ConversationState = {
   conversation_id: string
   revision: number
@@ -15,11 +20,6 @@ export type ConversationState = {
   meta: MetaStore
   status: ConversationStatus
 }
-
-export type MetaStore = Record<
-  MetaDomain,
-  { value: unknown; source_node: NodeId }
->
 
 export type TransitionType =
   | "NODE_HOP"
@@ -33,6 +33,7 @@ export type Transition = {
   from: NodeId
   to?: NodeId
   reason: string
+  meta_delta?: Record<MetaDomain, unknown>
 }
 
 export type InputSignal =
