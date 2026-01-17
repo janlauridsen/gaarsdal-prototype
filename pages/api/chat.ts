@@ -2,23 +2,14 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 
-import { nodes } from "../../guided-chat/nodes";
-import { NodeId, ROUTES } from "../../guided-chat/node-router";
-
-import { resolveFreeTextSignal } from "../../guided-chat/free-text-router";
-import { decideActionFromSignal } from "../../guided-chat/engine";
+import { runChatbotEngine } from "../../guided-chat/engine";
+import {
+  createInitialSessionState,
+  restoreSessionState,
+} from "../../guided-chat/session/session.factory";
 
 import { writeTurnLog } from "../../guided-chat/logging/logWriter";
 import { TurnLog } from "../../guided-chat/logging/log.types";
-
-/* =====================
-   CONFIG
-===================== */
-
-const DEFAULT_NODE: NodeId = "ROOT";
-
-const FALLBACK_MESSAGE =
-  "Du kan vælge en mulighed herunder eller skrive frit.";
 
 /* =====================
    API HANDLER
@@ -36,127 +27,63 @@ export default async function handler(
 
   const {
     sessionId,
-    currentNode,
-    text,
-    chip,
+    input,
   }: {
     sessionId?: string;
-    currentNode?: NodeId;
-    text?: string;
-    chip?: string;
+    input?: {
+      text?: string;
+      chip?: string;
+      action?: string;
+    };
   } = req.body ?? {};
 
   if (!sessionId) {
     return res.status(400).json({ error: "Missing sessionId" });
   }
 
-  const nodeFrom: NodeId = currentNode ?? DEFAULT_NODE;
-  const nodeConfig = nodes[nodeFrom];
-
-  if (!nodeConfig) {
-    return res.status(500).json({ error: "Invalid node" });
-  }
-
   /* =====================
-     ACTION RESOLUTION
+     SESSION
   ===================== */
 
-  let action:
-    | { type: "NODE_HOP"; to: NodeId }
-    | { type: "OPEN_PARENTESE"; to: NodeId }
-    | { type: "REQUEST_NEW_SESSION_CONFIRMATION" }
-    | { type: "FALLBACK" };
-
-  let resolvedSignal: any = null;
-
-  if (chip) {
-    if (nodeConfig.chips?.includes(chip)) {
-      const next =
-        ROUTES[nodeFrom]?.[chip] ?? nodeFrom;
-
-      action = { type: "NODE_HOP", to: next };
-    } else {
-      action = { type: "FALLBACK" };
-    }
-
-  } else if (text) {
-    const signalResult = resolveFreeTextSignal(text, nodeConfig);
-    resolvedSignal = signalResult;
-
-    action = decideActionFromSignal(signalResult, nodeConfig);
-
-  } else {
-    action = { type: "FALLBACK" };
-  }
+  // Stateless fallback. Redis kan senere kobles på her.
+  const session =
+    restoreSessionState(sessionId) ??
+    createInitialSessionState(sessionId);
 
   /* =====================
-     NODE TRANSITION
+     ENGINE
   ===================== */
 
-  let nodeTo: NodeId = nodeFrom;
-  let responseMessage: string | null = null;
-  let responseChips: string[] | null = null;
-
-  switch (action.type) {
-    case "NODE_HOP":
-      nodeTo = action.to;
-      break;
-
-    case "OPEN_PARENTESE":
-      nodeTo = action.to;
-      responseChips = ["Tilbage til samtalen"];
-      break;
-
-    case "REQUEST_NEW_SESSION_CONFIRMATION":
-      responseMessage =
-        "Det lyder som et nyt emne.\nVil du starte en ny samtale om dette, eller fortsætte her?";
-      responseChips = ["Start ny samtale", "Fortsæt her"];
-      break;
-
-    case "FALLBACK":
-    default:
-      break;
-  }
-
-  const nextNodeConfig = nodes[nodeTo];
-  if (!nextNodeConfig) {
-    return res.status(500).json({ error: "Invalid next node" });
-  }
+  const engineResult = runChatbotEngine({
+    session,
+    input: input ?? {},
+  });
 
   /* =====================
-     RESPONSE
-  ===================== */
-
-  const payload = {
-    node: nodeTo,
-    kind: nextNodeConfig.kind,
-    message:
-      responseMessage ??
-      nextNodeConfig.message ??
-      FALLBACK_MESSAGE,
-    chips:
-      responseChips ??
-      nextNodeConfig.chips ??
-      [],
-  };
-
-  /* =====================
-     LOGGING
+     LOGGING (TURN)
   ===================== */
 
   const logEntry: TurnLog = {
     timestamp: new Date().toISOString(),
     session_id: sessionId,
-    node_from: nodeFrom,
-    node_to: nodeTo,
-    raw_text: text ?? null,
-    chip_explicit: chip ?? null,
-    signal: resolvedSignal?.signal?.type ?? null,
-    action: action.type,
+    node_from: engineResult.nodeFrom ?? null,
+    node_to: engineResult.nodeTo ?? null,
+    raw_text: input?.text ?? null,
+    chip_explicit: input?.chip ?? null,
+    signal: engineResult.signal ?? null,
+    action: engineResult.action ?? null,
     latency_ms: Date.now() - startedAt,
   };
 
   await writeTurnLog(logEntry);
 
-  return res.status(200).json(payload);
+  /* =====================
+     RESPONSE
+  ===================== */
+
+  return res.status(200).json({
+    node: engineResult.nodeTo,
+    message: engineResult.message,
+    chips: engineResult.chips ?? [],
+  });
 }
