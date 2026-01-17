@@ -2,10 +2,10 @@ export type NodeId = string
 export type MetaDomain = string
 
 export type ConversationStatus =
-  | 'active'
-  | 'paused'
-  | 'completed'
-  | 'rejected'
+  | "active"
+  | "paused"
+  | "completed"
+  | "rejected"
 
 export type ConversationState = {
   conversation_id: string
@@ -21,20 +21,12 @@ export type MetaStore = Record<
   { value: unknown; source_node: NodeId }
 >
 
-export type Node = {
-  id: NodeId
-  kind: 'MENU' | 'DIALOG' | 'TERMINAL'
-  goal: string
-  allowed_exits: NodeId[]
-  meta_domains_written: MetaDomain[]
-}
-
 export type TransitionType =
-  | 'NODE_HOP'
-  | 'PARENTESE_OPEN'
-  | 'PARENTESE_CLOSE'
-  | 'TERMINAL'
-  | 'REJECT'
+  | "NODE_HOP"
+  | "PARENTESE_OPEN"
+  | "PARENTESE_CLOSE"
+  | "TERMINAL"
+  | "REJECT"
 
 export type Transition = {
   type: TransitionType
@@ -44,9 +36,9 @@ export type Transition = {
 }
 
 export type InputSignal =
-  | { type: 'EXPLICIT_TRANSITION'; target: NodeId }
-  | { type: 'FREE_TEXT'; text: string }
-  | { type: 'SYSTEM'; intent: string }
+  | { type: "EXPLICIT_TRANSITION"; target: NodeId }
+  | { type: "FREE_TEXT"; text: string }
+  | { type: "SYSTEM"; intent: string }
 
 export type LogEvent = {
   conversation_id: string
@@ -54,7 +46,7 @@ export type LogEvent = {
   revision_after: number
   active_node_before: NodeId
   active_node_after: NodeId
-  input_type: InputSignal['type']
+  input_type: InputSignal["type"]
   transition_type: TransitionType
   timestamp: string
 }
