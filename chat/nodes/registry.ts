@@ -1,6 +1,14 @@
-import { Node } from "../kernel/types"
+type NodeId = string
 
-const RAW_REGISTRY: Record<string, Node> = {
+type Node = {
+  id: NodeId
+  kind: "MENU" | "DIALOG" | "TERMINAL"
+  goal: string
+  allowed_exits: NodeId[]
+  meta_domains_written: string[]
+}
+
+const RAW_REGISTRY: Record<NodeId, Node> = {
   START: {
     id: "START",
     kind: "MENU",
@@ -17,7 +25,7 @@ const RAW_REGISTRY: Record<string, Node> = {
   },
 }
 
-const REGISTRY: Record<string, Readonly<Node>> = Object.freeze(
+const REGISTRY: Record<NodeId, Readonly<Node>> = Object.freeze(
   Object.fromEntries(
     Object.entries(RAW_REGISTRY).map(([k, v]) => [
       k,
@@ -26,7 +34,7 @@ const REGISTRY: Record<string, Readonly<Node>> = Object.freeze(
   )
 )
 
-export function getNode(id: string): Readonly<Node> {
+export function getNode(id: NodeId): Readonly<Node> {
   const node = REGISTRY[id]
   if (!node) throw new Error(`unknown node: ${id}`)
   return node
