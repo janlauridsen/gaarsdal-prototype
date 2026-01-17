@@ -1,3 +1,2 @@
-export * from "./types";
-export * from "./state";
-export * from "./engine";
+export { runKernel } from './engine'
+export * from './types'
