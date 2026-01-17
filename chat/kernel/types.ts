@@ -19,12 +19,15 @@ export type ConversationState = {
   allowed_transitions: NodeId[]
   meta: MetaStore
   status: ConversationStatus
+  parentese_stack: NodeId[]
 }
 
 export type TransitionType =
   | "NODE_HOP"
   | "PAUSE"
   | "RESUME"
+  | "PARENTESE_OPEN"
+  | "PARENTESE_CLOSE"
   | "TERMINAL"
   | "REJECT"
 
