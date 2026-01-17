@@ -44,6 +44,20 @@ function buildTransition(
         reason: "explicit transition",
       }
 
+    case "FREE_TEXT":
+      return {
+        type: "REJECT",
+        from: state.active_node,
+        reason: "free text requires external resolution",
+      }
+
+    case "FREE_TEXT_RESOLVED":
+      return {
+        ...input.proposed_transition,
+        from: state.active_node,
+        reason: "free text resolved externally",
+      }
+
     case "SYSTEM":
       switch (input.intent) {
         case "PAUSE":
@@ -70,13 +84,6 @@ function buildTransition(
             from: state.active_node,
             reason: "system terminate",
           }
-      }
-
-    case "FREE_TEXT":
-      return {
-        type: "REJECT",
-        from: state.active_node,
-        reason: "free text not actionable in kernel",
       }
 
     default:
@@ -187,7 +194,6 @@ function applyTransition(
 
   // NODE_HOP
   const node = getNode(state.active_node)
-
   if (transition.to && !node.allowed_exits.includes(transition.to)) {
     throw new Error("transition.to not allowed")
   }
