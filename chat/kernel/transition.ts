@@ -1,64 +1,79 @@
 // chat/kernel/transition.ts
 
-import {
-  ConversationState,
-  Transition,
-  TransitionType,
-  NodeId,
-} from "./types";
-
-import { assertValidState } from "./state";
+import { NodeId } from "./types";
 
 /**
- * Anvend en transition på state.
- * Dette er den ENESTE tilladte måde at ændre state på.
+ * Alle tilladte transition-typer.
+ * Lukket sæt.
  */
-export function applyTransition(
-  state: ConversationState,
-  transition: Transition
-): ConversationState {
-  // Basal validering
-  if (transition.from !== state.active_node) {
-    throw new Error(
-      `Invalid transition: from=${transition.from} does not match active_node=${state.active_node}`
-    );
-  }
+export type TransitionType =
+  | "NODE_HOP"
+  | "PARENTESE_OPEN"
+  | "PARENTESE_CLOSE"
+  | "TERMINAL"
+  | "REJECT";
 
-  if (!isAllowedTransitionType(transition.type)) {
-    throw new Error(`Invalid transition type: ${transition.type}`);
-  }
+/**
+ * Transition er den ENESTE måde state må ændres.
+ * Atomar og deterministisk.
+ */
+export type Transition = {
+  type: TransitionType;
 
-  // Rejection ændrer ikke state (kontrakt)
-  if (transition.type === "REJECT") {
-    return state;
-  }
+  /**
+   * Node vi forlader
+   */
+  from: NodeId;
 
-  const nextState: ConversationState = {
-    ...state,
-    revision: state.revision + 1,
-    active_node: transition.to ?? state.active_node,
-  };
+  /**
+   * Node vi går til (hvis relevant)
+   */
+  to?: NodeId;
 
-  // Terminal transitions lukker samtalen
-  if (transition.type === "TERMINAL") {
-    nextState.status = "completed";
-  }
+  /**
+   * Maskinlæsbar forklaring.
+   * Bruges til logging og replay.
+   */
+  reason: string;
+};
 
-  assertValidState(nextState);
-  return nextState;
+/**
+ * Hjælpere til entydige transitions
+ * (ingen logik – kun struktur)
+ */
+export function nodeHop(
+  from: NodeId,
+  to: NodeId,
+  reason: string
+): Transition {
+  return { type: "NODE_HOP", from, to, reason };
 }
 
-/**
- * Intern type-guard
- */
-function isAllowedTransitionType(
-  type: TransitionType
-): type is TransitionType {
-  return (
-    type === "NODE_HOP" ||
-    type === "PARENTESE_OPEN" ||
-    type === "PARENTESE_CLOSE" ||
-    type === "TERMINAL" ||
-    type === "REJECT"
-  );
+export function parenOpen(
+  from: NodeId,
+  to: NodeId,
+  reason: string
+): Transition {
+  return { type: "PARENTESE_OPEN", from, to, reason };
+}
+
+export function parenClose(
+  from: NodeId,
+  reason: string
+): Transition {
+  return { type: "PARENTESE_CLOSE", from, reason };
+}
+
+export function terminal(
+  from: NodeId,
+  reason: string
+): Transition {
+  return { type: "TERMINAL", from, reason };
+}
+
+export function reject(
+  from: NodeId,
+  reason: string
+): Transition {
+  return { type: "REJECT", from, reason };
 }
