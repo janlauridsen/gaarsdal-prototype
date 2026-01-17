@@ -15,6 +15,8 @@ import {
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
+const MAX_STACK = 5;
+
 type Message = {
   role: "user" | "assistant";
   content: string;
@@ -50,6 +52,7 @@ export default function Chatbot() {
   const canGoBack = index > 0;
   const canGoForward = index < stack.length - 1;
   const canDelete = stack.length > 1;
+  const canAdd = stack.length < MAX_STACK;
 
   /* INIT SYSTEM MESSAGE */
   useEffect(() => {
@@ -75,13 +78,11 @@ export default function Chatbot() {
     });
   }
 
-  /* SCROLL */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [current.messages, loading]);
 
-  /* SEND */
-  async function send(text: string) {
+  function send(text: string) {
     if (!text || loading) return;
 
     setStack((prev) => {
@@ -105,8 +106,9 @@ export default function Chatbot() {
     }, 300);
   }
 
-  /* STACK CONTROLS */
   function addConversation() {
+    if (!canAdd) return;
+
     setStack((prev) => [...prev, createConversation()]);
     setIndex(stack.length);
   }
@@ -153,7 +155,6 @@ export default function Chatbot() {
             }`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* HEADER */}
             <header className="gaarsdal-chatbot-header flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <img
@@ -182,7 +183,6 @@ export default function Chatbot() {
               </div>
             </header>
 
-            {/* MESSAGES */}
             <div className="messages">
               {current.messages.map((m, i) => (
                 <div
@@ -204,7 +204,6 @@ export default function Chatbot() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* FOOTER */}
             <footer className="gaarsdal-chatbot-footer">
               <textarea
                 value={input}
@@ -218,7 +217,6 @@ export default function Chatbot() {
                 placeholder="Skriv frit her…"
               />
 
-              {/* PRIMARY ICONS */}
               <div className="flex justify-center gap-4 mt-3">
                 <button
                   className="gaarsdal-icon-btn"
@@ -250,7 +248,6 @@ export default function Chatbot() {
                 </button>
               </div>
 
-              {/* STACK DOTS */}
               <div className="gaarsdal-stack-dots">
                 {stack.map((_, i) => (
                   <div
@@ -262,10 +259,13 @@ export default function Chatbot() {
                 ))}
               </div>
 
-              {/* STACK CONTROLS */}
               <div className="flex justify-center gap-4">
                 <button
-                  className="gaarsdal-icon-btn"
+                  className={
+                    canAdd
+                      ? "gaarsdal-icon-btn"
+                      : "gaarsdal-icon-btn gaarsdal-icon-disabled"
+                  }
                   title="Ny samtale"
                   onClick={addConversation}
                 >
@@ -279,9 +279,7 @@ export default function Chatbot() {
                       : "gaarsdal-icon-btn gaarsdal-icon-disabled"
                   }
                   title="Forrige"
-                  onClick={() =>
-                    canGoBack && setIndex((i) => i - 1)
-                  }
+                  onClick={() => canGoBack && setIndex(index - 1)}
                 >
                   <BackwardIcon className="w-5 h-5" />
                 </button>
@@ -293,9 +291,7 @@ export default function Chatbot() {
                       : "gaarsdal-icon-btn gaarsdal-icon-disabled"
                   }
                   title="Næste"
-                  onClick={() =>
-                    canGoForward && setIndex((i) => i + 1)
-                  }
+                  onClick={() => canGoForward && setIndex(index + 1)}
                 >
                   <ForwardIcon className="w-5 h-5" />
                 </button>
