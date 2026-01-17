@@ -1,59 +1,11 @@
-/**
- * PURE ROUTER
- * Deterministisk mapping:
- * (state, node) -> allowed transitions
- */
+import { RouterContext, RouteResult } from "./types"
+import { getNode } from "../nodes/registry"
 
-import { RouterContext, RouteResult } from "./types";
-import { nodes } from "../nodes";
+export function route(context: RouterContext): RouteResult {
+  const node = getNode(context.state.active_node)
 
-/* =========================
-   ROUTER
-========================= */
-
-export function resolveRoutes(ctx: RouterContext): RouteResult {
-  const node = nodes[ctx.active_node];
-
-  if (!node) {
-    return { allowed: [] };
+  return {
+    nodeId: node.id,
+    allowedExits: node.allowed_exits,
   }
-
-  const allowed = [];
-
-  /* --------
-     NODE HOPS
-  -------- */
-  for (const target of node.allowed_transitions ?? []) {
-    allowed.push({
-      type: "NODE_HOP",
-      to: target,
-    });
-  }
-
-  /* --------
-     PARENTESE
-  -------- */
-  if (node.parens?.can_open) {
-    allowed.push({
-      type: "PARENTESE_OPEN",
-      to: node.parens.target,
-    });
-  }
-
-  if (node.parens?.can_close && ctx.stack_depth > 0) {
-    allowed.push({
-      type: "PARENTESE_CLOSE",
-    });
-  }
-
-  /* --------
-     TERMINAL
-  -------- */
-  if (node.terminal === true) {
-    allowed.push({
-      type: "TERMINAL",
-    });
-  }
-
-  return { allowed };
 }
