@@ -1,56 +1,16 @@
-/**
- * LOGGING CONTRACT
- * Append-only. Replay-bar. Ingen afledt logik.
- * Afledt af Artefakt 4 og 8.
- */
-
 import {
-  ConversationId,
   NodeId,
   InputSignal,
   Transition,
-  ConversationState,
-} from "../kernel";
+} from '../kernel'
 
-/* =========================
-   LOG ENTRY
-========================= */
-
-export type LogEntry = {
-  /**
-   * Monoton stigende per conversation.
-   * Skal matche state.revision efter transition.
-   */
-  revision: number;
-
-  conversation_id: ConversationId;
-
-  timestamp: string;
-
-  /**
-   * Hvad brugeren/systemet gjorde.
-   */
-  input: InputSignal;
-
-  /**
-   * Hvilken transition der blev anvendt.
-   * Undefined hvis input blev afvist.
-   */
-  transition?: Transition;
-
-  /**
-   * State før og efter.
-   * Muliggør fuld replay og audit.
-   */
-  prev_state: ConversationState;
-  next_state: ConversationState;
-};
-
-/* =========================
-   LOG STREAM
-========================= */
-
-export type ConversationLog = {
-  conversation_id: ConversationId;
-  entries: LogEntry[];
-};
+export type LogEvent = {
+  conversation_id: string
+  revision_before: number
+  revision_after: number
+  active_node_before: NodeId
+  active_node_after: NodeId
+  input_type: InputSignal['type']
+  transition_type: Transition['type']
+  timestamp: string
+}
