@@ -1,38 +1,16 @@
-// chatbot/logWriter.ts
-import { Redis } from "@upstash/redis";
-import { TurnLog } from "./log.types";
+// guided-chat/logging/logWriter.ts
 
-const redis = Redis.fromEnv();
+import { KernelLogEvent } from "./log.types";
 
-/* =========
-   PRIMARY TURN LOG
-   ========= */
-export async function writeTurnLog(entry: TurnLog) {
-  const key = `chatlog:${entry.session_id}`;
-  await redis.rpush(key, JSON.stringify(entry));
-}
-
-/* =========
-   AI CALL LOG
-   ========= */
-export type AiCallLogEntry = {
-  timestamp: string;
-
-  session_id: string;
-  turn_id: number;
-
-  call_id: string;
-  model: string;
-  temperature: number;
-
-  request_messages: any[];
-  response_raw: any;
-  response_text: string;
-
-  latency_ms: number;
-};
-
-export async function writeAiCallLog(entry: AiCallLogEntry) {
-  const key = `chatlog:${entry.session_id}:turn:${entry.turn_id}:ai`;
-  await redis.rpush(key, JSON.stringify(entry));
+/**
+ * Passive log writer.
+ * No return value.
+ * No influence on control flow.
+ */
+export async function writeKernelLog(
+  event: KernelLogEvent
+): Promise<void> {
+  // Placeholder implementation.
+  // Later: Redis, DB, file, stream.
+  console.log("[KERNEL_LOG]", JSON.stringify(event));
 }
