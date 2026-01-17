@@ -2,7 +2,7 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 
-import { nodes, NodeConfig } from "../../guided-chat/nodes";
+import { nodes } from "../../guided-chat/nodes";
 import { NodeId, ROUTES } from "../../guided-chat/node-router";
 
 import { resolveFreeTextSignal } from "../../guided-chat/free-text-router";
@@ -51,7 +51,7 @@ export default async function handler(
   }
 
   const nodeFrom: NodeId = currentNode ?? DEFAULT_NODE;
-  const nodeConfig: NodeConfig | undefined = nodes[nodeFrom];
+  const nodeConfig = nodes[nodeFrom];
 
   if (!nodeConfig) {
     return res.status(500).json({ error: "Invalid node" });
