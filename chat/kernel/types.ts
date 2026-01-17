@@ -42,6 +42,10 @@ export type Transition = {
 export type InputSignal =
   | { type: "EXPLICIT_TRANSITION"; target: NodeId }
   | { type: "FREE_TEXT"; text: string }
+  | {
+      type: "FREE_TEXT_RESOLVED"
+      proposed_transition: Transition
+    }
   | { type: "SYSTEM"; intent: "PAUSE" | "RESUME" | "REJECT" | "TERMINATE" }
 
 export type LogEvent = {
