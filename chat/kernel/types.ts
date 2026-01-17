@@ -23,8 +23,8 @@ export type MetaStore = Record<
 
 export type TransitionType =
   | "NODE_HOP"
-  | "PARENTESE_OPEN"
-  | "PARENTESE_CLOSE"
+  | "PAUSE"
+  | "RESUME"
   | "TERMINAL"
   | "REJECT"
 
@@ -38,7 +38,7 @@ export type Transition = {
 export type InputSignal =
   | { type: "EXPLICIT_TRANSITION"; target: NodeId }
   | { type: "FREE_TEXT"; text: string }
-  | { type: "SYSTEM"; intent: string }
+  | { type: "SYSTEM"; intent: "PAUSE" | "RESUME" | "REJECT" | "TERMINATE" }
 
 export type LogEvent = {
   conversation_id: string
