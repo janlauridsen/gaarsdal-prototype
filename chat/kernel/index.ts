@@ -1,2 +1,11 @@
-export { runKernel } from './engine'
-export * from './types'
+export { runKernel } from "./engine"
+export type {
+  ConversationState,
+  ConversationStatus,
+  InputSignal,
+  Transition,
+  TransitionType,
+  LogEvent,
+  NodeId,
+  MetaStore,
+} from "./types"
