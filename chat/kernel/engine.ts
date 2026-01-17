@@ -7,7 +7,6 @@ import {
 } from "./types"
 import { getNode } from "../nodes/registry"
 
-/* internal guard */
 function assertState(state: ConversationState): void {
   if (!state.conversation_id) throw new Error("missing conversation_id")
   if (state.revision < 0) throw new Error("invalid revision")
@@ -18,6 +17,21 @@ function buildTransition(
   state: ConversationState,
   input: InputSignal
 ): Transition {
+  if (state.status === "paused") {
+    if (input.type === "SYSTEM" && input.intent === "RESUME") {
+      return {
+        type: "RESUME",
+        from: state.active_node,
+        reason: "system resume",
+      }
+    }
+    return {
+      type: "REJECT",
+      from: state.active_node,
+      reason: "only RESUME allowed while paused",
+    }
+  }
+
   switch (input.type) {
     case "EXPLICIT_TRANSITION":
       return {
@@ -28,17 +42,31 @@ function buildTransition(
       }
 
     case "SYSTEM":
-      if (input.intent === "TERMINATE") {
-        return {
-          type: "TERMINAL",
-          from: state.active_node,
-          reason: "system terminate",
-        }
-      }
-      return {
-        type: "REJECT",
-        from: state.active_node,
-        reason: "unknown system intent",
+      switch (input.intent) {
+        case "PAUSE":
+          return {
+            type: "PAUSE",
+            from: state.active_node,
+            reason: "system pause",
+          }
+        case "RESUME":
+          return {
+            type: "REJECT",
+            from: state.active_node,
+            reason: "resume while not paused",
+          }
+        case "REJECT":
+          return {
+            type: "REJECT",
+            from: state.active_node,
+            reason: "system reject",
+          }
+        case "TERMINATE":
+          return {
+            type: "TERMINAL",
+            from: state.active_node,
+            reason: "system terminate",
+          }
       }
 
     case "FREE_TEXT":
@@ -63,6 +91,30 @@ function applyTransition(
     throw new Error("transition.from mismatch")
   }
 
+  if (transition.type === "PAUSE") {
+    return {
+      ...state,
+      revision: state.revision + 1,
+      status: "paused",
+    }
+  }
+
+  if (transition.type === "RESUME") {
+    return {
+      ...state,
+      revision: state.revision + 1,
+      status: "active",
+    }
+  }
+
+  if (transition.type === "TERMINAL") {
+    return {
+      ...state,
+      revision: state.revision + 1,
+      status: "completed",
+    }
+  }
+
   const node = getNode(state.active_node)
 
   if (transition.to && !node.allowed_exits.includes(transition.to)) {
@@ -76,10 +128,7 @@ function applyTransition(
     allowed_transitions: transition.to
       ? getNode(transition.to).allowed_exits
       : state.allowed_transitions,
-    status:
-      transition.type === "TERMINAL"
-        ? "completed"
-        : state.status,
+    status: state.status,
   }
 }
 
