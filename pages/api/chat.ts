@@ -9,15 +9,13 @@ import {
   InputSignal,
 } from "../../guided-chat/kernel/types";
 
+import { writeKernelLog } from "../../guided-chat/logging/logWriter";
+
 /**
- * API = THIN FACADE
- * - No routing logic
- * - No UI logic
- * - No fallback
- * - No persistence (yet)
+ * API = THIN FACADE + PASSIVE LOGGING
  */
 
-export default function handler(
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -41,12 +39,22 @@ export default function handler(
     return res.status(400).json({ error: "Invalid request" });
   }
 
-  // Establish authoritative state
   const currentState: ConversationState = state
     ? state
     : createInitialState(conversation_id, startNode ?? "ROOT");
 
   const result = runKernel(currentState, signal);
+
+  await writeKernelLog({
+    conversation_id,
+    revision_before: currentState.revision,
+    revision_after: result.state.revision,
+    active_node_before: currentState.active_node,
+    active_node_after: result.state.active_node,
+    input_type: signal.type,
+    transition_type: result.transition.type,
+    timestamp: new Date().toISOString(),
+  });
 
   return res.status(200).json({
     state: result.state,
