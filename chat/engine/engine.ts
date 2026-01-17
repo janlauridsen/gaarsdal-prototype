@@ -41,7 +41,5 @@ export function runEngine(
       throw new Error("Unknown input")
   }
 
-  return {
-    transition,
-  }
+  return { transition }
 }
