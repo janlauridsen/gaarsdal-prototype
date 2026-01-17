@@ -2,35 +2,80 @@ import {
   ConversationState,
   InputSignal,
   Transition,
-} from "./types";
-
-/**
- * KERNE-ENGINE
- * Deterministisk. Ingen sideeffekter.
- */
+  KernelResult,
+  LogEvent,
+  Node,
+} from './types'
+import { assertStateInvariants, applyTransition } from './state'
+import { getNode } from '../nodes/registry'
 
 export function runKernel(
   state: ConversationState,
-  signal: InputSignal,
-  decide: (
-    state: ConversationState,
-    signal: InputSignal
-  ) => Transition
-): { state: ConversationState; transition: Transition } {
-  const transition = decide(state, signal);
+  input: InputSignal
+): KernelResult {
+  assertStateInvariants(state)
 
-  if (transition.type === "REJECT") {
-    return {
-      state: state,
-      transition,
-    };
+  const node: Node = getNode(state.active_node)
+
+  let transition: Transition
+
+  switch (input.type) {
+    case 'EXPLICIT_TRANSITION':
+      transition = {
+        type: 'NODE_HOP',
+        from: state.active_node,
+        to: input.target,
+        reason: 'explicit transition',
+      }
+      break
+
+    case 'SYSTEM':
+      if (input.intent === 'TERMINATE') {
+        transition = {
+          type: 'TERMINAL',
+          from: state.active_node,
+          reason: 'system terminate',
+        }
+      } else {
+        transition = {
+          type: 'REJECT',
+          from: state.active_node,
+          reason: 'unknown system intent',
+        }
+      }
+      break
+
+    case 'FREE_TEXT':
+      transition = {
+        type: 'REJECT',
+        from: state.active_node,
+        reason: 'free text not actionable in kernel',
+      }
+      break
+
+    default:
+      throw new Error('Unknown input signal')
   }
 
-  const next: ConversationState = {
-    ...state,
-    revision: state.revision + 1,
-    active_node: transition.to ?? state.active_node,
-  };
+  const nextState =
+    transition.type === 'REJECT'
+      ? state
+      : applyTransition(state, transition, node)
 
-  return { state: next, transition };
+  const log: LogEvent = {
+    conversation_id: state.conversation_id,
+    revision_before: state.revision,
+    revision_after: nextState.revision,
+    active_node_before: state.active_node,
+    active_node_after: nextState.active_node,
+    input_type: input.type,
+    transition_type: transition.type,
+    timestamp: new Date().toISOString(),
+  }
+
+  return {
+    state: nextState,
+    transition,
+    log,
+  }
 }
