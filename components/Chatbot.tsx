@@ -46,7 +46,10 @@ export default function Chatbot() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const current = stack[index];
-  const hasMultiple = stack.length > 1;
+
+  const canGoBack = index > 0;
+  const canGoForward = index < stack.length - 1;
+  const canDelete = stack.length > 1;
 
   /* INIT SYSTEM MESSAGE */
   useEffect(() => {
@@ -109,13 +112,12 @@ export default function Chatbot() {
   }
 
   function removeConversation() {
-    if (!hasMultiple) return;
+    if (!canDelete) return;
 
     setStack((prev) => prev.filter((_, i) => i !== index));
     setIndex((i) => Math.max(0, i - 1));
   }
 
-  /* PRIMARY ACTIONS */
   function primaryAction(label: string) {
     console.log("PRIMARY_ACTION:", label);
     appendSystem(`Handling valgt: ${label}`);
@@ -272,14 +274,13 @@ export default function Chatbot() {
 
                 <button
                   className={
-                    hasMultiple
+                    canGoBack
                       ? "gaarsdal-icon-btn"
                       : "gaarsdal-icon-btn gaarsdal-icon-disabled"
                   }
                   title="Forrige"
                   onClick={() =>
-                    hasMultiple &&
-                    setIndex((i) => Math.max(0, i - 1))
+                    canGoBack && setIndex((i) => i - 1)
                   }
                 >
                   <BackwardIcon className="w-5 h-5" />
@@ -287,16 +288,13 @@ export default function Chatbot() {
 
                 <button
                   className={
-                    hasMultiple
+                    canGoForward
                       ? "gaarsdal-icon-btn"
                       : "gaarsdal-icon-btn gaarsdal-icon-disabled"
                   }
                   title="Næste"
                   onClick={() =>
-                    hasMultiple &&
-                    setIndex((i) =>
-                      Math.min(stack.length - 1, i + 1)
-                    )
+                    canGoForward && setIndex((i) => i + 1)
                   }
                 >
                   <ForwardIcon className="w-5 h-5" />
@@ -304,7 +302,7 @@ export default function Chatbot() {
 
                 <button
                   className={
-                    hasMultiple
+                    canDelete
                       ? "gaarsdal-icon-btn"
                       : "gaarsdal-icon-btn gaarsdal-icon-disabled"
                   }
