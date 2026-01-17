@@ -12,6 +12,8 @@ function assertState(state: ConversationState): void {
   if (!state.conversation_id) throw new Error("missing conversation_id")
   if (state.revision < 0) throw new Error("invalid revision")
   if (!state.active_node) throw new Error("missing active_node")
+  if (!Array.isArray(state.parentese_stack))
+    throw new Error("missing parentese_stack")
 }
 
 function buildTransition(
@@ -146,6 +148,44 @@ function applyTransition(
     }
   }
 
+  if (transition.type === "PARENTESE_OPEN") {
+    if (!transition.to) {
+      throw new Error("PARENTESE_OPEN requires target")
+    }
+
+    const node = getNode(state.active_node)
+    if (!node.allowed_exits.includes(transition.to)) {
+      throw new Error("parentese open target not allowed")
+    }
+
+    return {
+      ...state,
+      revision: state.revision + 1,
+      parentese_stack: [...state.parentese_stack, state.active_node],
+      active_node: transition.to,
+      allowed_transitions: getNode(transition.to).allowed_exits,
+      meta: nextMeta,
+    }
+  }
+
+  if (transition.type === "PARENTESE_CLOSE") {
+    if (state.parentese_stack.length === 0) {
+      return state
+    }
+
+    const previous = state.parentese_stack[state.parentese_stack.length - 1]
+
+    return {
+      ...state,
+      revision: state.revision + 1,
+      parentese_stack: state.parentese_stack.slice(0, -1),
+      active_node: previous,
+      allowed_transitions: getNode(previous).allowed_exits,
+      meta: nextMeta,
+    }
+  }
+
+  // NODE_HOP
   const node = getNode(state.active_node)
 
   if (transition.to && !node.allowed_exits.includes(transition.to)) {
@@ -161,6 +201,7 @@ function applyTransition(
       : state.allowed_transitions,
     status: state.status,
     meta: nextMeta,
+    parentese_stack: state.parentese_stack,
   }
 }
 
