@@ -53,21 +53,24 @@ export default function Chatbot() {
     if (!open) return;
     if (current.messages.length > 0) return;
 
+    appendSystem(
+      "Velkommen. Vælg en mulighed herunder eller skriv frit."
+    );
+  }, [open]);
+
+  function appendSystem(text: string) {
     setStack((prev) => {
       const next = [...prev];
       next[index] = {
         ...next[index],
         messages: [
-          {
-            role: "assistant",
-            content:
-              "Velkommen. Vælg en mulighed herunder eller skriv frit.",
-          },
+          ...next[index].messages,
+          { role: "assistant", content: text },
         ],
       };
       return next;
     });
-  }, [open]);
+  }
 
   /* SCROLL */
   useEffect(() => {
@@ -94,17 +97,7 @@ export default function Chatbot() {
     setLoading(true);
 
     setTimeout(() => {
-      setStack((prev) => {
-        const next = [...prev];
-        next[index] = {
-          ...next[index],
-          messages: [
-            ...next[index].messages,
-            { role: "assistant", content: "Modtaget." },
-          ],
-        };
-        return next;
-      });
+      appendSystem("Modtaget.");
       setLoading(false);
     }, 300);
   }
@@ -120,6 +113,12 @@ export default function Chatbot() {
 
     setStack((prev) => prev.filter((_, i) => i !== index));
     setIndex((i) => Math.max(0, i - 1));
+  }
+
+  /* PRIMARY ACTIONS */
+  function primaryAction(label: string) {
+    console.log("PRIMARY_ACTION:", label);
+    appendSystem(`Handling valgt: ${label}`);
   }
 
   return (
@@ -166,12 +165,14 @@ export default function Chatbot() {
               <div className="flex gap-2">
                 <button
                   className="gaarsdal-icon-btn"
+                  title="Udvid"
                   onClick={() => setExpanded((v) => !v)}
                 >
                   <ArrowsPointingOutIcon className="w-5 h-5" />
                 </button>
                 <button
                   className="gaarsdal-icon-btn"
+                  title="Luk"
                   onClick={() => setOpen(false)}
                 >
                   <XMarkIcon className="w-5 h-5" />
@@ -217,14 +218,50 @@ export default function Chatbot() {
 
               {/* PRIMARY ICONS */}
               <div className="flex justify-center gap-4 mt-3">
-                <HomeIcon className="w-5 h-5" />
-                <EnvelopeIcon className="w-5 h-5" />
-                <PhoneIcon className="w-5 h-5" />
-                <ExclamationTriangleIcon className="w-5 h-5" />
+                <button
+                  className="gaarsdal-icon-btn"
+                  title="Forside"
+                  onClick={() => primaryAction("Forside")}
+                >
+                  <HomeIcon className="w-5 h-5" />
+                </button>
+                <button
+                  className="gaarsdal-icon-btn"
+                  title="Email"
+                  onClick={() => primaryAction("Email")}
+                >
+                  <EnvelopeIcon className="w-5 h-5" />
+                </button>
+                <button
+                  className="gaarsdal-icon-btn"
+                  title="Telefon"
+                  onClick={() => primaryAction("Telefon")}
+                >
+                  <PhoneIcon className="w-5 h-5" />
+                </button>
+                <button
+                  className="gaarsdal-icon-btn"
+                  title="Akut"
+                  onClick={() => primaryAction("Akut")}
+                >
+                  <ExclamationTriangleIcon className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* STACK DOTS */}
+              <div className="gaarsdal-stack-dots">
+                {stack.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`gaarsdal-stack-dot ${
+                      i === index ? "active" : ""
+                    }`}
+                  />
+                ))}
               </div>
 
               {/* STACK CONTROLS */}
-              <div className="flex justify-center gap-4 mt-3">
+              <div className="flex justify-center gap-4">
                 <button
                   className="gaarsdal-icon-btn"
                   title="Ny samtale"
