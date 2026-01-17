@@ -1,125 +1,47 @@
-/**
- * ENGINE
- * Single point of truth for state mutation.
- */
-
 import {
   ConversationState,
   InputSignal,
   Transition,
-} from "../kernel";
-import { resolveRoutes } from "../router";
-import { EngineResult } from "./types";
-
-/* =========================
-   ENGINE ENTRY
-========================= */
+} from "../kernel"
+import { EngineResult } from "./types"
 
 export function runEngine(
   state: ConversationState,
-  signal: InputSignal,
-  stack_depth: number
+  input: InputSignal
 ): EngineResult {
-  const routes = resolveRoutes({
-    active_node: state.active_node,
-    stack_depth,
-  });
+  let transition: Transition
 
-  const transition = selectTransition(routes.allowed, signal, state);
-
-  if (!transition) {
-    return {
-      kind: "REJECTED",
-      reason: "No valid transition for signal",
-      state,
-    };
-  }
-
-  const next_state = applyTransition(state, transition);
-
-  return {
-    kind: "APPLIED",
-    transition,
-    next_state,
-  };
-}
-
-/* =========================
-   SELECTION LOGIC
-========================= */
-
-function selectTransition(
-  allowed: readonly any[],
-  signal: InputSignal,
-  state: ConversationState
-): Transition | null {
-  switch (signal.type) {
-    case "EXPLICIT_TRANSITION": {
-      const match = allowed.find(
-        (t) => t.type === "NODE_HOP" && t.to === signal.target
-      );
-      if (!match) return null;
-
-      return {
+  switch (input.type) {
+    case "EXPLICIT_TRANSITION":
+      transition = {
         type: "NODE_HOP",
         from: state.active_node,
-        to: signal.target,
-        reason: "explicit",
-      };
-    }
-
-    case "SYSTEM": {
-      if (signal.intent === "TERMINATE") {
-        const match = allowed.find((t) => t.type === "TERMINAL");
-        if (!match) return null;
-
-        return {
-          type: "TERMINAL",
-          from: state.active_node,
-          reason: "system",
-        };
+        to: input.target,
+        reason: "explicit transition",
       }
-      return null;
-    }
+      break
 
-    case "FREE_TEXT": {
-      // Free text må ikke implicit navigere
-      return null;
-    }
+    case "SYSTEM":
+      transition = {
+        type: "REJECT",
+        from: state.active_node,
+        reason: "system input not handled by engine",
+      }
+      break
+
+    case "FREE_TEXT":
+      transition = {
+        type: "REJECT",
+        from: state.active_node,
+        reason: "free text not routable",
+      }
+      break
 
     default:
-      return null;
+      throw new Error("Unknown input")
   }
-}
 
-/* =========================
-   STATE REDUCER
-========================= */
-
-function applyTransition(
-  state: ConversationState,
-  transition: Transition
-): ConversationState {
-  const base = {
-    ...state,
-    revision: state.revision + 1,
-  };
-
-  switch (transition.type) {
-    case "NODE_HOP":
-      return {
-        ...base,
-        active_node: transition.to!,
-        allowed_transitions: [],
-      };
-
-    case "TERMINAL":
-      return {
-        ...base,
-        status: "completed",
-      };
-
-    default:
-      return base;
+  return {
+    transition,
   }
 }
