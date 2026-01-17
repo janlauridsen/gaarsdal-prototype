@@ -2,20 +2,22 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 
-import { runChatbotEngine } from "../../guided-chat/engine";
+import { runKernel } from "../../guided-chat/kernel/engine";
+import { createInitialState } from "../../guided-chat/kernel/state";
 import {
-  createInitialSessionState,
-  restoreSessionState,
-} from "../../guided-chat/session/session.factory";
+  ConversationState,
+  InputSignal,
+} from "../../guided-chat/kernel/types";
 
-import { writeTurnLog } from "../../guided-chat/logging/logWriter";
-import { TurnLog } from "../../guided-chat/logging/log.types";
+/**
+ * API = THIN FACADE
+ * - No routing logic
+ * - No UI logic
+ * - No fallback
+ * - No persistence (yet)
+ */
 
-/* =====================
-   API HANDLER
-===================== */
-
-export default async function handler(
+export default function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -23,67 +25,31 @@ export default async function handler(
     return res.status(405).end();
   }
 
-  const startedAt = Date.now();
-
   const {
-    sessionId,
-    input,
+    conversation_id,
+    state,
+    signal,
+    startNode,
   }: {
-    sessionId?: string;
-    input?: {
-      text?: string;
-      chip?: string;
-      action?: string;
-    };
-  } = req.body ?? {};
+    conversation_id: string;
+    state?: ConversationState;
+    signal: InputSignal;
+    startNode?: string;
+  } = req.body;
 
-  if (!sessionId) {
-    return res.status(400).json({ error: "Missing sessionId" });
+  if (!conversation_id || !signal) {
+    return res.status(400).json({ error: "Invalid request" });
   }
 
-  /* =====================
-     SESSION
-  ===================== */
+  // Establish authoritative state
+  const currentState: ConversationState = state
+    ? state
+    : createInitialState(conversation_id, startNode ?? "ROOT");
 
-  // Stateless fallback. Redis kan senere kobles på her.
-  const session =
-    restoreSessionState(sessionId) ??
-    createInitialSessionState(sessionId);
-
-  /* =====================
-     ENGINE
-  ===================== */
-
-  const engineResult = runChatbotEngine({
-    session,
-    input: input ?? {},
-  });
-
-  /* =====================
-     LOGGING (TURN)
-  ===================== */
-
-  const logEntry: TurnLog = {
-    timestamp: new Date().toISOString(),
-    session_id: sessionId,
-    node_from: engineResult.nodeFrom ?? null,
-    node_to: engineResult.nodeTo ?? null,
-    raw_text: input?.text ?? null,
-    chip_explicit: input?.chip ?? null,
-    signal: engineResult.signal ?? null,
-    action: engineResult.action ?? null,
-    latency_ms: Date.now() - startedAt,
-  };
-
-  await writeTurnLog(logEntry);
-
-  /* =====================
-     RESPONSE
-  ===================== */
+  const result = runKernel(currentState, signal);
 
   return res.status(200).json({
-    node: engineResult.nodeTo,
-    message: engineResult.message,
-    chips: engineResult.chips ?? [],
+    state: result.state,
+    transition: result.transition,
   });
 }
