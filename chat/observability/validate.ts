@@ -1,5 +1,6 @@
 import { LogEvent } from "../kernel/types"
 import { ValidationResult, ValidationError } from "./types"
+import { validateParenteseBalance } from "./parentese"
 
 export function validateLogs(logs: LogEvent[]): ValidationResult {
   const errors: ValidationError[] = []
@@ -21,6 +22,8 @@ export function validateLogs(logs: LogEvent[]): ValidationResult {
       })
     }
   }
+
+  errors.push(...validateParenteseBalance(logs))
 
   return {
     ok: errors.length === 0,
