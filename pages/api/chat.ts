@@ -1,7 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-
 import { runKernel } from "../../chat/kernel"
-import { ConversationState, InputSignal } from "../../chat/kernel/types"
+import {
+  ConversationState,
+  InputSignal,
+} from "../../chat/kernel/types"
 
 export default function handler(
   req: NextApiRequest,
