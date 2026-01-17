@@ -1,66 +1,66 @@
-/**
- * KERNE-TYPER
- * Normativ baseline.
- * Ingen UI, ingen runtime-detaljer.
- */
-
-export type ConversationId = string;
-export type NodeId = string;
-export type MetaDomain = string;
-
-/* =========================
-   INPUT
-========================= */
-
-export type InputSignal =
-  | { type: "EXPLICIT_TRANSITION"; target: NodeId }
-  | { type: "FREE_TEXT"; text: string }
-  | { type: "SYSTEM"; intent: string };
-
-/* =========================
-   TRANSITION
-========================= */
-
-export type TransitionType =
-  | "NODE"
-  | "PARENTESE_OPEN"
-  | "PARENTESE_CLOSE"
-  | "TERMINAL"
-  | "REJECT";
-
-export type Transition = {
-  type: TransitionType;
-  from: NodeId;
-  to?: NodeId;
-  reason: string;
-};
-
-/* =========================
-   META
-========================= */
-
-export type MetaValue = {
-  value: unknown;
-  source: NodeId;
-};
-
-export type MetaStore = Record<MetaDomain, MetaValue>;
-
-/* =========================
-   STATE
-========================= */
+export type NodeId = string
+export type MetaDomain = string
 
 export type ConversationStatus =
-  | "active"
-  | "paused"
-  | "completed"
-  | "rejected";
+  | 'active'
+  | 'paused'
+  | 'completed'
+  | 'rejected'
 
 export type ConversationState = {
-  conversation_id: ConversationId;
-  revision: number;
-  active_node: NodeId;
-  allowed_transitions: NodeId[];
-  meta: MetaStore;
-  status: ConversationStatus;
-};
+  conversation_id: string
+  revision: number
+  active_node: NodeId
+  allowed_transitions: NodeId[]
+  meta: MetaStore
+  status: ConversationStatus
+}
+
+export type MetaStore = Record<
+  MetaDomain,
+  { value: unknown; source_node: NodeId }
+>
+
+export type Node = {
+  id: NodeId
+  kind: 'MENU' | 'DIALOG' | 'TERMINAL'
+  goal: string
+  allowed_exits: NodeId[]
+  meta_domains_written: MetaDomain[]
+}
+
+export type TransitionType =
+  | 'NODE_HOP'
+  | 'PARENTESE_OPEN'
+  | 'PARENTESE_CLOSE'
+  | 'TERMINAL'
+  | 'REJECT'
+
+export type Transition = {
+  type: TransitionType
+  from: NodeId
+  to?: NodeId
+  reason: string
+}
+
+export type InputSignal =
+  | { type: 'EXPLICIT_TRANSITION'; target: NodeId }
+  | { type: 'FREE_TEXT'; text: string }
+  | { type: 'SYSTEM'; intent: string }
+
+export type LogEvent = {
+  conversation_id: string
+  revision_before: number
+  revision_after: number
+  active_node_before: NodeId
+  active_node_after: NodeId
+  input_type: InputSignal['type']
+  transition_type: TransitionType
+  timestamp: string
+}
+
+export type KernelResult = {
+  state: ConversationState
+  transition: Transition
+  log: LogEvent
+}
