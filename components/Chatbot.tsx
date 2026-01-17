@@ -1,3 +1,5 @@
+"use client";
+
 // components/Chatbot.tsx
 
 import { useEffect, useRef, useState } from "react";
@@ -15,16 +17,17 @@ import {
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
-type EngineResponse = {
-  message?: string;
-  actions?: { actionId: string; label: string }[];
-};
-
 type Message = {
   role: "user" | "assistant";
   content: string;
-  actions?: EngineResponse["actions"];
 };
+
+let sessionCounter = 0;
+
+function createSessionId() {
+  sessionCounter += 1;
+  return `session_${sessionCounter}`;
+}
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
@@ -36,68 +39,49 @@ export default function Chatbot() {
   const sessionIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  /** ✅ CLIENT-ONLY SESSION INIT */
+  /* INIT */
   useEffect(() => {
-    if (!sessionIdRef.current) {
-      sessionIdRef.current = Math.random().toString(36).slice(2);
-    }
-  }, []);
+    if (!open) return;
+    if (sessionIdRef.current) return;
 
+    sessionIdRef.current = createSessionId();
+
+    setMessages([
+      {
+        role: "assistant",
+        content: "Velkommen. Vælg en mulighed herunder eller skriv frit.",
+      },
+    ]);
+  }, [open]);
+
+  /* SCROLL */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  /** INITIAL SYSTEM KICK */
-  useEffect(() => {
-    if (!open) return;
-    if (messages.length > 0) return;
-    send({ actionId: "home" });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  async function send(text: string) {
+    if (!text || loading) return;
 
-  async function send(params: { text?: string; actionId?: string }) {
-    if (loading) return;
-    if (!params.text && !params.actionId) return;
-    if (!sessionIdRef.current) return;
-
-    if (params.text) {
-      setMessages(m => [...m, { role: "user", content: params.text! }]);
-    }
-
+    setMessages((m) => [...m, { role: "user", content: text }]);
     setInput("");
     setLoading(true);
 
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: sessionIdRef.current,
-          text: params.text ?? null,
-          actionId: params.actionId ?? null,
-        }),
-      });
-
-      const data: EngineResponse = await res.json();
-
-      setMessages(m => [
+    // Midlertidig echo – engine kobles på senere
+    setTimeout(() => {
+      setMessages((m) => [
         ...m,
-        {
-          role: "assistant",
-          content: data.message ?? "",
-          actions: data.actions,
-        },
+        { role: "assistant", content: "Modtaget." },
       ]);
-    } finally {
       setLoading(false);
-    }
+    }, 400);
   }
 
   return (
     <>
       {!open && (
         <button
-          className="fixed bottom-6 right-6 gaarsdal-launcher"
+          type="button"
+          className="fixed bottom-6 right-6 w-14 h-14 gaarsdal-launcher flex items-center justify-center"
           onClick={() => setOpen(true)}
         >
           <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
@@ -105,77 +89,91 @@ export default function Chatbot() {
       )}
 
       {open && (
-        <div
-          className={`fixed gaarsdal-chatbot flex flex-col ${
-            expanded
-              ? "inset-4 md:inset-10"
-              : "bottom-24 right-6 w-96 h-[70vh]"
-          }`}
-        >
-          <header className="gaarsdal-chatbot-header flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <img src="/jan.gif" className="w-6 h-6 rounded-full" />
-              <span>Gaarsdal</span>
-            </div>
+        <>
+          <div
+            className="gaarsdal-overlay"
+            onClick={() => {
+              setOpen(false);
+              setExpanded(false);
+            }}
+          />
 
-            <div className="flex gap-2">
-              <button onClick={() => setExpanded(v => !v)}>
-                <ArrowsPointingOutIcon className="w-5 h-5" />
-              </button>
-              <button onClick={() => setOpen(false)}>
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-          </header>
+          <div
+            className={`gaarsdal-chatbot fixed flex flex-col ${
+              expanded
+                ? "inset-4 md:inset-10"
+                : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* HEADER */}
+            <header className="gaarsdal-chatbot-header flex justify-between items-center">
+              <span className="font-medium text-sm">Gaarsdal</span>
 
-          <div className="messages">
-            {messages.map((m, i) => (
-              <div key={i}>
-                <div className={`message ${m.role}`}>{m.content}</div>
-                {m.role === "assistant" &&
-                  m.actions?.map(a => (
-                    <button
-                      key={a.actionId}
-                      onClick={() => send({ actionId: a.actionId })}
-                      className="text-xs px-3 py-1 rounded-full border bg-white mr-2 mt-2"
-                    >
-                      {a.label}
-                    </button>
-                  ))}
+              <div className="flex gap-2">
+                <button
+                  className="gaarsdal-icon-btn"
+                  onClick={() => setExpanded((v) => !v)}
+                >
+                  <ArrowsPointingOutIcon className="w-5 h-5" />
+                </button>
+                <button
+                  className="gaarsdal-icon-btn"
+                  onClick={() => setOpen(false)}
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
               </div>
-            ))}
-            {loading && <div className="text-sm opacity-60">Skriver…</div>}
-            <div ref={messagesEndRef} />
+            </header>
+
+            {/* MESSAGES */}
+            <div className="messages">
+              {messages.map((m, i) => (
+                <div
+                  key={i}
+                  className={`message ${m.role === "user" ? "user" : "bot"}`}
+                >
+                  {m.content}
+                </div>
+              ))}
+
+              {loading && (
+                <div className="text-sm opacity-60 mt-2">Skriver…</div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* FOOTER */}
+            <footer className="gaarsdal-chatbot-footer">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    send(input);
+                  }
+                }}
+                placeholder="Skriv frit her…"
+              />
+
+              <div className="flex justify-center gap-4 mt-3">
+                <HomeIcon className="w-5 h-5" />
+                <EnvelopeIcon className="w-5 h-5" />
+                <PhoneIcon className="w-5 h-5" />
+                <ExclamationTriangleIcon className="w-5 h-5" />
+              </div>
+
+              <div className="flex justify-center gap-4 mt-2">
+                <PlusIcon className="w-5 h-5 opacity-40" />
+                <BackwardIcon className="w-5 h-5 opacity-40" />
+                <ForwardIcon className="w-5 h-5 opacity-40" />
+                <TrashIcon className="w-5 h-5 opacity-40" />
+              </div>
+            </footer>
           </div>
-
-          <footer className="gaarsdal-chatbot-footer">
-            <textarea
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  send({ text: input });
-                }
-              }}
-              placeholder="Skriv her…"
-            />
-
-            <div className="flex justify-center gap-4 mt-3">
-              <button onClick={() => send({ actionId: "home" })}><HomeIcon className="w-5 h-5" /></button>
-              <button onClick={() => send({ actionId: "contact_mail" })}><EnvelopeIcon className="w-5 h-5" /></button>
-              <button onClick={() => send({ actionId: "contact_phone" })}><PhoneIcon className="w-5 h-5" /></button>
-              <button onClick={() => send({ actionId: "emergency" })}><ExclamationTriangleIcon className="w-5 h-5" /></button>
-            </div>
-
-            <div className="flex justify-center gap-4 mt-2">
-              <button onClick={() => send({ actionId: "create_task" })}><PlusIcon className="w-5 h-5" /></button>
-              <button onClick={() => send({ actionId: "switch_task" })}><BackwardIcon className="w-5 h-5" /></button>
-              <button onClick={() => send({ actionId: "switch_task" })}><ForwardIcon className="w-5 h-5" /></button>
-              <button onClick={() => send({ actionId: "close_task" })}><TrashIcon className="w-5 h-5" /></button>
-            </div>
-          </footer>
-        </div>
+        </>
       )}
     </>
   );
