@@ -5,7 +5,7 @@ import {
   KernelResult,
   LogEvent,
   MetaStore,
-} from "./types"
+} from "../kernel/types"
 import { getNode } from "../nodes/registry"
 
 function assertState(state: ConversationState): void {
@@ -193,10 +193,7 @@ function applyTransition(
     }
   }
 
-  // -----------------------------
-  // NODE_HOP (PATCHET v2.1)
-  // -----------------------------
-
+  // NODE_HOP (v2.1 lifecycle-patch)
   const node = getNode(state.active_node)
   if (transition.to && !node.allowed_exits.includes(transition.to)) {
     throw new Error("transition.to not allowed")
