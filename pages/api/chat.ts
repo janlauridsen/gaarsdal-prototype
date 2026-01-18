@@ -1,20 +1,38 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import { runKernel } from "../../chat/kernel"
-import {
-  ConversationState,
-  InputSignal,
-} from "../../chat/kernel/types"
+import { runKernel } from "../../chat/kernel/engine"
+import { createInitialState } from "../../chat/kernel/state"
 
 export default function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { state, input } = req.body as {
-    state: ConversationState
-    input: InputSignal
+  const { state, input } = req.body
+
+  // ---------- INIT ----------
+  if (state === null) {
+    const initialState = createInitialState("ui-session")
+
+    return res.status(200).json({
+      state: initialState,
+      transition: {
+        type: "INIT",
+        from: null,
+        reason: "system init",
+      },
+      log: {
+        conversation_id: initialState.conversation_id,
+        revision_before: -1,
+        revision_after: initialState.revision,
+        active_node_before: null,
+        active_node_after: initialState.active_node,
+        input_type: "SYSTEM_INIT",
+        transition_type: "INIT",
+        timestamp: new Date().toISOString(),
+      },
+    })
   }
 
+  // ---------- NORMAL ----------
   const result = runKernel(state, input)
-
   res.status(200).json(result)
 }
