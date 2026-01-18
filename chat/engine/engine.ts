@@ -1,247 +1,184 @@
+"use client"
+
+import { useEffect, useRef, useState } from "react"
 import {
+  ChatBubbleOvalLeftEllipsisIcon,
+  XMarkIcon,
+  HomeIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  ExclamationTriangleIcon,
+  BugAntIcon,
+} from "@heroicons/react/24/outline"
+
+import { runKernel } from "../chat/engine/engine"
+import { createInitialState } from "../chat/kernel/state"
+import type {
   ConversationState,
   InputSignal,
-  Transition,
-  KernelResult,
   LogEvent,
-  MetaStore,
-} from "../kernel/types"
-import { getNode } from "../nodes/registry"
+} from "../chat/kernel/types"
 
-function assertState(state: ConversationState): void {
-  if (!state.conversation_id) throw new Error("missing conversation_id")
-  if (state.revision < 0) throw new Error("invalid revision")
-  if (!state.active_node) throw new Error("missing active_node")
-  if (!Array.isArray(state.parentese_stack))
-    throw new Error("missing parentese_stack")
+/* =========================
+   UI-ONLY LABELS (DATA)
+   ========================= */
+
+const NODE_LABELS: Record<string, string> = {
+  HOME: "Forside",
+  GEN_HYPNO: "Generelt om hypnoterapi",
+  TRIAGE: "Triage",
+  BOOKING: "Book tid",
+  MAIL: "E-mail",
+  TLF: "Telefon",
+  AKUT: "Akut",
 }
 
-function buildTransition(
-  state: ConversationState,
-  input: InputSignal
-): Transition {
-  if (state.status === "paused") {
-    if (input.type === "SYSTEM" && input.intent === "RESUME") {
-      return {
-        type: "RESUME",
-        from: state.active_node,
-        reason: "system resume",
-      }
-    }
-    return {
-      type: "REJECT",
-      from: state.active_node,
-      reason: "only RESUME allowed while paused",
-    }
+/* ========================= */
+
+export default function Chatbot() {
+  const [open, setOpen] = useState(false)
+  const [showLogs, setShowLogs] = useState(false)
+
+  const [state, setState] = useState<ConversationState>(() =>
+    createInitialState("ui-session")
+  )
+  const [logs, setLogs] = useState<LogEvent[]>([])
+  const [input, setInput] = useState("")
+
+  const endRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [state, logs])
+
+  function dispatch(input: InputSignal) {
+    const result = runKernel(state, input)
+    setState(result.state)
+    setLogs((l) => [...l, result.log])
   }
 
-  switch (input.type) {
-    case "EXPLICIT_TRANSITION":
-      return {
-        type: "NODE_HOP",
-        from: state.active_node,
-        to: input.target,
-        reason: "explicit transition",
-      }
-
-    case "FREE_TEXT":
-      return {
-        type: "REJECT",
-        from: state.active_node,
-        reason: "free text requires external resolution",
-      }
-
-    case "FREE_TEXT_RESOLVED":
-      return {
-        ...input.proposed_transition,
-        from: state.active_node,
-        reason: "free text resolved externally",
-      }
-
-    case "SYSTEM":
-      switch (input.intent) {
-        case "PAUSE":
-          return {
-            type: "PAUSE",
-            from: state.active_node,
-            reason: "system pause",
-          }
-        case "RESUME":
-          return {
-            type: "REJECT",
-            from: state.active_node,
-            reason: "resume while not paused",
-          }
-        case "REJECT":
-          return {
-            type: "REJECT",
-            from: state.active_node,
-            reason: "system reject",
-          }
-        case "TERMINATE":
-          return {
-            type: "TERMINAL",
-            from: state.active_node,
-            reason: "system terminate",
-          }
-      }
-
-    default:
-      throw new Error("unknown input")
-  }
-}
-
-function applyMetaDelta(
-  state: ConversationState,
-  transition: Transition
-): MetaStore {
-  if (!transition.meta_delta) return state.meta
-  if (transition.type === "REJECT") {
-    throw new Error("meta_delta not allowed on REJECT")
+  function sendFreeText() {
+    if (!input.trim()) return
+    dispatch({ type: "FREE_TEXT", text: input })
+    setInput("")
   }
 
-  const node = getNode(state.active_node)
-  const next: MetaStore = { ...state.meta }
-
-  for (const [domain, value] of Object.entries(transition.meta_delta)) {
-    if (!node.meta_domains_written.includes(domain)) {
-      throw new Error(`meta domain not writable: ${domain}`)
-    }
-    next[domain] = {
-      value,
-      source_node: state.active_node,
-    }
+  function go(target: string) {
+    dispatch({ type: "EXPLICIT_TRANSITION", target })
   }
 
-  return next
-}
+  /* ========================= */
 
-function applyTransition(
-  state: ConversationState,
-  transition: Transition
-): ConversationState {
-  if (transition.type === "REJECT") return state
-
-  if (transition.from !== state.active_node) {
-    throw new Error("transition.from mismatch")
+  if (!open) {
+    return (
+      <button
+        className="fixed bottom-6 right-6 w-14 h-14 gaarsdal-launcher flex items-center justify-center"
+        onClick={() => setOpen(true)}
+      >
+        <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
+      </button>
+    )
   }
 
-  const nextMeta = applyMetaDelta(state, transition)
+  return (
+    <>
+      <div
+        className="gaarsdal-overlay"
+        onClick={() => setOpen(false)}
+      />
 
-  if (transition.type === "PAUSE") {
-    return {
-      ...state,
-      revision: state.revision + 1,
-      status: "paused",
-      meta: nextMeta,
-    }
-  }
+      <div
+        className="gaarsdal-chatbot fixed bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ================= HEADER ================= */}
 
-  if (transition.type === "RESUME") {
-    return {
-      ...state,
-      revision: state.revision + 1,
-      status: "active",
-      meta: nextMeta,
-    }
-  }
+        <header className="gaarsdal-chatbot-header flex justify-between items-center">
+          <span className="font-medium text-sm">Gaarsdal</span>
+          <div className="flex gap-2">
+            <button
+              title="Vis logs"
+              onClick={() => setShowLogs((v) => !v)}
+            >
+              <BugAntIcon className="w-5 h-5" />
+            </button>
+            <button onClick={() => setOpen(false)}>
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+        </header>
 
-  if (transition.type === "TERMINAL") {
-    return {
-      ...state,
-      revision: state.revision + 1,
-      status: "completed",
-      meta: nextMeta,
-    }
-  }
+        {/* ================= BODY ================= */}
 
-  if (transition.type === "PARENTESE_OPEN") {
-    if (!transition.to) {
-      throw new Error("PARENTESE_OPEN requires target")
-    }
+        <div className="messages text-sm p-3 overflow-auto flex-1">
+          <div className="mb-2 font-medium">
+            {NODE_LABELS[state.active_node] ?? state.active_node}
+          </div>
 
-    const node = getNode(state.active_node)
-    if (!node.allowed_exits.includes(transition.to)) {
-      throw new Error("parentese open target not allowed")
-    }
+          {state.status !== "active" && (
+            <div className="text-xs opacity-60 mb-2">
+              Status: {state.status}
+            </div>
+          )}
 
-    return {
-      ...state,
-      revision: state.revision + 1,
-      parentese_stack: [...state.parentese_stack, state.active_node],
-      active_node: transition.to,
-      allowed_transitions: getNode(transition.to).allowed_exits,
-      meta: nextMeta,
-    }
-  }
+          {/* Chips */}
+          {state.status === "active" && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {state.allowed_transitions.map((t) => (
+                <button
+                  key={t}
+                  className="chip"
+                  onClick={() => go(t)}
+                >
+                  {NODE_LABELS[t] ?? t}
+                </button>
+              ))}
+            </div>
+          )}
 
-  if (transition.type === "PARENTESE_CLOSE") {
-    if (state.parentese_stack.length === 0) {
-      return state
-    }
+          <div ref={endRef} />
+        </div>
 
-    const previous =
-      state.parentese_stack[state.parentese_stack.length - 1]
+        {/* ================= FOOTER ================= */}
 
-    return {
-      ...state,
-      revision: state.revision + 1,
-      parentese_stack: state.parentese_stack.slice(0, -1),
-      active_node: previous,
-      allowed_transitions: getNode(previous).allowed_exits,
-      meta: nextMeta,
-    }
-  }
+        <footer className="p-3 border-t">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault()
+                sendFreeText()
+              }
+            }}
+            placeholder="Skriv frit…"
+          />
 
-  // NODE_HOP (v2.1 lifecycle-patch)
-  const node = getNode(state.active_node)
-  if (transition.to && !node.allowed_exits.includes(transition.to)) {
-    throw new Error("transition.to not allowed")
-  }
+          <div className="flex justify-center gap-4 mt-3">
+            <button onClick={() => go("HOME")}>
+              <HomeIcon className="w-5 h-5" />
+            </button>
+            <button onClick={() => go("MAIL")}>
+              <EnvelopeIcon className="w-5 h-5" />
+            </button>
+            <button onClick={() => go("TLF")}>
+              <PhoneIcon className="w-5 h-5" />
+            </button>
+            <button onClick={() => go("AKUT")}>
+              <ExclamationTriangleIcon className="w-5 h-5" />
+            </button>
+          </div>
 
-  const targetNode = transition.to
-    ? getNode(transition.to)
-    : null
-
-  return {
-    ...state,
-    revision: state.revision + 1,
-    active_node: transition.to ?? state.active_node,
-    allowed_transitions: targetNode
-      ? targetNode.allowed_exits
-      : state.allowed_transitions,
-    status:
-      targetNode && targetNode.kind === "TERMINAL"
-        ? "completed"
-        : state.status,
-    meta: nextMeta,
-    parentese_stack: state.parentese_stack,
-  }
-}
-
-export function runKernel(
-  state: ConversationState,
-  input: InputSignal
-): KernelResult {
-  assertState(state)
-
-  const transition = buildTransition(state, input)
-  const nextState = applyTransition(state, transition)
-
-  const log: LogEvent = {
-    conversation_id: state.conversation_id,
-    revision_before: state.revision,
-    revision_after: nextState.revision,
-    active_node_before: state.active_node,
-    active_node_after: nextState.active_node,
-    input_type: input.type,
-    transition_type: transition.type,
-    timestamp: new Date().toISOString(),
-  }
-
-  return {
-    state: nextState,
-    transition,
-    log,
-  }
+          {/* Logs (toggle) */}
+          {showLogs && (
+            <div className="mt-3 text-xs opacity-60">
+              <pre className="overflow-auto max-h-40">
+                {JSON.stringify(logs, null, 2)}
+              </pre>
+            </div>
+          )}
+        </footer>
+      </div>
+    </>
+  )
 }
