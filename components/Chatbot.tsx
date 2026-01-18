@@ -1,317 +1,235 @@
-"use client";
+"use client"
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react"
 import {
   ChatBubbleOvalLeftEllipsisIcon,
   XMarkIcon,
-  PlusIcon,
-  BackwardIcon,
-  ForwardIcon,
-  TrashIcon,
   HomeIcon,
   PhoneIcon,
   EnvelopeIcon,
   ExclamationTriangleIcon,
-  ArrowsPointingOutIcon,
-} from "@heroicons/react/24/outline";
+  BugAntIcon,
+} from "@heroicons/react/24/outline"
 
-const MAX_STACK = 5;
+/* =========================
+   TYPES (UI-LOCAL ONLY)
+   ========================= */
 
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-};
-
-type Conversation = {
-  id: string;
-  messages: Message[];
-};
-
-let conversationCounter = 0;
-function createConversation(): Conversation {
-  conversationCounter += 1;
-  return { id: `conv_${conversationCounter}`, messages: [] };
+type ConversationState = {
+  conversation_id: string
+  revision: number
+  active_node: string
+  allowed_transitions: string[]
+  meta: Record<string, any>
+  status: "active" | "paused" | "completed" | "rejected"
+  parentese_stack: string[]
 }
 
+type InputSignal =
+  | { type: "EXPLICIT_TRANSITION"; target: string }
+  | { type: "FREE_TEXT"; text: string }
+
+type LogEvent = any
+
+type KernelResponse = {
+  state: ConversationState
+  transition: any
+  log: LogEvent
+}
+
+/* =========================
+   UI-ONLY LABELS
+   ========================= */
+
+const NODE_LABELS: Record<string, string> = {
+  HOME: "Forside",
+  GEN_HYPNO: "Generelt om hypnoterapi",
+  TRIAGE: "Triage",
+  BOOKING: "Book tid",
+  MAIL: "E-mail",
+  TLF: "Telefon",
+  AKUT: "Akut",
+}
+
+/* ========================= */
+
 export default function Chatbot() {
-  const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false)
+  const [showLogs, setShowLogs] = useState(false)
 
-  const [stack, setStack] = useState<Conversation[]>([
-    createConversation(),
-  ]);
-  const [index, setIndex] = useState(0);
+  const [state, setState] = useState<ConversationState | null>(
+    null
+  )
+  const [logs, setLogs] = useState<LogEvent[]>([])
+  const [input, setInput] = useState("")
 
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
-  const current = stack[index];
-
-  const canGoBack = index > 0;
-  const canGoForward = index < stack.length - 1;
-  const canDelete = stack.length > 1;
-  const canAdd = stack.length < MAX_STACK;
-
-  /* INIT SYSTEM MESSAGE */
-  useEffect(() => {
-    if (!open) return;
-    if (current.messages.length > 0) return;
-
-    appendSystem(
-      "Velkommen. Vælg en mulighed herunder eller skriv frit."
-    );
-  }, [open]);
-
-  function appendSystem(text: string) {
-    setStack((prev) => {
-      const next = [...prev];
-      next[index] = {
-        ...next[index],
-        messages: [
-          ...next[index].messages,
-          { role: "assistant", content: text },
-        ],
-      };
-      return next;
-    });
-  }
+  const endRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [current.messages, loading]);
+    endRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [state, logs])
 
-  function send(text: string) {
-    if (!text || loading) return;
+  /* =========================
+     API DISPATCH
+     ========================= */
 
-    setStack((prev) => {
-      const next = [...prev];
-      next[index] = {
-        ...next[index],
-        messages: [
-          ...next[index].messages,
-          { role: "user", content: text },
-        ],
-      };
-      return next;
-    });
+  async function dispatch(input: InputSignal) {
+    if (!state) return
 
-    setInput("");
-    setLoading(true);
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state, input }),
+    })
 
-    setTimeout(() => {
-      appendSystem("Modtaget.");
-      setLoading(false);
-    }, 300);
+    const data: KernelResponse = await res.json()
+    setState(data.state)
+    setLogs((l) => [...l, data.log])
   }
 
-  function addConversation() {
-    if (!canAdd) return;
+  async function init() {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        state: null,
+        input: { type: "SYSTEM_INIT" },
+      }),
+    })
 
-    setStack((prev) => [...prev, createConversation()]);
-    setIndex(stack.length);
+    const data: KernelResponse = await res.json()
+    setState(data.state)
   }
 
-  function removeConversation() {
-    if (!canDelete) return;
+  /* ========================= */
 
-    setStack((prev) => prev.filter((_, i) => i !== index));
-    setIndex((i) => Math.max(0, i - 1));
+  function sendFreeText() {
+    if (!input.trim() || !state) return
+    dispatch({ type: "FREE_TEXT", text: input })
+    setInput("")
   }
 
-  function primaryAction(label: string) {
-    console.log("PRIMARY_ACTION:", label);
-    appendSystem(`Handling valgt: ${label}`);
+  function go(target: string) {
+    if (!state) return
+    dispatch({ type: "EXPLICIT_TRANSITION", target })
   }
+
+  /* ========================= */
+
+  if (!open) {
+    return (
+      <button
+        className="fixed bottom-6 right-6 w-14 h-14 gaarsdal-launcher flex items-center justify-center"
+        onClick={() => {
+          setOpen(true)
+          if (!state) init()
+        }}
+      >
+        <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
+      </button>
+    )
+  }
+
+  if (!state) return null
 
   return (
     <>
-      {!open && (
-        <button
-          type="button"
-          className="fixed bottom-6 right-6 w-14 h-14 gaarsdal-launcher flex items-center justify-center"
-          onClick={() => setOpen(true)}
-        >
-          <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
-        </button>
-      )}
+      <div
+        className="gaarsdal-overlay"
+        onClick={() => setOpen(false)}
+      />
 
-      {open && (
-        <>
-          <div
-            className="gaarsdal-overlay"
-            onClick={() => {
-              setOpen(false);
-              setExpanded(false);
+      <div
+        className="gaarsdal-chatbot fixed bottom-24 right-6 w-96 max-w-[90vw] h-[70vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ================= HEADER ================= */}
+
+        <header className="gaarsdal-chatbot-header flex justify-between items-center">
+          <span className="font-medium text-sm">Gaarsdal</span>
+          <div className="flex gap-2">
+            <button
+              title="Vis logs"
+              onClick={() => setShowLogs((v) => !v)}
+            >
+              <BugAntIcon className="w-5 h-5" />
+            </button>
+            <button onClick={() => setOpen(false)}>
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+        </header>
+
+        {/* ================= BODY ================= */}
+
+        <div className="messages text-sm p-3 overflow-auto flex-1">
+          <div className="mb-2 font-medium">
+            {NODE_LABELS[state.active_node] ??
+              state.active_node}
+          </div>
+
+          {state.status !== "active" && (
+            <div className="text-xs opacity-60 mb-2">
+              Status: {state.status}
+            </div>
+          )}
+
+          {state.status === "active" && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {state.allowed_transitions.map((t) => (
+                <button
+                  key={t}
+                  className="chip"
+                  onClick={() => go(t)}
+                >
+                  {NODE_LABELS[t] ?? t}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div ref={endRef} />
+        </div>
+
+        {/* ================= FOOTER ================= */}
+
+        <footer className="p-3 border-t">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault()
+                sendFreeText()
+              }
             }}
+            placeholder="Skriv frit…"
           />
 
-          <div
-            className={`gaarsdal-chatbot fixed flex flex-col ${
-              expanded
-                ? "inset-4 md:inset-10"
-                : "bottom-24 right-6 w-96 max-w-[90vw] h-[70vh]"
-            }`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <header className="gaarsdal-chatbot-header flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <img
-                  src="/jan.gif"
-                  alt="Jan"
-                  className="w-6 h-6 rounded-full"
-                />
-                <span className="font-medium text-sm">Gaarsdal</span>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  className="gaarsdal-icon-btn"
-                  title="Udvid"
-                  onClick={() => setExpanded((v) => !v)}
-                >
-                  <ArrowsPointingOutIcon className="w-5 h-5" />
-                </button>
-                <button
-                  className="gaarsdal-icon-btn"
-                  title="Luk"
-                  onClick={() => setOpen(false)}
-                >
-                  <XMarkIcon className="w-5 h-5" />
-                </button>
-              </div>
-            </header>
-
-            <div className="messages">
-              {current.messages.map((m, i) => (
-                <div
-                  key={i}
-                  className={`message ${
-                    m.role === "user" ? "user" : "bot"
-                  }`}
-                >
-                  {m.content}
-                </div>
-              ))}
-
-              {loading && (
-                <div className="text-sm opacity-60 mt-2">
-                  Skriver…
-                </div>
-              )}
-
-              <div ref={messagesEndRef} />
-            </div>
-
-            <footer className="gaarsdal-chatbot-footer">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    send(input);
-                  }
-                }}
-                placeholder="Skriv frit her…"
-              />
-
-              <div className="flex justify-center gap-4 mt-3">
-                <button
-                  className="gaarsdal-icon-btn"
-                  title="Forside"
-                  onClick={() => primaryAction("Forside")}
-                >
-                  <HomeIcon className="w-5 h-5" />
-                </button>
-                <button
-                  className="gaarsdal-icon-btn"
-                  title="Email"
-                  onClick={() => primaryAction("Email")}
-                >
-                  <EnvelopeIcon className="w-5 h-5" />
-                </button>
-                <button
-                  className="gaarsdal-icon-btn"
-                  title="Telefon"
-                  onClick={() => primaryAction("Telefon")}
-                >
-                  <PhoneIcon className="w-5 h-5" />
-                </button>
-                <button
-                  className="gaarsdal-icon-btn"
-                  title="Akut"
-                  onClick={() => primaryAction("Akut")}
-                >
-                  <ExclamationTriangleIcon className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="gaarsdal-stack-dots">
-                {stack.map((_, i) => (
-                  <div
-                    key={i}
-                    className={`gaarsdal-stack-dot ${
-                      i === index ? "active" : ""
-                    }`}
-                  />
-                ))}
-              </div>
-
-              <div className="flex justify-center gap-4">
-                <button
-                  className={
-                    canAdd
-                      ? "gaarsdal-icon-btn"
-                      : "gaarsdal-icon-btn gaarsdal-icon-disabled"
-                  }
-                  title="Ny samtale"
-                  onClick={addConversation}
-                >
-                  <PlusIcon className="w-5 h-5" />
-                </button>
-
-                <button
-                  className={
-                    canGoBack
-                      ? "gaarsdal-icon-btn"
-                      : "gaarsdal-icon-btn gaarsdal-icon-disabled"
-                  }
-                  title="Forrige"
-                  onClick={() => canGoBack && setIndex(index - 1)}
-                >
-                  <BackwardIcon className="w-5 h-5" />
-                </button>
-
-                <button
-                  className={
-                    canGoForward
-                      ? "gaarsdal-icon-btn"
-                      : "gaarsdal-icon-btn gaarsdal-icon-disabled"
-                  }
-                  title="Næste"
-                  onClick={() => canGoForward && setIndex(index + 1)}
-                >
-                  <ForwardIcon className="w-5 h-5" />
-                </button>
-
-                <button
-                  className={
-                    canDelete
-                      ? "gaarsdal-icon-btn"
-                      : "gaarsdal-icon-btn gaarsdal-icon-disabled"
-                  }
-                  title="Slet"
-                  onClick={removeConversation}
-                >
-                  <TrashIcon className="w-5 h-5" />
-                </button>
-              </div>
-            </footer>
+          <div className="flex justify-center gap-4 mt-3">
+            <button onClick={() => go("HOME")}>
+              <HomeIcon className="w-5 h-5" />
+            </button>
+            <button onClick={() => go("MAIL")}>
+              <EnvelopeIcon className="w-5 h-5" />
+            </button>
+            <button onClick={() => go("TLF")}>
+              <PhoneIcon className="w-5 h-5" />
+            </button>
+            <button onClick={() => go("AKUT")}>
+              <ExclamationTriangleIcon className="w-5 h-5" />
+            </button>
           </div>
-        </>
-      )}
+
+          {showLogs && (
+            <div className="mt-3 text-xs opacity-60">
+              <pre className="overflow-auto max-h-40">
+                {JSON.stringify(logs, null, 2)}
+              </pre>
+            </div>
+          )}
+        </footer>
+      </div>
     </>
-  );
+  )
 }
