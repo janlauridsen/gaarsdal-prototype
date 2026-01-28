@@ -9,6 +9,10 @@ import {
   EnvelopeIcon,
   ExclamationTriangleIcon,
   BugAntIcon,
+  PlusIcon,
+  ArrowUturnLeftIcon,
+  ArrowUturnRightIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline"
 
 /* =========================
@@ -101,6 +105,17 @@ export default function Chatbot() {
     setState(data.state)
   }
 
+  function resetConversation() {
+    setLogs([])
+    setInput("")
+    setState(null)
+    init()
+  }
+
+  function clearLogs() {
+    setLogs([])
+  }
+
   /* ========================= */
 
   function sendFreeText() {
@@ -147,14 +162,47 @@ export default function Chatbot() {
 
         <header className="gaarsdal-chatbot-header flex justify-between items-center">
           <span className="font-medium text-sm">Gaarsdal</span>
-          <div className="flex gap-2">
+          <div className="flex gap-1">
             <button
+              className="gaarsdal-icon-btn"
+              title="Ny samtale"
+              onClick={resetConversation}
+            >
+              <PlusIcon className="w-4 h-4" />
+            </button>
+            <button
+              className="gaarsdal-icon-btn gaarsdal-icon-disabled"
+              title="Tilbage"
+              aria-disabled="true"
+            >
+              <ArrowUturnLeftIcon className="w-4 h-4" />
+            </button>
+            <button
+              className="gaarsdal-icon-btn gaarsdal-icon-disabled"
+              title="Frem"
+              aria-disabled="true"
+            >
+              <ArrowUturnRightIcon className="w-4 h-4" />
+            </button>
+            <button
+              className="gaarsdal-icon-btn"
+              title="Ryd logs"
+              onClick={clearLogs}
+            >
+              <TrashIcon className="w-4 h-4" />
+            </button>
+            <button
+              className="gaarsdal-icon-btn"
               title="Vis logs"
               onClick={() => setShowLogs((v) => !v)}
             >
               <BugAntIcon className="w-5 h-5" />
             </button>
-            <button onClick={() => setOpen(false)}>
+            <button
+              className="gaarsdal-icon-btn"
+              onClick={() => setOpen(false)}
+              title="Luk"
+            >
               <XMarkIcon className="w-5 h-5" />
             </button>
           </div>
@@ -193,7 +241,7 @@ export default function Chatbot() {
 
         {/* ================= FOOTER ================= */}
 
-        <footer className="p-3 border-t">
+        <footer className="gaarsdal-chatbot-footer">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
