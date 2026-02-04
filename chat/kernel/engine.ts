@@ -172,6 +172,7 @@ function applyTransition(
       active_node: transition.to,
       allowed_transitions: getNode(transition.to).allowed_exits,
       meta: nextMeta,
+      status: "active",
     }
   }
 
@@ -190,6 +191,7 @@ function applyTransition(
       active_node: previous,
       allowed_transitions: getNode(previous).allowed_exits,
       meta: nextMeta,
+      status: "active",
     }
   }
 
@@ -216,7 +218,7 @@ function applyTransition(
     status:
       targetNode && targetNode.kind === "TERMINAL"
         ? "completed"
-        : state.status,
+        : "active",
     meta: nextMeta,
     parentese_stack: state.parentese_stack,
   }
