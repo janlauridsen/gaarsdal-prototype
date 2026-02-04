@@ -35,6 +35,13 @@ export async function appendLogToRedis(
   )
 }
 
+function parseLogItem(item: unknown): LogEvent {
+  if (typeof item === "string") {
+    return JSON.parse(item) as LogEvent
+  }
+  return item as LogEvent
+}
+
 export async function readLogsFromRedis(
   conversation_id?: string
 ): Promise<LogEvent[]> {
@@ -44,6 +51,6 @@ export async function readLogsFromRedis(
   const key = conversation_id
     ? `${REDIS_CONVO_PREFIX}${conversation_id}`
     : REDIS_ALL_KEY
-  const items = await client.lrange<string>(key, 0, -1)
-  return items.map((item) => JSON.parse(item) as LogEvent)
+  const items = await client.lrange<any>(key, 0, -1)
+  return items.map(parseLogItem)
 }
