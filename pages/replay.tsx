@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 const DEFAULT_YAML = `cases:
   - name: basic_sanity
@@ -13,6 +13,8 @@ export default function ReplayPage() {
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [history, setHistory] = useState<any[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
 
   async function runReplay() {
     setLoading(true)
@@ -38,6 +40,23 @@ export default function ReplayPage() {
       setLoading(false)
     }
   }
+
+  async function loadHistory() {
+    setHistoryLoading(true)
+    try {
+      const res = await fetch("/api/replay/history")
+      const data = await res.json()
+      if (res.ok && Array.isArray(data?.history)) {
+        setHistory(data.history)
+      }
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadHistory()
+  }, [])
 
   return (
     <main className="min-h-screen bg-bg text-text px-6 py-16">
@@ -85,6 +104,63 @@ export default function ReplayPage() {
             </pre>
           </div>
         )}
+
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium">
+              Tidligere replays
+            </div>
+            <button
+              className="text-xs text-accent"
+              onClick={loadHistory}
+              disabled={historyLoading}
+            >
+              {historyLoading ? "Opdaterer..." : "Opdater"}
+            </button>
+          </div>
+          {history.length === 0 ? (
+            <div className="text-sm text-muted">
+              Ingen replays endnu.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {history.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="border border-gray-100 rounded-lg p-3"
+                >
+                  <div className="text-xs text-muted">
+                    {entry.created_at}
+                  </div>
+                  <pre className="text-xs overflow-auto max-h-[120px] bg-gray-50 p-2 rounded mt-2">
+                    {entry.yaml}
+                  </pre>
+                  <div className="mt-2 text-xs text-muted">
+                    {entry?.result?.passed ?? 0} /
+                    {entry?.result?.total ?? 0} bestået
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      className="text-xs px-2 py-1 rounded border border-gray-200"
+                      onClick={() => setYamlText(entry.yaml)}
+                    >
+                      Indlæs YAML
+                    </button>
+                    <button
+                      className="text-xs px-2 py-1 rounded bg-accent text-white"
+                      onClick={() => {
+                        setYamlText(entry.yaml)
+                        runReplay()
+                      }}
+                    >
+                      Kør igen
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </main>
   )
