@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next"
 import { runKernel } from "../../chat/kernel/engine"
 import { createInitialState } from "../../chat/kernel/state"
 import { appendLog } from "../../chat/logging/sink"
+import type { LogEvent } from "../../chat/kernel/types"
 
 export default async function handler(
   req: NextApiRequest,
@@ -13,6 +14,17 @@ export default async function handler(
   if (state === null) {
     const initialState = createInitialState("ui-session")
 
+    const log: LogEvent = {
+      conversation_id: initialState.conversation_id,
+      revision_before: -1,
+      revision_after: initialState.revision,
+      active_node_before: null,
+      active_node_after: initialState.active_node,
+      input_type: "SYSTEM_INIT",
+      transition_type: "INIT",
+      timestamp: new Date().toISOString(),
+    }
+
     const payload = {
       state: initialState,
       transition: {
@@ -20,16 +32,7 @@ export default async function handler(
         from: null,
         reason: "system init",
       },
-      log: {
-        conversation_id: initialState.conversation_id,
-        revision_before: -1,
-        revision_after: initialState.revision,
-        active_node_before: null,
-        active_node_after: initialState.active_node,
-        input_type: "SYSTEM_INIT",
-        transition_type: "INIT",
-        timestamp: new Date().toISOString(),
-      },
+      log,
     }
 
     await appendLog(payload.log)
