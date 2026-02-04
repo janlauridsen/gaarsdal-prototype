@@ -1,8 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next"
+import { randomUUID } from "crypto"
 import { parse } from "yaml"
 import { createInitialState } from "../../chat/kernel/state"
 import { readLogs } from "../../chat/logging/sink"
 import { replay } from "../../chat/observability/replay"
+import { appendReplayHistory } from "../../chat/logging/redisStore"
 
 type ReplayExpectation = {
   final_active_node?: string
@@ -116,10 +118,19 @@ export default async function handler(
     })
   )
 
-  res.status(200).json({
+  const response = {
     total: results.length,
     passed: results.filter((r) => r.ok).length,
     failed: results.filter((r) => !r.ok).length,
     results,
+  }
+
+  await appendReplayHistory({
+    id: randomUUID(),
+    created_at: new Date().toISOString(),
+    yaml: yamlText,
+    result: response,
   })
+
+  res.status(200).json(response)
 }
