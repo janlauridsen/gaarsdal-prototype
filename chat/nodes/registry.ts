@@ -13,7 +13,14 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "HOME",
     kind: "MENU",
     goal: "root",
-    allowed_exits: ["GEN_HYPNO", "TRIAGE", "BOOKING"],
+    allowed_exits: [
+      "GEN_HYPNO",
+      "TRIAGE",
+      "BOOKING",
+      "MAIL",
+      "TLF",
+      "AKUT",
+    ],
     meta_domains_written: [],
   },
 
