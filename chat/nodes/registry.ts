@@ -44,7 +44,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "BOOKING",
     kind: "MENU",
     goal: "Booking",
-    allowed_exits: ["MAIL", "TLF"],
+    allowed_exits: ["MAIL", "TLF", "HOME"],
     meta_domains_written: [],
   },
 
@@ -52,7 +52,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "MAIL",
     kind: "TERMINAL",
     goal: "Mail kontakt",
-    allowed_exits: [],
+    allowed_exits: ["HOME"],
     meta_domains_written: [],
   },
 
@@ -60,7 +60,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "TLF",
     kind: "TERMINAL",
     goal: "Telefon kontakt",
-    allowed_exits: [],
+    allowed_exits: ["HOME"],
     meta_domains_written: [],
   },
 
@@ -68,7 +68,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "AKUT",
     kind: "TERMINAL",
     goal: "Akut",
-    allowed_exits: [],
+    allowed_exits: ["HOME"],
     meta_domains_written: [],
   },
 }
