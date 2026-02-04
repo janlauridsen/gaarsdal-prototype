@@ -8,6 +8,8 @@ type Node = {
   meta_domains_written: string[]
 }
 
+const QUICK_CONTACTS: NodeId[] = ["HOME", "MAIL", "TLF", "AKUT"]
+
 const RAW_REGISTRY: Record<NodeId, Node> = {
   HOME: {
     id: "HOME",
@@ -28,7 +30,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "GEN_HYPNO",
     kind: "DIALOG",
     goal: "Generelt om hypnoterapi",
-    allowed_exits: ["HOME"],
+    allowed_exits: ["HOME", "MAIL", "TLF", "AKUT"],
     meta_domains_written: [],
   },
 
@@ -36,7 +38,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "TRIAGE",
     kind: "DIALOG",
     goal: "Triage",
-    allowed_exits: ["HOME"],
+    allowed_exits: ["HOME", "MAIL", "TLF", "AKUT"],
     meta_domains_written: [],
   },
 
@@ -44,7 +46,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "BOOKING",
     kind: "MENU",
     goal: "Booking",
-    allowed_exits: ["MAIL", "TLF", "HOME"],
+    allowed_exits: ["MAIL", "TLF", "HOME", "AKUT"],
     meta_domains_written: [],
   },
 
@@ -52,7 +54,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "MAIL",
     kind: "TERMINAL",
     goal: "Mail kontakt",
-    allowed_exits: ["HOME"],
+    allowed_exits: QUICK_CONTACTS,
     meta_domains_written: [],
   },
 
@@ -60,7 +62,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "TLF",
     kind: "TERMINAL",
     goal: "Telefon kontakt",
-    allowed_exits: ["HOME"],
+    allowed_exits: QUICK_CONTACTS,
     meta_domains_written: [],
   },
 
@@ -68,7 +70,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "AKUT",
     kind: "TERMINAL",
     goal: "Akut",
-    allowed_exits: ["HOME"],
+    allowed_exits: QUICK_CONTACTS,
     meta_domains_written: [],
   },
 }
