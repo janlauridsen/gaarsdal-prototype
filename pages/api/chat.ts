@@ -1,8 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { runKernel } from "../../chat/kernel/engine"
 import { createInitialState } from "../../chat/kernel/state"
+import { appendLog } from "../../chat/logging/sink"
 
-export default function handler(
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -12,7 +13,7 @@ export default function handler(
   if (state === null) {
     const initialState = createInitialState("ui-session")
 
-    return res.status(200).json({
+    const payload = {
       state: initialState,
       transition: {
         type: "INIT",
@@ -29,10 +30,14 @@ export default function handler(
         transition_type: "INIT",
         timestamp: new Date().toISOString(),
       },
-    })
+    }
+
+    await appendLog(payload.log)
+    return res.status(200).json(payload)
   }
 
   // ---------- NORMAL ----------
   const result = runKernel(state, input)
+  await appendLog(result.log)
   res.status(200).json(result)
 }
