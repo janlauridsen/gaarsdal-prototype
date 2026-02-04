@@ -30,6 +30,7 @@ export type TransitionType =
   | "PARENTESE_CLOSE"
   | "TERMINAL"
   | "REJECT"
+  | "INIT"
 
 export type Transition = {
   type: TransitionType
@@ -47,12 +48,13 @@ export type InputSignal =
       proposed_transition: Transition
     }
   | { type: "SYSTEM"; intent: "PAUSE" | "RESUME" | "REJECT" | "TERMINATE" }
+  | { type: "SYSTEM_INIT" }
 
 export type LogEvent = {
   conversation_id: string
   revision_before: number
   revision_after: number
-  active_node_before: NodeId
+  active_node_before: NodeId | null
   active_node_after: NodeId
   input_type: InputSignal["type"]
   transition_type: TransitionType
