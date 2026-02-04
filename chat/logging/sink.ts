@@ -1,14 +1,27 @@
 import type { LogEvent } from "../kernel/types"
+import {
+  appendLogToRedis,
+  readLogsFromRedis,
+  redisEnabled,
+} from "./redisStore"
 
 const MEMORY_LOG: LogEvent[] = []
 
-export function appendLog(event: LogEvent): void {
+export async function appendLog(event: LogEvent): Promise<void> {
   MEMORY_LOG.push(event)
+
+  if (redisEnabled()) {
+    await appendLogToRedis(event)
+  }
 }
 
-export function readLogs(
+export async function readLogs(
   conversation_id?: string
-): LogEvent[] {
+): Promise<LogEvent[]> {
+  if (redisEnabled()) {
+    return readLogsFromRedis(conversation_id)
+  }
+
   if (!conversation_id) return [...MEMORY_LOG]
   return MEMORY_LOG.filter(
     (e) => e.conversation_id === conversation_id
