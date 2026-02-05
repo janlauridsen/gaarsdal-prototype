@@ -49,11 +49,16 @@ const NODE_LABELS: Record<string, string> = {
   HOME: "Forside",
   GEN_HYPNO: "Generelt om hypnoterapi",
   TRIAGE: "Triage",
+  TRIAGE_GOAL: "Triage: mål",
+  TRIAGE_READY: "Triage: parathed",
+  TRIAGE_FIT_BOOKING: "Triage: egnet til booking",
+  TRIAGE_NEEDS_ASSESSMENT: "Triage: afklaringssamtale",
   BOOKING: "Book tid",
   MAIL: "E-mail",
   TLF: "Telefon",
   AKUT: "Akut",
 }
+
 
 /* ========================= */
 
