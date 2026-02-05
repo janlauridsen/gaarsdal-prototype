@@ -58,7 +58,7 @@ export default async function handler(
     input?.type === "FREE_TEXT" &&
     state.active_node === "TRIAGE"
   ) {
-    const triage = resolveTriageFreeText(state, input.text)
+    const triage = await resolveTriageFreeText(state, input.text)
     const result = runKernel(state, {
       type: "FREE_TEXT_RESOLVED",
       proposed_transition: triage.transition,
