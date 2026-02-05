@@ -8,6 +8,12 @@ import {
 
 type Relevance = "YES" | "LIKELY" | "UNCLEAR" | "NO"
 type NextState = "OPEN" | "MARK" | "EXPLORE" | "CONFIRM" | "CLOSE"
+type TranscriptRole = "user" | "assistant"
+
+type TranscriptTurn = {
+  role: TranscriptRole
+  content: string
+}
 
 type Decision = {
   relevance: Relevance
@@ -30,6 +36,8 @@ type TriageOutput = {
   decision: Decision
   render: Render
 }
+
+const MAX_TRANSCRIPT_TURNS = 16
 
 const TRIAGE_PROMPT = `Du er en relevans-assistent for hypnoterapi.
 
@@ -74,6 +82,9 @@ DIREKTE RELEVANS-SPØRGSMÅL:
 - Hvis brugeren direkte spørger, om hypnoterapi er relevant,
   og relevance vurderes som YES eller LIKELY,
   skal next_state være CONFIRM.
+
+Du får conversation_transcript med tidligere bruger-/assistent-udvekslinger.
+Du SKAL bruge den aktivt, så svar husker tidligere kontekst.
 
 Returner KUN gyldig JSON i formatet:
 {
@@ -141,6 +152,55 @@ function normalizeConfidence(value: unknown): number {
 function includesQuestionOnly(text: string): boolean {
   const trimmed = text.trim()
   return trimmed.endsWith("?") && !trimmed.includes(". ")
+}
+
+function readTranscript(context: AiCapabilityContext): TranscriptTurn[] {
+  const raw = context.state.meta["triage.transcript"]?.value
+  if (!Array.isArray(raw)) return []
+
+  const turns: TranscriptTurn[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue
+    const obj = item as Record<string, unknown>
+    if (
+      (obj.role === "user" || obj.role === "assistant") &&
+      typeof obj.content === "string" &&
+      obj.content.trim().length > 0
+    ) {
+      turns.push({
+        role: obj.role,
+        content: obj.content.trim(),
+      })
+    }
+  }
+  return turns.slice(-MAX_TRANSCRIPT_TURNS)
+}
+
+function buildAssistantText(render: Render): string {
+  const parts = [render.assistant_message.trim()]
+  if (render.next_question.trim()) {
+    parts.push(render.next_question.trim())
+  }
+  return parts.filter(Boolean).join("\n\n")
+}
+
+function appendTranscript(
+  previous: TranscriptTurn[],
+  userText: string,
+  assistantText: string
+): TranscriptTurn[] {
+  const next = [...previous]
+  const user = userText.trim()
+  const assistant = assistantText.trim()
+
+  if (user.length > 0) {
+    next.push({ role: "user", content: user })
+  }
+  if (assistant.length > 0) {
+    next.push({ role: "assistant", content: assistant })
+  }
+
+  return next.slice(-MAX_TRANSCRIPT_TURNS)
 }
 
 function enforceMessagePolicy(output: TriageOutput): TriageOutput {
@@ -278,7 +338,7 @@ function heuristic(context: AiCapabilityContext): TriageOutput {
     },
     render: {
       assistant_message: "Tak fordi du deler det. Jeg vil gerne forstå din situation lidt bedre.",
-      next_question: "Hvad ønsker du konkret skal være anderledes om 1-2 måneder?",
+            next_question: "Hvad ønsker du konkret skal være anderledes om 1-2 måneder?",
       chips: DEFAULT_CHIPS,
     },
   }
@@ -286,7 +346,8 @@ function heuristic(context: AiCapabilityContext): TriageOutput {
 
 function buildTransition(
   context: AiCapabilityContext,
-  output: TriageOutput
+  output: TriageOutput,
+  previousTranscript: TranscriptTurn[]
 ): Transition {
   const previousCount = countFromMeta(context)
   const nextCount = Math.min(previousCount + 1, 6)
@@ -300,10 +361,8 @@ function buildTransition(
     ? [...chips, { id: "book", label: "Book tid" }]
     : chips
 
-  const responseParts = [output.render.assistant_message.trim()]
-  if (output.render.next_question.trim()) {
-    responseParts.push(output.render.next_question.trim())
-  }
+  const assistantText = buildAssistantText(output.render)
+  const transcript = appendTranscript(previousTranscript, context.userText, assistantText)
 
   let to: Transition["to"] = "TRIAGE"
   if (output.decision.relevance === "NO") {
@@ -325,7 +384,7 @@ function buildTransition(
     from: context.state.active_node,
     to,
     reason: "triage capability decision",
-    response_message: responseParts.join("\n\n"),
+    response_message: assistantText,
     meta_delta: {
       "triage.question_count": nextCount,
       "triage.outcome": output.decision.relevance,
@@ -340,6 +399,7 @@ function buildTransition(
       "triage.notes_for_context": output.decision.notes_for_context,
       "triage.next_question": output.render.next_question,
       "triage.chips": finalChips,
+      "triage.transcript": transcript,
     },
   }
 }
@@ -349,6 +409,7 @@ async function runTriageCapability(
   llm: LlmClient
 ): Promise<AiCapabilityResult> {
   const model = process.env.TRIAGE_LLM_MODEL ?? "gpt-4o-mini"
+  const transcript = readTranscript(context)
 
   const payload = {
     model,
@@ -369,6 +430,15 @@ async function runTriageCapability(
             typeof context.state.meta["triage.notes_for_context"]?.value === "string"
               ? context.state.meta["triage.notes_for_context"]?.value
               : "",
+          prior_relevance:
+            typeof context.state.meta["triage.outcome"]?.value === "string"
+              ? context.state.meta["triage.outcome"]?.value
+              : "",
+          prior_user_goal:
+            typeof context.state.meta["triage.user_goal"]?.value === "string"
+              ? context.state.meta["triage.user_goal"]?.value
+              : "",
+          conversation_transcript: transcript,
         }),
       },
     ],
@@ -380,7 +450,7 @@ async function runTriageCapability(
   const output = enforceMessagePolicy(parsed ?? heuristic(context))
 
   return {
-    transition: buildTransition(context, output),
+    transition: buildTransition(context, output, transcript),
     debug: {
       capability: "triage-relevance-v1",
       used_fallback: usedFallback,
@@ -392,3 +462,8 @@ export const triageCapability: AiCapability = {
   id: "triage-relevance-v1",
   run: runTriageCapability,
 }
+
+
+
+
+      
