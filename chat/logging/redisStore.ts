@@ -1,9 +1,13 @@
 import { Redis } from "@upstash/redis"
 import type { LogEvent } from "../kernel/types"
+import type { InteractionEvent } from "./sink"
 
 const REDIS_ALL_KEY = "gaarsdal:logs:all"
 const REDIS_CONVO_PREFIX = "gaarsdal:logs:"
 const REDIS_REPLAY_HISTORY_KEY = "gaarsdal:replay:history"
+
+const REDIS_INTERACTIONS_ALL_KEY = "gaarsdal:interactions:all"
+const REDIS_INTERACTIONS_CONVO_PREFIX = "gaarsdal:interactions:"
 
 let redisClient: Redis | null = null
 
@@ -54,6 +58,33 @@ export async function readLogsFromRedis(
     : REDIS_ALL_KEY
   const items = await client.lrange<unknown>(key, 0, -1)
   return items.map((item) => parseStoredItem<LogEvent>(item))
+}
+
+export async function appendInteractionToRedis(
+  event: InteractionEvent
+): Promise<void> {
+  const client = getRedisClient()
+  if (!client) return
+
+  const payload = JSON.stringify(event)
+  await client.rpush(REDIS_INTERACTIONS_ALL_KEY, payload)
+  await client.rpush(
+    `${REDIS_INTERACTIONS_CONVO_PREFIX}${event.conversation_id}`,
+    payload
+  )
+}
+
+export async function readInteractionsFromRedis(
+  conversation_id?: string
+): Promise<InteractionEvent[]> {
+  const client = getRedisClient()
+  if (!client) return []
+
+  const key = conversation_id
+    ? `${REDIS_INTERACTIONS_CONVO_PREFIX}${conversation_id}`
+    : REDIS_INTERACTIONS_ALL_KEY
+  const items = await client.lrange<unknown>(key, 0, -1)
+  return items.map((item) => parseStoredItem<InteractionEvent>(item))
 }
 
 export type ReplayHistoryEntry = {
