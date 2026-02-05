@@ -16,6 +16,7 @@ export type ConversationState = {
   conversation_id: string
   revision: number
   active_node: NodeId
+  active_node_message: string
   allowed_transitions: NodeId[]
   meta: MetaStore
   status: ConversationStatus
@@ -37,6 +38,7 @@ export type Transition = {
   from: NodeId
   to?: NodeId
   reason: string
+  response_message?: string
   meta_delta?: Record<MetaDomain, unknown>
 }
 
