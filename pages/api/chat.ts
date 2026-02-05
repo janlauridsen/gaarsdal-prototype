@@ -3,6 +3,7 @@ import { runKernel } from "../../chat/kernel/engine"
 import { createInitialState } from "../../chat/kernel/state"
 import { appendLog } from "../../chat/logging/sink"
 import type { LogEvent } from "../../chat/kernel/types"
+import { resolveTriageFreeText } from "../../chat/triage/resolver"
 
 export default async function handler(
   req: NextApiRequest,
@@ -37,6 +38,22 @@ export default async function handler(
 
     await appendLog(payload.log)
     return res.status(200).json(payload)
+  }
+
+
+  // ---------- TRIAGE AI FREE TEXT ----------
+  if (
+    state &&
+    input?.type === "FREE_TEXT" &&
+    state.active_node === "TRIAGE"
+  ) {
+    const triage = resolveTriageFreeText(state, input.text)
+    const result = runKernel(state, {
+      type: "FREE_TEXT_RESOLVED",
+      proposed_transition: triage.transition,
+    })
+    await appendLog(result.log)
+    return res.status(200).json(result)
   }
 
   // ---------- NORMAL ----------
