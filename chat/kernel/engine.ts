@@ -44,12 +44,21 @@ function buildTransition(
         reason: "explicit transition",
       }
 
-    case "FREE_TEXT":
+    case "FREE_TEXT": {
+      const node = getNode(state.active_node)
+      if (!node.allow_free_text) {
+        return {
+          type: "REJECT",
+          from: state.active_node,
+          reason: "free text not allowed in this node",
+        }
+      }
       return {
         type: "REJECT",
         from: state.active_node,
         reason: "free text requires external resolution",
       }
+    }
 
     case "FREE_TEXT_RESOLVED":
       return {
@@ -134,6 +143,8 @@ function applyTransition(
       revision: state.revision + 1,
       status: "paused",
       meta: nextMeta,
+      active_node_message:
+        transition.response_message ?? state.active_node_message,
     }
   }
 
@@ -143,6 +154,8 @@ function applyTransition(
       revision: state.revision + 1,
       status: "active",
       meta: nextMeta,
+      active_node_message:
+        transition.response_message ?? state.active_node_message,
     }
   }
 
@@ -152,6 +165,8 @@ function applyTransition(
       revision: state.revision + 1,
       status: "completed",
       meta: nextMeta,
+      active_node_message:
+        transition.response_message ?? state.active_node_message,
     }
   }
 
@@ -165,12 +180,16 @@ function applyTransition(
       throw new Error("parentese open target not allowed")
     }
 
+    const targetNode = getNode(transition.to)
+
     return {
       ...state,
       revision: state.revision + 1,
       parentese_stack: [...state.parentese_stack, state.active_node],
       active_node: transition.to,
-      allowed_transitions: getNode(transition.to).allowed_exits,
+      active_node_message:
+        transition.response_message ?? targetNode.message,
+      allowed_transitions: targetNode.allowed_exits,
       meta: nextMeta,
       status: "active",
     }
@@ -184,20 +203,20 @@ function applyTransition(
     const previous =
       state.parentese_stack[state.parentese_stack.length - 1]
 
+    const previousNode = getNode(previous)
+
     return {
       ...state,
       revision: state.revision + 1,
       parentese_stack: state.parentese_stack.slice(0, -1),
       active_node: previous,
-      allowed_transitions: getNode(previous).allowed_exits,
+      active_node_message:
+        transition.response_message ?? previousNode.message,
+      allowed_transitions: previousNode.allowed_exits,
       meta: nextMeta,
       status: "active",
     }
   }
-
-  // -----------------------------
-  // NODE_HOP (PATCHET v2.1)
-  // -----------------------------
 
   const node = getNode(state.active_node)
   if (transition.to && !node.allowed_exits.includes(transition.to)) {
@@ -212,6 +231,10 @@ function applyTransition(
     ...state,
     revision: state.revision + 1,
     active_node: transition.to ?? state.active_node,
+    active_node_message: transition.response_message
+      ?? (targetNode
+      ? targetNode.message
+      : state.active_node_message),
     allowed_transitions: targetNode
       ? targetNode.allowed_exits
       : state.allowed_transitions,
