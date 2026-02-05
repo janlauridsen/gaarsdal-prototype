@@ -72,6 +72,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
       "triage.notes_for_context",
       "triage.next_question",
       "triage.chips",
+      "triage.transcript",
     ],
   },
 
