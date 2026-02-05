@@ -1,5 +1,14 @@
 import Link from "next/link";
-import Chatbot from "../components/Chatbot";
+import dynamic from "next/dynamic";
+
+/**
+ * Chatbot MÅ være client-only.
+ * SSR giver React #418 / #423 i dette setup.
+ */
+const Chatbot = dynamic(
+  () => import("../components/Chatbot"),
+  { ssr: false }
+);
 
 export default function Home() {
   return (
@@ -143,7 +152,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CHATBOT ICON */}
+      {/* CHATBOT */}
       <Chatbot />
 
     </main>
