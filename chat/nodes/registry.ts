@@ -46,56 +46,60 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
   TRIAGE: {
     id: "TRIAGE",
     kind: "DIALOG",
-    goal: "Triage intro",
-    message: "Kort triage: 3 hurtige spørgsmål for at finde næste skridt.",
+    goal: "AI-triage",
+    message:
+      "Beskriv kort dit problem. Jeg stiller 3-6 opklarende spørgsmål og vurderer, om hypnoterapi virker relevant.",
     allow_free_text: true,
     allow_parentese: true,
-    allowed_exits: ["TRIAGE_GOAL", "HOME", "MAIL", "TLF", "AKUT"],
-    meta_domains_written: [],
-  },
-
-  TRIAGE_GOAL: {
-    id: "TRIAGE_GOAL",
-    kind: "DIALOG",
-    goal: "Mål for forløb",
-    message: "Er dit mål at arbejde med vaner, stress eller uro (ikke akut)?",
-    allow_free_text: true,
-    allow_parentese: true,
-    allowed_exits: ["TRIAGE_READY", "TRIAGE_NEEDS_ASSESSMENT", ...QUICK_CONTACTS],
-    meta_domains_written: ["triage.presenting_issue"],
-  },
-
-  TRIAGE_READY: {
-    id: "TRIAGE_READY",
-    kind: "DIALOG",
-    goal: "Parathed",
-    message: "Er du klar til et struktureret forløb over flere sessioner?",
-    allow_free_text: true,
-    allow_parentese: true,
-    allowed_exits: ["TRIAGE_FIT_BOOKING", "TRIAGE_NEEDS_ASSESSMENT", ...QUICK_CONTACTS],
-    meta_domains_written: ["triage.intensity"],
+    allowed_exits: [
+      "TRIAGE",
+      "TRIAGE_FIT_BOOKING",
+      "TRIAGE_NOT_RELEVANT",
+      "TRIAGE_NEEDS_ASSESSMENT",
+      ...QUICK_CONTACTS,
+    ],
+    meta_domains_written: [
+      "triage.question_count",
+      "triage.outcome",
+      "triage.summary",
+      "triage.unclear_points",
+    ],
   },
 
   TRIAGE_FIT_BOOKING: {
     id: "TRIAGE_FIT_BOOKING",
     kind: "TERMINAL",
     goal: "Egnet til booking",
-    message: "Foreløbig triage: det ser relevant ud. Næste skridt er booking.",
+    message:
+      "Foreløbig triage: dit tema virker relevant for hypnoterapi. Næste skridt er booking.",
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: ["BOOKING", ...QUICK_CONTACTS],
-    meta_domains_written: ["triage.outcome", "triage.next_step"],
+    meta_domains_written: ["triage.outcome", "triage.summary", "triage.unclear_points"],
+  },
+
+  TRIAGE_NOT_RELEVANT: {
+    id: "TRIAGE_NOT_RELEVANT",
+    kind: "TERMINAL",
+    goal: "Ikke relevant",
+    message:
+      "Foreløbig triage: det lyder ikke som et klassisk hypnoterapi-spor. Vi anbefaler afklaring af anden støtte.",
+    allow_free_text: false,
+    allow_parentese: false,
+    allowed_exits: QUICK_CONTACTS,
+    meta_domains_written: ["triage.outcome", "triage.summary", "triage.unclear_points"],
   },
 
   TRIAGE_NEEDS_ASSESSMENT: {
     id: "TRIAGE_NEEDS_ASSESSMENT",
     kind: "TERMINAL",
     goal: "Kræver afklaringssamtale",
-    message: "Foreløbig triage: start med en afklaringssamtale.",
+    message:
+      "Foreløbig triage: der er stadig uklarheder. Start med en afklaringssamtale.",
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: QUICK_CONTACTS,
-    meta_domains_written: ["triage.outcome", "triage.next_step"],
+    meta_domains_written: ["triage.outcome", "triage.summary", "triage.unclear_points"],
   },
 
   BOOKING: {
