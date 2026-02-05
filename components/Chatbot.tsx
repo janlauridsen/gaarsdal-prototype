@@ -23,6 +23,7 @@ type ConversationState = {
   conversation_id: string
   revision: number
   active_node: string
+  active_node_message: string
   allowed_transitions: string[]
   meta: Record<string, any>
   status: "active" | "paused" | "completed" | "rejected"
@@ -49,16 +50,14 @@ const NODE_LABELS: Record<string, string> = {
   HOME: "Forside",
   GEN_HYPNO: "Generelt om hypnoterapi",
   TRIAGE: "Triage",
-  TRIAGE_GOAL: "Triage: mål",
-  TRIAGE_READY: "Triage: parathed",
   TRIAGE_FIT_BOOKING: "Triage: egnet til booking",
+  TRIAGE_NOT_RELEVANT: "Triage: ikke relevant",
   TRIAGE_NEEDS_ASSESSMENT: "Triage: afklaringssamtale",
   BOOKING: "Book tid",
   MAIL: "E-mail",
   TLF: "Telefon",
   AKUT: "Akut",
 }
-
 
 /* ========================= */
 
@@ -226,6 +225,8 @@ export default function Chatbot() {
               Status: {state.status}
             </div>
           )}
+
+          <div className="mb-2 opacity-80">{state.active_node_message}</div>
 
           {state.status === "active" && (
             <div className="flex flex-wrap gap-2 mt-2">
