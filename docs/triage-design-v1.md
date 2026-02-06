@@ -1,85 +1,75 @@
-# TRIAGE – Designspecifikation (repo-ejet)
+# Triage Design v1
 
-> **Formål med dette dokument**
 > Dette er den **fulde, vedligeholdte designspecifikation** for triage i node-strukturen.
-> Dokumentet er skrevet til at kunne ejes af dig/jer i repoet og opdateres over tid.
 
----
-
-## Dokumentkontrol (SKAL vedligeholdes af jer)
-
-- **Dokument-ejer:** `@UDFYLD`
-- **Teknisk reviewer:** `@UDFYLD`
-- **Produktansvarlig:** `@UDFYLD`
-- **Version:** `v1.0`
-- **Status:** `Draft | Ready for implementation | In implementation | Live`
-- **Sidst opdateret:** `YYYY-MM-DD`
-- **Næste review-dato:** `YYYY-MM-DD`
-
-### Ændringslog (SKAL opdateres ved hver ændring)
-
-| Dato | Version | Ændring | Ansvarlig |
-|---|---|---|---|
+## Changelog
+| Dato | Version | Ændring | Af |
+|------|---------|---------|----|
 | YYYY-MM-DD | v1.0 | Første version af vedligeholdt triage-designspec | @UDFYLD |
 
----
+## Formål
 
-## 1. Scope og mål
-
-### 1.1 Hvad er in-scope
-
-- Én canonical node-kontrakt som runtime og UI deler.
 - Et deklarativt triage-flow med eksplicitte beslutningsveje.
 - Kontrolleret skrivning af triage-metadata (`meta_delta`).
-- Audit/replay-egnet transitionsporing.
+- Maksimalt 6 spørgsmål i en triage-session.
 
-### 1.2 Hvad er out-of-scope (v1)
+## KPI’er (placeholder)
+- **Andel med klart outcome (`triage.outcome`)**: `UDFYLD %`
+- **Maks tilladt andel REJECT-events i triage:** `UDFYLD %`
 
-- Klinisk diagnose.
-- Automatisk medicinsk anbefalingsmotor.
-- Dynamiske flows baseret på ML-modeller uden deterministic fallback.
+## Overblik
 
-### 1.3 Målbare succeskriterier (SKAL udfyldes af jer)
+- `DIALOG` noder styrer spørgs/afklaring.
+- `DECISION` noder vurderer næste skridt.
+- `TERMINAL` noder afslutter samtalen/triage-udfald.
 
-- **Flow-completion-rate mål:** `50 %`
-- **Andel med klart outcome (`triage.outcome`)**: `50 %`
-- **Maks tilladt andel REJECT-events i triage:** `5 %`
-- **Observability SLA (log/replay):** `10`
+## Metadata (triage.*)
+- `triage.presenting_issue`
+- `triage.duration`
+- `triage.intensity`
+- `triage.red_flags`
+- `triage.contraindication`
+- `triage.outcome` = `FIT | NEEDS_ASSESSMENT | NOT_FIT | REFER_ACUTE`
+- `triage.next_step`
 
----
+## Metadata kontrakt
 
-## 2. Nuværende arkitektur (baseline)
+| Key | Type | Allowed values | Required | Owner |
+|-----|------|----------------|----------|-------|
+| triage.presenting_issue | `string/enum` | `UDFYLD` | Ja | @UDFYLD |
+| triage.duration | `enum` | `UDFYLD` | Ja | @UDFYLD |
+| triage.intensity | `enum` | `UDFYLD` | Ja | @UDFYLD |
+| triage.red_flags | `bool/enum` | `UDFYLD` | Ja | @UDFYLD |
+| triage.contraindication | `bool/enum` | `UDFYLD` | Ja | @UDFYLD |
+| triage.outcome | `enum` | `FIT, NEEDS_ASSESSMENT, NOT_FIT, REFER_ACUTE` | Ja | @UDFYLD |
+| triage.next_step | `enum/string` | `UDFYLD` | Ja | @UDFYLD |
 
-Der er aktuelt to node-repræsentationer i koden:
+## Node catalog (v1)
 
-1. Runtime bruger `chat/nodes/registry.ts` via `getNode(...)`.
-2. Der findes en separat deklarativ node-model i `chat/nodes/types.ts` + `chat/nodes/nodes.ts`.
+| Node | Kind | Goal | Message | meta_domains_written |
+|------|------|------|---------|----------------------|
+| TRIAGE_PRESENTING_ISSUE | DIALOG | Primært problem | `UDFYLD` | `triage.presenting_issue` |
+| TRIAGE_DURATION | DIALOG | Varighed | `UDFYLD` | `triage.duration` |
+| TRIAGE_INTENSITY | DIALOG | Intensitet | `UDFYLD` | `triage.intensity` |
+| TRIAGE_RED_FLAGS | DECISION | Risikoflag | `UDFYLD` | `triage.red_flags` |
+| TRIAGE_CONTRAINDICATIONS | DECISION | Kontraindikationer | `UDFYLD` | `triage.contraindication` |
+| TRIAGE_REFER_ACUTE | TERMINAL | Akut henvisning | - | `triage.outcome, triage.next_step` |
+| TRIAGE_NOT_FIT | TERMINAL | Ikke egnet | - | `triage.outcome, triage.next_step` |
+| TRIAGE_NEEDS_ASSESSMENT | TERMINAL | Kræver afklaringssamtale | - | `triage.outcome, triage.next_step` |
+| TRIAGE_FIT_BOOKING | TERMINAL | Egnet til booking | - | `triage.outcome, triage.next_step` |
 
-**Designbeslutning i dette dokument:**
-Vi konsoliderer til **én canonical model**, så design/data/runtime ikke divergerer.
+## Principper
 
----
+1. **Eksplicit transition er default i triage**.
+2. **Alle triage-forløb ender i et terminalt outcome**.
 
-## 3. Canonical node-kontrakt (besluttet)
+## Validation
 
-```ts
-export type NodeKind = "MENU" | "DIALOG" | "TERMINAL" | "DECISION"
+- Ingen ulovlige hops i triage.
+- Alle gennemførte triage-forløb ender i et terminalt outcome.
 
-export type NodeNavigation = {
-  allowed: NodeId[]
-  allow_free_text: boolean
-  allow_parentese: boolean
-}
+## Fase 2 – triage v1 i runtime
 
-export type NodeDefinition = {
-  id: NodeId
-  kind: NodeKind
-  goal: string
-  content: {
-    title?: string
-    message: string
-    chips?: Array<{ label: string; target: NodeId }>
-  }
-  navigation: NodeNavigation
-  meta_domains_written: string[]
-}
+- Opret triage-noderne fra nodekataloget.
+- Implementér resolver for fritekst i triage-kontekst.
+- Opdatér **Beslutningstabellen** når triage-regler ændres.
