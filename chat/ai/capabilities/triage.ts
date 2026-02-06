@@ -234,8 +234,16 @@ function enforceMessagePolicy(output: TriageOutput): TriageOutput {
   }
 
   if (isRelevant) {
+    const noQuestionLines = assistantMessage
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.includes("?"))
+    assistantMessage = noQuestionLines.join("\n")
     if (!assistantMessage.toLowerCase().includes("generel")) {
       assistantMessage = `${assistantMessage} Du kan læse mere i den generelle information om hypnoterapi.`.trim()
+    }
+    if (!assistantMessage) {
+      assistantMessage = `Tak fordi du deler det. ${relevanceHint} Du kan læse mere i den generelle information om hypnoterapi.`
     }
   }
 
