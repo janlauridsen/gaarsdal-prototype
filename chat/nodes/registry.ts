@@ -11,7 +11,13 @@ type Node = {
   meta_domains_written: string[]
 }
 
-const QUICK_CONTACTS: NodeId[] = ["HOME", "MAIL", "TLF", "AKUT"]
+const QUICK_CONTACTS: NodeId[] = [
+  "HOME",
+  "MAIL",
+  "TLF",
+  "CONTACT_FORM",
+  "AKUT",
+]
 
 const RAW_REGISTRY: Record<NodeId, Node> = {
   HOME: {
@@ -119,7 +125,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     message: "Her kan du vælge kontaktvej for booking.",
     allow_free_text: false,
     allow_parentese: false,
-    allowed_exits: ["MAIL", "TLF", "HOME", "AKUT"],
+    allowed_exits: ["MAIL", "TLF", "CONTACT_FORM", "HOME", "AKUT"],
     meta_domains_written: [],
   },
 
@@ -127,7 +133,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "MAIL",
     kind: "TERMINAL",
     goal: "Mail kontakt",
-    message: "Du kan kontakte os via e-mail.",
+    message: "Du kan kontakte mig via e-mail på jan@gaarsdal.net.",
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: QUICK_CONTACTS,
@@ -138,7 +144,20 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "TLF",
     kind: "TERMINAL",
     goal: "Telefon kontakt",
-    message: "Du kan kontakte os telefonisk.",
+    message:
+      "Du kan ringe eller sende sms til 42 80 74 74. Jeg svarer, så snart jeg kan.",
+    allow_free_text: false,
+    allow_parentese: false,
+    allowed_exits: QUICK_CONTACTS,
+    meta_domains_written: [],
+  },
+
+  CONTACT_FORM: {
+    id: "CONTACT_FORM",
+    kind: "TERMINAL",
+    goal: "Kontaktformular",
+    message:
+      "Du kan bruge kontaktformularen på /kontakt, hvis du ikke ønsker mail, telefon eller sms.",
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: QUICK_CONTACTS,
