@@ -4,7 +4,7 @@ import { parse } from "yaml"
 import { createInitialState } from "../../chat/kernel/state"
 import { readLogs } from "../../chat/logging/sink"
 import { replay } from "../../chat/observability/replay"
-import { appendReplayHistory } from "../../chat/logging/redisStore"
+import * as redisStore from "../../chat/logging/redisStore"
 
 type ReplayExpectation = {
   final_active_node?: string
@@ -20,6 +20,13 @@ type ReplayCase = {
 
 type ReplayPayload = {
   cases?: ReplayCase[]
+}
+
+type ReplayHistoryEntry = {
+  id: string
+  created_at: string
+  yaml: string
+  result: unknown
 }
 
 export default async function handler(
@@ -125,12 +132,18 @@ export default async function handler(
     results,
   }
 
-  await appendReplayHistory({
-    id: randomUUID(),
-    created_at: new Date().toISOString(),
-    yaml: yamlText,
-    result: response,
-  })
+  const appendReplayHistory = (redisStore as {
+    appendReplayHistory?: (entry: ReplayHistoryEntry) => Promise<void>
+  }).appendReplayHistory
+
+  if (appendReplayHistory) {
+    await appendReplayHistory({
+      id: randomUUID(),
+      created_at: new Date().toISOString(),
+      yaml: yamlText,
+      result: response,
+    })
+  }
 
   res.status(200).json(response)
 }
