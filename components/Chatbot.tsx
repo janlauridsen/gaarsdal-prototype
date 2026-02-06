@@ -228,17 +228,22 @@ export default function Chatbot() {
   if (!state) return null
 
   const triageChipsRaw = state.meta?.["triage.chips"]?.value
-  const triageChips =
-    state.status === "active" && state.active_node === "TRIAGE"
-      ? Array.isArray(triageChipsRaw)
-        ? triageChipsRaw.filter(
-            (chip) =>
-              chip &&
-              typeof chip.id === "string" &&
-              typeof chip.label === "string"
-          )
-        : []
+  const lastLog = logs[logs.length - 1]
+  const showTriageChips =
+    state.status === "active" &&
+    state.active_node === "TRIAGE" &&
+    (lastLog?.input_type === "FREE_TEXT" ||
+      lastLog?.input_type === "FREE_TEXT_RESOLVED")
+  const triageChips = showTriageChips
+    ? Array.isArray(triageChipsRaw)
+      ? triageChipsRaw.filter(
+          (chip) =>
+            chip &&
+            typeof chip.id === "string" &&
+            typeof chip.label === "string"
+        )
       : []
+    : []
   const primaryTransitions = state.allowed_transitions.filter((t) => {
     if (QUICK_ACTIONS.has(t)) return false
     if (state.active_node === "TRIAGE" && t === "TRIAGE") return false
