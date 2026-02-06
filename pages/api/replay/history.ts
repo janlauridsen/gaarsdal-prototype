@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import { readReplayHistory } from "../../../chat/logging/redisStore"
+import { readReplayHistory } from "../../../chat/logging"
 
 type ReplayHistoryEntry = {
   id: string
