@@ -82,6 +82,43 @@ body {
 }
 
 /* =========================
+   SECTION + CHIPS
+========================= */
+
+.gaarsdal-section-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6C6A63;
+  margin-bottom: 6px;
+}
+
+.gaarsdal-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  background: #FFFFFF;
+  border: 1px solid rgba(44, 42, 40, 0.12);
+  color: #2C2A28;
+  border-radius: 9999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: #EFEDE7;
+}
+
+.gaarsdal-meta {
+  color: #6C6A63;
+}
+
+/* =========================
    FOOTER
 ========================= */
 
