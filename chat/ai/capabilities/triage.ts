@@ -239,11 +239,11 @@ function enforceMessagePolicy(output: TriageOutput): TriageOutput {
       .map((line) => line.trim())
       .filter((line) => line.length > 0 && !line.includes("?"))
     assistantMessage = noQuestionLines.join("\n")
+    if (!assistantMessage) {
+      assistantMessage = `Tak fordi du deler det. ${relevanceHint}`
+    }
     if (!assistantMessage.toLowerCase().includes("generel")) {
       assistantMessage = `${assistantMessage} Du kan læse mere i den generelle information om hypnoterapi.`.trim()
-    }
-    if (!assistantMessage) {
-      assistantMessage = `Tak fordi du deler det. ${relevanceHint} Du kan læse mere i den generelle information om hypnoterapi.`
     }
   }
 
