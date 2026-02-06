@@ -177,7 +177,10 @@ export default function Chatbot() {
   /* ========================= */
 
   function sendFreeText() {
-    if (!input.trim() || !state || state.status !== "active") return
+    if (!input.trim() || !state) return
+    if (state.status !== "active" && state.active_node !== "TRIAGE") {
+      return
+    }
     dispatch({ type: "FREE_TEXT", text: input })
     setInput("")
   }
