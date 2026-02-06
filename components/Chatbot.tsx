@@ -177,7 +177,7 @@ export default function Chatbot() {
   /* ========================= */
 
   function sendFreeText() {
-    if (!input.trim() || !state) return
+    if (!input.trim() || !state || state.status !== "active") return
     dispatch({ type: "FREE_TEXT", text: input })
     setInput("")
   }
@@ -225,14 +225,17 @@ export default function Chatbot() {
   if (!state) return null
 
   const triageChipsRaw = state.meta?.["triage.chips"]?.value
-  const triageChips = Array.isArray(triageChipsRaw)
-    ? triageChipsRaw.filter(
-        (chip) =>
-          chip &&
-          typeof chip.id === "string" &&
-          typeof chip.label === "string"
-      )
-    : []
+  const triageChips =
+    state.status === "active" && state.active_node === "TRIAGE"
+      ? Array.isArray(triageChipsRaw)
+        ? triageChipsRaw.filter(
+            (chip) =>
+              chip &&
+              typeof chip.id === "string" &&
+              typeof chip.label === "string"
+          )
+        : []
+      : []
   const primaryTransitions = state.allowed_transitions.filter((t) => {
     if (QUICK_ACTIONS.has(t)) return false
     if (state.active_node === "TRIAGE" && TRIAGE_OUTCOMES.has(t)) return false
