@@ -168,7 +168,8 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "AKUT",
     kind: "TERMINAL",
     goal: "Akut",
-    message: "Hvis det haster, skal du kontakte akut hjælp med det samme.",
+    message:
+      "Akut hjælp i Danmark: Ring 112 ved livstruende situationer. Voksne: Livslinien 70 201 201 (døgnåben). Børn og unge: BørneTelefonen 116 111. Psykiatrisk akutmodtagelse kan kontaktes via 1813 (Region Hovedstaden) eller din region.",
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: QUICK_CONTACTS,
