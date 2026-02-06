@@ -60,6 +60,7 @@ const NODE_LABELS: Record<string, string> = {
   BOOKING: "Book tid",
   MAIL: "E-mail",
   TLF: "Telefon",
+  CONTACT_FORM: "Kontaktformular",
   AKUT: "Akut",
 }
 
