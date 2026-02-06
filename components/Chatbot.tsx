@@ -64,6 +64,11 @@ const NODE_LABELS: Record<string, string> = {
 }
 
 const QUICK_ACTIONS = new Set(["HOME", "MAIL", "TLF", "AKUT"])
+const TRIAGE_OUTCOMES = new Set([
+  "TRIAGE_FIT_BOOKING",
+  "TRIAGE_NOT_RELEVANT",
+  "TRIAGE_NEEDS_ASSESSMENT",
+])
 
 /* ========================= */
 
@@ -228,9 +233,11 @@ export default function Chatbot() {
           typeof chip.label === "string"
       )
     : []
-  const primaryTransitions = state.allowed_transitions.filter(
-    (t) => !QUICK_ACTIONS.has(t)
-  )
+  const primaryTransitions = state.allowed_transitions.filter((t) => {
+    if (QUICK_ACTIONS.has(t)) return false
+    if (state.active_node === "TRIAGE" && TRIAGE_OUTCOMES.has(t)) return false
+    return true
+  })
 
   return (
     <>
