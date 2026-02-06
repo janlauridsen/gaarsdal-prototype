@@ -70,9 +70,13 @@ KRITISK SAMTALEREGEL (hard rule):
 RELEVANSMARKØR:
 - Når relevance er YES eller LIKELY, SKAL du mindst én gang tydeligt formulere,
   at det brugeren beskriver er relevant for hypnoterapi.
-- Når relevans er markeret tydeligt,
+- Når relevance er markeret tydeligt,
   skal du IKKE gentage fuld relevansforklaring i hver efterfølgende tur.
   Brug i stedet korte bekræftelser.
+
+AFGRÆNSNING AF SPØRGSMÅL VED RELEVANS:
+- Hvis relevance er YES eller LIKELY, må du IKKE stille nye opklarende spørgsmål.
+- I stedet: giv kort uddybende svar og henvis til generel information om hypnoterapi.
 
 KONTEKSTSKIFT:
 - Hvis brugeren skifter emne markant (nyt problemområde),
@@ -204,21 +208,35 @@ function appendTranscript(
 }
 
 function enforceMessagePolicy(output: TriageOutput): TriageOutput {
-  const relevanceHint =
+  const isRelevant =
     output.decision.relevance === "YES" || output.decision.relevance === "LIKELY"
-      ? "Det, du beskriver, er relevant for hypnoterapi."
-      : "Tak for at dele det."
+  const relevanceHint = isRelevant
+    ? "Det, du beskriver, er relevant for hypnoterapi."
+    : "Tak for at dele det."
+
+  if (isRelevant) {
+    output = {
+      ...output,
+      render: {
+        ...output.render,
+        next_question: "",
+      },
+    }
+  }
 
   let assistantMessage = output.render.assistant_message?.trim() || ""
   if (!assistantMessage || includesQuestionOnly(assistantMessage)) {
     assistantMessage = `Tak fordi du deler det. ${relevanceHint}`
   }
 
-  if (
-    (output.decision.relevance === "YES" || output.decision.relevance === "LIKELY") &&
-    !assistantMessage.toLowerCase().includes("relevant")
-  ) {
+  if (isRelevant && !assistantMessage.toLowerCase().includes("relevant")) {
     assistantMessage = `${assistantMessage} ${relevanceHint}`.trim()
+  }
+
+  if (isRelevant) {
+    if (!assistantMessage.toLowerCase().includes("generel")) {
+      assistantMessage = `${assistantMessage} Du kan læse mere i den generelle information om hypnoterapi.`.trim()
+    }
   }
 
   return {
