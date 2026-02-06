@@ -52,6 +52,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     allow_free_text: true,
     allow_parentese: true,
     allowed_exits: [
+      "TRIAGE",
       "TRIAGE_FIT_BOOKING",
       "TRIAGE_NOT_RELEVANT",
       "TRIAGE_NEEDS_ASSESSMENT",
