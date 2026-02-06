@@ -338,7 +338,7 @@ function heuristic(context: AiCapabilityContext): TriageOutput {
     },
     render: {
       assistant_message: "Tak fordi du deler det. Jeg vil gerne forstå din situation lidt bedre.",
-            next_question: "Hvad ønsker du konkret skal være anderledes om 1-2 måneder?",
+      next_question: "Hvad ønsker du konkret skal være anderledes om 1-2 måneder?",
       chips: DEFAULT_CHIPS,
     },
   }
@@ -462,8 +462,3 @@ export const triageCapability: AiCapability = {
   id: "triage-relevance-v1",
   run: runTriageCapability,
 }
-
-
-
-
-      
