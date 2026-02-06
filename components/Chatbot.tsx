@@ -259,16 +259,50 @@ export default function Chatbot() {
             }}
             placeholder="Skriv frit…"
           />
-          <button onClick={sendFreeText}>Send</button>
-        </footer>
 
-        {/* ================= LOGS ================= */}
-
-        {showLogs && (
-          <div className="logs p-3 border-t text-xs bg-white max-h-[220px] overflow-auto">
-            <pre>{JSON.stringify(logs, null, 2)}</pre>
+          <div className="flex justify-center gap-4 mt-3">
+            <button
+              className="gaarsdal-icon-btn"
+              onClick={() => go("HOME")}
+              aria-label="Til forsiden"
+              title="Forside"
+            >
+              <HomeIcon className="w-5 h-5" />
+            </button>
+            <button
+              className="gaarsdal-icon-btn"
+              onClick={() => go("MAIL")}
+              aria-label="Skriv email"
+              title="E-mail"
+            >
+              <EnvelopeIcon className="w-5 h-5" />
+            </button>
+            <button
+              className="gaarsdal-icon-btn"
+              onClick={() => go("TLF")}
+              aria-label="Ring"
+              title="Telefon"
+            >
+              <PhoneIcon className="w-5 h-5" />
+            </button>
+            <button
+              className="gaarsdal-icon-btn"
+              onClick={() => go("AKUT")}
+              aria-label="Akut hjælp"
+              title="Akut"
+            >
+              <ExclamationTriangleIcon className="w-5 h-5" />
+            </button>
           </div>
-        )}
+
+          {showLogs && (
+            <div className="mt-3 text-xs opacity-60">
+              <pre className="overflow-auto max-h-40">
+                {JSON.stringify(logs, null, 2)}
+              </pre>
+            </div>
+          )}
+        </footer>
       </div>
     </>
   )
