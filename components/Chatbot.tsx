@@ -241,6 +241,7 @@ export default function Chatbot() {
       : []
   const primaryTransitions = state.allowed_transitions.filter((t) => {
     if (QUICK_ACTIONS.has(t)) return false
+    if (state.active_node === "TRIAGE" && t === "TRIAGE") return false
     if (state.active_node === "TRIAGE" && TRIAGE_OUTCOMES.has(t)) return false
     return true
   })
@@ -376,13 +377,6 @@ export default function Chatbot() {
             }}
             placeholder="Skriv frit…"
           />
-          <button
-            className="chip mt-3"
-            onClick={sendFreeText}
-            disabled={!input.trim()}
-          >
-            Send
-          </button>
 
           <div className="flex justify-center gap-4 mt-3">
             <button
