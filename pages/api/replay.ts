@@ -4,7 +4,7 @@ import { parse } from "yaml"
 import { createInitialState } from "../../chat/kernel/state"
 import { readLogs } from "../../chat/logging/sink"
 import { replay } from "../../chat/observability/replay"
-import { appendReplayHistory } from "../../chat/logging/redisStore"
+import { appendReplayHistory } from "../../chat/logging"
 
 type ReplayExpectation = {
   final_active_node?: string
