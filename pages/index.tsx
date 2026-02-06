@@ -1,5 +1,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 /**
  * Chatbot MÅ være client-only.
@@ -12,7 +14,9 @@ const Chatbot = dynamic(
 
 export default function Home() {
   return (
-    <main className="bg-bg text-text">
+    <div className="bg-bg text-text min-h-screen">
+      <Header />
+      <main>
 
       {/* HERO */}
       <section className="py-32 text-center px-6">
@@ -157,6 +161,8 @@ export default function Home() {
       {/* CHATBOT */}
       <Chatbot />
 
-    </main>
+      </main>
+      <Footer />
+    </div>
   );
 }
