@@ -259,30 +259,16 @@ export default function Chatbot() {
             }}
             placeholder="Skriv frit…"
           />
-
-          <div className="flex justify-center gap-4 mt-3">
-            <button onClick={() => go("HOME")}>
-              <HomeIcon className="w-5 h-5" />
-            </button>
-            <button onClick={() => go("MAIL")}>
-              <EnvelopeIcon className="w-5 h-5" />
-            </button>
-            <button onClick={() => go("TLF")}>
-              <PhoneIcon className="w-5 h-5" />
-            </button>
-            <button onClick={() => go("AKUT")}>
-              <ExclamationTriangleIcon className="w-5 h-5" />
-            </button>
-          </div>
-
-          {showLogs && (
-            <div className="mt-3 text-xs opacity-60">
-              <pre className="overflow-auto max-h-40">
-                {JSON.stringify(logs, null, 2)}
-              </pre>
-            </div>
-          )}
+          <button onClick={sendFreeText}>Send</button>
         </footer>
+
+        {/* ================= LOGS ================= */}
+
+        {showLogs && (
+          <div className="logs p-3 border-t text-xs bg-white max-h-[220px] overflow-auto">
+            <pre>{JSON.stringify(logs, null, 2)}</pre>
+          </div>
+        )}
       </div>
     </>
   )
