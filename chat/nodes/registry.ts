@@ -51,13 +51,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
       "Beskriv kort dit problem. Jeg stiller 3-6 opklarende spørgsmål og vurderer, om hypnoterapi virker relevant.",
     allow_free_text: true,
     allow_parentese: true,
-    allowed_exits: [
-      "TRIAGE",
-      "TRIAGE_FIT_BOOKING",
-      "TRIAGE_NOT_RELEVANT",
-      "TRIAGE_NEEDS_ASSESSMENT",
-      ...QUICK_CONTACTS,
-    ],
+    allowed_exits: QUICK_CONTACTS,
     meta_domains_written: [
       "triage.question_count",
       "triage.outcome",
