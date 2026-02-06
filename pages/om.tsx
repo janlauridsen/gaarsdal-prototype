@@ -1,6 +1,7 @@
 // pages/om.tsx
 import Head from "next/head";
-import Link from "next/link";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 export default function Om() {
   return (
@@ -13,8 +14,9 @@ export default function Om() {
         />
       </Head>
 
-      <main className="min-h-screen bg-bg text-text">
-        <section className="max-w-4xl mx-auto py-20 px-6">
+      <div className="min-h-screen bg-bg text-text">
+        <Header />
+        <main className="max-w-4xl mx-auto py-24 px-6">
           {/* HERO */}
           <div className="mb-12 text-center">
             <h1 className="text-h1 font-medium mb-4">
@@ -130,8 +132,9 @@ export default function Om() {
             </p>
             <p className="text-sm text-muted">Tlf: 42 80 74 74</p>
           </div>
-        </section>
-      </main>
+        </main>
+        <Footer />
+      </div>
     </>
   );
 }
