@@ -27,16 +27,18 @@ export default function Home() {
         </p>
 
         <div className="flex justify-center gap-4">
-          <Link href="/kontakt">
-            <a className="bg-accent text-white px-6 py-3 rounded-lg shadow hover:bg-accent/90 transition">
-              Kontakt mig
-            </a>
+          <Link
+            href="/kontakt"
+            className="bg-accent text-white px-6 py-3 rounded-lg shadow hover:bg-accent/90 transition"
+          >
+            Kontakt mig
           </Link>
 
-          <Link href="/hypnoterapi">
-            <a className="border border-accent text-accent px-6 py-3 rounded-lg hover:bg-accent/10 transition">
-              Læs mere
-            </a>
+          <Link
+            href="/hypnoterapi"
+            className="border border-accent text-accent px-6 py-3 rounded-lg hover:bg-accent/10 transition"
+          >
+            Læs mere
           </Link>
         </div>
       </section>
