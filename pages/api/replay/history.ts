@@ -1,5 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import { readReplayHistory } from "../../../chat/logging/redisStore"
+import * as redisStore from "../../../chat/logging/redisStore"
+
+type ReplayHistoryEntry = {
+  id: string
+  created_at: string
+  yaml: string
+  result: unknown
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -10,6 +17,10 @@ export default async function handler(
     return
   }
 
-  const history = await readReplayHistory()
+  const readReplayHistory = (redisStore as {
+    readReplayHistory?: () => Promise<ReplayHistoryEntry[]>
+  }).readReplayHistory
+
+  const history = readReplayHistory ? await readReplayHistory() : []
   res.status(200).json({ history })
 }
