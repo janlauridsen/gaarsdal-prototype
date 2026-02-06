@@ -376,6 +376,13 @@ export default function Chatbot() {
             }}
             placeholder="Skriv frit…"
           />
+          <button
+            className="chip mt-3"
+            onClick={sendFreeText}
+            disabled={!input.trim()}
+          >
+            Send
+          </button>
 
           <div className="flex justify-center gap-4 mt-3">
             <button
