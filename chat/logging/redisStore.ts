@@ -2,51 +2,123 @@ import { Redis } from "@upstash/redis"
 import type { LogEvent } from "../kernel/types"
 import type { InteractionEvent } from "./sink"
 
-let client: Redis | null = null
+const REDIS_ALL_KEY = "gaarsdal:logs:all"
+const REDIS_CONVO_PREFIX = "gaarsdal:logs:"
+const REDIS_REPLAY_HISTORY_KEY = "gaarsdal:replay:history"
+
+const REDIS_INTERACTIONS_ALL_KEY = "gaarsdal:interactions:all"
+const REDIS_INTERACTIONS_CONVO_PREFIX = "gaarsdal:interactions:"
+
+let redisClient: Redis | null = null
+
+function getRedisClient(): Redis | null {
+  if (!redisEnabled()) return null
+  if (!redisClient) {
+    redisClient = Redis.fromEnv()
+  }
+  return redisClient
+}
 
 export function redisEnabled(): boolean {
-  return Boolean(process.env.UPSTASH_REDIS_REST_URL)
+  return Boolean(
+    process.env.UPSTASH_REDIS_REST_URL &&
+      process.env.UPSTASH_REDIS_REST_TOKEN
+  )
 }
 
-function getClient(): Redis {
-  if (!client) {
-    client = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL!,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-    })
-  }
-  return client
-}
-
-const LOG_KEY = "chat:logs"
-const INTERACTION_KEY = "chat:interactions"
-
-export async function appendLogToRedis(event: LogEvent): Promise<void> {
-  const redis = getClient()
-  await redis.rpush(LOG_KEY, event)
-}
-
-export async function appendInteractionToRedis(
-  event: InteractionEvent
+export async function appendLogToRedis(
+  event: LogEvent
 ): Promise<void> {
-  const redis = getClient()
-  await redis.rpush(INTERACTION_KEY, event)
+  const client = getRedisClient()
+  if (!client) return
+
+  const payload = JSON.stringify(event)
+  await client.rpush(REDIS_ALL_KEY, payload)
+  await client.rpush(
+    `${REDIS_CONVO_PREFIX}${event.conversation_id}`,
+    payload
+  )
+}
+
+function parseStoredItem<T>(item: unknown): T {
+  if (typeof item === "string") {
+    return JSON.parse(item) as T
+  }
+  return item as T
 }
 
 export async function readLogsFromRedis(
   conversation_id?: string
 ): Promise<LogEvent[]> {
-  const redis = getClient()
-  const list = await redis.lrange<LogEvent>(LOG_KEY, 0, -1)
-  if (!conversation_id) return list
-  return list.filter((e) => e.conversation_id === conversation_id)
+  const client = getRedisClient()
+  if (!client) return []
+
+  const key = conversation_id
+    ? `${REDIS_CONVO_PREFIX}${conversation_id}`
+    : REDIS_ALL_KEY
+  const items = await client.lrange<unknown>(key, 0, -1)
+  return items.map((item) => parseStoredItem<LogEvent>(item))
+}
+
+export async function appendInteractionToRedis(
+  event: InteractionEvent
+): Promise<void> {
+  const client = getRedisClient()
+  if (!client) return
+
+  const payload = JSON.stringify(event)
+  await client.rpush(REDIS_INTERACTIONS_ALL_KEY, payload)
+  await client.rpush(
+    `${REDIS_INTERACTIONS_CONVO_PREFIX}${event.conversation_id}`,
+    payload
+  )
 }
 
 export async function readInteractionsFromRedis(
   conversation_id?: string
 ): Promise<InteractionEvent[]> {
-  const redis = getClient()
-  const list = await redis.lrange<InteractionEvent>(INTERACTION_KEY, 0, -1)
-  if (!conversation_id) return list
-  return list.filter((e) => e.conversation_id === conversation_id)
+  const client = getRedisClient()
+  if (!client) return []
+
+  const key = conversation_id
+    ? `${REDIS_INTERACTIONS_CONVO_PREFIX}${conversation_id}`
+    : REDIS_INTERACTIONS_ALL_KEY
+  const items = await client.lrange<unknown>(key, 0, -1)
+  return items.map((item) => parseStoredItem<InteractionEvent>(item))
+}
+
+export type ReplayHistoryEntry = {
+  id: string
+  created_at: string
+  yaml: string
+  result: unknown
+}
+
+export async function appendReplayHistory(
+  entry: ReplayHistoryEntry
+): Promise<void> {
+  const client = getRedisClient()
+  if (!client) return
+
+  await client.lpush(
+    REDIS_REPLAY_HISTORY_KEY,
+    JSON.stringify(entry)
+  )
+  await client.ltrim(REDIS_REPLAY_HISTORY_KEY, 0, 99)
+}
+
+export async function readReplayHistory(): Promise<
+  ReplayHistoryEntry[]
+> {
+  const client = getRedisClient()
+  if (!client) return []
+
+  const items = await client.lrange<unknown>(
+    REDIS_REPLAY_HISTORY_KEY,
+    0,
+    49
+  )
+  return items.map((item) =>
+    parseStoredItem<ReplayHistoryEntry>(item)
+  )
 }
