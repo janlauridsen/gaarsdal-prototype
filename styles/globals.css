@@ -198,27 +198,3 @@ body {
 .gaarsdal-icon-disabled:hover {
   background: transparent;
 }
-
-/* =========================
-   FLOATING LAUNCHER
-========================= */
-
-.gaarsdal-launcher {
-  background: #4A5D54;
-  color: #FFFFFF;
-  border-radius: 9999px;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
-}
-
-/* =========================
-   SCROLLBAR (OPTIONAL, SAFE)
-========================= */
-
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #D8D5CC;
-  border-radius: 6px;
-}
