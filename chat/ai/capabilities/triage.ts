@@ -219,137 +219,49 @@ function enforceMessagePolicy(output: TriageOutput): TriageOutput {
       ...output,
       render: {
         ...output.render,
+        assistant_message: output.render.assistant_message
+          ? output.render.assistant_message
+          : relevanceHint,
+      },
+    }
+  } else if (!output.render.assistant_message) {
+    output = {
+      ...output,
+      render: {
+        ...output.render,
+        assistant_message: relevanceHint,
+      },
+    }
+  }
+
+  if (includesQuestionOnly(output.render.assistant_message)) {
+    output = {
+      ...output,
+      render: {
+        ...output.render,
+        assistant_message: `${relevanceHint} ${output.render.assistant_message}`.trim(),
+      },
+    }
+  }
+
+  if (isRelevant && output.render.next_question.trim()) {
+    output = {
+      ...output,
+      render: {
+        ...output.render,
         next_question: "",
       },
     }
   }
 
-  let assistantMessage = output.render.assistant_message?.trim() || ""
-  if (!assistantMessage || includesQuestionOnly(assistantMessage)) {
-    assistantMessage = `Tak fordi du deler det. ${relevanceHint}`
-  }
-
-  if (isRelevant && !assistantMessage.toLowerCase().includes("relevant")) {
-    assistantMessage = `${assistantMessage} ${relevanceHint}`.trim()
-  }
-
-  if (isRelevant) {
-    const noQuestionLines = assistantMessage
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0 && !line.includes("?"))
-    assistantMessage = noQuestionLines.join("\n")
-    if (!assistantMessage) {
-      assistantMessage = `Tak fordi du deler det. ${relevanceHint}`
-    }
-    if (!assistantMessage.toLowerCase().includes("generel")) {
-      assistantMessage = `${assistantMessage} Du kan læse mere i den generelle information om hypnoterapi.`.trim()
-    }
-  }
-
-  return {
-    ...output,
-    render: {
-      ...output.render,
-      assistant_message: assistantMessage,
-    },
-  }
+  return output
 }
 
-function parseOutput(data: Record<string, unknown> | null): TriageOutput | null {
-  if (!data) return null
-  const decisionRaw = data.decision as Record<string, unknown> | undefined
-  const renderRaw = data.render as Record<string, unknown> | undefined
-  if (!decisionRaw || !renderRaw) return null
-
-  return {
-    decision: {
-      relevance: normalizeRelevance(decisionRaw.relevance),
-      topic_tags: toStringArray(decisionRaw.topic_tags),
-      user_goal: typeof decisionRaw.user_goal === "string" ? decisionRaw.user_goal : "",
-      key_triggers: toStringArray(decisionRaw.key_triggers),
-      time_horizon:
-        typeof decisionRaw.time_horizon === "string" ? decisionRaw.time_horizon : "",
-      confidence: normalizeConfidence(decisionRaw.confidence),
-      next_state: normalizeNextState(decisionRaw.next_state),
-      notes_for_context:
-        typeof decisionRaw.notes_for_context === "string"
-          ? decisionRaw.notes_for_context
-          : "",
-    },
-    render: {
-      assistant_message:
-        typeof renderRaw.assistant_message === "string"
-          ? renderRaw.assistant_message
-          : "",
-      next_question:
-        typeof renderRaw.next_question === "string" ? renderRaw.next_question : "",
-      chips: Array.isArray(renderRaw.chips)
-        ? renderRaw.chips
-            .map((chip) => {
-              if (!chip || typeof chip !== "object") return null
-              const c = chip as Record<string, unknown>
-              if (typeof c.id !== "string" || typeof c.label !== "string") {
-                return null
-              }
-              return { id: c.id, label: c.label }
-            })
-            .filter(Boolean) as Array<{ id: string; label: string }>
-        : [],
-    },
-  }
-}
-
-function heuristic(context: AiCapabilityContext): TriageOutput {
-  const text = context.userText.toLowerCase()
-  const likelyYes = ["stress", "angst", "søvn", "vane", "fobi", "uro"].some((w) =>
-    text.includes(w)
-  )
-  const likelyNo = ["juridisk", "skadeanmeldelse", "it-problem", "økonomi"].some((w) =>
-    text.includes(w)
-  )
-
-  if (likelyNo) {
-    return {
-      decision: {
-        relevance: "NO",
-        topic_tags: ["outside_scope"],
-        user_goal: "",
-        key_triggers: [],
-        time_horizon: "",
-        confidence: 0.8,
-        next_state: "CLOSE",
-        notes_for_context: "Emnet virker uden for hypnoterapi",
-      },
-      render: {
-        assistant_message:
-          "Tak fordi du deler det. Det, du beskriver, ligger sandsynligvis uden for hypnoterapiens område.",
-        next_question: "",
-        chips: DEFAULT_CHIPS,
-      },
-    }
-  }
-
-  if (likelyYes) {
-    return {
-      decision: {
-        relevance: "YES",
-        topic_tags: ["common_hypnosis_topic"],
-        user_goal: "Forandring i oplevet udfordring",
-        key_triggers: [],
-        time_horizon: "",
-        confidence: 0.75,
-        next_state: "CONFIRM",
-        notes_for_context: "Tydelig relevans for hypnoterapi",
-      },
-      render: {
-        assistant_message:
-          "Tak fordi du deler det. Det, du beskriver, er relevant for hypnoterapi.",
-        next_question: "Giver det mening, at vi kort opsummerer dit mål som næste skridt?",
-        chips: [...DEFAULT_CHIPS, { id: "book", label: "Book tid" }],
-      },
-    }
-  }
+function buildFallbackOutput(
+  context: AiCapabilityContext
+): TriageOutput {
+  const questionCount = countFromMeta(context)
+  const isFirst = questionCount === 0
 
   return {
     decision: {
@@ -358,133 +270,250 @@ function heuristic(context: AiCapabilityContext): TriageOutput {
       user_goal: "",
       key_triggers: [],
       time_horizon: "",
-      confidence: 0.5,
-      next_state: "EXPLORE",
-      notes_for_context: "Kræver mere afklaring",
+      confidence: 0.4,
+      next_state: isFirst ? "OPEN" : "EXPLORE",
+      notes_for_context:
+        "Fallback output: could not parse structured response.",
     },
     render: {
-      assistant_message: "Tak fordi du deler det. Jeg vil gerne forstå din situation lidt bedre.",
-      next_question: "Hvad ønsker du konkret skal være anderledes om 1-2 måneder?",
+      assistant_message:
+        "Tak for at dele det. Det er et område, som ofte kan være relevant for hypnoterapi.",
+      next_question: isFirst
+        ? "Kan du sige lidt mere om, hvad du gerne vil ændre eller opleve anderledes?"
+        : "Hvad er det vigtigste, du ønsker at få ud af et forløb?",
       chips: DEFAULT_CHIPS,
     },
   }
 }
 
-function buildTransition(
-  context: AiCapabilityContext,
-  output: TriageOutput,
-  previousTranscript: TranscriptTurn[]
+function toTransition(
+  stateId: NextState,
+  relevance: Relevance
 ): Transition {
-  const previousCount = countFromMeta(context)
-  const nextCount = Math.min(previousCount + 1, 6)
+  const isRelevant = relevance === "YES" || relevance === "LIKELY"
+  if (stateId === "CONFIRM" && isRelevant) {
+    return {
+      type: "AI_TRIAGE",
+      from: "TRIAGE",
+      to: "TRIAGE_FIT_BOOKING",
+      reason: "ai-triage-confirm",
+    }
+  }
 
-  const chips = output.render.chips.length > 0 ? output.render.chips : DEFAULT_CHIPS
-  const hasBook = chips.some((c) => c.id === "book")
-  const shouldHaveBook =
-    output.decision.relevance === "YES" || output.decision.relevance === "LIKELY"
+  if (stateId === "CLOSE") {
+    return {
+      type: "AI_TRIAGE",
+      from: "TRIAGE",
+      to: "TRIAGE_NOT_RELEVANT",
+      reason: "ai-triage-close",
+    }
+  }
 
-  const finalChips = shouldHaveBook && !hasBook
-    ? [...chips, { id: "book", label: "Book tid" }]
-    : chips
-
-  const assistantText = buildAssistantText(output.render)
-  const transcript = appendTranscript(previousTranscript, context.userText, assistantText)
-
-  let to: Transition["to"] = "TRIAGE"
-  if (output.decision.relevance === "NO") {
-    to = "TRIAGE_NOT_RELEVANT"
-  } else if (
-    output.decision.next_state === "CONFIRM" &&
-    (output.decision.relevance === "YES" || output.decision.relevance === "LIKELY")
-  ) {
-    to = "TRIAGE_FIT_BOOKING"
-  } else if (output.decision.next_state === "CLOSE") {
-    to =
-      output.decision.relevance === "YES" || output.decision.relevance === "LIKELY"
-        ? "TRIAGE_FIT_BOOKING"
-        : "TRIAGE_NEEDS_ASSESSMENT"
+  if (stateId === "MARK" && !isRelevant) {
+    return {
+      type: "AI_TRIAGE",
+      from: "TRIAGE",
+      to: "TRIAGE_NEEDS_ASSESSMENT",
+      reason: "ai-triage-assessment",
+    }
   }
 
   return {
-    type: "NODE_HOP",
-    from: context.state.active_node,
-    to,
-    reason: "triage capability decision",
-    response_message: assistantText,
-    meta_delta: {
-      "triage.question_count": nextCount,
-      "triage.outcome": output.decision.relevance,
-      "triage.summary": output.render.assistant_message,
-      "triage.unclear_points": output.decision.notes_for_context,
-      "triage.topic_tags": output.decision.topic_tags,
-      "triage.user_goal": output.decision.user_goal,
-      "triage.key_triggers": output.decision.key_triggers,
-      "triage.time_horizon": output.decision.time_horizon,
-      "triage.confidence": output.decision.confidence,
-      "triage.next_state": output.decision.next_state,
-      "triage.notes_for_context": output.decision.notes_for_context,
-      "triage.next_question": output.render.next_question,
-      "triage.chips": finalChips,
-      "triage.transcript": transcript,
-    },
+    type: "AI_TRIAGE",
+    from: "TRIAGE",
+    to: "TRIAGE",
+    reason: "ai-triage-continue",
   }
 }
 
-async function runTriageCapability(
-  context: AiCapabilityContext,
-  llm: LlmClient
-): Promise<AiCapabilityResult> {
-  const model = process.env.TRIAGE_LLM_MODEL ?? "gpt-4o-mini"
-  const transcript = readTranscript(context)
+function normalizeOutput(
+  raw: Record<string, unknown>,
+  context: AiCapabilityContext
+): TriageOutput {
+  const decision = raw.decision as Record<string, unknown>
+  const render = raw.render as Record<string, unknown>
 
-  const payload = {
-    model,
-    temperature: 0,
-    response_format: { type: "json_object" as const },
-    messages: [
-      { role: "system" as const, content: TRIAGE_PROMPT },
-      {
-        role: "user" as const,
-        content: JSON.stringify({
-          current_node: context.state.active_node,
-          latest_user_message: context.userText,
-          triage_question_count:
-            typeof context.state.meta["triage.question_count"]?.value === "number"
-              ? context.state.meta["triage.question_count"]?.value
-              : 0,
-          prior_notes:
-            typeof context.state.meta["triage.notes_for_context"]?.value === "string"
-              ? context.state.meta["triage.notes_for_context"]?.value
-              : "",
-          prior_relevance:
-            typeof context.state.meta["triage.outcome"]?.value === "string"
-              ? context.state.meta["triage.outcome"]?.value
-              : "",
-          prior_user_goal:
-            typeof context.state.meta["triage.user_goal"]?.value === "string"
-              ? context.state.meta["triage.user_goal"]?.value
-              : "",
-          conversation_transcript: transcript,
-        }),
-      },
-    ],
+  const nextState = normalizeNextState(decision?.next_state)
+  const relevance = normalizeRelevance(decision?.relevance)
+  const confidence = normalizeConfidence(decision?.confidence)
+
+  return enforceMessagePolicy({
+    decision: {
+      relevance,
+      topic_tags: toStringArray(decision?.topic_tags),
+      user_goal:
+        typeof decision?.user_goal === "string" ? decision.user_goal : "",
+      key_triggers: toStringArray(decision?.key_triggers),
+      time_horizon:
+        typeof decision?.time_horizon === "string" ? decision.time_horizon : "",
+      confidence,
+      next_state: nextState,
+      notes_for_context:
+        typeof decision?.notes_for_context === "string"
+          ? decision.notes_for_context
+          : "",
+    },
+    render: {
+      assistant_message:
+        typeof render?.assistant_message === "string"
+          ? render.assistant_message
+          : "",
+      next_question:
+        typeof render?.next_question === "string" ? render.next_question : "",
+      chips: Array.isArray(render?.chips)
+        ? render.chips.filter(
+            (chip) =>
+              chip &&
+              typeof chip.id === "string" &&
+              typeof chip.label === "string"
+          )
+        : DEFAULT_CHIPS,
+    },
+  })
+}
+
+function incrementQuestionCount(
+  context: AiCapabilityContext
+): number {
+  const current = countFromMeta(context)
+  return current + 1
+}
+
+function shouldCloseTriage(
+  output: TriageOutput,
+  questionCount: number
+): boolean {
+  if (output.decision.relevance === "YES") return true
+  if (output.decision.relevance === "NO") return true
+  return questionCount >= 4
+}
+
+function chooseNextState(
+  output: TriageOutput,
+  questionCount: number
+): NextState {
+  if (output.decision.relevance === "YES" || output.decision.relevance === "LIKELY") {
+    return "CONFIRM"
   }
 
-  const raw = await llm.chatJson(payload)
-  const parsed = parseOutput(raw)
-  const usedFallback = !parsed
-  const output = enforceMessagePolicy(parsed ?? heuristic(context))
+  if (questionCount >= 4) return "MARK"
+  return output.decision.next_state
+}
 
-  return {
-    transition: buildTransition(context, output, transcript),
-    debug: {
-      capability: "triage-relevance-v1",
-      used_fallback: usedFallback,
-    },
+function deriveOutcome(
+  output: TriageOutput,
+  questionCount: number
+): Transition {
+  const nextState = chooseNextState(output, questionCount)
+  return toTransition(nextState, output.decision.relevance)
+}
+
+function writeMetaDecision(
+  context: AiCapabilityContext,
+  output: TriageOutput,
+  questionCount: number
+): void {
+  context.state.meta["triage.question_count"] = {
+    value: questionCount,
+  }
+  context.state.meta["triage.outcome"] = {
+    value: output.decision.relevance,
+  }
+  context.state.meta["triage.summary"] = {
+    value: output.decision.user_goal,
+  }
+  context.state.meta["triage.unclear_points"] = {
+    value: output.decision.notes_for_context,
+  }
+  context.state.meta["triage.topic_tags"] = {
+    value: output.decision.topic_tags,
+  }
+  context.state.meta["triage.user_goal"] = {
+    value: output.decision.user_goal,
+  }
+  context.state.meta["triage.key_triggers"] = {
+    value: output.decision.key_triggers,
+  }
+  context.state.meta["triage.time_horizon"] = {
+    value: output.decision.time_horizon,
+  }
+  context.state.meta["triage.confidence"] = {
+    value: output.decision.confidence,
+  }
+  context.state.meta["triage.next_state"] = {
+    value: output.decision.next_state,
+  }
+  context.state.meta["triage.notes_for_context"] = {
+    value: output.decision.notes_for_context,
+  }
+  context.state.meta["triage.next_question"] = {
+    value: output.render.next_question,
+  }
+  context.state.meta["triage.chips"] = {
+    value: output.render.chips.length ? output.render.chips : DEFAULT_CHIPS,
+  }
+}
+
+function writeMetaTranscript(
+  context: AiCapabilityContext,
+  transcript: TranscriptTurn[]
+): void {
+  context.state.meta["triage.transcript"] = {
+    value: transcript,
   }
 }
 
 export const triageCapability: AiCapability = {
   id: "triage-relevance-v1",
-  run: runTriageCapability,
+  async run(
+    context: AiCapabilityContext,
+    llm: LlmClient
+  ): Promise<AiCapabilityResult> {
+    const transcript = readTranscript(context)
+    const questionCount = incrementQuestionCount(context)
+
+    const payload = {
+      model: process.env.TRIAGE_MODEL ?? "gpt-4.1-mini",
+      temperature: 0.2,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: TRIAGE_PROMPT },
+        {
+          role: "user",
+          content: JSON.stringify({
+            conversation_transcript: transcript,
+            user_input: context.userText,
+          }),
+        },
+      ],
+    }
+
+    const response = await llm.chatJson(payload)
+    const output = response
+      ? normalizeOutput(response, context)
+      : buildFallbackOutput(context)
+
+    const finalQuestionCount = questionCount
+    const transition = deriveOutcome(output, finalQuestionCount)
+    const assistantText = buildAssistantText(output.render)
+    const updatedTranscript = appendTranscript(
+      transcript,
+      context.userText,
+      assistantText
+    )
+
+    writeMetaDecision(context, output, finalQuestionCount)
+    writeMetaTranscript(context, updatedTranscript)
+
+    return {
+      transition: {
+        ...transition,
+        response_message: assistantText,
+      },
+      debug: {
+        capability: "triage-relevance-v1",
+        used_fallback: !response,
+      },
+    }
+  },
 }
