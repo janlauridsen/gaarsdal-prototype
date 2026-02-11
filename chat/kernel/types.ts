@@ -25,6 +25,7 @@ export type ConversationState = {
 
 export type TransitionType =
   | "NODE_HOP"
+  | "AI_TRIAGE"
   | "PAUSE"
   | "RESUME"
   | "PARENTESE_OPEN"
