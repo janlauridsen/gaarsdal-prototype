@@ -12,10 +12,6 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline"
 
-/* =========================
-   TYPES (UI-LOCAL ONLY)
-   ========================= */
-
 type ConversationState = {
   conversation_id: string
   revision: number
@@ -45,10 +41,6 @@ type ChatMessage = {
   text: string
 }
 
-/* =========================
-   UI-ONLY LABELS
-   ========================= */
-
 const NODE_LABELS: Record<string, string> = {
   HOME: "Forside",
   GEN_HYPNO: "Generelt om hypnoterapi",
@@ -63,14 +55,7 @@ const NODE_LABELS: Record<string, string> = {
   AKUT: "Akut",
 }
 
-const QUICK_ACTIONS = new Set(["HOME", "MAIL", "TLF", "AKUT"])
-const TRIAGE_OUTCOMES = new Set([
-  "TRIAGE_FIT_BOOKING",
-  "TRIAGE_NOT_RELEVANT",
-  "TRIAGE_NEEDS_ASSESSMENT",
-])
-
-/* ========================= */
+const QUICK_ACTIONS = ["HOME", "TLF", "MAIL", "AKUT"] as const
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
@@ -87,10 +72,6 @@ export default function Chatbot() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, open, showLogs])
-
-  /* =========================
-     API DISPATCH
-     ========================= */
 
   function appendMessage(message: ChatMessage) {
     setMessages((prev) => [...prev, message])
@@ -177,11 +158,8 @@ export default function Chatbot() {
     setMessages([])
   }
 
-  /* ========================= */
-
   function sendFreeText() {
     if (!input.trim() || !state) return
-    if (state.status !== "active" && state.active_node !== "TRIAGE") return
     dispatch({ type: "FREE_TEXT", text: input })
     setInput("")
   }
@@ -190,29 +168,6 @@ export default function Chatbot() {
     if (!state) return
     dispatch({ type: "EXPLICIT_TRANSITION", target })
   }
-
-  function handleChip(chip: { id: string; label: string }) {
-    const chipTransitions: Record<string, string> = {
-      book: "BOOKING",
-      stop: "HOME",
-    }
-
-    const explicitTarget = chipTransitions[chip.id]
-    if (explicitTarget) {
-      go(explicitTarget)
-      return
-    }
-
-    if (state?.active_node === "TRIAGE") {
-      dispatch({ type: "FREE_TEXT", text: chip.label })
-    } else {
-      setInput(chip.label)
-    }
-  }
-
-  /* =========================
-     LAUNCHER
-     ========================= */
 
   if (!open) {
     return (
@@ -229,46 +184,13 @@ export default function Chatbot() {
     )
   }
 
-  /* =========================
-     DERIVED UI DATA
-     ========================= */
-
-  const triageChipsRaw = state?.meta?.["triage.chips"]?.value
-  const lastLog = logs[logs.length - 1]
-  const showTriageChips =
-    !!state &&
-    state.status === "active" &&
-    state.active_node === "TRIAGE" &&
-    (lastLog?.input_type === "FREE_TEXT" || lastLog?.input_type === "FREE_TEXT_RESOLVED")
-
-  const triageChips = showTriageChips
-    ? Array.isArray(triageChipsRaw)
-      ? triageChipsRaw.filter(
-          (chip: any) =>
-            chip && typeof chip.id === "string" && typeof chip.label === "string"
-        )
-      : []
-    : []
-
-  const primaryTransitions = state
-    ? state.allowed_transitions.filter((t) => {
-        if (QUICK_ACTIONS.has(t)) return false
-        if (state.active_node === "TRIAGE" && t === "TRIAGE") return false
-        if (state.active_node === "TRIAGE" && TRIAGE_OUTCOMES.has(t)) return false
-        return true
-      })
-    : []
-
-  /* =========================
-     MODAL
-     ========================= */
+  const nodeLabel = state
+    ? `${NODE_LABELS[state.active_node] ?? state.active_node} · rev ${state.revision}`
+    : "Initialiserer..."
 
   return (
     <>
-      <div
-        className="gaarsdal-overlay"
-        onClick={() => setOpen(false)}
-      />
+      <div className="gaarsdal-overlay" onClick={() => setOpen(false)} />
 
       <div
         className="fixed bottom-6 right-6 w-[380px] h-[560px] gaarsdal-chatbot"
@@ -277,52 +199,21 @@ export default function Chatbot() {
         aria-modal="true"
         aria-label="Chatbot"
       >
-        {/* HEADER */}
+        {/* HEADER (Reset moved here) */}
         <div className="gaarsdal-chatbot-header flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-sm font-semibold">Gaarsdal Chat</div>
-            <div className="text-xs gaarsdal-meta truncate">
-              {state
-                ? `${NODE_LABELS[state.active_node] ?? state.active_node} · rev ${state.revision}`
-                : "Initialiserer..."}
-            </div>
+            <div className="text-xs gaarsdal-meta truncate">{nodeLabel}</div>
           </div>
 
           <div className="flex items-center gap-1">
             <button
               className="gaarsdal-icon-btn"
-              aria-label="Forside"
-              onClick={() => state && go("HOME")}
-              title="Forside"
+              aria-label="Reset samtale"
+              onClick={resetConversation}
+              title="Reset"
             >
-              <HomeIcon className="w-5 h-5" />
-            </button>
-
-            <button
-              className="gaarsdal-icon-btn"
-              aria-label="Telefon"
-              onClick={() => state && go("TLF")}
-              title="Telefon"
-            >
-              <PhoneIcon className="w-5 h-5" />
-            </button>
-
-            <button
-              className="gaarsdal-icon-btn"
-              aria-label="E-mail"
-              onClick={() => state && go("MAIL")}
-              title="E-mail"
-            >
-              <EnvelopeIcon className="w-5 h-5" />
-            </button>
-
-            <button
-              className="gaarsdal-icon-btn"
-              aria-label="Akut"
-              onClick={() => state && go("AKUT")}
-              title="Akut"
-            >
-              <ExclamationTriangleIcon className="w-5 h-5" />
+              <ChatBubbleOvalLeftEllipsisIcon className="w-5 h-5" />
             </button>
 
             <button
@@ -347,14 +238,10 @@ export default function Chatbot() {
 
         {/* BODY */}
         <div className="messages">
-          {loading && (
-            <div className="text-sm gaarsdal-meta">Initialiserer…</div>
-          )}
+          {loading && <div className="text-sm gaarsdal-meta">Initialiserer…</div>}
 
           {!loading && messages.length === 0 && (
-            <div className="text-sm gaarsdal-meta">
-              Ingen beskeder endnu.
-            </div>
+            <div className="text-sm gaarsdal-meta">Ingen beskeder endnu.</div>
           )}
 
           {messages.map((m) => (
@@ -366,43 +253,6 @@ export default function Chatbot() {
             </div>
           ))}
 
-          {/* TRIAGE CHIPS */}
-          {triageChips.length > 0 && (
-            <div className="mt-3">
-              <div className="gaarsdal-section-title">Forslag</div>
-              <div className="gaarsdal-chip-group">
-                {triageChips.map((chip: any) => (
-                  <button
-                    key={chip.id}
-                    className="chip"
-                    onClick={() => handleChip(chip)}
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TRANSITIONS */}
-          {state && primaryTransitions.length > 0 && (
-            <div className="mt-3">
-              <div className="gaarsdal-section-title">Muligheder</div>
-              <div className="gaarsdal-chip-group">
-                {primaryTransitions.map((t) => (
-                  <button
-                    key={t}
-                    className="chip"
-                    onClick={() => go(t)}
-                  >
-                    {NODE_LABELS[t] ?? t}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* LOGS */}
           {showLogs && (
             <div className="mt-3">
               <div className="gaarsdal-section-title">Logs</div>
@@ -415,8 +265,62 @@ export default function Chatbot() {
           <div ref={endRef} />
         </div>
 
-        {/* FOOTER */}
+        {/* FOOTER (Home/Phone/Mail/Akut moved here) */}
         <div className="gaarsdal-chatbot-footer">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-1">
+              <button
+                className="gaarsdal-icon-btn"
+                aria-label="Forside"
+                onClick={() => state && go("HOME")}
+                title="Forside"
+                disabled={!state || loading}
+              >
+                <HomeIcon className="w-5 h-5" />
+              </button>
+
+              <button
+                className="gaarsdal-icon-btn"
+                aria-label="Telefon"
+                onClick={() => state && go("TLF")}
+                title="Telefon"
+                disabled={!state || loading}
+              >
+                <PhoneIcon className="w-5 h-5" />
+              </button>
+
+              <button
+                className="gaarsdal-icon-btn"
+                aria-label="E-mail"
+                onClick={() => state && go("MAIL")}
+                title="E-mail"
+                disabled={!state || loading}
+              >
+                <EnvelopeIcon className="w-5 h-5" />
+              </button>
+
+              <button
+                className="gaarsdal-icon-btn"
+                aria-label="Akut"
+                onClick={() => state && go("AKUT")}
+                title="Akut"
+                disabled={!state || loading}
+              >
+                <ExclamationTriangleIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <button
+              className="gaarsdal-icon-btn"
+              aria-label="Ryd chat"
+              onClick={clearHistory}
+              title="Ryd chat"
+              disabled={messages.length === 0}
+            >
+              <TrashIcon className="w-5 h-5" />
+            </button>
+          </div>
+
           <div className="flex items-start gap-2">
             <textarea
               value={input}
@@ -430,29 +334,6 @@ export default function Chatbot() {
               }}
               disabled={!state || loading}
             />
-
-            <div className="flex flex-col gap-2 pt-1">
-              <button
-                className="gaarsdal-icon-btn"
-                aria-label="Ryd chat"
-                onClick={clearHistory}
-                title="Ryd chat"
-              >
-                <TrashIcon className="w-5 h-5" />
-              </button>
-
-              <button
-                className="gaarsdal-icon-btn"
-                aria-label="Reset"
-                onClick={resetConversation}
-                title="Reset"
-              >
-                <ChatBubbleOvalLeftEllipsisIcon className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-2 flex justify-end">
             <button
               className="chip"
               onClick={sendFreeText}
