@@ -33,3 +33,4 @@ export type AiCapability = {
   id: string
   run(context: AiCapabilityContext, llm: LlmClient): Promise<AiCapabilityResult>
 }
+
