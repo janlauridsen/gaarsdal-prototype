@@ -3,6 +3,7 @@ import {
   AiCapability,
   AiCapabilityContext,
   AiCapabilityResult,
+  LlmChatInput,
   LlmClient,
 } from "../types"
 
@@ -138,7 +139,12 @@ function toStringArray(value: unknown): string[] {
 }
 
 function normalizeRelevance(value: unknown): Relevance {
-  if (value === "YES" || value === "LIKELY" || value === "UNCLEAR" || value === "NO") {
+  if (
+    value === "YES" ||
+    value === "LIKELY" ||
+    value === "UNCLEAR" ||
+    value === "NO"
+  ) {
     return value
   }
   return "UNCLEAR"
@@ -268,9 +274,7 @@ function enforceMessagePolicy(output: TriageOutput): TriageOutput {
   return output
 }
 
-function buildFallbackOutput(
-  context: AiCapabilityContext
-): TriageOutput {
+function buildFallbackOutput(context: AiCapabilityContext): TriageOutput {
   const questionCount = countFromMeta(context)
   const isFirst = questionCount === 0
 
@@ -283,8 +287,7 @@ function buildFallbackOutput(
       time_horizon: "",
       confidence: 0.4,
       next_state: isFirst ? "OPEN" : "EXPLORE",
-      notes_for_context:
-        "Fallback output: could not parse structured response.",
+      notes_for_context: "Fallback output: could not parse structured response.",
     },
     render: {
       assistant_message:
@@ -297,10 +300,7 @@ function buildFallbackOutput(
   }
 }
 
-function toTransition(
-  stateId: NextState,
-  relevance: Relevance
-): Transition {
+function toTransition(stateId: NextState, relevance: Relevance): Transition {
   const isRelevant = relevance === "YES" || relevance === "LIKELY"
   if (stateId === "CONFIRM" && isRelevant) {
     return {
@@ -352,8 +352,7 @@ function normalizeOutput(
     decision: {
       relevance,
       topic_tags: toStringArray(decision?.topic_tags),
-      user_goal:
-        typeof decision?.user_goal === "string" ? decision.user_goal : "",
+      user_goal: typeof decision?.user_goal === "string" ? decision.user_goal : "",
       key_triggers: toStringArray(decision?.key_triggers),
       time_horizon:
         typeof decision?.time_horizon === "string" ? decision.time_horizon : "",
@@ -366,9 +365,7 @@ function normalizeOutput(
     },
     render: {
       assistant_message:
-        typeof render?.assistant_message === "string"
-          ? render.assistant_message
-          : "",
+        typeof render?.assistant_message === "string" ? render.assistant_message : "",
       next_question:
         typeof render?.next_question === "string" ? render.next_question : "",
       chips: Array.isArray(render?.chips)
@@ -383,26 +380,12 @@ function normalizeOutput(
   })
 }
 
-function incrementQuestionCount(
-  context: AiCapabilityContext
-): number {
+function incrementQuestionCount(context: AiCapabilityContext): number {
   const current = countFromMeta(context)
   return current + 1
 }
 
-function shouldCloseTriage(
-  output: TriageOutput,
-  questionCount: number
-): boolean {
-  if (output.decision.relevance === "YES") return true
-  if (output.decision.relevance === "NO") return true
-  return questionCount >= 4
-}
-
-function chooseNextState(
-  output: TriageOutput,
-  questionCount: number
-): NextState {
+function chooseNextState(output: TriageOutput, questionCount: number): NextState {
   if (output.decision.relevance === "YES" || output.decision.relevance === "LIKELY") {
     return "CONFIRM"
   }
@@ -411,10 +394,7 @@ function chooseNextState(
   return output.decision.next_state
 }
 
-function deriveOutcome(
-  output: TriageOutput,
-  questionCount: number
-): Transition {
+function deriveOutcome(output: TriageOutput, questionCount: number): Transition {
   const nextState = chooseNextState(output, questionCount)
   return toTransition(nextState, output.decision.relevance)
 }
@@ -427,22 +407,14 @@ function writeMetaDecision(
   writeMeta(context, "triage.question_count", questionCount)
   writeMeta(context, "triage.outcome", output.decision.relevance)
   writeMeta(context, "triage.summary", output.decision.user_goal)
-  writeMeta(
-    context,
-    "triage.unclear_points",
-    output.decision.notes_for_context
-  )
+  writeMeta(context, "triage.unclear_points", output.decision.notes_for_context)
   writeMeta(context, "triage.topic_tags", output.decision.topic_tags)
   writeMeta(context, "triage.user_goal", output.decision.user_goal)
   writeMeta(context, "triage.key_triggers", output.decision.key_triggers)
   writeMeta(context, "triage.time_horizon", output.decision.time_horizon)
   writeMeta(context, "triage.confidence", output.decision.confidence)
   writeMeta(context, "triage.next_state", output.decision.next_state)
-  writeMeta(
-    context,
-    "triage.notes_for_context",
-    output.decision.notes_for_context
-  )
+  writeMeta(context, "triage.notes_for_context", output.decision.notes_for_context)
   writeMeta(context, "triage.next_question", output.render.next_question)
   writeMeta(
     context,
@@ -481,23 +453,16 @@ export const triageCapability: AiCapability = {
           }),
         },
       ],
-    }
+    } satisfies LlmChatInput
 
     const response = await llm.chatJson(payload)
-    const output = response
-      ? normalizeOutput(response, context)
-      : buildFallbackOutput(context)
+    const output = response ? normalizeOutput(response, context) : buildFallbackOutput(context)
 
-    const finalQuestionCount = questionCount
-    const transition = deriveOutcome(output, finalQuestionCount)
+    const transition = deriveOutcome(output, questionCount)
     const assistantText = buildAssistantText(output.render)
-    const updatedTranscript = appendTranscript(
-      transcript,
-      context.userText,
-      assistantText
-    )
+    const updatedTranscript = appendTranscript(transcript, context.userText, assistantText)
 
-    writeMetaDecision(context, output, finalQuestionCount)
+    writeMetaDecision(context, output, questionCount)
     writeMetaTranscript(context, updatedTranscript)
 
     return {
