@@ -6,7 +6,8 @@ import {
   appendInteraction,
 } from "../../chat/logging/sink"
 import type { LogEvent, InputSignal } from "../../chat/kernel/types"
-import { resolveTriageFreeText } from "../../chat/triage/resolver"
+import { getNode } from "../../chat/nodes/registry"
+import { runCapability } from "../../chat/ai/runtime"
 
 function toUserInput(input: InputSignal): string | undefined {
   if (input.type === "FREE_TEXT") return input.text
@@ -15,6 +16,15 @@ function toUserInput(input: InputSignal): string | undefined {
   }
   if (input.type === "SYSTEM") return `SYSTEM:${input.intent}`
   return undefined
+}
+
+function resolveCapabilityId(nodeId: string): string | null {
+  // Registry-driven capability mapping
+  // Convention: dialog node id → capability id
+  // Extendable later without API branching.
+  if (nodeId === "TRIAGE") return "triage-relevance-v1"
+  if (nodeId === "GEN_HYPNO") return null // not implemented yet
+  return null
 }
 
 export default async function handler(
@@ -52,45 +62,58 @@ export default async function handler(
     return res.status(200).json(payload)
   }
 
-  // ---------- TRIAGE AI FREE TEXT ----------
-  if (
-    state &&
-    input?.type === "FREE_TEXT" &&
-    state.active_node === "TRIAGE"
-  ) {
-    const triage = await resolveTriageFreeText(state, input.text)
-    const result = runKernel(state, {
-      type: "FREE_TEXT_RESOLVED",
-      proposed_transition: triage.transition,
-    })
+  // ---------- GENERIC DIALOG FREE TEXT ----------
+  if (state && input?.type === "FREE_TEXT") {
+    const node = getNode(state.active_node)
 
-    await appendLog(result.log)
-    await appendInteraction({
-      conversation_id: result.state.conversation_id,
-      revision: result.state.revision,
-      active_node: result.state.active_node,
-      input_type: input.type,
-      user_input: input.text,
-      ai_response:
-        result.transition.response_message ??
-        result.state.active_node_message,
-      outcome_node: result.transition.to,
-      timestamp: new Date().toISOString(),
-    })
+    if (node.kind === "DIALOG") {
+      const capabilityId = resolveCapabilityId(node.id)
 
-    return res.status(200).json(result)
+      if (capabilityId) {
+        const capabilityResult = await runCapability(capabilityId, {
+          state,
+          userText: input.text,
+        })
+
+        const kernelResult = runKernel(state, {
+          type: "FREE_TEXT_RESOLVED",
+          proposed_transition: capabilityResult.transition,
+        })
+
+        await appendLog(kernelResult.log)
+
+        await appendInteraction({
+          conversation_id: kernelResult.state.conversation_id,
+          revision: kernelResult.state.revision,
+          active_node: kernelResult.state.active_node,
+          input_type: input.type,
+          user_input: input.text,
+          ai_response:
+            kernelResult.transition.response_message ??
+            kernelResult.state.active_node_message,
+          outcome_node: kernelResult.transition.to,
+          timestamp: new Date().toISOString(),
+        })
+
+        return res.status(200).json(kernelResult)
+      }
+    }
   }
 
   // ---------- NORMAL ----------
   const result = runKernel(state, input)
+
   await appendLog(result.log)
+
   await appendInteraction({
     conversation_id: result.state.conversation_id,
     revision: result.state.revision,
     active_node: result.state.active_node,
     input_type: input.type,
     user_input: toUserInput(input),
-    ai_response: result.state.active_node_message,
+    ai_response:
+      result.transition.response_message ??
+      result.state.active_node_message,
     outcome_node: result.transition.to,
     timestamp: new Date().toISOString(),
   })
