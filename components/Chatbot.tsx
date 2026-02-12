@@ -55,19 +55,15 @@ const NODE_LABELS: Record<string, string> = {
   AKUT: "Akut",
 }
 
-const QUICK_ACTIONS = new Set(["HOME", "TLF", "MAIL", "AKUT"])
-const TRIAGE_OUTCOME_NODES = new Set([
-  "TRIAGE_FIT_BOOKING",
-  "TRIAGE_NOT_RELEVANT",
-  "TRIAGE_NEEDS_ASSESSMENT",
-])
-
 const DEFAULT_TRIAGE_CHIPS = [
   { id: "tell_more", label: "Fortæl mere" },
   { id: "why_relevant", label: "Hvorfor relevant?" },
   { id: "next_steps", label: "Hvad er næste skridt?" },
   { id: "stop", label: "Stop her" },
 ]
+
+// Fixed topics (UI-owned)
+const TOPIC_NODES: string[] = ["GEN_HYPNO", "TRIAGE", "BOOKING"]
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
@@ -207,7 +203,7 @@ export default function Chatbot() {
     )
   }
 
-  // Derived: triage chips
+  // Derived: triage chips (dialog suggestions)
   const triageChipsRaw = state?.meta?.["triage.chips"]?.value
   const triageChips =
     state?.active_node === "TRIAGE"
@@ -220,22 +216,14 @@ export default function Chatbot() {
         : DEFAULT_TRIAGE_CHIPS
       : []
 
-  // Derived: option chips from allowed_transitions with context-aware filtering
-  const optionChips =
-    state?.allowed_transitions?.filter((t) => {
-      // never show quick actions in "Muligheder" (they are footer actions)
-      if (QUICK_ACTIONS.has(t)) return false
-
-      // TRIAGE: hide self-loop and outcome nodes (AI decides these)
-      if (state.active_node === "TRIAGE") {
-        if (t === "TRIAGE") return false
-        if (TRIAGE_OUTCOME_NODES.has(t)) return false
-        // optional: keep CONTACT_FORM out of triage options
-        if (t === "CONTACT_FORM") return false
-      }
-
-      return true
-    }) ?? []
+  // Topics are fixed in UI, but only enabled if the kernel allows them from current node.
+  // This preserves "registry/kernel is the authority" without showing internal exits.
+  const allowedSet = new Set(state?.allowed_transitions ?? [])
+  const topicButtons = TOPIC_NODES.map((id) => ({
+    id,
+    label: NODE_LABELS[id] ?? id,
+    enabled: state ? allowedSet.has(id) || id === state.active_node : false,
+  })).filter((t) => t.id !== state?.active_node)
 
   return (
     <>
@@ -306,7 +294,7 @@ export default function Chatbot() {
             </div>
           ))}
 
-          {/* TRIAGE: forslag */}
+          {/* Dialog suggestions */}
           {state?.active_node === "TRIAGE" && triageChips.length > 0 && (
             <div className="mt-3">
               <div className="gaarsdal-section-title">Forslag</div>
@@ -325,26 +313,27 @@ export default function Chatbot() {
             </div>
           )}
 
-          {/* OPTIONS */}
-          {optionChips.length > 0 && (
+          {/* Fixed topics (navigation), not raw allowed transitions */}
+          {topicButtons.length > 0 && (
             <div className="mt-3">
-              <div className="gaarsdal-section-title">Muligheder</div>
+              <div className="gaarsdal-section-title">Emner</div>
               <div className="gaarsdal-chip-group">
-                {optionChips.map((t) => (
+                {topicButtons.map((t) => (
                   <button
-                    key={t}
+                    key={t.id}
                     className="chip"
-                    onClick={() => go(t)}
-                    disabled={loading || !state}
+                    onClick={() => go(t.id)}
+                    disabled={!t.enabled || loading || !state}
+                    title={!t.enabled ? "Ikke tilgængelig herfra" : undefined}
                   >
-                    {NODE_LABELS[t] ?? t}
+                    {t.label}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* LOGS */}
+          {/* Logs (dev) */}
           {showLogs && (
             <div className="mt-3">
               <div className="gaarsdal-section-title">Logs</div>
@@ -359,6 +348,11 @@ export default function Chatbot() {
 
         {/* FOOTER */}
         <div className="gaarsdal-chatbot-footer">
+          {/* Subtle navigation hint */}
+          <div className="text-xs gaarsdal-meta mb-2">
+            Kontakt: vælg telefon, e-mail eller akut herunder.
+          </div>
+
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-1">
               <button
