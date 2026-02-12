@@ -1,8 +1,21 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { runKernel } from "../../chat/kernel/engine"
 import { createInitialState } from "../../chat/kernel/state"
-import { appendLog } from "../../chat/logging/sink"
-import type { LogEvent } from "../../chat/kernel/types"
+import {
+  appendLog,
+  appendInteraction,
+} from "../../chat/logging/sink"
+import type { LogEvent, InputSignal } from "../../chat/kernel/types"
+import { resolveTriageFreeText } from "../../chat/triage/resolver"
+
+function toUserInput(input: InputSignal): string | undefined {
+  if (input.type === "FREE_TEXT") return input.text
+  if (input.type === "EXPLICIT_TRANSITION") {
+    return `EXPLICIT_TRANSITION:${input.target}`
+  }
+  if (input.type === "SYSTEM") return `SYSTEM:${input.intent}`
+  return undefined
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -39,8 +52,48 @@ export default async function handler(
     return res.status(200).json(payload)
   }
 
+  // ---------- TRIAGE AI FREE TEXT ----------
+  if (
+    state &&
+    input?.type === "FREE_TEXT" &&
+    state.active_node === "TRIAGE"
+  ) {
+    const triage = await resolveTriageFreeText(state, input.text)
+    const result = runKernel(state, {
+      type: "FREE_TEXT_RESOLVED",
+      proposed_transition: triage.transition,
+    })
+
+    await appendLog(result.log)
+    await appendInteraction({
+      conversation_id: result.state.conversation_id,
+      revision: result.state.revision,
+      active_node: result.state.active_node,
+      input_type: input.type,
+      user_input: input.text,
+      ai_response:
+        result.transition.response_message ??
+        result.state.active_node_message,
+      outcome_node: result.transition.to,
+      timestamp: new Date().toISOString(),
+    })
+
+    return res.status(200).json(result)
+  }
+
   // ---------- NORMAL ----------
   const result = runKernel(state, input)
   await appendLog(result.log)
+  await appendInteraction({
+    conversation_id: result.state.conversation_id,
+    revision: result.state.revision,
+    active_node: result.state.active_node,
+    input_type: input.type,
+    user_input: toUserInput(input),
+    ai_response: result.state.active_node_message,
+    outcome_node: result.transition.to,
+    timestamp: new Date().toISOString(),
+  })
+
   res.status(200).json(result)
 }

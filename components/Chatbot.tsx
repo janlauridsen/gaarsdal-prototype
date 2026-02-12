@@ -10,8 +10,6 @@ import {
   ExclamationTriangleIcon,
   BugAntIcon,
   PlusIcon,
-  ArrowUturnLeftIcon,
-  ArrowUturnRightIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline"
 
@@ -23,6 +21,7 @@ type ConversationState = {
   conversation_id: string
   revision: number
   active_node: string
+  active_node_message: string
   allowed_transitions: string[]
   meta: Record<string, any>
   status: "active" | "paused" | "completed" | "rejected"
@@ -41,6 +40,12 @@ type KernelResponse = {
   log: LogEvent
 }
 
+type ChatMessage = {
+  id: string
+  role: "assistant" | "user"
+  text: string
+}
+
 /* =========================
    UI-ONLY LABELS
    ========================= */
@@ -49,11 +54,22 @@ const NODE_LABELS: Record<string, string> = {
   HOME: "Forside",
   GEN_HYPNO: "Generelt om hypnoterapi",
   TRIAGE: "Triage",
+  TRIAGE_FIT_BOOKING: "Triage: egnet til booking",
+  TRIAGE_NOT_RELEVANT: "Triage: ikke relevant",
+  TRIAGE_NEEDS_ASSESSMENT: "Triage: afklaringssamtale",
   BOOKING: "Book tid",
   MAIL: "E-mail",
   TLF: "Telefon",
+  CONTACT_FORM: "Kontaktformular",
   AKUT: "Akut",
 }
+
+const QUICK_ACTIONS = new Set(["HOME", "MAIL", "TLF", "AKUT"])
+const TRIAGE_OUTCOMES = new Set([
+  "TRIAGE_FIT_BOOKING",
+  "TRIAGE_NOT_RELEVANT",
+  "TRIAGE_NEEDS_ASSESSMENT",
+])
 
 /* ========================= */
 
@@ -65,17 +81,42 @@ export default function Chatbot() {
     null
   )
   const [logs, setLogs] = useState<LogEvent[]>([])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
 
   const endRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [state, logs])
+  }, [messages, open])
 
   /* =========================
      API DISPATCH
      ========================= */
+
+  function appendMessage(message: ChatMessage) {
+    setMessages((prev) => [...prev, message])
+  }
+
+  function appendAssistantMessage(text: string) {
+    const message = text.trim()
+    if (!message) return
+    appendMessage({
+      id: `assistant-${Date.now()}-${Math.random()}`,
+      role: "assistant",
+      text: message,
+    })
+  }
+
+  function appendUserMessage(text: string) {
+    const message = text.trim()
+    if (!message) return
+    appendMessage({
+      id: `user-${Date.now()}-${Math.random()}`,
+      role: "user",
+      text: message,
+    })
+  }
 
   async function dispatch(input: InputSignal) {
     if (!state) return
@@ -87,8 +128,23 @@ export default function Chatbot() {
     })
 
     const data: KernelResponse = await res.json()
+    const userLabel =
+      input.type === "EXPLICIT_TRANSITION"
+        ? `Valgte: ${NODE_LABELS[input.target] ?? input.target}`
+        : input.type === "FREE_TEXT"
+          ? input.text
+          : ""
+
+    if (userLabel) {
+      appendUserMessage(userLabel)
+    }
+
     setState(data.state)
     setLogs((l) => [...l, data.log])
+    appendAssistantMessage(
+      data.transition?.response_message ??
+        data.state.active_node_message
+    )
   }
 
   async function init() {
@@ -103,23 +159,29 @@ export default function Chatbot() {
 
     const data: KernelResponse = await res.json()
     setState(data.state)
+    setMessages([])
+    appendAssistantMessage(data.state.active_node_message)
   }
 
   function resetConversation() {
     setLogs([])
     setInput("")
+    setMessages([])
     setState(null)
     init()
   }
 
-  function clearLogs() {
-    setLogs([])
+  function clearHistory() {
+    setMessages([])
   }
 
   /* ========================= */
 
   function sendFreeText() {
     if (!input.trim() || !state) return
+    if (state.status !== "active" && state.active_node !== "TRIAGE") {
+      return
+    }
     dispatch({ type: "FREE_TEXT", text: input })
     setInput("")
   }
@@ -127,6 +189,25 @@ export default function Chatbot() {
   function go(target: string) {
     if (!state) return
     dispatch({ type: "EXPLICIT_TRANSITION", target })
+  }
+
+  function handleChip(chip: { id: string; label: string }) {
+    const chipTransitions: Record<string, string> = {
+      book: "BOOKING",
+      stop: "HOME",
+    }
+
+    const explicitTarget = chipTransitions[chip.id]
+    if (explicitTarget) {
+      go(explicitTarget)
+      return
+    }
+
+    if (state?.active_node === "TRIAGE") {
+      dispatch({ type: "FREE_TEXT", text: chip.label })
+    } else {
+      setInput(chip.label)
+    }
   }
 
   /* ========================= */
@@ -146,6 +227,30 @@ export default function Chatbot() {
   }
 
   if (!state) return null
+
+  const triageChipsRaw = state.meta?.["triage.chips"]?.value
+  const lastLog = logs[logs.length - 1]
+  const showTriageChips =
+    state.status === "active" &&
+    state.active_node === "TRIAGE" &&
+    (lastLog?.input_type === "FREE_TEXT" ||
+      lastLog?.input_type === "FREE_TEXT_RESOLVED")
+  const triageChips = showTriageChips
+    ? Array.isArray(triageChipsRaw)
+      ? triageChipsRaw.filter(
+          (chip) =>
+            chip &&
+            typeof chip.id === "string" &&
+            typeof chip.label === "string"
+        )
+      : []
+    : []
+  const primaryTransitions = state.allowed_transitions.filter((t) => {
+    if (QUICK_ACTIONS.has(t)) return false
+    if (state.active_node === "TRIAGE" && t === "TRIAGE") return false
+    if (state.active_node === "TRIAGE" && TRIAGE_OUTCOMES.has(t)) return false
+    return true
+  })
 
   return (
     <>
@@ -171,23 +276,9 @@ export default function Chatbot() {
               <PlusIcon className="w-4 h-4" />
             </button>
             <button
-              className="gaarsdal-icon-btn gaarsdal-icon-disabled"
-              title="Tilbage"
-              aria-disabled="true"
-            >
-              <ArrowUturnLeftIcon className="w-4 h-4" />
-            </button>
-            <button
-              className="gaarsdal-icon-btn gaarsdal-icon-disabled"
-              title="Frem"
-              aria-disabled="true"
-            >
-              <ArrowUturnRightIcon className="w-4 h-4" />
-            </button>
-            <button
               className="gaarsdal-icon-btn"
-              title="Ryd logs"
-              onClick={clearLogs}
+              title="Ryd historik"
+              onClick={clearHistory}
             >
               <TrashIcon className="w-4 h-4" />
             </button>
@@ -211,30 +302,69 @@ export default function Chatbot() {
         {/* ================= BODY ================= */}
 
         <div className="messages text-sm p-3 overflow-auto flex-1">
-          <div className="mb-2 font-medium">
-            {NODE_LABELS[state.active_node] ??
-              state.active_node}
+          <div className="flex items-center justify-between mb-2 text-xs uppercase tracking-wide gaarsdal-meta">
+            <span>
+              {NODE_LABELS[state.active_node] ??
+                state.active_node}
+            </span>
+            {state.status !== "active" && (
+              <span>Status: {state.status}</span>
+            )}
           </div>
 
-          {state.status !== "active" && (
-            <div className="text-xs opacity-60 mb-2">
-              Status: {state.status}
+          <div className="flex flex-col gap-2 mb-4">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`message ${
+                  message.role === "assistant"
+                    ? "bot"
+                    : "user"
+                }`}
+              >
+                {message.text}
+              </div>
+            ))}
+          </div>
+
+          {triageChips.length > 0 && (
+            <div className="mb-4">
+              <div className="gaarsdal-section-title">
+                Forslag til svar (klik)
+              </div>
+              <div className="gaarsdal-chip-group">
+                {triageChips.map((chip) => (
+                  <button
+                    key={chip.id}
+                    className="chip"
+                    onClick={() => handleChip(chip)}
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
-          {state.status === "active" && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {state.allowed_transitions.map((t) => (
-                <button
-                  key={t}
-                  className="chip"
-                  onClick={() => go(t)}
-                >
-                  {NODE_LABELS[t] ?? t}
-                </button>
-              ))}
-            </div>
-          )}
+          {state.status === "active" &&
+            primaryTransitions.length > 0 && (
+              <div className="mb-4">
+                <div className="gaarsdal-section-title">
+                  Menuvalg
+                </div>
+                <div className="gaarsdal-chip-group">
+                  {primaryTransitions.map((t) => (
+                    <button
+                      key={t}
+                      className="chip"
+                      onClick={() => go(t)}
+                    >
+                      {NODE_LABELS[t] ?? t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
           <div ref={endRef} />
         </div>
@@ -255,16 +385,36 @@ export default function Chatbot() {
           />
 
           <div className="flex justify-center gap-4 mt-3">
-            <button onClick={() => go("HOME")}>
+            <button
+              className="gaarsdal-icon-btn"
+              onClick={() => go("HOME")}
+              aria-label="Til forsiden"
+              title="Forside"
+            >
               <HomeIcon className="w-5 h-5" />
             </button>
-            <button onClick={() => go("MAIL")}>
+            <button
+              className="gaarsdal-icon-btn"
+              onClick={() => go("MAIL")}
+              aria-label="Skriv email"
+              title="E-mail"
+            >
               <EnvelopeIcon className="w-5 h-5" />
             </button>
-            <button onClick={() => go("TLF")}>
+            <button
+              className="gaarsdal-icon-btn"
+              onClick={() => go("TLF")}
+              aria-label="Ring"
+              title="Telefon"
+            >
               <PhoneIcon className="w-5 h-5" />
             </button>
-            <button onClick={() => go("AKUT")}>
+            <button
+              className="gaarsdal-icon-btn"
+              onClick={() => go("AKUT")}
+              aria-label="Akut hjælp"
+              title="Akut"
+            >
               <ExclamationTriangleIcon className="w-5 h-5" />
             </button>
           </div>

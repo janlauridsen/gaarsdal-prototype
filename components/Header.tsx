@@ -32,8 +32,8 @@ export default function Header({
       <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo / titel */}
         <div className="flex items-center gap-2 text-text font-sans text-lg font-medium">
-          <Link href="/">
-            <a className="hover:opacity-90">{siteTitle}</a>
+          <Link href="/" className="hover:opacity-90">
+            {siteTitle}
           </Link>
         </div>
 
@@ -45,18 +45,21 @@ export default function Header({
           {menu
             .filter((item) => item.href !== '/kontakt')
             .map((item) => (
-              <Link key={item.href} href={item.href}>
-                <a className="text-muted hover:text-text">
-                  {item.label}
-                </a>
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-muted hover:text-text"
+              >
+                {item.label}
               </Link>
             ))}
 
           {/* CTA */}
-          <Link href="/kontakt">
-            <a className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition">
-              Kontakt mig
-            </a>
+          <Link
+            href="/kontakt"
+            className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition"
+          >
+            Kontakt mig
           </Link>
         </nav>
 
@@ -94,22 +97,24 @@ export default function Header({
           {menu
             .filter((item) => item.href !== '/kontakt')
             .map((item) => (
-              <Link key={item.href} href={item.href}>
-                <a className="block py-2 text-lg">
-                  {item.label}
-                </a>
+              <Link
+                key={item.href}
+                href={item.href}
+                className="block py-2 text-lg"
+              >
+                {item.label}
               </Link>
             ))}
 
           {/* CTA mobil */}
-          <Link href="/kontakt">
-            <a className="mt-4 inline-block text-center bg-accent text-white px-4 py-3 rounded-lg hover:bg-accent/90 transition">
-              Kontakt mig
-            </a>
+          <Link
+            href="/kontakt"
+            className="mt-4 inline-block text-center bg-accent text-white px-4 py-3 rounded-lg hover:bg-accent/90 transition"
+          >
+            Kontakt mig
           </Link>
         </div>
       </div>
     </header>
   )
 }
-

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 /**
  * Chatbot MÅ være client-only.
@@ -12,7 +14,9 @@ const Chatbot = dynamic(
 
 export default function Home() {
   return (
-    <main className="bg-bg text-text">
+    <div className="bg-bg text-text min-h-screen">
+      <Header />
+      <main>
 
       {/* HERO */}
       <section className="py-32 text-center px-6">
@@ -27,16 +31,18 @@ export default function Home() {
         </p>
 
         <div className="flex justify-center gap-4">
-          <Link href="/kontakt">
-            <a className="bg-accent text-white px-6 py-3 rounded-lg shadow hover:bg-accent/90 transition">
-              Kontakt mig
-            </a>
+          <Link
+            href="/kontakt"
+            className="bg-accent text-white px-6 py-3 rounded-lg shadow hover:bg-accent/90 transition"
+          >
+            Kontakt mig
           </Link>
 
-          <Link href="/hypnoterapi">
-            <a className="border border-accent text-accent px-6 py-3 rounded-lg hover:bg-accent/10 transition">
-              Læs mere
-            </a>
+          <Link
+            href="/hypnoterapi"
+            className="border border-accent text-accent px-6 py-3 rounded-lg hover:bg-accent/10 transition"
+          >
+            Læs mere
           </Link>
         </div>
       </section>
@@ -155,6 +161,8 @@ export default function Home() {
       {/* CHATBOT */}
       <Chatbot />
 
-    </main>
+      </main>
+      <Footer />
+    </div>
   );
 }
