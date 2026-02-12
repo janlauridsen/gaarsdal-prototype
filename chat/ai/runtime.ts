@@ -5,9 +5,11 @@ import {
   AiCapabilityResult,
 } from "./types"
 import { triageCapability } from "./capabilities/triage"
+import { genHypnoCapability } from "./capabilities/genHypno"
 
 const CAPABILITIES: Record<string, AiCapability> = {
   [triageCapability.id]: triageCapability,
+  [genHypnoCapability.id]: genHypnoCapability,
 }
 
 export async function runCapability(
