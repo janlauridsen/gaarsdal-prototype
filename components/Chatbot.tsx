@@ -55,9 +55,14 @@ const NODE_LABELS: Record<string, string> = {
   AKUT: "Akut",
 }
 
-const QUICK_ACTIONS = ["HOME", "TLF", "MAIL", "AKUT"] as const
+const QUICK_ACTIONS = new Set(["HOME", "TLF", "MAIL", "AKUT"])
+const TRIAGE_OUTCOME_NODES = new Set([
+  "TRIAGE_FIT_BOOKING",
+  "TRIAGE_NOT_RELEVANT",
+  "TRIAGE_NEEDS_ASSESSMENT",
+])
 
-const DEFAULT_CHIPS = [
+const DEFAULT_TRIAGE_CHIPS = [
   { id: "tell_more", label: "Fortæl mere" },
   { id: "why_relevant", label: "Hvorfor relevant?" },
   { id: "next_steps", label: "Hvad er næste skridt?" },
@@ -112,7 +117,7 @@ export default function Chatbot() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           state: null,
-          input: { type: "SYSTEM_INIT" }, // ignoreres når state === null (API init branch)
+          input: { type: "SYSTEM_INIT" },
         }),
       })
 
@@ -137,9 +142,10 @@ export default function Chatbot() {
 
     const data: KernelResponse = await res.json()
 
-    // UI echo af bruger-handling
     if (nextInput.type === "EXPLICIT_TRANSITION") {
-      appendUserMessage(`Valgte: ${NODE_LABELS[nextInput.target] ?? nextInput.target}`)
+      appendUserMessage(
+        `Valgte: ${NODE_LABELS[nextInput.target] ?? nextInput.target}`
+      )
     } else if (nextInput.type === "FREE_TEXT") {
       appendUserMessage(nextInput.text)
     }
@@ -147,7 +153,6 @@ export default function Chatbot() {
     setState(data.state)
     setLogs((l) => [...l, data.log])
 
-    // Vis AI/Kernel output
     const assistantText =
       (data.transition?.response_message as string | undefined) ??
       data.state.active_node_message
@@ -156,7 +161,6 @@ export default function Chatbot() {
   }
 
   function resetConversation() {
-    // Reset = ny samtale/kernel state
     setLogs([])
     setInput("")
     setMessages([])
@@ -165,7 +169,6 @@ export default function Chatbot() {
   }
 
   function clearHistory() {
-    // Skraldespand = ryd kun UI-visning
     setMessages([])
   }
 
@@ -182,19 +185,13 @@ export default function Chatbot() {
     setInput("")
   }
 
-  function handleChip(chip: { id: string; label: string }) {
-    // Minimal mapping hvis du vil bruge chips til explicit navigation
-    const map: Record<string, string> = {
-      stop: "HOME",
-    }
+  function handleTriageChip(chip: { id: string; label: string }) {
+    const map: Record<string, string> = { stop: "HOME" }
     const target = map[chip.id]
     if (target) return go(target)
-
-    // Default: send chip label som fri tekst
     dispatch({ type: "FREE_TEXT", text: chip.label })
   }
 
-  // Launcher
   if (!open) {
     return (
       <button
@@ -210,11 +207,7 @@ export default function Chatbot() {
     )
   }
 
-  const nodeLabel = state
-    ? `${NODE_LABELS[state.active_node] ?? state.active_node} · rev ${state.revision}`
-    : "Initialiserer..."
-
-  // Chips: triage chips fra meta, kun i TRIAGE
+  // Derived: triage chips
   const triageChipsRaw = state?.meta?.["triage.chips"]?.value
   const triageChips =
     state?.active_node === "TRIAGE"
@@ -224,14 +217,25 @@ export default function Chatbot() {
               (c: any) => c && typeof c.id === "string" && typeof c.label === "string"
             )
             .slice(0, 8)
-        : DEFAULT_CHIPS
+        : DEFAULT_TRIAGE_CHIPS
       : []
 
-  // Muligheder: allowed transitions (uden quick actions)
+  // Derived: option chips from allowed_transitions with context-aware filtering
   const optionChips =
-    state?.allowed_transitions?.filter(
-      (t) => !QUICK_ACTIONS.includes(t as any)
-    ) ?? []
+    state?.allowed_transitions?.filter((t) => {
+      // never show quick actions in "Muligheder" (they are footer actions)
+      if (QUICK_ACTIONS.has(t)) return false
+
+      // TRIAGE: hide self-loop and outcome nodes (AI decides these)
+      if (state.active_node === "TRIAGE") {
+        if (t === "TRIAGE") return false
+        if (TRIAGE_OUTCOME_NODES.has(t)) return false
+        // optional: keep CONTACT_FORM out of triage options
+        if (t === "CONTACT_FORM") return false
+      }
+
+      return true
+    }) ?? []
 
   return (
     <>
@@ -244,17 +248,19 @@ export default function Chatbot() {
         aria-modal="true"
         aria-label="Chatbot"
       >
-        {/* HEADER: reset + logs + close */}
+        {/* HEADER */}
         <div className="gaarsdal-chatbot-header flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-sm font-semibold">Gaarsdal Chat</div>
-            <div className="text-xs gaarsdal-meta truncate">{nodeLabel}</div>
+            <div className="text-xs gaarsdal-meta truncate">
+              {state ? NODE_LABELS[state.active_node] ?? state.active_node : "Initialiserer..."}
+            </div>
           </div>
 
           <div className="flex items-center gap-1">
             <button
               className="gaarsdal-icon-btn"
-              aria-label="Ny samtale (reset kernel state)"
+              aria-label="Ny samtale"
               title="Ny samtale"
               onClick={resetConversation}
               disabled={loading}
@@ -300,7 +306,7 @@ export default function Chatbot() {
             </div>
           ))}
 
-          {/* TRIAGE: forslag chips */}
+          {/* TRIAGE: forslag */}
           {state?.active_node === "TRIAGE" && triageChips.length > 0 && (
             <div className="mt-3">
               <div className="gaarsdal-section-title">Forslag</div>
@@ -309,7 +315,7 @@ export default function Chatbot() {
                   <button
                     key={chip.id}
                     className="chip"
-                    onClick={() => handleChip(chip)}
+                    onClick={() => handleTriageChip(chip)}
                     disabled={loading || !state}
                   >
                     {chip.label}
@@ -319,7 +325,7 @@ export default function Chatbot() {
             </div>
           )}
 
-          {/* OPTIONS: allowed transitions */}
+          {/* OPTIONS */}
           {optionChips.length > 0 && (
             <div className="mt-3">
               <div className="gaarsdal-section-title">Muligheder</div>
@@ -351,7 +357,7 @@ export default function Chatbot() {
           <div ref={endRef} />
         </div>
 
-        {/* FOOTER: quick actions + input + trash */}
+        {/* FOOTER */}
         <div className="gaarsdal-chatbot-footer">
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-1">
@@ -359,7 +365,7 @@ export default function Chatbot() {
                 className="gaarsdal-icon-btn"
                 aria-label="Forside"
                 title="Forside"
-                onClick={() => go("HOME")}
+                onClick={() => state && go("HOME")}
                 disabled={!state || loading}
               >
                 <HomeIcon className="w-5 h-5" />
@@ -369,7 +375,7 @@ export default function Chatbot() {
                 className="gaarsdal-icon-btn"
                 aria-label="Telefon"
                 title="Telefon"
-                onClick={() => go("TLF")}
+                onClick={() => state && go("TLF")}
                 disabled={!state || loading}
               >
                 <PhoneIcon className="w-5 h-5" />
@@ -379,7 +385,7 @@ export default function Chatbot() {
                 className="gaarsdal-icon-btn"
                 aria-label="E-mail"
                 title="E-mail"
-                onClick={() => go("MAIL")}
+                onClick={() => state && go("MAIL")}
                 disabled={!state || loading}
               >
                 <EnvelopeIcon className="w-5 h-5" />
@@ -389,7 +395,7 @@ export default function Chatbot() {
                 className="gaarsdal-icon-btn"
                 aria-label="Akut"
                 title="Akut"
-                onClick={() => go("AKUT")}
+                onClick={() => state && go("AKUT")}
                 disabled={!state || loading}
               >
                 <ExclamationTriangleIcon className="w-5 h-5" />
@@ -398,7 +404,7 @@ export default function Chatbot() {
 
             <button
               className="gaarsdal-icon-btn"
-              aria-label="Ryd visning (bevarer kernel state)"
+              aria-label="Ryd visning"
               title="Ryd visning"
               onClick={clearHistory}
               disabled={messages.length === 0}
