@@ -116,6 +116,17 @@ const DEFAULT_CHIPS = [
   { id: "stop", label: "Stop her" },
 ]
 
+function writeMeta(
+  context: AiCapabilityContext,
+  domain: string,
+  value: unknown
+): void {
+  context.state.meta[domain] = {
+    value,
+    source_node: context.state.active_node,
+  }
+}
+
 function countFromMeta(context: AiCapabilityContext): number {
   const raw = context.state.meta["triage.question_count"]?.value
   return typeof raw === "number" ? raw : 0
@@ -413,54 +424,38 @@ function writeMetaDecision(
   output: TriageOutput,
   questionCount: number
 ): void {
-  context.state.meta["triage.question_count"] = {
-    value: questionCount,
-  }
-  context.state.meta["triage.outcome"] = {
-    value: output.decision.relevance,
-  }
-  context.state.meta["triage.summary"] = {
-    value: output.decision.user_goal,
-  }
-  context.state.meta["triage.unclear_points"] = {
-    value: output.decision.notes_for_context,
-  }
-  context.state.meta["triage.topic_tags"] = {
-    value: output.decision.topic_tags,
-  }
-  context.state.meta["triage.user_goal"] = {
-    value: output.decision.user_goal,
-  }
-  context.state.meta["triage.key_triggers"] = {
-    value: output.decision.key_triggers,
-  }
-  context.state.meta["triage.time_horizon"] = {
-    value: output.decision.time_horizon,
-  }
-  context.state.meta["triage.confidence"] = {
-    value: output.decision.confidence,
-  }
-  context.state.meta["triage.next_state"] = {
-    value: output.decision.next_state,
-  }
-  context.state.meta["triage.notes_for_context"] = {
-    value: output.decision.notes_for_context,
-  }
-  context.state.meta["triage.next_question"] = {
-    value: output.render.next_question,
-  }
-  context.state.meta["triage.chips"] = {
-    value: output.render.chips.length ? output.render.chips : DEFAULT_CHIPS,
-  }
+  writeMeta(context, "triage.question_count", questionCount)
+  writeMeta(context, "triage.outcome", output.decision.relevance)
+  writeMeta(context, "triage.summary", output.decision.user_goal)
+  writeMeta(
+    context,
+    "triage.unclear_points",
+    output.decision.notes_for_context
+  )
+  writeMeta(context, "triage.topic_tags", output.decision.topic_tags)
+  writeMeta(context, "triage.user_goal", output.decision.user_goal)
+  writeMeta(context, "triage.key_triggers", output.decision.key_triggers)
+  writeMeta(context, "triage.time_horizon", output.decision.time_horizon)
+  writeMeta(context, "triage.confidence", output.decision.confidence)
+  writeMeta(context, "triage.next_state", output.decision.next_state)
+  writeMeta(
+    context,
+    "triage.notes_for_context",
+    output.decision.notes_for_context
+  )
+  writeMeta(context, "triage.next_question", output.render.next_question)
+  writeMeta(
+    context,
+    "triage.chips",
+    output.render.chips.length ? output.render.chips : DEFAULT_CHIPS
+  )
 }
 
 function writeMetaTranscript(
   context: AiCapabilityContext,
   transcript: TranscriptTurn[]
 ): void {
-  context.state.meta["triage.transcript"] = {
-    value: transcript,
-  }
+  writeMeta(context, "triage.transcript", transcript)
 }
 
 export const triageCapability: AiCapability = {
