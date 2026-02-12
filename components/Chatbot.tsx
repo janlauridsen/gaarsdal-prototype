@@ -10,6 +10,7 @@ import {
   ExclamationTriangleIcon,
   BugAntIcon,
   TrashIcon,
+  LinkIcon,
 } from "@heroicons/react/24/outline"
 
 type ConversationState = {
@@ -188,6 +189,11 @@ export default function Chatbot() {
     dispatch({ type: "FREE_TEXT", text: chip.label })
   }
 
+  function openContactForm() {
+    // Open the /kontakt page (same tab)
+    window.location.href = "/kontakt"
+  }
+
   if (!open) {
     return (
       <button
@@ -203,10 +209,16 @@ export default function Chatbot() {
     )
   }
 
-  // Derived: triage chips (dialog suggestions)
+  // Derived: show triage suggestions only after user has provided free text at least once
+  const lastLog = logs.length ? logs[logs.length - 1] : null
+  const triageSuggestionsAllowed =
+    state?.active_node === "TRIAGE" &&
+    (lastLog?.input_type === "FREE_TEXT" ||
+      lastLog?.input_type === "FREE_TEXT_RESOLVED")
+
   const triageChipsRaw = state?.meta?.["triage.chips"]?.value
   const triageChips =
-    state?.active_node === "TRIAGE"
+    triageSuggestionsAllowed
       ? Array.isArray(triageChipsRaw)
         ? triageChipsRaw
             .filter(
@@ -216,14 +228,16 @@ export default function Chatbot() {
         : DEFAULT_TRIAGE_CHIPS
       : []
 
-  // Topics are fixed in UI, but only enabled if the kernel allows them from current node.
-  // This preserves "registry/kernel is the authority" without showing internal exits.
+  // Topics: only show on HOME (not in TRIAGE and other nodes)
+  const showTopics = state?.active_node === "HOME"
   const allowedSet = new Set(state?.allowed_transitions ?? [])
-  const topicButtons = TOPIC_NODES.map((id) => ({
-    id,
-    label: NODE_LABELS[id] ?? id,
-    enabled: state ? allowedSet.has(id) || id === state.active_node : false,
-  })).filter((t) => t.id !== state?.active_node)
+  const topicButtons = showTopics
+    ? TOPIC_NODES.map((id) => ({
+        id,
+        label: NODE_LABELS[id] ?? id,
+        enabled: state ? allowedSet.has(id) || id === state.active_node : false,
+      })).filter((t) => t.id !== state?.active_node)
+    : []
 
   return (
     <>
@@ -294,7 +308,7 @@ export default function Chatbot() {
             </div>
           ))}
 
-          {/* Dialog suggestions */}
+          {/* TRIAGE: suggestions only when relevant */}
           {state?.active_node === "TRIAGE" && triageChips.length > 0 && (
             <div className="mt-3">
               <div className="gaarsdal-section-title">Forslag</div>
@@ -313,7 +327,7 @@ export default function Chatbot() {
             </div>
           )}
 
-          {/* Fixed topics (navigation), not raw allowed transitions */}
+          {/* TOPICS: only on HOME */}
           {topicButtons.length > 0 && (
             <div className="mt-3">
               <div className="gaarsdal-section-title">Emner</div>
@@ -333,7 +347,7 @@ export default function Chatbot() {
             </div>
           )}
 
-          {/* Logs (dev) */}
+          {/* LOGS (dev) */}
           {showLogs && (
             <div className="mt-3">
               <div className="gaarsdal-section-title">Logs</div>
@@ -348,11 +362,6 @@ export default function Chatbot() {
 
         {/* FOOTER */}
         <div className="gaarsdal-chatbot-footer">
-          {/* Subtle navigation hint */}
-          <div className="text-xs gaarsdal-meta mb-2">
-            Kontakt: vælg telefon, e-mail eller akut herunder.
-          </div>
-
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-1">
               <button
@@ -393,6 +402,15 @@ export default function Chatbot() {
                 disabled={!state || loading}
               >
                 <ExclamationTriangleIcon className="w-5 h-5" />
+              </button>
+
+              <button
+                className="gaarsdal-icon-btn"
+                aria-label="Kontaktformular"
+                title="Kontaktformular"
+                onClick={openContactForm}
+              >
+                <LinkIcon className="w-5 h-5" />
               </button>
             </div>
 
