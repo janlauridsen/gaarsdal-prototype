@@ -57,6 +57,13 @@ const NODE_LABELS: Record<string, string> = {
 
 const QUICK_ACTIONS = ["HOME", "TLF", "MAIL", "AKUT"] as const
 
+const DEFAULT_CHIPS = [
+  { id: "tell_more", label: "Fortæl mere" },
+  { id: "why_relevant", label: "Hvorfor relevant?" },
+  { id: "next_steps", label: "Hvad er næste skridt?" },
+  { id: "stop", label: "Stop her" },
+]
+
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
   const [showLogs, setShowLogs] = useState(false)
@@ -97,33 +104,6 @@ export default function Chatbot() {
     })
   }
 
-  async function dispatch(input: InputSignal) {
-    if (!state) return
-
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ state, input }),
-    })
-
-    const data: KernelResponse = await res.json()
-
-    const userLabel =
-      input.type === "EXPLICIT_TRANSITION"
-        ? `Valgte: ${NODE_LABELS[input.target] ?? input.target}`
-        : input.type === "FREE_TEXT"
-          ? input.text
-          : ""
-
-    if (userLabel) appendUserMessage(userLabel)
-
-    setState(data.state)
-    setLogs((l) => [...l, data.log])
-    appendAssistantMessage(
-      data.transition?.response_message ?? data.state.active_node_message
-    )
-  }
-
   async function init() {
     setLoading(true)
     try {
@@ -132,7 +112,7 @@ export default function Chatbot() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           state: null,
-          input: { type: "SYSTEM_INIT" },
+          input: { type: "SYSTEM_INIT" }, // ignoreres når state === null (API init branch)
         }),
       })
 
@@ -146,7 +126,37 @@ export default function Chatbot() {
     }
   }
 
+  async function dispatch(nextInput: InputSignal) {
+    if (!state) return
+
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state, input: nextInput }),
+    })
+
+    const data: KernelResponse = await res.json()
+
+    // UI echo af bruger-handling
+    if (nextInput.type === "EXPLICIT_TRANSITION") {
+      appendUserMessage(`Valgte: ${NODE_LABELS[nextInput.target] ?? nextInput.target}`)
+    } else if (nextInput.type === "FREE_TEXT") {
+      appendUserMessage(nextInput.text)
+    }
+
+    setState(data.state)
+    setLogs((l) => [...l, data.log])
+
+    // Vis AI/Kernel output
+    const assistantText =
+      (data.transition?.response_message as string | undefined) ??
+      data.state.active_node_message
+
+    appendAssistantMessage(assistantText)
+  }
+
   function resetConversation() {
+    // Reset = ny samtale/kernel state
     setLogs([])
     setInput("")
     setMessages([])
@@ -155,13 +165,8 @@ export default function Chatbot() {
   }
 
   function clearHistory() {
+    // Skraldespand = ryd kun UI-visning
     setMessages([])
-  }
-
-  function sendFreeText() {
-    if (!input.trim() || !state) return
-    dispatch({ type: "FREE_TEXT", text: input })
-    setInput("")
   }
 
   function go(target: string) {
@@ -169,6 +174,27 @@ export default function Chatbot() {
     dispatch({ type: "EXPLICIT_TRANSITION", target })
   }
 
+  function sendFreeText() {
+    if (!state) return
+    const text = input.trim()
+    if (!text) return
+    dispatch({ type: "FREE_TEXT", text })
+    setInput("")
+  }
+
+  function handleChip(chip: { id: string; label: string }) {
+    // Minimal mapping hvis du vil bruge chips til explicit navigation
+    const map: Record<string, string> = {
+      stop: "HOME",
+    }
+    const target = map[chip.id]
+    if (target) return go(target)
+
+    // Default: send chip label som fri tekst
+    dispatch({ type: "FREE_TEXT", text: chip.label })
+  }
+
+  // Launcher
   if (!open) {
     return (
       <button
@@ -188,6 +214,25 @@ export default function Chatbot() {
     ? `${NODE_LABELS[state.active_node] ?? state.active_node} · rev ${state.revision}`
     : "Initialiserer..."
 
+  // Chips: triage chips fra meta, kun i TRIAGE
+  const triageChipsRaw = state?.meta?.["triage.chips"]?.value
+  const triageChips =
+    state?.active_node === "TRIAGE"
+      ? Array.isArray(triageChipsRaw)
+        ? triageChipsRaw
+            .filter(
+              (c: any) => c && typeof c.id === "string" && typeof c.label === "string"
+            )
+            .slice(0, 8)
+        : DEFAULT_CHIPS
+      : []
+
+  // Muligheder: allowed transitions (uden quick actions)
+  const optionChips =
+    state?.allowed_transitions?.filter(
+      (t) => !QUICK_ACTIONS.includes(t as any)
+    ) ?? []
+
   return (
     <>
       <div className="gaarsdal-overlay" onClick={() => setOpen(false)} />
@@ -199,7 +244,7 @@ export default function Chatbot() {
         aria-modal="true"
         aria-label="Chatbot"
       >
-        {/* HEADER (Reset moved here) */}
+        {/* HEADER: reset + logs + close */}
         <div className="gaarsdal-chatbot-header flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-sm font-semibold">Gaarsdal Chat</div>
@@ -209,9 +254,10 @@ export default function Chatbot() {
           <div className="flex items-center gap-1">
             <button
               className="gaarsdal-icon-btn"
-              aria-label="Reset samtale"
+              aria-label="Ny samtale (reset kernel state)"
+              title="Ny samtale"
               onClick={resetConversation}
-              title="Reset"
+              disabled={loading}
             >
               <ChatBubbleOvalLeftEllipsisIcon className="w-5 h-5" />
             </button>
@@ -219,8 +265,9 @@ export default function Chatbot() {
             <button
               className="gaarsdal-icon-btn"
               aria-label="Vis logs"
-              onClick={() => setShowLogs((v) => !v)}
               title="Logs"
+              onClick={() => setShowLogs((v) => !v)}
+              disabled={loading}
             >
               <BugAntIcon className="w-5 h-5" />
             </button>
@@ -228,8 +275,8 @@ export default function Chatbot() {
             <button
               className="gaarsdal-icon-btn"
               aria-label="Luk"
-              onClick={() => setOpen(false)}
               title="Luk"
+              onClick={() => setOpen(false)}
             >
               <XMarkIcon className="w-5 h-5" />
             </button>
@@ -253,6 +300,45 @@ export default function Chatbot() {
             </div>
           ))}
 
+          {/* TRIAGE: forslag chips */}
+          {state?.active_node === "TRIAGE" && triageChips.length > 0 && (
+            <div className="mt-3">
+              <div className="gaarsdal-section-title">Forslag</div>
+              <div className="gaarsdal-chip-group">
+                {triageChips.map((chip: any) => (
+                  <button
+                    key={chip.id}
+                    className="chip"
+                    onClick={() => handleChip(chip)}
+                    disabled={loading || !state}
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* OPTIONS: allowed transitions */}
+          {optionChips.length > 0 && (
+            <div className="mt-3">
+              <div className="gaarsdal-section-title">Muligheder</div>
+              <div className="gaarsdal-chip-group">
+                {optionChips.map((t) => (
+                  <button
+                    key={t}
+                    className="chip"
+                    onClick={() => go(t)}
+                    disabled={loading || !state}
+                  >
+                    {NODE_LABELS[t] ?? t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* LOGS */}
           {showLogs && (
             <div className="mt-3">
               <div className="gaarsdal-section-title">Logs</div>
@@ -265,15 +351,15 @@ export default function Chatbot() {
           <div ref={endRef} />
         </div>
 
-        {/* FOOTER (Home/Phone/Mail/Akut moved here) */}
+        {/* FOOTER: quick actions + input + trash */}
         <div className="gaarsdal-chatbot-footer">
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-1">
               <button
                 className="gaarsdal-icon-btn"
                 aria-label="Forside"
-                onClick={() => state && go("HOME")}
                 title="Forside"
+                onClick={() => go("HOME")}
                 disabled={!state || loading}
               >
                 <HomeIcon className="w-5 h-5" />
@@ -282,8 +368,8 @@ export default function Chatbot() {
               <button
                 className="gaarsdal-icon-btn"
                 aria-label="Telefon"
-                onClick={() => state && go("TLF")}
                 title="Telefon"
+                onClick={() => go("TLF")}
                 disabled={!state || loading}
               >
                 <PhoneIcon className="w-5 h-5" />
@@ -292,8 +378,8 @@ export default function Chatbot() {
               <button
                 className="gaarsdal-icon-btn"
                 aria-label="E-mail"
-                onClick={() => state && go("MAIL")}
                 title="E-mail"
+                onClick={() => go("MAIL")}
                 disabled={!state || loading}
               >
                 <EnvelopeIcon className="w-5 h-5" />
@@ -302,8 +388,8 @@ export default function Chatbot() {
               <button
                 className="gaarsdal-icon-btn"
                 aria-label="Akut"
-                onClick={() => state && go("AKUT")}
                 title="Akut"
+                onClick={() => go("AKUT")}
                 disabled={!state || loading}
               >
                 <ExclamationTriangleIcon className="w-5 h-5" />
@@ -312,9 +398,9 @@ export default function Chatbot() {
 
             <button
               className="gaarsdal-icon-btn"
-              aria-label="Ryd chat"
+              aria-label="Ryd visning (bevarer kernel state)"
+              title="Ryd visning"
               onClick={clearHistory}
-              title="Ryd chat"
               disabled={messages.length === 0}
             >
               <TrashIcon className="w-5 h-5" />
@@ -325,7 +411,7 @@ export default function Chatbot() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Skriv her…"
+              placeholder="Skriv her… (Enter = send, Shift+Enter = ny linje)"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault()
@@ -334,13 +420,6 @@ export default function Chatbot() {
               }}
               disabled={!state || loading}
             />
-            <button
-              className="chip"
-              onClick={sendFreeText}
-              disabled={!input.trim() || !state || loading}
-            >
-              Send
-            </button>
           </div>
         </div>
       </div>
