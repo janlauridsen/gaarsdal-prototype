@@ -11,6 +11,10 @@ import {
   LinkIcon,
   ArrowsPointingOutIcon,
   ArrowsPointingInIcon,
+  InformationCircleIcon,
+  ClipboardDocumentCheckIcon,
+  Squares2X2Icon,
+  CalendarDaysIcon,
 } from "@heroicons/react/24/outline"
 
 type ConversationState = {
@@ -58,7 +62,8 @@ const NODE_LABELS: Record<string, string> = {
 const TOPIC_TOOLTIPS: Record<string, string> = {
   GEN_HYPNO: "Fri samtale med viden og erfaring (ingen behandling i chatten).",
   TRIAGE: "Kort afklaring: få spørgsmål og relevansvurdering for din situation.",
-  METHOD_FIT: "Sammenlign retninger: hypnoterapi vs typiske alternativer (overblik, ikke behandling).",
+  METHOD_FIT:
+    "Sammenlign retninger: hypnoterapi vs typiske alternativer (overblik, ikke behandling).",
   BOOKING: "Vælg kontaktvej for booking.",
 }
 
@@ -69,19 +74,35 @@ const DEFAULT_TRIAGE_CHIPS = [
   { id: "stop", label: "Stop her" },
 ]
 
-// Fixed topics (UI-owned) — only shown on HOME
+// HOME menu items (UI-owned)
 const TOPIC_NODES: string[] = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING"]
+
+function getTopicIcon(nodeId: string) {
+  switch (nodeId) {
+    case "GEN_HYPNO":
+      return <InformationCircleIcon className="w-5 h-5" />
+    case "TRIAGE":
+      return <ClipboardDocumentCheckIcon className="w-5 h-5" />
+    case "METHOD_FIT":
+      return <Squares2X2Icon className="w-5 h-5" />
+    case "BOOKING":
+      return <CalendarDaysIcon className="w-5 h-5" />
+    default:
+      return <InformationCircleIcon className="w-5 h-5" />
+  }
+}
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
   const [state, setState] = useState<ConversationState | null>(null)
-  const [logs, setLogs] = useState<LogEvent[]>([])
+  const [logs, setLogs] = useState<LogEvent[]>([]) // used for triage gating; not shown
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
 
+  // Navigation banner (not part of chat transcript)
   const [navBanner, setNavBanner] = useState<string | null>(null)
   const navBannerTimerRef = useRef<number | null>(null)
 
@@ -239,6 +260,7 @@ export default function Chatbot() {
     )
   }
 
+  // TRIAGE: show suggestions only after at least one free-text exchange has happened
   const lastLog = logs.length ? logs[logs.length - 1] : null
   const triageSuggestionsAllowed =
     state?.active_node === "TRIAGE" &&
@@ -254,6 +276,7 @@ export default function Chatbot() {
         : DEFAULT_TRIAGE_CHIPS
       : []
 
+  // Topics only on HOME (UI-owned), disabled unless kernel allows them
   const showTopics = state?.active_node === "HOME"
   const allowedSet = new Set(state?.allowed_transitions ?? [])
   const topicButtons = showTopics
@@ -280,6 +303,7 @@ export default function Chatbot() {
         aria-modal="true"
         aria-label="Chatbot"
       >
+        {/* HEADER */}
         <div className="gaarsdal-chatbot-header flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-sm font-semibold">Gaarsdal Chat</div>
@@ -323,6 +347,7 @@ export default function Chatbot() {
           </div>
         </div>
 
+        {/* NAVIGATION BANNER */}
         {navBanner && (
           <div className="px-3 pt-3">
             <div className="w-full rounded-lg px-3 py-2 text-sm bg-black/10 border border-black/5">
@@ -331,12 +356,9 @@ export default function Chatbot() {
           </div>
         )}
 
+        {/* BODY */}
         <div className="messages">
           {loading && <div className="text-sm gaarsdal-meta">Initialiserer…</div>}
-
-          {!loading && messages.length === 0 && (
-            <div className="text-sm gaarsdal-meta">Ingen beskeder endnu.</div>
-          )}
 
           {messages.map((m) => (
             <div key={m.id} className={`message ${m.role === "assistant" ? "bot" : "user"}`}>
@@ -344,6 +366,7 @@ export default function Chatbot() {
             </div>
           ))}
 
+          {/* TRIAGE suggestions */}
           {state?.active_node === "TRIAGE" && triageChips.length > 0 && (
             <div className="mt-3">
               <div className="gaarsdal-section-title">Forslag</div>
@@ -362,20 +385,26 @@ export default function Chatbot() {
             </div>
           )}
 
-          {/* Compact menu: short items + tooltip only */}
+          {/* GRAPHIC HOME MENU: compact cards + tooltip-only */}
           {topicButtons.length > 0 && (
             <div className="mt-3">
               <div className="gaarsdal-section-title">Emner</div>
-              <div className="flex flex-wrap gap-2">
+
+              <div className="grid grid-cols-2 gap-2">
                 {topicButtons.map((t) => (
                   <button
                     key={t.id}
-                    className="chip"
                     onClick={() => go(t.id)}
                     disabled={!t.enabled || loading || !state}
                     title={t.tooltip || (!t.enabled ? "Ikke tilgængelig herfra" : "")}
+                    className={[
+                      "flex items-center gap-2 rounded-xl px-3 py-3 text-left",
+                      "bg-white border border-black/5 shadow-sm",
+                      "hover:bg-[#EFEDE7] disabled:opacity-50",
+                    ].join(" ")}
                   >
-                    {t.label}
+                    <span className="text-[#4A5D54]">{getTopicIcon(t.id)}</span>
+                    <span className="text-sm font-medium leading-snug">{t.label}</span>
                   </button>
                 ))}
               </div>
@@ -385,8 +414,10 @@ export default function Chatbot() {
           <div ref={endRef} />
         </div>
 
+        {/* FOOTER */}
         <div className="gaarsdal-chatbot-footer">
           <div className="flex items-center justify-between gap-2 mb-2">
+            {/* Left group */}
             <div className="flex items-center gap-1">
               <button
                 className="gaarsdal-icon-btn"
@@ -428,6 +459,7 @@ export default function Chatbot() {
               </button>
             </div>
 
+            {/* Right group: Akut always right */}
             <div className="flex items-center">
               <button
                 className="gaarsdal-icon-btn"
