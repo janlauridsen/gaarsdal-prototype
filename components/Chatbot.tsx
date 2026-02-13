@@ -125,7 +125,7 @@ export default function Chatbot() {
     navBannerTimerRef.current = window.setTimeout(() => {
       setNavBanner(null)
       navBannerTimerRef.current = null
-    }, 2200)
+    }, 3300)
   }
 
   async function init() {
@@ -191,9 +191,18 @@ export default function Chatbot() {
   }
 
   function go(target: string) {
-    if (!state) return
-    dispatch({ type: "EXPLICIT_TRANSITION", target })
+  if (!state) return
+
+  // Reset transcript when navigating between top-level nodes
+  const isTopLevel = ["HOME", "GEN_HYPNO", "TRIAGE", "BOOKING"].includes(target)
+
+  if (isTopLevel) {
+    setMessages([])
   }
+
+  dispatch({ type: "EXPLICIT_TRANSITION", target })
+}
+
 
   function sendFreeText() {
     if (!state) return
