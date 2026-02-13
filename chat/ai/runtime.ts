@@ -1,9 +1,5 @@
 import { createOpenAiCompatibleClient } from "./provider"
-import {
-  AiCapability,
-  AiCapabilityContext,
-  AiCapabilityResult,
-} from "./types"
+import { AiCapability, AiCapabilityContext, AiCapabilityResult } from "./types"
 import { triageCapability } from "./capabilities/triage"
 import { genHypnoCapability } from "./capabilities/genHypno"
 
