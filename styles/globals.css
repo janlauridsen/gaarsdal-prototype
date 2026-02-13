@@ -39,19 +39,40 @@ body {
   flex-direction: column;
 }
 
-/* Expanded/fullscreen: Tailwind adds .rounded-none, but header/footer also set radii */
-.gaarsdal-chatbot.rounded-none {
-  border-radius: 0 !important;
+/* Normal (default): bottom-right docked */
+.gaarsdal-chatbot--normal {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 380px;
+  height: 560px;
 }
 
-.gaarsdal-chatbot.rounded-none .gaarsdal-chatbot-header {
-  border-top-left-radius: 0 !important;
-  border-top-right-radius: 0 !important;
+/* Expanded: larger modal (NOT fullscreen) */
+.gaarsdal-chatbot--expanded {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(760px, calc(100vw - 48px));
+  height: min(820px, calc(100vh - 48px));
 }
 
-.gaarsdal-chatbot.rounded-none .gaarsdal-chatbot-footer {
-  border-bottom-left-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
+/* Mobile: give a little more breathing room */
+@media (max-width: 420px) {
+  .gaarsdal-chatbot--normal {
+    right: 12px;
+    bottom: 12px;
+    width: calc(100vw - 24px);
+    height: min(560px, calc(100vh - 24px));
+  }
+
+  .gaarsdal-chatbot--expanded {
+    top: 12px;
+    width: calc(100vw - 24px);
+    height: calc(100vh - 24px);
+    transform: translateX(-50%);
+  }
 }
 
 /* =========================
@@ -137,7 +158,6 @@ body {
    HOME TOPICS MENU (GRAPHIC CARDS)
 ========================= */
 
-/* Use these classes if/when you switch Chatbot.tsx to use classNames instead of inline Tailwind. */
 .gaarsdal-topic-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
