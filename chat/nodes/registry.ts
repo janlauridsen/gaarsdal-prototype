@@ -46,7 +46,10 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     allow_free_text: true,
     allow_parentese: true,
     allowed_exits: ["HOME", "MAIL", "TLF", "AKUT"],
-    meta_domains_written: [],
+    meta_domains_written: [
+      "gen_hypno.transcript",
+      "gen_hypno.last_topic",
+    ],
   },
 
   TRIAGE: {
@@ -179,10 +182,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
 
 const REGISTRY: Record<NodeId, Readonly<Node>> = Object.freeze(
   Object.fromEntries(
-    Object.entries(RAW_REGISTRY).map(([k, v]) => [
-      k,
-      Object.freeze(v),
-    ])
+    Object.entries(RAW_REGISTRY).map(([k, v]) => [k, Object.freeze(v)])
   )
 )
 
