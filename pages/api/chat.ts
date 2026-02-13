@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next"
+import crypto from "crypto"
 import { runKernel } from "../../chat/kernel/engine"
 import { createInitialState } from "../../chat/kernel/state"
 import { appendInteraction, appendLog } from "../../chat/logging/sink"
@@ -33,6 +34,58 @@ function resolveCapabilityId(nodeId: string): string | null {
   return null
 }
 
+function buildCookie(options: {
+  name: string
+  value: string
+  maxAgeSeconds: number
+  httpOnly?: boolean
+  secure?: boolean
+  sameSite?: "Lax" | "Strict" | "None"
+  path?: string
+}): string {
+  const parts: string[] = []
+  parts.push(`${options.name}=${encodeURIComponent(options.value)}`)
+  parts.push(`Max-Age=${options.maxAgeSeconds}`)
+  parts.push(`Path=${options.path ?? "/"}`)
+  parts.push(`SameSite=${options.sameSite ?? "Lax"}`)
+  if (options.httpOnly) parts.push("HttpOnly")
+  if (options.secure) parts.push("Secure")
+  return parts.join("; ")
+}
+
+/**
+ * Ensures anon device identity via HttpOnly cookie.
+ * Returns the user key.
+ */
+function ensureUserKey(req: NextApiRequest, res: NextApiResponse): string {
+  const COOKIE_NAME = "gaarsdal_uid"
+
+  const existing = req.cookies?.[COOKIE_NAME]
+  if (existing && typeof existing === "string" && existing.trim().length >= 8) {
+    return existing
+  }
+
+  const uid = crypto.randomUUID()
+  const maxAgeSeconds = 90 * 24 * 60 * 60 // 90 days
+
+  const secure = process.env.NODE_ENV === "production"
+
+  res.setHeader(
+    "Set-Cookie",
+    buildCookie({
+      name: COOKIE_NAME,
+      value: uid,
+      maxAgeSeconds,
+      httpOnly: true,
+      secure,
+      sameSite: "Lax",
+      path: "/",
+    })
+  )
+
+  return uid
+}
+
 async function logKernelResult(
   result: KernelResult,
   input: InputSignal,
@@ -61,6 +114,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Method Not Allowed" })
   }
 
+  // Ensure anon identity cookie for ALL requests (init + normal)
+  const userKey = ensureUserKey(req, res)
+
   if (!isObject(req.body)) {
     return res.status(400).json({ error: "Invalid JSON body" })
   }
@@ -73,7 +129,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // ---------- INIT ----------
   if (state === null) {
-    const initialState = createInitialState("ui-session")
+    // stable per-device conversation id (no login)
+    const conversationId = `u:${userKey}`
+
+    const initialState = createInitialState(conversationId)
 
     const log: LogEvent = {
       conversation_id: initialState.conversation_id,
@@ -121,11 +180,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         await logKernelResult(kernelResult, input, input.text)
         return res.status(200).json(kernelResult)
       }
-
-      /**
-       * If a node is DIALOG but no capability is registered, let kernel handle it.
-       * Kernel will typically REJECT with "free text requires external resolution".
-       */
     }
   }
 
