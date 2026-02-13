@@ -1,18 +1,31 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { runKernel } from "../../chat/kernel/engine"
 import { createInitialState } from "../../chat/kernel/state"
-import { appendLog, appendInteraction } from "../../chat/logging/sink"
-import type { LogEvent, InputSignal } from "../../chat/kernel/types"
+import { appendInteraction, appendLog } from "../../chat/logging/sink"
+import type { InputSignal, KernelResult, LogEvent } from "../../chat/kernel/types"
 import { getNode } from "../../chat/nodes/registry"
 import { runCapability } from "../../chat/ai/runtime"
+
+type ChatRequestBody = {
+  state: any
+  input: InputSignal
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
 
 function toUserInput(input: InputSignal): string | undefined {
   if (input.type === "FREE_TEXT") return input.text
   if (input.type === "EXPLICIT_TRANSITION") return `EXPLICIT_TRANSITION:${input.target}`
   if (input.type === "SYSTEM") return `SYSTEM:${input.intent}`
+  if (input.type === "SYSTEM_INIT") return "SYSTEM_INIT"
   return undefined
 }
 
+/**
+ * TODO (P3): move to registry (node.capability_id) or separate dialog registry.
+ */
 function resolveCapabilityId(nodeId: string): string | null {
   if (nodeId === "TRIAGE") return "triage-relevance-v1"
   if (nodeId === "GEN_HYPNO") return "gen-hypno-v1"
@@ -20,8 +33,43 @@ function resolveCapabilityId(nodeId: string): string | null {
   return null
 }
 
+async function logKernelResult(
+  result: KernelResult,
+  input: InputSignal,
+  userInputOverride?: string
+): Promise<void> {
+  await appendLog(result.log)
+
+  const aiText =
+    result.transition.response_message ??
+    result.state.active_node_message
+
+  await appendInteraction({
+    conversation_id: result.state.conversation_id,
+    revision: result.state.revision,
+    active_node: result.state.active_node,
+    input_type: input.type,
+    user_input: userInputOverride ?? toUserInput(input),
+    ai_response: aiText,
+    outcome_node: result.transition.to,
+    timestamp: new Date().toISOString(),
+  })
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { state, input } = req.body
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" })
+  }
+
+  if (!isObject(req.body)) {
+    return res.status(400).json({ error: "Invalid JSON body" })
+  }
+
+  const { state, input } = req.body as ChatRequestBody
+
+  if (!input || !isObject(input) || typeof (input as any).type !== "string") {
+    return res.status(400).json({ error: "Missing or invalid input" })
+  }
 
   // ---------- INIT ----------
   if (state === null) {
@@ -52,8 +100,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json(payload)
   }
 
-  // ---------- GENERIC DIALOG FREE TEXT ----------
-  if (state && input?.type === "FREE_TEXT") {
+  // ---------- DIALOG FREE TEXT (generic) ----------
+  if (state && input.type === "FREE_TEXT") {
     const node = getNode(state.active_node)
 
     if (node.kind === "DIALOG") {
@@ -70,41 +118,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           proposed_transition: capabilityResult.transition,
         })
 
-        await appendLog(kernelResult.log)
-
-        await appendInteraction({
-          conversation_id: kernelResult.state.conversation_id,
-          revision: kernelResult.state.revision,
-          active_node: kernelResult.state.active_node,
-          input_type: input.type,
-          user_input: input.text,
-          ai_response:
-            kernelResult.transition.response_message ??
-            kernelResult.state.active_node_message,
-          outcome_node: kernelResult.transition.to,
-          timestamp: new Date().toISOString(),
-        })
-
+        await logKernelResult(kernelResult, input, input.text)
         return res.status(200).json(kernelResult)
       }
+
+      /**
+       * If a node is DIALOG but no capability is registered, let kernel handle it.
+       * Kernel will typically REJECT with "free text requires external resolution".
+       */
     }
   }
 
   // ---------- NORMAL ----------
   const result = runKernel(state, input)
-
-  await appendLog(result.log)
-
-  await appendInteraction({
-    conversation_id: result.state.conversation_id,
-    revision: result.state.revision,
-    active_node: result.state.active_node,
-    input_type: input.type,
-    user_input: toUserInput(input),
-    ai_response: result.transition.response_message ?? result.state.active_node_message,
-    outcome_node: result.transition.to,
-    timestamp: new Date().toISOString(),
-  })
-
+  await logKernelResult(result, input)
   return res.status(200).json(result)
 }
