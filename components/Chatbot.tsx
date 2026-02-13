@@ -9,6 +9,8 @@ import {
   EnvelopeIcon,
   ExclamationTriangleIcon,
   LinkIcon,
+  ArrowsPointingOutIcon,
+  ArrowsPointingInIcon,
 } from "@heroicons/react/24/outline"
 
 type ConversationState = {
@@ -54,6 +56,14 @@ const NODE_LABELS: Record<string, string> = {
   AKUT: "Akut",
 }
 
+const NODE_DESCRIPTIONS: Record<string, string> = {
+  GEN_HYPNO:
+    "Spørg frit og få generel viden om hypnose og hypnoterapi (ingen behandling).",
+  TRIAGE:
+    "Kort afklaring: vurderer om hypnoterapi virker relevant for dit tema (ikke behandling).",
+  BOOKING: "Vælg kontaktvej for booking af tid.",
+}
+
 const DEFAULT_TRIAGE_CHIPS = [
   { id: "tell_more", label: "Fortæl mere" },
   { id: "why_relevant", label: "Hvorfor relevant?" },
@@ -66,9 +76,10 @@ const TOPIC_NODES: string[] = ["GEN_HYPNO", "TRIAGE", "BOOKING"]
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
   const [state, setState] = useState<ConversationState | null>(null)
-  const [logs, setLogs] = useState<LogEvent[]>([]) // kept only for triage "after free-text" gating; not shown
+  const [logs, setLogs] = useState<LogEvent[]>([]) // used for triage gating; not shown
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
@@ -81,7 +92,7 @@ export default function Chatbot() {
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, open, navBanner])
+  }, [messages, open, navBanner, expanded])
 
   useEffect(() => {
     return () => {
@@ -99,6 +110,13 @@ export default function Chatbot() {
   function appendAssistantMessage(text: string) {
     const message = text.trim()
     if (!message) return
+
+    // Dedupe: do not append the same assistant message twice in a row
+    const last = messages.length ? messages[messages.length - 1] : null
+    if (last && last.role === "assistant" && last.text.trim() === message) {
+      return
+    }
+
     appendMessage({
       id: `assistant-${Date.now()}-${Math.random()}`,
       role: "assistant",
@@ -191,18 +209,10 @@ export default function Chatbot() {
   }
 
   function go(target: string) {
-  if (!state) return
-
-  // Reset transcript when navigating between top-level nodes
-  const isTopLevel = ["HOME", "GEN_HYPNO", "TRIAGE", "BOOKING"].includes(target)
-
-  if (isTopLevel) {
-    setMessages([])
+    if (!state) return
+    // Keep transcript; user can reset explicitly.
+    dispatch({ type: "EXPLICIT_TRANSITION", target })
   }
-
-  dispatch({ type: "EXPLICIT_TRANSITION", target })
-}
-
 
   function sendFreeText() {
     if (!state) return
@@ -254,23 +264,28 @@ export default function Chatbot() {
         : DEFAULT_TRIAGE_CHIPS
       : []
 
-  // Topics only on HOME (UI-owned), but disabled unless kernel allows them
+  // Topics only on HOME (UI-owned), disabled unless kernel allows them
   const showTopics = state?.active_node === "HOME"
   const allowedSet = new Set(state?.allowed_transitions ?? [])
   const topicButtons = showTopics
     ? TOPIC_NODES.map((id) => ({
         id,
         label: NODE_LABELS[id] ?? id,
+        description: NODE_DESCRIPTIONS[id] ?? "",
         enabled: state ? allowedSet.has(id) || id === state.active_node : false,
       })).filter((t) => t.id !== state?.active_node)
     : []
+
+  const containerClass = expanded
+    ? "fixed inset-0 w-full h-full gaarsdal-chatbot rounded-none"
+    : "fixed bottom-6 right-6 w-[380px] h-[560px] gaarsdal-chatbot"
 
   return (
     <>
       <div className="gaarsdal-overlay" onClick={() => setOpen(false)} />
 
       <div
-        className="fixed bottom-6 right-6 w-[380px] h-[560px] gaarsdal-chatbot"
+        className={containerClass}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -286,6 +301,19 @@ export default function Chatbot() {
           </div>
 
           <div className="flex items-center gap-1">
+            <button
+              className="gaarsdal-icon-btn"
+              aria-label={expanded ? "Formindsk" : "Forstør"}
+              title={expanded ? "Formindsk" : "Forstør"}
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? (
+                <ArrowsPointingInIcon className="w-5 h-5" />
+              ) : (
+                <ArrowsPointingOutIcon className="w-5 h-5" />
+              )}
+            </button>
+
             <button
               className="gaarsdal-icon-btn"
               aria-label="Ny samtale"
@@ -307,7 +335,7 @@ export default function Chatbot() {
           </div>
         </div>
 
-        {/* NAVIGATION BANNER (not part of chat transcript) */}
+        {/* NAVIGATION BANNER */}
         {navBanner && (
           <div className="px-3 pt-3">
             <div className="w-full rounded-lg px-3 py-2 text-sm bg-black/10 border border-black/5">
@@ -325,10 +353,7 @@ export default function Chatbot() {
           )}
 
           {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`message ${m.role === "assistant" ? "bot" : "user"}`}
-            >
+            <div key={m.id} className={`message ${m.role === "assistant" ? "bot" : "user"}`}>
               {m.text}
             </div>
           ))}
@@ -352,22 +377,29 @@ export default function Chatbot() {
             </div>
           )}
 
-          {/* TOPICS: only on HOME */}
+          {/* TOPICS MENU: only on HOME */}
           {topicButtons.length > 0 && (
             <div className="mt-3">
               <div className="gaarsdal-section-title">Emner</div>
-              <div className="gaarsdal-chip-group">
-                {topicButtons.map((t) => (
-                  <button
-                    key={t.id}
-                    className="chip"
-                    onClick={() => go(t.id)}
-                    disabled={!t.enabled || loading || !state}
-                    title={!t.enabled ? "Ikke tilgængelig herfra" : undefined}
-                  >
-                    {t.label}
-                  </button>
-                ))}
+
+              {/* Menu-style container */}
+              <div className="rounded-xl border border-black/5 bg-black/5 p-2">
+                <div className="flex flex-col gap-2">
+                  {topicButtons.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => go(t.id)}
+                      disabled={!t.enabled || loading || !state}
+                      title={t.description || (!t.enabled ? "Ikke tilgængelig herfra" : "")}
+                      className="w-full text-left rounded-lg px-3 py-2 bg-white/80 border border-black/5 disabled:opacity-50"
+                    >
+                      <div className="text-sm font-medium">{t.label}</div>
+                      {t.description ? (
+                        <div className="text-xs gaarsdal-meta">{t.description}</div>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
