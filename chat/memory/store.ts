@@ -47,20 +47,48 @@ function clamp01(n: number): number {
   return n
 }
 
-function parseJson<T>(raw: unknown): T | null {
-  if (typeof raw !== "string") return null
-  try {
-    return JSON.parse(raw) as T
-  } catch {
-    return null
+function isUserProfile(value: unknown): value is UserProfile {
+  if (typeof value !== "object" || value === null) return false
+  const v = value as any
+
+  return (
+    typeof v.version === "number" &&
+    typeof v.updated_at === "string" &&
+    typeof v.first_seen_at === "string" &&
+    typeof v.last_seen_at === "string" &&
+    typeof v.last_node === "string" &&
+    typeof v.node_counts === "object" &&
+    v.node_counts !== null &&
+    typeof v.topic_scores === "object" &&
+    v.topic_scores !== null &&
+    typeof v.pref === "object" &&
+    v.pref !== null &&
+    typeof v.pref.short_answers === "number"
+  )
+}
+
+function parseJson<T>(raw: unknown, guard?: (v: unknown) => v is T): T | null {
+  // Upstash may return string or parsed object.
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw)
+      if (guard) return guard(parsed) ? parsed : null
+      return parsed as T
+    } catch {
+      return null
+    }
   }
+
+  if (guard) return guard(raw) ? (raw as T) : null
+  if (typeof raw === "object" && raw !== null) return raw as T
+  return null
 }
 
 export async function readUserProfile(userKey: string): Promise<UserProfile | null> {
   const client = getRedisClient()
   if (!client) return null
   const raw = await client.get<unknown>(profileKey(userKey))
-  return parseJson<UserProfile>(raw)
+  return parseJson<UserProfile>(raw, isUserProfile)
 }
 
 function defaultProfile(params: { now: string; lastNode: string }): UserProfile {
@@ -165,8 +193,14 @@ export async function recordTurn(params: {
   await client.expire(eventsKey(params.userKey), params.ttlSeconds)
 
   const rawProfile = await client.get<unknown>(profileKey(params.userKey))
-  const existing = parseJson<UserProfile>(rawProfile)
+  const existing = parseJson<UserProfile>(rawProfile, isUserProfile)
+
   const profile = existing ?? defaultProfile({ now: ts, lastNode: params.state.active_node })
+
+  // IMPORTANT: preserve first_seen_at if profile already existed
+  if (existing) {
+    profile.first_seen_at = existing.first_seen_at
+  }
 
   profile.updated_at = ts
   profile.last_seen_at = ts
@@ -191,6 +225,9 @@ export async function recordTurn(params: {
 export async function readMemoryEvents(userKey: string, limit = 50): Promise<MemoryEvent[]> {
   const client = getRedisClient()
   if (!client) return []
+
   const items = await client.lrange<unknown>(eventsKey(userKey), -limit, -1)
-  return items.map((x) => parseJson<MemoryEvent>(x)).filter((x): x is MemoryEvent => Boolean(x))
+  return items
+    .map((x) => parseJson<MemoryEvent>(x))
+    .filter((x): x is MemoryEvent => Boolean(x))
 }
