@@ -16,6 +16,7 @@ import {
   Squares2X2Icon,
   CalendarDaysIcon,
   HeartIcon,
+  CircleStackIcon,
 } from "@heroicons/react/24/outline"
 
 type ConversationState = {
@@ -74,13 +75,6 @@ const DEFAULT_TRIAGE_CHIPS = [
 
 const TOPIC_NODES: string[] = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING"]
 
-const FREE_TEXT_ENABLED_NODES = new Set<string>([
-  "HOME",
-  "GEN_HYPNO",
-  "TRIAGE",
-  "METHOD_FIT",
-])
-
 function getTopicIcon(nodeId: string) {
   switch (nodeId) {
     case "GEN_HYPNO":
@@ -96,18 +90,23 @@ function getTopicIcon(nodeId: string) {
   }
 }
 
+function hasAnyUserMessage(messages: ChatMessage[]): boolean {
+  return messages.some((m) => m.role === "user" && m.text.trim().length > 0)
+}
+
 function readMetaNumber(state: ConversationState | null, key: string): number {
   const raw = state?.meta?.[key]?.value
   return typeof raw === "number" ? raw : 0
 }
 
-function hasAnyUserMessage(messages: ChatMessage[]): boolean {
-  return messages.some((m) => m.role === "user" && m.text.trim().length > 0)
-}
-
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
+
+  const [insightsOpen, setInsightsOpen] = useState(false)
+  const [insightsLoading, setInsightsLoading] = useState(false)
+  const [insightsError, setInsightsError] = useState<string | null>(null)
+  const [insightsPayload, setInsightsPayload] = useState<any>(null)
 
   const [state, setState] = useState<ConversationState | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -119,9 +118,23 @@ export default function Chatbot() {
 
   const endRef = useRef<HTMLDivElement | null>(null)
 
+  const activeNodeLabel = state ? NODE_LABELS[state.active_node] ?? state.active_node : "Initialiserer…"
+
+  const freeTextEnabled = useMemo(() => {
+    // “Fritekst igen”: UI tillader alt, men backend kan stadig REJECT’e afhængigt af node/kind.
+    // Dette matcher retningen om en mere data-drevet router senere.
+    return true
+  }, [])
+
+  const inputPlaceholder = useMemo(() => {
+    if (!state) return "Initialiserer…"
+    if (!freeTextEnabled) return "Vælg et forslag eller navigation…"
+    return "Skriv her… (Enter = send, Shift+Enter = ny linje)"
+  }, [state, freeTextEnabled])
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, open, navBanner, expanded])
+  }, [messages, open, navBanner, expanded, insightsOpen])
 
   useEffect(() => {
     return () => {
@@ -131,23 +144,6 @@ export default function Chatbot() {
       }
     }
   }, [])
-
-  const activeNodeLabel = useMemo(() => {
-    if (!state) return "Initialiserer..."
-    return NODE_LABELS[state.active_node] ?? state.active_node
-  }, [state])
-
-  const freeTextEnabled = useMemo(() => {
-    if (!state) return false
-    return FREE_TEXT_ENABLED_NODES.has(state.active_node)
-  }, [state])
-
-  const inputPlaceholder = useMemo(() => {
-    if (!state) return "Initialiserer…"
-    if (!freeTextEnabled) return "Vælg en mulighed (fri tekst er ikke aktiv her)"
-    if (state.active_node === "HOME") return "Skriv frit… eller vælg et emne ovenfor"
-    return "Skriv her… (Enter = send, Shift+Enter = ny linje)"
-  }, [state, freeTextEnabled])
 
   function appendMessage(message: ChatMessage) {
     setMessages((prev) => [...prev, message])
@@ -242,20 +238,45 @@ export default function Chatbot() {
     }
   }
 
+  function closeInsights() {
+    setInsightsOpen(false)
+    setInsightsLoading(false)
+    setInsightsError(null)
+    setInsightsPayload(null)
+  }
+
+  async function openInsights() {
+    setInsightsOpen(true)
+    setInsightsLoading(true)
+    setInsightsError(null)
+    setInsightsPayload(null)
+
+    try {
+      const res = await fetch("/api/insights", { method: "GET" })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      setInsightsPayload(json)
+    } catch (e: any) {
+      setInsightsError(typeof e?.message === "string" ? e.message : "Kunne ikke hente data")
+    } finally {
+      setInsightsLoading(false)
+    }
+  }
+
   function resetConversation() {
     setInput("")
     setMessages([])
     setState(null)
     setNavBanner(null)
     setExpanded(false)
+    closeInsights()
     init()
   }
 
   function go(target: string) {
     if (!state) return
 
-    const goingFromHomeToTopic =
-      state.active_node === "HOME" && TOPIC_NODES.includes(target)
+    const goingFromHomeToTopic = state.active_node === "HOME" && TOPIC_NODES.includes(target)
 
     if (goingFromHomeToTopic && !hasAnyUserMessage(messages)) {
       setMessages([])
@@ -324,9 +345,7 @@ export default function Chatbot() {
       })).filter((t) => t.id !== state?.active_node)
     : []
 
-  const containerClass = expanded
-    ? "gaarsdal-chatbot gaarsdal-chatbot--expanded"
-    : "gaarsdal-chatbot gaarsdal-chatbot--normal"
+  const containerClass = expanded ? "gaarsdal-chatbot gaarsdal-chatbot--expanded" : "gaarsdal-chatbot gaarsdal-chatbot--normal"
 
   return (
     <>
@@ -345,11 +364,7 @@ export default function Chatbot() {
               <div className="text-sm font-semibold">Gaarsdal Chat</div>
 
               {loading && (
-                <span
-                  className="inline-flex items-center"
-                  aria-label="Arbejder"
-                  title="Arbejder…"
-                >
+                <span className="inline-flex items-center" aria-label="Arbejder" title="Arbejder…">
                   <HeartIcon className="w-4 h-4 text-[#4A5D54] animate-pulse" />
                 </span>
               )}
@@ -361,15 +376,21 @@ export default function Chatbot() {
           <div className="flex items-center gap-1">
             <button
               className="gaarsdal-icon-btn"
+              aria-label="Data"
+              title="Data og præferencer"
+              onClick={openInsights}
+              disabled={loading}
+            >
+              <CircleStackIcon className="w-5 h-5" />
+            </button>
+
+            <button
+              className="gaarsdal-icon-btn"
               aria-label={expanded ? "Formindsk" : "Forstør"}
               title={expanded ? "Formindsk" : "Forstør"}
               onClick={() => setExpanded((v) => !v)}
             >
-              {expanded ? (
-                <ArrowsPointingInIcon className="w-5 h-5" />
-              ) : (
-                <ArrowsPointingOutIcon className="w-5 h-5" />
-              )}
+              {expanded ? <ArrowsPointingInIcon className="w-5 h-5" /> : <ArrowsPointingOutIcon className="w-5 h-5" />}
             </button>
 
             <button
@@ -386,7 +407,10 @@ export default function Chatbot() {
               className="gaarsdal-icon-btn"
               aria-label="Luk"
               title="Luk"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                closeInsights()
+                setOpen(false)
+              }}
             >
               <XMarkIcon className="w-5 h-5" />
             </button>
@@ -395,9 +419,7 @@ export default function Chatbot() {
 
         {navBanner && (
           <div className="px-3 pt-3">
-            <div className="w-full rounded-lg px-3 py-2 text-sm bg-black/10 border border-black/5">
-              {navBanner}
-            </div>
+            <div className="w-full rounded-lg px-3 py-2 text-sm bg-black/10 border border-black/5">{navBanner}</div>
           </div>
         )}
 
@@ -413,12 +435,7 @@ export default function Chatbot() {
               <div className="gaarsdal-section-title">Forslag</div>
               <div className="gaarsdal-chip-group">
                 {triageChips.map((chip: any) => (
-                  <button
-                    key={chip.id}
-                    className="chip"
-                    onClick={() => handleTriageChip(chip)}
-                    disabled={loading || !state}
-                  >
+                  <button key={chip.id} className="chip" onClick={() => handleTriageChip(chip)} disabled={loading || !state}>
                     {chip.label}
                   </button>
                 ))}
@@ -453,54 +470,25 @@ export default function Chatbot() {
         <div className="gaarsdal-chatbot-footer">
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-1">
-              <button
-                className="gaarsdal-icon-btn"
-                aria-label="Forside"
-                title="Forside"
-                onClick={() => state && go("HOME")}
-                disabled={!state || loading}
-              >
+              <button className="gaarsdal-icon-btn" aria-label="Forside" title="Forside" onClick={() => state && go("HOME")} disabled={!state || loading}>
                 <HomeIcon className="w-5 h-5" />
               </button>
 
-              <button
-                className="gaarsdal-icon-btn"
-                aria-label="Telefon"
-                title="Telefon"
-                onClick={() => state && go("TLF")}
-                disabled={!state || loading}
-              >
+              <button className="gaarsdal-icon-btn" aria-label="Telefon" title="Telefon" onClick={() => state && go("TLF")} disabled={!state || loading}>
                 <PhoneIcon className="w-5 h-5" />
               </button>
 
-              <button
-                className="gaarsdal-icon-btn"
-                aria-label="E-mail"
-                title="E-mail"
-                onClick={() => state && go("MAIL")}
-                disabled={!state || loading}
-              >
+              <button className="gaarsdal-icon-btn" aria-label="E-mail" title="E-mail" onClick={() => state && go("MAIL")} disabled={!state || loading}>
                 <EnvelopeIcon className="w-5 h-5" />
               </button>
 
-              <button
-                className="gaarsdal-icon-btn"
-                aria-label="Kontaktformular"
-                title="Kontaktformular"
-                onClick={openContactForm}
-              >
+              <button className="gaarsdal-icon-btn" aria-label="Kontaktformular" title="Kontaktformular" onClick={openContactForm}>
                 <LinkIcon className="w-5 h-5" />
               </button>
             </div>
 
             <div className="flex items-center">
-              <button
-                className="gaarsdal-icon-btn"
-                aria-label="Akut"
-                title="Akut"
-                onClick={() => state && go("AKUT")}
-                disabled={!state || loading}
-              >
+              <button className="gaarsdal-icon-btn" aria-label="Akut" title="Akut" onClick={() => state && go("AKUT")} disabled={!state || loading}>
                 <ExclamationTriangleIcon className="w-5 h-5" />
               </button>
             </div>
@@ -521,6 +509,37 @@ export default function Chatbot() {
             />
           </div>
         </div>
+
+        {insightsOpen && (
+          <div className="gaarsdal-modal-overlay" onClick={closeInsights}>
+            <div
+              className="gaarsdal-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Data og præferencer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="gaarsdal-modal-header">
+                <div className="gaarsdal-modal-title">Data og præferencer</div>
+                <button className="gaarsdal-icon-btn" aria-label="Luk" title="Luk" onClick={closeInsights}>
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="gaarsdal-modal-body">
+                {insightsLoading && <div className="text-sm gaarsdal-meta">Henter…</div>}
+
+                {!insightsLoading && insightsError && (
+                  <div className="text-sm">Kunne ikke hente data: {insightsError}</div>
+                )}
+
+                {!insightsLoading && !insightsError && (
+                  <pre className="gaarsdal-pre">{JSON.stringify(insightsPayload ?? {}, null, 2)}</pre>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   )
