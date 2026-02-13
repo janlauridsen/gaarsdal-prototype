@@ -32,12 +32,10 @@ type InputSignal =
   | { type: "EXPLICIT_TRANSITION"; target: string }
   | { type: "FREE_TEXT"; text: string }
 
-type LogEvent = any
-
 type KernelResponse = {
   state: ConversationState
   transition: any
-  log: LogEvent
+  log: any
 }
 
 type ChatMessage = {
@@ -90,12 +88,16 @@ function getTopicIcon(nodeId: string) {
   }
 }
 
+function readMetaNumber(state: ConversationState | null, key: string): number {
+  const raw = state?.meta?.[key]?.value
+  return typeof raw === "number" ? raw : 0
+}
+
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
   const [state, setState] = useState<ConversationState | null>(null)
-  const [logs, setLogs] = useState<LogEvent[]>([])
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
@@ -173,7 +175,6 @@ export default function Chatbot() {
       const data: KernelResponse = await res.json()
       setState(data.state)
       setMessages([])
-      setLogs([])
       setInput("")
       setNavBanner(null)
       appendAssistantMessage(data.state.active_node_message)
@@ -200,17 +201,14 @@ export default function Chatbot() {
     }
 
     setState(data.state)
-    setLogs((l) => [...l, data.log])
 
     const assistantText =
-      (data.transition?.response_message as string | undefined) ??
-      data.state.active_node_message
+      (data.transition?.response_message as string | undefined) ?? data.state.active_node_message
 
     appendAssistantMessage(assistantText)
   }
 
   function resetConversation() {
-    setLogs([])
     setInput("")
     setMessages([])
     setState(null)
@@ -258,10 +256,9 @@ export default function Chatbot() {
     )
   }
 
-  const lastLog = logs.length ? logs[logs.length - 1] : null
-  const triageSuggestionsAllowed =
-    state?.active_node === "TRIAGE" &&
-    (lastLog?.input_type === "FREE_TEXT" || lastLog?.input_type === "FREE_TEXT_RESOLVED")
+  // TRIAGE: show suggestions after at least one triage exchange (meta-based, not UI logs)
+  const triageQuestionCount = readMetaNumber(state, "triage.question_count")
+  const triageSuggestionsAllowed = state?.active_node === "TRIAGE" && triageQuestionCount >= 1
 
   const triageChipsRaw = state?.meta?.["triage.chips"]?.value
   const triageChips =
@@ -273,6 +270,7 @@ export default function Chatbot() {
         : DEFAULT_TRIAGE_CHIPS
       : []
 
+  // Topics only on HOME (UI-owned), but disabled unless kernel allows them
   const showTopics = state?.active_node === "HOME"
   const allowedSet = new Set(state?.allowed_transitions ?? [])
   const topicButtons = showTopics
