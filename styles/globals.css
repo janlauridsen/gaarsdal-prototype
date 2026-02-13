@@ -28,6 +28,7 @@ body {
 ========================= */
 
 .gaarsdal-chatbot {
+  position: relative;
   z-index: 40;
   background: #F6F5F2;
   border-radius: 20px;
@@ -154,54 +155,52 @@ body {
 }
 
 /* =========================
-   HOME TOPICS MENU (GRAPHIC CARDS)
+   TOPIC GRID
 ========================= */
 
 .gaarsdal-topic-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
 .gaarsdal-topic-card {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
-  text-align: left;
-  width: 100%;
-  padding: 12px 12px;
-  border-radius: 14px;
   background: #FFFFFF;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(44, 42, 40, 0.10);
+  border-radius: 14px;
+  padding: 10px 12px;
+  text-align: left;
   cursor: pointer;
-  transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
 }
 
 .gaarsdal-topic-card:hover {
   background: #EFEDE7;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .gaarsdal-topic-card:disabled {
   opacity: 0.5;
-  cursor: default;
-  transform: none;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  cursor: not-allowed;
 }
 
 .gaarsdal-topic-icon {
-  color: #4A5D54;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(74, 93, 84, 0.10);
+  color: #4A5D54;
+  flex: 0 0 auto;
 }
 
 .gaarsdal-topic-label {
-  font-size: 13.5px;
-  line-height: 1.25;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   color: #2C2A28;
 }
 
@@ -234,28 +233,6 @@ body {
 }
 
 /* =========================
-   STACK DOTS
-========================= */
-
-.gaarsdal-stack-dots {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  padding: 6px 0;
-}
-
-.gaarsdal-stack-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #CFCBC1;
-}
-
-.gaarsdal-stack-dot.active {
-  background: #4A5D54;
-}
-
-/* =========================
    ICON BUTTONS
 ========================= */
 
@@ -284,4 +261,64 @@ body {
 
 .gaarsdal-icon-disabled:hover {
   background: transparent;
+}
+
+/* =========================
+   MODAL (INSIGHTS)
+========================= */
+
+.gaarsdal-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+
+.gaarsdal-modal {
+  width: 100%;
+  max-width: 420px;
+  max-height: 85%;
+  background: #F6F5F2;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.14);
+  display: flex;
+  flex-direction: column;
+}
+
+.gaarsdal-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: #ECEAE4;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+}
+
+.gaarsdal-modal-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.gaarsdal-modal-body {
+  padding: 12px;
+  overflow: auto;
+}
+
+.gaarsdal-pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12.5px;
+  line-height: 1.4;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  padding: 10px;
 }
