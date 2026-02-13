@@ -1,10 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { runKernel } from "../../chat/kernel/engine"
 import { createInitialState } from "../../chat/kernel/state"
-import {
-  appendLog,
-  appendInteraction,
-} from "../../chat/logging/sink"
+import { appendLog, appendInteraction } from "../../chat/logging/sink"
 import type { LogEvent, InputSignal } from "../../chat/kernel/types"
 import { getNode } from "../../chat/nodes/registry"
 import { runCapability } from "../../chat/ai/runtime"
@@ -19,18 +16,13 @@ function toUserInput(input: InputSignal): string | undefined {
 }
 
 function resolveCapabilityId(nodeId: string): string | null {
-  // Registry-driven capability mapping
-  // Convention: dialog node id → capability id
-  // Extendable later without API branching.
+  // v1: mapping here (later can be moved into registry)
   if (nodeId === "TRIAGE") return "triage-relevance-v1"
-  if (nodeId === "GEN_HYPNO") return null // not implemented yet
+  if (nodeId === "GEN_HYPNO") return "gen-hypno-v1"
   return null
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { state, input } = req.body
 
   // ---------- INIT ----------
@@ -111,12 +103,10 @@ export default async function handler(
     active_node: result.state.active_node,
     input_type: input.type,
     user_input: toUserInput(input),
-    ai_response:
-      result.transition.response_message ??
-      result.state.active_node_message,
+    ai_response: result.transition.response_message ?? result.state.active_node_message,
     outcome_node: result.transition.to,
     timestamp: new Date().toISOString(),
   })
 
-  res.status(200).json(result)
+  return res.status(200).json(result)
 }
