@@ -1,37 +1,30 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import crypto from "crypto"
+
 import { runKernel } from "../../chat/kernel/engine"
 import { createInitialState } from "../../chat/kernel/state"
-import { appendInteraction, appendLog } from "../../chat/logging/sink"
 import type { InputSignal, KernelResult, LogEvent } from "../../chat/kernel/types"
 import { getNode } from "../../chat/nodes/registry"
+
+import { appendInteraction, appendLog } from "../../chat/logging/sink"
 import { runCapability } from "../../chat/ai/runtime"
+import {
+  readConversationState,
+  writeConversationState,
+} from "../../chat/persistence/conversationStateStore"
+import { recordTurn } from "../../chat/memory/store"
 
 type ChatRequestBody = {
   state: any
   input: InputSignal
 }
 
+const COOKIE_NAME = "gaarsdal_uid"
+const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
+const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
-}
-
-function toUserInput(input: InputSignal): string | undefined {
-  if (input.type === "FREE_TEXT") return input.text
-  if (input.type === "EXPLICIT_TRANSITION") return `EXPLICIT_TRANSITION:${input.target}`
-  if (input.type === "SYSTEM") return `SYSTEM:${input.intent}`
-  if (input.type === "SYSTEM_INIT") return "SYSTEM_INIT"
-  return undefined
-}
-
-/**
- * TODO (P3): move to registry (node.capability_id) or separate dialog registry.
- */
-function resolveCapabilityId(nodeId: string): string | null {
-  if (nodeId === "TRIAGE") return "triage-relevance-v1"
-  if (nodeId === "GEN_HYPNO") return "gen-hypno-v1"
-  if (nodeId === "METHOD_FIT") return "method-fit-v1"
-  return null
 }
 
 function buildCookie(options: {
@@ -53,21 +46,13 @@ function buildCookie(options: {
   return parts.join("; ")
 }
 
-/**
- * Ensures anon device identity via HttpOnly cookie.
- * Returns the user key.
- */
 function ensureUserKey(req: NextApiRequest, res: NextApiResponse): string {
-  const COOKIE_NAME = "gaarsdal_uid"
-
   const existing = req.cookies?.[COOKIE_NAME]
   if (existing && typeof existing === "string" && existing.trim().length >= 8) {
     return existing
   }
 
   const uid = crypto.randomUUID()
-  const maxAgeSeconds = 90 * 24 * 60 * 60 // 90 days
-
   const secure = process.env.NODE_ENV === "production"
 
   res.setHeader(
@@ -75,7 +60,7 @@ function ensureUserKey(req: NextApiRequest, res: NextApiResponse): string {
     buildCookie({
       name: COOKIE_NAME,
       value: uid,
-      maxAgeSeconds,
+      maxAgeSeconds: SESSION_TTL_SECONDS,
       httpOnly: true,
       secure,
       sameSite: "Lax",
@@ -86,26 +71,61 @@ function ensureUserKey(req: NextApiRequest, res: NextApiResponse): string {
   return uid
 }
 
-async function logKernelResult(
-  result: KernelResult,
-  input: InputSignal,
-  userInputOverride?: string
-): Promise<void> {
-  await appendLog(result.log)
+function toConversationId(userKey: string): string {
+  return `u:${userKey}`
+}
 
-  const aiText =
-    result.transition.response_message ??
-    result.state.active_node_message
+function toUserInput(input: InputSignal): string | undefined {
+  if (input.type === "FREE_TEXT") return input.text
+  if (input.type === "EXPLICIT_TRANSITION") return `EXPLICIT_TRANSITION:${input.target}`
+  if (input.type === "SYSTEM") return `SYSTEM:${input.intent}`
+  if (input.type === "SYSTEM_INIT") return "SYSTEM_INIT"
+  return undefined
+}
+
+function resolveCapabilityId(nodeId: string): string | null {
+  if (nodeId === "TRIAGE") return "triage-relevance-v1"
+  if (nodeId === "GEN_HYPNO") return "gen-hypno-v1"
+  if (nodeId === "METHOD_FIT") return "method-fit-v1"
+  return null
+}
+
+async function persistState(result: KernelResult): Promise<void> {
+  await writeConversationState(result.state, SESSION_TTL_SECONDS)
+}
+
+async function logAndRecord(params: {
+  userKey: string
+  input: InputSignal
+  kernelResult: KernelResult
+  userText?: string
+}): Promise<void> {
+  const { kernelResult, input } = params
+
+  await appendLog(kernelResult.log)
+
+  const assistantText =
+    kernelResult.transition.response_message ?? kernelResult.state.active_node_message
 
   await appendInteraction({
-    conversation_id: result.state.conversation_id,
-    revision: result.state.revision,
-    active_node: result.state.active_node,
+    conversation_id: kernelResult.state.conversation_id,
+    revision: kernelResult.state.revision,
+    active_node: kernelResult.state.active_node,
     input_type: input.type,
-    user_input: userInputOverride ?? toUserInput(input),
-    ai_response: aiText,
-    outcome_node: result.transition.to,
+    user_input: params.userText ?? toUserInput(input),
+    ai_response: assistantText,
+    outcome_node: kernelResult.transition.to,
     timestamp: new Date().toISOString(),
+  })
+
+  await recordTurn({
+    userKey: params.userKey,
+    conversationId: kernelResult.state.conversation_id,
+    state: kernelResult.state,
+    userText: params.userText,
+    assistantText,
+    transitionType: kernelResult.transition.type,
+    ttlSeconds: MEMORY_TTL_SECONDS,
   })
 }
 
@@ -114,23 +134,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Method Not Allowed" })
   }
 
-  // Ensure anon identity cookie for ALL requests (init + normal)
   const userKey = ensureUserKey(req, res)
+  const conversationId = toConversationId(userKey)
 
   if (!isObject(req.body)) {
     return res.status(400).json({ error: "Invalid JSON body" })
   }
 
-  const { state, input } = req.body as ChatRequestBody
+  const { state: clientState, input } = req.body as ChatRequestBody
 
   if (!input || !isObject(input) || typeof (input as any).type !== "string") {
     return res.status(400).json({ error: "Missing or invalid input" })
   }
 
-  // ---------- INIT ----------
-  if (state === null) {
-    // stable per-device conversation id (no login)
-    const conversationId = `u:${userKey}`
+  // Server is source-of-truth for persistence.
+  const stored = await readConversationState(conversationId)
+
+  // ---------- INIT / RESTORE ----------
+  if (clientState === null) {
+    if (stored) {
+      const log: LogEvent = {
+        conversation_id: stored.conversation_id,
+        revision_before: stored.revision,
+        revision_after: stored.revision,
+        active_node_before: stored.active_node,
+        active_node_after: stored.active_node,
+        input_type: "SYSTEM_INIT",
+        transition_type: "INIT",
+        timestamp: new Date().toISOString(),
+      }
+
+      const payload = {
+        state: stored,
+        transition: {
+          type: "INIT",
+          from: null,
+          reason: "system init (restored)",
+        },
+        log,
+      }
+
+      await appendLog(payload.log)
+      return res.status(200).json(payload)
+    }
 
     const initialState = createInitialState(conversationId)
 
@@ -155,36 +201,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       log,
     }
 
+    await writeConversationState(initialState, SESSION_TTL_SECONDS)
     await appendLog(payload.log)
     return res.status(200).json(payload)
   }
 
-  // ---------- DIALOG FREE TEXT (generic) ----------
-  if (state && input.type === "FREE_TEXT") {
-    const node = getNode(state.active_node)
+  // Backwards compatible fallback: if no stored state, use client state.
+  const baseState = stored ?? clientState
+
+  // ---------- GENERIC DIALOG FREE TEXT ----------
+  if (baseState && input.type === "FREE_TEXT") {
+    const node = getNode(baseState.active_node)
 
     if (node.kind === "DIALOG") {
       const capabilityId = resolveCapabilityId(node.id)
 
       if (capabilityId) {
         const capabilityResult = await runCapability(capabilityId, {
-          state,
+          state: baseState,
           userText: input.text,
         })
 
-        const kernelResult = runKernel(state, {
+        const kernelResult = runKernel(baseState, {
           type: "FREE_TEXT_RESOLVED",
           proposed_transition: capabilityResult.transition,
         })
 
-        await logKernelResult(kernelResult, input, input.text)
+        await persistState(kernelResult)
+        await logAndRecord({ userKey, input, kernelResult, userText: input.text })
         return res.status(200).json(kernelResult)
       }
     }
   }
 
   // ---------- NORMAL ----------
-  const result = runKernel(state, input)
-  await logKernelResult(result, input)
-  return res.status(200).json(result)
+  const kernelResult = runKernel(baseState, input)
+  await persistState(kernelResult)
+  await logAndRecord({ userKey, input, kernelResult })
+  return res.status(200).json(kernelResult)
 }
