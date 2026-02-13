@@ -30,6 +30,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     allowed_exits: [
       "GEN_HYPNO",
       "TRIAGE",
+      "METHOD_FIT",
       "BOOKING",
       "MAIL",
       "TLF",
@@ -42,7 +43,8 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "GEN_HYPNO",
     kind: "DIALOG",
     goal: "Generelt om hypnoterapi",
-    message: "Generel information om hypnoterapi.",
+    message:
+      "Spørg mig om hypnoterapi: hvad det er, hvordan et forløb typisk foregår, hvad man ofte arbejder med, og hvad du kan forvente. Jeg deler viden og erfaring—ikke behandling i chatten.",
     allow_free_text: true,
     allow_parentese: true,
     allowed_exits: ["HOME", "MAIL", "TLF", "AKUT"],
@@ -55,9 +57,9 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
   TRIAGE: {
     id: "TRIAGE",
     kind: "DIALOG",
-    goal: "AI-triage",
+    goal: "Passer hypnoterapi til min situation?",
     message:
-      "Beskriv kort dit problem. Jeg stiller 3-6 opklarende spørgsmål og vurderer, om hypnoterapi virker relevant.",
+      "Fortæl kort om din situation og hvad du ønsker anderledes. Jeg stiller få opklarende spørgsmål og vurderer, om hypnoterapi typisk vil være relevant.",
     allow_free_text: true,
     allow_parentese: true,
     allowed_exits: [
@@ -82,6 +84,21 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
       "triage.next_question",
       "triage.chips",
       "triage.transcript",
+    ],
+  },
+
+  METHOD_FIT: {
+    id: "METHOD_FIT",
+    kind: "DIALOG",
+    goal: "Hypnoterapi eller et bedre alternativ?",
+    message:
+      "Fortæl kort hvad du vil opnå, og hvad der gør situationen svær lige nu. Jeg kan hjælpe med at vurdere, om hypnoterapi er et godt match, eller om andre tilgange typisk passer bedre. Jeg giver kun overblik—ikke behandling i chatten.",
+    allow_free_text: true,
+    allow_parentese: true,
+    allowed_exits: ["HOME", "BOOKING", ...QUICK_CONTACTS],
+    meta_domains_written: [
+      "method_fit.transcript",
+      "method_fit.summary",
     ],
   },
 
