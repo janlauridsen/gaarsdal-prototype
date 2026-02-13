@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   ChatBubbleOvalLeftEllipsisIcon,
   XMarkIcon,
@@ -73,6 +73,15 @@ const DEFAULT_TRIAGE_CHIPS = [
 
 const TOPIC_NODES: string[] = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING"]
 
+// UI-owned: which nodes accept free text.
+// (Server truth lives in registry, but UI needs a deterministic rule for UX.)
+const FREE_TEXT_ENABLED_NODES = new Set<string>([
+  "HOME",
+  "GEN_HYPNO",
+  "TRIAGE",
+  "METHOD_FIT",
+])
+
 function getTopicIcon(nodeId: string) {
   switch (nodeId) {
     case "GEN_HYPNO":
@@ -91,6 +100,10 @@ function getTopicIcon(nodeId: string) {
 function readMetaNumber(state: ConversationState | null, key: string): number {
   const raw = state?.meta?.[key]?.value
   return typeof raw === "number" ? raw : 0
+}
+
+function hasAnyUserMessage(messages: ChatMessage[]): boolean {
+  return messages.some((m) => m.role === "user" && m.text.trim().length > 0)
 }
 
 export default function Chatbot() {
@@ -120,6 +133,23 @@ export default function Chatbot() {
     }
   }, [])
 
+  const activeNodeLabel = useMemo(() => {
+    if (!state) return "Initialiserer..."
+    return NODE_LABELS[state.active_node] ?? state.active_node
+  }, [state])
+
+  const freeTextEnabled = useMemo(() => {
+    if (!state) return false
+    return FREE_TEXT_ENABLED_NODES.has(state.active_node)
+  }, [state])
+
+  const inputPlaceholder = useMemo(() => {
+    if (!state) return "Initialiserer…"
+    if (!freeTextEnabled) return "Vælg en mulighed (fri tekst er ikke aktiv her)"
+    if (state.active_node === "HOME") return "Skriv frit… eller vælg et emne ovenfor"
+    return "Skriv her… (Enter = send, Shift+Enter = ny linje)"
+  }, [state, freeTextEnabled])
+
   function appendMessage(message: ChatMessage) {
     setMessages((prev) => [...prev, message])
   }
@@ -128,6 +158,7 @@ export default function Chatbot() {
     const message = text.trim()
     if (!message) return
 
+    // Avoid immediate duplicates
     const last = messages.length ? messages[messages.length - 1] : null
     if (last && last.role === "assistant" && last.text.trim() === message) return
 
@@ -157,7 +188,7 @@ export default function Chatbot() {
     navBannerTimerRef.current = window.setTimeout(() => {
       setNavBanner(null)
       navBannerTimerRef.current = null
-    }, 3300)
+    }, 2500)
   }
 
   async function init() {
@@ -186,26 +217,31 @@ export default function Chatbot() {
   async function dispatch(nextInput: InputSignal) {
     if (!state) return
 
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ state, input: nextInput }),
-    })
+    setLoading(true)
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state, input: nextInput }),
+      })
 
-    const data: KernelResponse = await res.json()
+      const data: KernelResponse = await res.json()
 
-    if (nextInput.type === "EXPLICIT_TRANSITION") {
-      showNavBanner(`Valgte: ${NODE_LABELS[nextInput.target] ?? nextInput.target}`)
-    } else if (nextInput.type === "FREE_TEXT") {
-      appendUserMessage(nextInput.text)
+      if (nextInput.type === "EXPLICIT_TRANSITION") {
+        showNavBanner(`Valgte: ${NODE_LABELS[nextInput.target] ?? nextInput.target}`)
+      } else if (nextInput.type === "FREE_TEXT") {
+        appendUserMessage(nextInput.text)
+      }
+
+      setState(data.state)
+
+      const assistantText =
+        (data.transition?.response_message as string | undefined) ?? data.state.active_node_message
+
+      appendAssistantMessage(assistantText)
+    } finally {
+      setLoading(false)
     }
-
-    setState(data.state)
-
-    const assistantText =
-      (data.transition?.response_message as string | undefined) ?? data.state.active_node_message
-
-    appendAssistantMessage(assistantText)
   }
 
   function resetConversation() {
@@ -219,11 +255,26 @@ export default function Chatbot() {
 
   function go(target: string) {
     if (!state) return
+
+    /**
+     * Remove "double start text" effect:
+     * If user is on HOME and has not interacted yet (no user messages),
+     * and they choose a topic, clear the transcript so the new node intro is the only start text.
+     */
+    const goingFromHomeToTopic =
+      state.active_node === "HOME" && TOPIC_NODES.includes(target)
+
+    if (goingFromHomeToTopic && !hasAnyUserMessage(messages)) {
+      setMessages([])
+    }
+
     dispatch({ type: "EXPLICIT_TRANSITION", target })
   }
 
   function sendFreeText() {
     if (!state) return
+    if (!freeTextEnabled) return
+
     const text = input.trim()
     if (!text) return
     dispatch({ type: "FREE_TEXT", text })
@@ -256,7 +307,7 @@ export default function Chatbot() {
     )
   }
 
-  // TRIAGE: show suggestions after at least one triage exchange (meta-based, not UI logs)
+  // TRIAGE: show suggestions after at least one triage exchange (meta-based)
   const triageQuestionCount = readMetaNumber(state, "triage.question_count")
   const triageSuggestionsAllowed = state?.active_node === "TRIAGE" && triageQuestionCount >= 1
 
@@ -299,10 +350,22 @@ export default function Chatbot() {
       >
         <div className="gaarsdal-chatbot-header flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-sm font-semibold">Gaarsdal Chat</div>
-            <div className="text-xs gaarsdal-meta truncate">
-              {state ? NODE_LABELS[state.active_node] ?? state.active_node : "Initialiserer..."}
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-semibold">Gaarsdal Chat</div>
+
+              {/* Working indicator */}
+              {loading && (
+                <span
+                  className="inline-flex items-center gap-1 text-xs gaarsdal-meta"
+                  aria-label="Arbejder"
+                  title="Arbejder…"
+                >
+                  <span className="w-2 h-2 rounded-full bg-[#4A5D54] animate-pulse" />
+                </span>
+              )}
             </div>
+
+            <div className="text-xs gaarsdal-meta truncate">{activeNodeLabel}</div>
           </div>
 
           <div className="flex items-center gap-1">
@@ -349,8 +412,6 @@ export default function Chatbot() {
         )}
 
         <div className="messages">
-          {loading && <div className="text-sm gaarsdal-meta">Initialiserer…</div>}
-
           {messages.map((m) => (
             <div key={m.id} className={`message ${m.role === "assistant" ? "bot" : "user"}`}>
               {m.text}
@@ -459,14 +520,14 @@ export default function Chatbot() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Skriv her… (Enter = send, Shift+Enter = ny linje)"
+              placeholder={inputPlaceholder}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault()
                   sendFreeText()
                 }
               }}
-              disabled={!state || loading}
+              disabled={!state || loading || !freeTextEnabled}
             />
           </div>
         </div>
