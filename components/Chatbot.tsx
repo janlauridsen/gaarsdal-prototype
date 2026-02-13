@@ -8,8 +8,6 @@ import {
   PhoneIcon,
   EnvelopeIcon,
   ExclamationTriangleIcon,
-  BugAntIcon,
-  TrashIcon,
   LinkIcon,
 } from "@heroicons/react/24/outline"
 
@@ -63,24 +61,36 @@ const DEFAULT_TRIAGE_CHIPS = [
   { id: "stop", label: "Stop her" },
 ]
 
-// Fixed topics (UI-owned)
+// Fixed topics (UI-owned) — only shown on HOME
 const TOPIC_NODES: string[] = ["GEN_HYPNO", "TRIAGE", "BOOKING"]
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
-  const [showLogs, setShowLogs] = useState(false)
 
   const [state, setState] = useState<ConversationState | null>(null)
-  const [logs, setLogs] = useState<LogEvent[]>([])
+  const [logs, setLogs] = useState<LogEvent[]>([]) // kept only for triage "after free-text" gating; not shown
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
+
+  // Navigation banner (not part of chat transcript)
+  const [navBanner, setNavBanner] = useState<string | null>(null)
+  const navBannerTimerRef = useRef<number | null>(null)
 
   const endRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, open, showLogs])
+  }, [messages, open, navBanner])
+
+  useEffect(() => {
+    return () => {
+      if (navBannerTimerRef.current) {
+        window.clearTimeout(navBannerTimerRef.current)
+        navBannerTimerRef.current = null
+      }
+    }
+  }, [])
 
   function appendMessage(message: ChatMessage) {
     setMessages((prev) => [...prev, message])
@@ -106,6 +116,18 @@ export default function Chatbot() {
     })
   }
 
+  function showNavBanner(label: string) {
+    if (navBannerTimerRef.current) {
+      window.clearTimeout(navBannerTimerRef.current)
+      navBannerTimerRef.current = null
+    }
+    setNavBanner(label)
+    navBannerTimerRef.current = window.setTimeout(() => {
+      setNavBanner(null)
+      navBannerTimerRef.current = null
+    }, 2200)
+  }
+
   async function init() {
     setLoading(true)
     try {
@@ -122,6 +144,8 @@ export default function Chatbot() {
       setState(data.state)
       setMessages([])
       setLogs([])
+      setInput("")
+      setNavBanner(null)
       appendAssistantMessage(data.state.active_node_message)
     } finally {
       setLoading(false)
@@ -140,9 +164,8 @@ export default function Chatbot() {
     const data: KernelResponse = await res.json()
 
     if (nextInput.type === "EXPLICIT_TRANSITION") {
-      appendUserMessage(
-        `Valgte: ${NODE_LABELS[nextInput.target] ?? nextInput.target}`
-      )
+      // Navigation is not a user chat message.
+      showNavBanner(`Valgte: ${NODE_LABELS[nextInput.target] ?? nextInput.target}`)
     } else if (nextInput.type === "FREE_TEXT") {
       appendUserMessage(nextInput.text)
     }
@@ -158,15 +181,13 @@ export default function Chatbot() {
   }
 
   function resetConversation() {
+    // "Ny samtale" = clear transcript and re-init server-side state
     setLogs([])
     setInput("")
     setMessages([])
     setState(null)
+    setNavBanner(null)
     init()
-  }
-
-  function clearHistory() {
-    setMessages([])
   }
 
   function go(target: string) {
@@ -190,7 +211,6 @@ export default function Chatbot() {
   }
 
   function openContactForm() {
-    // Open the /kontakt page (same tab)
     window.location.href = "/kontakt"
   }
 
@@ -209,26 +229,23 @@ export default function Chatbot() {
     )
   }
 
-  // Derived: show triage suggestions only after user has provided free text at least once
+  // TRIAGE: show suggestions only after at least one free-text exchange has happened
   const lastLog = logs.length ? logs[logs.length - 1] : null
   const triageSuggestionsAllowed =
     state?.active_node === "TRIAGE" &&
-    (lastLog?.input_type === "FREE_TEXT" ||
-      lastLog?.input_type === "FREE_TEXT_RESOLVED")
+    (lastLog?.input_type === "FREE_TEXT" || lastLog?.input_type === "FREE_TEXT_RESOLVED")
 
   const triageChipsRaw = state?.meta?.["triage.chips"]?.value
   const triageChips =
     triageSuggestionsAllowed
       ? Array.isArray(triageChipsRaw)
         ? triageChipsRaw
-            .filter(
-              (c: any) => c && typeof c.id === "string" && typeof c.label === "string"
-            )
+            .filter((c: any) => c && typeof c.id === "string" && typeof c.label === "string")
             .slice(0, 8)
         : DEFAULT_TRIAGE_CHIPS
       : []
 
-  // Topics: only show on HOME (not in TRIAGE and other nodes)
+  // Topics only on HOME (UI-owned), but disabled unless kernel allows them
   const showTopics = state?.active_node === "HOME"
   const allowedSet = new Set(state?.allowed_transitions ?? [])
   const topicButtons = showTopics
@@ -272,16 +289,6 @@ export default function Chatbot() {
 
             <button
               className="gaarsdal-icon-btn"
-              aria-label="Vis logs"
-              title="Logs"
-              onClick={() => setShowLogs((v) => !v)}
-              disabled={loading}
-            >
-              <BugAntIcon className="w-5 h-5" />
-            </button>
-
-            <button
-              className="gaarsdal-icon-btn"
               aria-label="Luk"
               title="Luk"
               onClick={() => setOpen(false)}
@@ -290,6 +297,15 @@ export default function Chatbot() {
             </button>
           </div>
         </div>
+
+        {/* NAVIGATION BANNER (not part of chat transcript) */}
+        {navBanner && (
+          <div className="px-3 pt-3">
+            <div className="w-full rounded-lg px-3 py-2 text-sm bg-black/10 border border-black/5">
+              {navBanner}
+            </div>
+          </div>
+        )}
 
         {/* BODY */}
         <div className="messages">
@@ -308,7 +324,7 @@ export default function Chatbot() {
             </div>
           ))}
 
-          {/* TRIAGE: suggestions only when relevant */}
+          {/* TRIAGE: suggestions */}
           {state?.active_node === "TRIAGE" && triageChips.length > 0 && (
             <div className="mt-3">
               <div className="gaarsdal-section-title">Forslag</div>
@@ -347,22 +363,13 @@ export default function Chatbot() {
             </div>
           )}
 
-          {/* LOGS (dev) */}
-          {showLogs && (
-            <div className="mt-3">
-              <div className="gaarsdal-section-title">Logs</div>
-              <pre className="text-xs whitespace-pre-wrap bg-white/60 p-2 rounded-lg border border-black/5 max-h-[170px] overflow-auto">
-                {JSON.stringify(logs.slice(-10), null, 2)}
-              </pre>
-            </div>
-          )}
-
           <div ref={endRef} />
         </div>
 
         {/* FOOTER */}
         <div className="gaarsdal-chatbot-footer">
           <div className="flex items-center justify-between gap-2 mb-2">
+            {/* Left group */}
             <div className="flex items-center gap-1">
               <button
                 className="gaarsdal-icon-btn"
@@ -396,16 +403,6 @@ export default function Chatbot() {
 
               <button
                 className="gaarsdal-icon-btn"
-                aria-label="Akut"
-                title="Akut"
-                onClick={() => state && go("AKUT")}
-                disabled={!state || loading}
-              >
-                <ExclamationTriangleIcon className="w-5 h-5" />
-              </button>
-
-              <button
-                className="gaarsdal-icon-btn"
                 aria-label="Kontaktformular"
                 title="Kontaktformular"
                 onClick={openContactForm}
@@ -414,15 +411,18 @@ export default function Chatbot() {
               </button>
             </div>
 
-            <button
-              className="gaarsdal-icon-btn"
-              aria-label="Ryd visning"
-              title="Ryd visning"
-              onClick={clearHistory}
-              disabled={messages.length === 0}
-            >
-              <TrashIcon className="w-5 h-5" />
-            </button>
+            {/* Right group: Akut always right */}
+            <div className="flex items-center">
+              <button
+                className="gaarsdal-icon-btn"
+                aria-label="Akut"
+                title="Akut"
+                onClick={() => state && go("AKUT")}
+                disabled={!state || loading}
+              >
+                <ExclamationTriangleIcon className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           <div className="flex items-start gap-2">
