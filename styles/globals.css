@@ -39,6 +39,21 @@ body {
   flex-direction: column;
 }
 
+/* Expanded/fullscreen: Tailwind adds .rounded-none, but header/footer also set radii */
+.gaarsdal-chatbot.rounded-none {
+  border-radius: 0 !important;
+}
+
+.gaarsdal-chatbot.rounded-none .gaarsdal-chatbot-header {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+.gaarsdal-chatbot.rounded-none .gaarsdal-chatbot-footer {
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
 /* =========================
    HEADER
 ========================= */
@@ -116,6 +131,59 @@ body {
 
 .gaarsdal-meta {
   color: #6C6A63;
+}
+
+/* =========================
+   HOME TOPICS MENU (GRAPHIC CARDS)
+========================= */
+
+/* Use these classes if/when you switch Chatbot.tsx to use classNames instead of inline Tailwind. */
+.gaarsdal-topic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.gaarsdal-topic-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  width: 100%;
+  padding: 12px 12px;
+  border-radius: 14px;
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+
+.gaarsdal-topic-card:hover {
+  background: #EFEDE7;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.gaarsdal-topic-card:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.gaarsdal-topic-icon {
+  color: #4A5D54;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gaarsdal-topic-label {
+  font-size: 13.5px;
+  line-height: 1.25;
+  font-weight: 600;
+  color: #2C2A28;
 }
 
 /* =========================
