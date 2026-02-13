@@ -8,17 +8,15 @@ import { runCapability } from "../../chat/ai/runtime"
 
 function toUserInput(input: InputSignal): string | undefined {
   if (input.type === "FREE_TEXT") return input.text
-  if (input.type === "EXPLICIT_TRANSITION") {
-    return `EXPLICIT_TRANSITION:${input.target}`
-  }
+  if (input.type === "EXPLICIT_TRANSITION") return `EXPLICIT_TRANSITION:${input.target}`
   if (input.type === "SYSTEM") return `SYSTEM:${input.intent}`
   return undefined
 }
 
 function resolveCapabilityId(nodeId: string): string | null {
-  // v1: mapping here (later can be moved into registry)
   if (nodeId === "TRIAGE") return "triage-relevance-v1"
   if (nodeId === "GEN_HYPNO") return "gen-hypno-v1"
+  if (nodeId === "METHOD_FIT") return "method-fit-v1"
   return null
 }
 
