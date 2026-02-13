@@ -15,6 +15,7 @@ import {
   ClipboardDocumentCheckIcon,
   Squares2X2Icon,
   CalendarDaysIcon,
+  HeartIcon,
 } from "@heroicons/react/24/outline"
 
 type ConversationState = {
@@ -73,8 +74,6 @@ const DEFAULT_TRIAGE_CHIPS = [
 
 const TOPIC_NODES: string[] = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING"]
 
-// UI-owned: which nodes accept free text.
-// (Server truth lives in registry, but UI needs a deterministic rule for UX.)
 const FREE_TEXT_ENABLED_NODES = new Set<string>([
   "HOME",
   "GEN_HYPNO",
@@ -158,7 +157,6 @@ export default function Chatbot() {
     const message = text.trim()
     if (!message) return
 
-    // Avoid immediate duplicates
     const last = messages.length ? messages[messages.length - 1] : null
     if (last && last.role === "assistant" && last.text.trim() === message) return
 
@@ -256,11 +254,6 @@ export default function Chatbot() {
   function go(target: string) {
     if (!state) return
 
-    /**
-     * Remove "double start text" effect:
-     * If user is on HOME and has not interacted yet (no user messages),
-     * and they choose a topic, clear the transcript so the new node intro is the only start text.
-     */
     const goingFromHomeToTopic =
       state.active_node === "HOME" && TOPIC_NODES.includes(target)
 
@@ -307,7 +300,6 @@ export default function Chatbot() {
     )
   }
 
-  // TRIAGE: show suggestions after at least one triage exchange (meta-based)
   const triageQuestionCount = readMetaNumber(state, "triage.question_count")
   const triageSuggestionsAllowed = state?.active_node === "TRIAGE" && triageQuestionCount >= 1
 
@@ -321,7 +313,6 @@ export default function Chatbot() {
         : DEFAULT_TRIAGE_CHIPS
       : []
 
-  // Topics only on HOME (UI-owned), but disabled unless kernel allows them
   const showTopics = state?.active_node === "HOME"
   const allowedSet = new Set(state?.allowed_transitions ?? [])
   const topicButtons = showTopics
@@ -353,14 +344,13 @@ export default function Chatbot() {
             <div className="flex items-center gap-2">
               <div className="text-sm font-semibold">Gaarsdal Chat</div>
 
-              {/* Working indicator */}
               {loading && (
                 <span
-                  className="inline-flex items-center gap-1 text-xs gaarsdal-meta"
+                  className="inline-flex items-center"
                   aria-label="Arbejder"
                   title="Arbejder…"
                 >
-                  <span className="w-2 h-2 rounded-full bg-[#4A5D54] animate-pulse" />
+                  <HeartIcon className="w-4 h-4 text-[#4A5D54] animate-pulse" />
                 </span>
               )}
             </div>
