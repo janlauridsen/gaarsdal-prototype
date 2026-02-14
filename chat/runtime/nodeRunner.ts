@@ -13,10 +13,15 @@ export type NodeRunParams = {
   userKey: string
 }
 
+function norm(s: string): string {
+  return s.toLowerCase().trim()
+}
+
 /**
  * Runs a node according to its kind.
  *
- * - MENU/TERMINAL: kernel-only
+ * - MENU: allow FREE_TEXT and hop to first exit (or HOME) to avoid REJECT loops from UI
+ * - TERMINAL: kernel-only
  * - DIALOG: optional AI capability resolution for FREE_TEXT
  * - FORM: parses and validates FREE_TEXT and writes meta_delta
  * - TOOL/CHECKPOINT: deterministic tool execution (supports SYSTEM ticks for auto-advance)
@@ -71,6 +76,25 @@ export async function runNode(params: NodeRunParams) {
   // If node does not allow free text, kernel will REJECT.
   if (!node.allow_free_text) {
     return runKernel(state, input)
+  }
+
+  // MENU: hop forward to avoid UI free-text causing REJECT
+  if (node.kind === "MENU") {
+    const text = norm(input.text)
+    const toHome = text === "home" || text === "hjem" || text === "tilbage"
+    const next = toHome ? "HOME" : (node.allowed_exits?.[0] ?? state.active_node)
+
+    const transition: Transition = {
+      type: "NODE_HOP",
+      from: state.active_node,
+      to: next,
+      reason: "menu free_text -> next",
+    }
+
+    return runKernel(state, {
+      type: "FREE_TEXT_RESOLVED",
+      proposed_transition: transition,
+    })
   }
 
   if (node.kind === "ROUTER") {
@@ -129,7 +153,6 @@ export async function runNode(params: NodeRunParams) {
     }
 
     if (missing.length && !node.form.allow_partial) {
-      // Keep user in the same node; requires self-transition in allowed_exits.
       const response =
         `Mangler: ${missing.join(", ")}.\n\n` +
         `Skriv som nøgle:værdi pr linje, fx:\n` +
@@ -171,7 +194,6 @@ export async function runNode(params: NodeRunParams) {
   }
 
   if (node.kind === "TOOL" || node.kind === "CHECKPOINT") {
-    // Allow manual FREE_TEXT trigger too, but not required when API auto-advances.
     const spec = node.kind === "TOOL" ? node.tool : node.checkpoint
     if (!spec) {
       return runKernel(state, input)
@@ -200,6 +222,5 @@ export async function runNode(params: NodeRunParams) {
     })
   }
 
-  // MENU/TERMINAL/unknown: let kernel reject unresolved free text
   return runKernel(state, input)
 }
