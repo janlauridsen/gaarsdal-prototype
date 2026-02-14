@@ -5,6 +5,7 @@ import { runCapability } from "../ai/runtime"
 import type { Node } from "../nodes/registry"
 import { parseFormText } from "../tools/formParsing"
 import { runTool } from "../tools/tools"
+import { runRouter } from "../router/runRouter"
 
 export type NodeRunParams = {
   state: ConversationState
@@ -19,14 +20,22 @@ export type NodeRunParams = {
  * - DIALOG: optional AI capability resolution for FREE_TEXT
  * - FORM: parses and validates FREE_TEXT and writes meta_delta
  * - TOOL/CHECKPOINT: deterministic tool execution
- *
- * NOTE: ROUTER is introduced in PR2.
+ * - ROUTER: deterministic routing based on router policy
  */
 export async function runNode(params: NodeRunParams) {
   const { state, input } = params
   const node = getNode(state.active_node) as Readonly<Node>
 
-  // Default: let kernel handle it
+  // ROUTER can run on SYSTEM ticks (auto-advance)
+  if (node.kind === "ROUTER" && input.type === "SYSTEM") {
+    const { transition } = runRouter({ node, state, userText: "" })
+    return runKernel(state, {
+      type: "FREE_TEXT_RESOLVED",
+      proposed_transition: transition,
+    })
+  }
+
+  // Default: let kernel handle it for non FREE_TEXT
   if (input.type !== "FREE_TEXT") {
     return runKernel(state, input)
   }
@@ -34,6 +43,14 @@ export async function runNode(params: NodeRunParams) {
   // If node does not allow free text, kernel will REJECT.
   if (!node.allow_free_text) {
     return runKernel(state, input)
+  }
+
+  if (node.kind === "ROUTER") {
+    const { transition } = runRouter({ node, state, userText: input.text })
+    return runKernel(state, {
+      type: "FREE_TEXT_RESOLVED",
+      proposed_transition: transition,
+    })
   }
 
   if (node.kind === "DIALOG") {
