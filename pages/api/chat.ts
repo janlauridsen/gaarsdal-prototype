@@ -79,9 +79,9 @@ function toConversationId(userKey: string): string {
 }
 
 function toUserInput(input: InputSignal): string | undefined {
-  if (input.type === "FREE_TEXT") return input.text
-  if (input.type === "EXPLICIT_TRANSITION") return `EXPLICIT_TRANSITION:${input.target}`
-  if (input.type === "SYSTEM") return `SYSTEM:${input.intent}`
+  if (input.type === "FREE_TEXT") return (input as any).text
+  if (input.type === "EXPLICIT_TRANSITION") return `EXPLICIT_TRANSITION:${(input as any).target}`
+  if (input.type === "SYSTEM") return `SYSTEM:${(input as any).intent}`
   if (input.type === "SYSTEM_INIT") return "SYSTEM_INIT"
   return undefined
 }
@@ -107,7 +107,7 @@ async function logAndRecord(params: {
     conversation_id: kernelResult.state.conversation_id,
     revision: kernelResult.state.revision,
     active_node: kernelResult.state.active_node,
-    input_type: input.type,
+    input_type: (input as any).type,
     user_input: params.userText ?? toUserInput(input),
     ai_response: assistantText,
     outcome_node: kernelResult.transition.to,
@@ -131,7 +131,7 @@ async function logAndRecord(params: {
     user_key: params.userKey,
     revision: kernelResult.state.revision,
     node_id: kernelResult.state.active_node,
-    input_type: input.type,
+    input_type: (input as any).type,
     user_input_raw: params.userText ?? toUserInput(input),
     assistant_output_raw: assistantText,
     transition_type: kernelResult.transition.type,
@@ -152,8 +152,8 @@ async function logAndRecord(params: {
   }
 }
 
-function isRouterNode(kind: unknown): boolean {
-  return kind === "ROUTER"
+function isAutoNodeKind(kind: unknown): boolean {
+  return kind === "ROUTER" || kind === "TOOL" || kind === "CHECKPOINT"
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -239,16 +239,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // ---------- NODE RUNTIME (dispatch by kind) ----------
   let kernelResult = await runNode({ state: baseState, input, userKey })
 
-  // Auto-advance ROUTER nodes (avoid manual extra turn).
+  // Auto-advance ROUTER/TOOL/CHECKPOINT nodes to avoid manual "go" turns.
   // Guarded to prevent loops.
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     const activeNode = getNode(kernelResult.state.active_node)
-    if (!isRouterNode(activeNode.kind)) break
+    if (!isAutoNodeKind(activeNode.kind)) break
 
     const before = kernelResult.state.active_node
     kernelResult = await runNode({
       state: kernelResult.state,
-      input: { type: "SYSTEM", intent: "ROUTER_TICK" } as any,
+      input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
       userKey,
     })
     const after = kernelResult.state.active_node
@@ -260,7 +260,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     userKey,
     input,
     kernelResult,
-    userText: input.type === "FREE_TEXT" ? (input as any).text : undefined,
+    userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined,
   })
   return res.status(200).json(kernelResult)
 }
