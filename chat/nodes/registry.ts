@@ -97,7 +97,8 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     kind: "MENU",
     goal: "dev sandbox entry",
     message: "Dev sandbox: test FORM/TOOL/CHECKPOINT (track=sandbox).",
-    allow_free_text: false,
+    // HOTFIX: allow free text so UI can send "ok" without REJECT
+    allow_free_text: true,
     allow_parentese: false,
     allowed_exits: ["DEV_SANDBOX_INTRO", "HOME"],
     meta_domains_written: [],
