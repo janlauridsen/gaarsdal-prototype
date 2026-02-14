@@ -14,15 +14,7 @@ function includesAny(haystack: string, needles: string[]): boolean {
 
 /**
  * Deterministic, low-risk router for the "HOME" node.
- * Uses simple keyword matching. No LLM in PR2 foundation router.
- *
- * Candidates expected (typical):
- * - GEN_HYPNO
- * - TRIAGE
- * - METHOD_FIT
- * - BOOKING
- *
- * If no match: defaults to TRIAGE (screening) when present.
+ * Uses simple keyword matching.
  */
 export function homeRouterV1(params: {
   userText: string
@@ -36,6 +28,13 @@ export function homeRouterV1(params: {
       nextNodeId: candidates[0] ?? "HOME",
       confidence: 0,
       reason: "empty input",
+    }
+  }
+
+  // DEV sandbox
+  if (includesAny(text, ["sandbox", "dev sandbox", "dev", "test form", "test tool", "test checkpoint"])) {
+    if (candidates.includes("DEV_SANDBOX_ENTRY")) {
+      return { nextNodeId: "DEV_SANDBOX_ENTRY", confidence: 0.9, reason: "sandbox keywords" }
     }
   }
 
