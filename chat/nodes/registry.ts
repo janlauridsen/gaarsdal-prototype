@@ -78,31 +78,19 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
       "TRIAGE",
       "METHOD_FIT",
       "BOOKING",
-      "DEV_SANDBOX_ENTRY",
+      "DEV_SANDBOX_INTRO",
       "MAIL",
       "TLF",
       "AKUT",
     ],
     router: {
       router_id: "home-router-v1",
-      candidates: ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING", "DEV_SANDBOX_ENTRY"],
+      candidates: ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING", "DEV_SANDBOX_INTRO"],
     },
     meta_domains_written: ["router.decision"],
   },
 
   // ----------- DEV SANDBOX FLOW (FORM → TOOL → CHECKPOINT) -----------
-
-  DEV_SANDBOX_ENTRY: {
-    id: "DEV_SANDBOX_ENTRY",
-    kind: "MENU",
-    goal: "dev sandbox entry",
-    message: "Dev sandbox: test FORM/TOOL/CHECKPOINT (track=sandbox).",
-    // HOTFIX: allow free text so UI can send "ok" without REJECT
-    allow_free_text: true,
-    allow_parentese: false,
-    allowed_exits: ["DEV_SANDBOX_INTRO", "HOME"],
-    meta_domains_written: [],
-  },
 
   DEV_SANDBOX_INTRO: {
     id: "DEV_SANDBOX_INTRO",
