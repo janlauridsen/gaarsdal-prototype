@@ -152,8 +152,10 @@ async function logAndRecord(params: {
   }
 }
 
-function isAutoNodeKind(kind: unknown): boolean {
-  return kind === "ROUTER" || kind === "TOOL" || kind === "CHECKPOINT"
+function isAutoAdvanceNode(node: ReturnType<typeof getNode>): boolean {
+  // HOME is a ROUTER, but it should not auto-advance on empty input. It exists to wait for the user.
+  if (node.kind === "ROUTER" && node.id === "HOME") return false
+  return node.kind === "ROUTER" || node.kind === "TOOL" || node.kind === "CHECKPOINT"
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -243,7 +245,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Guarded to prevent loops.
   for (let i = 0; i < 5; i++) {
     const activeNode = getNode(kernelResult.state.active_node)
-    if (!isAutoNodeKind(activeNode.kind)) break
+    if (!isAutoAdvanceNode(activeNode)) break
 
     const before = kernelResult.state.active_node
     kernelResult = await runNode({
