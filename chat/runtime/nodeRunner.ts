@@ -19,8 +19,8 @@ export type NodeRunParams = {
  * - MENU/TERMINAL: kernel-only
  * - DIALOG: optional AI capability resolution for FREE_TEXT
  * - FORM: parses and validates FREE_TEXT and writes meta_delta
- * - TOOL/CHECKPOINT: deterministic tool execution
- * - ROUTER: deterministic routing based on router policy
+ * - TOOL/CHECKPOINT: deterministic tool execution (supports SYSTEM ticks for auto-advance)
+ * - ROUTER: deterministic routing (supports SYSTEM ticks for auto-advance)
  */
 export async function runNode(params: NodeRunParams) {
   const { state, input } = params
@@ -29,6 +29,34 @@ export async function runNode(params: NodeRunParams) {
   // ROUTER can run on SYSTEM ticks (auto-advance)
   if (node.kind === "ROUTER" && input.type === "SYSTEM") {
     const { transition } = runRouter({ node, state, userText: "" })
+    return runKernel(state, {
+      type: "FREE_TEXT_RESOLVED",
+      proposed_transition: transition,
+    })
+  }
+
+  // TOOL / CHECKPOINT can run on SYSTEM ticks (auto-advance)
+  if ((node.kind === "TOOL" || node.kind === "CHECKPOINT") && input.type === "SYSTEM") {
+    const spec = node.kind === "TOOL" ? node.tool : node.checkpoint
+    if (!spec) return runKernel(state, input)
+
+    const toolResult = await runTool({
+      kind: node.kind,
+      spec,
+      userKey: params.userKey,
+      state,
+      userText: "",
+    })
+
+    const transition: Transition = {
+      type: "NODE_HOP",
+      from: state.active_node,
+      to: toolResult.nextNode,
+      reason: toolResult.reason,
+      response_message: toolResult.response_message,
+      meta_delta: toolResult.meta_delta,
+    }
+
     return runKernel(state, {
       type: "FREE_TEXT_RESOLVED",
       proposed_transition: transition,
@@ -56,7 +84,19 @@ export async function runNode(params: NodeRunParams) {
   if (node.kind === "DIALOG") {
     const capabilityId = node.capability_id ?? null
     if (!capabilityId) {
-      return runKernel(state, input)
+      // No capability: treat as simple free-text node, and rely on explicit transitions.
+      // Default behavior: hop to first exit if user types anything.
+      const next = node.allowed_exits?.[0] ?? state.active_node
+      const transition: Transition = {
+        type: "NODE_HOP",
+        from: state.active_node,
+        to: next,
+        reason: "dialog (no capability) -> next",
+      }
+      return runKernel(state, {
+        type: "FREE_TEXT_RESOLVED",
+        proposed_transition: transition,
+      })
     }
 
     const capabilityResult = await runCapability(capabilityId, {
@@ -131,6 +171,7 @@ export async function runNode(params: NodeRunParams) {
   }
 
   if (node.kind === "TOOL" || node.kind === "CHECKPOINT") {
+    // Allow manual FREE_TEXT trigger too, but not required when API auto-advances.
     const spec = node.kind === "TOOL" ? node.tool : node.checkpoint
     if (!spec) {
       return runKernel(state, input)
