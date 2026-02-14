@@ -19,53 +19,25 @@ export type FormField = {
 }
 
 export type FormSpec = {
-  /**
-   * Human-friendly instructions. If empty, node.message should contain instructions.
-   */
   instructions?: string
   fields: FormField[]
-  /**
-   * Where to go on successful validation.
-   */
   on_submit_to: NodeId
-  /**
-   * If true, allow partial submissions and keep user in same node.
-   */
   allow_partial?: boolean
 }
 
 export type ToolSpec = {
   tool_id: string
-  /**
-   * Where to go after successful tool run.
-   */
   on_success_to: NodeId
-  /**
-   * Optional alternative target when tool fails.
-   */
   on_error_to?: NodeId
 }
 
 export type CheckpointSpec = {
-  /**
-   * Where to go after commit.
-   */
   on_done_to: NodeId
-  /**
-   * Domains to snapshot/commit.
-   * If empty, commit tool decides.
-   */
   commit_domains?: string[]
 }
 
 export type RouterSpec = {
-  /**
-   * Router policy identifier.
-   */
   router_id: string
-  /**
-   * Allowed candidates for router. Must be subset of allowed_exits.
-   */
   candidates?: NodeId[]
 }
 
@@ -78,20 +50,10 @@ export type Node = {
   allow_parentese: boolean
   allowed_exits: NodeId[]
   meta_domains_written: string[]
-
-  /** DIALOG only: which AI capability to run (if any). */
   capability_id?: string | null
-
-  /** FORM only: structured data capture */
   form?: FormSpec
-
-  /** TOOL only: deterministic background step */
   tool?: ToolSpec
-
-  /** CHECKPOINT only: commit/refine */
   checkpoint?: CheckpointSpec
-
-  /** ROUTER only: decision policy */
   router?: RouterSpec
 }
 
@@ -106,7 +68,7 @@ const QUICK_CONTACTS: NodeId[] = [
 const RAW_REGISTRY: Record<NodeId, Node> = {
   HOME: {
     id: "HOME",
-    kind: "MENU",
+    kind: "ROUTER",
     goal: "root",
     message: "Velkommen. Vælg et emne eller skriv frit.",
     allow_free_text: true,
@@ -120,7 +82,11 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
       "TLF",
       "AKUT",
     ],
-    meta_domains_written: [],
+    router: {
+      router_id: "home-router-v1",
+      candidates: ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING"],
+    },
+    meta_domains_written: ["router.decision"],
   },
 
   GEN_HYPNO: {
@@ -133,10 +99,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     allow_parentese: true,
     allowed_exits: ["HOME", "MAIL", "TLF", "AKUT"],
     capability_id: "gen-hypno-v1",
-    meta_domains_written: [
-      "gen_hypno.transcript",
-      "gen_hypno.last_topic",
-    ],
+    meta_domains_written: ["gen_hypno.transcript", "gen_hypno.last_topic"],
   },
 
   TRIAGE: {
@@ -183,10 +146,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     allow_parentese: true,
     allowed_exits: ["HOME", "BOOKING", ...QUICK_CONTACTS],
     capability_id: "method-fit-v1",
-    meta_domains_written: [
-      "method_fit.transcript",
-      "method_fit.summary",
-    ],
+    meta_domains_written: ["method_fit.transcript", "method_fit.summary"],
   },
 
   TRIAGE_FIT_BOOKING: {
