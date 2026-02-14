@@ -152,8 +152,8 @@ async function logAndRecord(params: {
   }
 }
 
-function isAutoAdvanceNode(node: ReturnType<typeof getNode>): boolean {
-  // HOME is a ROUTER, but it should not auto-advance on empty input. It exists to wait for the user.
+function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
+  // HOME is a ROUTER, but it should not auto-advance on empty input.
   if (node.kind === "ROUTER" && node.id === "HOME") return false
   return node.kind === "ROUTER" || node.kind === "TOOL" || node.kind === "CHECKPOINT"
 }
