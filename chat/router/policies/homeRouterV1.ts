@@ -33,8 +33,8 @@ export function homeRouterV1(params: {
 
   // DEV sandbox
   if (includesAny(text, ["sandbox", "dev sandbox", "dev", "test form", "test tool", "test checkpoint"])) {
-    if (candidates.includes("DEV_SANDBOX_ENTRY")) {
-      return { nextNodeId: "DEV_SANDBOX_ENTRY", confidence: 0.9, reason: "sandbox keywords" }
+    if (candidates.includes("DEV_SANDBOX_INTRO")) {
+      return { nextNodeId: "DEV_SANDBOX_INTRO", confidence: 0.9, reason: "sandbox keywords" }
     }
   }
 
