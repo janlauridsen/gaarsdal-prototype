@@ -78,6 +78,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
       "TRIAGE",
       "METHOD_FIT",
       "BOOKING",
+      "DEV_SANDBOX_ENTRY",
       "MAIL",
       "TLF",
       "AKUT",
@@ -88,6 +89,122 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     },
     meta_domains_written: ["router.decision"],
   },
+
+  // ----------- DEV SANDBOX FLOW (FORM → TOOL → CHECKPOINT) -----------
+
+  DEV_SANDBOX_ENTRY: {
+    id: "DEV_SANDBOX_ENTRY",
+    kind: "MENU",
+    goal: "dev sandbox entry",
+    message: "Dev sandbox: test FORM/TOOL/CHECKPOINT (track=sandbox).",
+    allow_free_text: false,
+    allow_parentese: false,
+    allowed_exits: ["DEV_SANDBOX_INTRO", "HOME"],
+    meta_domains_written: [],
+  },
+
+  DEV_SANDBOX_INTRO: {
+    id: "DEV_SANDBOX_INTRO",
+    kind: "DIALOG",
+    goal: "dev sandbox intro",
+    message:
+      "Sandbox-flow:\n\n" +
+      "1) Udfyld en mini-form (key:value pr linje)\n" +
+      "2) Systemet kører et TOOL (apply-form-to-track-v1)\n" +
+      "3) Systemet kører CHECKPOINT\n\n" +
+      "Skriv 'ok' for at gå videre til form.",
+    allow_free_text: true,
+    allow_parentese: false,
+    allowed_exits: ["DEV_SANDBOX_FORM", "HOME"],
+    capability_id: null,
+    meta_domains_written: [],
+  },
+
+  DEV_SANDBOX_FORM: {
+    id: "DEV_SANDBOX_FORM",
+    kind: "FORM",
+    goal: "dev sandbox form",
+    message:
+      "Udfyld form som key:value pr linje.\n\n" +
+      "Eksempel:\n" +
+      "topic: alkohol om aftenen\n" +
+      "goal: drikke mindre\n" +
+      "time_patterns: aftenen\n" +
+      "situational_triggers: arbejdsstress\n" +
+      "relational_patterns: familien\n" +
+      "preferred_tone: rolig og direkte\n",
+    allow_free_text: true,
+    allow_parentese: false,
+    // NOTE: include self for validation-fail stay (NODE_HOP to same node)
+    allowed_exits: ["DEV_SANDBOX_FORM", "DEV_SANDBOX_TOOL_APPLY", "HOME"],
+    form: {
+      instructions: "Skriv key:value pr linje.",
+      fields: [
+        { id: "topic", label: "Topic", required: true, placeholder: "fx alkohol om aftenen" },
+        { id: "goal", label: "Goal", required: true, placeholder: "fx drikke mindre" },
+        { id: "time_patterns", label: "Time patterns", required: false, placeholder: "fx aftenen" },
+        { id: "situational_triggers", label: "Situational triggers", required: false, placeholder: "fx arbejdsstress" },
+        { id: "relational_patterns", label: "Relational patterns", required: false, placeholder: "fx familien" },
+        { id: "preferred_tone", label: "Preferred tone", required: false, placeholder: "fx rolig og direkte" },
+        { id: "support_direction", label: "Support direction", required: false, placeholder: "fx ro før jeg kommer hjem" },
+        { id: "interest_in_methods", label: "Interest in methods", required: false, placeholder: "fx gåtur; pause; registrering" },
+      ],
+      on_submit_to: "DEV_SANDBOX_TOOL_APPLY",
+      allow_partial: false,
+    },
+    meta_domains_written: ["form.last"],
+  },
+
+  DEV_SANDBOX_TOOL_APPLY: {
+    id: "DEV_SANDBOX_TOOL_APPLY",
+    kind: "TOOL",
+    goal: "apply form to sandbox track",
+    message: "System step: applying form to sandbox track…",
+    // No manual input required; API auto-advances TOOL nodes.
+    allow_free_text: false,
+    allow_parentese: false,
+    allowed_exits: ["DEV_SANDBOX_CHECKPOINT", "DEV_SANDBOX_FORM", "HOME"],
+    tool: {
+      tool_id: "apply-form-to-track-v1",
+      on_success_to: "DEV_SANDBOX_CHECKPOINT",
+      on_error_to: "DEV_SANDBOX_FORM",
+    },
+    meta_domains_written: ["sandbox.apply_result"],
+  },
+
+  DEV_SANDBOX_CHECKPOINT: {
+    id: "DEV_SANDBOX_CHECKPOINT",
+    kind: "CHECKPOINT",
+    goal: "commit sandbox snapshot",
+    message: "System step: checkpoint commit…",
+    allow_free_text: false,
+    allow_parentese: false,
+    allowed_exits: ["DEV_SANDBOX_DONE", "HOME"],
+    checkpoint: {
+      on_done_to: "DEV_SANDBOX_DONE",
+      commit_domains: [],
+    },
+    meta_domains_written: ["checkpoint.last"],
+  },
+
+  DEV_SANDBOX_DONE: {
+    id: "DEV_SANDBOX_DONE",
+    kind: "TERMINAL",
+    goal: "sandbox done",
+    message:
+      "Sandbox complete.\n\n" +
+      "Du kan nu tjekke:\n" +
+      "- /api/telemetry\n" +
+      "- Redis profile (core + tracks)\n" +
+      "- state.meta['form.last'] / state.meta['router.decision']\n\n" +
+      "Vælg HOME for at fortsætte.",
+    allow_free_text: false,
+    allow_parentese: false,
+    allowed_exits: ["HOME"],
+    meta_domains_written: [],
+  },
+
+  // ----------- EXISTING NODES -----------
 
   GEN_HYPNO: {
     id: "GEN_HYPNO",
