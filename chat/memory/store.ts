@@ -22,6 +22,55 @@ export type UserProfile = {
   pref: {
     short_answers: number
   }
+
+  /**
+   * V2+: platform core and tracks.
+   * These are designed to be low-noise and safe to reuse across programs.
+   */
+  core: {
+    preferences: {
+      preferred_tone: string
+      short_answers: number
+    }
+    semantic: {
+      topics: string[]
+      goals: string[]
+      last_chips?: unknown
+      last_confidence?: number
+    }
+  }
+
+  tracks: {
+    active_track_id: string | null
+    items: Track[]
+  }
+}
+
+export type TrackStatus = "active" | "dormant" | "closed"
+
+export type Track = {
+  track_id: string
+  program: string
+  status: TrackStatus
+  title: string
+  created_at: string
+  updated_at: string
+  core_overlay: {
+    topics: string[]
+    goals: string[]
+    context: {
+      time_patterns: string
+      situational_triggers: string
+      relational_patterns: string
+    }
+    help_orientation: {
+      interest_in_methods: string[]
+      preferred_tone: string
+      support_direction: string
+    }
+  }
+  /** Program-specific payloads, versioned by producer */
+  extensions: Record<string, unknown>
 }
 
 const PROFILE_KEY_PREFIX = "gaarsdal:profile:"
@@ -63,7 +112,20 @@ function isUserProfile(value: unknown): value is UserProfile {
     v.topic_scores !== null &&
     typeof v.pref === "object" &&
     v.pref !== null &&
-    typeof v.pref.short_answers === "number"
+    typeof v.pref.short_answers === "number" &&
+    typeof v.core === "object" &&
+    v.core !== null &&
+    typeof v.core.preferences === "object" &&
+    v.core.preferences !== null &&
+    typeof v.core.preferences.short_answers === "number" &&
+    typeof v.core.semantic === "object" &&
+    v.core.semantic !== null &&
+    Array.isArray(v.core.semantic.topics) &&
+    Array.isArray(v.core.semantic.goals) &&
+    typeof v.tracks === "object" &&
+    v.tracks !== null &&
+    (typeof v.tracks.active_track_id === "string" || v.tracks.active_track_id === null) &&
+    Array.isArray(v.tracks.items)
   )
 }
 
@@ -88,12 +150,21 @@ export async function readUserProfile(userKey: string): Promise<UserProfile | nu
   const client = getRedisClient()
   if (!client) return null
   const raw = await client.get<unknown>(profileKey(userKey))
-  return parseJson<UserProfile>(raw, isUserProfile)
+  const parsed = parseJson<UserProfile>(raw, isUserProfile)
+  if (parsed) return parsed
+
+  // Migration from v1 profile (no core/tracks)
+  const legacy = parseJson<any>(raw)
+  if (legacy && typeof legacy === "object" && legacy !== null && legacy.version === 1) {
+    return migrateV1ToV2(legacy as any)
+  }
+
+  return null
 }
 
 function defaultProfile(params: { now: string; lastNode: string }): UserProfile {
   return {
-    version: 1,
+    version: 2,
     updated_at: params.now,
     first_seen_at: params.now,
     last_seen_at: params.now,
@@ -101,7 +172,53 @@ function defaultProfile(params: { now: string; lastNode: string }): UserProfile 
     node_counts: {},
     topic_scores: {},
     pref: { short_answers: 0.5 },
+
+    core: {
+      preferences: {
+        preferred_tone: "",
+        short_answers: 0.5,
+      },
+      semantic: {
+        topics: [],
+        goals: [],
+      },
+    },
+
+    tracks: {
+      active_track_id: null,
+      items: [],
+    },
   }
+}
+
+function migrateV1ToV2(v1: any): UserProfile {
+  const now = typeof v1.updated_at === "string" ? v1.updated_at : nowIso()
+  const lastNode = typeof v1.last_node === "string" ? v1.last_node : "HOME"
+  const base = defaultProfile({ now, lastNode })
+
+  base.first_seen_at = typeof v1.first_seen_at === "string" ? v1.first_seen_at : base.first_seen_at
+  base.last_seen_at = typeof v1.last_seen_at === "string" ? v1.last_seen_at : base.last_seen_at
+  base.updated_at = now
+  base.last_node = lastNode
+  base.node_counts = typeof v1.node_counts === "object" && v1.node_counts ? v1.node_counts : {}
+  base.topic_scores = typeof v1.topic_scores === "object" && v1.topic_scores ? v1.topic_scores : {}
+  if (typeof v1?.pref?.short_answers === "number") {
+    base.pref.short_answers = v1.pref.short_answers
+    base.core.preferences.short_answers = v1.pref.short_answers
+  }
+  return base
+}
+
+export async function writeUserProfile(params: {
+  userKey: string
+  profile: UserProfile
+  ttlSeconds: number
+}): Promise<void> {
+  const client = getRedisClient()
+  if (!client) return
+  await client.set(profileKey(params.userKey), JSON.stringify(params.profile), {
+    ex: params.ttlSeconds,
+  })
 }
 
 function ewma(oldValue: number, observation: number, alpha: number): number {
@@ -214,12 +331,11 @@ export async function recordTurn(params: {
     const obs = observeShortAnswerPreference(params.userText)
     if (obs !== null) {
       profile.pref.short_answers = clamp01(ewma(profile.pref.short_answers, obs, 0.08))
+      profile.core.preferences.short_answers = profile.pref.short_answers
     }
   }
 
-  await client.set(profileKey(params.userKey), JSON.stringify(profile), {
-    ex: params.ttlSeconds,
-  })
+  await writeUserProfile({ userKey: params.userKey, profile, ttlSeconds: params.ttlSeconds })
 }
 
 export async function readMemoryEvents(userKey: string, limit = 50): Promise<MemoryEvent[]> {
