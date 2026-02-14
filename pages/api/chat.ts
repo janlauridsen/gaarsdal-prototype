@@ -1,13 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import crypto from "crypto"
 
-import { runKernel } from "../../chat/kernel/engine"
+import { runNode } from "../../chat/runtime/nodeRunner"
 import { createInitialState } from "../../chat/kernel/state"
 import type { InputSignal, KernelResult, LogEvent } from "../../chat/kernel/types"
 import { getNode } from "../../chat/nodes/registry"
 
 import { appendInteraction, appendLog } from "../../chat/logging/sink"
-import { runCapability } from "../../chat/ai/runtime"
+import { appendTelemetryTurn } from "../../chat/telemetry/store"
+import { readUserProfile, writeUserProfile } from "../../chat/memory/store"
+import { consolidateV1 } from "../../chat/platform/consolidation"
 import {
   readConversationState,
   writeConversationState,
@@ -22,6 +24,7 @@ type ChatRequestBody = {
 const COOKIE_NAME = "gaarsdal_uid"
 const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
+const PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
@@ -83,13 +86,6 @@ function toUserInput(input: InputSignal): string | undefined {
   return undefined
 }
 
-function resolveCapabilityId(nodeId: string): string | null {
-  if (nodeId === "TRIAGE") return "triage-relevance-v1"
-  if (nodeId === "GEN_HYPNO") return "gen-hypno-v1"
-  if (nodeId === "METHOD_FIT") return "method-fit-v1"
-  return null
-}
-
 async function persistState(result: KernelResult): Promise<void> {
   await writeConversationState(result.state, SESSION_TTL_SECONDS)
 }
@@ -127,6 +123,33 @@ async function logAndRecord(params: {
     transitionType: kernelResult.transition.type,
     ttlSeconds: MEMORY_TTL_SECONDS,
   })
+
+  // Telemetry (dev): raw input/output for replay and prompt iteration.
+  const activeNode = getNode(kernelResult.state.active_node)
+  await appendTelemetryTurn({
+    conversation_id: kernelResult.state.conversation_id,
+    user_key: params.userKey,
+    revision: kernelResult.state.revision,
+    node_id: kernelResult.state.active_node,
+    input_type: input.type,
+    user_input_raw: params.userText ?? toUserInput(input),
+    assistant_output_raw: assistantText,
+    transition_type: kernelResult.transition.type,
+    outcome_node: kernelResult.transition.to,
+    capability_id: activeNode.kind === "DIALOG" ? activeNode.capability_id ?? null : null,
+    meta_keys_written: kernelResult.transition.meta_delta
+      ? Object.keys(kernelResult.transition.meta_delta)
+      : [],
+  })
+
+  // Deferred consolidation (C-mode): update core semantic hints in profile.
+  const profile = await readUserProfile(params.userKey)
+  if (profile) {
+    const { profile: updated, updated: didUpdate } = consolidateV1({ profile, state: kernelResult.state })
+    if (didUpdate) {
+      await writeUserProfile({ userKey: params.userKey, profile: updated, ttlSeconds: PROFILE_TTL_SECONDS })
+    }
+  }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -209,34 +232,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Backwards compatible fallback: if no stored state, use client state.
   const baseState = stored ?? clientState
 
-  // ---------- GENERIC DIALOG FREE TEXT ----------
-  if (baseState && input.type === "FREE_TEXT") {
-    const node = getNode(baseState.active_node)
-
-    if (node.kind === "DIALOG") {
-      const capabilityId = resolveCapabilityId(node.id)
-
-      if (capabilityId) {
-        const capabilityResult = await runCapability(capabilityId, {
-          state: baseState,
-          userText: input.text,
-        })
-
-        const kernelResult = runKernel(baseState, {
-          type: "FREE_TEXT_RESOLVED",
-          proposed_transition: capabilityResult.transition,
-        })
-
-        await persistState(kernelResult)
-        await logAndRecord({ userKey, input, kernelResult, userText: input.text })
-        return res.status(200).json(kernelResult)
-      }
-    }
-  }
-
-  // ---------- NORMAL ----------
-  const kernelResult = runKernel(baseState, input)
+  // ---------- NODE RUNTIME (dispatch by kind) ----------
+  const kernelResult = await runNode({ state: baseState, input, userKey })
   await persistState(kernelResult)
-  await logAndRecord({ userKey, input, kernelResult })
+  await logAndRecord({
+    userKey,
+    input,
+    kernelResult,
+    userText: input.type === "FREE_TEXT" ? input.text : undefined,
+  })
   return res.status(200).json(kernelResult)
 }
