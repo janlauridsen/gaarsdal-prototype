@@ -233,6 +233,75 @@ body {
 }
 
 /* =========================
+   SANDBOX UI (dev)
+========================= */
+
+.gaarsdal-sandbox-footer {
+  width: 100%;
+}
+
+.gaarsdal-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+@media (min-width: 420px) {
+  .gaarsdal-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.gaarsdal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gaarsdal-field span {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.gaarsdal-input {
+  width: 100%;
+  background: #F6F5F2;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  padding: 12px 14px;
+  outline: none;
+  font-size: 14px;
+}
+
+.gaarsdal-sandbox-cta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.gaarsdal-btn {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #4A5D54;
+  color: white;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.gaarsdal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gaarsdal-btn--ghost {
+  background: transparent;
+  color: #4A5D54;
+}
+
+/* =========================
    ICON BUTTONS
 ========================= */
 
