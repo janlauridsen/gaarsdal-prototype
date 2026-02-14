@@ -152,6 +152,10 @@ async function logAndRecord(params: {
   }
 }
 
+function isRouterNode(kind: unknown): boolean {
+  return kind === "ROUTER"
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" })
@@ -233,13 +237,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const baseState = stored ?? clientState
 
   // ---------- NODE RUNTIME (dispatch by kind) ----------
-  const kernelResult = await runNode({ state: baseState, input, userKey })
+  let kernelResult = await runNode({ state: baseState, input, userKey })
+
+  // Auto-advance ROUTER nodes (avoid manual extra turn).
+  // Guarded to prevent loops.
+  for (let i = 0; i < 3; i++) {
+    const activeNode = getNode(kernelResult.state.active_node)
+    if (!isRouterNode(activeNode.kind)) break
+
+    const before = kernelResult.state.active_node
+    kernelResult = await runNode({
+      state: kernelResult.state,
+      input: { type: "SYSTEM", intent: "ROUTER_TICK" } as any,
+      userKey,
+    })
+    const after = kernelResult.state.active_node
+    if (after === before) break
+  }
+
   await persistState(kernelResult)
   await logAndRecord({
     userKey,
     input,
     kernelResult,
-    userText: input.type === "FREE_TEXT" ? input.text : undefined,
+    userText: input.type === "FREE_TEXT" ? (input as any).text : undefined,
   })
   return res.status(200).json(kernelResult)
 }
