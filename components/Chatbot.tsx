@@ -15,6 +15,7 @@ import {
   ClipboardDocumentCheckIcon,
   Squares2X2Icon,
   CalendarDaysIcon,
+  WrenchScrewdriverIcon,
   HeartIcon,
   CircleStackIcon,
 } from "@heroicons/react/24/outline"
@@ -52,6 +53,7 @@ const NODE_LABELS: Record<string, string> = {
   TRIAGE: "Passer hypnoterapi til min situation?",
   METHOD_FIT: "Hypnoterapi eller et bedre alternativ?",
   BOOKING: "Book tid",
+  DEV_SANDBOX_INTRO: "Sandbox (dev)",
   MAIL: "E-mail",
   TLF: "Telefon",
   CONTACT_FORM: "Kontaktformular",
@@ -64,6 +66,7 @@ const TOPIC_TOOLTIPS: Record<string, string> = {
   METHOD_FIT:
     "Sammenlign retninger: hypnoterapi vs typiske alternativer (overblik, ikke behandling).",
   BOOKING: "Vælg kontaktvej for booking.",
+  DEV_SANDBOX_INTRO: "Dev-flow: form → tool → checkpoint → track/profile.",
 }
 
 const DEFAULT_TRIAGE_CHIPS = [
@@ -73,7 +76,7 @@ const DEFAULT_TRIAGE_CHIPS = [
   { id: "stop", label: "Stop her" },
 ]
 
-const TOPIC_NODES: string[] = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING"]
+const TOPIC_NODES: string[] = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING", "DEV_SANDBOX_INTRO"]
 
 function getTopicIcon(nodeId: string) {
   switch (nodeId) {
@@ -85,6 +88,8 @@ function getTopicIcon(nodeId: string) {
       return <Squares2X2Icon className="w-5 h-5" />
     case "BOOKING":
       return <CalendarDaysIcon className="w-5 h-5" />
+    case "DEV_SANDBOX_INTRO":
+      return <WrenchScrewdriverIcon className="w-5 h-5" />
     default:
       return <InformationCircleIcon className="w-5 h-5" />
   }
@@ -113,6 +118,18 @@ export default function Chatbot() {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
 
+  const [sandboxForm, setSandboxForm] = useState({
+    topic: "",
+    goal: "",
+    time_patterns: "",
+    situational_triggers: "",
+    relational_patterns: "",
+    preferred_tone: "",
+    support_direction: "",
+    interest_in_methods: "",
+  })
+  const [sandboxAdvanced, setSandboxAdvanced] = useState(false)
+
   const [navBanner, setNavBanner] = useState<string | null>(null)
   const navBannerTimerRef = useRef<number | null>(null)
 
@@ -135,6 +152,28 @@ export default function Chatbot() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, open, navBanner, expanded, insightsOpen])
+
+  useEffect(() => {
+    if (!state) return
+    if (state.active_node !== "DEV_SANDBOX_FORM") return
+
+    // Seed defaults fra sidste submit hvis den findes i state.meta
+    const last = state?.meta?.["form.last"]?.value
+    const values = last && typeof last === "object" ? (last as any).values : null
+    if (values && typeof values === "object") {
+      setSandboxForm((prev) => ({
+        ...prev,
+        topic: typeof values.topic === "string" ? values.topic : prev.topic,
+        goal: typeof values.goal === "string" ? values.goal : prev.goal,
+        time_patterns: typeof values.time_patterns === "string" ? values.time_patterns : prev.time_patterns,
+        situational_triggers: typeof values.situational_triggers === "string" ? values.situational_triggers : prev.situational_triggers,
+        relational_patterns: typeof values.relational_patterns === "string" ? values.relational_patterns : prev.relational_patterns,
+        preferred_tone: typeof values.preferred_tone === "string" ? values.preferred_tone : prev.preferred_tone,
+        support_direction: typeof values.support_direction === "string" ? values.support_direction : prev.support_direction,
+        interest_in_methods: typeof values.interest_in_methods === "string" ? values.interest_in_methods : prev.interest_in_methods,
+      }))
+    }
+  }, [state?.active_node])
 
   useEffect(() => {
     return () => {
@@ -295,6 +334,37 @@ export default function Chatbot() {
     setInput("")
   }
 
+  function submitSandboxForm() {
+    if (!state) return
+    if (state.active_node !== "DEV_SANDBOX_FORM") return
+
+    const topic = sandboxForm.topic.trim()
+    const goal = sandboxForm.goal.trim()
+
+    if (!topic || !goal) {
+      showNavBanner("Udfyld mindst: topic + goal")
+      return
+    }
+
+    const lines: string[] = []
+    const push = (k: string, v: string) => {
+      const val = v.trim()
+      if (!val) return
+      lines.push(`${k}: ${val}`)
+    }
+
+    push("topic", topic)
+    push("goal", goal)
+    push("time_patterns", sandboxForm.time_patterns)
+    push("situational_triggers", sandboxForm.situational_triggers)
+    push("relational_patterns", sandboxForm.relational_patterns)
+    push("preferred_tone", sandboxForm.preferred_tone)
+    push("support_direction", sandboxForm.support_direction)
+    push("interest_in_methods", sandboxForm.interest_in_methods)
+
+    dispatch({ type: "FREE_TEXT", text: lines.join("\n") })
+  }
+
   function handleTriageChip(chip: { id: string; label: string }) {
     const map: Record<string, string> = { stop: "HOME" }
     const target = map[chip.id]
@@ -344,6 +414,11 @@ export default function Chatbot() {
         tooltip: TOPIC_TOOLTIPS[id] ?? "",
       })).filter((t) => t.id !== state?.active_node)
     : []
+
+  const showSandboxFooter =
+    state?.active_node === "DEV_SANDBOX_INTRO" ||
+    state?.active_node === "DEV_SANDBOX_FORM" ||
+    state?.active_node === "DEV_SANDBOX_DONE"
 
   const containerClass = expanded ? "gaarsdal-chatbot gaarsdal-chatbot--expanded" : "gaarsdal-chatbot gaarsdal-chatbot--normal"
 
@@ -494,20 +569,178 @@ export default function Chatbot() {
             </div>
           </div>
 
-          <div className="flex items-start gap-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={inputPlaceholder}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault()
-                  sendFreeText()
-                }
-              }}
-              disabled={!state || loading || !freeTextEnabled}
-            />
-          </div>
+          {showSandboxFooter ? (
+            <div className="gaarsdal-sandbox-footer">
+              {state?.active_node === "DEV_SANDBOX_INTRO" && (
+                <div className="gaarsdal-sandbox-cta">
+                  <button
+                    className="gaarsdal-btn"
+                    onClick={() => state && go("DEV_SANDBOX_FORM")}
+                    disabled={!state || loading}
+                  >
+                    Start sandbox-form
+                  </button>
+                  <button
+                    className="gaarsdal-btn gaarsdal-btn--ghost"
+                    onClick={() => setSandboxAdvanced((v) => !v)}
+                    disabled={!state || loading}
+                  >
+                    {sandboxAdvanced ? "Skjul rå input" : "Vis rå input"}
+                  </button>
+                </div>
+              )}
+
+              {state?.active_node === "DEV_SANDBOX_FORM" && (
+                <div>
+                  <div className="gaarsdal-section-title">Sandbox form</div>
+
+                  <div className="gaarsdal-form-grid">
+                    <label className="gaarsdal-field">
+                      <span>Topic *</span>
+                      <input
+                        className="gaarsdal-input"
+                        value={sandboxForm.topic}
+                        onChange={(e) => setSandboxForm((p) => ({ ...p, topic: e.target.value }))}
+                        placeholder="fx alkohol om aftenen"
+                        disabled={!state || loading}
+                      />
+                    </label>
+
+                    <label className="gaarsdal-field">
+                      <span>Goal *</span>
+                      <input
+                        className="gaarsdal-input"
+                        value={sandboxForm.goal}
+                        onChange={(e) => setSandboxForm((p) => ({ ...p, goal: e.target.value }))}
+                        placeholder="fx drikke mindre"
+                        disabled={!state || loading}
+                      />
+                    </label>
+
+                    <label className="gaarsdal-field">
+                      <span>Time patterns</span>
+                      <input
+                        className="gaarsdal-input"
+                        value={sandboxForm.time_patterns}
+                        onChange={(e) => setSandboxForm((p) => ({ ...p, time_patterns: e.target.value }))}
+                        placeholder="fx aftenen"
+                        disabled={!state || loading}
+                      />
+                    </label>
+
+                    <label className="gaarsdal-field">
+                      <span>Situational triggers</span>
+                      <input
+                        className="gaarsdal-input"
+                        value={sandboxForm.situational_triggers}
+                        onChange={(e) => setSandboxForm((p) => ({ ...p, situational_triggers: e.target.value }))}
+                        placeholder="fx arbejdsstress"
+                        disabled={!state || loading}
+                      />
+                    </label>
+
+                    <label className="gaarsdal-field">
+                      <span>Relational patterns</span>
+                      <input
+                        className="gaarsdal-input"
+                        value={sandboxForm.relational_patterns}
+                        onChange={(e) => setSandboxForm((p) => ({ ...p, relational_patterns: e.target.value }))}
+                        placeholder="fx familien"
+                        disabled={!state || loading}
+                      />
+                    </label>
+
+                    <label className="gaarsdal-field">
+                      <span>Preferred tone</span>
+                      <input
+                        className="gaarsdal-input"
+                        value={sandboxForm.preferred_tone}
+                        onChange={(e) => setSandboxForm((p) => ({ ...p, preferred_tone: e.target.value }))}
+                        placeholder="fx rolig og direkte"
+                        disabled={!state || loading}
+                      />
+                    </label>
+
+                    <label className="gaarsdal-field">
+                      <span>Support direction</span>
+                      <input
+                        className="gaarsdal-input"
+                        value={sandboxForm.support_direction}
+                        onChange={(e) => setSandboxForm((p) => ({ ...p, support_direction: e.target.value }))}
+                        placeholder="fx ro før jeg kommer hjem"
+                        disabled={!state || loading}
+                      />
+                    </label>
+
+                    <label className="gaarsdal-field">
+                      <span>Interest in methods</span>
+                      <input
+                        className="gaarsdal-input"
+                        value={sandboxForm.interest_in_methods}
+                        onChange={(e) => setSandboxForm((p) => ({ ...p, interest_in_methods: e.target.value }))}
+                        placeholder="fx gåtur; pause; registrering"
+                        disabled={!state || loading}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="gaarsdal-sandbox-cta mt-2">
+                    <button className="gaarsdal-btn" onClick={submitSandboxForm} disabled={!state || loading}>
+                      Gem og kør tool
+                    </button>
+                    <button
+                      className="gaarsdal-btn gaarsdal-btn--ghost"
+                      onClick={() => setSandboxAdvanced((v) => !v)}
+                      disabled={!state || loading}
+                    >
+                      {sandboxAdvanced ? "Skjul rå input" : "Vis rå input"}
+                    </button>
+                  </div>
+
+                  {sandboxAdvanced && (
+                    <div className="mt-2">
+                      <div className="gaarsdal-section-title">Rå input (key:value)</div>
+                      <textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder={inputPlaceholder}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault()
+                            sendFreeText()
+                          }
+                        }}
+                        disabled={!state || loading || !freeTextEnabled}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {state?.active_node === "DEV_SANDBOX_DONE" && (
+                <div className="gaarsdal-sandbox-cta">
+                  <button className="gaarsdal-btn" onClick={() => state && go("HOME")} disabled={!state || loading}>
+                    Tilbage til forside
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-start gap-2">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={inputPlaceholder}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault()
+                    sendFreeText()
+                  }
+                }}
+                disabled={!state || loading || !freeTextEnabled}
+              />
+            </div>
+          )}
         </div>
 
         {insightsOpen && (
