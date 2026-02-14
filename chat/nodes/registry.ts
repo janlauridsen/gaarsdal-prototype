@@ -85,7 +85,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     ],
     router: {
       router_id: "home-router-v1",
-      candidates: ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING"],
+      candidates: ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING", "DEV_SANDBOX_ENTRY"],
     },
     meta_domains_written: ["router.decision"],
   },
@@ -135,7 +135,6 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
       "preferred_tone: rolig og direkte\n",
     allow_free_text: true,
     allow_parentese: false,
-    // NOTE: include self for validation-fail stay (NODE_HOP to same node)
     allowed_exits: ["DEV_SANDBOX_FORM", "DEV_SANDBOX_TOOL_APPLY", "HOME"],
     form: {
       instructions: "Skriv key:value pr linje.",
@@ -160,7 +159,6 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     kind: "TOOL",
     goal: "apply form to sandbox track",
     message: "System step: applying form to sandbox track…",
-    // No manual input required; API auto-advances TOOL nodes.
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: ["DEV_SANDBOX_CHECKPOINT", "DEV_SANDBOX_FORM", "HOME"],
