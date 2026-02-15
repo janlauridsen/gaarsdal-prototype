@@ -261,153 +261,73 @@ function enforceMessagePolicy(output: TriageOutput): TriageOutput {
     }
   }
 
-  if (isRelevant && output.render.next_question.trim()) {
-    output = {
-      ...output,
-      render: {
-        ...output.render,
-        next_question: "",
-      },
-    }
-  }
-
   return output
 }
 
-function buildFallbackOutput(context: AiCapabilityContext): TriageOutput {
-  const questionCount = countFromMeta(context)
-  const isFirst = questionCount === 0
+function normalizeOutput(raw: Record<string, unknown>, context: AiCapabilityContext): TriageOutput {
+  const decision = (raw.decision ?? {}) as Record<string, unknown>
+  const render = (raw.render ?? {}) as Record<string, unknown>
 
-  return {
+  const output: TriageOutput = {
+    decision: {
+      relevance: normalizeRelevance(decision.relevance),
+      topic_tags: toStringArray(decision.topic_tags),
+      user_goal: typeof decision.user_goal === "string" ? decision.user_goal : "",
+      key_triggers: toStringArray(decision.key_triggers),
+      time_horizon: typeof decision.time_horizon === "string" ? decision.time_horizon : "",
+      confidence: normalizeConfidence(decision.confidence),
+      next_state: normalizeNextState(decision.next_state),
+      notes_for_context: typeof decision.notes_for_context === "string" ? decision.notes_for_context : "",
+    },
+    render: {
+      assistant_message: typeof render.assistant_message === "string" ? render.assistant_message : "",
+      next_question: typeof render.next_question === "string" ? render.next_question : "",
+      chips: Array.isArray(render.chips) ? (render.chips as any[]).filter(Boolean) : [],
+    },
+  }
+
+  // Ensure chips have id/label shape; fallback if not.
+  const chips = output.render.chips
+    .map((c: any) => ({
+      id: typeof c?.id === "string" ? c.id : "",
+      label: typeof c?.label === "string" ? c.label : "",
+    }))
+    .filter((c) => c.id && c.label)
+
+  output.render.chips = chips.length ? chips : DEFAULT_CHIPS
+
+  return enforceMessagePolicy(output)
+}
+
+function buildFallbackOutput(context: AiCapabilityContext): TriageOutput {
+  return enforceMessagePolicy({
     decision: {
       relevance: "UNCLEAR",
       topic_tags: [],
       user_goal: "",
       key_triggers: [],
       time_horizon: "",
-      confidence: 0.4,
-      next_state: isFirst ? "OPEN" : "EXPLORE",
-      notes_for_context: "Fallback output: could not parse structured response.",
+      confidence: 0.35,
+      next_state: "EXPLORE",
+      notes_for_context: "",
     },
     render: {
-      assistant_message:
-        "Tak for at dele det. Det er et område, som ofte kan være relevant for hypnoterapi.",
-      next_question: isFirst
-        ? "Kan du sige lidt mere om, hvad du gerne vil ændre eller opleve anderledes?"
-        : "Hvad er det vigtigste, du ønsker at få ud af et forløb?",
+      assistant_message: "Tak for at dele det. Jeg vil gerne forstå lidt mere, så jeg kan svare ordentligt.",
+      next_question: "Hvad håber du at kunne ændre eller få hjælp til?",
       chips: DEFAULT_CHIPS,
-    },
-  }
-}
-
-function toTransition(stateId: NextState, relevance: Relevance): Transition {
-  const isRelevant = relevance === "YES" || relevance === "LIKELY"
-  if (stateId === "CONFIRM" && isRelevant) {
-    return {
-      type: "AI_TRIAGE",
-      from: "TRIAGE",
-      to: "TRIAGE_FIT_BOOKING",
-      reason: "ai-triage-confirm",
-    }
-  }
-
-  if (stateId === "CLOSE") {
-    return {
-      type: "AI_TRIAGE",
-      from: "TRIAGE",
-      to: "TRIAGE_NOT_RELEVANT",
-      reason: "ai-triage-close",
-    }
-  }
-
-  if (stateId === "MARK" && !isRelevant) {
-    return {
-      type: "AI_TRIAGE",
-      from: "TRIAGE",
-      to: "TRIAGE_NEEDS_ASSESSMENT",
-      reason: "ai-triage-assessment",
-    }
-  }
-
-  return {
-    type: "AI_TRIAGE",
-    from: "TRIAGE",
-    to: "TRIAGE",
-    reason: "ai-triage-continue",
-  }
-}
-
-function normalizeOutput(
-  raw: Record<string, unknown>,
-  context: AiCapabilityContext
-): TriageOutput {
-  const decision = raw.decision as Record<string, unknown>
-  const render = raw.render as Record<string, unknown>
-
-  const nextState = normalizeNextState(decision?.next_state)
-  const relevance = normalizeRelevance(decision?.relevance)
-  const confidence = normalizeConfidence(decision?.confidence)
-
-  return enforceMessagePolicy({
-    decision: {
-      relevance,
-      topic_tags: toStringArray(decision?.topic_tags),
-      user_goal: typeof decision?.user_goal === "string" ? decision.user_goal : "",
-      key_triggers: toStringArray(decision?.key_triggers),
-      time_horizon:
-        typeof decision?.time_horizon === "string" ? decision.time_horizon : "",
-      confidence,
-      next_state: nextState,
-      notes_for_context:
-        typeof decision?.notes_for_context === "string"
-          ? decision.notes_for_context
-          : "",
-    },
-    render: {
-      assistant_message:
-        typeof render?.assistant_message === "string" ? render.assistant_message : "",
-      next_question:
-        typeof render?.next_question === "string" ? render.next_question : "",
-      chips: Array.isArray(render?.chips)
-        ? render.chips.filter(
-            (chip) =>
-              chip &&
-              typeof chip.id === "string" &&
-              typeof chip.label === "string"
-          )
-        : DEFAULT_CHIPS,
     },
   })
 }
 
 function incrementQuestionCount(context: AiCapabilityContext): number {
   const current = countFromMeta(context)
-  return current + 1
+  const next = current + 1
+  writeMeta(context, "triage.question_count", next)
+  return next
 }
 
-function chooseNextState(output: TriageOutput, questionCount: number): NextState {
-  if (output.decision.relevance === "YES" || output.decision.relevance === "LIKELY") {
-    return "CONFIRM"
-  }
-
-  if (questionCount >= 4) return "MARK"
-  return output.decision.next_state
-}
-
-function deriveOutcome(output: TriageOutput, questionCount: number): Transition {
-  const nextState = chooseNextState(output, questionCount)
-  return toTransition(nextState, output.decision.relevance)
-}
-
-function writeMetaDecision(
-  context: AiCapabilityContext,
-  output: TriageOutput,
-  questionCount: number
-): void {
-  writeMeta(context, "triage.question_count", questionCount)
-  writeMeta(context, "triage.outcome", output.decision.relevance)
-  writeMeta(context, "triage.summary", output.decision.user_goal)
-  writeMeta(context, "triage.unclear_points", output.decision.notes_for_context)
+function writeMetaDecision(context: AiCapabilityContext, output: TriageOutput, questionCount: number): void {
+  writeMeta(context, "triage.relevance", output.decision.relevance)
   writeMeta(context, "triage.topic_tags", output.decision.topic_tags)
   writeMeta(context, "triage.user_goal", output.decision.user_goal)
   writeMeta(context, "triage.key_triggers", output.decision.key_triggers)
@@ -415,19 +335,25 @@ function writeMetaDecision(
   writeMeta(context, "triage.confidence", output.decision.confidence)
   writeMeta(context, "triage.next_state", output.decision.next_state)
   writeMeta(context, "triage.notes_for_context", output.decision.notes_for_context)
-  writeMeta(context, "triage.next_question", output.render.next_question)
-  writeMeta(
-    context,
-    "triage.chips",
-    output.render.chips.length ? output.render.chips : DEFAULT_CHIPS
-  )
+  writeMeta(context, "triage.question_count", questionCount)
 }
 
-function writeMetaTranscript(
-  context: AiCapabilityContext,
-  transcript: TranscriptTurn[]
-): void {
+function writeMetaTranscript(context: AiCapabilityContext, transcript: TranscriptTurn[]): void {
   writeMeta(context, "triage.transcript", transcript)
+}
+
+function deriveOutcome(output: TriageOutput, questionCount: number): Transition {
+  const nextNode = output.decision.relevance === "YES" || output.decision.relevance === "LIKELY" ? "GEN_HYPNO" : "TRIAGE"
+  return {
+    type: "NODE_HOP",
+    from: "TRIAGE",
+    to: nextNode,
+    reason: `triage: ${output.decision.relevance} (${questionCount})`,
+    meta_delta: {
+      "triage.decision": output.decision,
+      "triage.render": output.render,
+    },
+  }
 }
 
 export const triageCapability: AiCapability = {
@@ -439,12 +365,15 @@ export const triageCapability: AiCapability = {
     const transcript = readTranscript(context)
     const questionCount = incrementQuestionCount(context)
 
+    const contextSystem = (context.contextPack?.system ?? "").trim()
+
     const payload = {
       model: process.env.TRIAGE_MODEL ?? "gpt-4.1-mini",
       temperature: 0.2,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: TRIAGE_PROMPT },
+        ...(contextSystem ? [{ role: "system" as const, content: contextSystem }] : []),
         {
           role: "user",
           content: JSON.stringify({
