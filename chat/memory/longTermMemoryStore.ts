@@ -1,8 +1,8 @@
 import { getRedisClient } from "../persistence/redis"
 
 /**
- * Plane C — Long-term memory (v23): Themes + MemoryFacts (passive storage).
- * No prompt/context integration here yet.
+ * Plane C — Long-term memory (v23): Themes + Episodes + MemoryFacts.
+ * Passive storage only (no prompt integration here).
  */
 
 export type ThemeStatus = "active" | "dormant" | "archived"
@@ -15,6 +15,16 @@ export type Theme = {
   created_at: number
   updated_at: number
   origin: "user_selected" | "system_suggested" | "imported"
+}
+
+export type Episode = {
+  episode_id: string
+  theme_id: string
+  started_at: number
+  ended_at?: number
+  summary_short?: string
+  open_loops?: string[]
+  updated_at: number
 }
 
 export type MemoryFact = {
@@ -41,6 +51,9 @@ export type MemoryFact = {
 const KEY_PREFIX = "gaarsdal:mem:v23:"
 const KEY_THEMES_INDEX = (userKey: string) => `${KEY_PREFIX}u:${userKey}:themes`
 const KEY_THEME = (userKey: string, themeId: string) => `${KEY_PREFIX}u:${userKey}:theme:${themeId}`
+
+const KEY_EPISODES_INDEX = (userKey: string, themeId: string) => `${KEY_PREFIX}u:${userKey}:theme:${themeId}:episodes`
+const KEY_EPISODE = (userKey: string, episodeId: string) => `${KEY_PREFIX}u:${userKey}:episode:${episodeId}`
 
 const KEY_FACTS_INDEX = (userKey: string) => `${KEY_PREFIX}u:${userKey}:facts`
 const KEY_FACT = (userKey: string, factId: string) => `${KEY_PREFIX}u:${userKey}:fact:${factId}`
@@ -74,6 +87,17 @@ function isTheme(v: unknown): v is Theme {
   )
 }
 
+function isEpisode(v: unknown): v is Episode {
+  if (typeof v !== "object" || v === null) return false
+  const x = v as any
+  return (
+    typeof x.episode_id === "string" &&
+    typeof x.theme_id === "string" &&
+    typeof x.started_at === "number" &&
+    typeof x.updated_at === "number"
+  )
+}
+
 function isMemoryFact(v: unknown): v is MemoryFact {
   if (typeof v !== "object" || v === null) return false
   const x = v as any
@@ -91,8 +115,7 @@ function isMemoryFact(v: unknown): v is MemoryFact {
 }
 
 /**
- * Create or update a Theme.
- * This is safe to call idempotently with the same values.
+ * Create or update a Theme (idempotent).
  */
 export async function upsertTheme(params: {
   userKey: string
@@ -133,6 +156,59 @@ export async function readThemes(params: {
 }
 
 /**
+ * Create or update an Episode (idempotent).
+ */
+export async function upsertEpisode(params: {
+  userKey: string
+  episode: Episode
+  ttlSeconds: number
+}): Promise<void> {
+  const client = getRedisClient()
+  if (!client) return
+
+  await client.sadd(KEY_EPISODES_INDEX(params.userKey, params.episode.theme_id), params.episode.episode_id)
+  await client.set(KEY_EPISODE(params.userKey, params.episode.episode_id), JSON.stringify(params.episode), {
+    ex: params.ttlSeconds,
+  })
+}
+
+/**
+ * Read episodes for a theme.
+ */
+export async function readEpisodes(params: {
+  userKey: string
+  themeId: string
+  limit?: number
+}): Promise<Episode[]> {
+  const client = getRedisClient()
+  if (!client) return []
+
+  const ids = await client.smembers<string[]>(KEY_EPISODES_INDEX(params.userKey, params.themeId))
+  const limit = typeof params.limit === "number" ? Math.max(1, Math.min(params.limit, 100)) : 100
+
+  const out: Episode[] = []
+  for (const id of (ids ?? []).slice(0, limit)) {
+    const raw = await client.get<unknown>(KEY_EPISODE(params.userKey, id))
+    const parsed = parseJson<Episode>(raw)
+    if (parsed && isEpisode(parsed)) out.push(parsed)
+  }
+
+  out.sort((a, b) => b.updated_at - a.updated_at)
+  return out
+}
+
+export async function readEpisode(params: {
+  userKey: string
+  episodeId: string
+}): Promise<Episode | null> {
+  const client = getRedisClient()
+  if (!client) return null
+  const raw = await client.get<unknown>(KEY_EPISODE(params.userKey, params.episodeId))
+  const parsed = parseJson<Episode>(raw)
+  return parsed && isEpisode(parsed) ? parsed : null
+}
+
+/**
  * Create or update a MemoryFact.
  */
 export async function upsertFact(params: {
@@ -151,7 +227,6 @@ export async function upsertFact(params: {
 
 /**
  * Read facts for a user (best effort).
- * Optional status filter.
  */
 export async function readFacts(params: {
   userKey: string
@@ -177,26 +252,38 @@ export async function readFacts(params: {
 }
 
 /**
- * Convenience: create a suggested fact (no-op if caller doesn't use it yet).
- * Provided for Step 4 async jobs later.
+ * Step-4 helper: Ensure a default Theme+Episode exist.
+ * This is a temporary bridge until explicit theme selection UI exists.
  */
-export function makeSuggestedFact(params: {
-  fact_id: string
-  key: string
-  value: any
-  created_by: string
-  confidence?: number
-}): MemoryFact {
+export async function ensureDefaultThemeAndEpisode(params: {
+  userKey: string
+  ttlSeconds: number
+}): Promise<{ theme: Theme; episode: Episode }> {
+  const theme_id = "theme:general"
+  const episode_id = "episode:general:1"
   const ts = nowMs()
-  return {
-    fact_id: params.fact_id,
-    key: params.key,
-    value: params.value,
-    status: "suggested",
-    confidence: params.confidence,
+
+  const theme: Theme = {
+    theme_id,
+    label: "Generelt",
+    status: "active",
     created_at: ts,
     updated_at: ts,
-    provenance: { created_by: params.created_by },
-    edit_history: [],
+    origin: "system_suggested",
   }
+
+  const episode: Episode = {
+    episode_id,
+    theme_id,
+    started_at: ts,
+    updated_at: ts,
+    summary_short: undefined,
+    open_loops: undefined,
+  }
+
+  // Upsert both (idempotent).
+  await upsertTheme({ userKey: params.userKey, theme, ttlSeconds: params.ttlSeconds })
+  await upsertEpisode({ userKey: params.userKey, episode, ttlSeconds: params.ttlSeconds })
+
+  return { theme, episode }
 }
