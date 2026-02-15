@@ -1,545 +1,493 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  ArrowsPointingOutIcon,
-  ArrowsPointingInIcon,
-  XMarkIcon,
-  ChatBubbleLeftRightIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  LinkIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/outline";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-type StatePayload = {
+type Role = "user" | "assistant" | "system";
+
+type ChatMessage = {
+  role: Role;
+  content: string;
+  ts?: string;
+};
+
+type ConversationState = {
   conversation_id: string;
   revision: number;
   active_node: string;
   active_node_message: string;
   allowed_transitions: string[];
-  meta?: Record<string, any>;
-  status?: string;
+  status: "active" | "completed";
+  meta: Record<string, any>;
 };
 
-type Interaction = {
-  role: "user" | "assistant";
-  text: string;
-  ts?: string;
+type ChatApiResponse = {
+  ok: boolean;
+  state: ConversationState;
+  assistant_message?: string;
+  error?: string;
 };
 
-const API_STATE = "/api/state";
-const API_INTERACT = "/api/interact";
+type SandboxFormValues = {
+  topic: string;
+  goal: string;
+  time_patterns: string;
+  situational_triggers: string;
+  relational_patterns: string;
+  preferred_tone: string;
+  support_direction: string;
+  interest_in_methods: string;
+};
 
-function iconClass() {
-  return "gaarsdal-icon";
+const DEFAULT_SANDBOX_FORM: SandboxFormValues = {
+  topic: "",
+  goal: "",
+  time_patterns: "",
+  situational_triggers: "",
+  relational_patterns: "",
+  preferred_tone: "",
+  support_direction: "",
+  interest_in_methods: "",
+};
+
+function buildKeyValuePayload(values: SandboxFormValues): string {
+  // Backend forventer "key: value" pr linje.
+  // Vi sender kun felter der ikke er tomme.
+  const lines: string[] = [];
+  (Object.keys(values) as (keyof SandboxFormValues)[]).forEach((k) => {
+    const v = (values[k] ?? "").toString().trim();
+    if (v.length > 0) lines.push(`${k}: ${v}`);
+  });
+  return lines.join("\n");
 }
 
-function isSandboxNode(nodeId: string) {
-  return nodeId?.startsWith("DEV_SANDBOX_");
-}
-
-function isSandboxFormNode(nodeId: string) {
-  return nodeId === "DEV_SANDBOX_FORM";
-}
-
-function isSandboxIntroNode(nodeId: string) {
-  return nodeId === "DEV_SANDBOX_INTRO";
-}
-
-function isHomeNode(nodeId: string) {
-  return nodeId === "HOME";
-}
-
-function safeJsonParse<T>(value: string): T | null {
+function nowIso(): string {
   try {
-    return JSON.parse(value) as T;
+    return new Date().toISOString();
   } catch {
-    return null;
+    return "";
   }
-}
-
-function buildKeyValueText(values: Record<string, string>) {
-  return Object.entries(values)
-    .filter(([, v]) => (v ?? "").trim().length > 0)
-    .map(([k, v]) => `${k}: ${v.trim()}`)
-    .join("\n");
 }
 
 export default function Chatbot() {
-  const [isOpen, setIsOpen] = useState(true);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
-  const [state, setState] = useState<StatePayload | null>(null);
-  const [messages, setMessages] = useState<Interaction[]>([]);
+  const [state, setState] = useState<ConversationState | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // UI-friendly sandbox form state (client-side)
-  const [sandboxValues, setSandboxValues] = useState<Record<string, string>>({
-    topic: "",
-    goal: "",
-    time_patterns: "",
-    situational_triggers: "",
-    relational_patterns: "",
-    preferred_tone: "",
-    support_direction: "",
-    interest_in_methods: "",
-  });
-
-  const [sandboxError, setSandboxError] = useState<string | null>(null);
+  // Sandbox wizard UI
+  const [sandboxForm, setSandboxForm] = useState<SandboxFormValues>(DEFAULT_SANDBOX_FORM);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const initOnceRef = useRef(false);
 
-  const allowedTransitions = state?.allowed_transitions ?? [];
-  const activeNode = state?.active_node ?? "";
+  const activeNode = state?.active_node ?? "UNKNOWN";
 
-  const showSandboxForm = useMemo(() => {
-    return Boolean(state && isSandboxFormNode(state.active_node));
+  const isSandboxIntro = activeNode === "DEV_SANDBOX_INTRO";
+  const isSandboxForm = activeNode === "DEV_SANDBOX_FORM";
+  const isSandboxDone = activeNode === "DEV_SANDBOX_DONE";
+
+  const canGoHome = useMemo(() => {
+    const allowed = state?.allowed_transitions ?? [];
+    return allowed.includes("HOME");
   }, [state]);
 
-  const showSandboxIntroHelp = useMemo(() => {
-    return Boolean(state && isSandboxIntroNode(state.active_node));
-  }, [state]);
-
-  const showTopicGrid = useMemo(() => {
-    return Boolean(state && isHomeNode(state.active_node));
-  }, [state]);
-
-  const containerClass = useMemo(() => {
-    const base = "gaarsdal-chatbot";
-    const size = isExpanded ? " gaarsdal-chatbot--expanded" : " gaarsdal-chatbot--normal";
-    return base + size;
-  }, [isExpanded]);
-
-  async function fetchState() {
-    setError(null);
-    const res = await fetch(API_STATE, { method: "GET" });
-    if (!res.ok) throw new Error(`State fetch failed (${res.status})`);
-    const data = (await res.json()) as StatePayload;
-    setState(data);
-    return data;
-  }
-
-  async function sendInteraction(text: string) {
-    setIsSending(true);
-    setError(null);
-    try {
-      const res = await fetch(API_INTERACT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-
-      if (!res.ok) {
-        const maybe = await res.text();
-        throw new Error(maybe || `Interact failed (${res.status})`);
-      }
-
-      const payload = await res.json();
-
-      // payload can vary; we keep a simple transcript in UI:
-      const userMsg: Interaction = { role: "user", text };
-      const assistantText =
-        payload?.ai_response ??
-        payload?.assistant_output_raw ??
-        payload?.message ??
-        payload?.active_node_message ??
-        "";
-
-      const botMsg: Interaction = {
-        role: "assistant",
-        text: String(assistantText),
-      };
-
-      setMessages((prev) => [...prev, userMsg, botMsg]);
-
-      // refresh state after interaction
-      await fetchState();
-    } finally {
-      setIsSending(false);
-    }
-  }
-
-  async function boot() {
-    try {
-      const s = await fetchState();
-      // seed UI with the active_node_message once, so chat feels “alive”
-      if (s?.active_node_message) {
-        setMessages([{ role: "assistant", text: s.active_node_message }]);
-      }
-    } catch (e: any) {
-      setError(e?.message || "Kunne ikke hente state.");
-    }
-  }
-
-  useEffect(() => {
-    void boot();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isOpen, isExpanded]);
+    if (isOpen) scrollToBottom();
+  }, [isOpen, messages, scrollToBottom]);
 
-  function onToggleExpanded() {
-    setIsExpanded((v) => !v);
-  }
+  const appendMessage = useCallback((msg: ChatMessage) => {
+    setMessages((prev) => [...prev, msg]);
+  }, []);
 
-  function onClose() {
-    setIsOpen(false);
-  }
+  const callChatApi = useCallback(
+    async (payload: any): Promise<ChatApiResponse> => {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-  function onOpen() {
-    setIsOpen(true);
-  }
+      // Undgå at smide JSON parse-fejl ved fx HTML error pages
+      const text = await res.text();
+      let data: any = null;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { ok: false, error: `Non-JSON response (${res.status})`, raw: text };
+      }
 
-  async function onSubmitText() {
-    const text = input.trim();
-    if (!text || isSending) return;
+      if (!res.ok) {
+        return {
+          ok: false,
+          state: data?.state ?? payload?.state ?? null,
+          error: data?.error ?? `Request failed (${res.status})`,
+        };
+      }
 
-    setInput("");
-    await sendInteraction(text);
-  }
+      return data as ChatApiResponse;
+    },
+    []
+  );
 
-  async function onTransition(nodeId: string) {
-    if (isSending) return;
-    await sendInteraction(`EXPLICIT_TRANSITION:${nodeId}`);
-  }
+  const systemInit = useCallback(async () => {
+    setError(null);
+    setIsSending(true);
+    try {
+      const payload = {
+        state: null,
+        input_type: "SYSTEM_INIT",
+        user_input: "",
+      };
 
-  function renderQuickActions() {
-    // These are UI-only; you can wire them to your own transitions if you want.
-    return (
-      <div className="gaarsdal-chip-group" aria-label="Quick actions">
-        <button className="chip" type="button" onClick={() => void onTransition("HOME")} disabled={isSending}>
-          Home
-        </button>
-        <button className="chip" type="button" onClick={() => void onTransition("MAIL")} disabled={isSending}>
-          Mail
-        </button>
-        <button className="chip" type="button" onClick={() => void onTransition("TLF")} disabled={isSending}>
-          Telefon
-        </button>
-        <button className="chip" type="button" onClick={() => void onTransition("AKUT")} disabled={isSending}>
-          Akut
-        </button>
-      </div>
-    );
-  }
+      const data = await callChatApi(payload);
+      if (!data.ok) {
+        setError(data.error ?? "Init failed");
+        setIsSending(false);
+        return;
+      }
 
-  function renderTopicGrid() {
-    // Example UI grid for HOME that feels like a real entry screen.
-    // It uses your existing transitions.
-    const cards: Array<{ id: string; label: string; icon: React.ReactNode; disabled?: boolean }> = [
-      {
-        id: "GEN_HYPNO",
-        label: "Hypnoterapi (info)",
-        icon: <ChatBubbleLeftRightIcon className={iconClass()} />,
-      },
-      {
-        id: "TRIAGE",
-        label: "Hvad passer til mig?",
-        icon: <ExclamationTriangleIcon className={iconClass()} />,
-      },
-      {
-        id: "METHOD_FIT",
-        label: "Metode-fit",
-        icon: <LinkIcon className={iconClass()} />,
-      },
-      {
-        id: "BOOKING",
-        label: "Booking",
-        icon: <EnvelopeIcon className={iconClass()} />,
-      },
-      {
-        id: "DEV_SANDBOX_INTRO",
-        label: "Dev sandbox",
-        icon: <ChatBubbleLeftRightIcon className={iconClass()} />,
-      },
-    ];
+      setState(data.state);
 
-    return (
-      <>
-        <div className="gaarsdal-section-title">Vælg et emne</div>
-        <div className="gaarsdal-topic-grid">
-          {cards.map((c) => (
-            <button
-              key={c.id}
-              className="gaarsdal-topic-card"
-              type="button"
-              disabled={isSending || (allowedTransitions.length > 0 && !allowedTransitions.includes(c.id))}
-              onClick={() => void onTransition(c.id)}
-            >
-              <span className="gaarsdal-topic-icon">{c.icon}</span>
-              <span className="gaarsdal-topic-label">{c.label}</span>
-            </button>
-          ))}
-        </div>
-      </>
-    );
-  }
+      // Vis første bot-besked
+      const msg = data.state?.active_node_message ?? "Velkommen.";
+      appendMessage({ role: "assistant", content: msg, ts: nowIso() });
+    } catch (e: any) {
+      setError(e?.message ?? "Init error");
+    } finally {
+      setIsSending(false);
+    }
+  }, [appendMessage, callChatApi]);
 
-  function renderSandboxIntroHint() {
-    // Make sandbox feel guided, not “type ok”.
-    return (
-      <>
-        <div className="gaarsdal-section-title">Sandbox</div>
-        <div className="gaarsdal-meta">
-          Tryk “Start” for at udfylde felter i en rigtig form. (Systemet sender stadig key:value til backend for
-          kompatibilitet.)
-        </div>
-        <div className="gaarsdal-chip-group" style={{ marginTop: 8 }}>
-          <button
-            className="chip"
-            type="button"
-            disabled={isSending}
-            onClick={() => void onTransition("DEV_SANDBOX_FORM")}
-          >
-            Start
-          </button>
-          <button className="chip" type="button" disabled={isSending} onClick={() => void onTransition("HOME")}>
-            Tilbage
-          </button>
-        </div>
-      </>
-    );
-  }
+  useEffect(() => {
+    // Init kun når chatbot åbnes første gang (mere realistisk + mindre støj i logs)
+    if (!isOpen) return;
+    if (initOnceRef.current) return;
+    initOnceRef.current = true;
+    void systemInit();
+  }, [isOpen, systemInit]);
 
-  function onSandboxChange(key: string, value: string) {
-    setSandboxValues((prev) => ({ ...prev, [key]: value }));
-  }
+  const sendUserInput = useCallback(
+    async (userText: string, inputType: "FREE_TEXT" | "EXPLICIT_TRANSITION" = "FREE_TEXT") => {
+      if (!state) {
+        setError("No state yet. Open chatbot to initialize.");
+        return;
+      }
 
-  async function onSubmitSandboxForm() {
-    if (isSending) return;
+      const trimmed = userText.trim();
+      if (!trimmed && inputType === "FREE_TEXT") return;
 
-    setSandboxError(null);
+      setError(null);
+      setIsSending(true);
 
-    const required = ["topic", "goal"];
-    const missing = required.filter((k) => !(sandboxValues[k] ?? "").trim());
-    if (missing.length > 0) {
-      setSandboxError(`Udfyld mindst: ${missing.join(", ")}`);
+      if (inputType === "FREE_TEXT") {
+        appendMessage({ role: "user", content: trimmed, ts: nowIso() });
+      } else {
+        // EXPlicit transitions vises ikke som "user text" i UI; men du kan ændre det, hvis du vil
+      }
+
+      try {
+        const payload =
+          inputType === "EXPLICIT_TRANSITION"
+            ? { state, input_type: "EXPLICIT_TRANSITION", user_input: `EXPLICIT_TRANSITION:${trimmed}` }
+            : { state, input_type: "FREE_TEXT", user_input: trimmed };
+
+        const data = await callChatApi(payload);
+
+        if (!data.ok) {
+          setError(data.error ?? "Send failed");
+          setIsSending(false);
+          return;
+        }
+
+        setState(data.state);
+
+        const botMsg =
+          data.assistant_message ??
+          data.state?.active_node_message ??
+          "OK";
+
+        appendMessage({ role: "assistant", content: botMsg, ts: nowIso() });
+
+        // Hvis vi er i sandbox form, så gem sidste submit i UI som “draft”
+        if (data.state?.active_node === "DEV_SANDBOX_FORM") {
+          // behold brugerens felter
+        }
+
+        setInput("");
+      } catch (e: any) {
+        setError(e?.message ?? "Send error");
+      } finally {
+        setIsSending(false);
+      }
+    },
+    [appendMessage, callChatApi, state]
+  );
+
+  const onSubmitText = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      await sendUserInput(input, "FREE_TEXT");
+    },
+    [input, sendUserInput]
+  );
+
+  const onClickHome = useCallback(async () => {
+    if (!canGoHome) return;
+    await sendUserInput("HOME", "EXPLICIT_TRANSITION");
+  }, [canGoHome, sendUserInput]);
+
+  const submitSandboxForm = useCallback(async () => {
+    const payload = buildKeyValuePayload(sandboxForm);
+    if (!payload.trim()) {
+      setError("Udfyld mindst ét felt før du sender.");
       return;
     }
+    await sendUserInput(payload, "FREE_TEXT");
+  }, [sandboxForm, sendUserInput]);
 
-    const text = buildKeyValueText(sandboxValues);
-
-    // Clear UI input after submit (optional)
-    // setSandboxValues((v) => ({ ...v, support_direction: "", interest_in_methods: "" }));
-
-    await sendInteraction(text);
-  }
-
-  function renderSandboxFooterForm() {
-    return (
-      <div className="gaarsdal-sandbox-footer">
-        <div className="gaarsdal-section-title">Sandbox form</div>
-
-        <div className="gaarsdal-form-grid">
-          <div className="gaarsdal-field">
-            <div className="gaarsdal-label">Topic *</div>
-            <input
-              className="gaarsdal-input"
-              value={sandboxValues.topic}
-              onChange={(e) => onSandboxChange("topic", e.target.value)}
-              placeholder="fx alkohol om aftenen"
-              disabled={isSending}
-            />
-          </div>
-
-          <div className="gaarsdal-field">
-            <div className="gaarsdal-label">Goal *</div>
-            <input
-              className="gaarsdal-input"
-              value={sandboxValues.goal}
-              onChange={(e) => onSandboxChange("goal", e.target.value)}
-              placeholder="fx drikke mindre"
-              disabled={isSending}
-            />
-          </div>
-
-          <div className="gaarsdal-field">
-            <div className="gaarsdal-label">Time patterns</div>
-            <input
-              className="gaarsdal-input"
-              value={sandboxValues.time_patterns}
-              onChange={(e) => onSandboxChange("time_patterns", e.target.value)}
-              placeholder="fx aftenen"
-              disabled={isSending}
-            />
-          </div>
-
-          <div className="gaarsdal-field">
-            <div className="gaarsdal-label">Situational triggers</div>
-            <input
-              className="gaarsdal-input"
-              value={sandboxValues.situational_triggers}
-              onChange={(e) => onSandboxChange("situational_triggers", e.target.value)}
-              placeholder="fx arbejdsstress"
-              disabled={isSending}
-            />
-          </div>
-
-          <div className="gaarsdal-field">
-            <div className="gaarsdal-label">Relational patterns</div>
-            <input
-              className="gaarsdal-input"
-              value={sandboxValues.relational_patterns}
-              onChange={(e) => onSandboxChange("relational_patterns", e.target.value)}
-              placeholder="fx familien"
-              disabled={isSending}
-            />
-          </div>
-
-          <div className="gaarsdal-field">
-            <div className="gaarsdal-label">Preferred tone</div>
-            <input
-              className="gaarsdal-input"
-              value={sandboxValues.preferred_tone}
-              onChange={(e) => onSandboxChange("preferred_tone", e.target.value)}
-              placeholder="fx rolig og direkte"
-              disabled={isSending}
-            />
-          </div>
-
-          <div className="gaarsdal-field">
-            <div className="gaarsdal-label">Support direction</div>
-            <input
-              className="gaarsdal-input"
-              value={sandboxValues.support_direction}
-              onChange={(e) => onSandboxChange("support_direction", e.target.value)}
-              placeholder="fx ro før jeg kommer hjem"
-              disabled={isSending}
-            />
-          </div>
-
-          <div className="gaarsdal-field">
-            <div className="gaarsdal-label">Interest in methods</div>
-            <input
-              className="gaarsdal-input"
-              value={sandboxValues.interest_in_methods}
-              onChange={(e) => onSandboxChange("interest_in_methods", e.target.value)}
-              placeholder="fx gåtur; pause; registrering"
-              disabled={isSending}
-            />
-          </div>
-        </div>
-
-        <div className="gaarsdal-form-actions">
-          <button className="btn btn-primary" type="button" disabled={isSending} onClick={() => void onSubmitSandboxForm()}>
-            Send
-          </button>
-          <button className="btn" type="button" disabled={isSending} onClick={() => void onTransition("HOME")}>
-            Home
-          </button>
-        </div>
-
-        {sandboxError ? <div className="gaarsdal-error">{sandboxError}</div> : null}
-      </div>
-    );
-  }
-
-  if (!isOpen) {
-    return (
-      <button
-        type="button"
-        onClick={onOpen}
-        className="gaarsdal-icon-btn"
-        style={{
-          position: "fixed",
-          right: 24,
-          bottom: 24,
-          zIndex: 40,
-        }}
-        aria-label="Open chatbot"
-      >
-        <ChatBubbleLeftRightIcon className={iconClass()} />
-      </button>
-    );
-  }
+  // UI helpers
+  const headerSubtitle = useMemo(() => {
+    if (!state) return "—";
+    return state.active_node;
+  }, [state]);
 
   return (
     <>
-      <div className="gaarsdal-overlay" onClick={onClose} />
+      {/* Launcher (lukket som default) */}
+      {!isOpen && (
+        <button
+          type="button"
+          aria-label="Åbn chat"
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 active:scale-[0.99]"
+        >
+          Gaarsdal Chat
+        </button>
+      )}
 
-      <div className={containerClass} role="dialog" aria-label="Gaarsdal Chat">
-        <div className="gaarsdal-chatbot-header">
-          <div className="gaarsdal-header-row">
-            <div className="gaarsdal-title-wrap">
-              <div className="gaarsdal-title">Gaarsdal Chat</div>
-              <div className="gaarsdal-subtitle">{activeNode || "—"}</div>
+      {/* Panel */}
+      {isOpen && (
+        <div className="fixed bottom-6 right-6 z-50 w-[360px] max-w-[calc(100vw-3rem)] rounded-2xl border border-neutral-200 bg-white shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-neutral-900 truncate">Gaarsdal Chat</div>
+              <div className="text-xs text-neutral-500 truncate">{headerSubtitle}</div>
             </div>
 
-            <div className="gaarsdal-actions">
-              <button className="gaarsdal-icon-btn" type="button" onClick={onToggleExpanded} aria-label="Toggle size">
-                {isExpanded ? (
-                  <ArrowsPointingInIcon className={iconClass()} />
-                ) : (
-                  <ArrowsPointingOutIcon className={iconClass()} />
-                )}
-              </button>
-
-              <button className="gaarsdal-icon-btn" type="button" onClick={onClose} aria-label="Close">
-                <XMarkIcon className={iconClass()} />
+            <div className="flex items-center gap-2">
+              {canGoHome && (
+                <button
+                  type="button"
+                  onClick={onClickHome}
+                  className="rounded-lg border border-neutral-200 px-2 py-1 text-xs text-neutral-700 hover:bg-neutral-50"
+                >
+                  HOME
+                </button>
+              )}
+              <button
+                type="button"
+                aria-label="Luk"
+                onClick={() => setIsOpen(false)}
+                className="rounded-lg border border-neutral-200 px-2 py-1 text-xs text-neutral-700 hover:bg-neutral-50"
+              >
+                ✕
               </button>
             </div>
           </div>
-        </div>
 
-        <div className="messages">
-          {error ? (
-            <div className="message bot">
-              <strong>Fejl:</strong> {error}
-            </div>
-          ) : null}
-
-          {messages.map((m, idx) => (
-            <div key={idx} className={`message ${m.role === "user" ? "user" : "bot"}`}>
-              {m.text}
-            </div>
-          ))}
-
-          {/* UI sections */}
-          {showTopicGrid ? <div className="message bot">{renderTopicGrid()}</div> : null}
-          {showSandboxIntroHelp ? <div className="message bot">{renderSandboxIntroHint()}</div> : null}
-
-          {/* fallback quick actions (only when not in sandbox form) */}
-          {!showSandboxForm && isSandboxNode(activeNode) ? <div className="message bot">{renderQuickActions()}</div> : null}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        <div className="gaarsdal-chatbot-footer">
-          {showSandboxForm ? (
-            renderSandboxFooterForm()
-          ) : (
-            <>
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Skriv her... (Enter = send, Shift+Enter = ny linje)"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void onSubmitText();
-                  }
-                }}
-                disabled={isSending}
-              />
-
-              {/* Optional quick transitions if backend allows them */}
-              {allowedTransitions.length > 0 ? (
-                <div className="gaarsdal-chip-group" style={{ marginTop: 8 }}>
-                  {allowedTransitions.slice(0, 8).map((t) => (
-                    <button key={t} className="chip" type="button" disabled={isSending} onClick={() => void onTransition(t)}>
-                      {t}
-                    </button>
-                  ))}
+          {/* Body */}
+          <div className="h-[420px] bg-neutral-50">
+            <div className="h-full overflow-y-auto px-3 py-3 space-y-2">
+              {messages.map((m, idx) => {
+                const isUser = m.role === "user";
+                return (
+                  <div key={idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className={[
+                        "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed",
+                        isUser
+                          ? "bg-neutral-900 text-white"
+                          : "bg-white text-neutral-900 border border-neutral-200",
+                      ].join(" ")}
+                    >
+                      <div className="whitespace-pre-wrap">{m.content}</div>
+                    </div>
+                  </div>
+                );
+              })}
+              {error && (
+                <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                  Fejl: {error}
                 </div>
-              ) : null}
-            </>
-          )}
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+
+          {/* Footer / Input area */}
+          <div className="border-t border-neutral-200 bg-white px-3 py-3">
+            {/* Sandbox: Intro quick actions */}
+            {isSandboxIntro && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => sendUserInput("ok", "FREE_TEXT")}
+                  className="rounded-xl bg-neutral-900 px-3 py-2 text-xs font-medium text-white hover:bg-neutral-800"
+                  disabled={isSending}
+                >
+                  Start (OK)
+                </button>
+                {canGoHome && (
+                  <button
+                    type="button"
+                    onClick={onClickHome}
+                    className="rounded-xl border border-neutral-200 px-3 py-2 text-xs font-medium text-neutral-800 hover:bg-neutral-50"
+                    disabled={isSending}
+                  >
+                    Tilbage (HOME)
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Sandbox: Wizard-form UI */}
+            {isSandboxForm ? (
+              <div className="space-y-2">
+                <div className="text-xs text-neutral-600">
+                  Udfyld felterne (sendes som <span className="font-mono">key: value</span> til backend).
+                </div>
+
+                <div className="grid grid-cols-1 gap-2">
+                  <label className="text-xs text-neutral-700">
+                    Topic
+                    <input
+                      value={sandboxForm.topic}
+                      onChange={(e) => setSandboxForm((p) => ({ ...p, topic: e.target.value }))}
+                      className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-neutral-200"
+                      placeholder="fx alkohol om aftenen"
+                    />
+                  </label>
+
+                  <label className="text-xs text-neutral-700">
+                    Goal
+                    <input
+                      value={sandboxForm.goal}
+                      onChange={(e) => setSandboxForm((p) => ({ ...p, goal: e.target.value }))}
+                      className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-neutral-200"
+                      placeholder="fx drikke mindre"
+                    />
+                  </label>
+
+                  <label className="text-xs text-neutral-700">
+                    Time patterns
+                    <input
+                      value={sandboxForm.time_patterns}
+                      onChange={(e) => setSandboxForm((p) => ({ ...p, time_patterns: e.target.value }))}
+                      className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-neutral-200"
+                      placeholder="fx aftenen"
+                    />
+                  </label>
+
+                  <label className="text-xs text-neutral-700">
+                    Situational triggers
+                    <input
+                      value={sandboxForm.situational_triggers}
+                      onChange={(e) => setSandboxForm((p) => ({ ...p, situational_triggers: e.target.value }))}
+                      className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-neutral-200"
+                      placeholder="fx arbejdsstress"
+                    />
+                  </label>
+
+                  <label className="text-xs text-neutral-700">
+                    Relational patterns
+                    <input
+                      value={sandboxForm.relational_patterns}
+                      onChange={(e) => setSandboxForm((p) => ({ ...p, relational_patterns: e.target.value }))}
+                      className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-neutral-200"
+                      placeholder="fx familien"
+                    />
+                  </label>
+
+                  <label className="text-xs text-neutral-700">
+                    Preferred tone
+                    <input
+                      value={sandboxForm.preferred_tone}
+                      onChange={(e) => setSandboxForm((p) => ({ ...p, preferred_tone: e.target.value }))}
+                      className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-neutral-200"
+                      placeholder="fx rolig og direkte"
+                    />
+                  </label>
+
+                  <label className="text-xs text-neutral-700">
+                    Support direction
+                    <input
+                      value={sandboxForm.support_direction}
+                      onChange={(e) => setSandboxForm((p) => ({ ...p, support_direction: e.target.value }))}
+                      className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-neutral-200"
+                      placeholder="fx ro før jeg kommer hjem"
+                    />
+                  </label>
+
+                  <label className="text-xs text-neutral-700">
+                    Interest in methods
+                    <input
+                      value={sandboxForm.interest_in_methods}
+                      onChange={(e) => setSandboxForm((p) => ({ ...p, interest_in_methods: e.target.value }))}
+                      className="mt-1 w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-neutral-200"
+                      placeholder="fx gåtur; pause; registrering"
+                    />
+                  </label>
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={submitSandboxForm}
+                    disabled={isSending}
+                    className="flex-1 rounded-xl bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
+                  >
+                    Send
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSandboxForm(DEFAULT_SANDBOX_FORM)}
+                    disabled={isSending}
+                    className="rounded-xl border border-neutral-200 px-3 py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-50 disabled:opacity-60"
+                  >
+                    Ryd
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // Normal chat input (også i sandbox done, hvor man typisk vælger HOME)
+              <form onSubmit={onSubmitText} className="flex items-end gap-2">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  rows={2}
+                  placeholder={isSandboxDone ? "Vælg HOME for at fortsætte…" : "Skriv her…"}
+                  className="flex-1 resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-neutral-200"
+                  disabled={isSending}
+                />
+                <button
+                  type="submit"
+                  disabled={isSending || !input.trim()}
+                  className="rounded-xl bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
+                >
+                  Send
+                </button>
+              </form>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }
