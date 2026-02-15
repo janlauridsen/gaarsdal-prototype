@@ -1,78 +1,62 @@
-import type { Transition } from "../../kernel/types"
-import type { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
+import { Transition } from "../../kernel/types"
+import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
 
-type TranscriptRole = "user" | "assistant"
-type TranscriptTurn = { role: TranscriptRole; content: string }
+type TranscriptTurn = { role: "user" | "assistant"; content: string }
 
-const MAX_TURNS = 16
-
-type MethodFitJson = {
+type Output = {
   assistant_message: string
   summary?: string
 }
 
-const METHOD_FIT_PROMPT = `Du hjælper brugeren med at vælge retning: hypnoterapi eller typiske alternativer.
+const MAX_TRANSCRIPT_TURNS = 16
 
-Formål:
-- Afklare match mellem brugerens mål/situation og hypnoterapi som tilgang.
-- Hvis hypnoterapi typisk ikke matcher, nævn 1-3 alternative retninger i generelle termer (fx samtaleterapi, coaching, mindfulness/stress-tilgange, lægefaglig afklaring).
-- Du må gerne forklare forskelle på tilgange på et overordnet plan.
+const METHOD_FIT_PROMPT = `Du er en samtalepartner der hjælper med at afklare om og hvordan en metode kan passe.
+Du er rolig, respektfuld og ikke-behandlende.
 
-Hard rules:
-- Ingen behandling, øvelser, induktioner eller konkrete behandlingsråd.
-- Ingen diagnosticering eller medicinsk/psykiatrisk vurdering.
-- Stil maks. 1 afklarende spørgsmål pr svar, og kun hvis nødvendigt.
-- Vær tydelig om at du giver overblik, ikke behandling.
-
-Du får conversation_transcript og user_input. Brug transcript aktivt.
-
-Returnér KUN gyldig JSON:
+Returner KUN gyldig JSON i formatet:
 {
   "assistant_message": string,
-  "summary"?: string
+  "summary": string (optional)
 }`
 
 function readTranscript(context: AiCapabilityContext): TranscriptTurn[] {
   const raw = context.state.meta["method_fit.transcript"]?.value
   if (!Array.isArray(raw)) return []
-  const out: TranscriptTurn[] = []
+  const turns: TranscriptTurn[] = []
   for (const item of raw) {
     if (!item || typeof item !== "object") continue
-    const obj = item as Record<string, unknown>
-    const role = obj.role
-    const content = obj.content
-    if ((role === "user" || role === "assistant") && typeof content === "string" && content.trim()) {
-      out.push({ role, content: content.trim() })
+    const obj = item as any
+    if ((obj.role === "user" || obj.role === "assistant") && typeof obj.content === "string") {
+      const content = obj.content.trim()
+      if (content) turns.push({ role: obj.role, content })
     }
   }
-  return out.slice(-MAX_TURNS)
+  return turns.slice(-MAX_TRANSCRIPT_TURNS)
 }
 
-function appendTranscript(prev: TranscriptTurn[], userText: string, assistantText: string): TranscriptTurn[] {
-  const next = [...prev]
-  const u = userText.trim()
-  const a = assistantText.trim()
+function appendTranscript(previous: TranscriptTurn[], userText: string, assistantText: string): TranscriptTurn[] {
+  const next = [...previous]
+  const u = (userText ?? "").trim()
+  const a = (assistantText ?? "").trim()
   if (u) next.push({ role: "user", content: u })
   if (a) next.push({ role: "assistant", content: a })
-  return next.slice(-MAX_TURNS)
+  return next.slice(-MAX_TRANSCRIPT_TURNS)
 }
 
-function normalizeOutput(raw: Record<string, unknown> | null): MethodFitJson | null {
-  if (!raw || typeof raw !== "object") return null
-  const msg = raw["assistant_message"]
-  if (typeof msg !== "string") return null
-  const assistant_message = msg.trim()
-  if (!assistant_message) return null
-  const summary = typeof raw["summary"] === "string" ? (raw["summary"] as string).trim() : undefined
-  return { assistant_message, summary: summary || undefined }
+function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
+  if (!raw) return null
+  const msg = typeof raw.assistant_message === "string" ? raw.assistant_message.trim() : ""
+  if (!msg) return null
+  const summary = typeof raw.summary === "string" ? raw.summary.trim() : undefined
+  return { assistant_message: msg, summary }
 }
 
-function buildFallback(userText: string): MethodFitJson {
-  const hasText = userText.trim().length > 0
+function buildFallback(userText: string): Output {
+  const u = (userText ?? "").trim()
   return {
-    assistant_message: hasText
-      ? "Tak. For at vurdere retning på et overordnet plan: hvad vil du gerne opnå, og hvad har du allerede prøvet? (Jeg giver kun overblik, ikke behandling.)"
-      : "Hvad vil du gerne opnå—og handler det mest om fx vaner, angst/uro, selvværd, stress, smerter eller motivation? (Jeg giver kun overblik, ikke behandling.)",
+    assistant_message: u
+      ? "Tak. Hvis du vil, kan vi afklare hvad du håber at få ud af det, og hvad du helst vil undgå—så kan jeg bedre sige noget om metode-match."
+      : "Hvad vil du gerne afklare omkring metode-match—fx hvad du håber at få ud af et forløb, eller hvad du er i tvivl om?",
     summary: "",
   }
 }
@@ -81,6 +65,7 @@ export const methodFitCapability: AiCapability = {
   id: "method-fit-v1",
   async run(context: AiCapabilityContext, llm: LlmClient): Promise<AiCapabilityResult> {
     const transcript = readTranscript(context)
+    const contextSystem = (context.contextPack?.system ?? "").trim()
 
     const payload = {
       model: process.env.METHOD_FIT_MODEL ?? process.env.TRIAGE_MODEL ?? "gpt-4.1-mini",
@@ -88,6 +73,7 @@ export const methodFitCapability: AiCapability = {
       response_format: { type: "json_object" as const },
       messages: [
         { role: "system" as const, content: METHOD_FIT_PROMPT },
+        ...(contextSystem ? [{ role: "system" as const, content: contextSystem }] : []),
         {
           role: "user" as const,
           content: JSON.stringify({
