@@ -8,13 +8,13 @@ import { getNode } from "../../chat/nodes/registry"
 
 import { appendInteraction, appendLog } from "../../chat/logging/sink"
 import { appendTelemetryTurn } from "../../chat/telemetry/store"
-import { readUserProfile, writeUserProfile } from "../../chat/memory/store"
+import { readUserProfile, recordTurn, writeUserProfile } from "../../chat/memory/store"
 import { consolidateV1 } from "../../chat/platform/consolidation"
 import {
   readConversationState,
   writeConversationState,
 } from "../../chat/persistence/conversationStateStore"
-import { recordTurn } from "../../chat/memory/store"
+import { appendSpineEventV23 } from "../../chat/observability/spineStore"
 
 type ChatRequestBody = {
   state: any
@@ -86,8 +86,52 @@ function toUserInput(input: InputSignal): string | undefined {
   return undefined
 }
 
+function eventId(): string {
+  // Prefer built-in uuid if available.
+  return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
+}
+
+function metaDomains(keys: string[]): string[] {
+  const domains = new Set<string>()
+  for (const k of keys) {
+    const idx = k.indexOf(".")
+    domains.add(idx > 0 ? k.slice(0, idx) : k)
+  }
+  return Array.from(domains)
+}
+
 async function persistState(result: KernelResult): Promise<void> {
   await writeConversationState(result.state, SESSION_TTL_SECONDS)
+}
+
+async function emitSpine(params: {
+  userKey: string
+  input: InputSignal
+  kernelResult: KernelResult
+  latencyMs?: number
+  error?: { code: string; message: string; retryable?: boolean }
+}): Promise<void> {
+  const { kernelResult, input, userKey, latencyMs, error } = params
+  const keys = kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : []
+  const domains = keys.length ? metaDomains(keys) : []
+
+  await appendSpineEventV23({
+    schema_version: "v23",
+    event_id: eventId(),
+    user_key: userKey,
+    conversation_id: kernelResult.state.conversation_id,
+    revision_before: kernelResult.log.revision_before,
+    revision_after: kernelResult.log.revision_after,
+    node_before: kernelResult.log.active_node_before,
+    node_after: kernelResult.log.active_node_after,
+    status_after: kernelResult.state.status,
+    input_type: (input as any).type,
+    transition_type: kernelResult.transition.type,
+    meta_domains_written: domains,
+    meta_keys_written: keys,
+    latency_ms: latencyMs,
+    error,
+  })
 }
 
 async function logAndRecord(params: {
@@ -137,24 +181,15 @@ async function logAndRecord(params: {
     transition_type: kernelResult.transition.type,
     outcome_node: kernelResult.transition.to,
     capability_id: activeNode.kind === "DIALOG" ? activeNode.capability_id ?? null : null,
-    meta_keys_written: kernelResult.transition.meta_delta
-      ? Object.keys(kernelResult.transition.meta_delta)
-      : [],
+    meta_keys_written: kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : [],
   })
 
   // Deferred consolidation (C-mode): update core semantic hints in profile.
   const profile = await readUserProfile(params.userKey)
   if (profile) {
-    const { profile: updated, updated: didUpdate } = consolidateV1({
-      profile,
-      state: kernelResult.state,
-    })
+    const { profile: updated, updated: didUpdate } = consolidateV1({ profile, state: kernelResult.state })
     if (didUpdate) {
-      await writeUserProfile({
-        userKey: params.userKey,
-        profile: updated,
-        ttlSeconds: PROFILE_TTL_SECONDS,
-      })
+      await writeUserProfile({ userKey: params.userKey, profile: updated, ttlSeconds: PROFILE_TTL_SECONDS })
     }
   }
 }
@@ -165,10 +200,6 @@ function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
   return node.kind === "ROUTER" || node.kind === "TOOL" || node.kind === "CHECKPOINT"
 }
 
-/**
- * Validates request method and body and returns the parsed body.
- * This is intentionally strict and keeps behavior equivalent to the original file.
- */
 function validateRequest(req: NextApiRequest, res: NextApiResponse): ChatRequestBody | null {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method Not Allowed" })
@@ -182,7 +213,6 @@ function validateRequest(req: NextApiRequest, res: NextApiResponse): ChatRequest
 
   const body = req.body as ChatRequestBody
   const input = (body as any).input
-
   if (!input || !isObject(input) || typeof (input as any).type !== "string") {
     res.status(400).json({ error: "Missing or invalid input" })
     return null
@@ -191,26 +221,16 @@ function validateRequest(req: NextApiRequest, res: NextApiResponse): ChatRequest
   return body
 }
 
-/**
- * Handles clientState === null initialization semantics:
- * - if stored state exists: return it (and append init log)
- * - else: create initial state, persist it, append init log
- *
- * Returns:
- * - payload object (already written to response by caller), OR
- * - null if not an init request
- */
 async function handleInitOrRestore(params: {
   clientState: any
   storedState: any | null
   conversationId: string
+  userKey: string
   res: NextApiResponse
 }): Promise<boolean> {
-  const { clientState, storedState, res } = params
-
+  const { clientState, storedState, conversationId, userKey, res } = params
   if (clientState !== null) return false
 
-  // restore
   if (storedState) {
     const log: LogEvent = {
       conversation_id: storedState.conversation_id,
@@ -234,12 +254,27 @@ async function handleInitOrRestore(params: {
     }
 
     await appendLog(payload.log)
+
+    // Minimal spine for init/restore.
+    await appendSpineEventV23({
+      schema_version: "v23",
+      event_id: eventId(),
+      user_key: userKey,
+      conversation_id: storedState.conversation_id,
+      revision_before: storedState.revision,
+      revision_after: storedState.revision,
+      node_before: storedState.active_node,
+      node_after: storedState.active_node,
+      status_after: storedState.status,
+      input_type: "SYSTEM_INIT",
+      transition_type: "INIT",
+    })
+
     res.status(200).json(payload)
     return true
   }
 
-  // create
-  const initialState = createInitialState(params.conversationId)
+  const initialState = createInitialState(conversationId)
 
   const log: LogEvent = {
     conversation_id: initialState.conversation_id,
@@ -264,22 +299,29 @@ async function handleInitOrRestore(params: {
 
   await writeConversationState(initialState, SESSION_TTL_SECONDS)
   await appendLog(payload.log)
+
+  await appendSpineEventV23({
+    schema_version: "v23",
+    event_id: eventId(),
+    user_key: userKey,
+    conversation_id: initialState.conversation_id,
+    revision_before: -1,
+    revision_after: initialState.revision,
+    node_before: null,
+    node_after: initialState.active_node,
+    status_after: initialState.status,
+    input_type: "SYSTEM_INIT",
+    transition_type: "INIT",
+  })
+
   res.status(200).json(payload)
   return true
 }
 
-/**
- * Server is source-of-truth for persistence.
- * Backwards compatible fallback: if no stored state, use client state.
- */
 function resolveBaseState(params: { storedState: any | null; clientState: any }): any {
   return params.storedState ?? params.clientState
 }
 
-/**
- * Runs node runtime + kernel and auto-advances ROUTER/TOOL/CHECKPOINT nodes.
- * Guarded to prevent loops (max 5 ticks).
- */
 async function runTurnWithAutoAdvance(params: {
   baseState: any
   input: InputSignal
@@ -287,11 +329,8 @@ async function runTurnWithAutoAdvance(params: {
 }): Promise<KernelResult> {
   const { baseState, input, userKey } = params
 
-  // ---------- NODE RUNTIME (dispatch by kind) ----------
   let kernelResult = await runNode({ state: baseState, input, userKey })
 
-  // Auto-advance ROUTER/TOOL/CHECKPOINT nodes to avoid manual "go" turns.
-  // Guarded to prevent loops.
   for (let i = 0; i < 5; i++) {
     const activeNode = getNode(kernelResult.state.active_node)
     if (!isAutoAdvanceNode(activeNode)) break
@@ -310,6 +349,7 @@ async function runTurnWithAutoAdvance(params: {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const started = Date.now()
   const body = validateRequest(req, res)
   if (!body) return
 
@@ -318,30 +358,59 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { state: clientState, input } = body
 
-  // Server is source-of-truth for persistence.
   const stored = await readConversationState(conversationId)
 
-  // ---------- INIT / RESTORE ----------
   const initHandled = await handleInitOrRestore({
     clientState,
     storedState: stored,
     conversationId,
+    userKey,
     res,
   })
   if (initHandled) return
 
-  // ---------- TURN PIPELINE ----------
   const baseState = resolveBaseState({ storedState: stored, clientState })
 
-  const kernelResult = await runTurnWithAutoAdvance({ baseState, input, userKey })
+  try {
+    const kernelResult = await runTurnWithAutoAdvance({ baseState, input, userKey })
+    await persistState(kernelResult)
 
-  await persistState(kernelResult)
-  await logAndRecord({
-    userKey,
-    input,
-    kernelResult,
-    userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined,
-  })
+    await emitSpine({
+      userKey,
+      input,
+      kernelResult,
+      latencyMs: Date.now() - started,
+    })
 
-  return res.status(200).json(kernelResult)
+    await logAndRecord({
+      userKey,
+      input,
+      kernelResult,
+      userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined,
+    })
+
+    res.status(200).json(kernelResult)
+  } catch (e: any) {
+    // Best-effort: emit a minimal spine error event without requiring kernel output.
+    await appendSpineEventV23({
+      schema_version: "v23",
+      event_id: eventId(),
+      user_key: userKey,
+      conversation_id: conversationId,
+      revision_before: stored?.revision ?? -1,
+      revision_after: stored?.revision ?? -1,
+      node_before: stored?.active_node ?? null,
+      node_after: stored?.active_node ?? (clientState?.active_node ?? "UNKNOWN"),
+      status_after: stored?.status ?? "active",
+      input_type: (input as any).type,
+      transition_type: "ERROR",
+      latency_ms: Date.now() - started,
+      error: {
+        code: "UNHANDLED",
+        message: typeof e?.message === "string" ? e.message : "Unknown error",
+      },
+    })
+
+    res.status(500).json({ error: "Internal Server Error" })
+  }
 }
