@@ -16,6 +16,11 @@ type TranscriptTurn = {
   content: string
 }
 
+type CompactLastTurn = {
+  user?: string
+  assistant?: string
+}
+
 type Decision = {
   relevance: Relevance
   topic_tags: string[]
@@ -38,7 +43,7 @@ type TriageOutput = {
   render: Render
 }
 
-const MAX_TRANSCRIPT_TURNS = 16
+const MAX_TEXT = 260
 
 const TRIAGE_PROMPT = `Du er en relevans-assistent for hypnoterapi.
 
@@ -175,26 +180,19 @@ function includesQuestionOnly(text: string): boolean {
   return trimmed.endsWith("?") && !trimmed.includes(". ")
 }
 
-function readTranscript(context: AiCapabilityContext): TranscriptTurn[] {
-  const raw = context.state.meta["triage.transcript"]?.value
-  if (!Array.isArray(raw)) return []
+function clamp(s: string, max: number): string {
+  const t = (s ?? "").trim()
+  if (t.length <= max) return t
+  return t.slice(0, max - 1) + "…"
+}
 
-  const turns: TranscriptTurn[] = []
-  for (const item of raw) {
-    if (!item || typeof item !== "object") continue
-    const obj = item as Record<string, unknown>
-    if (
-      (obj.role === "user" || obj.role === "assistant") &&
-      typeof obj.content === "string" &&
-      obj.content.trim().length > 0
-    ) {
-      turns.push({
-        role: obj.role,
-        content: obj.content.trim(),
-      })
-    }
-  }
-  return turns.slice(-MAX_TRANSCRIPT_TURNS)
+function readCompactLastTurn(context: AiCapabilityContext): CompactLastTurn {
+  const raw = context.state.meta["dialog.triage.last_turn"]?.value
+  if (!raw || typeof raw !== "object") return {}
+  const obj = raw as Record<string, unknown>
+  const user = typeof obj.user === "string" ? clamp(obj.user, MAX_TEXT) : undefined
+  const assistant = typeof obj.assistant === "string" ? clamp(obj.assistant, MAX_TEXT) : undefined
+  return { user, assistant }
 }
 
 function buildAssistantText(render: Render): string {
@@ -205,23 +203,15 @@ function buildAssistantText(render: Render): string {
   return parts.filter(Boolean).join("\n\n")
 }
 
-function appendTranscript(
-  previous: TranscriptTurn[],
-  userText: string,
-  assistantText: string
-): TranscriptTurn[] {
-  const next = [...previous]
-  const user = userText.trim()
-  const assistant = assistantText.trim()
-
-  if (user.length > 0) {
-    next.push({ role: "user", content: user })
+function buildCompactTranscript(lastTurn: CompactLastTurn): TranscriptTurn[] {
+  const out: TranscriptTurn[] = []
+  if (typeof lastTurn.user === "string" && lastTurn.user.trim()) {
+    out.push({ role: "user", content: lastTurn.user.trim() })
   }
-  if (assistant.length > 0) {
-    next.push({ role: "assistant", content: assistant })
+  if (typeof lastTurn.assistant === "string" && lastTurn.assistant.trim()) {
+    out.push({ role: "assistant", content: lastTurn.assistant.trim() })
   }
-
-  return next.slice(-MAX_TRANSCRIPT_TURNS)
+  return out
 }
 
 function enforceMessagePolicy(output: TriageOutput): TriageOutput {
@@ -338,8 +328,55 @@ function writeMetaDecision(context: AiCapabilityContext, output: TriageOutput, q
   writeMeta(context, "triage.question_count", questionCount)
 }
 
-function writeMetaTranscript(context: AiCapabilityContext, transcript: TranscriptTurn[]): void {
-  writeMeta(context, "triage.transcript", transcript)
+function writeCompactLastTurn(context: AiCapabilityContext, userText: string, assistantText: string): void {
+  writeMeta(context, "dialog.triage.last_turn", {
+    user: clamp(userText, MAX_TEXT),
+    assistant: clamp(assistantText, MAX_TEXT),
+  })
+}
+
+function detectThemeCandidate(params: {
+  userText: string
+  topicTags: string[]
+}): { id: string; label: string; confidence: number } | null {
+  const text = (params.userText ?? "").toLowerCase()
+  const tags = (params.topicTags ?? []).map((t) => String(t).toLowerCase())
+
+  const alcoholSignals = ["alkohol", "vin", "øl", "bajer", "drik", "drikker", "fuld", "beruset"]
+  const hitsText = alcoholSignals.some((w) => text.includes(w))
+  const hitsTags = tags.some((t) => t.includes("alkohol"))
+
+  if (hitsText || hitsTags) {
+    return { id: "alkohol", label: "Alkohol", confidence: hitsTags ? 0.85 : 0.78 }
+  }
+
+  // v23: no other explicit theme routing yet
+  return null
+}
+
+function writeMemoryCandidates(context: AiCapabilityContext, output: TriageOutput): void {
+  const theme = detectThemeCandidate({ userText: context.userText, topicTags: output.decision.topic_tags })
+  if (theme) {
+    writeMeta(context, "memory_candidates.theme", theme)
+  }
+
+  if (output.decision.user_goal.trim()) {
+    writeMeta(context, "memory_candidates.goal", {
+      text: clamp(output.decision.user_goal, 240),
+      source: "triage",
+    })
+  }
+
+  if (output.decision.key_triggers.length) {
+    writeMeta(context, "memory_candidates.triggers", output.decision.key_triggers.slice(0, 10))
+  }
+
+  // v23: patterns are not extracted yet; keep explicit empty to enable future evolution.
+  writeMeta(context, "memory_candidates.patterns", [])
+
+  if (output.decision.notes_for_context.trim()) {
+    writeMeta(context, "memory_candidates.summary", clamp(output.decision.notes_for_context, 420))
+  }
 }
 
 function deriveOutcome(output: TriageOutput, questionCount: number): Transition {
@@ -362,7 +399,8 @@ export const triageCapability: AiCapability = {
     context: AiCapabilityContext,
     llm: LlmClient
   ): Promise<AiCapabilityResult> {
-    const transcript = readTranscript(context)
+    const lastTurn = readCompactLastTurn(context)
+    const transcript = buildCompactTranscript(lastTurn)
     const questionCount = incrementQuestionCount(context)
 
     const contextSystem = (context.contextPack?.system ?? "").trim()
@@ -389,10 +427,13 @@ export const triageCapability: AiCapability = {
 
     const transition = deriveOutcome(output, questionCount)
     const assistantText = buildAssistantText(output.render)
-    const updatedTranscript = appendTranscript(transcript, context.userText, assistantText)
-
     writeMetaDecision(context, output, questionCount)
-    writeMetaTranscript(context, updatedTranscript)
+
+    // Store a compact last-turn context (bounded), not a growing transcript.
+    writeCompactLastTurn(context, context.userText, assistantText)
+
+    // Emit structured candidates for long-term memory refinement.
+    writeMemoryCandidates(context, output)
 
     return {
       transition: {
