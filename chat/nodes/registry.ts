@@ -65,6 +65,12 @@ const QUICK_CONTACTS: NodeId[] = [
   "AKUT",
 ]
 
+/**
+ * NOTE:
+ * The runtime appears to enforce *exact* domain/keys as "writable".
+ * Your logs show: "meta domain not writable: triage.decision"
+ * So TRIAGE must include "triage.decision" (and commonly "triage.render").
+ */
 const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
   HOME: {
     id: "HOME",
@@ -79,13 +85,22 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "METHOD_FIT",
       "BOOKING",
       "DEV_SANDBOX_INTRO",
+      // Optional: add ALCOHOL once capability exists.
+      // "ALCOHOL",
       "MAIL",
       "TLF",
       "AKUT",
     ],
     router: {
       router_id: "home-router-v1",
-      candidates: ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING", "DEV_SANDBOX_INTRO"],
+      candidates: [
+        "GEN_HYPNO",
+        "TRIAGE",
+        "METHOD_FIT",
+        "BOOKING",
+        "DEV_SANDBOX_INTRO",
+        // Optional: "ALCOHOL",
+      ],
     },
     meta_domains_written: ["router.decision"],
   },
@@ -191,6 +206,26 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     meta_domains_written: [],
   },
 
+  // ----------- OPTIONAL: ALCOHOL DIALOG (enable when capability exists) -----------
+  // ALCOHOL: {
+  //   id: "ALCOHOL",
+  //   kind: "DIALOG",
+  //   goal: "Alkohol: refleksion og ændring",
+  //   message:
+  //     "Fortæl kort om dit alkoholmønster (hvornår/hvor meget/hvad der udløser det) og hvad du ønsker anderledes. Jeg hjælper med struktur, refleksion og næste skridt—ikke behandling.",
+  //   allow_free_text: true,
+  //   allow_parentese: true,
+  //   allowed_exits: ["HOME", ...QUICK_CONTACTS],
+  //   capability_id: "alcohol-dialog-v1",
+  //   meta_domains_written: [
+  //     "alcohol.transcript",
+  //     "alcohol.summary",
+  //     "alcohol.patterns",
+  //     "alcohol.triggers",
+  //     "alcohol.goal",
+  //   ],
+  // },
+
   // ----------- EXISTING NODES -----------
 
   GEN_HYPNO: {
@@ -223,6 +258,11 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     ],
     capability_id: "triage-relevance-v1",
     meta_domains_written: [
+      // Fix for: "meta domain not writable: triage.decision"
+      "triage.decision",
+      // Often written by the same capability (header/chips rendering data)
+      "triage.render",
+
       "triage.question_count",
       "triage.outcome",
       "triage.summary",
@@ -236,6 +276,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "triage.notes_for_context",
       "triage.next_question",
       "triage.chips",
+
       // Iteration 1: compact last-turn context + structured memory candidates.
       "dialog.triage.last_turn",
       "memory_candidates.theme",
