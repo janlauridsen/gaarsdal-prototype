@@ -145,9 +145,16 @@ async function logAndRecord(params: {
   // Deferred consolidation (C-mode): update core semantic hints in profile.
   const profile = await readUserProfile(params.userKey)
   if (profile) {
-    const { profile: updated, updated: didUpdate } = consolidateV1({ profile, state: kernelResult.state })
+    const { profile: updated, updated: didUpdate } = consolidateV1({
+      profile,
+      state: kernelResult.state,
+    })
     if (didUpdate) {
-      await writeUserProfile({ userKey: params.userKey, profile: updated, ttlSeconds: PROFILE_TTL_SECONDS })
+      await writeUserProfile({
+        userKey: params.userKey,
+        profile: updated,
+        ttlSeconds: PROFILE_TTL_SECONDS,
+      })
     }
   }
 }
@@ -158,85 +165,127 @@ function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
   return node.kind === "ROUTER" || node.kind === "TOOL" || node.kind === "CHECKPOINT"
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+/**
+ * Validates request method and body and returns the parsed body.
+ * This is intentionally strict and keeps behavior equivalent to the original file.
+ */
+function validateRequest(req: NextApiRequest, res: NextApiResponse): ChatRequestBody | null {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" })
+    res.status(405).json({ error: "Method Not Allowed" })
+    return null
   }
-
-  const userKey = ensureUserKey(req, res)
-  const conversationId = toConversationId(userKey)
 
   if (!isObject(req.body)) {
-    return res.status(400).json({ error: "Invalid JSON body" })
+    res.status(400).json({ error: "Invalid JSON body" })
+    return null
   }
 
-  const { state: clientState, input } = req.body as ChatRequestBody
+  const body = req.body as ChatRequestBody
+  const input = (body as any).input
 
   if (!input || !isObject(input) || typeof (input as any).type !== "string") {
-    return res.status(400).json({ error: "Missing or invalid input" })
+    res.status(400).json({ error: "Missing or invalid input" })
+    return null
   }
 
-  // Server is source-of-truth for persistence.
-  const stored = await readConversationState(conversationId)
+  return body
+}
 
-  // ---------- INIT / RESTORE ----------
-  if (clientState === null) {
-    if (stored) {
-      const log: LogEvent = {
-        conversation_id: stored.conversation_id,
-        revision_before: stored.revision,
-        revision_after: stored.revision,
-        active_node_before: stored.active_node,
-        active_node_after: stored.active_node,
-        input_type: "SYSTEM_INIT",
-        transition_type: "INIT",
-        timestamp: new Date().toISOString(),
-      }
+/**
+ * Handles clientState === null initialization semantics:
+ * - if stored state exists: return it (and append init log)
+ * - else: create initial state, persist it, append init log
+ *
+ * Returns:
+ * - payload object (already written to response by caller), OR
+ * - null if not an init request
+ */
+async function handleInitOrRestore(params: {
+  clientState: any
+  storedState: any | null
+  conversationId: string
+  res: NextApiResponse
+}): Promise<boolean> {
+  const { clientState, storedState, res } = params
 
-      const payload = {
-        state: stored,
-        transition: {
-          type: "INIT",
-          from: null,
-          reason: "system init (restored)",
-        },
-        log,
-      }
+  if (clientState !== null) return false
 
-      await appendLog(payload.log)
-      return res.status(200).json(payload)
-    }
-
-    const initialState = createInitialState(conversationId)
-
+  // restore
+  if (storedState) {
     const log: LogEvent = {
-      conversation_id: initialState.conversation_id,
-      revision_before: -1,
-      revision_after: initialState.revision,
-      active_node_before: null,
-      active_node_after: initialState.active_node,
+      conversation_id: storedState.conversation_id,
+      revision_before: storedState.revision,
+      revision_after: storedState.revision,
+      active_node_before: storedState.active_node,
+      active_node_after: storedState.active_node,
       input_type: "SYSTEM_INIT",
       transition_type: "INIT",
       timestamp: new Date().toISOString(),
     }
 
     const payload = {
-      state: initialState,
+      state: storedState,
       transition: {
         type: "INIT",
         from: null,
-        reason: "system init",
+        reason: "system init (restored)",
       },
       log,
     }
 
-    await writeConversationState(initialState, SESSION_TTL_SECONDS)
     await appendLog(payload.log)
-    return res.status(200).json(payload)
+    res.status(200).json(payload)
+    return true
   }
 
-  // Backwards compatible fallback: if no stored state, use client state.
-  const baseState = stored ?? clientState
+  // create
+  const initialState = createInitialState(params.conversationId)
+
+  const log: LogEvent = {
+    conversation_id: initialState.conversation_id,
+    revision_before: -1,
+    revision_after: initialState.revision,
+    active_node_before: null,
+    active_node_after: initialState.active_node,
+    input_type: "SYSTEM_INIT",
+    transition_type: "INIT",
+    timestamp: new Date().toISOString(),
+  }
+
+  const payload = {
+    state: initialState,
+    transition: {
+      type: "INIT",
+      from: null,
+      reason: "system init",
+    },
+    log,
+  }
+
+  await writeConversationState(initialState, SESSION_TTL_SECONDS)
+  await appendLog(payload.log)
+  res.status(200).json(payload)
+  return true
+}
+
+/**
+ * Server is source-of-truth for persistence.
+ * Backwards compatible fallback: if no stored state, use client state.
+ */
+function resolveBaseState(params: { storedState: any | null; clientState: any }): any {
+  return params.storedState ?? params.clientState
+}
+
+/**
+ * Runs node runtime + kernel and auto-advances ROUTER/TOOL/CHECKPOINT nodes.
+ * Guarded to prevent loops (max 5 ticks).
+ */
+async function runTurnWithAutoAdvance(params: {
+  baseState: any
+  input: InputSignal
+  userKey: string
+}): Promise<KernelResult> {
+  const { baseState, input, userKey } = params
 
   // ---------- NODE RUNTIME (dispatch by kind) ----------
   let kernelResult = await runNode({ state: baseState, input, userKey })
@@ -257,6 +306,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (after === before) break
   }
 
+  return kernelResult
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const body = validateRequest(req, res)
+  if (!body) return
+
+  const userKey = ensureUserKey(req, res)
+  const conversationId = toConversationId(userKey)
+
+  const { state: clientState, input } = body
+
+  // Server is source-of-truth for persistence.
+  const stored = await readConversationState(conversationId)
+
+  // ---------- INIT / RESTORE ----------
+  const initHandled = await handleInitOrRestore({
+    clientState,
+    storedState: stored,
+    conversationId,
+    res,
+  })
+  if (initHandled) return
+
+  // ---------- TURN PIPELINE ----------
+  const baseState = resolveBaseState({ storedState: stored, clientState })
+
+  const kernelResult = await runTurnWithAutoAdvance({ baseState, input, userKey })
+
   await persistState(kernelResult)
   await logAndRecord({
     userKey,
@@ -264,5 +342,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     kernelResult,
     userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined,
   })
+
   return res.status(200).json(kernelResult)
 }
