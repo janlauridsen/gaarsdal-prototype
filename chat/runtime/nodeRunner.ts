@@ -6,12 +6,15 @@ import type { Node } from "../nodes/registry"
 import { parseFormText } from "../tools/formParsing"
 import { runTool } from "../tools/tools"
 import { runRouter } from "../router/runRouter"
+import { buildContextPackV23 } from "../ai/contextPack"
 
 export type NodeRunParams = {
   state: ConversationState
   input: InputSignal
   userKey: string
 }
+
+const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // keep aligned with other TTLs for now
 
 function norm(s: string): string {
   return s.toLowerCase().trim()
@@ -123,9 +126,16 @@ export async function runNode(params: NodeRunParams) {
       })
     }
 
+    const contextPack = await buildContextPackV23({
+      userKey: params.userKey,
+      state,
+      ttlSeconds: MEMORY_TTL_SECONDS,
+    })
+
     const capabilityResult = await runCapability(capabilityId, {
       state,
       userText: input.text,
+      contextPack: { system: contextPack.system },
     })
 
     return runKernel(state, {
@@ -222,5 +232,6 @@ export async function runNode(params: NodeRunParams) {
     })
   }
 
+  // Default fallback
   return runKernel(state, input)
 }
