@@ -1,4 +1,4 @@
-export type AsyncJobType = "SUMMARIZE_EPISODE"
+export type AsyncJobType = "SUMMARIZE_EPISODE" | "SUGGEST_FACTS"
 
 export type AsyncJobV23 = {
   schema_version: "v23"
