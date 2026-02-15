@@ -179,9 +179,12 @@ async function enqueueSuggestFacts(params: {
   metaKeysWritten: string[]
 }): Promise<void> {
   // Trigger rule (v23):
-  // - when triage.* writes occur, enqueue; otherwise no-op.
-  const touchedTriage = params.metaKeysWritten.some((k) => k.startsWith("triage."))
-  if (!touchedTriage) return
+  // - when triage.* OR memory_candidates.* writes occur, enqueue; otherwise no-op.
+  // (Iteration 1: triage writes structured memory candidates.)
+  const touched = params.metaKeysWritten.some(
+    (k) => k.startsWith("triage.") || k.startsWith("memory_candidates.")
+  )
+  if (!touched) return
 
   const ensured = await ensureDefaultThemeAndEpisode({
     userKey: params.userKey,
