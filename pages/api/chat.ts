@@ -138,16 +138,11 @@ async function emitSpine(params: {
   })
 }
 
-/**
- * Step 4: minimal async enqueue rule.
- * Until theme-selection UI exists, we summarize into a default "Generelt" theme/episode.
- */
 async function enqueueSummarizeEpisode(params: {
   userKey: string
   conversationId: string
   revisionAfter: number
 }): Promise<void> {
-  // Only every N turns to keep costs down.
   const N = 8
   if (params.revisionAfter <= 0) return
   if (params.revisionAfter % N !== 0) return
@@ -168,6 +163,42 @@ async function enqueueSummarizeEpisode(params: {
     schema_version: "v23",
     job_version: 1,
     type: "SUMMARIZE_EPISODE",
+    job_id,
+    user_key: params.userKey,
+    conversation_id: params.conversationId,
+    theme_id: ensured.theme.theme_id,
+    episode_id: ensured.episode.episode_id,
+    revision_after: params.revisionAfter,
+  })
+}
+
+async function enqueueSuggestFacts(params: {
+  userKey: string
+  conversationId: string
+  revisionAfter: number
+  metaKeysWritten: string[]
+}): Promise<void> {
+  // Trigger rule (v23):
+  // - when triage.* writes occur, enqueue; otherwise no-op.
+  const touchedTriage = params.metaKeysWritten.some((k) => k.startsWith("triage."))
+  if (!touchedTriage) return
+
+  const ensured = await ensureDefaultThemeAndEpisode({
+    userKey: params.userKey,
+    ttlSeconds: MEMORY_TTL_SECONDS,
+  })
+
+  const job_id = makeJobId({
+    type: "SUGGEST_FACTS",
+    userKey: params.userKey,
+    episodeId: ensured.episode.episode_id,
+    revisionAfter: params.revisionAfter,
+  })
+
+  await enqueueJob({
+    schema_version: "v23",
+    job_version: 1,
+    type: "SUGGEST_FACTS",
     job_id,
     user_key: params.userKey,
     conversation_id: params.conversationId,
@@ -414,6 +445,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const kernelResult = await runTurnWithAutoAdvance({ baseState, input, userKey })
     await persistState(kernelResult)
 
+    const metaKeysWritten = kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : []
+
     await emitSpine({
       userKey,
       input,
@@ -425,6 +458,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       userKey,
       conversationId: kernelResult.state.conversation_id,
       revisionAfter: kernelResult.state.revision,
+    })
+
+    await enqueueSuggestFacts({
+      userKey,
+      conversationId: kernelResult.state.conversation_id,
+      revisionAfter: kernelResult.state.revision,
+      metaKeysWritten,
     })
 
     await logAndRecord({
