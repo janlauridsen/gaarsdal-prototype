@@ -293,7 +293,13 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "BOOKING",
     kind: "MENU",
     goal: "Booking",
-    message: "Her kan du vælge kontaktvej for booking.",
+    message:
+      "Der er ikke et online bookingsystem.\n\n" +
+      "For at booke tid kan du vælge en kontaktvej:\n" +
+      "- Telefon eller sms (hurtigst)\n" +
+      "- E-mail\n" +
+      "- Kontaktformular\n\n" +
+      "Tip: Skriv gerne 2–3 tidsforslag (dag + tidspunkt), og en kort linje om hvad du ønsker hjælp til.",
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: ["MAIL", "TLF", "CONTACT_FORM", "HOME", "AKUT"],
