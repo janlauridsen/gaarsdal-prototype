@@ -20,6 +20,8 @@ import {
   CircleStackIcon,
 } from "@heroicons/react/24/outline"
 
+import styles from "./Chatbot.module.css"
+
 type ConversationState = {
   conversation_id: string
   revision: number
@@ -420,11 +422,25 @@ export default function Chatbot() {
     state?.active_node === "DEV_SANDBOX_FORM" ||
     state?.active_node === "DEV_SANDBOX_DONE"
 
-  const containerClass = expanded ? "gaarsdal-chatbot gaarsdal-chatbot--expanded" : "gaarsdal-chatbot gaarsdal-chatbot--normal"
+  const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal}`
+
+  function applySandboxExample() {
+    setSandboxForm({
+      topic: "alkohol om aftenen",
+      goal: "drikke mindre og stoppe tidligere",
+      time_patterns: "typisk efter kl. 20, især i weekenden",
+      situational_triggers: "arbejdsstress, uro i kroppen, 'skal lige slappe af'",
+      relational_patterns: "drikker mere når jeg er alene; mindre hvis jeg er sammen med andre",
+      preferred_tone: "rolig, konkret og uden moral",
+      support_direction: "et alternativt 'afkoblings-ritual' før jeg kommer hjem",
+      interest_in_methods: "gåtur; registrering; pause før første glas",
+    })
+    showNavBanner("Indsatte eksempeldata")
+  }
 
   return (
     <>
-      <div className="gaarsdal-overlay" onClick={() => setOpen(false)} />
+      <div className={styles.overlay} onClick={() => setOpen(false)} />
 
       <div
         className={containerClass}
@@ -433,7 +449,7 @@ export default function Chatbot() {
         aria-modal="true"
         aria-label="Chatbot"
       >
-        <div className="gaarsdal-chatbot-header flex items-center justify-between gap-3">
+        <div className={`${styles.header} flex items-center justify-between gap-3`}>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <div className="text-sm font-semibold">Gaarsdal Chat</div>
@@ -445,12 +461,12 @@ export default function Chatbot() {
               )}
             </div>
 
-            <div className="text-xs gaarsdal-meta truncate">{activeNodeLabel}</div>
+            <div className={`text-xs truncate ${styles.meta}`}>{activeNodeLabel}</div>
           </div>
 
           <div className="flex items-center gap-1">
             <button
-              className="gaarsdal-icon-btn"
+              className={styles.iconBtn}
               aria-label="Data"
               title="Data og præferencer"
               onClick={openInsights}
@@ -460,7 +476,7 @@ export default function Chatbot() {
             </button>
 
             <button
-              className="gaarsdal-icon-btn"
+              className={styles.iconBtn}
               aria-label={expanded ? "Formindsk" : "Forstør"}
               title={expanded ? "Formindsk" : "Forstør"}
               onClick={() => setExpanded((v) => !v)}
@@ -469,7 +485,7 @@ export default function Chatbot() {
             </button>
 
             <button
-              className="gaarsdal-icon-btn"
+              className={styles.iconBtn}
               aria-label="Ny samtale"
               title="Ny samtale"
               onClick={resetConversation}
@@ -479,7 +495,7 @@ export default function Chatbot() {
             </button>
 
             <button
-              className="gaarsdal-icon-btn"
+              className={styles.iconBtn}
               aria-label="Luk"
               title="Luk"
               onClick={() => {
@@ -498,19 +514,22 @@ export default function Chatbot() {
           </div>
         )}
 
-        <div className="messages">
+        <div className={styles.messages}>
           {messages.map((m) => (
-            <div key={m.id} className={`message ${m.role === "assistant" ? "bot" : "user"}`}>
+            <div
+              key={m.id}
+              className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}
+            >
               {m.text}
             </div>
           ))}
 
           {state?.active_node === "TRIAGE" && triageChips.length > 0 && (
             <div className="mt-3">
-              <div className="gaarsdal-section-title">Forslag</div>
-              <div className="gaarsdal-chip-group">
+              <div className={styles.sectionTitle}>Forslag</div>
+              <div className={styles.chipGroup}>
                 {triageChips.map((chip: any) => (
-                  <button key={chip.id} className="chip" onClick={() => handleTriageChip(chip)} disabled={loading || !state}>
+                  <button key={chip.id} className={styles.chip} onClick={() => handleTriageChip(chip)} disabled={loading || !state}>
                     {chip.label}
                   </button>
                 ))}
@@ -520,19 +539,19 @@ export default function Chatbot() {
 
           {topicButtons.length > 0 && (
             <div className="mt-3">
-              <div className="gaarsdal-section-title">Emner</div>
+              <div className={styles.sectionTitle}>Emner</div>
 
-              <div className="gaarsdal-topic-grid">
+              <div className={styles.topicGrid}>
                 {topicButtons.map((t) => (
                   <button
                     key={t.id}
                     onClick={() => go(t.id)}
                     disabled={!t.enabled || loading || !state}
                     title={t.tooltip || (!t.enabled ? "Ikke tilgængelig herfra" : "")}
-                    className="gaarsdal-topic-card"
+                    className={styles.topicCard}
                   >
-                    <span className="gaarsdal-topic-icon">{getTopicIcon(t.id)}</span>
-                    <span className="gaarsdal-topic-label">{t.label}</span>
+                    <span className={styles.topicIcon}>{getTopicIcon(t.id)}</span>
+                    <span className={styles.topicLabel}>{t.label}</span>
                   </button>
                 ))}
               </div>
@@ -542,46 +561,53 @@ export default function Chatbot() {
           <div ref={endRef} />
         </div>
 
-        <div className="gaarsdal-chatbot-footer">
+        <div className={styles.footer}>
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-1">
-              <button className="gaarsdal-icon-btn" aria-label="Forside" title="Forside" onClick={() => state && go("HOME")} disabled={!state || loading}>
+              <button className={styles.iconBtn} aria-label="Forside" title="Forside" onClick={() => state && go("HOME")} disabled={!state || loading}>
                 <HomeIcon className="w-5 h-5" />
               </button>
 
-              <button className="gaarsdal-icon-btn" aria-label="Telefon" title="Telefon" onClick={() => state && go("TLF")} disabled={!state || loading}>
+              <button className={styles.iconBtn} aria-label="Telefon" title="Telefon" onClick={() => state && go("TLF")} disabled={!state || loading}>
                 <PhoneIcon className="w-5 h-5" />
               </button>
 
-              <button className="gaarsdal-icon-btn" aria-label="E-mail" title="E-mail" onClick={() => state && go("MAIL")} disabled={!state || loading}>
+              <button className={styles.iconBtn} aria-label="E-mail" title="E-mail" onClick={() => state && go("MAIL")} disabled={!state || loading}>
                 <EnvelopeIcon className="w-5 h-5" />
               </button>
 
-              <button className="gaarsdal-icon-btn" aria-label="Kontaktformular" title="Kontaktformular" onClick={openContactForm}>
+              <button className={styles.iconBtn} aria-label="Kontaktformular" title="Kontaktformular" onClick={openContactForm}>
                 <LinkIcon className="w-5 h-5" />
               </button>
             </div>
 
             <div className="flex items-center">
-              <button className="gaarsdal-icon-btn" aria-label="Akut" title="Akut" onClick={() => state && go("AKUT")} disabled={!state || loading}>
+              <button className={styles.iconBtn} aria-label="Akut" title="Akut" onClick={() => state && go("AKUT")} disabled={!state || loading}>
                 <ExclamationTriangleIcon className="w-5 h-5" />
               </button>
             </div>
           </div>
 
           {showSandboxFooter ? (
-            <div className="gaarsdal-sandbox-footer">
+            <div className={styles.sandboxFooter}>
               {state?.active_node === "DEV_SANDBOX_INTRO" && (
-                <div className="gaarsdal-sandbox-cta">
+                <div className={styles.sandboxCta}>
                   <button
-                    className="gaarsdal-btn"
+                    className={styles.btn}
                     onClick={() => state && go("DEV_SANDBOX_FORM")}
                     disabled={!state || loading}
                   >
                     Start sandbox-form
                   </button>
                   <button
-                    className="gaarsdal-btn gaarsdal-btn--ghost"
+                    className={`${styles.btn} ${styles.btnGhost}`}
+                    onClick={applySandboxExample}
+                    disabled={!state || loading}
+                  >
+                    Indsæt eksempel
+                  </button>
+                  <button
+                    className={`${styles.btn} ${styles.btnGhost}`}
                     onClick={() => setSandboxAdvanced((v) => !v)}
                     disabled={!state || loading}
                   >
@@ -592,13 +618,13 @@ export default function Chatbot() {
 
               {state?.active_node === "DEV_SANDBOX_FORM" && (
                 <div>
-                  <div className="gaarsdal-section-title">Sandbox form</div>
+                  <div className={styles.sectionTitle}>Sandbox form</div>
 
-                  <div className="gaarsdal-form-grid">
-                    <label className="gaarsdal-field">
-                      <span>Topic *</span>
+                  <div className={styles.formGrid}>
+                    <label className={styles.field}>
+                      <span className={styles.fieldLabel}>Topic *</span>
                       <input
-                        className="gaarsdal-input"
+                        className={styles.input}
                         value={sandboxForm.topic}
                         onChange={(e) => setSandboxForm((p) => ({ ...p, topic: e.target.value }))}
                         placeholder="fx alkohol om aftenen"
@@ -606,10 +632,10 @@ export default function Chatbot() {
                       />
                     </label>
 
-                    <label className="gaarsdal-field">
-                      <span>Goal *</span>
+                    <label className={styles.field}>
+                      <span className={styles.fieldLabel}>Goal *</span>
                       <input
-                        className="gaarsdal-input"
+                        className={styles.input}
                         value={sandboxForm.goal}
                         onChange={(e) => setSandboxForm((p) => ({ ...p, goal: e.target.value }))}
                         placeholder="fx drikke mindre"
@@ -617,10 +643,10 @@ export default function Chatbot() {
                       />
                     </label>
 
-                    <label className="gaarsdal-field">
-                      <span>Time patterns</span>
+                    <label className={styles.field}>
+                      <span className={styles.fieldLabel}>Time patterns</span>
                       <input
-                        className="gaarsdal-input"
+                        className={styles.input}
                         value={sandboxForm.time_patterns}
                         onChange={(e) => setSandboxForm((p) => ({ ...p, time_patterns: e.target.value }))}
                         placeholder="fx aftenen"
@@ -628,10 +654,10 @@ export default function Chatbot() {
                       />
                     </label>
 
-                    <label className="gaarsdal-field">
-                      <span>Situational triggers</span>
+                    <label className={styles.field}>
+                      <span className={styles.fieldLabel}>Situational triggers</span>
                       <input
-                        className="gaarsdal-input"
+                        className={styles.input}
                         value={sandboxForm.situational_triggers}
                         onChange={(e) => setSandboxForm((p) => ({ ...p, situational_triggers: e.target.value }))}
                         placeholder="fx arbejdsstress"
@@ -639,10 +665,10 @@ export default function Chatbot() {
                       />
                     </label>
 
-                    <label className="gaarsdal-field">
-                      <span>Relational patterns</span>
+                    <label className={styles.field}>
+                      <span className={styles.fieldLabel}>Relational patterns</span>
                       <input
-                        className="gaarsdal-input"
+                        className={styles.input}
                         value={sandboxForm.relational_patterns}
                         onChange={(e) => setSandboxForm((p) => ({ ...p, relational_patterns: e.target.value }))}
                         placeholder="fx familien"
@@ -650,10 +676,10 @@ export default function Chatbot() {
                       />
                     </label>
 
-                    <label className="gaarsdal-field">
-                      <span>Preferred tone</span>
+                    <label className={styles.field}>
+                      <span className={styles.fieldLabel}>Preferred tone</span>
                       <input
-                        className="gaarsdal-input"
+                        className={styles.input}
                         value={sandboxForm.preferred_tone}
                         onChange={(e) => setSandboxForm((p) => ({ ...p, preferred_tone: e.target.value }))}
                         placeholder="fx rolig og direkte"
@@ -661,10 +687,10 @@ export default function Chatbot() {
                       />
                     </label>
 
-                    <label className="gaarsdal-field">
-                      <span>Support direction</span>
+                    <label className={styles.field}>
+                      <span className={styles.fieldLabel}>Support direction</span>
                       <input
-                        className="gaarsdal-input"
+                        className={styles.input}
                         value={sandboxForm.support_direction}
                         onChange={(e) => setSandboxForm((p) => ({ ...p, support_direction: e.target.value }))}
                         placeholder="fx ro før jeg kommer hjem"
@@ -672,10 +698,10 @@ export default function Chatbot() {
                       />
                     </label>
 
-                    <label className="gaarsdal-field">
-                      <span>Interest in methods</span>
+                    <label className={styles.field}>
+                      <span className={styles.fieldLabel}>Interest in methods</span>
                       <input
-                        className="gaarsdal-input"
+                        className={styles.input}
                         value={sandboxForm.interest_in_methods}
                         onChange={(e) => setSandboxForm((p) => ({ ...p, interest_in_methods: e.target.value }))}
                         placeholder="fx gåtur; pause; registrering"
@@ -684,12 +710,19 @@ export default function Chatbot() {
                     </label>
                   </div>
 
-                  <div className="gaarsdal-sandbox-cta mt-2">
-                    <button className="gaarsdal-btn" onClick={submitSandboxForm} disabled={!state || loading}>
+                  <div className={`${styles.sandboxCta} mt-2`}>
+                    <button className={styles.btn} onClick={submitSandboxForm} disabled={!state || loading}>
                       Gem og kør tool
                     </button>
                     <button
-                      className="gaarsdal-btn gaarsdal-btn--ghost"
+                      className={`${styles.btn} ${styles.btnGhost}`}
+                      onClick={applySandboxExample}
+                      disabled={!state || loading}
+                    >
+                      Indsæt eksempel
+                    </button>
+                    <button
+                      className={`${styles.btn} ${styles.btnGhost}`}
                       onClick={() => setSandboxAdvanced((v) => !v)}
                       disabled={!state || loading}
                     >
@@ -699,8 +732,9 @@ export default function Chatbot() {
 
                   {sandboxAdvanced && (
                     <div className="mt-2">
-                      <div className="gaarsdal-section-title">Rå input (key:value)</div>
+                      <div className={styles.sectionTitle}>Rå input (key:value)</div>
                       <textarea
+                        className={styles.textarea}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder={inputPlaceholder}
@@ -718,8 +752,8 @@ export default function Chatbot() {
               )}
 
               {state?.active_node === "DEV_SANDBOX_DONE" && (
-                <div className="gaarsdal-sandbox-cta">
-                  <button className="gaarsdal-btn" onClick={() => state && go("HOME")} disabled={!state || loading}>
+                <div className={styles.sandboxCta}>
+                  <button className={styles.btn} onClick={() => state && go("HOME")} disabled={!state || loading}>
                     Tilbage til forside
                   </button>
                 </div>
@@ -728,6 +762,7 @@ export default function Chatbot() {
           ) : (
             <div className="flex items-start gap-2">
               <textarea
+                className={styles.textarea}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={inputPlaceholder}
@@ -744,30 +779,30 @@ export default function Chatbot() {
         </div>
 
         {insightsOpen && (
-          <div className="gaarsdal-modal-overlay" onClick={closeInsights}>
+          <div className={styles.modalOverlay} onClick={closeInsights}>
             <div
-              className="gaarsdal-modal"
+              className={styles.modal}
               role="dialog"
               aria-modal="true"
               aria-label="Data og præferencer"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="gaarsdal-modal-header">
-                <div className="gaarsdal-modal-title">Data og præferencer</div>
-                <button className="gaarsdal-icon-btn" aria-label="Luk" title="Luk" onClick={closeInsights}>
+              <div className={styles.modalHeader}>
+                <div className={styles.modalTitle}>Data og præferencer</div>
+                <button className={styles.iconBtn} aria-label="Luk" title="Luk" onClick={closeInsights}>
                   <XMarkIcon className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="gaarsdal-modal-body">
-                {insightsLoading && <div className="text-sm gaarsdal-meta">Henter…</div>}
+              <div className={styles.modalBody}>
+                {insightsLoading && <div className={`text-sm ${styles.meta}`}>Henter…</div>}
 
                 {!insightsLoading && insightsError && (
                   <div className="text-sm">Kunne ikke hente data: {insightsError}</div>
                 )}
 
                 {!insightsLoading && !insightsError && (
-                  <pre className="gaarsdal-pre">{JSON.stringify(insightsPayload ?? {}, null, 2)}</pre>
+                  <pre className={styles.pre}>{JSON.stringify(insightsPayload ?? {}, null, 2)}</pre>
                 )}
               </div>
             </div>
