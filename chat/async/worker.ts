@@ -5,6 +5,8 @@ import {
   ensureDefaultThemeAndEpisode,
   readEpisode,
   readFacts,
+  readThemes,
+  upsertTheme,
   upsertEpisode,
   upsertFact,
   type MemoryFact,
@@ -44,6 +46,25 @@ function stableFactId(params: { userKey: string; key: string }): string {
   return `fact:${h.toString(16)}`
 }
 
+function stableEpisodeId(params: { themeId: string }): string {
+  // deterministic single episode per theme for v23 iteration 1
+  return `episode:${params.themeId}:1`
+}
+
+function stableThemeId(raw: string): string {
+  const base = (raw ?? "").trim().toLowerCase()
+  if (!base) return "general"
+  // allow a-z0-9 and dash/underscore
+  return base.replace(/[^a-z0-9_-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "general"
+}
+
+function themeLabel(themeId: string): string {
+  if (themeId === "alkohol") return "Alkohol"
+  if (themeId === "general") return "Generelt"
+  // fallback: title-case-ish
+  return themeId.charAt(0).toUpperCase() + themeId.slice(1)
+}
+
 function isNonEmptyString(x: unknown): x is string {
   return typeof x === "string" && x.trim().length > 0
 }
@@ -52,6 +73,102 @@ function readMetaValue(state: any, key: string): unknown {
   const entry = state?.meta?.[key]
   if (!entry || typeof entry !== "object") return undefined
   return (entry as any).value
+}
+
+function asStringArray(value: unknown, limit: number): string[] {
+  if (!Array.isArray(value)) return []
+  const out = value
+    .filter((v) => typeof v === "string")
+    .map((v) => v.trim())
+    .filter(Boolean)
+    .slice(0, limit)
+  return out
+}
+
+async function upsertCanonicalFact(params: {
+  userKey: string
+  key: string
+  value: any
+  confidence?: number
+  createdBy: string
+}): Promise<void> {
+  const existing = await readFacts({ userKey: params.userKey, limit: 500 })
+  const rejected = existing.some((f) => f.key === params.key && f.status === "rejected")
+  if (rejected) return
+
+  const fact_id = stableFactId({ userKey: params.userKey, key: params.key })
+  const ts = nowMs()
+  const prior = existing.find((f) => f.fact_id === fact_id)
+
+  const fact: MemoryFact = {
+    fact_id,
+    key: params.key,
+    value: params.value,
+    status: "canonical",
+    confidence: typeof params.confidence === "number" ? params.confidence : prior?.confidence,
+    created_at: prior?.created_at ?? ts,
+    updated_at: ts,
+    provenance: {
+      created_by: prior?.provenance?.created_by ?? params.createdBy,
+      last_edited_by: params.createdBy,
+    },
+    edit_history: prior?.edit_history ?? [],
+  }
+
+  await upsertFact({ userKey: params.userKey, fact, ttlSeconds: MEMORY_TTL_SECONDS })
+}
+
+async function ensureThemeAndEpisode(params: {
+  userKey: string
+  themeId: string
+  origin: "user_selected" | "system_suggested" | "imported"
+}): Promise<{ themeId: string; episodeId: string }> {
+  const themeId = stableThemeId(params.themeId)
+  const ts = nowMs()
+
+  const themes = await readThemes({ userKey: params.userKey, limit: 50 })
+  const existing = themes.find((t) => t.theme_id === themeId)
+
+  await upsertTheme({
+    userKey: params.userKey,
+    ttlSeconds: MEMORY_TTL_SECONDS,
+    theme: {
+      theme_id: themeId,
+      label: existing?.label ?? themeLabel(themeId),
+      status: "active",
+      created_at: existing?.created_at ?? ts,
+      updated_at: ts,
+      origin: existing?.origin ?? params.origin,
+    },
+  })
+
+  const episodeId = stableEpisodeId({ themeId })
+  const existingEpisode = await readEpisode({ userKey: params.userKey, episodeId })
+
+  if (!existingEpisode) {
+    await upsertEpisode({
+      userKey: params.userKey,
+      ttlSeconds: MEMORY_TTL_SECONDS,
+      episode: {
+        episode_id: episodeId,
+        theme_id: themeId,
+        started_at: ts,
+        updated_at: ts,
+      },
+    })
+  } else {
+    // touch updated_at to keep theme “fresh” for context selection
+    await upsertEpisode({
+      userKey: params.userKey,
+      ttlSeconds: MEMORY_TTL_SECONDS,
+      episode: {
+        ...existingEpisode,
+        updated_at: ts,
+      },
+    })
+  }
+
+  return { themeId, episodeId }
 }
 
 async function upsertSuggestedFact(params: {
@@ -118,6 +235,85 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
   // Deterministic v23: derive a few facts from existing state.meta.
   const state = await readConversationState(job.conversation_id)
   if (!state) return { job_id: job.job_id, ok: true }
+
+  // --- Iteration 1: memory_candidates → theme/episode + canonical facts ---
+  const themeCandidate = readMetaValue(state, "memory_candidates.theme")
+  const themeIdRaw =
+    themeCandidate && typeof themeCandidate === "object" && themeCandidate !== null
+      ? (themeCandidate as any).id
+      : undefined
+
+  if (typeof themeIdRaw === "string" && themeIdRaw.trim()) {
+    const ensured = await ensureThemeAndEpisode({
+      userKey: job.user_key,
+      themeId: themeIdRaw,
+      origin: "system_suggested",
+    })
+
+    const goalObj = readMetaValue(state, "memory_candidates.goal")
+    const goalText =
+      typeof goalObj === "string"
+        ? goalObj
+        : goalObj && typeof goalObj === "object" && goalObj !== null && typeof (goalObj as any).text === "string"
+          ? (goalObj as any).text
+          : ""
+
+    const triggers = asStringArray(readMetaValue(state, "memory_candidates.triggers"), 10)
+    const patterns = asStringArray(readMetaValue(state, "memory_candidates.patterns"), 10)
+    const summary = readMetaValue(state, "memory_candidates.summary")
+
+    const createdBy = `job:${job.type}:${job.job_version}`
+    const conf =
+      themeCandidate && typeof themeCandidate === "object" && themeCandidate !== null && typeof (themeCandidate as any).confidence === "number"
+        ? (themeCandidate as any).confidence
+        : undefined
+
+    if (isNonEmptyString(goalText)) {
+      await upsertCanonicalFact({
+        userKey: job.user_key,
+        key: `theme.${ensured.themeId}.goal`,
+        value: goalText.trim(),
+        confidence: conf,
+        createdBy,
+      })
+    }
+
+    if (triggers.length) {
+      await upsertCanonicalFact({
+        userKey: job.user_key,
+        key: `theme.${ensured.themeId}.key_triggers`,
+        value: triggers,
+        confidence: conf,
+        createdBy,
+      })
+    }
+
+    if (patterns.length) {
+      await upsertCanonicalFact({
+        userKey: job.user_key,
+        key: `theme.${ensured.themeId}.patterns`,
+        value: patterns,
+        confidence: conf,
+        createdBy,
+      })
+    }
+
+    if (typeof summary === "string" && summary.trim()) {
+      // Episode summary is the most useful “no repetition” anchor.
+      const episode = await readEpisode({ userKey: job.user_key, episodeId: ensured.episodeId })
+      if (episode) {
+        await upsertEpisode({
+          userKey: job.user_key,
+          ttlSeconds: MEMORY_TTL_SECONDS,
+          episode: {
+            ...episode,
+            summary_short: clampText(summary, 520),
+            updated_at: nowMs(),
+          },
+        })
+      }
+    }
+  }
 
   // triage-derived suggestions (only if present)
   const triageGoal = readMetaValue(state, "triage.user_goal")
