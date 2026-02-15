@@ -19,6 +19,9 @@ export type LlmClient = {
 export type AiCapabilityContext = {
   state: ConversationState
   userText: string
+  contextPack?: {
+    system: string
+  }
 }
 
 export type AiCapabilityResult = {
@@ -33,4 +36,3 @@ export type AiCapability = {
   id: string
   run(context: AiCapabilityContext, llm: LlmClient): Promise<AiCapabilityResult>
 }
-
