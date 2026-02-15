@@ -65,7 +65,7 @@ const QUICK_CONTACTS: NodeId[] = [
   "AKUT",
 ]
 
-const RAW_REGISTRY: Record<NodeId, Node> = {
+const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
   HOME: {
     id: "HOME",
     kind: "ROUTER",
@@ -236,7 +236,13 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
       "triage.notes_for_context",
       "triage.next_question",
       "triage.chips",
-      "triage.transcript",
+      // Iteration 1: compact last-turn context + structured memory candidates.
+      "dialog.triage.last_turn",
+      "memory_candidates.theme",
+      "memory_candidates.goal",
+      "memory_candidates.triggers",
+      "memory_candidates.patterns",
+      "memory_candidates.summary",
     ],
   },
 
@@ -293,13 +299,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     id: "BOOKING",
     kind: "MENU",
     goal: "Booking",
-    message:
-      "Der er ikke et online bookingsystem.\n\n" +
-      "For at booke tid kan du vælge en kontaktvej:\n" +
-      "- Telefon eller sms (hurtigst)\n" +
-      "- E-mail\n" +
-      "- Kontaktformular\n\n" +
-      "Tip: Skriv gerne 2–3 tidsforslag (dag + tidspunkt), og en kort linje om hvad du ønsker hjælp til.",
+    message: "Her kan du vælge kontaktvej for booking.",
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: ["MAIL", "TLF", "CONTACT_FORM", "HOME", "AKUT"],
@@ -352,7 +352,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = {
     allowed_exits: QUICK_CONTACTS,
     meta_domains_written: [],
   },
-}
+})
 
 const REGISTRY: Record<NodeId, Readonly<Node>> = Object.freeze(
   Object.fromEntries(
