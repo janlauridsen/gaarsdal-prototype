@@ -62,6 +62,35 @@
   color: #6C6A63;
 }
 
+.navHint {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.navHintPulse {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(74, 93, 84, 0.10);
+  border: 1px solid rgba(74, 93, 84, 0.14);
+  animation: navPulse 700ms ease-out 0ms 2;
+}
+
+@keyframes navPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .messages {
   flex: 1;
   overflow-y: auto;
@@ -230,6 +259,16 @@
   gap: 10px;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.formError {
+  margin-top: 8px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.72);
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  padding: 8px 10px;
 }
 
 .btn {
