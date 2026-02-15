@@ -16,6 +16,9 @@ import {
 } from "../../chat/persistence/conversationStateStore"
 import { appendSpineEventV23 } from "../../chat/observability/spineStore"
 
+import { ensureDefaultThemeAndEpisode } from "../../chat/memory/longTermMemoryStore"
+import { enqueueJob, makeJobId } from "../../chat/async/queue"
+
 type ChatRequestBody = {
   state: any
   input: InputSignal
@@ -87,8 +90,9 @@ function toUserInput(input: InputSignal): string | undefined {
 }
 
 function eventId(): string {
-  // Prefer built-in uuid if available.
-  return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
+  return (crypto as any).randomUUID
+    ? (crypto as any).randomUUID()
+    : crypto.randomBytes(16).toString("hex")
 }
 
 function metaDomains(keys: string[]): string[] {
@@ -134,6 +138,45 @@ async function emitSpine(params: {
   })
 }
 
+/**
+ * Step 4: minimal async enqueue rule.
+ * Until theme-selection UI exists, we summarize into a default "Generelt" theme/episode.
+ */
+async function enqueueSummarizeEpisode(params: {
+  userKey: string
+  conversationId: string
+  revisionAfter: number
+}): Promise<void> {
+  // Only every N turns to keep costs down.
+  const N = 8
+  if (params.revisionAfter <= 0) return
+  if (params.revisionAfter % N !== 0) return
+
+  const ensured = await ensureDefaultThemeAndEpisode({
+    userKey: params.userKey,
+    ttlSeconds: MEMORY_TTL_SECONDS,
+  })
+
+  const job_id = makeJobId({
+    type: "SUMMARIZE_EPISODE",
+    userKey: params.userKey,
+    episodeId: ensured.episode.episode_id,
+    revisionAfter: params.revisionAfter,
+  })
+
+  await enqueueJob({
+    schema_version: "v23",
+    job_version: 1,
+    type: "SUMMARIZE_EPISODE",
+    job_id,
+    user_key: params.userKey,
+    conversation_id: params.conversationId,
+    theme_id: ensured.theme.theme_id,
+    episode_id: ensured.episode.episode_id,
+    revision_after: params.revisionAfter,
+  })
+}
+
 async function logAndRecord(params: {
   userKey: string
   input: InputSignal
@@ -168,7 +211,6 @@ async function logAndRecord(params: {
     ttlSeconds: MEMORY_TTL_SECONDS,
   })
 
-  // Telemetry (dev): raw input/output for replay and prompt iteration.
   const activeNode = getNode(kernelResult.state.active_node)
   await appendTelemetryTurn({
     conversation_id: kernelResult.state.conversation_id,
@@ -184,7 +226,6 @@ async function logAndRecord(params: {
     meta_keys_written: kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : [],
   })
 
-  // Deferred consolidation (C-mode): update core semantic hints in profile.
   const profile = await readUserProfile(params.userKey)
   if (profile) {
     const { profile: updated, updated: didUpdate } = consolidateV1({ profile, state: kernelResult.state })
@@ -195,7 +236,6 @@ async function logAndRecord(params: {
 }
 
 function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
-  // HOME is a ROUTER, but it should not auto-advance on empty input.
   if (node.kind === "ROUTER" && node.id === "HOME") return false
   return node.kind === "ROUTER" || node.kind === "TOOL" || node.kind === "CHECKPOINT"
 }
@@ -255,7 +295,6 @@ async function handleInitOrRestore(params: {
 
     await appendLog(payload.log)
 
-    // Minimal spine for init/restore.
     await appendSpineEventV23({
       schema_version: "v23",
       event_id: eventId(),
@@ -382,6 +421,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       latencyMs: Date.now() - started,
     })
 
+    await enqueueSummarizeEpisode({
+      userKey,
+      conversationId: kernelResult.state.conversation_id,
+      revisionAfter: kernelResult.state.revision,
+    })
+
     await logAndRecord({
       userKey,
       input,
@@ -391,7 +436,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     res.status(200).json(kernelResult)
   } catch (e: any) {
-    // Best-effort: emit a minimal spine error event without requiring kernel output.
     await appendSpineEventV23({
       schema_version: "v23",
       event_id: eventId(),
