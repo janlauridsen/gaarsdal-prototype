@@ -131,9 +131,10 @@ export default function Chatbot() {
     interest_in_methods: "",
   })
   const [sandboxAdvanced, setSandboxAdvanced] = useState(false)
+  const [sandboxError, setSandboxError] = useState<string | null>(null)
 
-  const [navBanner, setNavBanner] = useState<string | null>(null)
-  const navBannerTimerRef = useRef<number | null>(null)
+  const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
+  const headerNavHintTimerRef = useRef<number | null>(null)
 
   const endRef = useRef<HTMLDivElement | null>(null)
 
@@ -153,7 +154,7 @@ export default function Chatbot() {
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, open, navBanner, expanded, insightsOpen])
+  }, [messages, open, headerNavHint, expanded, insightsOpen])
 
   useEffect(() => {
     if (!state) return
@@ -179,9 +180,9 @@ export default function Chatbot() {
 
   useEffect(() => {
     return () => {
-      if (navBannerTimerRef.current) {
-        window.clearTimeout(navBannerTimerRef.current)
-        navBannerTimerRef.current = null
+      if (headerNavHintTimerRef.current) {
+        window.clearTimeout(headerNavHintTimerRef.current)
+        headerNavHintTimerRef.current = null
       }
     }
   }, [])
@@ -214,16 +215,17 @@ export default function Chatbot() {
     })
   }
 
-  function showNavBanner(label: string) {
-    if (navBannerTimerRef.current) {
-      window.clearTimeout(navBannerTimerRef.current)
-      navBannerTimerRef.current = null
+  function showHeaderNavHint(text: string) {
+    if (headerNavHintTimerRef.current) {
+      window.clearTimeout(headerNavHintTimerRef.current)
+      headerNavHintTimerRef.current = null
     }
-    setNavBanner(label)
-    navBannerTimerRef.current = window.setTimeout(() => {
-      setNavBanner(null)
-      navBannerTimerRef.current = null
-    }, 2500)
+
+    setHeaderNavHint(text)
+    headerNavHintTimerRef.current = window.setTimeout(() => {
+      setHeaderNavHint(null)
+      headerNavHintTimerRef.current = null
+    }, 3200)
   }
 
   async function init() {
@@ -242,7 +244,8 @@ export default function Chatbot() {
       setState(data.state)
       setMessages([])
       setInput("")
-      setNavBanner(null)
+      setHeaderNavHint(null)
+      setSandboxError(null)
       appendAssistantMessage(data.state.active_node_message)
     } finally {
       setLoading(false)
@@ -254,6 +257,8 @@ export default function Chatbot() {
 
     setLoading(true)
     try {
+      const fromNode = state.active_node
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -263,7 +268,10 @@ export default function Chatbot() {
       const data: KernelResponse = await res.json()
 
       if (nextInput.type === "EXPLICIT_TRANSITION") {
-        showNavBanner(`Valgte: ${NODE_LABELS[nextInput.target] ?? nextInput.target}`)
+        const fromLabel = NODE_LABELS[fromNode] ?? fromNode
+        const toNode = data?.state?.active_node ?? nextInput.target
+        const toLabel = NODE_LABELS[toNode] ?? toNode
+        showHeaderNavHint(`${fromLabel} → ${toLabel}`)
       } else if (nextInput.type === "FREE_TEXT") {
         appendUserMessage(nextInput.text)
       }
@@ -308,7 +316,8 @@ export default function Chatbot() {
     setInput("")
     setMessages([])
     setState(null)
-    setNavBanner(null)
+    setHeaderNavHint(null)
+    setSandboxError(null)
     setExpanded(false)
     closeInsights()
     init()
@@ -344,9 +353,11 @@ export default function Chatbot() {
     const goal = sandboxForm.goal.trim()
 
     if (!topic || !goal) {
-      showNavBanner("Udfyld mindst: topic + goal")
+      setSandboxError("Udfyld mindst: topic + goal")
       return
     }
+
+    setSandboxError(null)
 
     const lines: string[] = []
     const push = (k: string, v: string) => {
@@ -435,7 +446,7 @@ export default function Chatbot() {
       support_direction: "et alternativt 'afkoblings-ritual' før jeg kommer hjem",
       interest_in_methods: "gåtur; registrering; pause før første glas",
     })
-    showNavBanner("Indsatte eksempeldata")
+    setSandboxError(null)
   }
 
   return (
@@ -462,6 +473,12 @@ export default function Chatbot() {
             </div>
 
             <div className={`text-xs truncate ${styles.meta}`}>{activeNodeLabel}</div>
+
+            {headerNavHint && (
+              <div className={styles.navHint} aria-live="polite">
+                <span className={styles.navHintPulse}>{headerNavHint}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-1">
@@ -507,12 +524,6 @@ export default function Chatbot() {
             </button>
           </div>
         </div>
-
-        {navBanner && (
-          <div className="px-3 pt-3">
-            <div className="w-full rounded-lg px-3 py-2 text-sm bg-black/10 border border-black/5">{navBanner}</div>
-          </div>
-        )}
 
         <div className={styles.messages}>
           {messages.map((m) => (
@@ -626,7 +637,10 @@ export default function Chatbot() {
                       <input
                         className={styles.input}
                         value={sandboxForm.topic}
-                        onChange={(e) => setSandboxForm((p) => ({ ...p, topic: e.target.value }))}
+                        onChange={(e) => {
+                          setSandboxError(null)
+                          setSandboxForm((p) => ({ ...p, topic: e.target.value }))
+                        }}
                         placeholder="fx alkohol om aftenen"
                         disabled={!state || loading}
                       />
@@ -637,7 +651,10 @@ export default function Chatbot() {
                       <input
                         className={styles.input}
                         value={sandboxForm.goal}
-                        onChange={(e) => setSandboxForm((p) => ({ ...p, goal: e.target.value }))}
+                        onChange={(e) => {
+                          setSandboxError(null)
+                          setSandboxForm((p) => ({ ...p, goal: e.target.value }))
+                        }}
                         placeholder="fx drikke mindre"
                         disabled={!state || loading}
                       />
@@ -729,6 +746,8 @@ export default function Chatbot() {
                       {sandboxAdvanced ? "Skjul rå input" : "Vis rå input"}
                     </button>
                   </div>
+
+                  {sandboxError && <div className={styles.formError}>{sandboxError}</div>}
 
                   {sandboxAdvanced && (
                     <div className="mt-2">
