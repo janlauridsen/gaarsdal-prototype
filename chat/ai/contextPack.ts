@@ -1,5 +1,5 @@
 import type { ConversationState } from "../kernel/types"
-import { ensureDefaultThemeAndEpisode, readEpisode, readFacts, readThemes } from "../memory/longTermMemoryStore"
+import { ensureDefaultThemeAndEpisode, readEpisode, readEpisodes, readFacts, readThemes } from "../memory/longTermMemoryStore"
 
 export type ContextPackV23 = {
   system: string
@@ -36,13 +36,21 @@ export async function buildContextPackV23(params: {
     ttlSeconds: params.ttlSeconds,
   })
 
-  const themeId = ensured.theme.theme_id
-  const episodeId = ensured.episode.episode_id
-
   // Prefer actual stored data (it may have been updated async)
   const themes = await readThemes({ userKey: params.userKey, limit: 20 })
-  const theme = themes.find((t) => t.theme_id === themeId) ?? ensured.theme
 
+  // Iteration 1 selection rule:
+  // - pick most recently updated active theme, excluding "general" if any other exists.
+  const active = themes.filter((t) => t.status === "active")
+  const nonGeneral = active.filter((t) => t.theme_id !== "general")
+  const selectedTheme = (nonGeneral.length ? nonGeneral : active).sort((a, b) => b.updated_at - a.updated_at)[0]
+
+  const theme = selectedTheme ?? ensured.theme
+  const themeId = theme.theme_id
+
+  // Pick most recent episode for selected theme; fallback to ensured episode.
+  const episodes = await readEpisodes({ userKey: params.userKey, themeId, limit: 10 })
+  const episodeId = episodes[0]?.episode_id ?? ensured.episode.episode_id
   const episode = (await readEpisode({ userKey: params.userKey, episodeId })) ?? ensured.episode
 
   const canonicalFacts = await readFacts({
