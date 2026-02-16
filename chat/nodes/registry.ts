@@ -1,3 +1,17 @@
+// registry.ts
+// NOTE: This version fixes two common runtime causes seen in your logs:
+// 1) "meta domain not writable: triage.decision"  -> meta_domains_written must list DOMAINS, not keys.
+// 2) "transition.to not allowed"                  -> TRIAGE can legitimately end in BOOKING (direct) in addition to TRIAGE_FIT_BOOKING,
+//                                                    and we also keep explicit terminal exits.
+//
+// Assumption (explicit):
+// - Your engine treats "meta domain" as the prefix before the first "." in a meta key
+//   (e.g. "triage.decision" => domain "triage").
+// - Your engine validates transition.to against node.allowed_exits.
+//
+// If your engine uses a different domain parsing rule (e.g. "triage.decision" as a domain itself),
+// then you must change parseDomain(metaKey) server-side OR list exact domains accordingly.
+
 type NodeId = string
 
 export type NodeKind =
@@ -49,6 +63,11 @@ export type Node = {
   allow_free_text: boolean
   allow_parentese: boolean
   allowed_exits: NodeId[]
+  /**
+   * IMPORTANT:
+   * This must be a list of DOMAINS (e.g. "triage", "gen_hypno", "dialog", "memory_candidates").
+   * Do NOT list individual meta keys here.
+   */
   meta_domains_written: string[]
   capability_id?: string | null
   form?: FormSpec
@@ -57,21 +76,24 @@ export type Node = {
   router?: RouterSpec
 }
 
-const QUICK_CONTACTS: NodeId[] = [
-  "HOME",
-  "MAIL",
-  "TLF",
-  "CONTACT_FORM",
-  "AKUT",
-]
+const QUICK_CONTACTS: NodeId[] = ["HOME", "MAIL", "TLF", "CONTACT_FORM", "AKUT"]
 
 /**
- * NOTE:
- * The runtime appears to enforce *exact* domain/keys as "writable".
- * Your logs show: "meta domain not writable: triage.decision"
- * So TRIAGE must include "triage.decision" (and commonly "triage.render").
+ * Shared meta domains used by multiple nodes.
+ * Keep these aligned with whatever your server-side "writable meta domain" validator expects.
  */
+const META_DOMAINS = {
+  router: ["router"],
+  genHypno: ["gen_hypno"],
+  triage: ["triage", "dialog", "memory_candidates"],
+  methodFit: ["method_fit"],
+  form: ["form"],
+  sandbox: ["sandbox", "checkpoint"],
+} as const
+
 const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
+  // ---------------- ROOT ----------------
+
   HOME: {
     id: "HOME",
     kind: "ROUTER",
@@ -83,13 +105,13 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "GEN_HYPNO",
       "TRIAGE",
       "METHOD_FIT",
+      "ALCOHOL",
       "BOOKING",
       "DEV_SANDBOX_INTRO",
-      // Optional: add ALCOHOL once capability exists.
-      // "ALCOHOL",
       "MAIL",
       "TLF",
       "AKUT",
+      "CONTACT_FORM",
     ],
     router: {
       router_id: "home-router-v1",
@@ -97,12 +119,32 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
         "GEN_HYPNO",
         "TRIAGE",
         "METHOD_FIT",
+        "ALCOHOL",
         "BOOKING",
         "DEV_SANDBOX_INTRO",
-        // Optional: "ALCOHOL",
       ],
     },
-    meta_domains_written: ["router.decision"],
+    meta_domains_written: [...META_DOMAINS.router],
+  },
+
+  // ---------------- ALCOHOL DIALOG ----------------
+  // Activation:
+  // - From HOME: choose the alcohol icon/button (if you have one) or route via the HOME router.
+  // - Or implement explicit transition chip "ALCOHOL" in UI and send EXPLICIT_TRANSITION:ALCOHOL.
+
+  ALCOHOL: {
+    id: "ALCOHOL",
+    kind: "DIALOG",
+    goal: "Alkohol - refleksion og støtte",
+    message:
+      "Fortæl kort om dit alkoholmønster (hvornår, hvor meget, hvad udløser det) og hvad du ønsker anderledes. " +
+      "Jeg hjælper med refleksion, struktur og forslag til næste skridt—ikke behandling i chatten.",
+    allow_free_text: true,
+    allow_parentese: true,
+    allowed_exits: ["ALCOHOL", "HOME", "BOOKING", ...QUICK_CONTACTS],
+    capability_id: "alcohol-dialog-v1",
+    // Adjust to what the capability writes (example domains)
+    meta_domains_written: ["alcohol", "dialog", "memory_candidates"],
   },
 
   // ----------- DEV SANDBOX FLOW (FORM → TOOL → CHECKPOINT) -----------
@@ -146,16 +188,31 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
         { id: "topic", label: "Topic", required: true, placeholder: "fx alkohol om aftenen" },
         { id: "goal", label: "Goal", required: true, placeholder: "fx drikke mindre" },
         { id: "time_patterns", label: "Time patterns", required: false, placeholder: "fx aftenen" },
-        { id: "situational_triggers", label: "Situational triggers", required: false, placeholder: "fx arbejdsstress" },
-        { id: "relational_patterns", label: "Relational patterns", required: false, placeholder: "fx familien" },
+        {
+          id: "situational_triggers",
+          label: "Situational triggers",
+          required: false,
+          placeholder: "fx arbejdsstress",
+        },
+        {
+          id: "relational_patterns",
+          label: "Relational patterns",
+          required: false,
+          placeholder: "fx familien",
+        },
         { id: "preferred_tone", label: "Preferred tone", required: false, placeholder: "fx rolig og direkte" },
         { id: "support_direction", label: "Support direction", required: false, placeholder: "fx ro før jeg kommer hjem" },
-        { id: "interest_in_methods", label: "Interest in methods", required: false, placeholder: "fx gåtur; pause; registrering" },
+        {
+          id: "interest_in_methods",
+          label: "Interest in methods",
+          required: false,
+          placeholder: "fx gåtur; pause; registrering",
+        },
       ],
       on_submit_to: "DEV_SANDBOX_TOOL_APPLY",
       allow_partial: false,
     },
-    meta_domains_written: ["form.last"],
+    meta_domains_written: [...META_DOMAINS.form],
   },
 
   DEV_SANDBOX_TOOL_APPLY: {
@@ -171,7 +228,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       on_success_to: "DEV_SANDBOX_CHECKPOINT",
       on_error_to: "DEV_SANDBOX_FORM",
     },
-    meta_domains_written: ["sandbox.apply_result"],
+    meta_domains_written: [...META_DOMAINS.sandbox],
   },
 
   DEV_SANDBOX_CHECKPOINT: {
@@ -186,7 +243,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       on_done_to: "DEV_SANDBOX_DONE",
       commit_domains: [],
     },
-    meta_domains_written: ["checkpoint.last"],
+    meta_domains_written: [...META_DOMAINS.sandbox],
   },
 
   DEV_SANDBOX_DONE: {
@@ -206,27 +263,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     meta_domains_written: [],
   },
 
-  // ----------- OPTIONAL: ALCOHOL DIALOG (enable when capability exists) -----------
-  // ALCOHOL: {
-  //   id: "ALCOHOL",
-  //   kind: "DIALOG",
-  //   goal: "Alkohol: refleksion og ændring",
-  //   message:
-  //     "Fortæl kort om dit alkoholmønster (hvornår/hvor meget/hvad der udløser det) og hvad du ønsker anderledes. Jeg hjælper med struktur, refleksion og næste skridt—ikke behandling.",
-  //   allow_free_text: true,
-  //   allow_parentese: true,
-  //   allowed_exits: ["HOME", ...QUICK_CONTACTS],
-  //   capability_id: "alcohol-dialog-v1",
-  //   meta_domains_written: [
-  //     "alcohol.transcript",
-  //     "alcohol.summary",
-  //     "alcohol.patterns",
-  //     "alcohol.triggers",
-  //     "alcohol.goal",
-  //   ],
-  // },
-
-  // ----------- EXISTING NODES -----------
+  // ---------------- EXISTING NODES ----------------
 
   GEN_HYPNO: {
     id: "GEN_HYPNO",
@@ -236,9 +273,9 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "Spørg mig om hypnoterapi: hvad det er, hvordan et forløb typisk foregår, hvad man ofte arbejder med, og hvad du kan forvente. Jeg deler viden og erfaring—ikke behandling i chatten.",
     allow_free_text: true,
     allow_parentese: true,
-    allowed_exits: ["HOME", "MAIL", "TLF", "AKUT"],
+    allowed_exits: ["HOME", ...QUICK_CONTACTS],
     capability_id: "gen-hypno-v1",
-    meta_domains_written: ["gen_hypno.transcript", "gen_hypno.last_topic"],
+    meta_domains_written: [...META_DOMAINS.genHypno],
   },
 
   TRIAGE: {
@@ -250,41 +287,19 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     allow_free_text: true,
     allow_parentese: true,
     allowed_exits: [
+      // allow staying
       "TRIAGE",
+      // allow “result” nodes
       "TRIAGE_FIT_BOOKING",
       "TRIAGE_NOT_RELEVANT",
       "TRIAGE_NEEDS_ASSESSMENT",
+      // IMPORTANT: allow direct booking too (prevents transition.to not allowed if model chooses BOOKING)
+      "BOOKING",
       ...QUICK_CONTACTS,
     ],
     capability_id: "triage-relevance-v1",
-    meta_domains_written: [
-      // Fix for: "meta domain not writable: triage.decision"
-      "triage.decision",
-      // Often written by the same capability (header/chips rendering data)
-      "triage.render",
-
-      "triage.question_count",
-      "triage.outcome",
-      "triage.summary",
-      "triage.unclear_points",
-      "triage.topic_tags",
-      "triage.user_goal",
-      "triage.key_triggers",
-      "triage.time_horizon",
-      "triage.confidence",
-      "triage.next_state",
-      "triage.notes_for_context",
-      "triage.next_question",
-      "triage.chips",
-
-      // Iteration 1: compact last-turn context + structured memory candidates.
-      "dialog.triage.last_turn",
-      "memory_candidates.theme",
-      "memory_candidates.goal",
-      "memory_candidates.triggers",
-      "memory_candidates.patterns",
-      "memory_candidates.summary",
-    ],
+    // DOMAINS (not keys)
+    meta_domains_written: [...META_DOMAINS.triage],
   },
 
   METHOD_FIT: {
@@ -292,24 +307,25 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     kind: "DIALOG",
     goal: "Hypnoterapi eller et bedre alternativ?",
     message:
-      "Fortæl kort hvad du vil opnå, og hvad der gør situationen svær lige nu. Jeg kan hjælpe med at vurdere, om hypnoterapi er et godt match, eller om andre tilgange typisk passer bedre. Jeg giver kun overblik—ikke behandling i chatten.",
+      "Fortæl kort hvad du vil opnå, og hvad der gør situationen svær lige nu. " +
+      "Jeg kan hjælpe med at vurdere, om hypnoterapi er et godt match, eller om andre tilgange typisk passer bedre. " +
+      "Jeg giver kun overblik—ikke behandling i chatten.",
     allow_free_text: true,
     allow_parentese: true,
     allowed_exits: ["HOME", "BOOKING", ...QUICK_CONTACTS],
     capability_id: "method-fit-v1",
-    meta_domains_written: ["method_fit.transcript", "method_fit.summary"],
+    meta_domains_written: [...META_DOMAINS.methodFit],
   },
 
   TRIAGE_FIT_BOOKING: {
     id: "TRIAGE_FIT_BOOKING",
     kind: "TERMINAL",
     goal: "Egnet til booking",
-    message:
-      "Foreløbig triage: dit tema virker relevant for hypnoterapi. Næste skridt er booking.",
+    message: "Foreløbig triage: dit tema virker relevant for hypnoterapi. Næste skridt er booking.",
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: ["BOOKING", ...QUICK_CONTACTS],
-    meta_domains_written: ["triage.outcome", "triage.summary", "triage.unclear_points"],
+    meta_domains_written: [...META_DOMAINS.triage],
   },
 
   TRIAGE_NOT_RELEVANT: {
@@ -320,27 +336,26 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "Foreløbig triage: det lyder ikke som et klassisk hypnoterapi-spor. Vi anbefaler afklaring af anden støtte.",
     allow_free_text: false,
     allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
-    meta_domains_written: ["triage.outcome", "triage.summary", "triage.unclear_points"],
+    allowed_exits: [...QUICK_CONTACTS],
+    meta_domains_written: [...META_DOMAINS.triage],
   },
 
   TRIAGE_NEEDS_ASSESSMENT: {
     id: "TRIAGE_NEEDS_ASSESSMENT",
     kind: "TERMINAL",
     goal: "Kræver afklaringssamtale",
-    message:
-      "Foreløbig triage: der er stadig uklarheder. Start med en afklaringssamtale.",
+    message: "Foreløbig triage: der er stadig uklarheder. Start med en afklaringssamtale.",
     allow_free_text: false,
     allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
-    meta_domains_written: ["triage.outcome", "triage.summary", "triage.unclear_points"],
+    allowed_exits: [...QUICK_CONTACTS],
+    meta_domains_written: [...META_DOMAINS.triage],
   },
 
   BOOKING: {
     id: "BOOKING",
     kind: "MENU",
     goal: "Booking",
-    message: "Her kan du vælge kontaktvej for booking.",
+    message: "Der er ikke et bookingsystem. Du kan booke tid via telefon/sms, e-mail eller kontaktformular.",
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: ["MAIL", "TLF", "CONTACT_FORM", "HOME", "AKUT"],
@@ -354,7 +369,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     message: "Du kan kontakte mig via e-mail på jan@gaarsdal.net.",
     allow_free_text: false,
     allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
+    allowed_exits: [...QUICK_CONTACTS],
     meta_domains_written: [],
   },
 
@@ -362,11 +377,10 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     id: "TLF",
     kind: "TERMINAL",
     goal: "Telefon kontakt",
-    message:
-      "Du kan ringe eller sende sms til 42 80 74 74. Jeg svarer, så snart jeg kan.",
+    message: "Du kan ringe eller sende sms til 42 80 74 74. Jeg svarer, så snart jeg kan.",
     allow_free_text: false,
     allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
+    allowed_exits: [...QUICK_CONTACTS],
     meta_domains_written: [],
   },
 
@@ -374,11 +388,10 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     id: "CONTACT_FORM",
     kind: "TERMINAL",
     goal: "Kontaktformular",
-    message:
-      "Du kan bruge kontaktformularen på /kontakt, hvis du ikke ønsker mail, telefon eller sms.",
+    message: "Du kan bruge kontaktformularen på /kontakt, hvis du ikke ønsker mail, telefon eller sms.",
     allow_free_text: false,
     allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
+    allowed_exits: [...QUICK_CONTACTS],
     meta_domains_written: [],
   },
 
@@ -387,22 +400,45 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     kind: "TERMINAL",
     goal: "Akut",
     message:
-      "Akut hjælp i Danmark: Ring 112 ved livstruende situationer. Voksne: Livslinien 70 201 201 (døgnåben). Børn og unge: BørneTelefonen 116 111. Psykiatrisk akutmodtagelse kan kontaktes via 1813 (Region Hovedstaden) eller din region.",
+      "Akut hjælp i Danmark: Ring 112 ved livstruende situationer. Voksne: Livslinien 70 201 201 (døgnåben). " +
+      "Børn og unge: BørneTelefonen 116 111. Psykiatrisk akutmodtagelse kan kontaktes via 1813 (Region Hovedstaden) eller din region.",
     allow_free_text: false,
     allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
+    allowed_exits: [...QUICK_CONTACTS],
     meta_domains_written: [],
   },
 })
 
 const REGISTRY: Record<NodeId, Readonly<Node>> = Object.freeze(
-  Object.fromEntries(
-    Object.entries(RAW_REGISTRY).map(([k, v]) => [k, Object.freeze(v)])
-  )
+  Object.fromEntries(Object.entries(RAW_REGISTRY).map(([k, v]) => [k, Object.freeze(v)]))
 )
 
 export function getNode(id: NodeId): Readonly<Node> {
   const node = REGISTRY[id]
   if (!node) throw new Error(`unknown node: ${id}`)
   return node
+}
+
+/**
+ * Optional: run once at startup in dev to catch registry mistakes early.
+ * - Ensures exits refer to existing nodes
+ * - Ensures meta_domains_written looks like domains (no dots)
+ */
+export function validateRegistry(): void {
+  const ids = new Set(Object.keys(REGISTRY))
+
+  for (const [id, node] of Object.entries(REGISTRY)) {
+    for (const to of node.allowed_exits) {
+      if (!ids.has(to)) {
+        throw new Error(`Node ${id} has allowed_exit -> ${to}, but ${to} is not in registry`)
+      }
+    }
+    for (const d of node.meta_domains_written) {
+      if (d.includes(".")) {
+        throw new Error(
+          `Node ${id} meta_domains_written contains "${d}" (looks like a key). Use domains like "triage" not "triage.decision".`
+        )
+      }
+    }
+  }
 }
