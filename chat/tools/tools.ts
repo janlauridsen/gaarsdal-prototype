@@ -70,15 +70,28 @@ function metaEntry(sourceNode: string, value: unknown): { value: unknown; source
 
 function makeThreadChoices(params: {
   activeConversationId: string | null
-  threads: Array<{ conversation_id: string; title: string; updated_at: string }>
-}): Array<{ id: string; label: string; kind: "continue" | "new" | "thread" }>{
+  threads: Array<{ conversation_id: string; title: string; preview: string; updated_at: string }>
+}): Array<{ id: string; label: string; kind: "continue" | "new" | "thread" }> {
   const items: Array<{ id: string; label: string; kind: "continue" | "new" | "thread" }> = []
+
+  const shortId = (conversationId: string): string => {
+    const s = conversationId.replace(/^c:/, "")
+    return s.length > 8 ? s.slice(-8) : s
+  }
+
+  const buildLabel = (t: { conversation_id: string; title: string; preview: string }): string => {
+    const base = t.title?.trim() ? t.title.trim() : `Tråd ${shortId(t.conversation_id)}`
+    const preview = t.preview?.trim() ? t.preview.trim() : ""
+    if (!preview) return base
+    const combined = `${base} — ${preview}`
+    return combined.length > 110 ? combined.slice(0, 107).trimEnd() + "…" : combined
+  }
 
   if (params.activeConversationId) {
     const active = params.threads.find((t) => t.conversation_id === params.activeConversationId)
     items.push({
       id: "continue",
-      label: active?.title ? `Fortsæt: ${active.title}` : "Fortsæt seneste tråd",
+      label: active ? `Fortsæt: ${buildLabel(active)}` : "Fortsæt seneste tråd",
       kind: "continue",
     })
   }
@@ -88,7 +101,7 @@ function makeThreadChoices(params: {
   for (const t of params.threads) {
     items.push({
       id: t.conversation_id,
-      label: t.title ? t.title : `Tråd: ${t.conversation_id}`,
+      label: buildLabel(t),
       kind: "thread",
     })
   }
@@ -150,7 +163,12 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
 
     const choices = makeThreadChoices({
       activeConversationId: index.active_conversation_id,
-      threads: index.threads.map((t) => ({ conversation_id: t.conversation_id, title: t.title, updated_at: t.updated_at })),
+      threads: index.threads.map((t) => ({
+        conversation_id: t.conversation_id,
+        title: t.title,
+        preview: t.preview,
+        updated_at: t.updated_at,
+      })),
     })
 
     return {
@@ -192,7 +210,12 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
     if (mode !== "new" && (!targetConversationId || typeof targetConversationId !== "string")) {
       const choices = makeThreadChoices({
         activeConversationId: index0.active_conversation_id,
-        threads: index0.threads.map((t) => ({ conversation_id: t.conversation_id, title: t.title, updated_at: t.updated_at })),
+        threads: index0.threads.map((t) => ({
+          conversation_id: t.conversation_id,
+          title: t.title,
+          preview: t.preview,
+          updated_at: t.updated_at,
+        })),
       })
 
       return {
@@ -214,8 +237,8 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
       // Persist thread state.
       await writeConversationState(newState, DEFAULT_SESSION_TTL_SECONDS)
 
-      // Update index.
-      let index1 = upsertThread({ index: index0, conversationId, title: `Tråd ${index0.threads.length + 1}` })
+      // Update index (title/preview will be auto-filled after first meaningful user input).
+      let index1 = upsertThread({ index: index0, conversationId, title: "", preview: "" })
       index1 = setActiveThread({ index: index1, conversationId })
       await writeThreadIndex({ userKey: params.userKey, index: index1, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
 
@@ -260,7 +283,10 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
     }
   }
 
-  if (params.kind === "TOOL" && (toolId === "postproc-step-1-v1" || toolId === "postproc-step-2-v1" || toolId === "postproc-step-3-v1")) {
+  if (
+    params.kind === "TOOL" &&
+    (toolId === "postproc-step-1-v1" || toolId === "postproc-step-2-v1" || toolId === "postproc-step-3-v1")
+  ) {
     const step = toolId === "postproc-step-1-v1" ? 1 : toolId === "postproc-step-2-v1" ? 2 : 3
     const ts = nowIso()
     return {
@@ -369,7 +395,9 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
         // Evidence snippets: store short quotes per mapped field (dev v1)
         const evidenceKey = "evidence.v1"
         const existingEvidence =
-          (track.extensions && typeof track.extensions[evidenceKey] === "object" && track.extensions[evidenceKey] !== null)
+          (track.extensions &&
+            typeof track.extensions[evidenceKey] === "object" &&
+            track.extensions[evidenceKey] !== null)
             ? (track.extensions[evidenceKey] as Record<string, unknown>)
             : {}
 
