@@ -14,6 +14,13 @@ import {
   readConversationState,
   writeConversationState,
 } from "../../chat/persistence/conversationStateStore"
+import {
+  applyAutoThreadLabelFromText,
+  ensureThreadIndex,
+  setActiveThread,
+  upsertThread,
+  writeThreadIndex,
+} from "../../chat/persistence/threadIndexStore"
 import { appendSpineEventV23 } from "../../chat/observability/spineStore"
 
 import { ensureDefaultThemeAndEpisode } from "../../chat/memory/longTermMemoryStore"
@@ -102,6 +109,40 @@ function metaDomains(keys: string[]): string[] {
     domains.add(idx > 0 ? k.slice(0, idx) : k)
   }
   return Array.from(domains)
+}
+
+function isLobbyConversation(conversationId: string): boolean {
+  return conversationId.startsWith("lobby:u:")
+}
+
+async function maybeAutoLabelThread(params: {
+  userKey: string
+  conversationId: string
+  input: InputSignal
+  revisionAfter: number
+}): Promise<void> {
+  if (isLobbyConversation(params.conversationId)) return
+  if (params.input.type !== "FREE_TEXT") return
+  if (params.revisionAfter !== 1) return
+
+  const userText = params.input.text
+  const index0 = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+
+  // Ensure thread exists in index (covers restores or direct navigation).
+  let index1 = upsertThread({ index: index0, conversationId: params.conversationId })
+  index1 = applyAutoThreadLabelFromText({
+    index: index1,
+    conversationId: params.conversationId,
+    userText,
+    maxTitleChars: 60,
+    maxPreviewChars: 120,
+  })
+  index1 = setActiveThread({ index: index1, conversationId: params.conversationId })
+
+  // Only write if changed materially (simple JSON compare).
+  if (JSON.stringify(index0) === JSON.stringify(index1)) return
+
+  await writeThreadIndex({ userKey: params.userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
 }
 
 async function persistState(result: KernelResult): Promise<void> {
@@ -454,7 +495,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return
   }
 
-  const conversationId = typeof clientState?.conversation_id === "string" ? clientState.conversation_id : lobbyConversationId
+  const conversationId =
+    typeof clientState?.conversation_id === "string" ? clientState.conversation_id : lobbyConversationId
   const stored = await readConversationState(conversationId)
 
   const baseState = resolveBaseState({ storedState: stored, clientState })
@@ -462,6 +504,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const kernelResult = await runTurnWithAutoAdvance({ baseState, input, userKey })
     await persistState(kernelResult)
+
+    await maybeAutoLabelThread({
+      userKey,
+      conversationId: kernelResult.state.conversation_id,
+      input,
+      revisionAfter: kernelResult.state.revision,
+    })
 
     const metaKeysWritten = kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : []
 
