@@ -1,4 +1,15 @@
 import type { ConversationState } from "../kernel/types"
+import crypto from "crypto"
+
+import { createInitialState } from "../kernel/state"
+import { readConversationState, writeConversationState } from "../persistence/conversationStateStore"
+import {
+  ensureThreadIndex,
+  setActiveThread,
+  upsertThread,
+  writeThreadIndex,
+} from "../persistence/threadIndexStore"
+
 import { readUserProfile, writeUserProfile } from "../memory/store"
 import type { CheckpointSpec, ToolSpec } from "../nodes/registry"
 import { consolidateV1, ensureTrack } from "../platform/consolidation"
@@ -16,12 +27,78 @@ export type ToolRunResult = {
   reason: string
   response_message?: string
   meta_delta?: Record<string, unknown>
+  state_override?: ConversationState
 }
 
 const DEFAULT_PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60
+const DEFAULT_SESSION_TTL_SECONDS = 90 * 24 * 60 * 60
 
 function nowIso(): string {
   return new Date().toISOString()
+}
+
+function defaultProfileV2(params: { now: string; lastNode: string }) {
+  return {
+    version: 2,
+    updated_at: params.now,
+    first_seen_at: params.now,
+    last_seen_at: params.now,
+    last_node: params.lastNode,
+    node_counts: {},
+    topic_scores: {},
+    pref: { short_answers: 0.5 },
+    core: {
+      preferences: {
+        preferred_tone: "",
+        short_answers: 0.5,
+      },
+      semantic: {
+        topics: [],
+        goals: [],
+      },
+    },
+    tracks: {
+      active_track_id: null,
+      items: [],
+    },
+  }
+}
+
+function metaEntry(sourceNode: string, value: unknown): { value: unknown; source_node: string } {
+  return { value, source_node: sourceNode }
+}
+
+function makeThreadChoices(params: {
+  activeConversationId: string | null
+  threads: Array<{ conversation_id: string; title: string; updated_at: string }>
+}): Array<{ id: string; label: string; kind: "continue" | "new" | "thread" }>{
+  const items: Array<{ id: string; label: string; kind: "continue" | "new" | "thread" }> = []
+
+  if (params.activeConversationId) {
+    const active = params.threads.find((t) => t.conversation_id === params.activeConversationId)
+    items.push({
+      id: "continue",
+      label: active?.title ? `Fortsæt: ${active.title}` : "Fortsæt seneste tråd",
+      kind: "continue",
+    })
+  }
+
+  items.push({ id: "new", label: "Start ny tråd", kind: "new" })
+
+  for (const t of params.threads) {
+    items.push({
+      id: t.conversation_id,
+      label: t.title ? t.title : `Tråd: ${t.conversation_id}`,
+      kind: "thread",
+    })
+  }
+
+  return items.slice(0, 12)
+}
+
+function safeUuid(): string {
+  // Node 18+ has crypto.randomUUID; fallback for older runtimes.
+  return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
 }
 
 function asString(v: unknown): string {
@@ -54,6 +131,152 @@ function getFormLastValues(state: ConversationState): Record<string, unknown> | 
  * - CHECKPOINT: explicit commit/refine step
  */
 export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
+  const specAny = params.spec as any
+  const toolId = typeof specAny?.tool_id === "string" ? specAny.tool_id : ""
+
+  // Special tools that must work even if profile is missing.
+  if (params.kind === "TOOL" && toolId === "profile-bootstrap-v1") {
+    const ts = nowIso()
+
+    const existing = await readUserProfile(params.userKey)
+    const profile = existing ?? defaultProfileV2({ now: ts, lastNode: params.state.active_node })
+    profile.updated_at = ts
+    profile.last_seen_at = ts
+    profile.last_node = params.state.active_node
+
+    await writeUserProfile({ userKey: params.userKey, profile, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
+
+    const index = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
+
+    const choices = makeThreadChoices({
+      activeConversationId: index.active_conversation_id,
+      threads: index.threads.map((t) => ({ conversation_id: t.conversation_id, title: t.title, updated_at: t.updated_at })),
+    })
+
+    return {
+      nextNode: specAny.on_success_to,
+      reason: "profile bootstrap ok",
+      meta_delta: {
+        "profile.status": existing ? "known" : "new",
+        "profile.last_seen_at": ts,
+        "threads.count": index.threads.length,
+        "threads.active": index.active_conversation_id,
+        "threads.choices": choices,
+      },
+    }
+  }
+
+  if (params.kind === "TOOL" && toolId === "thread-switch-v1") {
+    const ts = nowIso()
+    const index0 = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
+
+    const raw = (params.userText ?? "").trim()
+    const text = raw.toLowerCase()
+
+    const wantsNew = text === "new" || text === "ny" || text === "start ny" || text === "start" || text === "n"
+    const wantsContinue = text === "continue" || text === "fortsæt" || text === "fortsaet" || text === "c"
+
+    let targetConversationId: string | null = null
+    let mode: "new" | "continue" | "select" = "select"
+
+    if (wantsNew) {
+      mode = "new"
+    } else if (wantsContinue) {
+      mode = "continue"
+      targetConversationId = index0.active_conversation_id
+    } else if (raw) {
+      mode = "select"
+      targetConversationId = raw
+    }
+
+    if (mode !== "new" && (!targetConversationId || typeof targetConversationId !== "string")) {
+      const choices = makeThreadChoices({
+        activeConversationId: index0.active_conversation_id,
+        threads: index0.threads.map((t) => ({ conversation_id: t.conversation_id, title: t.title, updated_at: t.updated_at })),
+      })
+
+      return {
+        nextNode: params.state.active_node,
+        reason: "thread switch missing selection",
+        response_message: "Vælg en tråd: skriv 'continue', 'new' eller vælg en af knapperne.",
+        meta_delta: {
+          "threads.choices": choices,
+          "threads.count": index0.threads.length,
+          "threads.active": index0.active_conversation_id,
+        },
+      }
+    }
+
+    if (mode === "new") {
+      const conversationId = `c:${safeUuid()}`
+      const newState = createInitialState(conversationId)
+
+      // Persist thread state.
+      await writeConversationState(newState, DEFAULT_SESSION_TTL_SECONDS)
+
+      // Update index.
+      let index1 = upsertThread({ index: index0, conversationId, title: `Tråd ${index0.threads.length + 1}` })
+      index1 = setActiveThread({ index: index1, conversationId })
+      await writeThreadIndex({ userKey: params.userKey, index: index1, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
+
+      // Stamp meta into the new state's meta store for UI hints.
+      newState.meta = {
+        ...(newState.meta ?? {}),
+        "threads.last_switch": metaEntry("THREAD_CHOOSER", { at: ts, mode: "new", from: params.state.conversation_id }),
+      }
+
+      return {
+        nextNode: newState.active_node,
+        reason: "thread switch -> new",
+        state_override: newState,
+      }
+    }
+
+    // Continue/select
+    const loaded = targetConversationId ? await readConversationState(targetConversationId) : null
+
+    const ensured = loaded ?? createInitialState(targetConversationId as string)
+    if (!loaded) {
+      await writeConversationState(ensured, DEFAULT_SESSION_TTL_SECONDS)
+    }
+
+    let index2 = upsertThread({ index: index0, conversationId: ensured.conversation_id })
+    index2 = setActiveThread({ index: index2, conversationId: ensured.conversation_id })
+    await writeThreadIndex({ userKey: params.userKey, index: index2, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
+
+    ensured.meta = {
+      ...(ensured.meta ?? {}),
+      "threads.last_switch": metaEntry("THREAD_CHOOSER", {
+        at: ts,
+        mode: mode === "continue" ? "continue" : "select",
+        from: params.state.conversation_id,
+      }),
+    }
+
+    return {
+      nextNode: ensured.active_node,
+      reason: `thread switch -> ${mode}`,
+      state_override: ensured,
+    }
+  }
+
+  if (params.kind === "TOOL" && (toolId === "postproc-step-1-v1" || toolId === "postproc-step-2-v1" || toolId === "postproc-step-3-v1")) {
+    const step = toolId === "postproc-step-1-v1" ? 1 : toolId === "postproc-step-2-v1" ? 2 : 3
+    const ts = nowIso()
+    return {
+      nextNode: specAny.on_success_to,
+      reason: `postproc step ${step} ok`,
+      meta_delta: {
+        "postproc.last": {
+          at: ts,
+          step,
+          node: params.state.active_node,
+          conversation_id: params.state.conversation_id,
+        },
+      },
+    }
+  }
+
   const profile = await readUserProfile(params.userKey)
 
   if (!profile) {
