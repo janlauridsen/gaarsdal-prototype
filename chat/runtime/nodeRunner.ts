@@ -56,6 +56,31 @@ export async function runNode(params: NodeRunParams) {
       userText: "",
     })
 
+    if (toolResult.state_override) {
+      const now = new Date().toISOString()
+      return {
+        state: toolResult.state_override,
+        transition: {
+          type: "INIT",
+          from: "SYSTEM",
+          to: toolResult.state_override.active_node,
+          reason: toolResult.reason,
+          response_message: toolResult.response_message,
+          meta_delta: toolResult.meta_delta,
+        },
+        log: {
+          conversation_id: toolResult.state_override.conversation_id,
+          revision_before: -1,
+          revision_after: toolResult.state_override.revision,
+          active_node_before: null,
+          active_node_after: toolResult.state_override.active_node,
+          input_type: "SYSTEM",
+          transition_type: "INIT",
+          timestamp: now,
+        },
+      }
+    }
+
     const transition: Transition = {
       type: "NODE_HOP",
       from: state.active_node,
@@ -216,6 +241,31 @@ export async function runNode(params: NodeRunParams) {
       state,
       userText: input.text,
     })
+
+    if (toolResult.state_override) {
+      const now = new Date().toISOString()
+      return {
+        state: toolResult.state_override,
+        transition: {
+          type: "INIT",
+          from: state.active_node,
+          to: toolResult.state_override.active_node,
+          reason: toolResult.reason,
+          response_message: toolResult.response_message,
+          meta_delta: toolResult.meta_delta,
+        },
+        log: {
+          conversation_id: toolResult.state_override.conversation_id,
+          revision_before: -1,
+          revision_after: toolResult.state_override.revision,
+          active_node_before: null,
+          active_node_after: toolResult.state_override.active_node,
+          input_type: "FREE_TEXT",
+          transition_type: "INIT",
+          timestamp: now,
+        },
+      }
+    }
 
     const transition: Transition = {
       type: "NODE_HOP",
