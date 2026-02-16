@@ -1,4 +1,4 @@
-import type { ConversationState, InputSignal, Transition } from "../kernel/types"
+import type { ConversationState, InputSignal, KernelResult, Transition } from "../kernel/types"
 import { runKernel } from "../kernel/engine"
 import { getNode } from "../nodes/registry"
 import { runCapability } from "../ai/runtime"
@@ -30,7 +30,7 @@ function norm(s: string): string {
  * - TOOL/CHECKPOINT: deterministic tool execution (supports SYSTEM ticks for auto-advance)
  * - ROUTER: deterministic routing (supports SYSTEM ticks for auto-advance)
  */
-export async function runNode(params: NodeRunParams) {
+export async function runNode(params: NodeRunParams): Promise<KernelResult> {
   const { state, input } = params
   const node = getNode(state.active_node) as Readonly<Node>
 
@@ -58,7 +58,7 @@ export async function runNode(params: NodeRunParams) {
 
     if (toolResult.state_override) {
       const now = new Date().toISOString()
-      return {
+      const result: KernelResult = {
         state: toolResult.state_override,
         transition: {
           type: "INIT",
@@ -79,6 +79,7 @@ export async function runNode(params: NodeRunParams) {
           timestamp: now,
         },
       }
+      return result
     }
 
     const transition: Transition = {
@@ -244,7 +245,7 @@ export async function runNode(params: NodeRunParams) {
 
     if (toolResult.state_override) {
       const now = new Date().toISOString()
-      return {
+      const result: KernelResult = {
         state: toolResult.state_override,
         transition: {
           type: "INIT",
@@ -265,6 +266,7 @@ export async function runNode(params: NodeRunParams) {
           timestamp: now,
         },
       }
+      return result
     }
 
     const transition: Transition = {
