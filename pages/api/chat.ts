@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next"
 import crypto from "crypto"
 
 import { runNode } from "../../chat/runtime/nodeRunner"
-import { createInitialState } from "../../chat/kernel/state"
+import { createInitialState, createLobbyState } from "../../chat/kernel/state"
 import type { InputSignal, KernelResult, LogEvent } from "../../chat/kernel/types"
 import { getNode } from "../../chat/nodes/registry"
 
@@ -77,8 +77,8 @@ function ensureUserKey(req: NextApiRequest, res: NextApiResponse): string {
   return uid
 }
 
-function toConversationId(userKey: string): string {
-  return `u:${userKey}`
+function toLobbyConversationId(userKey: string): string {
+  return `lobby:u:${userKey}`
 }
 
 function toUserInput(input: InputSignal): string | undefined {
@@ -343,11 +343,20 @@ async function handleInitOrRestore(params: {
       transition_type: "INIT",
     })
 
-    res.status(200).json(payload)
+    // Auto-advance lobby through TOOL/CHECKPOINT/ROUTER nodes so the user lands on a usable prompt.
+    const advanced = await runTurnWithAutoAdvance({
+      baseState: payload.state,
+      input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
+      userKey,
+    })
+
+    await persistState(advanced)
+
+    res.status(200).json(advanced)
     return true
   }
 
-  const initialState = createInitialState(conversationId)
+  const initialState = createLobbyState(conversationId)
 
   const log: LogEvent = {
     conversation_id: initialState.conversation_id,
@@ -360,18 +369,8 @@ async function handleInitOrRestore(params: {
     timestamp: new Date().toISOString(),
   }
 
-  const payload = {
-    state: initialState,
-    transition: {
-      type: "INIT",
-      from: null,
-      reason: "system init",
-    },
-    log,
-  }
-
   await writeConversationState(initialState, SESSION_TTL_SECONDS)
-  await appendLog(payload.log)
+  await appendLog(log)
 
   await appendSpineEventV23({
     schema_version: "v23",
@@ -387,7 +386,16 @@ async function handleInitOrRestore(params: {
     transition_type: "INIT",
   })
 
-  res.status(200).json(payload)
+  // Auto-advance lobby through TOOL/CHECKPOINT/ROUTER nodes so the user lands on a usable prompt.
+  const advanced = await runTurnWithAutoAdvance({
+    baseState: initialState,
+    input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
+    userKey,
+  })
+
+  await persistState(advanced)
+
+  res.status(200).json(advanced)
   return true
 }
 
@@ -427,20 +435,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!body) return
 
   const userKey = ensureUserKey(req, res)
-  const conversationId = toConversationId(userKey)
+  const lobbyConversationId = toLobbyConversationId(userKey)
 
   const { state: clientState, input } = body
 
-  const stored = await readConversationState(conversationId)
+  // Init always enters the lobby, not a specific thread.
+  if (clientState === null) {
+    const storedLobby = await readConversationState(lobbyConversationId)
+    const initHandled = await handleInitOrRestore({
+      clientState,
+      storedState: storedLobby,
+      conversationId: lobbyConversationId,
+      userKey,
+      res,
+    })
+    if (initHandled) return
+    // handleInitOrRestore always returns true for clientState === null
+    return
+  }
 
-  const initHandled = await handleInitOrRestore({
-    clientState,
-    storedState: stored,
-    conversationId,
-    userKey,
-    res,
-  })
-  if (initHandled) return
+  const conversationId = typeof clientState?.conversation_id === "string" ? clientState.conversation_id : lobbyConversationId
+  const stored = await readConversationState(conversationId)
 
   const baseState = resolveBaseState({ storedState: stored, clientState })
 
