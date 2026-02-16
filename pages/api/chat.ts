@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next"
 import crypto from "crypto"
 
 import { runNode } from "../../chat/runtime/nodeRunner"
-import { createLobbyState } from "../../chat/kernel/state"
+import { createInitialState, createLobbyState } from "../../chat/kernel/state"
 import type { InputSignal, KernelResult, LogEvent } from "../../chat/kernel/types"
 import { getNode } from "../../chat/nodes/registry"
 
@@ -32,9 +32,9 @@ type ChatRequestBody = {
 }
 
 const COOKIE_NAME = "gaarsdal_uid"
-const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60
-const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60
-const PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60
+const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
+const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
+const PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
@@ -88,6 +88,14 @@ function toLobbyConversationId(userKey: string): string {
   return `lobby:u:${userKey}`
 }
 
+function toUserInput(input: InputSignal): string | undefined {
+  if (input.type === "FREE_TEXT") return (input as any).text
+  if (input.type === "EXPLICIT_TRANSITION") return `EXPLICIT_TRANSITION:${(input as any).target}`
+  if (input.type === "SYSTEM") return `SYSTEM:${(input as any).intent}`
+  if (input.type === "SYSTEM_INIT") return "SYSTEM_INIT"
+  return undefined
+}
+
 function eventId(): string {
   return (crypto as any).randomUUID
     ? (crypto as any).randomUUID()
@@ -120,57 +128,36 @@ async function maybeAutoLabelThread(params: {
   userKey: string
   conversationId: string
   input: InputSignal
+  revisionAfter: number
 }): Promise<void> {
-  const { userKey, conversationId, input } = params
+  if (isLobbyConversation(params.conversationId)) return
+  if (params.input.type !== "FREE_TEXT") return
 
-  if (isLobbyConversation(conversationId)) return
-  if (input.type !== "FREE_TEXT") return
-
-  const userText = input.text ?? ""
+  const userText = params.input.text ?? ""
   if (userText.trim().length < 12) return
   if (isControlInput(userText)) return
 
-  const index0 = await ensureThreadIndex({
-    userKey,
-    ttlSeconds: PROFILE_TTL_SECONDS,
-  })
+  const index0 = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: PROFILE_TTL_SECONDS })
 
-  const existingThread = index0.threads.find(
-    (t) => t.conversation_id === conversationId
-  )
-
-  const needsLabel =
-    !existingThread ||
-    !existingThread.title?.trim() ||
-    !existingThread.preview?.trim()
-
+  const existing = index0.threads.find((t) => t.conversation_id === params.conversationId)
+  const needsLabel = !existing || !existing.title?.trim() || !existing.preview?.trim()
   if (!needsLabel) return
 
-  let index1 = upsertThread({
-    index: index0,
-    conversationId,
-  })
-
+  // Ensure thread exists in index (covers restores or direct navigation).
+  let index1 = upsertThread({ index: index0, conversationId: params.conversationId })
   index1 = applyAutoThreadLabelFromText({
     index: index1,
-    conversationId,
+    conversationId: params.conversationId,
     userText,
     maxTitleChars: 60,
     maxPreviewChars: 120,
   })
+  index1 = setActiveThread({ index: index1, conversationId: params.conversationId })
 
-  index1 = setActiveThread({
-    index: index1,
-    conversationId,
-  })
-
+  // Only write if changed materially (simple JSON compare).
   if (JSON.stringify(index0) === JSON.stringify(index1)) return
 
-  await writeThreadIndex({
-    userKey,
-    index: index1,
-    ttlSeconds: PROFILE_TTL_SECONDS,
-  })
+  await writeThreadIndex({ userKey: params.userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
 }
 
 async function persistState(result: KernelResult): Promise<void> {
@@ -185,9 +172,7 @@ async function emitSpine(params: {
   error?: { code: string; message: string; retryable?: boolean }
 }): Promise<void> {
   const { kernelResult, input, userKey, latencyMs, error } = params
-  const keys = kernelResult.transition.meta_delta
-    ? Object.keys(kernelResult.transition.meta_delta)
-    : []
+  const keys = kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : []
   const domains = keys.length ? metaDomains(keys) : []
 
   await appendSpineEventV23({
@@ -249,6 +234,8 @@ async function enqueueSuggestFacts(params: {
   revisionAfter: number
   metaKeysWritten: string[]
 }): Promise<void> {
+  // Trigger rule (v23):
+  // - when triage.* OR memory_candidates.* writes occur, enqueue; otherwise no-op.
   const touched = params.metaKeysWritten.some(
     (k) => k.startsWith("triage.") || k.startsWith("memory_candidates.")
   )
@@ -290,15 +277,14 @@ async function logAndRecord(params: {
   await appendLog(kernelResult.log)
 
   const assistantText =
-    kernelResult.transition.response_message ??
-    kernelResult.state.active_node_message
+    kernelResult.transition.response_message ?? kernelResult.state.active_node_message
 
   await appendInteraction({
     conversation_id: kernelResult.state.conversation_id,
     revision: kernelResult.state.revision,
     active_node: kernelResult.state.active_node,
     input_type: (input as any).type,
-    user_input: params.userText,
+    user_input: params.userText ?? toUserInput(input),
     ai_response: assistantText,
     outcome_node: kernelResult.transition.to,
     timestamp: new Date().toISOString(),
@@ -321,48 +307,29 @@ async function logAndRecord(params: {
     revision: kernelResult.state.revision,
     node_id: kernelResult.state.active_node,
     input_type: (input as any).type,
-    user_input_raw: params.userText,
+    user_input_raw: params.userText ?? toUserInput(input),
     assistant_output_raw: assistantText,
     transition_type: kernelResult.transition.type,
     outcome_node: kernelResult.transition.to,
-    capability_id:
-      activeNode.kind === "DIALOG"
-        ? activeNode.capability_id ?? null
-        : null,
-    meta_keys_written: kernelResult.transition.meta_delta
-      ? Object.keys(kernelResult.transition.meta_delta)
-      : [],
+    capability_id: activeNode.kind === "DIALOG" ? activeNode.capability_id ?? null : null,
+    meta_keys_written: kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : [],
   })
 
   const profile = await readUserProfile(params.userKey)
   if (profile) {
-    const { profile: updated, updated: didUpdate } = consolidateV1({
-      profile,
-      state: kernelResult.state,
-    })
+    const { profile: updated, updated: didUpdate } = consolidateV1({ profile, state: kernelResult.state })
     if (didUpdate) {
-      await writeUserProfile({
-        userKey: params.userKey,
-        profile: updated,
-        ttlSeconds: PROFILE_TTL_SECONDS,
-      })
+      await writeUserProfile({ userKey: params.userKey, profile: updated, ttlSeconds: PROFILE_TTL_SECONDS })
     }
   }
 }
 
 function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
   if (node.kind === "ROUTER" && node.id === "HOME") return false
-  return (
-    node.kind === "ROUTER" ||
-    node.kind === "TOOL" ||
-    node.kind === "CHECKPOINT"
-  )
+  return node.kind === "ROUTER" || node.kind === "TOOL" || node.kind === "CHECKPOINT"
 }
 
-function validateRequest(
-  req: NextApiRequest,
-  res: NextApiResponse
-): ChatRequestBody | null {
+function validateRequest(req: NextApiRequest, res: NextApiResponse): ChatRequestBody | null {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method Not Allowed" })
     return null
@@ -383,6 +350,114 @@ function validateRequest(
   return body
 }
 
+async function handleInitOrRestore(params: {
+  clientState: any
+  storedState: any | null
+  conversationId: string
+  userKey: string
+  res: NextApiResponse
+}): Promise<boolean> {
+  const { clientState, storedState, conversationId, userKey, res } = params
+  if (clientState !== null) return false
+
+  if (storedState) {
+    const log: LogEvent = {
+      conversation_id: storedState.conversation_id,
+      revision_before: storedState.revision,
+      revision_after: storedState.revision,
+      active_node_before: storedState.active_node,
+      active_node_after: storedState.active_node,
+      input_type: "SYSTEM_INIT",
+      transition_type: "INIT",
+      timestamp: new Date().toISOString(),
+    }
+
+    const payload = {
+      state: storedState,
+      transition: {
+        type: "INIT",
+        from: null,
+        reason: "system init (restored)",
+      },
+      log,
+    }
+
+    await appendLog(payload.log)
+
+    await appendSpineEventV23({
+      schema_version: "v23",
+      event_id: eventId(),
+      user_key: userKey,
+      conversation_id: storedState.conversation_id,
+      revision_before: storedState.revision,
+      revision_after: storedState.revision,
+      node_before: storedState.active_node,
+      node_after: storedState.active_node,
+      status_after: storedState.status,
+      input_type: "SYSTEM_INIT",
+      transition_type: "INIT",
+    })
+
+    // Auto-advance lobby through TOOL/CHECKPOINT/ROUTER nodes so the user lands on a usable prompt.
+    const advanced = await runTurnWithAutoAdvance({
+      baseState: payload.state,
+      input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
+      userKey,
+    })
+
+    await persistState(advanced)
+
+    res.status(200).json(advanced)
+    return true
+  }
+
+  const initialState = createLobbyState(conversationId)
+
+  const log: LogEvent = {
+    conversation_id: initialState.conversation_id,
+    revision_before: -1,
+    revision_after: initialState.revision,
+    active_node_before: null,
+    active_node_after: initialState.active_node,
+    input_type: "SYSTEM_INIT",
+    transition_type: "INIT",
+    timestamp: new Date().toISOString(),
+  }
+
+  await writeConversationState(initialState, SESSION_TTL_SECONDS)
+  await appendLog(log)
+
+  await appendSpineEventV23({
+    schema_version: "v23",
+    event_id: eventId(),
+    user_key: userKey,
+    conversation_id: initialState.conversation_id,
+    revision_before: -1,
+    revision_after: initialState.revision,
+    node_before: null,
+    node_after: initialState.active_node,
+    status_after: initialState.status,
+    input_type: "SYSTEM_INIT",
+    transition_type: "INIT",
+  })
+
+  // Auto-advance lobby through TOOL/CHECKPOINT/ROUTER nodes so the user lands on a usable prompt.
+  const advanced = await runTurnWithAutoAdvance({
+    baseState: initialState,
+    input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
+    userKey,
+  })
+
+  await persistState(advanced)
+
+  res.status(200).json(advanced)
+  return true
+}
+
+function resolveBaseState(params: { storedState: any | null; clientState: any }): any {
+  return params.storedState ?? params.clientState
+}
+
 async function runTurnWithAutoAdvance(params: {
   baseState: any
   input: InputSignal
@@ -390,11 +465,7 @@ async function runTurnWithAutoAdvance(params: {
 }): Promise<KernelResult> {
   const { baseState, input, userKey } = params
 
-  let kernelResult = await runNode({
-    state: baseState,
-    input,
-    userKey,
-  })
+  let kernelResult = await runNode({ state: baseState, input, userKey })
 
   for (let i = 0; i < 5; i++) {
     const activeNode = getNode(kernelResult.state.active_node)
@@ -413,10 +484,7 @@ async function runTurnWithAutoAdvance(params: {
   return kernelResult
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const started = Date.now()
   const body = validateRequest(req, res)
   if (!body) return
@@ -426,83 +494,38 @@ export default async function handler(
 
   const { state: clientState, input } = body
 
+  // Init always enters the lobby, not a specific thread.
   if (clientState === null) {
     const storedLobby = await readConversationState(lobbyConversationId)
-
-    if (storedLobby) {
-      await persistState({
-        state: storedLobby,
-        transition: {
-          type: "INIT",
-          from: null,
-          to: storedLobby.active_node,
-          reason: "system init (restored)",
-        },
-        log: {
-          conversation_id: storedLobby.conversation_id,
-          revision_before: storedLobby.revision,
-          revision_after: storedLobby.revision,
-          active_node_before: storedLobby.active_node,
-          active_node_after: storedLobby.active_node,
-          input_type: "SYSTEM_INIT",
-          transition_type: "INIT",
-          timestamp: new Date().toISOString(),
-        },
-      } as any)
-
-      res.status(200).json({
-        state: storedLobby,
-        transition: {
-          type: "INIT",
-          from: null,
-          to: storedLobby.active_node,
-          reason: "system init (restored)",
-        },
-      })
-      return
-    }
-
-    const initialState = createLobbyState(lobbyConversationId)
-    await writeConversationState(initialState, SESSION_TTL_SECONDS)
-
-    res.status(200).json({
-      state: initialState,
-      transition: {
-        type: "INIT",
-        from: null,
-        to: initialState.active_node,
-        reason: "system init",
-      },
+    const initHandled = await handleInitOrRestore({
+      clientState,
+      storedState: storedLobby,
+      conversationId: lobbyConversationId,
+      userKey,
+      res,
     })
+    if (initHandled) return
     return
   }
 
   const conversationId =
-    typeof clientState?.conversation_id === "string"
-      ? clientState.conversation_id
-      : lobbyConversationId
-
+    typeof clientState?.conversation_id === "string" ? clientState.conversation_id : lobbyConversationId
   const stored = await readConversationState(conversationId)
-  const baseState = stored ?? clientState
+
+  const baseState = resolveBaseState({ storedState: stored, clientState })
 
   try {
-    const kernelResult = await runTurnWithAutoAdvance({
-      baseState,
-      input,
-      userKey,
-    })
-
+    const kernelResult = await runTurnWithAutoAdvance({ baseState, input, userKey })
     await persistState(kernelResult)
 
     await maybeAutoLabelThread({
       userKey,
       conversationId: kernelResult.state.conversation_id,
       input,
+      revisionAfter: kernelResult.state.revision,
     })
 
-    const metaKeysWritten = kernelResult.transition.meta_delta
-      ? Object.keys(kernelResult.transition.meta_delta)
-      : []
+    const metaKeysWritten = kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : []
 
     await emitSpine({
       userKey,
@@ -528,12 +551,30 @@ export default async function handler(
       userKey,
       input,
       kernelResult,
-      userText:
-        input.type === "FREE_TEXT" ? input.text : undefined,
+      userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined,
     })
 
     res.status(200).json(kernelResult)
   } catch (e: any) {
+    await appendSpineEventV23({
+      schema_version: "v23",
+      event_id: eventId(),
+      user_key: userKey,
+      conversation_id: conversationId,
+      revision_before: stored?.revision ?? -1,
+      revision_after: stored?.revision ?? -1,
+      node_before: stored?.active_node ?? null,
+      node_after: stored?.active_node ?? (clientState?.active_node ?? "UNKNOWN"),
+      status_after: stored?.status ?? "active",
+      input_type: (input as any).type,
+      transition_type: "ERROR",
+      latency_ms: Date.now() - started,
+      error: {
+        code: "UNHANDLED",
+        message: typeof e?.message === "string" ? e.message : "Unknown error",
+      },
+    })
+
     res.status(500).json({ error: "Internal Server Error" })
   }
 }
