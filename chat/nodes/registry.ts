@@ -74,6 +74,99 @@ const QUICK_CONTACTS: NodeId[] = [
 ]
 
 const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
+  // ----------- LOBBY / PROFILE / THREADS (V23.1) -----------
+
+  PROFILE_BOOTSTRAP: {
+    id: "PROFILE_BOOTSTRAP",
+    kind: "TOOL",
+    goal: "bootstrap profile + thread index",
+    message: "System step: loader profil og tråde…",
+    allow_free_text: false,
+    allow_parentese: false,
+    allowed_exits: ["THREAD_CHOOSER"],
+    tool: {
+      tool_id: "profile-bootstrap-v1",
+      on_success_to: "THREAD_CHOOSER",
+      on_error_to: "THREAD_CHOOSER",
+    },
+    meta_domains_written: [
+      "profile.status",
+      "profile.last_seen_at",
+      "threads.count",
+      "threads.active",
+      "threads.choices",
+    ],
+  },
+
+  THREAD_CHOOSER: {
+    id: "THREAD_CHOOSER",
+    kind: "TOOL",
+    goal: "choose thread or start new",
+    message:
+      "Vælg en tråd:\n" +
+      "- Tryk 'Fortsæt' for at fortsætte seneste\n" +
+      "- Tryk 'Start ny tråd' for at starte på en frisk\n" +
+      "- Eller vælg en eksisterende tråd\n\n" +
+      "Du kan også skrive: continue / new.",
+    allow_free_text: true,
+    allow_parentese: false,
+    allowed_exits: ["HOME"],
+    tool: {
+      tool_id: "thread-switch-v1",
+      on_success_to: "HOME",
+      on_error_to: "THREAD_CHOOSER",
+    },
+    meta_domains_written: ["threads.choices", "threads.count", "threads.active"],
+  },
+
+  POSTPROC_STEP_1_SCAN: {
+    id: "POSTPROC_STEP_1_SCAN",
+    kind: "TOOL",
+    goal: "post processing step 1 (scan)",
+    message: "System step: post processing (1/3) — scan…",
+    allow_free_text: false,
+    allow_parentese: false,
+    allowed_exits: ["POSTPROC_STEP_2_BUILD", "HOME"],
+    tool: {
+      tool_id: "postproc-step-1-v1",
+      on_success_to: "POSTPROC_STEP_2_BUILD",
+      on_error_to: "HOME",
+    },
+    meta_domains_written: ["postproc.last"],
+  },
+
+  POSTPROC_STEP_2_BUILD: {
+    id: "POSTPROC_STEP_2_BUILD",
+    kind: "TOOL",
+    goal: "post processing step 2 (build)",
+    message: "System step: post processing (2/3) — build…",
+    allow_free_text: false,
+    allow_parentese: false,
+    allowed_exits: ["POSTPROC_STEP_3_PUBLISH", "HOME"],
+    tool: {
+      tool_id: "postproc-step-2-v1",
+      on_success_to: "POSTPROC_STEP_3_PUBLISH",
+      on_error_to: "HOME",
+    },
+    meta_domains_written: ["postproc.last"],
+  },
+
+  POSTPROC_STEP_3_PUBLISH: {
+    id: "POSTPROC_STEP_3_PUBLISH",
+    kind: "TOOL",
+    goal: "post processing step 3 (publish)",
+    message: "System step: post processing (3/3) — publish…",
+    allow_free_text: false,
+    allow_parentese: false,
+    allowed_exits: ["HOME"],
+    tool: {
+      tool_id: "postproc-step-3-v1",
+      on_success_to: "HOME",
+      on_error_to: "HOME",
+    },
+    meta_domains_written: ["postproc.last"],
+  },
+
   HOME: {
     id: "HOME",
     kind: "ROUTER",
@@ -87,6 +180,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "METHOD_FIT",
       "BOOKING",
       "DEV_SANDBOX_INTRO",
+      "POSTPROC_STEP_1_SCAN",
       "MAIL",
       "TLF",
       "CONTACT_FORM", // FIX: missing previously
