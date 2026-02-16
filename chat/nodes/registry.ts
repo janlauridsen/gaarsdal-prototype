@@ -110,7 +110,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "Du kan også skrive: continue / new.",
     allow_free_text: true,
     allow_parentese: false,
-    allowed_exits: ["HOME"],
+    allowed_exits: ["THREAD_CHOOSER", "HOME"],
     tool: {
       tool_id: "thread-switch-v1",
       on_success_to: "HOME",
@@ -385,7 +385,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "Foreløbig triage: dit tema virker relevant for hypnoterapi. Næste skridt er booking.",
     allow_free_text: false,
     allow_parentese: false,
-    allowed_exits: ["BOOKING", ...QUICK_CONTACTS],
+    allowed_exits: QUICK_CONTACTS,
     meta_domains_written: ["triage.outcome", "triage.summary", "triage.unclear_points"],
   },
 
