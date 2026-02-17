@@ -65,6 +65,22 @@ export type AppendEventOptions = {
 };
 
 /**
+ * Internal redis binding for legacy call sites that invoke appendConversationEventV1(event)
+ * without passing a redis client.
+ *
+ * Recommendation: set once during app bootstrap (API route init) via setEventsRedis(redis).
+ */
+let _eventsRedis: RedisLike | null = null;
+
+export function setEventsRedis(redis: RedisLike): void {
+  _eventsRedis = redis;
+}
+
+function isRedisLike(x: unknown): x is RedisLike {
+  return !!x && typeof x === "object" && typeof (x as any).rpush === "function" && typeof (x as any).ltrim === "function";
+}
+
+/**
  * Generic append for v1 conversation events.
  * Writes to:
  *  - all feed
@@ -111,16 +127,44 @@ export async function appendEvent(
 }
 
 /**
- * Backwards-compatible named export expected by older call sites.
- * This fixes:
- *   Type error: has no exported member named 'appendConversationEventV1'
+ * Backwards-compatible export expected by pages/api/chat.ts.
+ *
+ * Supports BOTH call styles:
+ *   1) appendConversationEventV1(event)
+ *   2) appendConversationEventV1(redis, event, opts?)
+ *
+ * If called as (event), you MUST have called setEventsRedis(redis) earlier in the process.
  */
-export async function appendConversationEventV1(
+export function appendConversationEventV1(event: EventEnvelope, opts?: AppendEventOptions): Promise<void>;
+export function appendConversationEventV1(
   redis: RedisLike,
   event: EventEnvelope,
-  opts: AppendEventOptions = {}
+  opts?: AppendEventOptions
+): Promise<void>;
+export async function appendConversationEventV1(
+  a: RedisLike | EventEnvelope,
+  b?: EventEnvelope | AppendEventOptions,
+  c?: AppendEventOptions
 ): Promise<void> {
-  return appendEvent(redis, event, opts);
+  // Style: appendConversationEventV1(redis, event, opts?)
+  if (isRedisLike(a)) {
+    const redis = a;
+    const event = b as EventEnvelope;
+    const opts = c ?? {};
+    return appendEvent(redis, event, opts);
+  }
+
+  // Style: appendConversationEventV1(event, opts?)
+  const event = a as EventEnvelope;
+  const opts = (b as AppendEventOptions) ?? {};
+
+  if (!_eventsRedis) {
+    throw new Error(
+      "appendConversationEventV1(event) called without redis bound. Call setEventsRedis(redis) during initialization, or call appendConversationEventV1(redis, event, opts)."
+    );
+  }
+
+  return appendEvent(_eventsRedis, event, opts);
 }
 
 export type ReadEventsOptions = {
