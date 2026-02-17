@@ -22,6 +22,7 @@ import {
   writeThreadIndex,
 } from "../../chat/persistence/threadIndexStore"
 import { appendSpineEventV23 } from "../../chat/observability/spineStore"
+import { appendConversationEventV1 } from "../../chat/events/store"
 
 import { ensureDefaultThemeAndEpisode } from "../../chat/memory/longTermMemoryStore"
 import { enqueueJob, makeJobId } from "../../chat/async/queue"
@@ -100,6 +101,50 @@ function eventId(): string {
   return (crypto as any).randomUUID
     ? (crypto as any).randomUUID()
     : crypto.randomBytes(16).toString("hex")
+}
+
+function nowMs(): number {
+  return Date.now()
+}
+
+function envTrue(name: string): boolean {
+  const v = process.env[name]
+  if (!v) return false
+  const t = v.trim().toLowerCase()
+  return t === "1" || t === "true" || t === "yes" || t === "on"
+}
+
+function truncateText(s: string, max: number): string {
+  if (s.length <= max) return s
+  return s.slice(0, max) + "…"
+}
+
+function shouldIncludeRawText(): boolean {
+  // Default off to reduce risk of PII in canonical events.
+  return envTrue("GAARSDAL_EVENTS_INCLUDE_TEXT")
+}
+
+async function emitCanonicalEvent(params: {
+  userKey: string
+  conversationId: string
+  revision: number
+  inputId: number
+  nodeId?: string | null
+  eventType: string
+  payload: unknown
+}): Promise<void> {
+  await appendConversationEventV1({
+    schema_version: "v1",
+    event_id: eventId(),
+    event_type: params.eventType as any,
+    conversation_id: params.conversationId,
+    user_key: params.userKey,
+    revision: params.revision,
+    input_id: params.inputId,
+    node_id: params.nodeId ?? undefined,
+    timestamp_ms: nowMs(),
+    payload: params.payload,
+  })
 }
 
 function metaDomains(keys: string[]): string[] {
@@ -407,6 +452,41 @@ async function handleInitOrRestore(params: {
 
     await persistState(advanced)
 
+    // Canonical events (V1): represent the resulting applied transition and rendered node after auto-advance.
+    await emitCanonicalEvent({
+      userKey,
+      conversationId: advanced.state.conversation_id,
+      revision: advanced.state.revision,
+      inputId: advanced.state.revision,
+      nodeId: advanced.state.active_node,
+      eventType: "transition_applied",
+      payload: {
+        input_type: "SYSTEM_INIT",
+        transition: {
+          type: advanced.transition.type,
+          from: advanced.transition.from,
+          to: advanced.transition.to ?? null,
+          reason: advanced.transition.reason,
+          meta_keys_written: advanced.transition.meta_delta ? Object.keys(advanced.transition.meta_delta) : [],
+        },
+        status_after: advanced.state.status,
+      },
+    })
+
+    await emitCanonicalEvent({
+      userKey,
+      conversationId: advanced.state.conversation_id,
+      revision: advanced.state.revision,
+      inputId: advanced.state.revision,
+      nodeId: advanced.state.active_node,
+      eventType: "node_rendered",
+      payload: {
+        node_id: advanced.state.active_node,
+        message: truncateText(advanced.state.active_node_message ?? "", 800),
+        status: advanced.state.status,
+      },
+    })
+
     res.status(200).json(advanced)
     return true
   }
@@ -449,6 +529,41 @@ async function handleInitOrRestore(params: {
   })
 
   await persistState(advanced)
+
+  // Canonical events (V1): represent the resulting applied transition and rendered node after auto-advance.
+  await emitCanonicalEvent({
+    userKey,
+    conversationId: advanced.state.conversation_id,
+    revision: advanced.state.revision,
+    inputId: advanced.state.revision,
+    nodeId: advanced.state.active_node,
+    eventType: "transition_applied",
+    payload: {
+      input_type: "SYSTEM_INIT",
+      transition: {
+        type: advanced.transition.type,
+        from: advanced.transition.from,
+        to: advanced.transition.to ?? null,
+        reason: advanced.transition.reason,
+        meta_keys_written: advanced.transition.meta_delta ? Object.keys(advanced.transition.meta_delta) : [],
+      },
+      status_after: advanced.state.status,
+    },
+  })
+
+  await emitCanonicalEvent({
+    userKey,
+    conversationId: advanced.state.conversation_id,
+    revision: advanced.state.revision,
+    inputId: advanced.state.revision,
+    nodeId: advanced.state.active_node,
+    eventType: "node_rendered",
+    payload: {
+      node_id: advanced.state.active_node,
+      message: truncateText(advanced.state.active_node_message ?? "", 800),
+      status: advanced.state.status,
+    },
+  })
 
   res.status(200).json(advanced)
   return true
@@ -518,6 +633,100 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const kernelResult = await runTurnWithAutoAdvance({ baseState, input, userKey })
     await persistState(kernelResult)
 
+    // Canonical events (V1)
+    const assistantText =
+      kernelResult.transition.response_message ?? kernelResult.state.active_node_message
+
+    const rawUserText = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : toUserInput(input) ?? ""
+
+    await emitCanonicalEvent({
+      userKey,
+      conversationId: kernelResult.state.conversation_id,
+      revision: kernelResult.state.revision,
+      inputId: kernelResult.state.revision,
+      nodeId: kernelResult.log.active_node_before ?? (baseState?.active_node ?? null),
+      eventType: "input_received",
+      payload: {
+        input_type: (input as any).type,
+        // Raw text is disabled by default; enable via GAARSDAL_EVENTS_INCLUDE_TEXT=1 for local/dev.
+        user_input: shouldIncludeRawText() ? truncateText(rawUserText, 1200) : undefined,
+        user_input_length: rawUserText.length,
+      },
+    })
+
+    await emitCanonicalEvent({
+      userKey,
+      conversationId: kernelResult.state.conversation_id,
+      revision: kernelResult.state.revision,
+      inputId: kernelResult.state.revision,
+      nodeId: kernelResult.state.active_node,
+      eventType: "transition_applied",
+      payload: {
+        input_type: (input as any).type,
+        transition: {
+          type: kernelResult.transition.type,
+          from: kernelResult.transition.from,
+          to: kernelResult.transition.to ?? null,
+          reason: kernelResult.transition.reason,
+          meta_keys_written: kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : [],
+        },
+        status_after: kernelResult.state.status,
+      },
+    })
+
+    const activeNode = getNode(kernelResult.state.active_node)
+
+    await emitCanonicalEvent({
+      userKey,
+      conversationId: kernelResult.state.conversation_id,
+      revision: kernelResult.state.revision,
+      inputId: kernelResult.state.revision,
+      nodeId: kernelResult.state.active_node,
+      eventType: "node_rendered",
+      payload: {
+        node_id: kernelResult.state.active_node,
+        node_kind: (activeNode as any)?.kind ?? null,
+        capability_id: (activeNode as any)?.kind === "DIALOG" ? (activeNode as any)?.capability_id ?? null : null,
+        tool_id: (activeNode as any)?.kind === "TOOL" ? (activeNode as any)?.tool?.tool_id ?? null : null,
+        message: truncateText(assistantText ?? "", 800),
+        ai_output_length: (assistantText ?? "").length,
+        status: kernelResult.state.status,
+      },
+    })
+
+    // Terminal events: emit only on status change (no inference).
+    const prevStatus = typeof baseState?.status === "string" ? baseState.status : null
+    if (prevStatus !== kernelResult.state.status) {
+      if (kernelResult.state.status === "completed") {
+        await emitCanonicalEvent({
+          userKey,
+          conversationId: kernelResult.state.conversation_id,
+          revision: kernelResult.state.revision,
+          inputId: kernelResult.state.revision,
+          nodeId: kernelResult.state.active_node,
+          eventType: "conversation_completed",
+          payload: {
+            terminal_revision: kernelResult.state.revision,
+            terminal_node: kernelResult.state.active_node,
+          },
+        })
+      }
+      if (kernelResult.state.status === "rejected") {
+        await emitCanonicalEvent({
+          userKey,
+          conversationId: kernelResult.state.conversation_id,
+          revision: kernelResult.state.revision,
+          inputId: kernelResult.state.revision,
+          nodeId: kernelResult.state.active_node,
+          eventType: "conversation_rejected",
+          payload: {
+            terminal_revision: kernelResult.state.revision,
+            terminal_node: kernelResult.state.active_node,
+          },
+        })
+      }
+    }
+
     await maybeAutoLabelThread({
       userKey,
       conversationId: kernelResult.state.conversation_id,
@@ -572,6 +781,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       error: {
         code: "UNHANDLED",
         message: typeof e?.message === "string" ? e.message : "Unknown error",
+      },
+    })
+
+    // Canonical event (V1): error
+    await emitCanonicalEvent({
+      userKey,
+      conversationId,
+      revision: stored?.revision ?? -1,
+      inputId: stored?.revision ?? -1,
+      nodeId: stored?.active_node ?? null,
+      eventType: "error_raised",
+      payload: {
+        code: "UNHANDLED",
+        message: typeof e?.message === "string" ? e.message : "Unknown error",
+        stage: "runtime",
+        input_type: (input as any).type,
       },
     })
 
