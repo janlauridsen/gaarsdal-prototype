@@ -153,6 +153,7 @@ export default function Chatbot() {
   }, [state, freeTextEnabled])
 
   useEffect(() => {
+    if (!open) return
     endRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, open, headerNavHint, expanded, insightsOpen])
 
@@ -203,13 +204,14 @@ export default function Chatbot() {
     const message = text.trim()
     if (!message) return
 
-    const last = messages.length ? messages[messages.length - 1] : null
-    if (last && last.role === "assistant" && last.text.trim() === message) return
-
-    appendMessage({
-      id: `assistant-${Date.now()}-${Math.random()}`,
-      role: "assistant",
-      text: message,
+    // Undgå simpel duplikat af sidste assistant-linje
+    setMessages((prev) => {
+      const last = prev.length ? prev[prev.length - 1] : null
+      if (last && last.role === "assistant" && last.text.trim() === message) return prev
+      return [
+        ...prev,
+        { id: `assistant-${Date.now()}-${Math.random()}`, role: "assistant", text: message },
+      ]
     })
   }
 
@@ -280,9 +282,7 @@ export default function Chatbot() {
         const toLabel = NODE_LABELS[toNode] ?? toNode
         showHeaderNavHint(`${fromLabel} → ${toLabel}`)
       } else if (nextInput.type === "FREE_TEXT") {
-        // Undgå at vise tekniske THREAD_CHOOSER-kommandoer som brugerbeskeder.
-        const suppress =
-          fromNode === "THREAD_CHOOSER" && isThreadChooserCommand(nextInput.text)
+        const suppress = fromNode === "THREAD_CHOOSER" && isThreadChooserCommand(nextInput.text)
         if (!suppress) {
           appendUserMessage(nextInput.text)
         }
@@ -314,9 +314,7 @@ export default function Chatbot() {
 
     try {
       const res = await fetch("/api/insights", { method: "GET" })
-      if (!res.ok) {
-        throw new Error(`Insights: HTTP ${res.status}`)
-      }
+      if (!res.ok) throw new Error(`Insights: HTTP ${res.status}`)
       const payload = await res.json()
       setInsightsPayload(payload)
     } catch (e: any) {
@@ -354,11 +352,8 @@ export default function Chatbot() {
   }
 
   function toggleInsights() {
-    if (insightsOpen) {
-      closeInsights()
-    } else {
-      openInsights()
-    }
+    if (insightsOpen) closeInsights()
+    else openInsights()
   }
 
   const triageChipsRaw = metaValue("triage.chips")
@@ -413,255 +408,261 @@ export default function Chatbot() {
 
   return (
     <>
-      <div className={styles.overlay} onClick={() => setOpen(false)} />
+      {/* Overlay + dialog renderes kun når open === true */}
+      {open && (
+        <>
+          <div className={styles.overlay} onClick={() => setOpen(false)} />
 
-      <div
-        className={containerClass}
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Chatbot"
-      >
-        <div className={`${styles.header} flex items-center justify-between gap-3`}>
-          <div className="min-w-0">
-            <div className={styles.titleRow}>
-              <div className={styles.title}>Gaarsdal Chat</div>
-              <div className={styles.nodeLabel}>{activeNodeLabel}</div>
+          <div
+            className={containerClass}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Chatbot"
+          >
+            <div className={`${styles.header} flex items-center justify-between gap-3`}>
+              <div className="min-w-0">
+                <div className={styles.titleRow}>
+                  <div className={styles.title}>Gaarsdal Chat</div>
+                  <div className={styles.nodeLabel}>{activeNodeLabel}</div>
+                </div>
+
+                {headerNavHint && <div className={styles.headerHint}>{headerNavHint}</div>}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button className={styles.iconBtn} onClick={toggleInsights} title="Insights">
+                  <InformationCircleIcon className="w-5 h-5" />
+                </button>
+
+                <button className={styles.iconBtn} onClick={reset} title="Reset">
+                  <ClipboardDocumentCheckIcon className="w-5 h-5" />
+                </button>
+
+                <button
+                  className={styles.iconBtn}
+                  onClick={toggleExpanded}
+                  title={expanded ? "Minimer" : "Maksimer"}
+                >
+                  {expanded ? (
+                    <ArrowsPointingInIcon className="w-5 h-5" />
+                  ) : (
+                    <ArrowsPointingOutIcon className="w-5 h-5" />
+                  )}
+                </button>
+
+                <button className={styles.iconBtn} onClick={() => setOpen(false)} title="Luk">
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              </div>
             </div>
 
-            {headerNavHint && <div className={styles.headerHint}>{headerNavHint}</div>}
-          </div>
+            <div className={styles.messages}>
+              {messages.map((m) => (
+                <div key={m.id} className={m.role === "assistant" ? styles.messageBot : styles.messageUser}>
+                  {m.text}
+                </div>
+              ))}
 
-          <div className="flex items-center gap-2">
-            <button className={styles.iconBtn} onClick={toggleInsights} title="Insights">
-              <InformationCircleIcon className="w-5 h-5" />
-            </button>
-
-            <button className={styles.iconBtn} onClick={reset} title="Reset">
-              <ClipboardDocumentCheckIcon className="w-5 h-5" />
-            </button>
-
-            <button
-              className={styles.iconBtn}
-              onClick={toggleExpanded}
-              title={expanded ? "Minimer" : "Maksimer"}
-            >
-              {expanded ? (
-                <ArrowsPointingInIcon className="w-5 h-5" />
-              ) : (
-                <ArrowsPointingOutIcon className="w-5 h-5" />
+              {/* THREAD_CHOOSER: vis tråde */}
+              {threadChoices.length > 0 && (
+                <div className="mt-3">
+                  <div className={styles.sectionTitle}>Tråde</div>
+                  <div className={styles.topicButtons}>
+                    {threadChoices.map((c: any) => (
+                      <button
+                        key={c.id}
+                        className={styles.topicBtn}
+                        onClick={() => {
+                          // Vis label, send teknisk id (uden "new" som ekstra user message)
+                          appendUserMessage(c.label)
+                          dispatch({ type: "FREE_TEXT", text: c.id })
+                        }}
+                        disabled={loading || !state}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
-            </button>
 
-            <button className={styles.iconBtn} onClick={() => setOpen(false)} title="Luk">
-              <XMarkIcon className="w-6 h-6" />
-            </button>
+              {/* HOME: emner */}
+              {topicButtons.length > 0 && (
+                <div className="mt-3">
+                  <div className={styles.sectionTitle}>Emner</div>
+                  <div className={styles.topicButtons}>
+                    {topicButtons.map((t) => (
+                      <button
+                        key={t.id}
+                        className={styles.topicBtn}
+                        onClick={() => go(t.id)}
+                        disabled={!t.enabled || loading || !state}
+                        title={t.tooltip}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TRIAGE chips */}
+              {triageChips.length > 0 && (
+                <div className="mt-3">
+                  <div className={styles.sectionTitle}>Forslag</div>
+                  <div className={styles.chips}>
+                    {triageChips.map((chip: any) => (
+                      <button
+                        key={chip.id}
+                        className={styles.chip}
+                        onClick={() => {
+                          appendUserMessage(chip.label)
+                          dispatch({ type: "FREE_TEXT", text: chip.label })
+                        }}
+                        disabled={loading || !state}
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {insightsOpen && (
+                <div className="mt-3">
+                  <div className={styles.sectionTitle}>Insights</div>
+                  <div className={styles.insightsBox}>
+                    {insightsLoading && <div>Henter…</div>}
+                    {insightsError && <div className={styles.errorText}>{insightsError}</div>}
+                    {!insightsLoading && !insightsError && (
+                      <pre className={styles.pre}>{JSON.stringify(insightsPayload, null, 2)}</pre>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div ref={endRef} />
+            </div>
+
+            <div className={styles.footer}>
+              <div className={styles.footerRow}>
+                <button className={styles.footerIcon} onClick={() => go("HOME")} title="Forside">
+                  <HomeIcon className="w-5 h-5" />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("TLF")} title="Telefon">
+                  <PhoneIcon className="w-5 h-5" />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("MAIL")} title="E-mail">
+                  <EnvelopeIcon className="w-5 h-5" />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("CONTACT_FORM")} title="Kontaktformular">
+                  <LinkIcon className="w-5 h-5" />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("AKUT")} title="Akut">
+                  <ExclamationTriangleIcon className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className={styles.inputRow}>
+                <textarea
+                  className={styles.input}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={placeholder}
+                  rows={2}
+                  disabled={loading || !state || !freeTextEnabled}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault()
+                      const text = input.trim()
+                      if (!text) return
+                      setInput("")
+                      dispatch({ type: "FREE_TEXT", text })
+                    }
+                  }}
+                />
+
+                <button
+                  className={styles.sendBtn}
+                  onClick={() => {
+                    const text = input.trim()
+                    if (!text) return
+                    setInput("")
+                    dispatch({ type: "FREE_TEXT", text })
+                  }}
+                  disabled={loading || !state || !freeTextEnabled || !input.trim()}
+                  title="Send"
+                >
+                  Send
+                </button>
+              </div>
+
+              {showSandboxFooter && (
+                <div className={styles.sandboxFooter}>
+                  <div className={styles.sectionTitle}>Sandbox</div>
+
+                  <div className={styles.sandboxGrid}>
+                    <button
+                      className={styles.sandboxBtn}
+                      onClick={() => go("DEV_SANDBOX_INTRO")}
+                      disabled={loading || !state}
+                      title="Intro"
+                    >
+                      <Squares2X2Icon className="w-5 h-5" />
+                      Intro
+                    </button>
+
+                    <button
+                      className={styles.sandboxBtn}
+                      onClick={() => go("DEV_SANDBOX_FORM")}
+                      disabled={loading || !state}
+                      title="Form"
+                    >
+                      <CalendarDaysIcon className="w-5 h-5" />
+                      Form
+                    </button>
+
+                    <button
+                      className={styles.sandboxBtn}
+                      onClick={applySandboxExample}
+                      disabled={loading || !state}
+                      title="Indsæt eksempel"
+                    >
+                      <WrenchScrewdriverIcon className="w-5 h-5" />
+                      Eksempel
+                    </button>
+
+                    <button
+                      className={styles.sandboxBtn}
+                      onClick={() => setSandboxAdvanced((v) => !v)}
+                      disabled={loading || !state}
+                      title="Avanceret"
+                    >
+                      <HeartIcon className="w-5 h-5" />
+                      {sandboxAdvanced ? "Basic" : "Avanceret"}
+                    </button>
+
+                    <button
+                      className={styles.sandboxBtn}
+                      onClick={() => go("HOME")}
+                      disabled={loading || !state}
+                      title="Tilbage til forsiden"
+                    >
+                      <CircleStackIcon className="w-5 h-5" />
+                      Tilbage
+                    </button>
+                  </div>
+
+                  {sandboxError && <div className={styles.errorText}>{sandboxError}</div>}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </>
+      )}
 
-        <div className={styles.messages}>
-          {messages.map((m) => (
-            <div key={m.id} className={m.role === "assistant" ? styles.messageBot : styles.messageUser}>
-              {m.text}
-            </div>
-          ))}
-
-          {/* THREAD_CHOOSER: vis tråde */}
-          {threadChoices.length > 0 && (
-            <div className="mt-3">
-              <div className={styles.sectionTitle}>Tråde</div>
-              <div className={styles.topicButtons}>
-                {threadChoices.map((c: any) => (
-                  <button
-                    key={c.id}
-                    className={styles.topicBtn}
-                    onClick={() => {
-                      // Vis label (menneskevenligt), men send id (teknisk).
-                      appendUserMessage(c.label)
-                      dispatch({ type: "FREE_TEXT", text: c.id })
-                    }}
-                    disabled={loading || !state}
-                  >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* HOME: emner */}
-          {topicButtons.length > 0 && (
-            <div className="mt-3">
-              <div className={styles.sectionTitle}>Emner</div>
-              <div className={styles.topicButtons}>
-                {topicButtons.map((t) => (
-                  <button
-                    key={t.id}
-                    className={styles.topicBtn}
-                    onClick={() => go(t.id)}
-                    disabled={!t.enabled || loading || !state}
-                    title={t.tooltip}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TRIAGE chips */}
-          {triageChips.length > 0 && (
-            <div className="mt-3">
-              <div className={styles.sectionTitle}>Forslag</div>
-              <div className={styles.chips}>
-                {triageChips.map((chip: any) => (
-                  <button
-                    key={chip.id}
-                    className={styles.chip}
-                    onClick={() => {
-                      appendUserMessage(chip.label)
-                      dispatch({ type: "FREE_TEXT", text: chip.label })
-                    }}
-                    disabled={loading || !state}
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {insightsOpen && (
-            <div className="mt-3">
-              <div className={styles.sectionTitle}>Insights</div>
-              <div className={styles.insightsBox}>
-                {insightsLoading && <div>Henter…</div>}
-                {insightsError && <div className={styles.errorText}>{insightsError}</div>}
-                {!insightsLoading && !insightsError && (
-                  <pre className={styles.pre}>{JSON.stringify(insightsPayload, null, 2)}</pre>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div ref={endRef} />
-        </div>
-
-        <div className={styles.footer}>
-          <div className={styles.footerRow}>
-            <button className={styles.footerIcon} onClick={() => go("HOME")} title="Forside">
-              <HomeIcon className="w-5 h-5" />
-            </button>
-            <button className={styles.footerIcon} onClick={() => go("TLF")} title="Telefon">
-              <PhoneIcon className="w-5 h-5" />
-            </button>
-            <button className={styles.footerIcon} onClick={() => go("MAIL")} title="E-mail">
-              <EnvelopeIcon className="w-5 h-5" />
-            </button>
-            <button className={styles.footerIcon} onClick={() => go("CONTACT_FORM")} title="Kontaktformular">
-              <LinkIcon className="w-5 h-5" />
-            </button>
-            <button className={styles.footerIcon} onClick={() => go("AKUT")} title="Akut">
-              <ExclamationTriangleIcon className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className={styles.inputRow}>
-            <textarea
-              className={styles.input}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={placeholder}
-              rows={2}
-              disabled={loading || !state || !freeTextEnabled}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault()
-                  const text = input.trim()
-                  if (!text) return
-                  setInput("")
-                  dispatch({ type: "FREE_TEXT", text })
-                }
-              }}
-            />
-
-            <button
-              className={styles.sendBtn}
-              onClick={() => {
-                const text = input.trim()
-                if (!text) return
-                setInput("")
-                dispatch({ type: "FREE_TEXT", text })
-              }}
-              disabled={loading || !state || !freeTextEnabled || !input.trim()}
-              title="Send"
-            >
-              Send
-            </button>
-          </div>
-
-          {showSandboxFooter && (
-            <div className={styles.sandboxFooter}>
-              <div className={styles.sectionTitle}>Sandbox</div>
-
-              <div className={styles.sandboxGrid}>
-                <button
-                  className={styles.sandboxBtn}
-                  onClick={() => go("DEV_SANDBOX_INTRO")}
-                  disabled={loading || !state}
-                  title="Intro"
-                >
-                  <Squares2X2Icon className="w-5 h-5" />
-                  Intro
-                </button>
-
-                <button
-                  className={styles.sandboxBtn}
-                  onClick={() => go("DEV_SANDBOX_FORM")}
-                  disabled={loading || !state}
-                  title="Form"
-                >
-                  <CalendarDaysIcon className="w-5 h-5" />
-                  Form
-                </button>
-
-                <button
-                  className={styles.sandboxBtn}
-                  onClick={applySandboxExample}
-                  disabled={loading || !state}
-                  title="Indsæt eksempel"
-                >
-                  <WrenchScrewdriverIcon className="w-5 h-5" />
-                  Eksempel
-                </button>
-
-                <button
-                  className={styles.sandboxBtn}
-                  onClick={() => setSandboxAdvanced((v) => !v)}
-                  disabled={loading || !state}
-                  title="Avanceret"
-                >
-                  <HeartIcon className="w-5 h-5" />
-                  {sandboxAdvanced ? "Basic" : "Avanceret"}
-                </button>
-
-                <button
-                  className={styles.sandboxBtn}
-                  onClick={() => go("HOME")}
-                  disabled={loading || !state}
-                  title="Tilbage til forsiden"
-                >
-                  <CircleStackIcon className="w-5 h-5" />
-                  Tilbage
-                </button>
-              </div>
-
-              {sandboxError && <div className={styles.errorText}>{sandboxError}</div>}
-            </div>
-          )}
-        </div>
-      </div>
-
+      {/* Floating launcher button er altid synlig */}
       <button
         className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center bg-[#4A5D54]"
         onClick={() => {
@@ -671,8 +672,6 @@ export default function Chatbot() {
       >
         <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7 text-white" />
       </button>
-
-      {open && null}
     </>
   )
 }
