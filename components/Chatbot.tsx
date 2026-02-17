@@ -1,3 +1,4 @@
+// Chatbot.tsx
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -9,6 +10,11 @@ import {
   InformationCircleIcon,
   CircleStackIcon,
   PaperAirplaneIcon,
+  HomeIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  LinkIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline"
 
 import styles from "./Chatbot.module.css"
@@ -64,8 +70,7 @@ const NODE_LABELS: Record<string, string> = {
 const TOPIC_TOOLTIPS: Record<string, string> = {
   GEN_HYPNO: "Fri samtale med viden og erfaring (ingen behandling i chatten).",
   TRIAGE: "Kort afklaring: få spørgsmål og relevansvurdering for din situation.",
-  METHOD_FIT:
-    "Sammenlign retninger: hypnoterapi vs typiske alternativer (overblik, ikke behandling).",
+  METHOD_FIT: "Sammenlign retninger: hypnoterapi vs typiske alternativer (overblik, ikke behandling).",
   BOOKING: "Vælg kontaktvej for booking.",
   DEV_SANDBOX_INTRO: "Dev-flow: form → tool → checkpoint → track/profile.",
 }
@@ -184,7 +189,7 @@ export default function Chatbot() {
   }
 
   function normalizeAssistantMessage(s: ConversationState) {
-    // Backend default tekst nævner 'continue', selv når der ingen tråde findes.
+    // Backend kan returnere tekst med 'continue' selv i edge-cases; vi normaliserer UI-tekst.
     if (s.active_node === "THREAD_CHOOSER") {
       const count = Number((s.meta?.["threads.count"]?.value ?? s.meta?.["threads.count"]) ?? 0)
       if (!Number.isNaN(count) && count <= 0) return "Ingen tidligere tråde. Starter en ny tråd."
@@ -261,7 +266,7 @@ export default function Chatbot() {
     dispatch({ type: "EXPLICIT_TRANSITION", target })
   }
 
-  // “Tråde” i header er et “reset til lobby”, så man altid kan vælge tråd.
+  // Header-knap: tilbage til tråd-vælger (lobby)
   function goToThreadChooser() {
     setMessages([])
     setInput("")
@@ -303,7 +308,7 @@ export default function Chatbot() {
       })).filter((t) => t.id !== state?.active_node)
     : []
 
-  // Auto: hvis der ingen tråde er, start ny tråd uden at brugeren skal skrive “new”.
+  // Auto-start: hvis der ingen tråde er, start ny tråd uden at brugeren skriver “new”.
   useEffect(() => {
     if (!open) return
     if (!state) return
@@ -316,7 +321,7 @@ export default function Chatbot() {
       try {
         await dispatch({ type: "FREE_TEXT", text: "new" }, { silentUser: true })
       } catch {
-        // ingen-op
+        // no-op
       }
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -364,7 +369,11 @@ export default function Chatbot() {
                     title={expanded ? "Minimer" : "Maksimer"}
                     aria-label={expanded ? "Minimer" : "Maksimer"}
                   >
-                    {expanded ? <ArrowsPointingInIcon className={styles.icon} /> : <ArrowsPointingOutIcon className={styles.icon} />}
+                    {expanded ? (
+                      <ArrowsPointingInIcon className={styles.icon} />
+                    ) : (
+                      <ArrowsPointingOutIcon className={styles.icon} />
+                    )}
                   </button>
 
                   <button className={styles.iconBtn} onClick={closeChat} title="Luk" aria-label="Luk">
@@ -391,7 +400,7 @@ export default function Chatbot() {
               ))}
 
               {state?.active_node === "THREAD_CHOOSER" && threadChoices.length > 0 && (
-                <div className="mt-3">
+                <div className={styles.sectionBlock}>
                   <div className={styles.sectionTitle}>Tråde</div>
                   <div className={styles.topicGrid}>
                     {threadChoices
@@ -421,6 +430,7 @@ export default function Chatbot() {
                           title={c.kind === "thread" ? c.label : ""}
                         >
                           <span className={styles.topicLabel}>{(c as any).uiLabel}</span>
+                          {c.kind === "thread" && <span className={styles.topicMeta}>Tråd</span>}
                         </button>
                       ))}
                   </div>
@@ -428,7 +438,7 @@ export default function Chatbot() {
               )}
 
               {topicButtons.length > 0 && (
-                <div className="mt-3">
+                <div className={styles.sectionBlock}>
                   <div className={styles.sectionTitle}>Emner</div>
                   <div className={styles.topicGrid}>
                     {topicButtons.map((t) => (
@@ -440,6 +450,7 @@ export default function Chatbot() {
                         title={t.tooltip}
                       >
                         <span className={styles.topicLabel}>{t.label}</span>
+                        <span className={styles.topicMeta}>Vælg</span>
                       </button>
                     ))}
                   </div>
@@ -447,7 +458,7 @@ export default function Chatbot() {
               )}
 
               {triageChips.length > 0 && (
-                <div className="mt-3">
+                <div className={styles.sectionBlock}>
                   <div className={styles.sectionTitle}>Forslag</div>
                   <div className={styles.chipGroup}>
                     {triageChips.map((chip: any) => (
@@ -468,6 +479,30 @@ export default function Chatbot() {
             </div>
 
             <div className={styles.footer}>
+              {/* Footer-nav (skal altid være synlig) */}
+              <div className={styles.footerNav} aria-label="Genveje">
+                <button className={styles.footerIcon} onClick={() => go("HOME")} title="Forside" aria-label="Forside">
+                  <HomeIcon className={styles.footerIconSvg} />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("TLF")} title="Telefon" aria-label="Telefon">
+                  <PhoneIcon className={styles.footerIconSvg} />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("MAIL")} title="E-mail" aria-label="E-mail">
+                  <EnvelopeIcon className={styles.footerIconSvg} />
+                </button>
+                <button
+                  className={styles.footerIcon}
+                  onClick={() => go("CONTACT_FORM")}
+                  title="Kontaktformular"
+                  aria-label="Kontaktformular"
+                >
+                  <LinkIcon className={styles.footerIconSvg} />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("AKUT")} title="Akut" aria-label="Akut">
+                  <ExclamationTriangleIcon className={styles.footerIconSvg} />
+                </button>
+              </div>
+
               <div className={styles.inputRow}>
                 <textarea
                   className={styles.textarea}
