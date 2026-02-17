@@ -13,10 +13,6 @@ import {
   ArrowsPointingInIcon,
   InformationCircleIcon,
   ClipboardDocumentCheckIcon,
-  Squares2X2Icon,
-  CalendarDaysIcon,
-  WrenchScrewdriverIcon,
-  HeartIcon,
   CircleStackIcon,
 } from "@heroicons/react/24/outline"
 
@@ -36,6 +32,7 @@ type ConversationState = {
 type InputSignal =
   | { type: "EXPLICIT_TRANSITION"; target: string }
   | { type: "FREE_TEXT"; text: string }
+  | { type: "SYSTEM_INIT" }
 
 type KernelResponse = {
   state: ConversationState
@@ -60,13 +57,13 @@ const NODE_LABELS: Record<string, string> = {
   TLF: "Telefon",
   CONTACT_FORM: "Kontaktformular",
   AKUT: "Akut",
+  THREAD_CHOOSER: "THREAD_CHOOSER",
 }
 
 const TOPIC_TOOLTIPS: Record<string, string> = {
   GEN_HYPNO: "Fri samtale med viden og erfaring (ingen behandling i chatten).",
   TRIAGE: "Kort afklaring: få spørgsmål og relevansvurdering for din situation.",
-  METHOD_FIT:
-    "Sammenlign retninger: hypnoterapi vs typiske alternativer (overblik, ikke behandling).",
+  METHOD_FIT: "Sammenlign retninger: hypnoterapi vs typiske alternativer (overblik, ikke behandling).",
   BOOKING: "Vælg kontaktvej for booking.",
   DEV_SANDBOX_INTRO: "Dev-flow: form → tool → checkpoint → track/profile.",
 }
@@ -90,14 +87,6 @@ const TOPIC_NODES = [
   "AKUT",
 ] as const
 
-function isThreadChooserCommand(text: string) {
-  const t = text.trim().toLowerCase()
-  if (t === "new" || t === "ny") return true
-  if (t === "continue" || t === "fortsæt") return true
-  if (t.startsWith("c:")) return true
-  return false
-}
-
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -112,26 +101,13 @@ export default function Chatbot() {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
 
-  const [sandboxForm, setSandboxForm] = useState({
-    topic: "",
-    goal: "",
-    time_patterns: "",
-    situational_triggers: "",
-    relational_patterns: "",
-    preferred_tone: "",
-    support_direction: "",
-    interest_in_methods: "",
-  })
-  const [sandboxAdvanced, setSandboxAdvanced] = useState(false)
-  const [sandboxError, setSandboxError] = useState<string | null>(null)
-
   const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
   const headerNavHintTimerRef = useRef<number | null>(null)
 
   const endRef = useRef<HTMLDivElement | null>(null)
 
-  function metaValue(key: string) {
-    const entry = state?.meta?.[key]
+  function metaValue(key: string, s: ConversationState | null = state) {
+    const entry = s?.meta?.[key]
     if (entry && typeof entry === "object" && "value" in entry) return (entry as any).value
     return entry
   }
@@ -140,52 +116,19 @@ export default function Chatbot() {
 
   const freeTextEnabled = useMemo(() => {
     if (!state) return false
-    if (state.active_node === "THREAD_CHOOSER") return true
-    if (state.active_node === "HOME") return true
     return true
   }, [state])
 
   const placeholder = useMemo(() => {
     if (!state) return "Initialiserer…"
-    if (state.active_node === "THREAD_CHOOSER") return "Skriv 'continue' eller 'new'…"
-    if (state.active_node === "DEV_SANDBOX_FORM") return "Udfyld felterne eller brug eksemplet…"
+    if (state.active_node === "THREAD_CHOOSER") return "Skriv 'new' eller vælg en tråd…"
     return "Skriv her… (Enter = send, Shift+Enter = ny linje)"
-  }, [state, freeTextEnabled])
+  }, [state])
 
   useEffect(() => {
     if (!open) return
     endRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, open, headerNavHint, expanded, insightsOpen])
-
-  useEffect(() => {
-    if (!state) return
-    if (state.active_node !== "DEV_SANDBOX_FORM") return
-
-    const last = metaValue("form.last")
-    const values = last && typeof last === "object" ? (last as any).values : null
-    if (values && typeof values === "object") {
-      setSandboxForm((prev) => ({
-        ...prev,
-        topic: typeof values.topic === "string" ? values.topic : prev.topic,
-        goal: typeof values.goal === "string" ? values.goal : prev.goal,
-        time_patterns: typeof values.time_patterns === "string" ? values.time_patterns : prev.time_patterns,
-        situational_triggers:
-          typeof values.situational_triggers === "string"
-            ? values.situational_triggers
-            : prev.situational_triggers,
-        relational_patterns:
-          typeof values.relational_patterns === "string" ? values.relational_patterns : prev.relational_patterns,
-        preferred_tone:
-          typeof values.preferred_tone === "string" ? values.preferred_tone : prev.preferred_tone,
-        support_direction:
-          typeof values.support_direction === "string" ? values.support_direction : prev.support_direction,
-        interest_in_methods:
-          typeof values.interest_in_methods === "string"
-            ? values.interest_in_methods
-            : prev.interest_in_methods,
-      }))
-    }
-  }, [state?.active_node])
 
   useEffect(() => {
     return () => {
@@ -204,13 +147,16 @@ export default function Chatbot() {
     const message = text.trim()
     if (!message) return
 
-    // Undgå simpel duplikat af sidste assistant-linje
     setMessages((prev) => {
       const last = prev.length ? prev[prev.length - 1] : null
       if (last && last.role === "assistant" && last.text.trim() === message) return prev
       return [
         ...prev,
-        { id: `assistant-${Date.now()}-${Math.random()}`, role: "assistant", text: message },
+        {
+          id: `assistant-${Date.now()}-${Math.random()}`,
+          role: "assistant",
+          text: message,
+        },
       ]
     })
   }
@@ -237,6 +183,19 @@ export default function Chatbot() {
     }, 3200)
   }
 
+  function computeInitAssistantText(s: ConversationState) {
+    if (s.active_node !== "THREAD_CHOOSER") return s.active_node_message
+
+    const count = metaValue("threads.count", s)
+    const n = typeof count === "number" ? count : Number(count ?? 0)
+
+    if (!Number.isFinite(n) || n <= 0) {
+      return "Der er ingen gemte tråde endnu. Vælg “Start ny tråd” eller skriv 'new'."
+    }
+
+    return s.active_node_message
+  }
+
   async function init() {
     setLoading(true)
     try {
@@ -254,8 +213,8 @@ export default function Chatbot() {
       setMessages([])
       setInput("")
       setHeaderNavHint(null)
-      setSandboxError(null)
-      appendAssistantMessage(data.state.active_node_message)
+
+      appendAssistantMessage(computeInitAssistantText(data.state))
     } finally {
       setLoading(false)
     }
@@ -282,10 +241,7 @@ export default function Chatbot() {
         const toLabel = NODE_LABELS[toNode] ?? toNode
         showHeaderNavHint(`${fromLabel} → ${toLabel}`)
       } else if (nextInput.type === "FREE_TEXT") {
-        const suppress = fromNode === "THREAD_CHOOSER" && isThreadChooserCommand(nextInput.text)
-        if (!suppress) {
-          appendUserMessage(nextInput.text)
-        }
+        appendUserMessage(nextInput.text)
       }
 
       setState(data.state)
@@ -329,7 +285,6 @@ export default function Chatbot() {
     setInput("")
     setState(null)
     setHeaderNavHint(null)
-    setSandboxError(null)
     setExpanded(false)
     closeInsights()
     init()
@@ -385,30 +340,10 @@ export default function Chatbot() {
       })).filter((t) => t.id !== state?.active_node)
     : []
 
-  const showSandboxFooter =
-    state?.active_node === "DEV_SANDBOX_INTRO" ||
-    state?.active_node === "DEV_SANDBOX_FORM" ||
-    state?.active_node === "DEV_SANDBOX_DONE"
-
   const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal}`
-
-  function applySandboxExample() {
-    setSandboxForm({
-      topic: "alkohol om aftenen",
-      goal: "drikke mindre og stoppe tidligere",
-      time_patterns: "typisk efter kl. 20, især i weekenden",
-      situational_triggers: "arbejdsstress, uro i kroppen, 'skal lige slappe af'",
-      relational_patterns: "drikker mere når jeg er alene; mindre hvis jeg er sammen med andre",
-      preferred_tone: "rolig, konkret og uden moral",
-      support_direction: "et alternativt 'afkoblings-ritual' før jeg kommer hjem",
-      interest_in_methods: "gåtur; registrering; pause før første glas",
-    })
-    setSandboxError(null)
-  }
 
   return (
     <>
-      {/* Overlay + dialog renderes kun når open === true */}
       {open && (
         <>
           <div className={styles.overlay} onClick={() => setOpen(false)} />
@@ -420,17 +355,15 @@ export default function Chatbot() {
             aria-modal="true"
             aria-label="Chatbot"
           >
-            <div className={`${styles.header} flex items-center justify-between gap-3`}>
-              <div className="min-w-0">
-                <div className={styles.titleRow}>
-                  <div className={styles.title}>Gaarsdal Chat</div>
-                  <div className={styles.nodeLabel}>{activeNodeLabel}</div>
-                </div>
-
-                {headerNavHint && <div className={styles.headerHint}>{headerNavHint}</div>}
+            <div className={styles.header}>
+              <div className={styles.titleRow}>
+                <div className={styles.title}>Gaarsdal Chat</div>
+                <div className={styles.nodeLabel}>{activeNodeLabel}</div>
               </div>
 
-              <div className="flex items-center gap-2">
+              {headerNavHint && <div className={styles.headerHint}>{headerNavHint}</div>}
+
+              <div className={styles.headerActions}>
                 <button className={styles.iconBtn} onClick={toggleInsights} title="Insights">
                   <InformationCircleIcon className="w-5 h-5" />
                 </button>
@@ -464,9 +397,8 @@ export default function Chatbot() {
                 </div>
               ))}
 
-              {/* THREAD_CHOOSER: vis tråde */}
               {threadChoices.length > 0 && (
-                <div className="mt-3">
+                <div className={styles.sectionBlock}>
                   <div className={styles.sectionTitle}>Tråde</div>
                   <div className={styles.topicButtons}>
                     {threadChoices.map((c: any) => (
@@ -474,7 +406,6 @@ export default function Chatbot() {
                         key={c.id}
                         className={styles.topicBtn}
                         onClick={() => {
-                          // Vis label, send teknisk id (uden "new" som ekstra user message)
                           appendUserMessage(c.label)
                           dispatch({ type: "FREE_TEXT", text: c.id })
                         }}
@@ -487,9 +418,8 @@ export default function Chatbot() {
                 </div>
               )}
 
-              {/* HOME: emner */}
               {topicButtons.length > 0 && (
-                <div className="mt-3">
+                <div className={styles.sectionBlock}>
                   <div className={styles.sectionTitle}>Emner</div>
                   <div className={styles.topicButtons}>
                     {topicButtons.map((t) => (
@@ -507,9 +437,8 @@ export default function Chatbot() {
                 </div>
               )}
 
-              {/* TRIAGE chips */}
               {triageChips.length > 0 && (
-                <div className="mt-3">
+                <div className={styles.sectionBlock}>
                   <div className={styles.sectionTitle}>Forslag</div>
                   <div className={styles.chips}>
                     {triageChips.map((chip: any) => (
@@ -530,7 +459,7 @@ export default function Chatbot() {
               )}
 
               {insightsOpen && (
-                <div className="mt-3">
+                <div className={styles.sectionBlock}>
                   <div className={styles.sectionTitle}>Insights</div>
                   <div className={styles.insightsBox}>
                     {insightsLoading && <div>Henter…</div>}
@@ -598,79 +527,31 @@ export default function Chatbot() {
                 </button>
               </div>
 
-              {showSandboxFooter && (
-                <div className={styles.sandboxFooter}>
-                  <div className={styles.sectionTitle}>Sandbox</div>
-
-                  <div className={styles.sandboxGrid}>
-                    <button
-                      className={styles.sandboxBtn}
-                      onClick={() => go("DEV_SANDBOX_INTRO")}
-                      disabled={loading || !state}
-                      title="Intro"
-                    >
-                      <Squares2X2Icon className="w-5 h-5" />
-                      Intro
-                    </button>
-
-                    <button
-                      className={styles.sandboxBtn}
-                      onClick={() => go("DEV_SANDBOX_FORM")}
-                      disabled={loading || !state}
-                      title="Form"
-                    >
-                      <CalendarDaysIcon className="w-5 h-5" />
-                      Form
-                    </button>
-
-                    <button
-                      className={styles.sandboxBtn}
-                      onClick={applySandboxExample}
-                      disabled={loading || !state}
-                      title="Indsæt eksempel"
-                    >
-                      <WrenchScrewdriverIcon className="w-5 h-5" />
-                      Eksempel
-                    </button>
-
-                    <button
-                      className={styles.sandboxBtn}
-                      onClick={() => setSandboxAdvanced((v) => !v)}
-                      disabled={loading || !state}
-                      title="Avanceret"
-                    >
-                      <HeartIcon className="w-5 h-5" />
-                      {sandboxAdvanced ? "Basic" : "Avanceret"}
-                    </button>
-
-                    <button
-                      className={styles.sandboxBtn}
-                      onClick={() => go("HOME")}
-                      disabled={loading || !state}
-                      title="Tilbage til forsiden"
-                    >
-                      <CircleStackIcon className="w-5 h-5" />
-                      Tilbage
-                    </button>
-                  </div>
-
-                  {sandboxError && <div className={styles.errorText}>{sandboxError}</div>}
-                </div>
-              )}
+              <div className={styles.footerMetaRow}>
+                <div className={styles.footerMetaLeft} />
+                <button
+                  className={styles.footerMetaIcon}
+                  onClick={() => go("DEV_SANDBOX_INTRO")}
+                  disabled={loading || !state}
+                  title="Sandbox"
+                >
+                  <CircleStackIcon className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         </>
       )}
 
-      {/* Floating launcher button er altid synlig */}
       <button
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center bg-[#4A5D54]"
+        className={styles.fab}
         onClick={() => {
           setOpen(true)
           if (!state) init()
         }}
+        title="Åbn chat"
       >
-        <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7 text-white" />
+        <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
       </button>
     </>
   )
