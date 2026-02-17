@@ -1,8 +1,8 @@
+// chat/async/worker.ts
 import type { AsyncJobResult, AsyncJobV23 } from "./types"
 import { dequeueJobs } from "./queue"
 import { readInteractions } from "../logging/sink"
 import {
-  ensureDefaultThemeAndEpisode,
   readEpisode,
   readFacts,
   readThemes,
@@ -10,6 +10,7 @@ import {
   upsertEpisode,
   upsertFact,
   type MemoryFact,
+  readTheme,
 } from "../memory/longTermMemoryStore"
 import { readConversationState } from "../persistence/conversationStateStore"
 
@@ -206,10 +207,18 @@ async function upsertSuggestedFact(params: {
 }
 
 async function processSummarizeEpisode(job: AsyncJobV23): Promise<AsyncJobResult> {
-  const ensured = await ensureDefaultThemeAndEpisode({ userKey: job.user_key, ttlSeconds: MEMORY_TTL_SECONDS })
+  // Cross-thread contamination guardrail:
+  // Summaries MUST be written to the thread-bound episode_id.
+  let episodeId = job.episode_id
+  if (!episodeId) {
+    const state = await readConversationState(job.conversation_id)
+    const bound = (state?.meta?.["thread.episode_id"] as any)?.value
+    if (typeof bound === "string") episodeId = bound
+  }
+  if (!episodeId) return { job_id: job.job_id, ok: true }
 
-  const episodeId = job.episode_id || ensured.episode.episode_id
-  const episode = (await readEpisode({ userKey: job.user_key, episodeId })) ?? ensured.episode
+  const episode = await readEpisode({ userKey: job.user_key, episodeId })
+  if (!episode) return { job_id: job.job_id, ok: true }
 
   const interactions = await readInteractions(job.conversation_id)
   const last = interactions.slice(-12)
@@ -236,20 +245,54 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
   const state = await readConversationState(job.conversation_id)
   if (!state) return { job_id: job.job_id, ok: true }
 
-  // --- Iteration 1: memory_candidates → theme/episode + canonical facts ---
+  // Cross-thread contamination guardrail:
+  // Facts and theme/episode updates MUST target the thread-bound theme/episode.
+  const boundThemeId = job.theme_id ?? (state.meta?.["thread.theme_id"] as any)?.value
+  const boundEpisodeId = job.episode_id ?? (state.meta?.["thread.episode_id"] as any)?.value
+  if (typeof boundThemeId !== "string" || typeof boundEpisodeId !== "string") {
+    return { job_id: job.job_id, ok: true }
+  }
+
+  // Ensure theme + episode exist (idempotent).
+  const ts = nowMs()
+  const existingTheme = await readTheme({ userKey: job.user_key, themeId: boundThemeId })
+
+  // Optional label update from memory_candidates.theme (label only; never changes theme_id).
   const themeCandidate = readMetaValue(state, "memory_candidates.theme")
-  const themeIdRaw =
-    themeCandidate && typeof themeCandidate === "object" && themeCandidate !== null
-      ? (themeCandidate as any).id
-      : undefined
+  const candidateLabel =
+    themeCandidate && typeof themeCandidate === "object" && themeCandidate !== null && typeof (themeCandidate as any).id === "string"
+      ? String((themeCandidate as any).id)
+      : ""
 
-  if (typeof themeIdRaw === "string" && themeIdRaw.trim()) {
-    const ensured = await ensureThemeAndEpisode({
-      userKey: job.user_key,
-      themeId: themeIdRaw,
-      origin: "system_suggested",
-    })
+  await upsertTheme({
+    userKey: job.user_key,
+    ttlSeconds: MEMORY_TTL_SECONDS,
+    theme: {
+      theme_id: boundThemeId,
+      label: clampText(candidateLabel, 64) || existingTheme?.label || "Tråd",
+      status: "active",
+      created_at: existingTheme?.created_at ?? ts,
+      updated_at: ts,
+      origin: existingTheme?.origin ?? "system_suggested",
+    },
+  })
 
+  const existingEpisode = await readEpisode({ userKey: job.user_key, episodeId: boundEpisodeId })
+  await upsertEpisode({
+    userKey: job.user_key,
+    ttlSeconds: MEMORY_TTL_SECONDS,
+    episode: existingEpisode
+      ? { ...existingEpisode, theme_id: boundThemeId, updated_at: ts }
+      : {
+          episode_id: boundEpisodeId,
+          theme_id: boundThemeId,
+          started_at: ts,
+          updated_at: ts,
+        },
+  })
+
+  // --- Iteration 1: memory_candidates → theme/episode + canonical facts ---
+  {
     const goalObj = readMetaValue(state, "memory_candidates.goal")
     const goalText =
       typeof goalObj === "string"
@@ -271,7 +314,7 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
     if (isNonEmptyString(goalText)) {
       await upsertCanonicalFact({
         userKey: job.user_key,
-        key: `theme.${ensured.themeId}.goal`,
+        key: `theme.${boundThemeId}.goal`,
         value: goalText.trim(),
         confidence: conf,
         createdBy,
@@ -281,7 +324,7 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
     if (triggers.length) {
       await upsertCanonicalFact({
         userKey: job.user_key,
-        key: `theme.${ensured.themeId}.key_triggers`,
+        key: `theme.${boundThemeId}.key_triggers`,
         value: triggers,
         confidence: conf,
         createdBy,
@@ -291,7 +334,7 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
     if (patterns.length) {
       await upsertCanonicalFact({
         userKey: job.user_key,
-        key: `theme.${ensured.themeId}.patterns`,
+        key: `theme.${boundThemeId}.patterns`,
         value: patterns,
         confidence: conf,
         createdBy,
@@ -300,7 +343,7 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
 
     if (typeof summary === "string" && summary.trim()) {
       // Episode summary is the most useful “no repetition” anchor.
-      const episode = await readEpisode({ userKey: job.user_key, episodeId: ensured.episodeId })
+      const episode = await readEpisode({ userKey: job.user_key, episodeId: boundEpisodeId })
       if (episode) {
         await upsertEpisode({
           userKey: job.user_key,
@@ -354,7 +397,7 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
   if (isNonEmptyString(lastTopic)) {
     await upsertSuggestedFact({
       userKey: job.user_key,
-      key: "theme.general.last_topic",
+      key: `theme.${boundThemeId}.last_topic`,
       value: lastTopic.trim(),
       createdBy: `job:${job.type}:${job.job_version}`,
     })
