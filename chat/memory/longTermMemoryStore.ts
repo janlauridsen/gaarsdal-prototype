@@ -1,3 +1,4 @@
+// chat/memory/longTermMemoryStore.ts
 import { getRedisClient } from "../persistence/redis"
 
 /**
@@ -208,6 +209,17 @@ export async function readEpisode(params: {
   return parsed && isEpisode(parsed) ? parsed : null
 }
 
+export async function readTheme(params: {
+  userKey: string
+  themeId: string
+}): Promise<Theme | null> {
+  const client = getRedisClient()
+  if (!client) return null
+  const raw = await client.get<unknown>(KEY_THEME(params.userKey, params.themeId))
+  const parsed = parseJson<Theme>(raw)
+  return parsed && isTheme(parsed) ? parsed : null
+}
+
 /**
  * Create or update a MemoryFact.
  */
@@ -282,6 +294,49 @@ export async function ensureDefaultThemeAndEpisode(params: {
   }
 
   // Upsert both (idempotent).
+  await upsertTheme({ userKey: params.userKey, theme, ttlSeconds: params.ttlSeconds })
+  await upsertEpisode({ userKey: params.userKey, episode, ttlSeconds: params.ttlSeconds })
+
+  return { theme, episode }
+}
+
+/**
+ * Step-4 helper: Ensure a thread-bound Theme+Episode exist.
+ *
+ * Cross-thread contamination guardrail:
+ * - every conversation/thread gets its own theme_id + episode_id binding
+ * - theme_id/episode_id are stable by conversation_id
+ */
+export async function ensureThreadThemeAndEpisode(params: {
+  userKey: string
+  conversationId: string
+  ttlSeconds: number
+}): Promise<{ theme: Theme; episode: Episode }> {
+  const safeConv = (params.conversationId ?? "").trim() || "unknown"
+  const theme_id = `theme:thread:${safeConv}`
+  const episode_id = `episode:thread:${safeConv}:1`
+  const ts = nowMs()
+
+  const existingTheme = await readTheme({ userKey: params.userKey, themeId: theme_id })
+  const theme: Theme = {
+    theme_id,
+    label: existingTheme?.label ?? "Tråd",
+    status: "active",
+    created_at: existingTheme?.created_at ?? ts,
+    updated_at: ts,
+    origin: existingTheme?.origin ?? "system_suggested",
+  }
+
+  const existingEpisode = await readEpisode({ userKey: params.userKey, episodeId: episode_id })
+  const episode: Episode = {
+    episode_id,
+    theme_id,
+    started_at: existingEpisode?.started_at ?? ts,
+    updated_at: ts,
+    summary_short: existingEpisode?.summary_short,
+    open_loops: existingEpisode?.open_loops,
+  }
+
   await upsertTheme({ userKey: params.userKey, theme, ttlSeconds: params.ttlSeconds })
   await upsertEpisode({ userKey: params.userKey, episode, ttlSeconds: params.ttlSeconds })
 
