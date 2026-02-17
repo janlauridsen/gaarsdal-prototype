@@ -1,182 +1,123 @@
 // chat/events/store.ts
-// Canonical events list keys:
-//   gaarsdal:events:v1:${conversationId}
-// Observed legacy/bug keys (double "c:" etc.):
-//   gaarsdal:events:v1:c:${conversationId}
+import { getRedisClient } from "../persistence/redis"
+import type { ConversationEventV1, EventStoreReadParams } from "./types"
 
-export type RedisLike = {
-  rpush: (...args: any[]) => Promise<any>;
-  ltrim: (...args: any[]) => Promise<any>;
-  lrange: (...args: any[]) => Promise<any>;
-  llen?: (...args: any[]) => Promise<any>;
-};
+const KEY_ALL = "gaarsdal:events:v1:all"
+const KEY_USER_PREFIX = "gaarsdal:events:v1:u:"
+const KEY_CONVO_PREFIX_CANONICAL = "gaarsdal:events:v1:" // + {conversation_id}
+const KEY_CONVO_PREFIX_LEGACY = "gaarsdal:events:v1:c:" // legacy rollout
 
-export const EVENTS_SCHEMA_VERSION = "v1" as const;
+// Keep bounded in Redis for V1. Long-term storage can be introduced later.
+const MAX_EVENTS_PER_LIST = 4000
 
-const KEY_EVENTS_PREFIX_CANONICAL = "gaarsdal:events:v1:"; // + {conversation_id} OR "all" OR "u:{userKey}" etc.
-const KEY_EVENTS_PREFIX_LEGACY_BUG = "gaarsdal:events:v1:c:"; // + {conversation_id}
+/**
+ * IMPORTANT:
+ * Dual-write to legacy keys will recreate duplication (including c:c:...),
+ * so it is OFF by default. Enable only for short migration windows.
+ */
+const DUAL_WRITE_LEGACY = false
 
-const KEY_EVENTS_ALL = `${KEY_EVENTS_PREFIX_CANONICAL}all`;
-const KEY_EVENTS_USER = (userKey: string) => `${KEY_EVENTS_PREFIX_CANONICAL}u:${userKey}`;
-const KEY_EVENTS_CONVO = (conversationId: string) => `${KEY_EVENTS_PREFIX_CANONICAL}${conversationId}`;
-const KEY_EVENTS_CONVO_LEGACY_BUG = (conversationId: string) =>
-  `${KEY_EVENTS_PREFIX_LEGACY_BUG}${conversationId}`;
-
-// Keep last N events (same as your logs: -4000 -1)
-const DEFAULT_MAX_EVENTS = 4000;
-
-// If you *must* keep dual-write temporarily, set to true.
-// NOTE: true will recreate the duplication you see in logs.
-const DUAL_WRITE_LEGACY_BUG_KEY = false;
-
-export type EventEnvelope<TPayload = any> = {
-  schema_version: typeof EVENTS_SCHEMA_VERSION;
-  event_id: string;
-  event_type: string;
-  conversation_id: string;
-  user_key: string;
-  revision: number;
-  input_id?: number;
-  node_id?: string;
-  timestamp_ms: number;
-  payload: TPayload;
-};
-
-export type AppendEventOptions = {
-  maxEvents?: number;
-  writeAll?: boolean; // gaarsdal:events:v1:all
-  writeUser?: boolean; // gaarsdal:events:v1:u:{userKey}
-  writeConversation?: boolean; // gaarsdal:events:v1:{conversationId}
-};
-
-export type ReadEventsOptions = {
-  start?: number; // LRANGE start
-  stop?: number; // LRANGE stop
-};
-
-function safeJson(value: unknown): string {
-  return JSON.stringify(value);
+function userKeyList(userKey: string): string {
+  return `${KEY_USER_PREFIX}${userKey}`
 }
 
-async function rpushTrim(redis: RedisLike, key: string, value: string, maxEvents: number): Promise<void> {
-  await redis.rpush(key, value);
-  await redis.ltrim(key, -maxEvents, -1);
+function convoKeyCanonical(conversationId: string): string {
+  return `${KEY_CONVO_PREFIX_CANONICAL}${conversationId}`
+}
+
+// Some old data was written as gaarsdal:events:v1:c:{conversationId}
+// where conversationId might already start with "c:" -> creates c:c:...
+// We therefore support BOTH legacy variants on read.
+function stripLeadingConversationPrefix(conversationId: string): string {
+  return conversationId.startsWith("c:") ? conversationId.slice(2) : conversationId
+}
+
+function convoKeyLegacyVariants(conversationId: string): string[] {
+  const a = `${KEY_CONVO_PREFIX_LEGACY}${conversationId}`
+  const b = `${KEY_CONVO_PREFIX_LEGACY}${stripLeadingConversationPrefix(conversationId)}`
+  return a === b ? [a] : [a, b]
+}
+
+function parseStored<T>(x: unknown): T | null {
+  try {
+    if (typeof x === "string") return JSON.parse(x) as T
+    if (typeof x === "object" && x !== null) return x as T
+    return null
+  } catch {
+    return null
+  }
+}
+
+async function rpushAndTrim(client: any, key: string, payload: string): Promise<void> {
+  await client.rpush(key, payload)
+  await client.ltrim(key, -MAX_EVENTS_PER_LIST, -1)
 }
 
 /**
- * Optional: configure a default Redis instance for legacy call sites that do:
- *   appendConversationEventV1(event)
+ * Backwards-compatible signature (pages/api/chat.ts expects 1 argument).
  */
-let DEFAULT_REDIS: RedisLike | null = null;
+export async function appendConversationEventV1(event: ConversationEventV1): Promise<void> {
+  const client = getRedisClient()
+  if (!client) return
 
-export function configureEventsStore(redis: RedisLike): void {
-  DEFAULT_REDIS = redis;
-}
+  const payload = JSON.stringify(event)
 
-function requireDefaultRedis(): RedisLike {
-  if (!DEFAULT_REDIS) {
-    throw new Error(
-      "Events store not configured. Call configureEventsStore(redis) once, or use appendConversationEventV1(redis, event, opts)."
-    );
-  }
-  return DEFAULT_REDIS;
-}
+  // Global + per-user (stable)
+  await rpushAndTrim(client, KEY_ALL, payload)
+  await rpushAndTrim(client, userKeyList(event.user_key), payload)
 
-export async function appendEvent(
-  redis: RedisLike,
-  event: EventEnvelope,
-  opts: AppendEventOptions = {}
-): Promise<void> {
-  const maxEvents = opts.maxEvents ?? DEFAULT_MAX_EVENTS;
+  // Canonical per-conversation (the only one we want going forward)
+  const keyCanonical = convoKeyCanonical(event.conversation_id)
+  await rpushAndTrim(client, keyCanonical, payload)
 
-  const writeAll = opts.writeAll ?? true;
-  const writeUser = opts.writeUser ?? true;
-  const writeConversation = opts.writeConversation ?? true;
-
-  const json = safeJson(event);
-  const jobs: Promise<void>[] = [];
-
-  if (writeAll) jobs.push(rpushTrim(redis, KEY_EVENTS_ALL, json, maxEvents));
-  if (writeUser) jobs.push(rpushTrim(redis, KEY_EVENTS_USER(event.user_key), json, maxEvents));
-
-  if (writeConversation) {
-    const canonicalKey = KEY_EVENTS_CONVO(event.conversation_id);
-    jobs.push(rpushTrim(redis, canonicalKey, json, maxEvents));
-
-    if (DUAL_WRITE_LEGACY_BUG_KEY) {
-      const legacyBugKey = KEY_EVENTS_CONVO_LEGACY_BUG(event.conversation_id);
-      if (legacyBugKey !== canonicalKey) {
-        jobs.push(rpushTrim(redis, legacyBugKey, json, maxEvents));
+  // Optional dual-write to legacy (OFF by default)
+  if (DUAL_WRITE_LEGACY) {
+    for (const legacyKey of convoKeyLegacyVariants(event.conversation_id)) {
+      if (legacyKey !== keyCanonical) {
+        await rpushAndTrim(client, legacyKey, payload)
       }
     }
   }
-
-  await Promise.all(jobs);
 }
 
-/**
- * Back-compat export expected by pages/api/chat.ts
- *
- * Supports:
- *   appendConversationEventV1(event, opts?)
- *   appendConversationEventV1(redis, event, opts?)
- */
-export function appendConversationEventV1(event: EventEnvelope, opts?: AppendEventOptions): Promise<void>;
-export function appendConversationEventV1(
-  redis: RedisLike,
-  event: EventEnvelope,
-  opts?: AppendEventOptions
-): Promise<void>;
-export async function appendConversationEventV1(...args: any[]): Promise<void> {
-  // Legacy: (event, opts?)
-  if (args.length === 1 || (args.length === 2 && typeof args[1] === "object" && !("rpush" in args[1]))) {
-    const event = args[0] as EventEnvelope;
-    const opts = args[1] as AppendEventOptions | undefined;
-    return appendEvent(requireDefaultRedis(), event, opts ?? {});
+async function readListTail(client: any, key: string, limit: number): Promise<ConversationEventV1[]> {
+  const items = (await client.lrange(key, -limit, -1)) as unknown[]
+  return items
+    .map((i) => parseStored<ConversationEventV1>(i))
+    .filter((x): x is ConversationEventV1 => Boolean(x))
+}
+
+export async function readConversationEventsV1(params: EventStoreReadParams): Promise<ConversationEventV1[]> {
+  const client = getRedisClient()
+  if (!client) return []
+
+  const limit = typeof params.limit === "number" ? Math.max(1, Math.min(params.limit, 500)) : 100
+
+  // Conversation-specific read: canonical first, then legacy variants
+  if (params.conversationId) {
+    const keyCanonical = convoKeyCanonical(params.conversationId)
+    const primary = await readListTail(client, keyCanonical, limit)
+    if (primary.length > 0) return primary
+
+    for (const legacyKey of convoKeyLegacyVariants(params.conversationId)) {
+      if (legacyKey === keyCanonical) continue
+      const fallback = await readListTail(client, legacyKey, limit)
+      if (fallback.length > 0) return fallback
+    }
+    return []
   }
 
-  // New: (redis, event, opts?)
-  const redis = args[0] as RedisLike;
-  const event = args[1] as EventEnvelope;
-  const opts = args[2] as AppendEventOptions | undefined;
-  return appendEvent(redis, event, opts ?? {});
-}
+  // User-scoped read
+  if (params.userKey) {
+    return await readListTail(client, userKeyList(params.userKey), limit)
+  }
 
-export async function readConversationEvents(
-  redis: RedisLike,
-  conversationId: string,
-  opts: ReadEventsOptions = {}
-): Promise<string[]> {
-  const start = opts.start ?? 0;
-  const stop = opts.stop ?? -1;
-
-  const canonicalKey = KEY_EVENTS_CONVO(conversationId);
-  const legacyBugKey = KEY_EVENTS_CONVO_LEGACY_BUG(conversationId);
-
-  const canonical = (await redis.lrange(canonicalKey, start, stop)) as string[] | null;
-  if (canonical && canonical.length > 0) return canonical;
-
-  const legacy = (await redis.lrange(legacyBugKey, start, stop)) as string[] | null;
-  return legacy ?? [];
+  // Global
+  return await readListTail(client, KEY_ALL, limit)
 }
 
 /**
- * Optional helper to detect whether a conversation has data split across keys.
+ * Alias for compatibility with code that imports `readConversationEvents`.
+ * (Your build error suggested this name exists elsewhere.)
  */
-export async function diagnoseConversationEventKeys(
-  redis: RedisLike,
-  conversationId: string
-): Promise<{
-  canonicalKey: string;
-  legacyBugKey: string;
-  canonicalLen?: number;
-  legacyBugLen?: number;
-}> {
-  const canonicalKey = KEY_EVENTS_CONVO(conversationId);
-  const legacyBugKey = KEY_EVENTS_CONVO_LEGACY_BUG(conversationId);
-
-  const canonicalLen = redis.llen ? Number(await redis.llen(canonicalKey)) : undefined;
-  const legacyBugLen = redis.llen ? Number(await redis.llen(legacyBugKey)) : undefined;
-
-  return { canonicalKey, legacyBugKey, canonicalLen, legacyBugLen };
-}
+export const readConversationEvents = readConversationEventsV1
