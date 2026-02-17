@@ -1,4 +1,4 @@
-// events_store.ts
+// chat/events/store.ts
 // Canonical events list keys:
 //   gaarsdal:events:v1:${conversationId}
 // Observed legacy/bug keys (double "c:" etc.):
@@ -14,19 +14,20 @@ export type RedisLike = {
 export const EVENTS_SCHEMA_VERSION = "v1" as const;
 
 const KEY_EVENTS_PREFIX_CANONICAL = "gaarsdal:events:v1:"; // + {conversation_id} OR "all" OR "u:{userKey}" etc.
-const KEY_EVENTS_PREFIX_LEGACY_BUG = "gaarsdal:events:v1:c:"; // + {conversation_id} (causes c:c:... when conversation_id already starts with c:)
+const KEY_EVENTS_PREFIX_LEGACY_BUG = "gaarsdal:events:v1:c:"; // + {conversation_id}
 
+// Lists
 const KEY_EVENTS_ALL = `${KEY_EVENTS_PREFIX_CANONICAL}all`;
 const KEY_EVENTS_USER = (userKey: string) => `${KEY_EVENTS_PREFIX_CANONICAL}u:${userKey}`;
 const KEY_EVENTS_CONVO = (conversationId: string) => `${KEY_EVENTS_PREFIX_CANONICAL}${conversationId}`;
 const KEY_EVENTS_CONVO_LEGACY_BUG = (conversationId: string) =>
   `${KEY_EVENTS_PREFIX_LEGACY_BUG}${conversationId}`;
 
-// Keep last N events (same as your logs: -4000 -1)
+// Keep last N events (same as logs: -4000 -1)
 const DEFAULT_MAX_EVENTS = 4000;
 
 // If you *must* keep dual-write temporarily, set to true.
-// NOTE: true will recreate the duplication you see in logs.
+// NOTE: true will recreate duplication you see in logs.
 const DUAL_WRITE_LEGACY_BUG_KEY = false;
 
 export type EventEnvelope<TPayload = any> = {
@@ -42,26 +43,44 @@ export type EventEnvelope<TPayload = any> = {
   payload: TPayload;
 };
 
-function safeJson(value: unknown): string {
-  return JSON.stringify(value);
-}
-
-async function rpushTrim(
-  redis: RedisLike,
-  key: string,
-  value: string,
-  maxEvents: number
-): Promise<void> {
-  await redis.rpush(key, value);
-  await redis.ltrim(key, -maxEvents, -1);
-}
-
 export type AppendEventOptions = {
   maxEvents?: number;
   writeAll?: boolean; // gaarsdal:events:v1:all
   writeUser?: boolean; // gaarsdal:events:v1:u:{userKey}
   writeConversation?: boolean; // gaarsdal:events:v1:{conversationId}
 };
+
+export type ReadEventsOptions = {
+  start?: number; // LRANGE start
+  stop?: number; // LRANGE stop
+};
+
+/**
+ * Optional global redis binding for convenience (so callers can do appendConversationEventV1(event)).
+ * Recommended: bind once during app boot (e.g. in an API route module init).
+ */
+let _redis: RedisLike | null = null;
+
+export function setEventsRedis(redis: RedisLike) {
+  _redis = redis;
+}
+
+function requireRedis(explicit?: RedisLike): RedisLike {
+  if (explicit) return explicit;
+  if (_redis) return _redis;
+  throw new Error(
+    "Events store: Redis client not set. Call setEventsRedis(redis) once at startup, or call appendConversationEventV1(redis, event, opts)."
+  );
+}
+
+function safeJson(value: unknown): string {
+  return JSON.stringify(value);
+}
+
+async function rpushTrim(redis: RedisLike, key: string, value: string, maxEvents: number): Promise<void> {
+  await redis.rpush(key, value);
+  await redis.ltrim(key, -maxEvents, -1);
+}
 
 export async function appendEvent(
   redis: RedisLike,
@@ -75,7 +94,6 @@ export async function appendEvent(
   const writeConversation = opts.writeConversation ?? true;
 
   const json = safeJson(event);
-
   const jobs: Promise<void>[] = [];
 
   if (writeAll) jobs.push(rpushTrim(redis, KEY_EVENTS_ALL, json, maxEvents));
@@ -85,7 +103,6 @@ export async function appendEvent(
     const canonicalKey = KEY_EVENTS_CONVO(event.conversation_id);
     jobs.push(rpushTrim(redis, canonicalKey, json, maxEvents));
 
-    // Legacy bug key fallback write (disabled by default)
     if (DUAL_WRITE_LEGACY_BUG_KEY) {
       const legacyBugKey = KEY_EVENTS_CONVO_LEGACY_BUG(event.conversation_id);
       if (legacyBugKey !== canonicalKey) {
@@ -98,77 +115,42 @@ export async function appendEvent(
 }
 
 /**
- * Compatibility wrapper expected by older code paths.
+ * Backwards-compatible wrapper matching the old import name.
  *
- * Your build error indicates pages/api/chat.ts calls:
- *   await appendConversationEventV1({ ...event })
- *
- * This wrapper supports BOTH call styles:
- *   1) appendConversationEventV1(event)
- *   2) appendConversationEventV1(redis, event, opts?)
- *
- * If you use style (1), you must configure a default redis via setEventsRedis().
+ * Supports BOTH:
+ *   appendConversationEventV1(event, opts?)
+ *   appendConversationEventV1(redis, event, opts?)
  */
-let defaultRedis: RedisLike | null = null;
-
-export function setEventsRedis(redis: RedisLike): void {
-  defaultRedis = redis;
-}
-
-function requireDefaultRedis(): RedisLike {
-  if (!defaultRedis) {
-    throw new Error(
-      "events_store: default redis is not set. Call setEventsRedis(redis) or use appendConversationEventV1(redis, event, opts)."
-    );
-  }
-  return defaultRedis;
-}
-
-// Overloads (so TS accepts 1-arg calls)
 export function appendConversationEventV1(event: EventEnvelope, opts?: AppendEventOptions): Promise<void>;
 export function appendConversationEventV1(
   redis: RedisLike,
   event: EventEnvelope,
   opts?: AppendEventOptions
 ): Promise<void>;
-export function appendConversationEventV1(
-  a: RedisLike | EventEnvelope,
-  b?: EventEnvelope | AppendEventOptions,
-  c?: AppendEventOptions
-): Promise<void> {
-  // Called as appendConversationEventV1(event, opts?)
-  if (isEventEnvelope(a)) {
-    const event = a;
-    const opts = (b as AppendEventOptions | undefined) ?? {};
-    return appendEvent(requireDefaultRedis(), event, opts);
+export async function appendConversationEventV1(...args: any[]): Promise<void> {
+  // Overload resolution
+  // (redis,event,opts) OR (event,opts)
+  const first = args[0];
+
+  const looksLikeRedis =
+    first &&
+    typeof first === "object" &&
+    typeof first.rpush === "function" &&
+    typeof first.ltrim === "function" &&
+    typeof first.lrange === "function";
+
+  if (looksLikeRedis) {
+    const redis = first as RedisLike;
+    const event = args[1] as EventEnvelope;
+    const opts = (args[2] ?? {}) as AppendEventOptions;
+    return appendEvent(redis, event, opts);
   }
 
-  // Called as appendConversationEventV1(redis, event, opts?)
-  const redis = a;
-  const event = b as EventEnvelope;
-  const opts = c ?? {};
+  const event = first as EventEnvelope;
+  const opts = (args[1] ?? {}) as AppendEventOptions;
+  const redis = requireRedis();
   return appendEvent(redis, event, opts);
 }
-
-function isEventEnvelope(x: any): x is EventEnvelope {
-  return (
-    x &&
-    typeof x === "object" &&
-    typeof x.schema_version === "string" &&
-    typeof x.event_id === "string" &&
-    typeof x.event_type === "string" &&
-    typeof x.conversation_id === "string" &&
-    typeof x.user_key === "string" &&
-    typeof x.revision === "number" &&
-    typeof x.timestamp_ms === "number" &&
-    "payload" in x
-  );
-}
-
-export type ReadEventsOptions = {
-  start?: number; // LRANGE start
-  stop?: number; // LRANGE stop
-};
 
 export async function readConversationEvents(
   redis: RedisLike,
@@ -181,13 +163,45 @@ export async function readConversationEvents(
   const canonicalKey = KEY_EVENTS_CONVO(conversationId);
   const legacyBugKey = KEY_EVENTS_CONVO_LEGACY_BUG(conversationId);
 
-  // Read canonical first
   const canonical = (await redis.lrange(canonicalKey, start, stop)) as string[] | null;
   if (canonical && canonical.length > 0) return canonical;
 
-  // Fallback to legacy/bug key (covers gaarsdal:events:v1:c:c:... and similar)
   const legacy = (await redis.lrange(legacyBugKey, start, stop)) as string[] | null;
   return legacy ?? [];
+}
+
+/**
+ * Convenience overload, same pattern as appendConversationEventV1:
+ *   readConversationEventsV1(conversationId, opts?)  // requires setEventsRedis()
+ *   readConversationEventsV1(redis, conversationId, opts?)
+ */
+export function readConversationEventsV1(conversationId: string, opts?: ReadEventsOptions): Promise<string[]>;
+export function readConversationEventsV1(
+  redis: RedisLike,
+  conversationId: string,
+  opts?: ReadEventsOptions
+): Promise<string[]>;
+export async function readConversationEventsV1(...args: any[]): Promise<string[]> {
+  const first = args[0];
+
+  const looksLikeRedis =
+    first &&
+    typeof first === "object" &&
+    typeof first.rpush === "function" &&
+    typeof first.ltrim === "function" &&
+    typeof first.lrange === "function";
+
+  if (looksLikeRedis) {
+    const redis = first as RedisLike;
+    const conversationId = args[1] as string;
+    const opts = (args[2] ?? {}) as ReadEventsOptions;
+    return readConversationEvents(redis, conversationId, opts);
+  }
+
+  const conversationId = first as string;
+  const opts = (args[1] ?? {}) as ReadEventsOptions;
+  const redis = requireRedis();
+  return readConversationEvents(redis, conversationId, opts);
 }
 
 /**
