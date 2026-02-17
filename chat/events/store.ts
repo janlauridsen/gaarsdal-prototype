@@ -7,7 +7,7 @@ const KEY_USER_PREFIX = "gaarsdal:events:v1:u:"
 // New canonical per-conversation key: gaarsdal:events:v1:{conversation_id}
 const KEY_CONVO_PREFIX_NEW = "gaarsdal:events:v1:"
 
-// Legacy key from V1 initial rollout (kept for migration): gaarsdal:events:v1:c:{conversation_id}
+// Legacy key from initial rollout: gaarsdal:events:v1:c:{conversation_id}
 const KEY_CONVO_PREFIX_LEGACY = "gaarsdal:events:v1:c:"
 
 // Keep bounded in Redis for V1. Long-term storage can be introduced later.
@@ -56,14 +56,16 @@ export async function appendConversationEventV1(event: ConversationEventV1): Pro
 
   await rpushAndTrim(client, keyNew, payload)
 
-  // Only dual-write if different (it will be different for conversation_ids like "c:..." and "lobby:u:...")
+  // Only dual-write if different
   if (keyLegacy !== keyNew) {
     await rpushAndTrim(client, keyLegacy, payload)
   }
 }
 
 async function readListTail(client: any, key: string, limit: number): Promise<ConversationEventV1[]> {
-  const items = await client.lrange<unknown>(key, -limit, -1)
+  // IMPORTANT: client is untyped; do not use generic type args on lrange
+  const items = (await client.lrange(key, -limit, -1)) as unknown[]
+
   return items
     .map((i) => parseStored<ConversationEventV1>(i))
     .filter((x): x is ConversationEventV1 => Boolean(x))
@@ -84,17 +86,16 @@ export async function readConversationEventsV1(params: EventStoreReadParams): Pr
     if (primary.length > 0) return primary
 
     if (keyLegacy !== keyNew) {
-      const fallback = await readListTail(client, keyLegacy, limit)
-      return fallback
+      return await readListTail(client, keyLegacy, limit)
     }
     return primary
   }
 
   // User-scoped read
   if (params.userKey) {
-    return readListTail(client, userKeyList(params.userKey), limit)
+    return await readListTail(client, userKeyList(params.userKey), limit)
   }
 
   // Global
-  return readListTail(client, KEY_ALL, limit)
+  return await readListTail(client, KEY_ALL, limit)
 }
