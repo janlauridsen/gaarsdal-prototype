@@ -14,7 +14,7 @@ export type RedisLike = {
 export const EVENTS_SCHEMA_VERSION = "v1" as const;
 
 const KEY_EVENTS_PREFIX_CANONICAL = "gaarsdal:events:v1:"; // + {conversation_id} OR "all" OR "u:{userKey}" etc.
-const KEY_EVENTS_PREFIX_LEGACY_BUG = "gaarsdal:events:v1:c:"; // + {conversation_id} (causes c:c:... when conversation_id already starts with c:)
+const KEY_EVENTS_PREFIX_LEGACY_BUG = "gaarsdal:events:v1:c:"; // + {conversation_id} (can cause c:c:... when conversation_id already starts with c:)
 
 const KEY_EVENTS_ALL = `${KEY_EVENTS_PREFIX_CANONICAL}all`;
 const KEY_EVENTS_USER = (userKey: string) => `${KEY_EVENTS_PREFIX_CANONICAL}u:${userKey}`;
@@ -59,11 +59,18 @@ async function rpushTrim(
 
 export type AppendEventOptions = {
   maxEvents?: number;
-  writeAll?: boolean;      // gaarsdal:events:v1:all
-  writeUser?: boolean;     // gaarsdal:events:v1:u:{userKey}
+  writeAll?: boolean; // gaarsdal:events:v1:all
+  writeUser?: boolean; // gaarsdal:events:v1:u:{userKey}
   writeConversation?: boolean; // gaarsdal:events:v1:{conversationId}
 };
 
+/**
+ * Generic append for v1 conversation events.
+ * Writes to:
+ *  - all feed
+ *  - per-user feed
+ *  - per-conversation feed
+ */
 export async function appendEvent(
   redis: RedisLike,
   event: EventEnvelope,
@@ -103,9 +110,22 @@ export async function appendEvent(
   await Promise.all(jobs);
 }
 
+/**
+ * Backwards-compatible named export expected by older call sites.
+ * This fixes:
+ *   Type error: has no exported member named 'appendConversationEventV1'
+ */
+export async function appendConversationEventV1(
+  redis: RedisLike,
+  event: EventEnvelope,
+  opts: AppendEventOptions = {}
+): Promise<void> {
+  return appendEvent(redis, event, opts);
+}
+
 export type ReadEventsOptions = {
-  start?: number;  // LRANGE start
-  stop?: number;   // LRANGE stop
+  start?: number; // LRANGE start
+  stop?: number; // LRANGE stop
 };
 
 export async function readConversationEvents(
@@ -121,7 +141,6 @@ export async function readConversationEvents(
 
   // Read canonical first
   const canonical = (await redis.lrange(canonicalKey, start, stop)) as string[] | null;
-
   if (canonical && canonical.length > 0) return canonical;
 
   // Fallback to legacy/bug key (covers gaarsdal:events:v1:c:c:... and similar)
