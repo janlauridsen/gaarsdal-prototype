@@ -1,3 +1,4 @@
+// pages/api/chat.ts
 import type { NextApiRequest, NextApiResponse } from "next"
 import crypto from "crypto"
 
@@ -24,7 +25,7 @@ import {
 import { appendSpineEventV23 } from "../../chat/observability/spineStore"
 import { appendConversationEventV1 } from "../../chat/events/store"
 
-import { ensureDefaultThemeAndEpisode } from "../../chat/memory/longTermMemoryStore"
+import { ensureThreadThemeAndEpisode } from "../../chat/memory/longTermMemoryStore"
 import { enqueueJob, makeJobId } from "../../chat/async/queue"
 
 type ChatRequestBody = {
@@ -243,20 +244,21 @@ async function enqueueSummarizeEpisode(params: {
   userKey: string
   conversationId: string
   revisionAfter: number
+  threadThemeId?: string
+  threadEpisodeId?: string
 }): Promise<void> {
   const N = 8
   if (params.revisionAfter <= 0) return
   if (params.revisionAfter % N !== 0) return
 
-  const ensured = await ensureDefaultThemeAndEpisode({
-    userKey: params.userKey,
-    ttlSeconds: MEMORY_TTL_SECONDS,
-  })
+  const themeId = params.threadThemeId
+  const episodeId = params.threadEpisodeId
+  if (typeof themeId !== "string" || typeof episodeId !== "string") return
 
   const job_id = makeJobId({
     type: "SUMMARIZE_EPISODE",
     userKey: params.userKey,
-    episodeId: ensured.episode.episode_id,
+    episodeId,
     revisionAfter: params.revisionAfter,
   })
 
@@ -267,8 +269,8 @@ async function enqueueSummarizeEpisode(params: {
     job_id,
     user_key: params.userKey,
     conversation_id: params.conversationId,
-    theme_id: ensured.theme.theme_id,
-    episode_id: ensured.episode.episode_id,
+    theme_id: themeId,
+    episode_id: episodeId,
     revision_after: params.revisionAfter,
   })
 }
@@ -278,6 +280,8 @@ async function enqueueSuggestFacts(params: {
   conversationId: string
   revisionAfter: number
   metaKeysWritten: string[]
+  threadThemeId?: string
+  threadEpisodeId?: string
 }): Promise<void> {
   // Trigger rule (v23):
   // - when triage.* OR memory_candidates.* writes occur, enqueue; otherwise no-op.
@@ -286,15 +290,14 @@ async function enqueueSuggestFacts(params: {
   )
   if (!touched) return
 
-  const ensured = await ensureDefaultThemeAndEpisode({
-    userKey: params.userKey,
-    ttlSeconds: MEMORY_TTL_SECONDS,
-  })
+  const themeId = params.threadThemeId
+  const episodeId = params.threadEpisodeId
+  if (typeof themeId !== "string" || typeof episodeId !== "string") return
 
   const job_id = makeJobId({
     type: "SUGGEST_FACTS",
     userKey: params.userKey,
-    episodeId: ensured.episode.episode_id,
+    episodeId,
     revisionAfter: params.revisionAfter,
   })
 
@@ -305,10 +308,39 @@ async function enqueueSuggestFacts(params: {
     job_id,
     user_key: params.userKey,
     conversation_id: params.conversationId,
-    theme_id: ensured.theme.theme_id,
-    episode_id: ensured.episode.episode_id,
+    theme_id: themeId,
+    episode_id: episodeId,
     revision_after: params.revisionAfter,
   })
+}
+
+async function ensureThreadBindingOnState(params: {
+  userKey: string
+  conversationId: string
+  state: any
+}): Promise<{ state: any; themeId: string; episodeId: string } | null> {
+  const meta = (params.state?.meta && typeof params.state.meta === "object") ? params.state.meta : {}
+  const existingThemeId = (meta?.["thread.theme_id"] as any)?.value
+  const existingEpisodeId = (meta?.["thread.episode_id"] as any)?.value
+
+  if (typeof existingThemeId === "string" && typeof existingEpisodeId === "string") {
+    return { state: params.state, themeId: existingThemeId, episodeId: existingEpisodeId }
+  }
+
+  const ensured = await ensureThreadThemeAndEpisode({
+    userKey: params.userKey,
+    conversationId: params.conversationId,
+    ttlSeconds: MEMORY_TTL_SECONDS,
+  })
+
+  const nextMeta = {
+    ...meta,
+    "thread.theme_id": { value: ensured.theme.theme_id, source_node: "SYSTEM_THREAD_BINDING" },
+    "thread.episode_id": { value: ensured.episode.episode_id, source_node: "SYSTEM_THREAD_BINDING" },
+  }
+
+  const nextState = { ...params.state, meta: nextMeta }
+  return { state: nextState, themeId: ensured.theme.theme_id, episodeId: ensured.episode.episode_id }
 }
 
 async function logAndRecord(params: {
@@ -627,7 +659,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     typeof clientState?.conversation_id === "string" ? clientState.conversation_id : lobbyConversationId
   const stored = await readConversationState(conversationId)
 
-  const baseState = resolveBaseState({ storedState: stored, clientState })
+  let baseState = resolveBaseState({ storedState: stored, clientState })
+
+  // Cross-thread contamination guardrail:
+  // Ensure every non-lobby conversation has a stable thread→theme/episode binding.
+  let threadBinding: { themeId: string; episodeId: string } | null = null
+  if (conversationId !== lobbyConversationId) {
+    const ensured = await ensureThreadBindingOnState({
+      userKey,
+      conversationId,
+      state: baseState,
+    })
+    if (ensured) {
+      baseState = ensured.state
+      threadBinding = { themeId: ensured.themeId, episodeId: ensured.episodeId }
+    }
+  }
 
   try {
     const kernelResult = await runTurnWithAutoAdvance({ baseState, input, userKey })
@@ -747,6 +794,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       userKey,
       conversationId: kernelResult.state.conversation_id,
       revisionAfter: kernelResult.state.revision,
+      threadThemeId: threadBinding?.themeId ?? (kernelResult.state.meta?.["thread.theme_id"] as any)?.value,
+      threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
     })
 
     await enqueueSuggestFacts({
@@ -754,6 +803,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       conversationId: kernelResult.state.conversation_id,
       revisionAfter: kernelResult.state.revision,
       metaKeysWritten,
+      threadThemeId: threadBinding?.themeId ?? (kernelResult.state.meta?.["thread.theme_id"] as any)?.value,
+      threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
     })
 
     await logAndRecord({
