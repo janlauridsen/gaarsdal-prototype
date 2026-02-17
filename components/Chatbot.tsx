@@ -4,16 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import {
   ChatBubbleOvalLeftEllipsisIcon,
   XMarkIcon,
-  HomeIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  ExclamationTriangleIcon,
-  LinkIcon,
   ArrowsPointingOutIcon,
   ArrowsPointingInIcon,
   InformationCircleIcon,
-  ClipboardDocumentCheckIcon,
-  CircleStackIcon,
+  RectangleStackIcon,
+  PaperAirplaneIcon,
 } from "@heroicons/react/24/outline"
 
 import styles from "./Chatbot.module.css"
@@ -57,7 +52,7 @@ const NODE_LABELS: Record<string, string> = {
   TLF: "Telefon",
   CONTACT_FORM: "Kontaktformular",
   AKUT: "Akut",
-  THREAD_CHOOSER: "THREAD_CHOOSER",
+  THREAD_CHOOSER: "Tråde",
 }
 
 const TOPIC_TOOLTIPS: Record<string, string> = {
@@ -75,17 +70,7 @@ const DEFAULT_TRIAGE_CHIPS = [
   { id: "evidence", label: "Hvad virker typisk?" },
 ]
 
-const TOPIC_NODES = [
-  "GEN_HYPNO",
-  "TRIAGE",
-  "METHOD_FIT",
-  "BOOKING",
-  "DEV_SANDBOX_INTRO",
-  "MAIL",
-  "TLF",
-  "CONTACT_FORM",
-  "AKUT",
-] as const
+const TOPIC_NODES = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING", "DEV_SANDBOX_INTRO"] as const
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
@@ -121,14 +106,14 @@ export default function Chatbot() {
 
   const placeholder = useMemo(() => {
     if (!state) return "Initialiserer…"
-    if (state.active_node === "THREAD_CHOOSER") return "Skriv 'new' eller vælg en tråd…"
+    if (state.active_node === "THREAD_CHOOSER") return "Vælg en tråd…"
     return "Skriv her… (Enter = send, Shift+Enter = ny linje)"
   }, [state])
 
   useEffect(() => {
     if (!open) return
     endRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, open, headerNavHint, expanded, insightsOpen])
+  }, [messages, open, expanded, insightsOpen, headerNavHint])
 
   useEffect(() => {
     return () => {
@@ -180,41 +165,45 @@ export default function Chatbot() {
     headerNavHintTimerRef.current = window.setTimeout(() => {
       setHeaderNavHint(null)
       headerNavHintTimerRef.current = null
-    }, 3200)
+    }, 2600)
   }
 
-  function computeInitAssistantText(s: ConversationState) {
-    if (s.active_node !== "THREAD_CHOOSER") return s.active_node_message
-
-    const count = metaValue("threads.count", s)
-    const n = typeof count === "number" ? count : Number(count ?? 0)
-
-    if (!Number.isFinite(n) || n <= 0) {
-      return "Der er ingen gemte tråde endnu. Vælg “Start ny tråd” eller skriv 'new'."
-    }
-
-    return s.active_node_message
+  async function postChat(nextState: ConversationState | null, nextInput: any): Promise<KernelResponse> {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state: nextState, input: nextInput }),
+    })
+    return res.json()
   }
 
   async function init() {
     setLoading(true)
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          state: null,
-          input: { type: "SYSTEM_INIT" },
-        }),
-      })
+      // 1) SYSTEM_INIT (giver typisk THREAD_CHOOSER)
+      const initResp = await postChat(null, { type: "SYSTEM_INIT" })
 
-      const data: KernelResponse = await res.json()
-      setState(data.state)
+      // 2) Hvis ingen tråde: auto-start new uden at vise THREAD_CHOOSER UI
+      if (initResp.state.active_node === "THREAD_CHOOSER") {
+        const count = metaValue("threads.count", initResp.state)
+        const n = typeof count === "number" ? count : Number(count ?? 0)
+
+        if (!Number.isFinite(n) || n <= 0) {
+          const newResp = await postChat(initResp.state, { type: "FREE_TEXT", text: "new" })
+          setState(newResp.state)
+          setMessages([])
+          setInput("")
+          setHeaderNavHint(null)
+          appendAssistantMessage(newResp.state.active_node_message)
+          return
+        }
+      }
+
+      setState(initResp.state)
       setMessages([])
       setInput("")
       setHeaderNavHint(null)
-
-      appendAssistantMessage(computeInitAssistantText(data.state))
+      appendAssistantMessage(initResp.state.active_node_message)
     } finally {
       setLoading(false)
     }
@@ -227,13 +216,7 @@ export default function Chatbot() {
     try {
       const fromNode = state.active_node
 
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state, input: nextInput }),
-      })
-
-      const data: KernelResponse = await res.json()
+      const data = await postChat(state, nextInput)
 
       if (nextInput.type === "EXPLICIT_TRANSITION") {
         const fromLabel = NODE_LABELS[fromNode] ?? fromNode
@@ -280,35 +263,29 @@ export default function Chatbot() {
     }
   }
 
-  function reset() {
-    setMessages([])
-    setInput("")
-    setState(null)
-    setHeaderNavHint(null)
-    setExpanded(false)
-    closeInsights()
-    init()
-  }
-
-  function go(target: string) {
-    if (!state) return
-
-    const goingFromHomeToTopic = state.active_node === "HOME" && target !== "HOME"
-    if (goingFromHomeToTopic) {
-      const label = NODE_LABELS[target] ?? target
-      appendUserMessage(label)
-    }
-
-    dispatch({ type: "EXPLICIT_TRANSITION", target })
+  function toggleInsights() {
+    if (insightsOpen) closeInsights()
+    else openInsights()
   }
 
   function toggleExpanded() {
     setExpanded((v) => !v)
   }
 
-  function toggleInsights() {
-    if (insightsOpen) closeInsights()
-    else openInsights()
+  // “Skift tråd” = re-init (går til lobby/THREAD_CHOOSER)
+  function openThreads() {
+    setMessages([])
+    setInput("")
+    setState(null)
+    setHeaderNavHint(null)
+    closeInsights()
+    init()
+  }
+
+  function go(target: string) {
+    if (!state) return
+    appendUserMessage(NODE_LABELS[target] ?? target)
+    dispatch({ type: "EXPLICIT_TRANSITION", target })
   }
 
   const triageChipsRaw = metaValue("triage.chips")
@@ -326,6 +303,7 @@ export default function Chatbot() {
     state?.active_node === "THREAD_CHOOSER" && Array.isArray(threadChoicesRaw)
       ? threadChoicesRaw
           .filter((c: any) => c && typeof c.id === "string" && typeof c.label === "string")
+          .filter((c: any) => c.id !== "new") // vi viser ikke “new” som valg; brugeren kan vælge eksisterende
           .slice(0, 10)
       : []
 
@@ -359,24 +337,19 @@ export default function Chatbot() {
               <div className={styles.titleRow}>
                 <div className={styles.title}>Gaarsdal Chat</div>
                 <div className={styles.nodeLabel}>{activeNodeLabel}</div>
+                {headerNavHint && <div className={styles.headerHint}>{headerNavHint}</div>}
               </div>
 
-              {headerNavHint && <div className={styles.headerHint}>{headerNavHint}</div>}
-
               <div className={styles.headerActions}>
+                <button className={styles.iconBtn} onClick={openThreads} title="Skift tråd">
+                  <RectangleStackIcon className="w-5 h-5" />
+                </button>
+
                 <button className={styles.iconBtn} onClick={toggleInsights} title="Insights">
                   <InformationCircleIcon className="w-5 h-5" />
                 </button>
 
-                <button className={styles.iconBtn} onClick={reset} title="Reset">
-                  <ClipboardDocumentCheckIcon className="w-5 h-5" />
-                </button>
-
-                <button
-                  className={styles.iconBtn}
-                  onClick={toggleExpanded}
-                  title={expanded ? "Minimer" : "Maksimer"}
-                >
+                <button className={styles.iconBtn} onClick={toggleExpanded} title={expanded ? "Minimer" : "Maksimer"}>
                   {expanded ? (
                     <ArrowsPointingInIcon className="w-5 h-5" />
                   ) : (
@@ -397,6 +370,7 @@ export default function Chatbot() {
                 </div>
               ))}
 
+              {/* THREAD_CHOOSER: vis kun eksisterende tråde (ingen “new”) */}
               {threadChoices.length > 0 && (
                 <div className={styles.sectionBlock}>
                   <div className={styles.sectionTitle}>Tråde</div>
@@ -418,6 +392,7 @@ export default function Chatbot() {
                 </div>
               )}
 
+              {/* HOME: emner */}
               {topicButtons.length > 0 && (
                 <div className={styles.sectionBlock}>
                   <div className={styles.sectionTitle}>Emner</div>
@@ -437,6 +412,7 @@ export default function Chatbot() {
                 </div>
               )}
 
+              {/* TRIAGE chips */}
               {triageChips.length > 0 && (
                 <div className={styles.sectionBlock}>
                   <div className={styles.sectionTitle}>Forslag</div>
@@ -475,24 +451,6 @@ export default function Chatbot() {
             </div>
 
             <div className={styles.footer}>
-              <div className={styles.footerRow}>
-                <button className={styles.footerIcon} onClick={() => go("HOME")} title="Forside">
-                  <HomeIcon className="w-5 h-5" />
-                </button>
-                <button className={styles.footerIcon} onClick={() => go("TLF")} title="Telefon">
-                  <PhoneIcon className="w-5 h-5" />
-                </button>
-                <button className={styles.footerIcon} onClick={() => go("MAIL")} title="E-mail">
-                  <EnvelopeIcon className="w-5 h-5" />
-                </button>
-                <button className={styles.footerIcon} onClick={() => go("CONTACT_FORM")} title="Kontaktformular">
-                  <LinkIcon className="w-5 h-5" />
-                </button>
-                <button className={styles.footerIcon} onClick={() => go("AKUT")} title="Akut">
-                  <ExclamationTriangleIcon className="w-5 h-5" />
-                </button>
-              </div>
-
               <div className={styles.inputRow}>
                 <textarea
                   className={styles.input}
@@ -513,7 +471,7 @@ export default function Chatbot() {
                 />
 
                 <button
-                  className={styles.sendBtn}
+                  className={styles.sendBtnIcon}
                   onClick={() => {
                     const text = input.trim()
                     if (!text) return
@@ -522,20 +480,9 @@ export default function Chatbot() {
                   }}
                   disabled={loading || !state || !freeTextEnabled || !input.trim()}
                   title="Send"
+                  aria-label="Send"
                 >
-                  Send
-                </button>
-              </div>
-
-              <div className={styles.footerMetaRow}>
-                <div className={styles.footerMetaLeft} />
-                <button
-                  className={styles.footerMetaIcon}
-                  onClick={() => go("DEV_SANDBOX_INTRO")}
-                  disabled={loading || !state}
-                  title="Sandbox"
-                >
-                  <CircleStackIcon className="w-5 h-5" />
+                  <PaperAirplaneIcon className="w-5 h-5" />
                 </button>
               </div>
             </div>
@@ -550,6 +497,7 @@ export default function Chatbot() {
           if (!state) init()
         }}
         title="Åbn chat"
+        aria-label="Åbn chat"
       >
         <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7" />
       </button>
