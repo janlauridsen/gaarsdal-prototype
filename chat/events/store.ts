@@ -1,3 +1,5 @@
+// chat/events/store.ts
+
 import { getRedisClient } from "../persistence/redis"
 import type { ConversationEventV1, EventStoreReadParams } from "./types"
 
