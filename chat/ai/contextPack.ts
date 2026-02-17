@@ -1,5 +1,14 @@
+// chat/ai/contextPack.ts
 import type { ConversationState } from "../kernel/types"
-import { ensureDefaultThemeAndEpisode, readEpisode, readEpisodes, readFacts, readThemes } from "../memory/longTermMemoryStore"
+import {
+  ensureDefaultThemeAndEpisode,
+  ensureThreadThemeAndEpisode,
+  readEpisode,
+  readEpisodes,
+  readFacts,
+  readThemes,
+  readTheme,
+} from "../memory/longTermMemoryStore"
 
 export type ContextPackV23 = {
   system: string
@@ -30,27 +39,46 @@ export async function buildContextPackV23(params: {
   state: ConversationState
   ttlSeconds: number
 }): Promise<ContextPackV23> {
-  // Best-effort: if memory store is disabled/unavailable, this should degrade to empty context.
-  const ensured = await ensureDefaultThemeAndEpisode({
-    userKey: params.userKey,
-    ttlSeconds: params.ttlSeconds,
-  })
+  // Cross-thread contamination guardrail:
+  // If the conversation has an explicit thread binding, always use it.
+  const boundThemeId = (params.state.meta?.["thread.theme_id"] as any)?.value
+  const boundEpisodeId = (params.state.meta?.["thread.episode_id"] as any)?.value
 
-  // Prefer actual stored data (it may have been updated async)
-  const themes = await readThemes({ userKey: params.userKey, limit: 20 })
+  const ensured =
+    typeof boundThemeId === "string" && typeof boundEpisodeId === "string"
+      ? await ensureThreadThemeAndEpisode({
+          userKey: params.userKey,
+          conversationId: params.state.conversation_id,
+          ttlSeconds: params.ttlSeconds,
+        })
+      : await ensureDefaultThemeAndEpisode({
+          userKey: params.userKey,
+          ttlSeconds: params.ttlSeconds,
+        })
 
-  // Iteration 1 selection rule:
-  // - pick most recently updated active theme, excluding "general" if any other exists.
-  const active = themes.filter((t) => t.status === "active")
-  const nonGeneral = active.filter((t) => t.theme_id !== "general")
-  const selectedTheme = (nonGeneral.length ? nonGeneral : active).sort((a, b) => b.updated_at - a.updated_at)[0]
+  let themeId = ensured.theme.theme_id
+  let episodeId = ensured.episode.episode_id
 
-  const theme = selectedTheme ?? ensured.theme
-  const themeId = theme.theme_id
+  // If thread binding exists, do not use any “most recent theme” selection.
+  if (typeof boundThemeId === "string" && typeof boundEpisodeId === "string") {
+    themeId = boundThemeId
+    episodeId = boundEpisodeId
+  } else {
+    // Prefer actual stored data (it may have been updated async)
+    const themes = await readThemes({ userKey: params.userKey, limit: 20 })
 
-  // Pick most recent episode for selected theme; fallback to ensured episode.
-  const episodes = await readEpisodes({ userKey: params.userKey, themeId, limit: 10 })
-  const episodeId = episodes[0]?.episode_id ?? ensured.episode.episode_id
+    // Iteration 1 selection rule (legacy fallback only):
+    // - pick most recently updated active theme, excluding "general" if any other exists.
+    const active = themes.filter((t) => t.status === "active")
+    const nonGeneral = active.filter((t) => t.theme_id !== "general" && t.theme_id !== "theme:general")
+    const selectedTheme = (nonGeneral.length ? nonGeneral : active).sort((a, b) => b.updated_at - a.updated_at)[0]
+
+    themeId = (selectedTheme ?? ensured.theme).theme_id
+    const episodes = await readEpisodes({ userKey: params.userKey, themeId, limit: 10 })
+    episodeId = episodes[0]?.episode_id ?? ensured.episode.episode_id
+  }
+
+  const theme = (await readTheme({ userKey: params.userKey, themeId })) ?? ensured.theme
   const episode = (await readEpisode({ userKey: params.userKey, episodeId })) ?? ensured.episode
 
   const canonicalFacts = await readFacts({
