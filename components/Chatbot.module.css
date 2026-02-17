@@ -172,7 +172,6 @@
   background: #f6f5f2;
 }
 
-/* More separation between “content” vs “choices” */
 .sectionBlock {
   margin-top: 14px;
 }
@@ -210,20 +209,20 @@
 .chipGroup {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
-/* Chips: make them visibly different from bot bubbles */
+/* Chips: mindre, mindre “bold”, tættere ramme */
 .chip {
   background: rgba(236, 234, 228, 0.9);
-  border: 1px solid rgba(44, 42, 40, 0.14);
+  border: 1px solid rgba(44, 42, 40, 0.12);
   color: #2c2a28;
   border-radius: 9999px;
-  padding: 7px 12px;
+  padding: 5px 10px;
   font-size: 13px;
-  line-height: 1.2;
+  line-height: 1.15;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .chip:hover {
@@ -241,7 +240,6 @@
   gap: 10px;
 }
 
-/* Cards: strongly different from message bubbles */
 .topicCard {
   width: 100%;
   display: flex;
@@ -308,6 +306,11 @@
   background: rgba(74, 93, 84, 0.08);
 }
 
+.footerIcon:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .footerIconSvg {
   width: 20px;
   height: 20px;
@@ -321,7 +324,7 @@
 
 .textarea {
   width: 100%;
-  background: #ffffff; /* makes it feel active, not “locked” */
+  background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 12px;
   padding: 12px 14px;
