@@ -90,6 +90,14 @@ const TOPIC_NODES = [
   "AKUT",
 ] as const
 
+function isThreadChooserCommand(text: string) {
+  const t = text.trim().toLowerCase()
+  if (t === "new" || t === "ny") return true
+  if (t === "continue" || t === "fortsæt") return true
+  if (t.startsWith("c:")) return true
+  return false
+}
+
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -131,11 +139,9 @@ export default function Chatbot() {
   const activeNodeLabel = state ? NODE_LABELS[state.active_node] ?? state.active_node : "Initialiserer…"
 
   const freeTextEnabled = useMemo(() => {
-    // HOME og DIALOG-lignende noder kan tage fri tekst. Vi holder det simpelt her.
     if (!state) return false
     if (state.active_node === "THREAD_CHOOSER") return true
     if (state.active_node === "HOME") return true
-    // Tillad i øvrige flows hvis backend forventer det (fallback):
     return true
   }, [state])
 
@@ -154,7 +160,6 @@ export default function Chatbot() {
     if (!state) return
     if (state.active_node !== "DEV_SANDBOX_FORM") return
 
-    // Seed defaults fra sidste submit hvis den findes i state.meta
     const last = metaValue("form.last")
     const values = last && typeof last === "object" ? (last as any).values : null
     if (values && typeof values === "object") {
@@ -275,7 +280,12 @@ export default function Chatbot() {
         const toLabel = NODE_LABELS[toNode] ?? toNode
         showHeaderNavHint(`${fromLabel} → ${toLabel}`)
       } else if (nextInput.type === "FREE_TEXT") {
-        appendUserMessage(nextInput.text)
+        // Undgå at vise tekniske THREAD_CHOOSER-kommandoer som brugerbeskeder.
+        const suppress =
+          fromNode === "THREAD_CHOOSER" && isThreadChooserCommand(nextInput.text)
+        if (!suppress) {
+          appendUserMessage(nextInput.text)
+        }
       }
 
       setState(data.state)
@@ -355,14 +365,18 @@ export default function Chatbot() {
   const triageSuggestionsAllowed = state?.active_node === "TRIAGE"
   const triageChips = triageSuggestionsAllowed
     ? Array.isArray(triageChipsRaw)
-      ? triageChipsRaw.filter((c: any) => c && typeof c.id === "string" && typeof c.label === "string").slice(0, 8)
+      ? triageChipsRaw
+          .filter((c: any) => c && typeof c.id === "string" && typeof c.label === "string")
+          .slice(0, 8)
       : DEFAULT_TRIAGE_CHIPS
     : []
 
   const threadChoicesRaw = metaValue("threads.choices")
   const threadChoices =
     state?.active_node === "THREAD_CHOOSER" && Array.isArray(threadChoicesRaw)
-      ? threadChoicesRaw.filter((c: any) => c && typeof c.id === "string" && typeof c.label === "string").slice(0, 10)
+      ? threadChoicesRaw
+          .filter((c: any) => c && typeof c.id === "string" && typeof c.label === "string")
+          .slice(0, 10)
       : []
 
   const showTopics = state?.active_node === "HOME"
@@ -427,8 +441,16 @@ export default function Chatbot() {
               <ClipboardDocumentCheckIcon className="w-5 h-5" />
             </button>
 
-            <button className={styles.iconBtn} onClick={toggleExpanded} title={expanded ? "Minimer" : "Maksimer"}>
-              {expanded ? <ArrowsPointingInIcon className="w-5 h-5" /> : <ArrowsPointingOutIcon className="w-5 h-5" />}
+            <button
+              className={styles.iconBtn}
+              onClick={toggleExpanded}
+              title={expanded ? "Minimer" : "Maksimer"}
+            >
+              {expanded ? (
+                <ArrowsPointingInIcon className="w-5 h-5" />
+              ) : (
+                <ArrowsPointingOutIcon className="w-5 h-5" />
+              )}
             </button>
 
             <button className={styles.iconBtn} onClick={() => setOpen(false)} title="Luk">
@@ -439,10 +461,7 @@ export default function Chatbot() {
 
         <div className={styles.messages}>
           {messages.map((m) => (
-            <div
-              key={m.id}
-              className={m.role === "assistant" ? styles.messageBot : styles.messageUser}
-            >
+            <div key={m.id} className={m.role === "assistant" ? styles.messageBot : styles.messageUser}>
               {m.text}
             </div>
           ))}
@@ -457,6 +476,7 @@ export default function Chatbot() {
                     key={c.id}
                     className={styles.topicBtn}
                     onClick={() => {
+                      // Vis label (menneskevenligt), men send id (teknisk).
                       appendUserMessage(c.label)
                       dispatch({ type: "FREE_TEXT", text: c.id })
                     }}
