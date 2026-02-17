@@ -88,6 +88,16 @@ function safeId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
+function looksLikeOpaqueId(label: string) {
+  const s = (label ?? "").trim()
+  if (!s) return true
+  if (/^\d+$/.test(s)) return true
+  if (/^[a-f0-9]{8,}$/i.test(s) && s.length >= 12) return true
+  if (/^c:/.test(s) || /^lobby:/.test(s)) return true
+  if (s.includes("—") && s.split("—").every((p) => looksLikeOpaqueId(p.trim()))) return true
+  return false
+}
+
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -139,10 +149,6 @@ export default function Chatbot() {
     }
   }, [])
 
-  function appendMessage(message: ChatMessage) {
-    setMessages((prev) => [...prev, message])
-  }
-
   function appendAssistantMessage(text: string) {
     const message = (text ?? "").trim()
     if (!message) return
@@ -157,7 +163,7 @@ export default function Chatbot() {
   function appendUserMessage(text: string) {
     const message = (text ?? "").trim()
     if (!message) return
-    appendMessage({ id: `user-${safeId()}`, role: "user", text: message })
+    setMessages((prev) => [...prev, { id: `user-${safeId()}`, role: "user", text: message }])
   }
 
   function showHeaderNavHint(text: string) {
@@ -189,7 +195,6 @@ export default function Chatbot() {
   }
 
   function normalizeAssistantMessage(s: ConversationState) {
-    // Backend kan returnere tekst med 'continue' selv i edge-cases; vi normaliserer UI-tekst.
     if (s.active_node === "THREAD_CHOOSER") {
       const count = Number((s.meta?.["threads.count"]?.value ?? s.meta?.["threads.count"]) ?? 0)
       if (!Number.isNaN(count) && count <= 0) return "Ingen tidligere tråde. Starter en ny tråd."
@@ -201,7 +206,6 @@ export default function Chatbot() {
   async function init() {
     setLoading(true)
     didAutoStartNewThreadRef.current = false
-
     try {
       const data = await callKernel(null, { type: "SYSTEM_INIT" })
       setState(data.state)
@@ -217,7 +221,6 @@ export default function Chatbot() {
   async function dispatch(nextInput: InputSignal, opts?: { silentUser?: boolean }) {
     if (!state) return
     setLoading(true)
-
     try {
       const fromNode = state.active_node
       const data = await callKernel(state, nextInput)
@@ -240,6 +243,47 @@ export default function Chatbot() {
     }
   }
 
+  async function navigate(target: string) {
+    if (!state) return
+    const allowed = new Set(state.allowed_transitions ?? [])
+
+    // Hvis det er tilladt direkte, hop.
+    if (allowed.has(target)) {
+      await dispatch({ type: "EXPLICIT_TRANSITION", target })
+      return
+    }
+
+    // Hvis vi ikke kan hoppe direkte (typisk THREAD_CHOOSER), så gå via HOME hvis muligt.
+    if (allowed.has("HOME")) {
+      setLoading(true)
+      try {
+        const fromLabel = NODE_LABELS[state.active_node] ?? state.active_node
+
+        const hop1 = await callKernel(state, { type: "EXPLICIT_TRANSITION", target: "HOME" })
+        showHeaderNavHint(`${fromLabel} → ${NODE_LABELS.HOME}`)
+        setState(hop1.state)
+        appendAssistantMessage((hop1.transition?.response_message as string | undefined) ?? normalizeAssistantMessage(hop1.state))
+
+        const allowed2 = new Set(hop1.state.allowed_transitions ?? [])
+        if (allowed2.has(target)) {
+          const hop2 = await callKernel(hop1.state, { type: "EXPLICIT_TRANSITION", target })
+          showHeaderNavHint(`${NODE_LABELS.HOME} → ${NODE_LABELS[target] ?? target}`)
+          setState(hop2.state)
+          appendAssistantMessage(
+            (hop2.transition?.response_message as string | undefined) ?? normalizeAssistantMessage(hop2.state)
+          )
+        } else {
+          appendAssistantMessage("Det valg er ikke tilgængeligt herfra endnu.")
+        }
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
+    appendAssistantMessage("Det valg er ikke tilgængeligt herfra endnu.")
+  }
+
   function openChat() {
     setOpen(true)
     if (!state) init()
@@ -254,19 +298,6 @@ export default function Chatbot() {
     setExpanded((v) => !v)
   }
 
-  function go(target: string) {
-    if (!state) return
-
-    const goingFromHomeToTopic = state.active_node === "HOME" && target !== "HOME"
-    if (goingFromHomeToTopic) {
-      const label = NODE_LABELS[target] ?? target
-      appendUserMessage(label)
-    }
-
-    dispatch({ type: "EXPLICIT_TRANSITION", target })
-  }
-
-  // Header-knap: tilbage til tråd-vælger (lobby)
   function goToThreadChooser() {
     setMessages([])
     setInput("")
@@ -274,6 +305,13 @@ export default function Chatbot() {
     setHeaderNavHint(null)
     didAutoStartNewThreadRef.current = false
     init()
+  }
+
+  function goTopic(target: string) {
+    if (!state) return
+    const goingFromHomeToTopic = state.active_node === "HOME" && target !== "HOME"
+    if (goingFromHomeToTopic) appendUserMessage(NODE_LABELS[target] ?? target)
+    dispatch({ type: "EXPLICIT_TRANSITION", target })
   }
 
   const triageChipsRaw = metaValue("triage.chips")
@@ -326,6 +364,34 @@ export default function Chatbot() {
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, state?.active_node, threadCount])
+
+  // THREAD_CHOOSER UI: skjul “Fortsæt seneste” når det reelt er samme som eneste tråd.
+  const threadChoicesForUi = useMemo(() => {
+    const sorted = [...threadChoices]
+      .map((c) => {
+        const raw = (c.label ?? "").trim()
+        const cleanThreadTitle =
+          c.kind === "thread"
+            ? looksLikeOpaqueId(raw)
+              ? "Tidligere tråd"
+              : raw
+            : raw
+
+        const uiLabel =
+          c.kind === "new" ? "Ny tråd" : c.kind === "continue" ? "Fortsæt seneste tråd" : cleanThreadTitle
+
+        return { ...c, uiLabel }
+      })
+      .sort((a, b) => {
+        const rank = (k: ThreadChoice["kind"]) => (k === "new" ? 0 : k === "continue" ? 1 : 2)
+        return rank(a.kind) - rank(b.kind)
+      })
+
+    // Hvis der kun er 1 tråd, så fjern “continue” for at undgå dublet.
+    const filtered = sorted.filter((c) => !(threadCount === 1 && c.kind === "continue"))
+    // Hvis der 0 tråde, fjern “continue” uanset.
+    return filtered.filter((c) => !(threadCount <= 0 && c.kind === "continue"))
+  }, [threadChoices, threadCount])
 
   const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal}`
 
@@ -399,40 +465,24 @@ export default function Chatbot() {
                 </div>
               ))}
 
-              {state?.active_node === "THREAD_CHOOSER" && threadChoices.length > 0 && (
+              {state?.active_node === "THREAD_CHOOSER" && threadChoicesForUi.length > 0 && (
                 <div className={styles.sectionBlock}>
                   <div className={styles.sectionTitle}>Tråde</div>
                   <div className={styles.topicGrid}>
-                    {threadChoices
-                      .map((c) => ({
-                        ...c,
-                        uiLabel:
-                          c.kind === "new"
-                            ? "Ny tråd"
-                            : c.kind === "continue"
-                              ? "Fortsæt seneste tråd"
-                              : c.label,
-                      }))
-                      .sort((a, b) => {
-                        const rank = (k: ThreadChoice["kind"]) => (k === "new" ? 0 : k === "continue" ? 1 : 2)
-                        return rank(a.kind) - rank(b.kind)
-                      })
-                      .filter((c) => {
-                        if (threadCount <= 0 && c.kind === "continue") return false
-                        return true
-                      })
-                      .map((c) => (
-                        <button
-                          key={c.id}
-                          className={styles.topicCard}
-                          onClick={() => dispatch({ type: "FREE_TEXT", text: c.id }, { silentUser: true })}
-                          disabled={loading || !state}
-                          title={c.kind === "thread" ? c.label : ""}
-                        >
-                          <span className={styles.topicLabel}>{(c as any).uiLabel}</span>
-                          {c.kind === "thread" && <span className={styles.topicMeta}>Tråd</span>}
-                        </button>
-                      ))}
+                    {threadChoicesForUi.map((c) => (
+                      <button
+                        key={c.id}
+                        className={styles.topicCard}
+                        onClick={() => dispatch({ type: "FREE_TEXT", text: c.id }, { silentUser: true })}
+                        disabled={loading || !state}
+                        title={c.kind === "thread" ? c.label : ""}
+                      >
+                        <span className={styles.topicLabel}>{(c as any).uiLabel}</span>
+                        {c.kind === "thread" && <span className={styles.topicMeta}>Tråd</span>}
+                        {c.kind === "new" && <span className={styles.topicMeta}>Start</span>}
+                        {c.kind === "continue" && <span className={styles.topicMeta}>Seneste</span>}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
@@ -445,7 +495,7 @@ export default function Chatbot() {
                       <button
                         key={t.id}
                         className={styles.topicCard}
-                        onClick={() => go(t.id)}
+                        onClick={() => goTopic(t.id)}
                         disabled={!t.enabled || loading || !state}
                         title={t.tooltip}
                       >
@@ -479,26 +529,50 @@ export default function Chatbot() {
             </div>
 
             <div className={styles.footer}>
-              {/* Footer-nav (skal altid være synlig) */}
               <div className={styles.footerNav} aria-label="Genveje">
-                <button className={styles.footerIcon} onClick={() => go("HOME")} title="Forside" aria-label="Forside">
+                <button
+                  className={styles.footerIcon}
+                  onClick={() => navigate("HOME")}
+                  title="Forside"
+                  aria-label="Forside"
+                  disabled={loading || !state}
+                >
                   <HomeIcon className={styles.footerIconSvg} />
                 </button>
-                <button className={styles.footerIcon} onClick={() => go("TLF")} title="Telefon" aria-label="Telefon">
+                <button
+                  className={styles.footerIcon}
+                  onClick={() => navigate("TLF")}
+                  title="Telefon"
+                  aria-label="Telefon"
+                  disabled={loading || !state}
+                >
                   <PhoneIcon className={styles.footerIconSvg} />
                 </button>
-                <button className={styles.footerIcon} onClick={() => go("MAIL")} title="E-mail" aria-label="E-mail">
+                <button
+                  className={styles.footerIcon}
+                  onClick={() => navigate("MAIL")}
+                  title="E-mail"
+                  aria-label="E-mail"
+                  disabled={loading || !state}
+                >
                   <EnvelopeIcon className={styles.footerIconSvg} />
                 </button>
                 <button
                   className={styles.footerIcon}
-                  onClick={() => go("CONTACT_FORM")}
+                  onClick={() => navigate("CONTACT_FORM")}
                   title="Kontaktformular"
                   aria-label="Kontaktformular"
+                  disabled={loading || !state}
                 >
                   <LinkIcon className={styles.footerIconSvg} />
                 </button>
-                <button className={styles.footerIcon} onClick={() => go("AKUT")} title="Akut" aria-label="Akut">
+                <button
+                  className={styles.footerIcon}
+                  onClick={() => navigate("AKUT")}
+                  title="Akut"
+                  aria-label="Akut"
+                  disabled={loading || !state}
+                >
                   <ExclamationTriangleIcon className={styles.footerIconSvg} />
                 </button>
               </div>
