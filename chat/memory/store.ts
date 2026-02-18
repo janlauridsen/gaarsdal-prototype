@@ -254,12 +254,18 @@ export async function recordTurn(params: {
   userText?: string
   assistantText?: string
   transitionType?: string
+  /**
+   * When false, this function will avoid storing raw user/assistant text in memory events.
+   * (Other derived signals like short-answer preference may still be computed from userText.)
+   */
+  includeText?: boolean
   ttlSeconds: number
 }): Promise<void> {
   const client = getRedisClient()
   if (!client) return
 
   const ts = nowIso()
+  const includeText = params.includeText !== false
 
   const metaSnapshot: Record<string, unknown> = {}
   const includeKeys = [
@@ -276,7 +282,7 @@ export async function recordTurn(params: {
   }
 
   const events: MemoryEvent[] = []
-  if (params.userText) {
+  if (includeText && params.userText) {
     events.push({
       ts,
       conversation_id: params.conversationId,
@@ -285,7 +291,7 @@ export async function recordTurn(params: {
       text: params.userText,
     })
   }
-  if (params.assistantText) {
+  if (includeText && params.assistantText) {
     events.push({
       ts,
       conversation_id: params.conversationId,
@@ -327,6 +333,7 @@ export async function recordTurn(params: {
   const tags = extractTopicTags(params.state)
   for (const t of tags) bumpScore(profile.topic_scores, t, 0.2)
 
+  // Even if includeText=false, userText may exist at runtime and can be used for preferences.
   if (params.userText) {
     const obs = observeShortAnswerPreference(params.userText)
     if (obs !== null) {
