@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next"
 import crypto from "crypto"
 
 import { runNode } from "../../chat/runtime/nodeRunner"
-import { createInitialState, createLobbyState } from "../../chat/kernel/state"
+import { createLobbyState } from "../../chat/kernel/state"
 import type { InputSignal, KernelResult, LogEvent } from "../../chat/kernel/types"
 import { getNode } from "../../chat/nodes/registry"
 
@@ -28,6 +28,11 @@ import { appendConversationEventV1 } from "../../chat/events/store"
 import { ensureThreadThemeAndEpisode } from "../../chat/memory/longTermMemoryStore"
 import { enqueueJob, makeJobId } from "../../chat/async/queue"
 
+// NEW: structured context + single raw stream
+import { upsertTherapeuticContext } from "../../chat/context/store"
+import { buildTriageContextUpdates } from "../../chat/context/mapping"
+import { appendRawTurn } from "../../chat/raw/store"
+
 type ChatRequestBody = {
   state: any
   input: InputSignal
@@ -37,6 +42,25 @@ const COOKIE_NAME = "gaarsdal_uid"
 const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 const PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
+
+// NEW defaults
+const DEFAULT_RAW_TTL_DAYS = 14
+const DEFAULT_CONTEXT_TTL_DAYS = 90
+
+function envInt(name: string, fallback: number): number {
+  const v = process.env[name]
+  if (!v) return fallback
+  const n = Number.parseInt(v.trim(), 10)
+  return Number.isFinite(n) ? n : fallback
+}
+
+function rawTtlSeconds(): number {
+  return envInt("GAARSDAL_RAW_TTL_DAYS", DEFAULT_RAW_TTL_DAYS) * 24 * 60 * 60
+}
+
+function contextTtlSeconds(): number {
+  return envInt("GAARSDAL_CONTEXT_TTL_DAYS", DEFAULT_CONTEXT_TTL_DAYS) * 24 * 60 * 60
+}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
@@ -123,6 +147,12 @@ function truncateText(s: string, max: number): string {
 function shouldIncludeRawText(): boolean {
   // Default off to reduce risk of PII in canonical events.
   return envTrue("GAARSDAL_EVENTS_INCLUDE_TEXT")
+}
+
+function legacyRawLogsEnabled(): boolean {
+  // When true, keep writing raw text into legacy interaction/telemetry/memory logs.
+  // Default is false to honor single raw stream + TTL.
+  return envTrue("GAARSDAL_LEGACY_RAW_LOGS")
 }
 
 async function emitCanonicalEvent(params: {
@@ -351,22 +381,49 @@ async function logAndRecord(params: {
 }): Promise<void> {
   const { kernelResult, input } = params
 
-  await appendLog(kernelResult.log)
-
   const assistantText =
     kernelResult.transition.response_message ?? kernelResult.state.active_node_message
 
-  await appendInteraction({
-    conversation_id: kernelResult.state.conversation_id,
+  // Raw text goes into exactly one place (TTL).
+  await appendRawTurn({
+    conversationId: kernelResult.state.conversation_id,
     revision: kernelResult.state.revision,
-    active_node: kernelResult.state.active_node,
-    input_type: (input as any).type,
-    user_input: params.userText ?? toUserInput(input),
-    ai_response: assistantText,
-    outcome_node: kernelResult.transition.to,
-    timestamp: new Date().toISOString(),
+    nodeId: kernelResult.state.active_node,
+    inputType: (input as any).type,
+    userInput: params.userText ?? toUserInput(input),
+    assistantOutput: assistantText,
+    ttlSeconds: rawTtlSeconds(),
   })
 
+  // Always keep kernel log.
+  await appendLog(kernelResult.log)
+
+  const includeLegacyRaw = legacyRawLogsEnabled()
+
+  // Interaction log: keep minimal event; only include raw text if legacy enabled.
+  if (includeLegacyRaw) {
+    await appendInteraction({
+      conversation_id: kernelResult.state.conversation_id,
+      revision: kernelResult.state.revision,
+      active_node: kernelResult.state.active_node,
+      input_type: (input as any).type,
+      user_input: params.userText ?? toUserInput(input),
+      ai_response: assistantText,
+      outcome_node: kernelResult.transition.to,
+      timestamp: new Date().toISOString(),
+    })
+  } else {
+    await appendInteraction({
+      conversation_id: kernelResult.state.conversation_id,
+      revision: kernelResult.state.revision,
+      active_node: kernelResult.state.active_node,
+      input_type: (input as any).type,
+      outcome_node: kernelResult.transition.to,
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  // Memory events: includeText is controlled by legacy flag.
   await recordTurn({
     userKey: params.userKey,
     conversationId: kernelResult.state.conversation_id,
@@ -374,6 +431,7 @@ async function logAndRecord(params: {
     userText: params.userText,
     assistantText,
     transitionType: kernelResult.transition.type,
+    includeText: includeLegacyRaw,
     ttlSeconds: MEMORY_TTL_SECONDS,
   })
 
@@ -384,13 +442,29 @@ async function logAndRecord(params: {
     revision: kernelResult.state.revision,
     node_id: kernelResult.state.active_node,
     input_type: (input as any).type,
-    user_input_raw: params.userText ?? toUserInput(input),
-    assistant_output_raw: assistantText,
+    user_input_raw: includeLegacyRaw ? (params.userText ?? toUserInput(input)) : undefined,
+    assistant_output_raw: includeLegacyRaw ? assistantText : undefined,
     transition_type: kernelResult.transition.type,
     outcome_node: kernelResult.transition.to,
     capability_id: activeNode.kind === "DIALOG" ? activeNode.capability_id ?? null : null,
     meta_keys_written: kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : [],
   })
+
+  // Structured therapeutic context: project from triage meta (no raw transcript).
+  const triageUpdates = buildTriageContextUpdates({
+    state: kernelResult.state as any,
+    userKey: params.userKey,
+    turnId: `rev:${kernelResult.state.revision}`,
+  })
+
+  if (triageUpdates.length) {
+    await upsertTherapeuticContext({
+      conversationId: kernelResult.state.conversation_id,
+      userKey: params.userKey,
+      ttlSeconds: contextTtlSeconds(),
+      updates: triageUpdates,
+    })
+  }
 
   const profile = await readUserProfile(params.userKey)
   if (profile) {
@@ -684,7 +758,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const assistantText =
       kernelResult.transition.response_message ?? kernelResult.state.active_node_message
 
-    const rawUserText = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : toUserInput(input) ?? ""
+    const rawUserText =
+      (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : toUserInput(input) ?? ""
 
     await emitCanonicalEvent({
       userKey,
