@@ -7,6 +7,11 @@ const KEY_USER_PREFIX = "gaarsdal:events:v1:u:"
 const KEY_CONVO_PREFIX_CANONICAL = "gaarsdal:events:v1:" // + {conversation_id}
 const KEY_CONVO_PREFIX_LEGACY = "gaarsdal:events:v1:c:" // legacy rollout
 
+// Conversation index for session browsing (new default)
+const INDEX_RECENT_CONVERSATIONS = "gaarsdal:index:conversations:recent" // ZSET {conversation_id} score=timestamp_ms
+const INDEX_MAX_ITEMS = 5000
+const INDEX_TTL_SECONDS = 7776000 // 90 days
+
 // Keep bounded in Redis for V1. Long-term storage can be introduced later.
 const MAX_EVENTS_PER_LIST = 4000
 
@@ -16,6 +21,10 @@ const MAX_EVENTS_PER_LIST = 4000
  * so it is OFF by default. Enable only for short migration windows.
  */
 const DUAL_WRITE_LEGACY = false
+
+// Default: ONLY per-conversation is written. Global/user streams can be re-enabled temporarily.
+const WRITE_GLOBAL = process.env.GAARSDAL_EVENTS_V1_WRITE_GLOBAL === "1"
+const WRITE_USER = process.env.GAARSDAL_EVENTS_V1_WRITE_USER === "1"
 
 function userKeyList(userKey: string): string {
   return `${KEY_USER_PREFIX}${userKey}`
@@ -53,6 +62,28 @@ async function rpushAndTrim(client: any, key: string, payload: string): Promise<
   await client.ltrim(key, -MAX_EVENTS_PER_LIST, -1)
 }
 
+async function touchConversationIndex(client: any, conversationId: string, timestampMs: number): Promise<void> {
+  // Upstash client types have evolved; use `any` calls to keep compatibility across versions.
+  try {
+    const anyClient = client as any
+    // Try common zadd signatures.
+    try {
+      await anyClient.zadd(INDEX_RECENT_CONVERSATIONS, { score: timestampMs, member: conversationId })
+    } catch {
+      try {
+        await anyClient.zadd(INDEX_RECENT_CONVERSATIONS, [{ score: timestampMs, member: conversationId }])
+      } catch {
+        await anyClient.zadd(INDEX_RECENT_CONVERSATIONS, timestampMs, conversationId)
+      }
+    }
+    // Keep most recent N
+    await anyClient.zremrangebyrank(INDEX_RECENT_CONVERSATIONS, 0, -INDEX_MAX_ITEMS - 1)
+    await anyClient.expire(INDEX_RECENT_CONVERSATIONS, INDEX_TTL_SECONDS)
+  } catch {
+    // Index is best-effort. Event append should not fail if index update fails.
+  }
+}
+
 /**
  * Backwards-compatible signature (pages/api/chat.ts expects 1 argument).
  */
@@ -62,9 +93,16 @@ export async function appendConversationEventV1(event: ConversationEventV1): Pro
 
   const payload = JSON.stringify(event)
 
-  // Global + per-user (stable)
-  await rpushAndTrim(client, KEY_ALL, payload)
-  await rpushAndTrim(client, userKeyList(event.user_key), payload)
+  // Keep a lightweight index so the Sessions UI does not depend on global/user event lists.
+  await touchConversationIndex(client, event.conversation_id, event.timestamp_ms)
+
+  // Optional global + per-user (OFF by default)
+  if (WRITE_GLOBAL) {
+    await rpushAndTrim(client, KEY_ALL, payload)
+  }
+  if (WRITE_USER) {
+    await rpushAndTrim(client, userKeyList(event.user_key), payload)
+  }
 
   // Canonical per-conversation (the only one we want going forward)
   const keyCanonical = convoKeyCanonical(event.conversation_id)
