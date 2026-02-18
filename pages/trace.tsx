@@ -2,19 +2,27 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+type TurnGroup = {
+  input_id: number | null;
+  revision: number | null;
+  started_at_ms: number | null;
+  ended_at_ms: number | null;
+
+  input_received?: any;
+  transition_applied?: any[];
+  node_rendered?: any;
+
+  raw?: any;
+  spine?: any[];
+};
+
 type TracePayload = {
   conversation_id: string;
   keys: Record<string, string>;
   ttl_ms: number | null;
   state: any;
-  counts: { v1: number; spine: number; raw: number; timeline: number };
-  timeline: Array<{
-    kind: "v1" | "spine" | "raw";
-    t_ms: number | null;
-    t_iso: string | null;
-    summary: string;
-    data: any;
-  }>;
+  counts: { v1: number; spine: number; raw: number; groups: number };
+  groups: TurnGroup[];
 };
 
 function fmtTTL(ms: number | null) {
@@ -24,6 +32,15 @@ function fmtTTL(ms: number | null) {
   const h = Math.floor((s % 86400) / 3600);
   const m = Math.floor((s % 3600) / 60);
   return `${d}d ${h}h ${m}m`;
+}
+
+function fmtTime(ms: number | null) {
+  if (ms == null) return "";
+  try {
+    return new Date(ms).toISOString();
+  } catch {
+    return String(ms);
+  }
 }
 
 function CodeBlock({ value }: { value: any }) {
@@ -45,12 +62,31 @@ function CodeBlock({ value }: { value: any }) {
   );
 }
 
+function pickLatency(spine?: any[]) {
+  if (!Array.isArray(spine) || spine.length === 0) return null;
+  // take max latency_ms in group as "turn latency"
+  let best: number | null = null;
+  for (const e of spine) {
+    const v = typeof e?.latency_ms === "number" ? e.latency_ms : null;
+    if (v == null) continue;
+    if (best == null || v > best) best = v;
+  }
+  return best;
+}
+
 export default function TracePage() {
   const [conversations, setConversations] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [data, setData] = useState<TracePayload | null>(null);
-  const [raw, setRaw] = useState(false);
-  const [limit, setLimit] = useState(250);
+  const [rawAll, setRawAll] = useState(false);
+  const [limit, setLimit] = useState(500);
+
+  // preselect from query param
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const cid = url.searchParams.get("conversation_id");
+    if (cid) setSelected(cid);
+  }, []);
 
   useEffect(() => {
     fetch("/api/trace")
@@ -78,20 +114,20 @@ export default function TracePage() {
     <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
       {/* LEFT */}
       <div style={{ width: 360, borderRight: "1px solid #e0e0e0", padding: 16, overflowY: "auto" }}>
-        <h2 style={{ marginTop: 0 }}>Trace</h2>
+        <h2 style={{ marginTop: 0 }}>Trace (Grouped)</h2>
 
         <div style={{ marginBottom: 12 }}>
-          <label style={{ fontSize: 12, color: "#444" }}>Limit</label>
+          <label style={{ fontSize: 12, color: "#444" }}>Limit (tail)</label>
           <div>
             <select
               value={limit}
               onChange={(e) => setLimit(Number(e.target.value))}
               style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #ccc", width: "100%" }}
             >
-              <option value={100}>100</option>
               <option value={250}>250</option>
               <option value={500}>500</option>
               <option value={1000}>1000</option>
+              <option value={2000}>2000</option>
             </select>
           </div>
         </div>
@@ -119,10 +155,10 @@ export default function TracePage() {
       <div style={{ flex: 1, padding: 24, overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
           <button
-            onClick={() => setRaw(!raw)}
+            onClick={() => setRawAll(!rawAll)}
             style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #ccc", background: "#fff", cursor: "pointer" }}
           >
-            {raw ? "Readable View" : "Raw JSON"}
+            {rawAll ? "Readable View" : "Raw JSON (whole response)"}
           </button>
 
           {data?.conversation_id && (
@@ -144,36 +180,104 @@ export default function TracePage() {
               <div style={{ fontSize: 13, marginBottom: 6 }}><strong>TTL:</strong> {fmtTTL(data.ttl_ms)} ({data.ttl_ms} ms)</div>
               <div style={{ fontSize: 13, marginBottom: 6 }}><strong>State:</strong> {header?.active_node} · {header?.status} · rev {header?.revision}</div>
               <div style={{ fontSize: 13 }}>
-                <strong>Counts:</strong> v1 {data.counts.v1} · spine {data.counts.spine} · raw {data.counts.raw} · timeline {data.counts.timeline}
+                <strong>Counts:</strong> v1 {data.counts.v1} · spine {data.counts.spine} · raw {data.counts.raw} · groups {data.counts.groups}
               </div>
             </div>
 
-            {raw ? (
+            {rawAll ? (
               <CodeBlock value={data} />
             ) : (
-              <div style={{ display: "grid", gap: 10 }}>
-                {data.timeline.map((row, idx) => (
-                  <div
-                    key={`${row.kind}-${idx}`}
-                    style={{
-                      border: "1px solid #e0e0e0",
-                      borderRadius: 8,
-                      padding: 12,
-                      background: "#fff",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                      <div style={{ fontSize: 12, color: "#555" }}>
-                        <strong>{row.kind.toUpperCase()}</strong> · {row.t_iso ?? (row.t_ms ?? "")}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#555" }}>{row.summary}</div>
-                    </div>
+              <div style={{ display: "grid", gap: 12 }}>
+                {data.groups.map((g, idx) => {
+                  const transitions = Array.isArray(g.transition_applied) ? g.transition_applied : [];
+                  const latency = pickLatency(g.spine);
+                  const renderedMsg = g.node_rendered?.payload?.message ?? g.node_rendered?.payload?.node_id ?? null;
 
-                    <div style={{ marginTop: 8 }}>
-                      <CodeBlock value={row.data} />
+                  const userText = g.raw?.user_input ?? "";
+                  const assistantText = g.raw?.assistant_output ?? "";
+
+                  const nodeRendered = g.node_rendered?.payload?.node_id ?? g.node_rendered?.node_id ?? null;
+                  const nodeFromTransition = transitions[transitions.length - 1]?.payload?.transition?.to ?? null;
+
+                  const node = nodeRendered ?? nodeFromTransition ?? "";
+
+                  return (
+                    <div key={`${g.input_id ?? "null"}-${idx}`} style={{ border: "1px solid #e0e0e0", borderRadius: 10, padding: 14, background: "#fff" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+                        <div style={{ fontSize: 12, color: "#555" }}>
+                          <strong>Turn</strong> #{g.input_id ?? "?"} · rev {g.revision ?? "?"} · {fmtTime(g.started_at_ms)}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#555" }}>
+                          node <strong>{node}</strong>
+                          {latency != null ? ` · latency ${latency}ms` : ""}
+                        </div>
+                      </div>
+
+                      {(userText || assistantText) && (
+                        <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
+                          {userText && (
+                            <div>
+                              <div style={{ fontSize: 12, color: "#444", marginBottom: 4 }}><strong>User</strong></div>
+                              <div style={{ whiteSpace: "pre-wrap" }}>{userText}</div>
+                            </div>
+                          )}
+                          {assistantText && (
+                            <div>
+                              <div style={{ fontSize: 12, color: "#444", marginBottom: 4 }}><strong>Assistant</strong></div>
+                              <div style={{ whiteSpace: "pre-wrap" }}>{assistantText}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {renderedMsg && typeof renderedMsg === "string" && renderedMsg.length < 200 && (
+                        <div style={{ marginTop: 10, fontSize: 12, color: "#333", background: "#f8f8f8", border: "1px solid #eee", borderRadius: 8, padding: 10 }}>
+                          <strong>Rendered:</strong> {renderedMsg}
+                        </div>
+                      )}
+
+                      <details style={{ marginTop: 12 }}>
+                        <summary style={{ cursor: "pointer", fontSize: 12, color: "#0b57d0" }}>Details (v1 / spine / raw)</summary>
+                        <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                          {g.input_received && (
+                            <div>
+                              <div style={{ fontSize: 12, color: "#444", marginBottom: 6 }}><strong>v1.input_received</strong></div>
+                              <CodeBlock value={g.input_received} />
+                            </div>
+                          )}
+
+                          {transitions.length > 0 && (
+                            <div>
+                              <div style={{ fontSize: 12, color: "#444", marginBottom: 6 }}><strong>v1.transition_applied ({transitions.length})</strong></div>
+                              <CodeBlock value={transitions} />
+                            </div>
+                          )}
+
+                          {g.node_rendered && (
+                            <div>
+                              <div style={{ fontSize: 12, color: "#444", marginBottom: 6 }}><strong>v1.node_rendered</strong></div>
+                              <CodeBlock value={g.node_rendered} />
+                            </div>
+                          )}
+
+                          {Array.isArray(g.spine) && g.spine.length > 0 && (
+                            <div>
+                              <div style={{ fontSize: 12, color: "#444", marginBottom: 6 }}><strong>spine ({g.spine.length})</strong></div>
+                              <CodeBlock value={g.spine} />
+                            </div>
+                          )}
+
+                          {g.raw && (
+                            <div>
+                              <div style={{ fontSize: 12, color: "#444", marginBottom: 6 }}><strong>raw</strong></div>
+                              <CodeBlock value={g.raw} />
+                            </div>
+                          )}
+                        </div>
+                      </details>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
