@@ -28,9 +28,7 @@ import { appendConversationEventV1 } from "../../chat/events/store"
 import { ensureThreadThemeAndEpisode } from "../../chat/memory/longTermMemoryStore"
 import { enqueueJob, makeJobId } from "../../chat/async/queue"
 
-// NEW: structured context + single raw stream
-import { upsertTherapeuticContext } from "../../chat/context/store"
-import { buildTriageContextUpdates } from "../../chat/context/mapping"
+// Single raw stream
 import { appendRawTurn } from "../../chat/raw/store"
 
 type ChatRequestBody = {
@@ -43,9 +41,8 @@ const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 const PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 
-// NEW defaults
+// Defaults
 const DEFAULT_RAW_TTL_DAYS = 14
-const DEFAULT_CONTEXT_TTL_DAYS = 90
 
 function envInt(name: string, fallback: number): number {
   const v = process.env[name]
@@ -56,10 +53,6 @@ function envInt(name: string, fallback: number): number {
 
 function rawTtlSeconds(): number {
   return envInt("GAARSDAL_RAW_TTL_DAYS", DEFAULT_RAW_TTL_DAYS) * 24 * 60 * 60
-}
-
-function contextTtlSeconds(): number {
-  return envInt("GAARSDAL_CONTEXT_TTL_DAYS", DEFAULT_CONTEXT_TTL_DAYS) * 24 * 60 * 60
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -449,22 +442,6 @@ async function logAndRecord(params: {
     capability_id: activeNode.kind === "DIALOG" ? activeNode.capability_id ?? null : null,
     meta_keys_written: kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : [],
   })
-
-  // Structured therapeutic context: project from triage meta (no raw transcript).
-  const triageUpdates = buildTriageContextUpdates({
-    state: kernelResult.state as any,
-    userKey: params.userKey,
-    turnId: `rev:${kernelResult.state.revision}`,
-  })
-
-  if (triageUpdates.length) {
-    await upsertTherapeuticContext({
-      conversationId: kernelResult.state.conversation_id,
-      userKey: params.userKey,
-      ttlSeconds: contextTtlSeconds(),
-      updates: triageUpdates,
-    })
-  }
 
   const profile = await readUserProfile(params.userKey)
   if (profile) {
