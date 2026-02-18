@@ -42,6 +42,23 @@ const KEY_CONVO_PREFIX = "gaarsdal:spine:v23:events:c:"
 
 const MAX_EVENTS_PER_LIST = 4000
 
+/**
+ * Spine is intended for observability / operational triggering, not canonical audit.
+ * To reduce duplication, default behaviour is to write only per-conversation.
+ *
+ * Enable additional materialized views via env flags:
+ *   - GAARSDAL_SPINE_WRITE_ALL=1
+ *   - GAARSDAL_SPINE_WRITE_USER=1
+ */
+function envTruthy(v: string | undefined): boolean {
+  if (!v) return false
+  const x = v.trim().toLowerCase()
+  return x === "1" || x === "true" || x === "yes" || x === "y" || x === "on"
+}
+
+const WRITE_ALL = envTruthy(process.env.GAARSDAL_SPINE_WRITE_ALL)
+const WRITE_USER = envTruthy(process.env.GAARSDAL_SPINE_WRITE_USER)
+
 function userKeyList(userKey: string): string {
   return `${KEY_USER_PREFIX}${userKey}`
 }
@@ -61,13 +78,17 @@ export async function appendSpineEventV23(event: Omit<SpineEventV23, "ts">): Pro
   const full: SpineEventV23 = { ts: nowIso(), ...event }
   const payload = JSON.stringify(full)
 
-  await client.rpush(KEY_ALL, payload)
-  await client.rpush(userKeyList(event.user_key), payload)
-  await client.rpush(convoKeyList(event.conversation_id), payload)
+  // Default: per-conversation only.
+  const keys: string[] = [convoKeyList(event.conversation_id)]
+  if (WRITE_ALL) keys.push(KEY_ALL)
+  if (WRITE_USER) keys.push(userKeyList(event.user_key))
 
-  await client.ltrim(KEY_ALL, -MAX_EVENTS_PER_LIST, -1)
-  await client.ltrim(userKeyList(event.user_key), -MAX_EVENTS_PER_LIST, -1)
-  await client.ltrim(convoKeyList(event.conversation_id), -MAX_EVENTS_PER_LIST, -1)
+  // Keep the write path simple and predictable. If you need stronger atomicity,
+  // consider batching via pipeline or a Lua script.
+  for (const k of keys) {
+    await client.rpush(k, payload)
+    await client.ltrim(k, -MAX_EVENTS_PER_LIST, -1)
+  }
 }
 
 function parseStored<T>(x: unknown): T | null {
