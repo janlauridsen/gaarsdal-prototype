@@ -27,53 +27,85 @@ export default function StatePage() {
       .then(setData);
   }, [selected]);
 
-  function renderReadable(state: any) {
-    if (!state) return null;
-
+  function Box({ children }: { children: React.ReactNode }) {
     return (
-      <div style={{ lineHeight: 1.6 }}>
-        <h3>Active Node</h3>
-        <p>
-          <strong>{state.active_node}</strong>
-        </p>
-
-        <h3>Status</h3>
-        <p>{state.status}</p>
-
-        <h3>Revision</h3>
-        <p>{state.revision}</p>
-
-        <h3>Allowed Transitions</h3>
-        <ul>
-          {(state.allowed_transitions || []).map((t: string) => (
-            <li key={t}>{t}</li>
-          ))}
-        </ul>
-
-        <h3>Meta</h3>
-        <pre
-          style={{
-            background: "#111",
-            padding: 12,
-            overflowX: "auto",
-          }}
-        >
-          {JSON.stringify(state.meta, null, 2)}
-        </pre>
-
-        <h3>Parentese Stack</h3>
-        <pre>{JSON.stringify(state.parentese_stack, null, 2)}</pre>
+      <div
+        style={{
+          background: "#f5f5f5",
+          padding: 16,
+          borderRadius: 8,
+          border: "1px solid #e0e0e0",
+          marginBottom: 16,
+        }}
+      >
+        {children}
       </div>
     );
   }
 
+  function CodeBlock({ value }: { value: any }) {
+    return (
+      <pre
+        style={{
+          background: "#fafafa",
+          padding: 16,
+          borderRadius: 8,
+          border: "1px solid #e0e0e0",
+          overflowX: "auto",
+          fontSize: 13,
+          lineHeight: 1.5,
+        }}
+      >
+        {JSON.stringify(value, null, 2)}
+      </pre>
+    );
+  }
+
+  function renderReadable(state: any) {
+    if (!state) return null;
+
+    return (
+      <>
+        <Box>
+          <h3>Active Node</h3>
+          <p><strong>{state.active_node}</strong></p>
+
+          <h3>Status</h3>
+          <p>{state.status}</p>
+
+          <h3>Revision</h3>
+          <p>{state.revision}</p>
+        </Box>
+
+        <Box>
+          <h3>Allowed Transitions</h3>
+          <ul>
+            {(state.allowed_transitions || []).map((t: string) => (
+              <li key={t}>{t}</li>
+            ))}
+          </ul>
+        </Box>
+
+        <Box>
+          <h3>Meta</h3>
+          <CodeBlock value={state.meta} />
+        </Box>
+
+        <Box>
+          <h3>Parentese Stack</h3>
+          <CodeBlock value={state.parentese_stack} />
+        </Box>
+      </>
+    );
+  }
+
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+    <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
       {/* LEFT PANEL */}
       <div
         style={{
           width: 320,
-          borderRight: "1px solid #333",
+          borderRight: "1px solid #e0e0e0",
           padding: 16,
           overflowY: "auto",
         }}
@@ -86,7 +118,9 @@ export default function StatePage() {
             style={{
               padding: 8,
               cursor: "pointer",
-              background: selected === id ? "#222" : "transparent",
+              background: selected === id ? "#eaeaea" : "transparent",
+              borderRadius: 6,
+              marginBottom: 4,
             }}
           >
             {id}
@@ -96,8 +130,17 @@ export default function StatePage() {
 
       {/* RIGHT PANEL */}
       <div style={{ flex: 1, padding: 24, overflowY: "auto" }}>
-        <div style={{ marginBottom: 12 }}>
-          <button onClick={() => setRaw(!raw)}>
+        <div style={{ marginBottom: 16 }}>
+          <button
+            onClick={() => setRaw(!raw)}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 6,
+              border: "1px solid #ccc",
+              background: "#fff",
+              cursor: "pointer",
+            }}
+          >
             {raw ? "Readable View" : "Raw JSON"}
           </button>
         </div>
@@ -106,23 +149,13 @@ export default function StatePage() {
 
         {data && (
           <>
-            <p>
-              <strong>Key:</strong> {data.key}
-            </p>
-            <p>
-              <strong>TTL (ms):</strong> {data.ttl_ms}
-            </p>
+            <Box>
+              <p><strong>Key:</strong> {data.key}</p>
+              <p><strong>TTL (ms):</strong> {data.ttl_ms}</p>
+            </Box>
 
             {raw ? (
-              <pre
-                style={{
-                  background: "#111",
-                  padding: 16,
-                  overflowX: "auto",
-                }}
-              >
-                {JSON.stringify(data.state, null, 2)}
-              </pre>
+              <CodeBlock value={data.state} />
             ) : (
               renderReadable(data.state)
             )}
