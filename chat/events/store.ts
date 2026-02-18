@@ -4,7 +4,15 @@ import type { ConversationEventV1, EventStoreReadParams } from "./types"
 
 const KEY_ALL = "gaarsdal:events:v1:all"
 const KEY_USER_PREFIX = "gaarsdal:events:v1:u:"
-const KEY_CONVO_PREFIX_CANONICAL = "gaarsdal:events:v1:" // + {conversation_id}
+// Canonical per-conversation stream.
+// Uses a dedicated segment ("conv") to avoid ambiguity with conversation ids like "c:<uuid>".
+// New canonical key: gaarsdal:events:v1:conv:{conversation_id}
+const KEY_CONVO_PREFIX_CANONICAL = "gaarsdal:events:v1:conv:" // + {conversation_id}
+
+// Legacy variants that existed prior to the "conv" namespace:
+//  - gaarsdal:events:v1:{conversation_id}
+//  - gaarsdal:events:v1:c:{conversation_id} (and sometimes conversation_id already started with "c:")
+const KEY_CONVO_PREFIX_OLD_CANONICAL = "gaarsdal:events:v1:" // + {conversation_id}
 const KEY_CONVO_PREFIX_LEGACY = "gaarsdal:events:v1:c:" // legacy rollout
 
 // Conversation index for session browsing (new default)
@@ -34,6 +42,10 @@ function convoKeyCanonical(conversationId: string): string {
   return `${KEY_CONVO_PREFIX_CANONICAL}${conversationId}`
 }
 
+function convoKeyOldCanonical(conversationId: string): string {
+  return `${KEY_CONVO_PREFIX_OLD_CANONICAL}${conversationId}`
+}
+
 // Some old data was written as gaarsdal:events:v1:c:{conversationId}
 // where conversationId might already start with "c:" -> creates c:c:...
 // We therefore support BOTH legacy variants on read.
@@ -42,9 +54,19 @@ function stripLeadingConversationPrefix(conversationId: string): string {
 }
 
 function convoKeyLegacyVariants(conversationId: string): string[] {
-  const a = `${KEY_CONVO_PREFIX_LEGACY}${conversationId}`
-  const b = `${KEY_CONVO_PREFIX_LEGACY}${stripLeadingConversationPrefix(conversationId)}`
-  return a === b ? [a] : [a, b]
+  const keys = new Set<string>()
+
+  // Previous canonical (before "conv:")
+  keys.add(convoKeyOldCanonical(conversationId))
+
+  // Legacy rollout variants
+  keys.add(`${KEY_CONVO_PREFIX_LEGACY}${conversationId}`)
+  keys.add(`${KEY_CONVO_PREFIX_LEGACY}${stripLeadingConversationPrefix(conversationId)}`)
+
+  // Remove any accidental canonical collision
+  keys.delete(convoKeyCanonical(conversationId))
+
+  return [...keys]
 }
 
 function parseStored<T>(x: unknown): T | null {
@@ -111,9 +133,7 @@ export async function appendConversationEventV1(event: ConversationEventV1): Pro
   // Optional dual-write to legacy (OFF by default)
   if (DUAL_WRITE_LEGACY) {
     for (const legacyKey of convoKeyLegacyVariants(event.conversation_id)) {
-      if (legacyKey !== keyCanonical) {
-        await rpushAndTrim(client, legacyKey, payload)
-      }
+      await rpushAndTrim(client, legacyKey, payload)
     }
   }
 }
@@ -137,11 +157,12 @@ export async function readConversationEventsV1(params: EventStoreReadParams): Pr
     const primary = await readListTail(client, keyCanonical, limit)
     if (primary.length > 0) return primary
 
+    // Fallback to any older key variants (best-effort)
     for (const legacyKey of convoKeyLegacyVariants(params.conversationId)) {
-      if (legacyKey === keyCanonical) continue
       const fallback = await readListTail(client, legacyKey, limit)
       if (fallback.length > 0) return fallback
     }
+
     return []
   }
 
