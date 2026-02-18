@@ -38,7 +38,11 @@ export type SpineEventV23 = {
 
 const KEY_ALL = "gaarsdal:spine:v23:events:all"
 const KEY_USER_PREFIX = "gaarsdal:spine:v23:events:u:"
-const KEY_CONVO_PREFIX = "gaarsdal:spine:v23:events:c:"
+// Canonical: suffix is the raw conversation_id (e.g. "c:..." or "lobby:u:...")
+// This avoids the noisy "c:c:..." keys.
+const KEY_CONVO_PREFIX_CANONICAL = "gaarsdal:spine:v23:events:"
+// Legacy rollout prefix kept for backwards-compatible reads.
+const KEY_CONVO_PREFIX_LEGACY = "gaarsdal:spine:v23:events:c:"
 
 const MAX_EVENTS_PER_LIST = 4000
 
@@ -63,8 +67,18 @@ function userKeyList(userKey: string): string {
   return `${KEY_USER_PREFIX}${userKey}`
 }
 
-function convoKeyList(conversationId: string): string {
-  return `${KEY_CONVO_PREFIX}${conversationId}`
+function convoKeyCanonical(conversationId: string): string {
+  return `${KEY_CONVO_PREFIX_CANONICAL}${conversationId}`
+}
+
+function stripLeadingConversationPrefix(conversationId: string): string {
+  return conversationId.startsWith("c:") ? conversationId.slice(2) : conversationId
+}
+
+function convoKeyLegacyVariants(conversationId: string): string[] {
+  const a = `${KEY_CONVO_PREFIX_LEGACY}${conversationId}`
+  const b = `${KEY_CONVO_PREFIX_LEGACY}${stripLeadingConversationPrefix(conversationId)}`
+  return a === b ? [a] : [a, b]
 }
 
 function nowIso(): string {
@@ -79,7 +93,7 @@ export async function appendSpineEventV23(event: Omit<SpineEventV23, "ts">): Pro
   const payload = JSON.stringify(full)
 
   // Default: per-conversation only.
-  const keys: string[] = [convoKeyList(event.conversation_id)]
+  const keys: string[] = [convoKeyCanonical(event.conversation_id)]
   if (WRITE_ALL) keys.push(KEY_ALL)
   if (WRITE_USER) keys.push(userKeyList(event.user_key))
 
@@ -110,14 +124,25 @@ export async function readSpineEventsV23(params: {
   if (!client) return []
 
   const limit = typeof params.limit === "number" ? Math.max(1, Math.min(params.limit, 500)) : 100
-  const key = params.conversationId
-    ? convoKeyList(params.conversationId)
-    : params.userKey
-      ? userKeyList(params.userKey)
-      : KEY_ALL
+  // Conversation-specific read: canonical first, then legacy variants.
+  if (params.conversationId) {
+    const keyCanonical = convoKeyCanonical(params.conversationId)
+    const items = await client.lrange<unknown>(keyCanonical, -limit, -1)
+    const parsed = items.map((i) => parseStored<SpineEventV23>(i)).filter((x): x is SpineEventV23 => Boolean(x))
+    if (parsed.length > 0) return parsed
 
+    for (const legacyKey of convoKeyLegacyVariants(params.conversationId)) {
+      if (legacyKey === keyCanonical) continue
+      const legacyItems = await client.lrange<unknown>(legacyKey, -limit, -1)
+      const legacyParsed = legacyItems
+        .map((i) => parseStored<SpineEventV23>(i))
+        .filter((x): x is SpineEventV23 => Boolean(x))
+      if (legacyParsed.length > 0) return legacyParsed
+    }
+    return []
+  }
+
+  const key = params.userKey ? userKeyList(params.userKey) : KEY_ALL
   const items = await client.lrange<unknown>(key, -limit, -1)
-  return items
-    .map((i) => parseStored<SpineEventV23>(i))
-    .filter((x): x is SpineEventV23 => Boolean(x))
+  return items.map((i) => parseStored<SpineEventV23>(i)).filter((x): x is SpineEventV23 => Boolean(x))
 }
