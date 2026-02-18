@@ -26,20 +26,63 @@ function safeJsonParse<T = any>(v: any): T | any {
   }
 }
 
-function tsToMs(ts: any): number | null {
-  if (!ts) return null;
-  if (typeof ts === "number") return ts;
-  if (typeof ts === "string") {
-    const ms = Date.parse(ts);
+function isoToMs(iso: any): number | null {
+  if (!iso) return null;
+  if (typeof iso === "number") return iso;
+  if (typeof iso === "string") {
+    const ms = Date.parse(iso);
     return Number.isFinite(ms) ? ms : null;
   }
   return null;
 }
 
+type TurnGroup = {
+  input_id: number | null;
+  revision: number | null;
+  started_at_ms: number | null;
+  ended_at_ms: number | null;
+
+  // v1
+  input_received?: any;
+  transition_applied?: any[];
+  node_rendered?: any;
+
+  // raw
+  raw?: any;
+
+  // spine
+  spine?: any[];
+};
+
+function setBounds(g: TurnGroup, t: number | null) {
+  if (t == null) return;
+  if (g.started_at_ms == null || t < g.started_at_ms) g.started_at_ms = t;
+  if (g.ended_at_ms == null || t > g.ended_at_ms) g.ended_at_ms = t;
+}
+
+function pickClosestByTime<T extends { _ms?: number | null }>(
+  candidates: T[],
+  targetMs: number | null
+): T | null {
+  if (!candidates.length) return null;
+  if (targetMs == null) return candidates[0] ?? null;
+  let best: T | null = null;
+  let bestDist = Infinity;
+  for (const c of candidates) {
+    const ms = c._ms ?? null;
+    const dist = ms == null ? Infinity : Math.abs(ms - targetMs);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = c;
+    }
+  }
+  return best ?? candidates[0] ?? null;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const conversation_id = asString(req.query.conversation_id);
-    const limit = Math.max(20, Math.min(1000, Number(asString(req.query.limit) ?? 250)));
+    const limit = Math.max(50, Math.min(2000, Number(asString(req.query.limit) ?? 500)));
 
     // LIST
     if (!conversation_id) {
@@ -47,7 +90,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({ conversations: ids ?? [] });
     }
 
-    // DETAIL
     const stateKey = `${STATE_PREFIX}${conversation_id}`;
     const v1Key = `${V1_EVENTS_PREFIX}${conversation_id}`;
     const spineKey = `${SPINE_PREFIX}${conversation_id}`;
@@ -55,7 +97,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const [stateRaw, v1Raw, spineRaw, rawRaw] = await Promise.all([
       redis.get(stateKey),
-      // tail
       (redis as any).lrange?.(v1Key, -limit, -1) ?? [],
       (redis as any).lrange?.(spineKey, -limit, -1) ?? [],
       (redis as any).lrange?.(rawKey, -limit, -1) ?? [],
@@ -79,42 +120,117 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // Merge to timeline
-    const timeline: any[] = [];
+    // ---- Build groups from V1 events by input_id ----
+    const byInputId = new Map<number, TurnGroup>();
+
+    function getGroup(input_id: number | null): TurnGroup {
+      const id = input_id ?? -1;
+      let g = byInputId.get(id);
+      if (!g) {
+        g = {
+          input_id: input_id ?? null,
+          revision: null,
+          started_at_ms: null,
+          ended_at_ms: null,
+          transition_applied: [],
+          spine: [],
+        };
+        byInputId.set(id, g);
+      }
+      return g;
+    }
 
     for (const e of v1Events) {
-      timeline.push({
-        kind: "v1",
-        t_ms: tsToMs(e?.timestamp_ms) ?? null,
-        t_iso: e?.timestamp_ms ? new Date(e.timestamp_ms).toISOString() : null,
-        summary: `${e?.event_type ?? "event"} @ ${e?.node_id ?? "?"}`,
-        data: e,
-      });
+      const input_id = typeof e?.input_id === "number" ? e.input_id : null;
+      const revision = typeof e?.revision === "number" ? e.revision : null;
+      const t = typeof e?.timestamp_ms === "number" ? e.timestamp_ms : null;
+
+      const g = getGroup(input_id);
+      if (g.revision == null && revision != null) g.revision = revision;
+      setBounds(g, t);
+
+      const et = e?.event_type;
+      if (et === "input_received") g.input_received = e;
+      else if (et === "transition_applied") (g.transition_applied ??= []).push(e);
+      else if (et === "node_rendered") g.node_rendered = e;
+      else {
+        (g.transition_applied ??= []).push(e);
+      }
     }
 
-    for (const e of spineEvents) {
-      const ms = tsToMs(e?.ts);
-      timeline.push({
-        kind: "spine",
-        t_ms: ms,
-        t_iso: typeof e?.ts === "string" ? e.ts : ms ? new Date(ms).toISOString() : null,
-        summary: `${e?.transition_type ?? "event"} ${e?.node_after ?? ""}`.trim(),
-        data: e,
-      });
+    // Convert to array and sort by time
+    let groups: TurnGroup[] = Array.from(byInputId.values()).filter((g) => g.input_id !== -1);
+    groups.sort((a, b) => (a.started_at_ms ?? 0) - (b.started_at_ms ?? 0));
+
+    // If no V1 groups exist (edge), create a single group and attach everything
+    if (!groups.length) {
+      groups = [
+        {
+          input_id: null,
+          revision: typeof state?.revision === "number" ? state.revision : null,
+          started_at_ms: null,
+          ended_at_ms: null,
+          transition_applied: [],
+          spine: [],
+        },
+      ];
     }
 
-    for (const t of rawTurns) {
-      const ms = tsToMs(t?.ts);
-      timeline.push({
-        kind: "raw",
-        t_ms: ms,
-        t_iso: typeof t?.ts === "string" ? t.ts : ms ? new Date(ms).toISOString() : null,
-        summary: `raw ${t?.input_type ?? ""}`.trim(),
-        data: t,
-      });
+    // ---- Attach RAW turns to closest group by revision then time ----
+    const rawWithMs = rawTurns.map((t: any) => ({ ...t, _ms: isoToMs(t?.ts) }));
+    for (const rt of rawWithMs) {
+      const rrev = typeof rt?.revision === "number" ? rt.revision : null;
+      const rms = rt._ms ?? null;
+
+      const candidates = groups
+        .filter((g) => (rrev == null ? true : g.revision === rrev))
+        .map((g) => ({ g, _ms: g.started_at_ms }));
+
+      const picked = pickClosestByTime(candidates as any, rms);
+      const target = (picked as any)?.g as TurnGroup | undefined;
+      if (!target) continue;
+
+      // If multiple raw entries map to same group, keep the closest to node_rendered time if possible
+      if (!target.raw) {
+        target.raw = rt;
+      } else {
+        const existingMs = (target.raw as any)?._ms ?? null;
+        const targetAnchor = target.ended_at_ms ?? target.started_at_ms ?? null;
+        const newDist = targetAnchor == null || rms == null ? Infinity : Math.abs(rms - targetAnchor);
+        const oldDist =
+          targetAnchor == null || existingMs == null ? Infinity : Math.abs(existingMs - targetAnchor);
+        if (newDist < oldDist) target.raw = rt;
+      }
+
+      setBounds(target, rms);
     }
 
-    timeline.sort((a, b) => (a.t_ms ?? 0) - (b.t_ms ?? 0));
+    // ---- Attach SPINE events to closest group by revision_after then time ----
+    const spineWithMs = spineEvents.map((e: any) => ({ ...e, _ms: isoToMs(e?.ts) }));
+    for (const se of spineWithMs) {
+      const revAfter = typeof se?.revision_after === "number" ? se.revision_after : null;
+      const ms = se._ms ?? null;
+
+      const candidates = groups
+        .filter((g) => (revAfter == null ? true : g.revision === revAfter))
+        .map((g) => ({ g, _ms: g.started_at_ms }));
+
+      const picked = pickClosestByTime(candidates as any, ms);
+      const target = (picked as any)?.g as TurnGroup | undefined;
+      if (!target) continue;
+
+      (target.spine ??= []).push(se);
+      setBounds(target, ms);
+    }
+
+    // Normalize: ensure arrays
+    for (const g of groups) {
+      g.transition_applied = Array.isArray(g.transition_applied) ? g.transition_applied : [];
+      g.spine = Array.isArray(g.spine) ? g.spine : [];
+      // sort internal arrays
+      g.transition_applied.sort((a, b) => (a?.timestamp_ms ?? 0) - (b?.timestamp_ms ?? 0));
+      g.spine.sort((a, b) => (a?._ms ?? 0) - (b?._ms ?? 0));
+    }
 
     return res.status(200).json({
       conversation_id,
@@ -125,9 +241,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         v1: v1Events.length,
         spine: spineEvents.length,
         raw: rawTurns.length,
-        timeline: timeline.length,
+        groups: groups.length,
       },
-      timeline,
+      groups,
+      // keep raw lists in response for debugging
       v1Events,
       spineEvents,
       rawTurns,
