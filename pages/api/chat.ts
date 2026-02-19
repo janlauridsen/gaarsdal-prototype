@@ -548,7 +548,10 @@ async function handleInitOrRestore(params: {
         transition: {
           type: advanced.transition.type,
           from: advanced.transition.from,
-          to: advanced.transition.to ?? null,
+          // Ensure canonical events always carry a concrete destination node.
+          // Some internal transitions (e.g. "NODE_HOP" with external resolution) may leave `to` unset.
+          // Falling back to the post-transition active node keeps the event self-contained.
+          to: advanced.transition.to ?? advanced.state.active_node,
           reason: advanced.transition.reason,
           meta_keys_written: advanced.transition.meta_delta ? Object.keys(advanced.transition.meta_delta) : [],
         },
@@ -626,7 +629,10 @@ async function handleInitOrRestore(params: {
       transition: {
         type: advanced.transition.type,
         from: advanced.transition.from,
-        to: advanced.transition.to ?? null,
+        // Ensure canonical events always carry a concrete destination node.
+        // Some internal transitions (e.g. "NODE_HOP" with external resolution) may leave `to` unset.
+        // Falling back to the post-transition active node keeps the event self-contained.
+        to: advanced.transition.to ?? advanced.state.active_node,
         reason: advanced.transition.reason,
         meta_keys_written: advanced.transition.meta_delta ? Object.keys(advanced.transition.meta_delta) : [],
       },
@@ -765,7 +771,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         transition: {
           type: kernelResult.transition.type,
           from: kernelResult.transition.from,
-          to: kernelResult.transition.to ?? null,
+          // Ensure canonical events always carry a concrete destination node.
+          // Some internal transitions (e.g. "NODE_HOP" with external resolution) may leave `to` unset.
+          // Falling back to the post-transition active node keeps the event self-contained.
+          to: kernelResult.transition.to ?? kernelResult.state.active_node,
           reason: kernelResult.transition.reason,
           meta_keys_written: kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : [],
         },
