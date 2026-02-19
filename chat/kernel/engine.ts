@@ -8,6 +8,11 @@ import {
 } from "./types"
 import { getNode } from "../nodes/registry"
 
+// Global actions should behave like HOME: they must always be reachable from any state.
+// This avoids UX dead-ends when a user triggers a global footer action from inside
+// a deep flow where the current node does not list that exit.
+const GLOBAL_EXITS: string[] = ["HOME", "MAIL", "TLF", "CONTACT_FORM", "AKUT"]
+
 function assertState(state: ConversationState): void {
   if (!state.conversation_id) throw new Error("missing conversation_id")
   if (state.revision < 0) throw new Error("invalid revision")
@@ -176,7 +181,7 @@ function applyTransition(
     }
 
     const node = getNode(state.active_node)
-    if (!node.allowed_exits.includes(transition.to)) {
+    if (!node.allowed_exits.includes(transition.to) && !GLOBAL_EXITS.includes(transition.to)) {
       throw new Error("parentese open target not allowed")
     }
 
@@ -219,7 +224,7 @@ function applyTransition(
   }
 
   const node = getNode(state.active_node)
-  if (transition.to && !node.allowed_exits.includes(transition.to)) {
+  if (transition.to && !node.allowed_exits.includes(transition.to) && !GLOBAL_EXITS.includes(transition.to)) {
     throw new Error("transition.to not allowed")
   }
 
