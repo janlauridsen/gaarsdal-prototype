@@ -4,7 +4,8 @@
 // - Fix: allow TRIAGE to write meta keys used by triage-relevance-v1 (triage.decision, triage.render, triage.relevance).
 // - Fix: widen TRIAGE allowed exits to include nodes the capability may choose (METHOD_FIT, GEN_HYPNO, BOOKING)
 //        to avoid "transition.to not allowed" when the model routes to a non-listed node.
-// - Fix: HOME allowed exits now includes CONTACT_FORM (it was missing even though QUICK_CONTACTS includes it).
+// Global actions are available from anywhere via engine-level global exits.
+// Only HOME should show them as visible chips by default.
 
 type NodeId = string
 
@@ -65,13 +66,11 @@ export type Node = {
   router?: RouterSpec
 }
 
-const QUICK_CONTACTS: NodeId[] = [
-  "HOME",
-  "MAIL",
-  "TLF",
-  "CONTACT_FORM",
-  "AKUT",
-]
+// Chips shown on HOME (menu).
+const QUICK_CONTACTS: NodeId[] = ["MAIL", "TLF", "CONTACT_FORM", "AKUT"]
+
+// Exits shown inside a parentese overlay.
+const PARENTESE_EXITS: NodeId[] = ["RESUME", "HOME"]
 
 const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
   // ----------- LOBBY / PROFILE / THREADS (V23.1) -----------
@@ -304,7 +303,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "Spørg mig om hypnoterapi: hvad det er, hvordan et forløb typisk foregår, hvad man ofte arbejder med, og hvad du kan forvente. Jeg deler viden og erfaring—ikke behandling i chatten.",
     allow_free_text: true,
     allow_parentese: true,
-    allowed_exits: ["HOME", "MAIL", "TLF", "AKUT", "CONTACT_FORM"],
+    allowed_exits: ["HOME"],
     capability_id: "gen-hypno-v1",
     meta_domains_written: ["gen_hypno.transcript", "gen_hypno.last_topic"],
   },
@@ -330,7 +329,11 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "METHOD_FIT",
       "GEN_HYPNO",
 
-      ...QUICK_CONTACTS,
+      // Menu break
+      "HOME",
+
+      // Global actions (MAIL/TLF/CONTACT_FORM/AKUT) are reachable via engine global exits,
+      // but should not appear as chips during a flow.
     ],
     capability_id: "triage-relevance-v1",
     meta_domains_written: [
@@ -372,7 +375,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "Fortæl kort hvad du vil opnå, og hvad der gør situationen svær lige nu. Jeg kan hjælpe med at vurdere, om hypnoterapi er et godt match, eller om andre tilgange typisk passer bedre. Jeg giver kun overblik—ikke behandling i chatten.",
     allow_free_text: true,
     allow_parentese: true,
-    allowed_exits: ["HOME", "BOOKING", ...QUICK_CONTACTS],
+    allowed_exits: ["HOME", "BOOKING"],
     capability_id: "method-fit-v1",
     meta_domains_written: ["method_fit.transcript", "method_fit.summary"],
   },
@@ -431,7 +434,10 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     message: "Du kan kontakte mig via e-mail på jan@gaarsdal.net.",
     allow_free_text: false,
     allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
+    navigation: {
+      show_default_chips: false,
+    },
+    allowed_exits: PARENTESE_EXITS,
     meta_domains_written: [],
   },
 
@@ -443,7 +449,10 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "Du kan ringe eller sende sms til 42 80 74 74. Jeg svarer, så snart jeg kan.",
     allow_free_text: false,
     allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
+    navigation: {
+      show_default_chips: false,
+    },
+    allowed_exits: PARENTESE_EXITS,
     meta_domains_written: [],
   },
 
@@ -455,7 +464,10 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "Du kan bruge kontaktformularen på /kontakt, hvis du ikke ønsker mail, telefon eller sms.",
     allow_free_text: false,
     allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
+    navigation: {
+      show_default_chips: false,
+    },
+    allowed_exits: PARENTESE_EXITS,
     meta_domains_written: [],
   },
 
@@ -467,7 +479,10 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "Akut hjælp i Danmark: Ring 112 ved livstruende situationer. Voksne: Livslinien 70 201 201 (døgnåben). Børn og unge: BørneTelefonen 116 111. Psykiatrisk akutmodtagelse kan kontaktes via 1813 (Region Hovedstaden) eller din region.",
     allow_free_text: false,
     allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
+    navigation: {
+      show_default_chips: false,
+    },
+    allowed_exits: PARENTESE_EXITS,
     meta_domains_written: [],
   },
 })
