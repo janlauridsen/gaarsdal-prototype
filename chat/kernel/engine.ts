@@ -11,7 +11,10 @@ import { getNode } from "../nodes/registry"
 // Global actions should behave like HOME: they must always be reachable from any state.
 // This avoids UX dead-ends when a user triggers a global footer action from inside
 // a deep flow where the current node does not list that exit.
-const GLOBAL_EXITS: string[] = ["HOME", "MAIL", "TLF", "CONTACT_FORM", "AKUT"]
+// NOTE: These are allowed regardless of the active node's declared exits.
+// MAIL/TLF/CONTACT_FORM/AKUT are handled as "parentese" overlays so the user can resume.
+// HOME remains a hard break back to the menu.
+const GLOBAL_EXITS: string[] = ["HOME", "MAIL", "TLF", "CONTACT_FORM", "AKUT", "RESUME"]
 
 function assertState(state: ConversationState): void {
   if (!state.conversation_id) throw new Error("missing conversation_id")
@@ -42,6 +45,34 @@ function buildTransition(
 
   switch (input.type) {
     case "EXPLICIT_TRANSITION":
+      // RESUME: close the latest parentese (if any)
+      if (input.target === "RESUME") {
+        return {
+          type: "PARENTESE_CLOSE",
+          from: state.active_node,
+          to:
+            state.parentese_stack.length > 0
+              ? state.parentese_stack[state.parentese_stack.length - 1]
+              : null,
+          reason: "resume from parentese",
+        }
+      }
+
+      // Global overlays: open parentese (push current node onto stack).
+      // HOME is intentionally *not* a parentese; it's a break back to menu.
+      if (
+        input.target !== "HOME" &&
+        GLOBAL_EXITS.includes(input.target) &&
+        getNode(state.active_node).allow_parentese
+      ) {
+        return {
+          type: "PARENTESE_OPEN",
+          from: state.active_node,
+          to: input.target,
+          reason: "global action (parentese)",
+        }
+      }
+
       return {
         type: "NODE_HOP",
         from: state.active_node,
