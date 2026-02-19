@@ -38,6 +38,14 @@ type Render = {
   chips: Array<{ id: string; label: string }>
 }
 
+type Outcome = {
+  relevance: Relevance
+  confidence: number
+  next_state: NextState
+  next_node: string
+  question_count: number
+}
+
 type TriageOutput = {
   decision: Decision
   render: Render
@@ -328,6 +336,49 @@ function writeMetaDecision(context: AiCapabilityContext, output: TriageOutput, q
   writeMeta(context, "triage.question_count", questionCount)
 }
 
+function deriveUnclearPoints(output: TriageOutput): string[] {
+  const missing: string[] = []
+  if (!output.decision.user_goal.trim()) missing.push("user_goal")
+  if (!output.decision.topic_tags.length) missing.push("topic_tags")
+  if (!output.decision.key_triggers.length) missing.push("key_triggers")
+  if (!output.decision.time_horizon.trim()) missing.push("time_horizon")
+  return missing.slice(0, 6)
+}
+
+function deriveSummary(output: TriageOutput): string {
+  const note = (output.decision.notes_for_context ?? "").trim()
+  if (note) return clamp(note, 420)
+  const goal = (output.decision.user_goal ?? "").trim()
+  if (goal) return clamp(goal, 420)
+  return ""
+}
+
+function writeMetaRenderAndOutcome(params: {
+  context: AiCapabilityContext
+  output: TriageOutput
+  questionCount: number
+  nextNode: string
+}): void {
+  const { context, output, questionCount, nextNode } = params
+
+  // UI hints (already declared in registry and consumed by the UI/consolidation).
+  writeMeta(context, "triage.next_question", output.render.next_question)
+  writeMeta(context, "triage.chips", output.render.chips)
+
+  // Minimal snapshot signals used by memory/event capture.
+  writeMeta(context, "triage.summary", deriveSummary(output))
+  writeMeta(context, "triage.unclear_points", deriveUnclearPoints(output))
+
+  const outcome: Outcome = {
+    relevance: output.decision.relevance,
+    confidence: output.decision.confidence,
+    next_state: output.decision.next_state,
+    next_node: nextNode,
+    question_count: questionCount,
+  }
+  writeMeta(context, "triage.outcome", outcome)
+}
+
 function writeCompactLastTurn(context: AiCapabilityContext, userText: string, assistantText: string): void {
   writeMeta(context, "dialog.triage.last_turn", {
     user: clamp(userText, MAX_TEXT),
@@ -379,9 +430,12 @@ function writeMemoryCandidates(context: AiCapabilityContext, output: TriageOutpu
   }
 }
 
-function deriveOutcome(output: TriageOutput, questionCount: number): Transition {
-  const nextNode = output.decision.relevance === "YES" || output.decision.relevance === "LIKELY" ? "GEN_HYPNO" : "TRIAGE"
+function deriveOutcome(output: TriageOutput, questionCount: number): { transition: Transition; nextNode: string } {
+  const nextNode =
+    output.decision.relevance === "YES" || output.decision.relevance === "LIKELY" ? "GEN_HYPNO" : "TRIAGE"
   return {
+    nextNode,
+    transition: {
     type: "NODE_HOP",
     from: "TRIAGE",
     to: nextNode,
@@ -389,6 +443,7 @@ function deriveOutcome(output: TriageOutput, questionCount: number): Transition 
     meta_delta: {
       "triage.decision": output.decision,
       "triage.render": output.render,
+    },
     },
   }
 }
@@ -425,9 +480,17 @@ export const triageCapability: AiCapability = {
     const response = await llm.chatJson(payload)
     const output = response ? normalizeOutput(response, context) : buildFallbackOutput(context)
 
-    const transition = deriveOutcome(output, questionCount)
+    const outcome = deriveOutcome(output, questionCount)
     const assistantText = buildAssistantText(output.render)
     writeMetaDecision(context, output, questionCount)
+
+    // Ensure UI & memory snapshot keys declared in registry are actually populated.
+    writeMetaRenderAndOutcome({
+      context,
+      output,
+      questionCount,
+      nextNode: outcome.nextNode,
+    })
 
     // Store a compact last-turn context (bounded), not a growing transcript.
     writeCompactLastTurn(context, context.userText, assistantText)
@@ -437,7 +500,7 @@ export const triageCapability: AiCapability = {
 
     return {
       transition: {
-        ...transition,
+        ...outcome.transition,
         response_message: assistantText,
       },
       debug: {
