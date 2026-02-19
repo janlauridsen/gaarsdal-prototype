@@ -426,7 +426,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
 
   MAIL: {
     id: "MAIL",
-    kind: "TERMINAL",
+    kind: "MENU",
     goal: "Mail kontakt",
     message: "Du kan kontakte mig via e-mail på jan@gaarsdal.net.",
     allow_free_text: false,
@@ -437,7 +437,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
 
   TLF: {
     id: "TLF",
-    kind: "TERMINAL",
+    kind: "MENU",
     goal: "Telefon kontakt",
     message:
       "Du kan ringe eller sende sms til 42 80 74 74. Jeg svarer, så snart jeg kan.",
@@ -449,7 +449,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
 
   CONTACT_FORM: {
     id: "CONTACT_FORM",
-    kind: "TERMINAL",
+    kind: "MENU",
     goal: "Kontaktformular",
     message:
       "Du kan bruge kontaktformularen på /kontakt, hvis du ikke ønsker mail, telefon eller sms.",
@@ -461,7 +461,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
 
   AKUT: {
     id: "AKUT",
-    kind: "TERMINAL",
+    kind: "MENU",
     goal: "Akut",
     message:
       "Akut hjælp i Danmark: Ring 112 ved livstruende situationer. Voksne: Livslinien 70 201 201 (døgnåben). Børn og unge: BørneTelefonen 116 111. Psykiatrisk akutmodtagelse kan kontaktes via 1813 (Region Hovedstaden) eller din region.",
