@@ -59,7 +59,7 @@ function buildTransition(
       }
 
       // Global overlays: open parentese (push current node onto stack).
-      // HOME is intentionally *not* a parentese; it's a break back to menu.
+      // HOME is intentionally *not* a parentese; it's a break back to the menu.
       if (
         input.target !== "HOME" &&
         GLOBAL_EXITS.includes(input.target) &&
@@ -292,6 +292,15 @@ export function runKernel(
   const transition = buildTransition(state, input)
   const nextState = applyTransition(state, transition)
 
+  // Normalize transitions so logs/events never carry an undefined destination.
+  // In practice this happens when external routing resolves FREE_TEXT into a
+  // logical NODE_HOP but does not provide `to` (meaning the node stays the same).
+  // The state already reflects the truth; this just aligns the transition payload.
+  const normalizedTransition =
+    transition.type === "NODE_HOP" && !transition.to
+      ? { ...transition, to: nextState.active_node }
+      : transition
+
   const log: LogEvent = {
     conversation_id: state.conversation_id,
     revision_before: state.revision,
@@ -299,13 +308,13 @@ export function runKernel(
     active_node_before: state.active_node,
     active_node_after: nextState.active_node,
     input_type: input.type,
-    transition_type: transition.type,
+    transition_type: normalizedTransition.type,
     timestamp: new Date().toISOString(),
   }
 
   return {
     state: nextState,
-    transition,
+    transition: normalizedTransition,
     log,
   }
 }
