@@ -233,7 +233,7 @@ export default function Home() {
                 Adresse: Bakkevej 36, 3460 Birkerød.
               </p>
               <p className="text-muted leading-relaxed">
-                Jeg har ofte klienter fra Rudersdal og nærområder som Holte,
+                Jeg har ofte klienter fra Rudersdal og nærområder dvs primært borgere fra Birkerød, Holte,
                 Farum og Allerød.
               </p>
             </div>
