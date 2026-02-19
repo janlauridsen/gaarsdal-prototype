@@ -79,10 +79,27 @@ function makeThreadChoices(params: {
     return s.length > 8 ? s.slice(-8) : s
   }
 
+  const normalize = (s: string): string =>
+    s
+      .trim()
+      .replace(/\s+/g, " ")
+      // Treat both ASCII and unicode ellipsis the same for comparisons.
+      .replace(/\.{3,}$/g, "…")
+      .replace(/…+$/g, "…")
+
   const buildLabel = (t: { conversation_id: string; title: string; preview: string }): string => {
     const base = t.title?.trim() ? t.title.trim() : `Tråd ${shortId(t.conversation_id)}`
     const preview = t.preview?.trim() ? t.preview.trim() : ""
     if (!preview) return base
+
+    const nBase = normalize(base).toLowerCase()
+    const nPreview = normalize(preview).toLowerCase()
+
+    // Avoid labels like: "X — X" (common when title==preview or one is a truncated copy).
+    if (nPreview === nBase) return base
+    if (nPreview.startsWith(nBase) && nPreview.length - nBase.length <= 3) return preview
+    if (nBase.startsWith(nPreview) && nBase.length - nPreview.length <= 3) return base
+
     const combined = `${base} — ${preview}`
     return combined.length > 110 ? combined.slice(0, 107).trimEnd() + "…" : combined
   }
