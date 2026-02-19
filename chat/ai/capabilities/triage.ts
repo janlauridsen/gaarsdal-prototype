@@ -430,9 +430,24 @@ function writeMemoryCandidates(context: AiCapabilityContext, output: TriageOutpu
   }
 }
 
-function deriveOutcome(output: TriageOutput, questionCount: number): { transition: Transition; nextNode: string } {
+function deriveOutcome(
+  output: TriageOutput,
+  questionCount: number
+): { transition: Transition; nextNode: string } {
   const nextNode =
     output.decision.relevance === "YES" || output.decision.relevance === "LIKELY" ? "GEN_HYPNO" : "TRIAGE"
+
+  // These are also written to state.meta via writeMeta* helpers, but we additionally include them
+  // in meta_delta so telemetry/spine meta_keys_written reflects the actual triage contract.
+  const summary = deriveSummary(output)
+  const unclear_points = deriveUnclearPoints(output)
+  const outcome: Outcome = {
+    relevance: output.decision.relevance,
+    confidence: output.decision.confidence,
+    next_state: output.decision.next_state,
+    next_node: nextNode,
+    question_count: questionCount,
+  }
   return {
     nextNode,
     transition: {
@@ -443,6 +458,14 @@ function deriveOutcome(output: TriageOutput, questionCount: number): { transitio
     meta_delta: {
       "triage.decision": output.decision,
       "triage.render": output.render,
+      // UI / snapshot keys (declared in registry; consumed by UI, consolidation, memory events)
+      "triage.next_question": output.render.next_question,
+      "triage.chips": output.render.chips,
+      "triage.summary": summary,
+      "triage.unclear_points": unclear_points,
+      "triage.outcome": outcome,
+      // Useful to observe in telemetry even though it's also inside decision/outcome.
+      "triage.question_count": questionCount,
     },
     },
   }
