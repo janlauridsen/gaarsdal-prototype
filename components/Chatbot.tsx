@@ -506,8 +506,16 @@ export default function Chatbot() {
                         title={c.kind === "thread" ? trimDuplicateTitle(c.label) : ""}
                       >
                         <span className={styles.topicLabel}>{(c as any).uiLabel}</span>
-                        {c.kind === "thread" && (
-                          <span className={styles.topicMeta}>{trimDuplicateTitle(c.label)}</span>
+                        {/*
+                          Avoid duplicate-looking cards:
+                          For normal thread cards, uiLabel is already derived from the label,
+                          so repeating the label as a "meta" line reads like a bug.
+                          Keep the secondary line only for the "continue" affordance.
+                        */}
+                        {c.kind === "continue" && (
+                          <span className={styles.topicMeta}>
+                            {trimDuplicateTitle(String(c.label ?? "").replace(/^Fortsæt:\s*/i, ""))}
+                          </span>
                         )}
                       </button>
                     ))}
