@@ -109,6 +109,13 @@ export default function Chatbot() {
   const endRef = useRef<HTMLDivElement | null>(null)
   const didAutoStartNewThreadRef = useRef(false)
 
+  // Global footer actions must always be reachable, regardless of the current node's allowed_transitions.
+  // (Kernel also whitelists these exits.)
+  const GLOBAL_ACTIONS = useMemo(
+    () => new Set(["HOME", "TLF", "MAIL", "CONTACT_FORM", "AKUT"]),
+    []
+  )
+
   function metaValue(key: string) {
     const entry = state?.meta?.[key]
     if (entry && typeof entry === "object" && "value" in entry) return (entry as any).value
@@ -279,7 +286,7 @@ export default function Chatbot() {
     if (!state) return
 
     const allowed = new Set(state.allowed_transitions ?? [])
-    const isAllowed = allowed.has(target) || target === "HOME" // HOME bruges ofte som fallback
+    const isAllowed = allowed.has(target) || GLOBAL_ACTIONS.has(target) // globale footer-actions
     if (!isAllowed) {
       showHeaderNavHint("Ikke tilgængeligt her")
       return
