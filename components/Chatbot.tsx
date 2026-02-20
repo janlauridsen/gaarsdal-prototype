@@ -46,6 +46,12 @@ type ChatMessage = {
   text: string
 }
 
+type UiSuggestion = {
+  id: string
+  label: string
+  input?: any
+}
+
 type ThreadChoice = {
   id: string
   label: string
@@ -73,13 +79,6 @@ const TOPIC_TOOLTIPS: Record<string, string> = {
   BOOKING: "Vælg kontaktvej for booking.",
   DEV_SANDBOX_INTRO: "Dev-flow: form → tool → checkpoint → track/profile.",
 }
-
-const DEFAULT_TRIAGE_CHIPS = [
-  { id: "tell_more", label: "Fortæl mere" },
-  { id: "why_relevant", label: "Hvorfor relevant?" },
-  { id: "next_steps", label: "Næste skridt" },
-  { id: "evidence", label: "Hvad virker typisk?" },
-]
 
 const TOPIC_NODES = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING", "DEV_SANDBOX_INTRO"] as const
 
@@ -321,15 +320,16 @@ export default function Chatbot() {
           .slice(0, 12)
       : []
 
-  const triageChipsRaw = metaValue("triage.chips")
-  const triageSuggestionsAllowed = state?.active_node === "TRIAGE"
-  const triageChips = triageSuggestionsAllowed
-    ? Array.isArray(triageChipsRaw)
-      ? triageChipsRaw
-          .filter((c: any) => c && typeof c.id === "string" && typeof c.label === "string")
-          .slice(0, 8)
-      : DEFAULT_TRIAGE_CHIPS
-    : []
+  const uiSuggestionsRaw = metaValue(state, "ui.suggestions")
+const uiSuggestions: UiSuggestion[] = Array.isArray(uiSuggestionsRaw)
+  ? (uiSuggestionsRaw as any[])
+      .filter((x) => x && typeof x === "object" && typeof (x as any).label === "string")
+      .map((x, i) => ({
+        id: String((x as any).id ?? i),
+        label: String((x as any).label),
+        input: (x as any).input,
+      }))
+  : []
 
   const showTopics = state?.active_node === "HOME"
   const allowedSet = new Set(state?.allowed_transitions ?? [])
@@ -542,15 +542,28 @@ export default function Chatbot() {
                 </div>
               )}
 
-              {triageChips.length > 0 && (
-                <div className="mt-3">
-                  <div className={styles.sectionTitle}>Forslag</div>
-                  <div className={styles.chipGroup}>
-                    {triageChips.map((chip: any) => (
-                      <button
-                        key={chip.id}
-                        className={styles.chip}
-                        onClick={() => dispatch({ type: "FREE_TEXT", text: chip.label }, { silentUser: true })}
+              {uiSuggestions.length > 0 && (
+              <div className="mt-3">
+                <div className="text-xs uppercase tracking-wider text-neutral-500 mb-2">Forslag</div>
+                <div className="flex flex-wrap gap-2">
+                  {uiSuggestions.map((s) => (
+                    <button
+                      key={s.id}
+                      className="px-3 py-1.5 rounded-full border border-neutral-200 bg-white hover:bg-neutral-50 text-sm"
+                      onClick={() => {
+                        if (s.input) {
+                          sendInput(s.input)
+                        } else {
+                          sendInput({ type: "FREE_TEXT", text: s.label })
+                        }
+                      }}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
                         disabled={loading || !state || !freeTextEnabled}
                       >
                         {chip.label}
