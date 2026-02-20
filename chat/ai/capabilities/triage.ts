@@ -483,7 +483,7 @@ function enforceBudgetsAndScope(params: {
 
   // Track chip usage so selected chips do not reappear.
   const usedChipIds = new Set(readUsedChipIds(params.context))
-  const lastUserText = String(params.context.last_user_message ?? "").trim()
+  const lastUserText = String(params.context.userText ?? "").trim()
   const labelToId: Record<string, string> = {
     "Er der evidens?": "evidence",
     "Er det normalt?": "normal",
