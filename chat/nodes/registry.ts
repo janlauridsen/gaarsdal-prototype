@@ -64,6 +64,9 @@ export type Node = {
   tool?: ToolSpec
   checkpoint?: CheckpointSpec
   router?: RouterSpec
+  // NOTE: repo currently uses a navigation field on some MENU nodes.
+  // Keep it as 'any' here to avoid registry typing drift if present elsewhere.
+  navigation?: any
 }
 
 // Chips shown on HOME (menu).
@@ -182,7 +185,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "POSTPROC_STEP_1_SCAN",
       "MAIL",
       "TLF",
-      "CONTACT_FORM", // FIX: missing previously
+      "CONTACT_FORM",
       "AKUT",
     ],
     router: {
@@ -233,11 +236,21 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
         { id: "topic", label: "Topic", required: true, placeholder: "fx alkohol om aftenen" },
         { id: "goal", label: "Goal", required: true, placeholder: "fx drikke mindre" },
         { id: "time_patterns", label: "Time patterns", required: false, placeholder: "fx aftenen" },
-        { id: "situational_triggers", label: "Situational triggers", required: false, placeholder: "fx arbejdsstress" },
+        {
+          id: "situational_triggers",
+          label: "Situational triggers",
+          required: false,
+          placeholder: "fx arbejdsstress",
+        },
         { id: "relational_patterns", label: "Relational patterns", required: false, placeholder: "fx familien" },
         { id: "preferred_tone", label: "Preferred tone", required: false, placeholder: "fx rolig og direkte" },
         { id: "support_direction", label: "Support direction", required: false, placeholder: "fx ro før jeg kommer hjem" },
-        { id: "interest_in_methods", label: "Interest in methods", required: false, placeholder: "fx gåtur; pause; registrering" },
+        {
+          id: "interest_in_methods",
+          label: "Interest in methods",
+          required: false,
+          placeholder: "fx gåtur; pause; registrering",
+        },
       ],
       on_submit_to: "DEV_SANDBOX_TOOL_APPLY",
       allow_partial: false,
@@ -318,26 +331,16 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     allow_parentese: true,
     allowed_exits: [
       "TRIAGE",
-
-      // Terminal outcomes
       "TRIAGE_FIT_BOOKING",
       "TRIAGE_NOT_RELEVANT",
       "TRIAGE_NEEDS_ASSESSMENT",
-
-      // FIX: allow model to route to these directly if capability chooses them
       "BOOKING",
       "METHOD_FIT",
       "GEN_HYPNO",
-
-      // Menu break
       "HOME",
-
-      // Global actions (MAIL/TLF/CONTACT_FORM/AKUT) are reachable via engine global exits,
-      // but should not appear as chips during a flow.
     ],
     capability_id: "triage-relevance-v1",
     meta_domains_written: [
-      // Existing keys you already track
       "triage.question_count",
       "triage.outcome",
       "triage.summary",
@@ -352,13 +355,9 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "triage.next_question",
       "triage.chips",
       "triage.close_signal",
-
-      // FIX: keys observed in logs but previously blocked
       "triage.decision",
       "triage.render",
       "triage.relevance",
-
-      // Iteration 2: bounded transcript (10 entries) + structured memory candidates.
       "dialog.triage.transcript",
       "dialog.triage.used_chip_ids",
       "dialog.triage.post_close_chips_shown",
@@ -379,17 +378,30 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "Fortæl kort hvad du vil opnå, og hvad der gør situationen svær lige nu. Jeg kan hjælpe med at vurdere, om hypnoterapi er et godt match, eller om andre tilgange typisk passer bedre. Jeg giver kun overblik—ikke behandling i chatten.",
     allow_free_text: true,
     allow_parentese: true,
-    allowed_exits: ["HOME", "BOOKING"],
+    // Allow self-hop so the capability can stay in METHOD_FIT without dead-ends.
+    allowed_exits: ["METHOD_FIT", "HOME", "BOOKING"],
     capability_id: "method-fit-v1",
-    meta_domains_written: ["method_fit.transcript", "method_fit.summary"],
+    meta_domains_written: [
+      "method_fit.transcript",
+      "method_fit.summary",
+
+      // v2: triage-like discipline + outputs
+      "method_fit.question_count",
+      "method_fit.questions_remaining",
+      "method_fit.close_signal",
+      "method_fit.relevance",
+      "method_fit.confidence",
+      "method_fit.tags",
+      "method_fit.next_question",
+      "method_fit.chips",
+    ],
   },
 
   TRIAGE_FIT_BOOKING: {
     id: "TRIAGE_FIT_BOOKING",
     kind: "TERMINAL",
     goal: "Egnet til booking",
-    message:
-      "Foreløbig triage: dit tema virker relevant for hypnoterapi. Næste skridt er booking.",
+    message: "Foreløbig triage: dit tema virker relevant for hypnoterapi. Næste skridt er booking.",
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: QUICK_CONTACTS,
@@ -412,8 +424,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     id: "TRIAGE_NEEDS_ASSESSMENT",
     kind: "TERMINAL",
     goal: "Kræver afklaringssamtale",
-    message:
-      "Foreløbig triage: der er stadig uklarheder. Start med en afklaringssamtale.",
+    message: "Foreløbig triage: der er stadig uklarheder. Start med en afklaringssamtale.",
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: QUICK_CONTACTS,
@@ -449,8 +460,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     id: "TLF",
     kind: "MENU",
     goal: "Telefon kontakt",
-    message:
-      "Du kan ringe eller sende sms til 42 80 74 74. Jeg svarer, så snart jeg kan.",
+    message: "Du kan ringe eller sende sms til 42 80 74 74. Jeg svarer, så snart jeg kan.",
     allow_free_text: false,
     allow_parentese: false,
     navigation: {
@@ -492,9 +502,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
 })
 
 const REGISTRY: Record<NodeId, Readonly<Node>> = Object.freeze(
-  Object.fromEntries(
-    Object.entries(RAW_REGISTRY).map(([k, v]) => [k, Object.freeze(v)])
-  )
+  Object.fromEntries(Object.entries(RAW_REGISTRY).map(([k, v]) => [k, Object.freeze(v)]))
 )
 
 function getNode(id: NodeId): Readonly<Node> {
