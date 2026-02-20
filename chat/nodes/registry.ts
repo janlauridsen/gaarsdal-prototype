@@ -351,14 +351,15 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "triage.notes_for_context",
       "triage.next_question",
       "triage.chips",
+      "triage.close_signal",
 
       // FIX: keys observed in logs but previously blocked
       "triage.decision",
       "triage.render",
       "triage.relevance",
 
-      // Iteration 1: compact last-turn context + structured memory candidates.
-      "dialog.triage.last_turn",
+      // Iteration 2: bounded transcript (10 entries) + structured memory candidates.
+      "dialog.triage.transcript",
       "memory_candidates.theme",
       "memory_candidates.goal",
       "memory_candidates.triggers",
