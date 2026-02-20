@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/router"
 import {
   ChatBubbleOvalLeftEllipsisIcon,
   XMarkIcon,
@@ -94,6 +95,7 @@ function trimDuplicateTitle(s: string) {
 }
 
 export default function Chatbot() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
@@ -548,8 +550,14 @@ export default function Chatbot() {
                         key={s.id}
                         className={styles.chipAction}
                         onClick={() => {
-                          if (s.input) {
-                            dispatch(s.input as InputSignal, { silentUser: true })
+                          const input = s.input as any
+                          if (input && input.type === "OPEN_URL" && typeof input.url === "string") {
+                            router.push(input.url)
+                            return
+                          }
+
+                          if (input) {
+                            dispatch(input as InputSignal, { silentUser: true })
                           } else {
                             dispatch({ type: "FREE_TEXT", text: s.label })
                           }
@@ -580,7 +588,7 @@ export default function Chatbot() {
                 </button>
                 <button
                   className={styles.footerIcon}
-                  onClick={() => go("CONTACT_FORM")}
+                  onClick={() => router.push("/kontakt")}
                   title="Kontakt"
                   aria-label="Kontakt"
                 >
