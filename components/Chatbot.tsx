@@ -332,7 +332,9 @@ export default function Chatbot() {
         }))
     : []
 
-  const showTopics = state?.active_node === "HOME"
+  // Hide the topic menu immediately when the user selects a topic (explicit transition),
+  // so the HOME menu doesn't flash while waiting for the next node to render.
+  const showTopics = state?.active_node === "HOME" && !loading
   const allowedSet = new Set(state?.allowed_transitions ?? [])
   const topicButtons = showTopics
     ? TOPIC_NODES.map((id) => ({
