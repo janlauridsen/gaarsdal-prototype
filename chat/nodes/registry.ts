@@ -360,6 +360,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
 
       // Iteration 2: bounded transcript (10 entries) + structured memory candidates.
       "dialog.triage.transcript",
+      "dialog.triage.used_chip_ids",
       "memory_candidates.theme",
       "memory_candidates.goal",
       "memory_candidates.triggers",
