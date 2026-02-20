@@ -11,10 +11,7 @@ import { appendInteraction, appendLog } from "../../chat/logging/sink"
 import { appendTelemetryTurn } from "../../chat/telemetry/store"
 import { readUserProfile, recordTurn, writeUserProfile } from "../../chat/memory/store"
 import { consolidateV1 } from "../../chat/platform/consolidation"
-import {
-  readConversationState,
-  writeConversationState,
-} from "../../chat/persistence/conversationStateStore"
+import { readConversationState, writeConversationState } from "../../chat/persistence/conversationStateStore"
 import {
   applyAutoThreadLabelFromText,
   ensureThreadIndex,
@@ -34,6 +31,12 @@ import { appendRawTurn } from "../../chat/raw/store"
 type ChatRequestBody = {
   state: any
   input: InputSignal
+}
+
+type UiSuggestion = {
+  id: string
+  label: string
+  input?: any
 }
 
 const COOKIE_NAME = "gaarsdal_uid"
@@ -116,9 +119,7 @@ function toUserInput(input: InputSignal): string | undefined {
 }
 
 function eventId(): string {
-  return (crypto as any).randomUUID
-    ? (crypto as any).randomUUID()
-    : crypto.randomBytes(16).toString("hex")
+  return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
 }
 
 function nowMs(): number {
@@ -182,6 +183,26 @@ function metaDomains(keys: string[]): string[] {
 
 function isLobbyConversation(conversationId: string): boolean {
   return conversationId.startsWith("lobby:u:")
+}
+
+function deriveUiSuggestionsFromState(state: any): UiSuggestion[] {
+  const meta = state?.meta && typeof state.meta === "object" ? state.meta : {}
+  const render = (meta?.["triage.render"] as any)?.value
+  const chips = (render && Array.isArray(render.chips) ? render.chips : (meta?.["triage.chips"] as any)?.value) as any
+  if (!Array.isArray(chips)) return []
+
+  return chips
+    .filter((c) => c && typeof c === "object" && typeof (c as any).label === "string")
+    .slice(0, 8)
+    .map((c, i) => {
+      const label = String((c as any).label)
+      return {
+        id: String((c as any).id ?? i),
+        label,
+        // Default behavior: chips send FREE_TEXT with the label (the runtime already resolves intent).
+        input: { type: "FREE_TEXT", text: label },
+      }
+    })
 }
 
 function isControlInput(text: string): boolean {
@@ -308,9 +329,7 @@ async function enqueueSuggestFacts(params: {
 }): Promise<void> {
   // Trigger rule (v23):
   // - when triage.* OR memory_candidates.* writes occur, enqueue; otherwise no-op.
-  const touched = params.metaKeysWritten.some(
-    (k) => k.startsWith("triage.") || k.startsWith("memory_candidates.")
-  )
+  const touched = params.metaKeysWritten.some((k) => k.startsWith("triage.") || k.startsWith("memory_candidates."))
   if (!touched) return
 
   const themeId = params.threadThemeId
@@ -342,7 +361,7 @@ async function ensureThreadBindingOnState(params: {
   conversationId: string
   state: any
 }): Promise<{ state: any; themeId: string; episodeId: string } | null> {
-  const meta = (params.state?.meta && typeof params.state.meta === "object") ? params.state.meta : {}
+  const meta = params.state?.meta && typeof params.state.meta === "object" ? params.state.meta : {}
   const existingThemeId = (meta?.["thread.theme_id"] as any)?.value
   const existingEpisodeId = (meta?.["thread.episode_id"] as any)?.value
 
@@ -374,8 +393,7 @@ async function logAndRecord(params: {
 }): Promise<void> {
   const { kernelResult, input } = params
 
-  const assistantText =
-    kernelResult.transition.response_message ?? kernelResult.state.active_node_message
+  const assistantText = kernelResult.transition.response_message ?? kernelResult.state.active_node_message
 
   // Raw text goes into exactly one place (TTL).
   await appendRawTurn({
@@ -435,7 +453,7 @@ async function logAndRecord(params: {
     revision: kernelResult.state.revision,
     node_id: kernelResult.state.active_node,
     input_type: (input as any).type,
-    user_input_raw: includeLegacyRaw ? (params.userText ?? toUserInput(input)) : undefined,
+    user_input_raw: includeLegacyRaw ? params.userText ?? toUserInput(input) : undefined,
     assistant_output_raw: includeLegacyRaw ? assistantText : undefined,
     transition_type: kernelResult.transition.type,
     outcome_node: kernelResult.transition.to,
@@ -662,11 +680,7 @@ function resolveBaseState(params: { storedState: any | null; clientState: any })
   return params.storedState ?? params.clientState
 }
 
-async function runTurnWithAutoAdvance(params: {
-  baseState: any
-  input: InputSignal
-  userKey: string
-}): Promise<KernelResult> {
+async function runTurnWithAutoAdvance(params: { baseState: any; input: InputSignal; userKey: string }): Promise<KernelResult> {
   const { baseState, input, userKey } = params
 
   let kernelResult = await runNode({ state: baseState, input, userKey })
@@ -734,12 +748,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const kernelResult = await runTurnWithAutoAdvance({ baseState, input, userKey })
+    const kernelResult0 = await runTurnWithAutoAdvance({ baseState, input, userKey })
+
+    // UI suggestions are server-controlled to avoid hardcoded/meaningless chips in the client.
+    const uiSuggestions =
+      kernelResult0.state?.active_node === "TRIAGE" ? deriveUiSuggestionsFromState(kernelResult0.state) : []
+
+    const kernelResult: KernelResult = {
+      ...kernelResult0,
+      state: {
+        ...kernelResult0.state,
+        meta: {
+          ...(kernelResult0.state?.meta ?? {}),
+          "ui.suggestions": { value: uiSuggestions, source_node: "SYSTEM_UI" },
+        },
+      },
+    }
+
     await persistState(kernelResult)
 
     // Canonical events (V1)
-    const assistantText =
-      kernelResult.transition.response_message ?? kernelResult.state.active_node_message
+    const assistantText = kernelResult.transition.response_message ?? kernelResult.state.active_node_message
 
     const rawUserText =
       (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : toUserInput(input) ?? ""
