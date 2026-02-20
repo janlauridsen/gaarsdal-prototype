@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next"
 import crypto from "crypto"
 
 import { runNode } from "../../chat/runtime/nodeRunner"
-import { createLobbyState } from "../../chat/kernel/state"
+import { createInitialState, createLobbyState } from "../../chat/kernel/state"
 import type { InputSignal, KernelResult, LogEvent } from "../../chat/kernel/types"
 import { getNode } from "../../chat/nodes/registry"
 
@@ -30,8 +30,13 @@ import { appendRawTurn } from "../../chat/raw/store"
 
 type ChatRequestBody = {
   state: any
-  input: InputSignal
+  input: ApiInputSignal
 }
+
+type ApiInputSignal =
+  | InputSignal
+  | { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
+  | { type: "THREAD_BACK" }
 
 type UiSuggestion = {
   id: string
@@ -116,6 +121,25 @@ function toUserInput(input: InputSignal): string | undefined {
   if (input.type === "SYSTEM") return `SYSTEM:${(input as any).intent}`
   if (input.type === "SYSTEM_INIT") return "SYSTEM_INIT"
   return undefined
+}
+
+function safeUuid(): string {
+  // Node 18+ has crypto.randomUUID; fallback for older runtimes.
+  return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
+}
+
+function withThreadNavMeta(state: any, returnDepth: number): any {
+  return {
+    ...state,
+    meta: {
+      ...(state?.meta ?? {}),
+      "threads.return_depth": { value: returnDepth, source_node: "SYSTEM_UI" },
+    },
+  }
+}
+
+function isPlatformThreadInput(input: ApiInputSignal): input is Exclude<ApiInputSignal, InputSignal> {
+  return (input as any)?.type === "THREAD_CREATE" || (input as any)?.type === "THREAD_BACK"
 }
 
 function eventId(): string {
@@ -591,7 +615,10 @@ async function handleInitOrRestore(params: {
       },
     })
 
-    res.status(200).json(advanced)
+    res.status(200).json({
+      ...advanced,
+      state: withThreadNavMeta(advanced.state, 0),
+    })
     return true
   }
 
@@ -672,7 +699,10 @@ async function handleInitOrRestore(params: {
     },
   })
 
-  res.status(200).json(advanced)
+  res.status(200).json({
+    ...advanced,
+    state: withThreadNavMeta(advanced.state, 0),
+  })
   return true
 }
 
@@ -747,12 +777,115 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
+  // Platform-level thread navigation (explicit user actions only).
+  if (isPlatformThreadInput(input)) {
+    const index0 = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+
+    if (input.type === "THREAD_CREATE") {
+      const oldThreadId = typeof baseState?.conversation_id === "string" ? baseState.conversation_id : null
+      const canReturn = !!oldThreadId && !isLobbyConversation(oldThreadId)
+
+      const newConversationId = `c:${safeUuid()}`
+      const newState = createInitialState(newConversationId)
+
+      await writeConversationState(newState, SESSION_TTL_SECONDS)
+
+      let nextIndex = upsertThread({ index: index0, conversationId: newConversationId, title: "", preview: "" })
+
+      if (input.mode === "normal") {
+        // Hard break.
+        nextIndex = { ...nextIndex, navigation: { return_stack: [] } }
+      } else {
+        const stack = [...(nextIndex.navigation?.return_stack ?? [])]
+        if (canReturn) {
+          stack.push({
+            from: oldThreadId as string,
+            to: newConversationId,
+            created_at: new Date().toISOString(),
+            reason: "parenthesis",
+          })
+        }
+        nextIndex = { ...nextIndex, navigation: { return_stack: stack } }
+      }
+
+      nextIndex = setActiveThread({ index: nextIndex, conversationId: newConversationId })
+      await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
+
+      const returnDepth = nextIndex.navigation?.return_stack?.length ?? 0
+
+      res.status(200).json({
+        state: withThreadNavMeta(
+          {
+            ...newState,
+            meta: {
+              ...(newState.meta ?? {}),
+              "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
+            },
+          },
+          returnDepth
+        ),
+      })
+      return
+    }
+
+    if (input.type === "THREAD_BACK") {
+      const stack0 = index0.navigation?.return_stack ?? []
+      if (!stack0.length) {
+        res.status(200).json({
+          state: withThreadNavMeta(
+            {
+              ...baseState,
+              meta: {
+                ...(baseState?.meta ?? {}),
+                "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
+              },
+            },
+            0
+          ),
+        })
+        return
+      }
+
+      const stack1 = stack0.slice(0, -1)
+      const link = stack0[stack0.length - 1]
+      const targetConversationId = link.from
+
+      const loaded = await readConversationState(targetConversationId)
+      const ensured = loaded ?? createInitialState(targetConversationId)
+      if (!loaded) {
+        await writeConversationState(ensured, SESSION_TTL_SECONDS)
+      }
+
+      let nextIndex = { ...index0, navigation: { return_stack: stack1 } }
+      nextIndex = upsertThread({ index: nextIndex, conversationId: ensured.conversation_id })
+      nextIndex = setActiveThread({ index: nextIndex, conversationId: ensured.conversation_id })
+      await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
+
+      res.status(200).json({
+        state: withThreadNavMeta(
+          {
+            ...ensured,
+            meta: {
+              ...(ensured.meta ?? {}),
+              "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
+            },
+          },
+          stack1.length
+        ),
+      })
+      return
+    }
+  }
+
   try {
-    const kernelResult0 = await runTurnWithAutoAdvance({ baseState, input, userKey })
+    const kernelResult0 = await runTurnWithAutoAdvance({ baseState, input: input as InputSignal, userKey })
 
     // UI suggestions are server-controlled to avoid hardcoded/meaningless chips in the client.
     const uiSuggestions =
       kernelResult0.state?.active_node === "TRIAGE" ? deriveUiSuggestionsFromState(kernelResult0.state) : []
+
+    const indexForUi = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+    const returnDepth = indexForUi.navigation?.return_stack?.length ?? 0
 
     const kernelResult: KernelResult = {
       ...kernelResult0,
@@ -761,6 +894,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         meta: {
           ...(kernelResult0.state?.meta ?? {}),
           "ui.suggestions": { value: uiSuggestions, source_node: "SYSTEM_UI" },
+          "threads.return_depth": { value: returnDepth, source_node: "SYSTEM_UI" },
         },
       },
     }
