@@ -465,7 +465,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     kind: "MENU",
     goal: "Kontaktformular",
     message:
-      "Du kan bruge kontaktformularen på /kontakt, hvis du ikke ønsker mail, telefon eller sms.",
+      "Vil du åbne kontaktsiden, eller blive her i chatten?\n\nE-mail: jan@gaarsdal.net\nTelefon/SMS: 42 80 74 74\nKontaktformular: /kontakt",
     allow_free_text: false,
     allow_parentese: false,
     navigation: {
