@@ -7,7 +7,6 @@ import {
   XMarkIcon,
   ArrowsPointingOutIcon,
   ArrowsPointingInIcon,
-  InformationCircleIcon,
   CircleStackIcon,
   PaperAirplaneIcon,
   HomeIcon,
@@ -78,11 +77,10 @@ const TOPIC_TOOLTIPS: Record<string, string> = {
   TRIAGE: "Kort afklaring med få spørgsmål.",
   METHOD_FIT: "Overblik over alternativer (ikke behandling).",
   BOOKING: "Vælg kontaktvej for booking.",
-  DEV_SANDBOX_INTRO: "Dev-flow: form → tool → checkpoint → track/profile.",
 }
 
 // Topic buttons shown on the HOME screen. Booking is handled via the footer UI, not as a HOME topic.
-const TOPIC_NODES = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "DEV_SANDBOX_INTRO"] as const
+const TOPIC_NODES = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT"] as const
 
 function safeId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`
@@ -434,15 +432,6 @@ export default function Chatbot() {
                 <div className={styles.headerRight}>
                   <button className={styles.iconBtn} onClick={goToThreadChooser} title="Tråde" aria-label="Tråde">
                     <CircleStackIcon className={styles.icon} />
-                  </button>
-
-                  <button
-                    className={styles.iconBtn}
-                    onClick={() => appendAssistantMessage("(Info er ikke aktiveret i UI endnu.)")}
-                    title="Info"
-                    aria-label="Info"
-                  >
-                    <InformationCircleIcon className={styles.icon} />
                   </button>
 
                   <button
