@@ -8,6 +8,8 @@ import {
   ArrowsPointingOutIcon,
   ArrowsPointingInIcon,
   CircleStackIcon,
+  PlusIcon,
+  ArrowUturnLeftIcon,
   PaperAirplaneIcon,
   HomeIcon,
   PhoneIcon,
@@ -33,6 +35,8 @@ type InputSignal =
   | { type: "EXPLICIT_TRANSITION"; target: string }
   | { type: "FREE_TEXT"; text: string }
   | { type: "SYSTEM_INIT" }
+  | { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
+  | { type: "THREAD_BACK" }
 
 type KernelResponse = {
   state: ConversationState
@@ -248,7 +252,12 @@ export default function Chatbot() {
       const fromNode = state.active_node
       const data = await callKernel(state, nextInput)
 
-      if (nextInput.type === "EXPLICIT_TRANSITION") {
+      if (nextInput.type === "THREAD_CREATE" || nextInput.type === "THREAD_BACK") {
+        // Thread-level navigation is platform-managed. UI holds no per-thread transcript, so reset.
+        setMessages([])
+        setInput("")
+        setHeaderNavHint(null)
+      } else if (nextInput.type === "EXPLICIT_TRANSITION") {
         const fromLabel = NODE_LABELS[fromNode] ?? fromNode
         const toNode = data?.state?.active_node ?? nextInput.target
         const toLabel = NODE_LABELS[toNode] ?? toNode
@@ -313,6 +322,10 @@ export default function Chatbot() {
 
   const threadChoicesRaw = metaValue("threads.choices")
   const threadCount = state ? threadCountFromState(state) : 0
+
+  const returnDepthRaw = metaValue("threads.return_depth")
+  const returnDepth = Number.isFinite(Number(returnDepthRaw ?? 0)) ? Number(returnDepthRaw ?? 0) : 0
+  const canThreadBack = returnDepth > 0
 
   const threadChoices: ThreadChoice[] =
     state?.active_node === "THREAD_CHOOSER" && Array.isArray(threadChoicesRaw)
@@ -430,6 +443,26 @@ export default function Chatbot() {
                 </div>
 
                 <div className={styles.headerRight}>
+                  <button
+                    className={styles.iconBtn}
+                    onClick={() => dispatch({ type: "THREAD_BACK" }, { silentUser: true })}
+                    title={canThreadBack ? "Tilbage" : "Tilbage (ingen parentese)"}
+                    aria-label="Tilbage"
+                    disabled={loading || !state || !canThreadBack}
+                  >
+                    <ArrowUturnLeftIcon className={styles.icon} />
+                  </button>
+
+                  <button
+                    className={styles.iconBtn}
+                    onClick={() => dispatch({ type: "THREAD_CREATE", mode: "parenthesis" }, { silentUser: true })}
+                    title="Parentes (ny tråd)"
+                    aria-label="Parentes"
+                    disabled={loading || !state}
+                  >
+                    <PlusIcon className={styles.icon} />
+                  </button>
+
                   <button className={styles.iconBtn} onClick={goToThreadChooser} title="Tråde" aria-label="Tråde">
                     <CircleStackIcon className={styles.icon} />
                   </button>
