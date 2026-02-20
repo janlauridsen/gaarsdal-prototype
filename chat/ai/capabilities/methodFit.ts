@@ -3,20 +3,70 @@ import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from
 
 type TranscriptTurn = { role: "user" | "assistant"; content: string }
 
+type Relevance = "YES" | "SUPPLEMENT" | "NO" | "NEEDS_ASSESSMENT"
+type Confidence = "low" | "medium" | "high"
+
 type Output = {
   assistant_message: string
   summary?: string
+
+  // New (method-fit v2 behavior, backward compatible):
+  relevance?: Relevance
+  confidence?: Confidence
+  tags?: string[]
+
+  // Hard question budget support:
+  asked_clarifying_question?: boolean
+  next_question?: string // optional single question; will be emptied when closed
+
+  // Close discipline:
+  close_signal?: boolean
+
+  // Optional UI affordances (kept simple):
+  chips?: Array<{ id: string; label: string }>
 }
 
-const MAX_TRANSCRIPT_TURNS = 16
+const MAX_TRANSCRIPT_ENTRIES = 10 // mirror TRIAGE bounded transcript
+const MAX_QUESTIONS = 4 // mirror TRIAGE discipline, but tighter for method-fit
 
-const METHOD_FIT_PROMPT = `Du er en samtalepartner der hjælper med at afklare om og hvordan en metode kan passe.
-Du er rolig, respektfuld og ikke-behandlende.
+const METHOD_FIT_PROMPT = `Du er en beslutningsstøttende guide der hjælper brugeren med at vurdere:
+- om hypnoterapi typisk er et godt match
+- om hypnoterapi typisk er et supplement
+- eller om andre tilgange typisk passer bedre
 
-Returner KUN gyldig JSON i formatet:
+VIGTIGT (hard rules):
+- Du giver kun overblik og positionering — ikke behandling, ikke øvelser, ikke teknikker.
+- Ingen diagnostik. Ingen garantier.
+- Tone: saglig, rolig, dansk, ikke-terapeutisk ("det lyder hårdt" osv. undgås).
+- Maks 4 afklarende spørgsmål i alt for hele episoden. (systemet holder tæller)
+- Spørg kun hvis nødvendigt for at kunne give et bedre overblik.
+- Når der er nok viden: konkludér og sæt close_signal=true og next_question="".
+- Hvis spørgebudget er opbrugt: konkludér ud fra det du har, close_signal=true og next_question="".
+- Ingen “vil du høre mere?” eller tilsvarende invitationer til dybde.
+
+Sikkerhed / ansvar:
+- Ved fysiske symptomer (fx mave/afføring, smerter, neurologisk): spørg kort om lægelig udredning/diagnose,
+  og nævn at lægelig vurdering typisk er relevant, især ved lang varighed eller bekymrende symptomer.
+- Hypnoterapi ændrer sjældent strukturelle/medicinske tilstande direkte, men kan være relevant for sekundære mål
+  (stressrespons, søvn, smerteoplevelse, mestring, vane/trigger-mønstre) når det passer.
+
+Du skal returnere KUN gyldig JSON i formatet:
+
 {
-  "assistant_message": string,
-  "summary": string (optional)
+  "assistant_message": string,            // det brugeren ser (kort, konkret)
+  "summary": string (optional),           // 1-2 linjer
+  "relevance": "YES"|"SUPPLEMENT"|"NO"|"NEEDS_ASSESSMENT",
+  "confidence": "low"|"medium"|"high",
+  "tags": string[] (optional),
+
+  "asked_clarifying_question": boolean,  // true kun hvis du faktisk stiller et afklarende spørgsmål
+  "next_question": string,               // tom streng når close_signal=true; ellers et enkelt konkret spørgsmål
+
+  "close_signal": boolean,               // true når du er færdig med afklaring/overblik i denne episode
+
+  "chips": [                              // max 2; kun efter close eller til meget præcis afklaring
+    {"id": string, "label": string}
+  ] (optional)
 }`
 
 function readTranscript(context: AiCapabilityContext): TranscriptTurn[] {
@@ -31,7 +81,7 @@ function readTranscript(context: AiCapabilityContext): TranscriptTurn[] {
       if (content) turns.push({ role: obj.role, content })
     }
   }
-  return turns.slice(-MAX_TRANSCRIPT_TURNS)
+  return turns.slice(-MAX_TRANSCRIPT_ENTRIES)
 }
 
 function appendTranscript(previous: TranscriptTurn[], userText: string, assistantText: string): TranscriptTurn[] {
@@ -40,25 +90,163 @@ function appendTranscript(previous: TranscriptTurn[], userText: string, assistan
   const a = (assistantText ?? "").trim()
   if (u) next.push({ role: "user", content: u })
   if (a) next.push({ role: "assistant", content: a })
-  return next.slice(-MAX_TRANSCRIPT_TURNS)
+  return next.slice(-MAX_TRANSCRIPT_ENTRIES)
+}
+
+function readNumberMeta(context: AiCapabilityContext, key: string, fallback = 0): number {
+  const v = context.state.meta[key]?.value
+  if (typeof v === "number" && Number.isFinite(v)) return v
+  if (typeof v === "string") {
+    const n = Number(v)
+    if (Number.isFinite(n)) return n
+  }
+  return fallback
+}
+
+function normalizeRelevance(v: unknown): Relevance | undefined {
+  if (v === "YES" || v === "SUPPLEMENT" || v === "NO" || v === "NEEDS_ASSESSMENT") return v
+  return undefined
+}
+
+function normalizeConfidence(v: unknown): Confidence | undefined {
+  if (v === "low" || v === "medium" || v === "high") return v
+  return undefined
+}
+
+function normalizeChips(v: unknown): Array<{ id: string; label: string }> | undefined {
+  if (!Array.isArray(v)) return undefined
+  const out: Array<{ id: string; label: string }> = []
+  for (const item of v) {
+    if (!item || typeof item !== "object") continue
+    const obj = item as any
+    const id = typeof obj.id === "string" ? obj.id.trim() : ""
+    const label = typeof obj.label === "string" ? obj.label.trim() : ""
+    if (!id || !label) continue
+    out.push({ id, label })
+    if (out.length >= 2) break // hard cap
+  }
+  return out.length ? out : undefined
 }
 
 function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
   if (!raw) return null
+
   const msg = typeof raw.assistant_message === "string" ? raw.assistant_message.trim() : ""
   if (!msg) return null
+
   const summary = typeof raw.summary === "string" ? raw.summary.trim() : undefined
-  return { assistant_message: msg, summary }
+  const relevance = normalizeRelevance(raw.relevance)
+  const confidence = normalizeConfidence(raw.confidence)
+
+  const tagsRaw = raw.tags
+  const tags =
+    Array.isArray(tagsRaw) && tagsRaw.every((x) => typeof x === "string")
+      ? (tagsRaw as string[]).map((s) => s.trim()).filter(Boolean).slice(0, 8)
+      : undefined
+
+  const asked =
+    typeof raw.asked_clarifying_question === "boolean" ? raw.asked_clarifying_question : undefined
+
+  const nextQ = typeof raw.next_question === "string" ? raw.next_question.trim() : undefined
+  const close = typeof raw.close_signal === "boolean" ? raw.close_signal : undefined
+  const chips = normalizeChips(raw.chips)
+
+  return {
+    assistant_message: msg,
+    summary,
+    relevance,
+    confidence,
+    tags,
+    asked_clarifying_question: asked,
+    next_question: nextQ,
+    close_signal: close,
+    chips,
+  }
 }
 
-function buildFallback(userText: string): Output {
+function buildFallback(userText: string, questionsRemaining: number): Output {
   const u = (userText ?? "").trim()
+
+  // Keep fallback neutral + structured; 1 question if we still can, otherwise close.
+  if (questionsRemaining <= 0) {
+    return {
+      assistant_message:
+        "Jeg kan give et generelt overblik: hypnose bruges ofte ved vane- og stressrelaterede mønstre, mens ved vedvarende fysiske symptomer er lægelig afklaring typisk første skridt. Hvis du kort siger hvad du vil opnå, kan jeg bedre placere hypnoterapi vs. alternativer næste gang.",
+      summary: "",
+      relevance: "NEEDS_ASSESSMENT",
+      confidence: "low",
+      asked_clarifying_question: false,
+      next_question: "",
+      close_signal: true,
+    }
+  }
+
   return {
     assistant_message: u
-      ? "Tak. Hvis du vil, kan vi afklare hvad du håber at få ud af det, og hvad du helst vil undgå—så kan jeg bedre sige noget om metode-match."
-      : "Hvad vil du gerne afklare omkring metode-match—fx hvad du håber at få ud af et forløb, eller hvad du er i tvivl om?",
+      ? "Tak. For at kunne give et kort overblik: er det primært et fysisk problem, en vane/afhængighed, eller noget der trigges af stress/uro?"
+      : "Hvad vil du gerne opnå, og er det primært fysisk, vane/afhængighed eller stress/uro-relateret?",
     summary: "",
+    relevance: "NEEDS_ASSESSMENT",
+    confidence: "low",
+    asked_clarifying_question: true,
+    next_question: "Er det primært fysisk, vane/afhængighed eller stress/uro-relateret?",
+    close_signal: false,
   }
+}
+
+function enforceBudgetAndClose(
+  parsed: Output,
+  questionsUsed: number,
+  questionsRemaining: number
+): { output: Output; questionsUsed: number; questionsRemaining: number } {
+  // Determine if model asked a real clarifying question
+  const asked =
+    typeof parsed.asked_clarifying_question === "boolean"
+      ? parsed.asked_clarifying_question
+      : // backward compatible heuristic:
+        typeof parsed.next_question === "string" && parsed.next_question.trim().endsWith("?")
+
+  let nextQuestionsUsed = questionsUsed + (asked ? 1 : 0)
+  if (nextQuestionsUsed > MAX_QUESTIONS) nextQuestionsUsed = MAX_QUESTIONS
+  const nextRemaining = Math.max(0, MAX_QUESTIONS - nextQuestionsUsed)
+
+  const shouldClose =
+    parsed.close_signal === true ||
+    nextRemaining <= 0 ||
+    (parsed.relevance === "YES" || parsed.relevance === "SUPPLEMENT" || parsed.relevance === "NO")
+
+  const out: Output = { ...parsed }
+
+  // Enforce: if closing -> next_question empty + no further questioning
+  if (shouldClose) {
+    out.close_signal = true
+    out.next_question = ""
+    out.asked_clarifying_question = false
+
+    // Chips policy: max 2, only after close; keep them optional + non-mechanical
+    if (out.chips && out.chips.length) {
+      out.chips = out.chips.slice(0, 2)
+    }
+  } else {
+    out.close_signal = false
+
+    // If not closing but budget is exhausted, force close.
+    if (nextRemaining <= 0) {
+      out.close_signal = true
+      out.next_question = ""
+      out.asked_clarifying_question = false
+    } else {
+      // Ensure only one concrete question max
+      const nq = (out.next_question ?? "").trim()
+      out.next_question = nq
+      out.asked_clarifying_question = asked
+    }
+
+    // Before close: chips should generally be empty (avoid steering)
+    out.chips = undefined
+  }
+
+  return { output: out, questionsUsed: nextQuestionsUsed, questionsRemaining: Math.max(0, nextRemaining) }
 }
 
 export const methodFitCapability: AiCapability = {
@@ -66,6 +254,26 @@ export const methodFitCapability: AiCapability = {
   async run(context: AiCapabilityContext, llm: LlmClient): Promise<AiCapabilityResult> {
     const transcript = readTranscript(context)
     const contextSystem = (context.contextPack?.system ?? "").trim()
+
+    // Episode state
+    const questionsUsed0 = readNumberMeta(context, "method_fit.question_count", 0)
+    const close0 = Boolean(context.state.meta["method_fit.close_signal"]?.value === true)
+    const questionsRemaining0 = Math.max(0, MAX_QUESTIONS - questionsUsed0)
+
+    // If already closed, do not ask more; return a minimal, stable response.
+    if (close0) {
+      const transition: Transition = {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        reason: "method-fit-closed",
+        response_message:
+          "Jeg har allerede givet et overblik i denne runde. Hvis du vil starte forfra, så gå ind i ‘alternativ behandlingsmuligheder’ igen og beskriv den nye situation kort.",
+        meta_delta: {
+          "method_fit.close_signal": true,
+        },
+      }
+      return { transition, debug: { capability: "method-fit-v1", used_fallback: true } }
+    }
 
     const payload = {
       model: process.env.METHOD_FIT_MODEL ?? process.env.TRIAGE_MODEL ?? "gpt-4.1-mini",
@@ -79,20 +287,37 @@ export const methodFitCapability: AiCapability = {
           content: JSON.stringify({
             conversation_transcript: transcript,
             user_input: context.userText ?? "",
+            question_budget: {
+              max_questions: MAX_QUESTIONS,
+              questions_used: questionsUsed0,
+              questions_remaining: questionsRemaining0,
+            },
+            instruction: "Stil højst ét konkret afklarende spørgsmål hvis nødvendigt; ellers giv overblik + konklusion og luk.",
           }),
         },
       ],
     }
 
     const response = await llm.chatJson(payload)
-    const parsed = normalizeOutput(response) ?? buildFallback(context.userText ?? "")
+    const parsed0 = normalizeOutput(response) ?? buildFallback(context.userText ?? "", questionsRemaining0)
+
+    const enforced = enforceBudgetAndClose(parsed0, questionsUsed0, questionsRemaining0)
+    const parsed = enforced.output
 
     const updatedTranscript = appendTranscript(transcript, context.userText ?? "", parsed.assistant_message)
 
     const meta_delta: Record<string, unknown> = {
       "method_fit.transcript": updatedTranscript,
+      "method_fit.question_count": enforced.questionsUsed,
+      "method_fit.questions_remaining": enforced.questionsRemaining,
+      "method_fit.close_signal": parsed.close_signal === true,
     }
+
     if (parsed.summary) meta_delta["method_fit.summary"] = parsed.summary
+    if (parsed.relevance) meta_delta["method_fit.relevance"] = parsed.relevance
+    if (parsed.confidence) meta_delta["method_fit.confidence"] = parsed.confidence
+    if (parsed.tags) meta_delta["method_fit.tags"] = parsed.tags
+    if (parsed.chips) meta_delta["method_fit.chips"] = parsed.chips
 
     const transition: Transition = {
       type: "NODE_HOP",
