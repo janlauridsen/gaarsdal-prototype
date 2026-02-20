@@ -51,7 +51,32 @@ type TriageOutput = {
 const MAX_TEXT = 260
 const MAX_TRANSCRIPT_ENTRIES = 10
 const USED_CHIP_IDS_KEY = "dialog.triage.used_chip_ids"
+const POST_CLOSE_CHIPS_SHOWN_KEY = "dialog.triage.post_close_chips_shown"
+const POST_CLOSE_CHIPS_CONSUMED_KEY = "dialog.triage.post_close_chips_consumed"
 const MAX_QUESTIONS = 5
+
+function isEpisodeStart(userText: string): boolean {
+  const t = String(userText ?? "").trim()
+  return t === "EXPLICIT_TRANSITION:TRIAGE" || t.startsWith("EXPLICIT_TRANSITION:TRIAGE")
+}
+
+function resetEpisodeStateIfNeeded(context: AiCapabilityContext): void {
+  if (!isEpisodeStart(context.userText)) return
+
+  // Episode boundary (A): explicit transition into TRIAGE starts a new triage episode.
+  // Reset only triage-local state. This ensures chips can re-appear in a new episode,
+  // but never re-appear within the same episode.
+  delete context.state.meta[USED_CHIP_IDS_KEY]
+  delete context.state.meta[POST_CLOSE_CHIPS_SHOWN_KEY]
+  delete context.state.meta[POST_CLOSE_CHIPS_CONSUMED_KEY]
+  delete context.state.meta["triage.question_count"]
+  delete context.state.meta["triage.close_signal"]
+  delete context.state.meta["dialog.triage.transcript"]
+}
+
+function readBoolFromMeta(context: AiCapabilityContext, key: string): boolean {
+  return Boolean(context.state.meta[key]?.value)
+}
 
 const TRIAGE_PROMPT = `Du er en TRIAGE-assistent, der udelukkende vurderer hypnoterapi-relevans.
 
@@ -400,17 +425,22 @@ function deriveContextualChips(params: {
   output: TriageOutput
   questionRemaining: number
   usedChipIds: Set<string>
+  postCloseShown: boolean
+  postCloseConsumed: boolean
 }): Array<{ id: string; label: string }> {
   const rel = params.output.decision.relevance
   const isRelevant = rel === "YES" || rel === "LIKELY"
 
   if (isRelevant) {
+    // Post-close info chips are ONE-SHOT per episode.
+    // - Show them at most once.
+    // - If the user clicks any post-close chip, hide all chips afterwards.
+    if (params.postCloseConsumed || params.postCloseShown) return []
     const all = [
       { id: "evidence", label: "Er der evidens?" },
       { id: "normal", label: "Er det normalt?" },
     ]
-    const filtered = all.filter((c) => !params.usedChipIds.has(c.id))
-    return trimChips(filtered)
+    return trimChips(all)
   }
 
   // Before conclusion: only provide precise clarification choices if it helps.
@@ -435,7 +465,14 @@ function enforceBudgetsAndScope(params: {
   questionUsed: number
   questionRemaining: number
   hardClosed: boolean
-}): { output: TriageOutput; questionUsed: number; closeSignal: boolean } {
+}): {
+  output: TriageOutput
+  questionUsed: number
+  closeSignal: boolean
+  usedChipIds: string[]
+  postCloseShown: boolean
+  postCloseConsumed: boolean
+} {
   let { output } = params
   let used = params.questionUsed
 
@@ -482,7 +519,11 @@ function enforceBudgetsAndScope(params: {
   const remainingNow = Math.max(0, MAX_QUESTIONS - used)
 
   // Track chip usage so selected chips do not reappear.
+  // Note: post-close chips are one-shot per episode; time-horizon chips can be remembered per episode.
   const usedChipIds = new Set(readUsedChipIds(params.context))
+  let postCloseShown = readBoolFromMeta(params.context, POST_CLOSE_CHIPS_SHOWN_KEY)
+  let postCloseConsumed = readBoolFromMeta(params.context, POST_CLOSE_CHIPS_CONSUMED_KEY)
+
   const lastUserText = String(params.context.userText ?? "").trim()
   const labelToId: Record<string, string> = {
     "Er der evidens?": "evidence",
@@ -492,15 +533,39 @@ function enforceBudgetsAndScope(params: {
     "Over 6 måneder": "t_gt_6m",
   }
   const picked = labelToId[lastUserText]
-  if (picked) usedChipIds.add(picked)
+  if (picked) {
+    // If the user clicked any post-close chip once, hide ALL post-close chips for the rest of the episode.
+    if (picked === "evidence" || picked === "normal") {
+      postCloseConsumed = true
+    }
+    usedChipIds.add(picked)
+  }
 
-  const chips = deriveContextualChips({ output, questionRemaining: remainingNow, usedChipIds })
+  const chips = deriveContextualChips({
+    output,
+    questionRemaining: remainingNow,
+    usedChipIds,
+    postCloseShown,
+    postCloseConsumed,
+  })
   output = { ...output, render: { ...output.render, chips } }
+
+  // If we just displayed post-close chips, remember that we've shown them once this episode.
+  if ((chips ?? []).some((c) => c.id === "evidence" || c.id === "normal")) {
+    postCloseShown = true
+  }
 
   const closeSignal =
     output.decision.next_state === "CLOSE" || isRelevant || params.questionRemaining <= 0 || params.hardClosed
 
-  return { output, questionUsed: used, closeSignal }
+  return {
+    output,
+    questionUsed: used,
+    closeSignal,
+    usedChipIds: Array.from(usedChipIds),
+    postCloseShown,
+    postCloseConsumed,
+  }
 }
 
 function buildGateOutput(params: {
@@ -586,8 +651,21 @@ function writeMetaRenderAndOutcome(params: {
   nextNode: string
   closeSignal: boolean
   transcript: TranscriptTurn[]
+  usedChipIds: string[]
+  postCloseShown: boolean
+  postCloseConsumed: boolean
 }): void {
-  const { context, output, questionCount, nextNode, closeSignal, transcript } = params
+  const {
+    context,
+    output,
+    questionCount,
+    nextNode,
+    closeSignal,
+    transcript,
+    usedChipIds,
+    postCloseShown,
+    postCloseConsumed,
+  } = params
 
   // UI hints (already declared in registry and consumed by the UI/consolidation).
   writeMeta(context, "triage.next_question", output.render.next_question)
@@ -598,6 +676,9 @@ function writeMetaRenderAndOutcome(params: {
   writeMeta(context, "triage.unclear_points", deriveUnclearPoints(output))
   writeMeta(context, "triage.close_signal", closeSignal)
   writeMeta(context, "dialog.triage.transcript", transcript)
+  writeMeta(context, USED_CHIP_IDS_KEY, usedChipIds)
+  writeMeta(context, POST_CLOSE_CHIPS_SHOWN_KEY, postCloseShown)
+  writeMeta(context, POST_CLOSE_CHIPS_CONSUMED_KEY, postCloseConsumed)
 
   const outcome: Outcome = {
     relevance: output.decision.relevance,
@@ -702,6 +783,9 @@ export const triageCapability: AiCapability = {
     context: AiCapabilityContext,
     llm: LlmClient
   ): Promise<AiCapabilityResult> {
+    // Episode boundary (A): entering TRIAGE via explicit transition resets triage-local episode state.
+    resetEpisodeStateIfNeeded(context)
+
     const transcript = readBoundedTranscript(context)
     const questionUsed0 = countFromMeta(context)
     const questionRemaining0 = Math.max(0, MAX_QUESTIONS - questionUsed0)
@@ -728,6 +812,9 @@ export const triageCapability: AiCapability = {
         nextNode: outcome.nextNode,
         closeSignal: true,
         transcript: transcript1,
+        usedChipIds: readUsedChipIds(context),
+        postCloseShown: readBoolFromMeta(context, POST_CLOSE_CHIPS_SHOWN_KEY),
+        postCloseConsumed: readBoolFromMeta(context, POST_CLOSE_CHIPS_CONSUMED_KEY),
       })
       writeMemoryCandidates(context, output)
 
@@ -807,6 +894,9 @@ export const triageCapability: AiCapability = {
       nextNode: outcome.nextNode,
       closeSignal: enforced.closeSignal,
       transcript: transcript1,
+      usedChipIds: enforced.usedChipIds,
+      postCloseShown: enforced.postCloseShown,
+      postCloseConsumed: enforced.postCloseConsumed,
     })
 
     // Emit structured candidates for long-term memory refinement.
