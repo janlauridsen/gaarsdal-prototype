@@ -16,11 +16,6 @@ type TranscriptTurn = {
   content: string
 }
 
-type CompactLastTurn = {
-  user?: string
-  assistant?: string
-}
-
 type Decision = {
   relevance: Relevance
   topic_tags: string[]
@@ -52,27 +47,50 @@ type TriageOutput = {
 }
 
 const MAX_TEXT = 260
+const MAX_TRANSCRIPT_ENTRIES = 10
+const MAX_QUESTIONS = 5
 
-const TRIAGE_PROMPT = `Du er en relevans-assistent for hypnoterapi.
+const TRIAGE_PROMPT = `Du er en TRIAGE-assistent, der udelukkende vurderer hypnoterapi-relevans.
 
-Dit formål er:
-1) at afgøre om hypnoterapi er relevant ud fra brugerens egne oplevelser og ønskede forandringer
-2) at returnere relevans + metadata til videre kontekst (state machine, journal, booking)
-3) at føre en menneskelig, anerkendende dialog, hvor brugeren føler sig set og hørt
-
-Grundlæggende præmis:
-- Relevans må gerne afgøres tidligt.
-- Samtalen må aldrig lukkes blot fordi relevans er afgjort.
-- Brugeren skal tydeligt kunne mærke, når det de beskriver allerede er relevant.
-- Dialogen må ikke udvikle sig til egentlig behandling eller forberedende terapi.
+SCOPE (hard rule):
+- Du må kun arbejde med: “Kan det her typisk håndteres med hypnoterapi?”
+- Alt andet (smalltalk, generel coaching, rådgivning uden triage-formål) skal afvises høfligt
+  og nudges tilbage til triage-sporet ved at bede brugeren beskrive et problem/ønske.
 
 Vigtige afgrænsninger:
 - Du må ikke diagnosticere eller risikovurdere medicinsk/psykiatrisk.
-- Diagnoser, labels og symptomer er ikke afgørende for relevans.
-- Du må ikke give behandlingsråd eller foreslå konkrete løsninger.
-- Du må gerne normalisere og rammesætte ud fra erfaring
-  (fx “det er et område mange arbejder med i hypnoterapi”),
-  men uden årsagsforklaringer, mekanismer eller medicinske vurderinger.
+- Du må ikke give behandlingsråd, øvelser eller konkrete løsninger.
+- Du må gerne normalisere i korte, generelle vendinger (fx “mange opsøger hypnose for …”),
+  men uden garantier, klinisk præcision, eller faglig debat.
+
+KONTEKST:
+- Du får conversation_transcript (bounded) med tidligere udvekslinger.
+- Du får question_budget: { used, max, remaining } og close_signal.
+- Du skal holde dialogen sammenhængende ud fra transcript.
+
+SPØRGSMÅL-BUDGET (hard rule):
+- Du må maks stille max spørgsmål (se question_budget.max) i alt.
+- Kun faktiske afklarende spørgsmål tæller (de skal stå i render.next_question).
+- Hvis der er nok viden før budget: stop med at spørge og giv konklusion.
+- Hvis budget er opbrugt: luk afklaringssporet og giv bedste vurdering.
+
+TIDLIG KONKLUSION (hard rule):
+- Hvis relevance er YES eller LIKELY: sig eksplicit at det brugeren beskriver typisk er noget
+  man arbejder med i hypnoterapi.
+- Når relevance er YES eller LIKELY: next_question SKAL være tom og next_state SKAL være CLOSE.
+
+NO med sekundær relevans:
+- Hvis kerneproblemet typisk ikke løses af hypnose direkte: forklar kort at hypnose sjældent
+  ændrer X direkte, men kan være relevant for 1–2 sekundære mål (stressrespons, søvn, triggere,
+  mestring, vanemønstre). Hold det kort og ikke-behandlende.
+
+EVIDENS / “er det normalt?” (kort svar):
+- Svar på generelt niveau i 2–4 sætninger. Ingen garantier. Ingen klinisk diagnostik.
+
+CHIPS (hard rule):
+- Max 2–3 chips.
+- Kun til præcis afklaring (før konklusion) eller korte info-spørgsmål (efter konklusion).
+- Chips må ikke styre navigation eller booking.
 
 KRITISK SAMTALEREGEL (hard rule):
 - Du må ALDRIG stille et spørgsmål uden først at kvittere og anerkende brugerens oplevelse.
@@ -80,29 +98,6 @@ KRITISK SAMTALEREGEL (hard rule):
   1) en kort spejling/anerkendelse
   2) en relevansramme
 - assistant_message må aldrig kun bestå af et spørgsmål.
-
-RELEVANSMARKØR:
-- Når relevance er YES eller LIKELY, SKAL du mindst én gang tydeligt formulere,
-  at det brugeren beskriver er relevant for hypnoterapi.
-- Når relevance er markeret tydeligt,
-  skal du IKKE gentage fuld relevansforklaring i hver efterfølgende tur.
-  Brug i stedet korte bekræftelser.
-
-AFGRÆNSNING AF SPØRGSMÅL VED RELEVANS:
-- Hvis relevance er YES eller LIKELY, må du IKKE stille nye opklarende spørgsmål.
-- I stedet: giv kort uddybende svar og henvis til generel information om hypnoterapi.
-
-KONTEKSTSKIFT:
-- Hvis brugeren skifter emne markant (nyt problemområde),
-  skal assistant_message eksplicit anerkende skiftet før ny relevans vurderes.
-
-DIREKTE RELEVANS-SPØRGSMÅL:
-- Hvis brugeren direkte spørger, om hypnoterapi er relevant,
-  og relevance vurderes som YES eller LIKELY,
-  skal next_state være CONFIRM.
-
-Du får conversation_transcript med tidligere bruger-/assistent-udvekslinger.
-Du SKAL bruge den aktivt, så svar husker tidligere kontekst.
 
 Returner KUN gyldig JSON i formatet:
 {
@@ -123,12 +118,7 @@ Returner KUN gyldig JSON i formatet:
   }
 }`
 
-const DEFAULT_CHIPS = [
-  { id: "tell_more", label: "Fortæl mere" },
-  { id: "why_relevant", label: "Hvorfor relevant?" },
-  { id: "next_steps", label: "Hvad er næste skridt?" },
-  { id: "stop", label: "Stop her" },
-]
+const DEFAULT_CHIPS: Array<{ id: string; label: string }> = []
 
 function writeMeta(
   context: AiCapabilityContext,
@@ -194,13 +184,27 @@ function clamp(s: string, max: number): string {
   return t.slice(0, max - 1) + "…"
 }
 
-function readCompactLastTurn(context: AiCapabilityContext): CompactLastTurn {
-  const raw = context.state.meta["dialog.triage.last_turn"]?.value
-  if (!raw || typeof raw !== "object") return {}
-  const obj = raw as Record<string, unknown>
-  const user = typeof obj.user === "string" ? clamp(obj.user, MAX_TEXT) : undefined
-  const assistant = typeof obj.assistant === "string" ? clamp(obj.assistant, MAX_TEXT) : undefined
-  return { user, assistant }
+function normalizeTranscriptEntry(value: unknown): TranscriptTurn | null {
+  if (!value || typeof value !== "object") return null
+  const obj = value as Record<string, unknown>
+  const role = obj.role
+  const content = obj.content
+  if (role !== "user" && role !== "assistant") return null
+  if (typeof content !== "string") return null
+  const c = clamp(content, MAX_TEXT)
+  if (!c.trim()) return null
+  return { role, content: c }
+}
+
+function readBoundedTranscript(context: AiCapabilityContext): TranscriptTurn[] {
+  const raw = context.state.meta["dialog.triage.transcript"]?.value
+  if (!Array.isArray(raw)) return []
+  const out: TranscriptTurn[] = []
+  for (const item of raw) {
+    const t = normalizeTranscriptEntry(item)
+    if (t) out.push(t)
+  }
+  return out.slice(-MAX_TRANSCRIPT_ENTRIES)
 }
 
 function buildAssistantText(render: Render): string {
@@ -211,15 +215,17 @@ function buildAssistantText(render: Render): string {
   return parts.filter(Boolean).join("\n\n")
 }
 
-function buildCompactTranscript(lastTurn: CompactLastTurn): TranscriptTurn[] {
-  const out: TranscriptTurn[] = []
-  if (typeof lastTurn.user === "string" && lastTurn.user.trim()) {
-    out.push({ role: "user", content: lastTurn.user.trim() })
-  }
-  if (typeof lastTurn.assistant === "string" && lastTurn.assistant.trim()) {
-    out.push({ role: "assistant", content: lastTurn.assistant.trim() })
-  }
-  return out
+function appendToTranscript(params: {
+  transcript: TranscriptTurn[]
+  userText: string
+  assistantText: string
+}): TranscriptTurn[] {
+  const next: TranscriptTurn[] = [...(params.transcript ?? [])]
+  const u = clamp(params.userText ?? "", MAX_TEXT)
+  const a = clamp(params.assistantText ?? "", MAX_TEXT)
+  if (u.trim()) next.push({ role: "user", content: u.trim() })
+  if (a.trim()) next.push({ role: "assistant", content: a.trim() })
+  return next.slice(-MAX_TRANSCRIPT_ENTRIES)
 }
 
 function enforceMessagePolicy(output: TriageOutput): TriageOutput {
@@ -317,11 +323,93 @@ function buildFallbackOutput(context: AiCapabilityContext): TriageOutput {
   })
 }
 
-function incrementQuestionCount(context: AiCapabilityContext): number {
-  const current = countFromMeta(context)
-  const next = current + 1
-  writeMeta(context, "triage.question_count", next)
-  return next
+function countsAsClarifyingQuestion(output: TriageOutput): boolean {
+  const q = (output?.render?.next_question ?? "").trim()
+  if (!q) return false
+  // We only count explicit clarifying questions carried in next_question.
+  return q.includes("?")
+}
+
+function trimChips(chips: Array<{ id: string; label: string }>, max = 3) {
+  return (chips ?? []).filter(Boolean).slice(0, max)
+}
+
+function deriveContextualChips(params: {
+  output: TriageOutput
+  questionRemaining: number
+}): Array<{ id: string; label: string }> {
+  const rel = params.output.decision.relevance
+  const isRelevant = rel === "YES" || rel === "LIKELY"
+
+  if (isRelevant) {
+    return trimChips([
+      { id: "evidence", label: "Er der evidens?" },
+      { id: "normal", label: "Er det normalt?" },
+    ])
+  }
+
+  // Before conclusion: only provide precise clarification choices if it helps.
+  // The only safe generic clarification we can offer without steering is time horizon.
+  const missing = deriveUnclearPoints(params.output)
+  if (params.questionRemaining > 0 && missing.includes("time_horizon")) {
+    return trimChips([
+      { id: "t_lt_1m", label: "Under 1 måned" },
+      { id: "t_1_6m", label: "1–6 måneder" },
+      { id: "t_gt_6m", label: "Over 6 måneder" },
+    ])
+  }
+
+  return []
+}
+
+function enforceBudgetsAndScope(params: {
+  context: AiCapabilityContext
+  output: TriageOutput
+  questionUsed: number
+  questionRemaining: number
+}): { output: TriageOutput; questionUsed: number; closeSignal: boolean } {
+  let { output } = params
+  let used = params.questionUsed
+
+  const isRelevant = output.decision.relevance === "YES" || output.decision.relevance === "LIKELY"
+
+  // If already relevant: no more questions.
+  if (isRelevant) {
+    output = {
+      ...output,
+      decision: { ...output.decision, next_state: "CLOSE" },
+      render: { ...output.render, next_question: "" },
+    }
+  }
+
+  // Hard budget: if no remaining questions, force-close any question.
+  if (params.questionRemaining <= 0) {
+    output = {
+      ...output,
+      decision: { ...output.decision, next_state: "CLOSE" },
+      render: { ...output.render, next_question: "" },
+    }
+  }
+
+  const asked = countsAsClarifyingQuestion(output)
+  if (asked && params.questionRemaining > 0 && !isRelevant) {
+    used = used + 1
+  } else {
+    // Ensure we don't accidentally count or keep a non-budget-compliant question.
+    if (asked && (params.questionRemaining <= 0 || isRelevant)) {
+      output = { ...output, render: { ...output.render, next_question: "" } }
+    }
+  }
+
+  // Chip hard rules.
+  const remainingNow = Math.max(0, MAX_QUESTIONS - used)
+  const chips = deriveContextualChips({ output, questionRemaining: remainingNow })
+  output = { ...output, render: { ...output.render, chips } }
+
+  const closeSignal =
+    output.decision.next_state === "CLOSE" || isRelevant || params.questionRemaining <= 0
+
+  return { output, questionUsed: used, closeSignal }
 }
 
 function writeMetaDecision(context: AiCapabilityContext, output: TriageOutput, questionCount: number): void {
@@ -358,8 +446,10 @@ function writeMetaRenderAndOutcome(params: {
   output: TriageOutput
   questionCount: number
   nextNode: string
+  closeSignal: boolean
+  transcript: TranscriptTurn[]
 }): void {
-  const { context, output, questionCount, nextNode } = params
+  const { context, output, questionCount, nextNode, closeSignal, transcript } = params
 
   // UI hints (already declared in registry and consumed by the UI/consolidation).
   writeMeta(context, "triage.next_question", output.render.next_question)
@@ -368,6 +458,8 @@ function writeMetaRenderAndOutcome(params: {
   // Minimal snapshot signals used by memory/event capture.
   writeMeta(context, "triage.summary", deriveSummary(output))
   writeMeta(context, "triage.unclear_points", deriveUnclearPoints(output))
+  writeMeta(context, "triage.close_signal", closeSignal)
+  writeMeta(context, "dialog.triage.transcript", transcript)
 
   const outcome: Outcome = {
     relevance: output.decision.relevance,
@@ -377,13 +469,6 @@ function writeMetaRenderAndOutcome(params: {
     question_count: questionCount,
   }
   writeMeta(context, "triage.outcome", outcome)
-}
-
-function writeCompactLastTurn(context: AiCapabilityContext, userText: string, assistantText: string): void {
-  writeMeta(context, "dialog.triage.last_turn", {
-    user: clamp(userText, MAX_TEXT),
-    assistant: clamp(assistantText, MAX_TEXT),
-  })
 }
 
 function detectThemeCandidate(params: {
@@ -434,8 +519,8 @@ function deriveOutcome(
   output: TriageOutput,
   questionCount: number
 ): { transition: Transition; nextNode: string } {
-  const nextNode =
-    output.decision.relevance === "YES" || output.decision.relevance === "LIKELY" ? "GEN_HYPNO" : "TRIAGE"
+  // Decision: TRIAGE never performs navigation/booking. UI controls next actions.
+  const nextNode = "TRIAGE"
 
   // These are also written to state.meta via writeMeta* helpers, but we additionally include them
   // in meta_delta so telemetry/spine meta_keys_written reflects the actual triage contract.
@@ -453,7 +538,8 @@ function deriveOutcome(
     transition: {
     type: "NODE_HOP",
     from: "TRIAGE",
-    to: nextNode,
+    // Stay in TRIAGE. Kernel will normalize `to` to the active node in logs.
+    to: undefined,
     reason: `triage: ${output.decision.relevance} (${questionCount})`,
     meta_delta: {
       "triage.decision": output.decision,
@@ -466,6 +552,7 @@ function deriveOutcome(
       "triage.outcome": outcome,
       // Useful to observe in telemetry even though it's also inside decision/outcome.
       "triage.question_count": questionCount,
+      "triage.close_signal": output.decision.next_state === "CLOSE",
     },
     },
   }
@@ -477,9 +564,10 @@ export const triageCapability: AiCapability = {
     context: AiCapabilityContext,
     llm: LlmClient
   ): Promise<AiCapabilityResult> {
-    const lastTurn = readCompactLastTurn(context)
-    const transcript = buildCompactTranscript(lastTurn)
-    const questionCount = incrementQuestionCount(context)
+    const transcript = readBoundedTranscript(context)
+    const questionUsed0 = countFromMeta(context)
+    const questionRemaining0 = Math.max(0, MAX_QUESTIONS - questionUsed0)
+    const closeSignal0 = Boolean(context.state.meta["triage.close_signal"]?.value)
 
     const contextSystem = (context.contextPack?.system ?? "").trim()
 
@@ -494,6 +582,12 @@ export const triageCapability: AiCapability = {
           role: "user",
           content: JSON.stringify({
             conversation_transcript: transcript,
+            question_budget: {
+              used: questionUsed0,
+              max: MAX_QUESTIONS,
+              remaining: questionRemaining0,
+            },
+            close_signal: closeSignal0,
             user_input: context.userText,
           }),
         },
@@ -503,20 +597,38 @@ export const triageCapability: AiCapability = {
     const response = await llm.chatJson(payload)
     const output = response ? normalizeOutput(response, context) : buildFallbackOutput(context)
 
-    const outcome = deriveOutcome(output, questionCount)
+    const enforced = enforceBudgetsAndScope({
+      context,
+      output,
+      questionUsed: questionUsed0,
+      questionRemaining: questionRemaining0,
+    })
+    output = enforced.output
+    const questionUsed1 = enforced.questionUsed
     const assistantText = buildAssistantText(output.render)
-    writeMetaDecision(context, output, questionCount)
+
+    // Update transcript (bounded) AFTER generating assistant message.
+    const transcript1 = appendToTranscript({
+      transcript,
+      userText: context.userText,
+      assistantText,
+    })
+
+    // Persist question count (counts only factual clarifying questions).
+    writeMeta(context, "triage.question_count", questionUsed1)
+    writeMetaDecision(context, output, questionUsed1)
+
+    const outcome = deriveOutcome(output, questionUsed1)
 
     // Ensure UI & memory snapshot keys declared in registry are actually populated.
     writeMetaRenderAndOutcome({
       context,
       output,
-      questionCount,
+      questionCount: questionUsed1,
       nextNode: outcome.nextNode,
+      closeSignal: enforced.closeSignal,
+      transcript: transcript1,
     })
-
-    // Store a compact last-turn context (bounded), not a growing transcript.
-    writeCompactLastTurn(context, context.userText, assistantText)
 
     // Emit structured candidates for long-term memory refinement.
     writeMemoryCandidates(context, output)
