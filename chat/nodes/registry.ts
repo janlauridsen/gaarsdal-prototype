@@ -1,504 +1,966 @@
-// registry.ts
-// Version: 2026-02-16T00:00:00Z
-// Notes:
-// - Fix: allow TRIAGE to write meta keys used by triage-relevance-v1 (triage.decision, triage.render, triage.relevance).
-// - Fix: widen TRIAGE allowed exits to include nodes the capability may choose (METHOD_FIT, GEN_HYPNO, BOOKING)
-//        to avoid "transition.to not allowed" when the model routes to a non-listed node.
-// Global actions are available from anywhere via engine-level global exits.
-// Only HOME should show them as visible chips by default.
+// pages/api/chat.ts
+import type { NextApiRequest, NextApiResponse } from "next"
+import crypto from "crypto"
 
-type NodeId = string
+import { runNode } from "../../chat/runtime/nodeRunner"
+import { createLobbyState } from "../../chat/kernel/state"
+import type { InputSignal, KernelResult, LogEvent } from "../../chat/kernel/types"
+import { getNode } from "../../chat/nodes/registry"
 
-export type NodeKind =
-  | "MENU"
-  | "DIALOG"
-  | "FORM"
-  | "TOOL"
-  | "CHECKPOINT"
-  | "ROUTER"
-  | "TERMINAL"
+import { appendInteraction, appendLog } from "../../chat/logging/sink"
+import { appendTelemetryTurn } from "../../chat/telemetry/store"
+import { readUserProfile, recordTurn, writeUserProfile } from "../../chat/memory/store"
+import { consolidateV1 } from "../../chat/platform/consolidation"
+import { readConversationState, writeConversationState } from "../../chat/persistence/conversationStateStore"
+import {
+  applyAutoThreadLabelFromText,
+  ensureThreadIndex,
+  setActiveThread,
+  upsertThread,
+  writeThreadIndex,
+} from "../../chat/persistence/threadIndexStore"
+import { appendSpineEventV23 } from "../../chat/observability/spineStore"
+import { appendConversationEventV1 } from "../../chat/events/store"
 
-export type FormField = {
+import { ensureThreadThemeAndEpisode } from "../../chat/memory/longTermMemoryStore"
+import { enqueueJob, makeJobId } from "../../chat/async/queue"
+
+// Single raw stream
+import { appendRawTurn } from "../../chat/raw/store"
+
+type ChatRequestBody = {
+  state: any
+  input: InputSignal
+}
+
+type UiSuggestion = {
   id: string
   label: string
-  required?: boolean
-  kind?: "text" | "number" | "choice"
-  choices?: string[]
-  placeholder?: string
+  input?: any
 }
 
-export type FormSpec = {
-  instructions?: string
-  fields: FormField[]
-  on_submit_to: NodeId
-  allow_partial?: boolean
+const COOKIE_NAME = "gaarsdal_uid"
+const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
+const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
+const PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
+
+// Defaults
+const DEFAULT_RAW_TTL_DAYS = 14
+
+function envInt(name: string, fallback: number): number {
+  const v = process.env[name]
+  if (!v) return fallback
+  const n = Number.parseInt(v.trim(), 10)
+  return Number.isFinite(n) ? n : fallback
 }
 
-export type ToolSpec = {
-  tool_id: string
-  on_success_to: NodeId
-  on_error_to?: NodeId
+function rawTtlSeconds(): number {
+  return envInt("GAARSDAL_RAW_TTL_DAYS", DEFAULT_RAW_TTL_DAYS) * 24 * 60 * 60
 }
 
-export type CheckpointSpec = {
-  on_done_to: NodeId
-  commit_domains?: string[]
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
 }
 
-export type RouterSpec = {
-  router_id: string
-  candidates?: NodeId[]
+function buildCookie(options: {
+  name: string
+  value: string
+  maxAgeSeconds: number
+  httpOnly?: boolean
+  secure?: boolean
+  sameSite?: "Lax" | "Strict" | "None"
+  path?: string
+}): string {
+  const parts: string[] = []
+  parts.push(`${options.name}=${encodeURIComponent(options.value)}`)
+  parts.push(`Max-Age=${options.maxAgeSeconds}`)
+  parts.push(`Path=${options.path ?? "/"}`)
+  parts.push(`SameSite=${options.sameSite ?? "Lax"}`)
+  if (options.httpOnly) parts.push("HttpOnly")
+  if (options.secure) parts.push("Secure")
+  return parts.join("; ")
 }
 
-export type Node = {
-  id: NodeId
-  kind: NodeKind
-  goal: string
-  message: string
-  allow_free_text: boolean
-  allow_parentese: boolean
-  allowed_exits: NodeId[]
-  meta_domains_written: string[]
-  capability_id?: string | null
-  form?: FormSpec
-  tool?: ToolSpec
-  checkpoint?: CheckpointSpec
-  router?: RouterSpec
-}
+function ensureUserKey(req: NextApiRequest, res: NextApiResponse): string {
+  const existing = req.cookies?.[COOKIE_NAME]
+  if (existing && typeof existing === "string" && existing.trim().length >= 8) {
+    return existing
+  }
 
-// Chips shown on HOME (menu).
-const QUICK_CONTACTS: NodeId[] = ["MAIL", "TLF", "CONTACT_FORM", "AKUT"]
+  const uid = crypto.randomUUID()
+  const secure = process.env.NODE_ENV === "production"
 
-// Exits shown inside a parentese overlay.
-const PARENTESE_EXITS: NodeId[] = ["RESUME", "HOME"]
-
-const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
-  // ----------- LOBBY / PROFILE / THREADS (V23.1) -----------
-
-  PROFILE_BOOTSTRAP: {
-    id: "PROFILE_BOOTSTRAP",
-    kind: "TOOL",
-    goal: "bootstrap profile + thread index",
-    message: "System step: loader profil og tråde…",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: ["THREAD_CHOOSER"],
-    tool: {
-      tool_id: "profile-bootstrap-v1",
-      on_success_to: "THREAD_CHOOSER",
-      on_error_to: "THREAD_CHOOSER",
-    },
-    meta_domains_written: [
-      "profile.status",
-      "profile.last_seen_at",
-      "threads.count",
-      "threads.active",
-      "threads.choices",
-    ],
-  },
-
-  THREAD_CHOOSER: {
-    id: "THREAD_CHOOSER",
-    kind: "TOOL",
-    goal: "choose thread or start new",
-    message:
-      "Vælg en tråd:\n" +
-      "- Tryk 'Fortsæt' for at fortsætte seneste\n" +
-      "- Tryk 'Start ny tråd' for at starte på en frisk\n" +
-      "- Eller vælg en eksisterende tråd\n\n" +
-      "Du kan også skrive: continue / new.",
-    allow_free_text: true,
-    allow_parentese: false,
-    allowed_exits: ["THREAD_CHOOSER", "HOME"],
-    tool: {
-      tool_id: "thread-switch-v1",
-      on_success_to: "HOME",
-      on_error_to: "THREAD_CHOOSER",
-    },
-    meta_domains_written: ["threads.choices", "threads.count", "threads.active"],
-  },
-
-  POSTPROC_STEP_1_SCAN: {
-    id: "POSTPROC_STEP_1_SCAN",
-    kind: "TOOL",
-    goal: "post processing step 1 (scan)",
-    message: "System step: post processing (1/3) — scan…",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: ["POSTPROC_STEP_2_BUILD", "HOME"],
-    tool: {
-      tool_id: "postproc-step-1-v1",
-      on_success_to: "POSTPROC_STEP_2_BUILD",
-      on_error_to: "HOME",
-    },
-    meta_domains_written: ["postproc.last"],
-  },
-
-  POSTPROC_STEP_2_BUILD: {
-    id: "POSTPROC_STEP_2_BUILD",
-    kind: "TOOL",
-    goal: "post processing step 2 (build)",
-    message: "System step: post processing (2/3) — build…",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: ["POSTPROC_STEP_3_PUBLISH", "HOME"],
-    tool: {
-      tool_id: "postproc-step-2-v1",
-      on_success_to: "POSTPROC_STEP_3_PUBLISH",
-      on_error_to: "HOME",
-    },
-    meta_domains_written: ["postproc.last"],
-  },
-
-  POSTPROC_STEP_3_PUBLISH: {
-    id: "POSTPROC_STEP_3_PUBLISH",
-    kind: "TOOL",
-    goal: "post processing step 3 (publish)",
-    message: "System step: post processing (3/3) — publish…",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: ["HOME"],
-    tool: {
-      tool_id: "postproc-step-3-v1",
-      on_success_to: "HOME",
-      on_error_to: "HOME",
-    },
-    meta_domains_written: ["postproc.last"],
-  },
-
-  HOME: {
-    id: "HOME",
-    kind: "ROUTER",
-    goal: "root",
-    message: "Velkommen. Vælg et emne eller skriv frit.",
-    allow_free_text: true,
-    allow_parentese: false,
-    allowed_exits: [
-      "GEN_HYPNO",
-      "TRIAGE",
-      "METHOD_FIT",
-      "BOOKING",
-      "DEV_SANDBOX_INTRO",
-      "POSTPROC_STEP_1_SCAN",
-      "MAIL",
-      "TLF",
-      "CONTACT_FORM", // FIX: missing previously
-      "AKUT",
-    ],
-    router: {
-      router_id: "home-router-v1",
-      candidates: ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING", "DEV_SANDBOX_INTRO"],
-    },
-    meta_domains_written: ["router.decision"],
-  },
-
-  // ----------- DEV SANDBOX FLOW (FORM → TOOL → CHECKPOINT) -----------
-
-  DEV_SANDBOX_INTRO: {
-    id: "DEV_SANDBOX_INTRO",
-    kind: "DIALOG",
-    goal: "dev sandbox intro",
-    message:
-      "Sandbox-flow:\n\n" +
-      "1) Udfyld en mini-form (key:value pr linje)\n" +
-      "2) Systemet kører et TOOL (apply-form-to-track-v1)\n" +
-      "3) Systemet kører CHECKPOINT\n\n" +
-      "Skriv 'ok' for at gå videre til form.",
-    allow_free_text: true,
-    allow_parentese: false,
-    allowed_exits: ["DEV_SANDBOX_FORM", "HOME"],
-    capability_id: null,
-    meta_domains_written: [],
-  },
-
-  DEV_SANDBOX_FORM: {
-    id: "DEV_SANDBOX_FORM",
-    kind: "FORM",
-    goal: "dev sandbox form",
-    message:
-      "Udfyld form som key:value pr linje.\n\n" +
-      "Eksempel:\n" +
-      "topic: alkohol om aftenen\n" +
-      "goal: drikke mindre\n" +
-      "time_patterns: aftenen\n" +
-      "situational_triggers: arbejdsstress\n" +
-      "relational_patterns: familien\n" +
-      "preferred_tone: rolig og direkte\n",
-    allow_free_text: true,
-    allow_parentese: false,
-    allowed_exits: ["DEV_SANDBOX_FORM", "DEV_SANDBOX_TOOL_APPLY", "HOME"],
-    form: {
-      instructions: "Skriv key:value pr linje.",
-      fields: [
-        { id: "topic", label: "Topic", required: true, placeholder: "fx alkohol om aftenen" },
-        { id: "goal", label: "Goal", required: true, placeholder: "fx drikke mindre" },
-        { id: "time_patterns", label: "Time patterns", required: false, placeholder: "fx aftenen" },
-        { id: "situational_triggers", label: "Situational triggers", required: false, placeholder: "fx arbejdsstress" },
-        { id: "relational_patterns", label: "Relational patterns", required: false, placeholder: "fx familien" },
-        { id: "preferred_tone", label: "Preferred tone", required: false, placeholder: "fx rolig og direkte" },
-        { id: "support_direction", label: "Support direction", required: false, placeholder: "fx ro før jeg kommer hjem" },
-        { id: "interest_in_methods", label: "Interest in methods", required: false, placeholder: "fx gåtur; pause; registrering" },
-      ],
-      on_submit_to: "DEV_SANDBOX_TOOL_APPLY",
-      allow_partial: false,
-    },
-    meta_domains_written: ["form.last"],
-  },
-
-  DEV_SANDBOX_TOOL_APPLY: {
-    id: "DEV_SANDBOX_TOOL_APPLY",
-    kind: "TOOL",
-    goal: "apply form to sandbox track",
-    message: "System step: applying form to sandbox track…",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: ["DEV_SANDBOX_CHECKPOINT", "DEV_SANDBOX_FORM", "HOME"],
-    tool: {
-      tool_id: "apply-form-to-track-v1",
-      on_success_to: "DEV_SANDBOX_CHECKPOINT",
-      on_error_to: "DEV_SANDBOX_FORM",
-    },
-    meta_domains_written: ["sandbox.apply_result"],
-  },
-
-  DEV_SANDBOX_CHECKPOINT: {
-    id: "DEV_SANDBOX_CHECKPOINT",
-    kind: "CHECKPOINT",
-    goal: "commit sandbox snapshot",
-    message: "System step: checkpoint commit…",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: ["DEV_SANDBOX_DONE", "HOME"],
-    checkpoint: {
-      on_done_to: "DEV_SANDBOX_DONE",
-      commit_domains: [],
-    },
-    meta_domains_written: ["checkpoint.last"],
-  },
-
-  DEV_SANDBOX_DONE: {
-    id: "DEV_SANDBOX_DONE",
-    kind: "TERMINAL",
-    goal: "sandbox done",
-    message:
-      "Sandbox complete.\n\n" +
-      "Du kan nu tjekke:\n" +
-      "- /api/telemetry\n" +
-      "- Redis profile (core + tracks)\n" +
-      "- state.meta['form.last'] / state.meta['router.decision']\n\n" +
-      "Vælg HOME for at fortsætte.",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: ["HOME"],
-    meta_domains_written: [],
-  },
-
-  // ----------- EXISTING NODES -----------
-
-  GEN_HYPNO: {
-    id: "GEN_HYPNO",
-    kind: "DIALOG",
-    goal: "Generelt om hypnoterapi",
-    message:
-      "Spørg mig om hypnoterapi: hvad det er, hvordan et forløb typisk foregår, hvad man ofte arbejder med, og hvad du kan forvente. Jeg deler viden og erfaring—ikke behandling i chatten.",
-    allow_free_text: true,
-    allow_parentese: true,
-    allowed_exits: ["HOME"],
-    capability_id: "gen-hypno-v1",
-    meta_domains_written: ["gen_hypno.transcript", "gen_hypno.last_topic"],
-  },
-
-  TRIAGE: {
-    id: "TRIAGE",
-    kind: "DIALOG",
-    goal: "Passer hypnoterapi til min situation?",
-    message:
-      "Fortæl kort om din situation og hvad du ønsker anderledes. Jeg stiller få opklarende spørgsmål og vurderer, om hypnoterapi typisk vil være relevant.",
-    allow_free_text: true,
-    allow_parentese: true,
-    allowed_exits: [
-      "TRIAGE",
-
-      // Terminal outcomes
-      "TRIAGE_FIT_BOOKING",
-      "TRIAGE_NOT_RELEVANT",
-      "TRIAGE_NEEDS_ASSESSMENT",
-
-      // FIX: allow model to route to these directly if capability chooses them
-      "BOOKING",
-      "METHOD_FIT",
-      "GEN_HYPNO",
-
-      // Menu break
-      "HOME",
-
-      // Global actions (MAIL/TLF/CONTACT_FORM/AKUT) are reachable via engine global exits,
-      // but should not appear as chips during a flow.
-    ],
-    capability_id: "triage-relevance-v1",
-    meta_domains_written: [
-      // Existing keys you already track
-      "triage.question_count",
-      "triage.outcome",
-      "triage.summary",
-      "triage.unclear_points",
-      "triage.topic_tags",
-      "triage.user_goal",
-      "triage.key_triggers",
-      "triage.time_horizon",
-      "triage.confidence",
-      "triage.next_state",
-      "triage.notes_for_context",
-      "triage.next_question",
-      "triage.chips",
-      "triage.close_signal",
-
-      // FIX: keys observed in logs but previously blocked
-      "triage.decision",
-      "triage.render",
-      "triage.relevance",
-
-      // Iteration 2: bounded transcript (10 entries) + structured memory candidates.
-      "dialog.triage.transcript",
-      "dialog.triage.used_chip_ids",
-      "dialog.triage.post_close_chips_shown",
-      "dialog.triage.post_close_chips_consumed",
-      "memory_candidates.theme",
-      "memory_candidates.goal",
-      "memory_candidates.triggers",
-      "memory_candidates.patterns",
-      "memory_candidates.summary",
-    ],
-  },
-
-  METHOD_FIT: {
-    id: "METHOD_FIT",
-    kind: "DIALOG",
-    goal: "Hypnoterapi eller et bedre alternativ?",
-    message:
-      "Fortæl kort hvad du vil opnå, og hvad der gør situationen svær lige nu. Jeg kan hjælpe med at vurdere, om hypnoterapi er et godt match, eller om andre tilgange typisk passer bedre. Jeg giver kun overblik—ikke behandling i chatten.",
-    allow_free_text: true,
-    allow_parentese: true,
-    allowed_exits: ["HOME", "BOOKING"],
-    capability_id: "method-fit-v1",
-    meta_domains_written: ["method_fit.transcript", "method_fit.summary"],
-  },
-
-  TRIAGE_FIT_BOOKING: {
-    id: "TRIAGE_FIT_BOOKING",
-    kind: "TERMINAL",
-    goal: "Egnet til booking",
-    message:
-      "Foreløbig triage: dit tema virker relevant for hypnoterapi. Næste skridt er booking.",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
-    meta_domains_written: ["triage.outcome", "triage.summary", "triage.unclear_points"],
-  },
-
-  TRIAGE_NOT_RELEVANT: {
-    id: "TRIAGE_NOT_RELEVANT",
-    kind: "TERMINAL",
-    goal: "Ikke relevant",
-    message:
-      "Foreløbig triage: det lyder ikke som et klassisk hypnoterapi-spor. Vi anbefaler afklaring af anden støtte.",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
-    meta_domains_written: ["triage.outcome", "triage.summary", "triage.unclear_points"],
-  },
-
-  TRIAGE_NEEDS_ASSESSMENT: {
-    id: "TRIAGE_NEEDS_ASSESSMENT",
-    kind: "TERMINAL",
-    goal: "Kræver afklaringssamtale",
-    message:
-      "Foreløbig triage: der er stadig uklarheder. Start med en afklaringssamtale.",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
-    meta_domains_written: ["triage.outcome", "triage.summary", "triage.unclear_points"],
-  },
-
-  BOOKING: {
-    id: "BOOKING",
-    kind: "MENU",
-    goal: "Booking",
-    message: "Her kan du vælge kontaktvej for booking.",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: ["MAIL", "TLF", "CONTACT_FORM", "HOME", "AKUT"],
-    meta_domains_written: [],
-  },
-
-  MAIL: {
-    id: "MAIL",
-    kind: "MENU",
-    goal: "Mail kontakt",
-    message: "Du kan kontakte mig via e-mail på jan@gaarsdal.net.",
-    allow_free_text: false,
-    allow_parentese: false,
-    navigation: {
-      show_default_chips: false,
-    },
-    allowed_exits: PARENTESE_EXITS,
-    meta_domains_written: [],
-  },
-
-  TLF: {
-    id: "TLF",
-    kind: "MENU",
-    goal: "Telefon kontakt",
-    message:
-      "Du kan ringe eller sende sms til 42 80 74 74. Jeg svarer, så snart jeg kan.",
-    allow_free_text: false,
-    allow_parentese: false,
-    navigation: {
-      show_default_chips: false,
-    },
-    allowed_exits: PARENTESE_EXITS,
-    meta_domains_written: [],
-  },
-
-  CONTACT_FORM: {
-    id: "CONTACT_FORM",
-    kind: "MENU",
-    goal: "Kontaktformular",
-    message:
-      "Vil du åbne kontaktsiden, eller blive her i chatten?\n\nE-mail: jan@gaarsdal.net\nTelefon/SMS: 42 80 74 74\nKontaktformular: /kontakt",
-    allow_free_text: false,
-    allow_parentese: false,
-    navigation: {
-      show_default_chips: false,
-    },
-    allowed_exits: PARENTESE_EXITS,
-    meta_domains_written: [],
-  },
-
-  AKUT: {
-    id: "AKUT",
-    kind: "MENU",
-    goal: "Akut",
-    message:
-      "Akut hjælp i Danmark: Ring 112 ved livstruende situationer. Voksne: Livslinien 70 201 201 (døgnåben). Børn og unge: BørneTelefonen 116 111. Psykiatrisk akutmodtagelse kan kontaktes via 1813 (Region Hovedstaden) eller din region.",
-    allow_free_text: false,
-    allow_parentese: false,
-    navigation: {
-      show_default_chips: false,
-    },
-    allowed_exits: PARENTESE_EXITS,
-    meta_domains_written: [],
-  },
-})
-
-const REGISTRY: Record<NodeId, Readonly<Node>> = Object.freeze(
-  Object.fromEntries(
-    Object.entries(RAW_REGISTRY).map(([k, v]) => [k, Object.freeze(v)])
+  res.setHeader(
+    "Set-Cookie",
+    buildCookie({
+      name: COOKIE_NAME,
+      value: uid,
+      maxAgeSeconds: SESSION_TTL_SECONDS,
+      httpOnly: true,
+      secure,
+      sameSite: "Lax",
+      path: "/",
+    })
   )
-)
 
-export function getNode(id: NodeId): Readonly<Node> {
-  const node = REGISTRY[id]
-  if (!node) throw new Error(`unknown node: ${id}`)
-  return node
+  return uid
+}
+
+function toLobbyConversationId(userKey: string): string {
+  return `lobby:u:${userKey}`
+}
+
+function toUserInput(input: InputSignal): string | undefined {
+  if (input.type === "FREE_TEXT") return (input as any).text
+  if (input.type === "EXPLICIT_TRANSITION") return `EXPLICIT_TRANSITION:${(input as any).target}`
+  if (input.type === "SYSTEM") return `SYSTEM:${(input as any).intent}`
+  if (input.type === "SYSTEM_INIT") return "SYSTEM_INIT"
+  return undefined
+}
+
+function eventId(): string {
+  return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
+}
+
+function nowMs(): number {
+  return Date.now()
+}
+
+function envTrue(name: string): boolean {
+  const v = process.env[name]
+  if (!v) return false
+  const t = v.trim().toLowerCase()
+  return t === "1" || t === "true" || t === "yes" || t === "on"
+}
+
+function truncateText(s: string, max: number): string {
+  if (s.length <= max) return s
+  return s.slice(0, max) + "…"
+}
+
+function shouldIncludeRawText(): boolean {
+  // Default off to reduce risk of PII in canonical events.
+  return envTrue("GAARSDAL_EVENTS_INCLUDE_TEXT")
+}
+
+function legacyRawLogsEnabled(): boolean {
+  // When true, keep writing raw text into legacy interaction/telemetry/memory logs.
+  // Default is false to honor single raw stream + TTL.
+  return envTrue("GAARSDAL_LEGACY_RAW_LOGS")
+}
+
+async function emitCanonicalEvent(params: {
+  userKey: string
+  conversationId: string
+  revision: number
+  inputId: number
+  nodeId?: string | null
+  eventType: string
+  payload: unknown
+}): Promise<void> {
+  await appendConversationEventV1({
+    schema_version: "v1",
+    event_id: eventId(),
+    event_type: params.eventType as any,
+    conversation_id: params.conversationId,
+    user_key: params.userKey,
+    revision: params.revision,
+    input_id: params.inputId,
+    node_id: params.nodeId ?? undefined,
+    timestamp_ms: nowMs(),
+    payload: params.payload,
+  })
+}
+
+function metaDomains(keys: string[]): string[] {
+  const domains = new Set<string>()
+  for (const k of keys) {
+    const idx = k.indexOf(".")
+    domains.add(idx > 0 ? k.slice(0, idx) : k)
+  }
+  return Array.from(domains)
+}
+
+function isLobbyConversation(conversationId: string): boolean {
+  return conversationId.startsWith("lobby:u:")
+}
+
+function deriveUiSuggestionsFromState(state: any): UiSuggestion[] {
+  const meta = state?.meta && typeof state.meta === "object" ? state.meta : {}
+  const render = (meta?.["triage.render"] as any)?.value
+  const chips = (render && Array.isArray(render.chips) ? render.chips : (meta?.["triage.chips"] as any)?.value) as any
+  if (!Array.isArray(chips)) return []
+
+  return chips
+    .filter((c) => c && typeof c === "object" && typeof (c as any).label === "string")
+    .slice(0, 8)
+    .map((c, i) => {
+      const label = String((c as any).label)
+      return {
+        id: String((c as any).id ?? i),
+        label,
+        // Default behavior: chips send FREE_TEXT with the label (the runtime already resolves intent).
+        input: { type: "FREE_TEXT", text: label },
+      }
+    })
+}
+
+function isControlInput(text: string): boolean {
+  const t = text.trim().toLowerCase()
+  if (!t) return true
+  if (t === "continue" || t === "fortsæt" || t === "fortsaet") return true
+  if (t === "new" || t === "ny") return true
+  if (t.startsWith("c:")) return true
+  return false
+}
+
+async function maybeAutoLabelThread(params: {
+  userKey: string
+  conversationId: string
+  input: InputSignal
+  revisionAfter: number
+}): Promise<void> {
+  if (isLobbyConversation(params.conversationId)) return
+  if (params.input.type !== "FREE_TEXT") return
+
+  const userText = params.input.text ?? ""
+  if (userText.trim().length < 12) return
+  if (isControlInput(userText)) return
+
+  const index0 = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+
+  const existing = index0.threads.find((t) => t.conversation_id === params.conversationId)
+  const needsLabel = !existing || !existing.title?.trim() || !existing.preview?.trim()
+  if (!needsLabel) return
+
+  // Ensure thread exists in index (covers restores or direct navigation).
+  let index1 = upsertThread({ index: index0, conversationId: params.conversationId })
+  index1 = applyAutoThreadLabelFromText({
+    index: index1,
+    conversationId: params.conversationId,
+    userText,
+    maxTitleChars: 60,
+    maxPreviewChars: 120,
+  })
+  index1 = setActiveThread({ index: index1, conversationId: params.conversationId })
+
+  // Only write if changed materially (simple JSON compare).
+  if (JSON.stringify(index0) === JSON.stringify(index1)) return
+
+  await writeThreadIndex({ userKey: params.userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
+}
+
+async function persistState(result: KernelResult): Promise<void> {
+  await writeConversationState(result.state, SESSION_TTL_SECONDS)
+}
+
+async function emitSpine(params: {
+  userKey: string
+  input: InputSignal
+  kernelResult: KernelResult
+  latencyMs?: number
+  error?: { code: string; message: string; retryable?: boolean }
+}): Promise<void> {
+  const { kernelResult, input, userKey, latencyMs, error } = params
+  const keys = kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : []
+  const domains = keys.length ? metaDomains(keys) : []
+
+  await appendSpineEventV23({
+    schema_version: "v23",
+    event_id: eventId(),
+    user_key: userKey,
+    conversation_id: kernelResult.state.conversation_id,
+    revision_before: kernelResult.log.revision_before,
+    revision_after: kernelResult.log.revision_after,
+    node_before: kernelResult.log.active_node_before,
+    node_after: kernelResult.log.active_node_after,
+    status_after: kernelResult.state.status,
+    input_type: (input as any).type,
+    transition_type: kernelResult.transition.type,
+    meta_domains_written: domains,
+    meta_keys_written: keys,
+    latency_ms: latencyMs,
+    error,
+  })
+}
+
+async function enqueueSummarizeEpisode(params: {
+  userKey: string
+  conversationId: string
+  revisionAfter: number
+  threadThemeId?: string
+  threadEpisodeId?: string
+}): Promise<void> {
+  const N = 8
+  if (params.revisionAfter <= 0) return
+  if (params.revisionAfter % N !== 0) return
+
+  const themeId = params.threadThemeId
+  const episodeId = params.threadEpisodeId
+  if (typeof themeId !== "string" || typeof episodeId !== "string") return
+
+  const job_id = makeJobId({
+    type: "SUMMARIZE_EPISODE",
+    userKey: params.userKey,
+    episodeId,
+    revisionAfter: params.revisionAfter,
+  })
+
+  await enqueueJob({
+    schema_version: "v23",
+    job_version: 1,
+    type: "SUMMARIZE_EPISODE",
+    job_id,
+    user_key: params.userKey,
+    conversation_id: params.conversationId,
+    theme_id: themeId,
+    episode_id: episodeId,
+    revision_after: params.revisionAfter,
+  })
+}
+
+async function enqueueSuggestFacts(params: {
+  userKey: string
+  conversationId: string
+  revisionAfter: number
+  metaKeysWritten: string[]
+  threadThemeId?: string
+  threadEpisodeId?: string
+}): Promise<void> {
+  // Trigger rule (v23):
+  // - when triage.* OR memory_candidates.* writes occur, enqueue; otherwise no-op.
+  const touched = params.metaKeysWritten.some((k) => k.startsWith("triage.") || k.startsWith("memory_candidates."))
+  if (!touched) return
+
+  const themeId = params.threadThemeId
+  const episodeId = params.threadEpisodeId
+  if (typeof themeId !== "string" || typeof episodeId !== "string") return
+
+  const job_id = makeJobId({
+    type: "SUGGEST_FACTS",
+    userKey: params.userKey,
+    episodeId,
+    revisionAfter: params.revisionAfter,
+  })
+
+  await enqueueJob({
+    schema_version: "v23",
+    job_version: 1,
+    type: "SUGGEST_FACTS",
+    job_id,
+    user_key: params.userKey,
+    conversation_id: params.conversationId,
+    theme_id: themeId,
+    episode_id: episodeId,
+    revision_after: params.revisionAfter,
+  })
+}
+
+async function ensureThreadBindingOnState(params: {
+  userKey: string
+  conversationId: string
+  state: any
+}): Promise<{ state: any; themeId: string; episodeId: string } | null> {
+  const meta = params.state?.meta && typeof params.state.meta === "object" ? params.state.meta : {}
+  const existingThemeId = (meta?.["thread.theme_id"] as any)?.value
+  const existingEpisodeId = (meta?.["thread.episode_id"] as any)?.value
+
+  if (typeof existingThemeId === "string" && typeof existingEpisodeId === "string") {
+    return { state: params.state, themeId: existingThemeId, episodeId: existingEpisodeId }
+  }
+
+  const ensured = await ensureThreadThemeAndEpisode({
+    userKey: params.userKey,
+    conversationId: params.conversationId,
+    ttlSeconds: MEMORY_TTL_SECONDS,
+  })
+
+  const nextMeta = {
+    ...meta,
+    "thread.theme_id": { value: ensured.theme.theme_id, source_node: "SYSTEM_THREAD_BINDING" },
+    "thread.episode_id": { value: ensured.episode.episode_id, source_node: "SYSTEM_THREAD_BINDING" },
+  }
+
+  const nextState = { ...params.state, meta: nextMeta }
+  return { state: nextState, themeId: ensured.theme.theme_id, episodeId: ensured.episode.episode_id }
+}
+
+async function logAndRecord(params: {
+  userKey: string
+  input: InputSignal
+  kernelResult: KernelResult
+  userText?: string
+}): Promise<void> {
+  const { kernelResult, input } = params
+
+  const assistantText = kernelResult.transition.response_message ?? kernelResult.state.active_node_message
+
+  // Raw text goes into exactly one place (TTL).
+  await appendRawTurn({
+    conversationId: kernelResult.state.conversation_id,
+    revision: kernelResult.state.revision,
+    nodeId: kernelResult.state.active_node,
+    inputType: (input as any).type,
+    userInput: params.userText ?? toUserInput(input),
+    assistantOutput: assistantText,
+    ttlSeconds: rawTtlSeconds(),
+  })
+
+  // Always keep kernel log.
+  await appendLog(kernelResult.log)
+
+  const includeLegacyRaw = legacyRawLogsEnabled()
+
+  // Interaction log: keep minimal event; only include raw text if legacy enabled.
+  if (includeLegacyRaw) {
+    await appendInteraction({
+      conversation_id: kernelResult.state.conversation_id,
+      revision: kernelResult.state.revision,
+      active_node: kernelResult.state.active_node,
+      input_type: (input as any).type,
+      user_input: params.userText ?? toUserInput(input),
+      ai_response: assistantText,
+      outcome_node: kernelResult.transition.to,
+      timestamp: new Date().toISOString(),
+    })
+  } else {
+    await appendInteraction({
+      conversation_id: kernelResult.state.conversation_id,
+      revision: kernelResult.state.revision,
+      active_node: kernelResult.state.active_node,
+      input_type: (input as any).type,
+      outcome_node: kernelResult.transition.to,
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  // Memory events: includeText is controlled by legacy flag.
+  await recordTurn({
+    userKey: params.userKey,
+    conversationId: kernelResult.state.conversation_id,
+    state: kernelResult.state,
+    userText: params.userText,
+    assistantText,
+    transitionType: kernelResult.transition.type,
+    includeText: includeLegacyRaw,
+    ttlSeconds: MEMORY_TTL_SECONDS,
+  })
+
+  const activeNode = getNode(kernelResult.state.active_node)
+  await appendTelemetryTurn({
+    conversation_id: kernelResult.state.conversation_id,
+    user_key: params.userKey,
+    revision: kernelResult.state.revision,
+    node_id: kernelResult.state.active_node,
+    input_type: (input as any).type,
+    user_input_raw: includeLegacyRaw ? params.userText ?? toUserInput(input) : undefined,
+    assistant_output_raw: includeLegacyRaw ? assistantText : undefined,
+    transition_type: kernelResult.transition.type,
+    outcome_node: kernelResult.transition.to,
+    capability_id: activeNode.kind === "DIALOG" ? activeNode.capability_id ?? null : null,
+    meta_keys_written: kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : [],
+  })
+
+  const profile = await readUserProfile(params.userKey)
+  if (profile) {
+    const { profile: updated, updated: didUpdate } = consolidateV1({ profile, state: kernelResult.state })
+    if (didUpdate) {
+      await writeUserProfile({ userKey: params.userKey, profile: updated, ttlSeconds: PROFILE_TTL_SECONDS })
+    }
+  }
+}
+
+function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
+  if (node.kind === "ROUTER" && node.id === "HOME") return false
+  return node.kind === "ROUTER" || node.kind === "TOOL" || node.kind === "CHECKPOINT"
+}
+
+function validateRequest(req: NextApiRequest, res: NextApiResponse): ChatRequestBody | null {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method Not Allowed" })
+    return null
+  }
+
+  if (!isObject(req.body)) {
+    res.status(400).json({ error: "Invalid JSON body" })
+    return null
+  }
+
+  const body = req.body as ChatRequestBody
+  const input = (body as any).input
+  if (!input || !isObject(input) || typeof (input as any).type !== "string") {
+    res.status(400).json({ error: "Missing or invalid input" })
+    return null
+  }
+
+  return body
+}
+
+async function handleInitOrRestore(params: {
+  clientState: any
+  storedState: any | null
+  conversationId: string
+  userKey: string
+  res: NextApiResponse
+}): Promise<boolean> {
+  const { clientState, storedState, conversationId, userKey, res } = params
+  if (clientState !== null) return false
+
+  if (storedState) {
+    const log: LogEvent = {
+      conversation_id: storedState.conversation_id,
+      revision_before: storedState.revision,
+      revision_after: storedState.revision,
+      active_node_before: storedState.active_node,
+      active_node_after: storedState.active_node,
+      input_type: "SYSTEM_INIT",
+      transition_type: "INIT",
+      timestamp: new Date().toISOString(),
+    }
+
+    const payload = {
+      state: storedState,
+      transition: {
+        type: "INIT",
+        from: null,
+        reason: "system init (restored)",
+      },
+      log,
+    }
+
+    await appendLog(payload.log)
+
+    await appendSpineEventV23({
+      schema_version: "v23",
+      event_id: eventId(),
+      user_key: userKey,
+      conversation_id: storedState.conversation_id,
+      revision_before: storedState.revision,
+      revision_after: storedState.revision,
+      node_before: storedState.active_node,
+      node_after: storedState.active_node,
+      status_after: storedState.status,
+      input_type: "SYSTEM_INIT",
+      transition_type: "INIT",
+    })
+
+    // Auto-advance lobby through TOOL/CHECKPOINT/ROUTER nodes so the user lands on a usable prompt.
+    const advanced = await runTurnWithAutoAdvance({
+      baseState: payload.state,
+      input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
+      userKey,
+    })
+
+    await persistState(advanced)
+
+    // Canonical events (V1): represent the resulting applied transition and rendered node after auto-advance.
+    await emitCanonicalEvent({
+      userKey,
+      conversationId: advanced.state.conversation_id,
+      revision: advanced.state.revision,
+      inputId: advanced.state.revision,
+      nodeId: advanced.state.active_node,
+      eventType: "transition_applied",
+      payload: {
+        input_type: "SYSTEM_INIT",
+        transition: {
+          type: advanced.transition.type,
+          from: advanced.transition.from,
+          // Ensure canonical events always carry a concrete destination node.
+          // Some internal transitions (e.g. "NODE_HOP" with external resolution) may leave `to` unset.
+          // Falling back to the post-transition active node keeps the event self-contained.
+          to: advanced.transition.to ?? advanced.state.active_node,
+          reason: advanced.transition.reason,
+          meta_keys_written: advanced.transition.meta_delta ? Object.keys(advanced.transition.meta_delta) : [],
+        },
+        status_after: advanced.state.status,
+      },
+    })
+
+    await emitCanonicalEvent({
+      userKey,
+      conversationId: advanced.state.conversation_id,
+      revision: advanced.state.revision,
+      inputId: advanced.state.revision,
+      nodeId: advanced.state.active_node,
+      eventType: "node_rendered",
+      payload: {
+        node_id: advanced.state.active_node,
+        message: truncateText(advanced.state.active_node_message ?? "", 800),
+        status: advanced.state.status,
+      },
+    })
+
+    res.status(200).json(advanced)
+    return true
+  }
+
+  const initialState = createLobbyState(conversationId)
+
+  const log: LogEvent = {
+    conversation_id: initialState.conversation_id,
+    revision_before: -1,
+    revision_after: initialState.revision,
+    active_node_before: null,
+    active_node_after: initialState.active_node,
+    input_type: "SYSTEM_INIT",
+    transition_type: "INIT",
+    timestamp: new Date().toISOString(),
+  }
+
+  await writeConversationState(initialState, SESSION_TTL_SECONDS)
+  await appendLog(log)
+
+  await appendSpineEventV23({
+    schema_version: "v23",
+    event_id: eventId(),
+    user_key: userKey,
+    conversation_id: initialState.conversation_id,
+    revision_before: -1,
+    revision_after: initialState.revision,
+    node_before: null,
+    node_after: initialState.active_node,
+    status_after: initialState.status,
+    input_type: "SYSTEM_INIT",
+    transition_type: "INIT",
+  })
+
+  // Auto-advance lobby through TOOL/CHECKPOINT/ROUTER nodes so the user lands on a usable prompt.
+  const advanced = await runTurnWithAutoAdvance({
+    baseState: initialState,
+    input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
+    userKey,
+  })
+
+  await persistState(advanced)
+
+  // Canonical events (V1): represent the resulting applied transition and rendered node after auto-advance.
+  await emitCanonicalEvent({
+    userKey,
+    conversationId: advanced.state.conversation_id,
+    revision: advanced.state.revision,
+    inputId: advanced.state.revision,
+    nodeId: advanced.state.active_node,
+    eventType: "transition_applied",
+    payload: {
+      input_type: "SYSTEM_INIT",
+      transition: {
+        type: advanced.transition.type,
+        from: advanced.transition.from,
+        // Ensure canonical events always carry a concrete destination node.
+        // Some internal transitions (e.g. "NODE_HOP" with external resolution) may leave `to` unset.
+        // Falling back to the post-transition active node keeps the event self-contained.
+        to: advanced.transition.to ?? advanced.state.active_node,
+        reason: advanced.transition.reason,
+        meta_keys_written: advanced.transition.meta_delta ? Object.keys(advanced.transition.meta_delta) : [],
+      },
+      status_after: advanced.state.status,
+    },
+  })
+
+  await emitCanonicalEvent({
+    userKey,
+    conversationId: advanced.state.conversation_id,
+    revision: advanced.state.revision,
+    inputId: advanced.state.revision,
+    nodeId: advanced.state.active_node,
+    eventType: "node_rendered",
+    payload: {
+      node_id: advanced.state.active_node,
+      message: truncateText(advanced.state.active_node_message ?? "", 800),
+      status: advanced.state.status,
+    },
+  })
+
+  res.status(200).json(advanced)
+  return true
+}
+
+function resolveBaseState(params: { storedState: any | null; clientState: any }): any {
+  return params.storedState ?? params.clientState
+}
+
+async function runTurnWithAutoAdvance(params: { baseState: any; input: InputSignal; userKey: string }): Promise<KernelResult> {
+  const { baseState, input, userKey } = params
+
+  let kernelResult = await runNode({ state: baseState, input, userKey })
+
+  for (let i = 0; i < 5; i++) {
+    const activeNode = getNode(kernelResult.state.active_node)
+    if (!isAutoAdvanceNode(activeNode)) break
+
+    const before = kernelResult.state.active_node
+    kernelResult = await runNode({
+      state: kernelResult.state,
+      input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
+      userKey,
+    })
+    const after = kernelResult.state.active_node
+    if (after === before) break
+  }
+
+  return kernelResult
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const started = Date.now()
+  const body = validateRequest(req, res)
+  if (!body) return
+
+  const userKey = ensureUserKey(req, res)
+  const lobbyConversationId = toLobbyConversationId(userKey)
+
+  const { state: clientState, input } = body
+
+  // Init always enters the lobby, not a specific thread.
+  if (clientState === null) {
+    const storedLobby = await readConversationState(lobbyConversationId)
+    const initHandled = await handleInitOrRestore({
+      clientState,
+      storedState: storedLobby,
+      conversationId: lobbyConversationId,
+      userKey,
+      res,
+    })
+    if (initHandled) return
+    return
+  }
+
+  const conversationId =
+    typeof clientState?.conversation_id === "string" ? clientState.conversation_id : lobbyConversationId
+  const stored = await readConversationState(conversationId)
+
+  let baseState = resolveBaseState({ storedState: stored, clientState })
+
+  // Cross-thread contamination guardrail:
+  // Ensure every non-lobby conversation has a stable thread→theme/episode binding.
+  let threadBinding: { themeId: string; episodeId: string } | null = null
+  if (conversationId !== lobbyConversationId) {
+    const ensured = await ensureThreadBindingOnState({
+      userKey,
+      conversationId,
+      state: baseState,
+    })
+    if (ensured) {
+      baseState = ensured.state
+      threadBinding = { themeId: ensured.themeId, episodeId: ensured.episodeId }
+    }
+  }
+
+  try {
+    const kernelResult0 = await runTurnWithAutoAdvance({ baseState, input, userKey })
+
+    // UI suggestions are server-controlled to avoid hardcoded/meaningless chips in the client.
+    const uiSuggestions = (() => {
+      const node = kernelResult0.state?.active_node
+      if (node === "TRIAGE") return deriveUiSuggestionsFromState(kernelResult0.state)
+      if (node === "CONTACT_FORM") {
+        // CONTACT_FORM is a UI convenience overlay. Suggestions here are intentional
+        // and should not depend on the TRIAGE chip pipeline.
+        return [
+          {
+            id: "open-contact-page",
+            label: "Åbn kontakt-side",
+            // Client handles this without calling the kernel.
+            input: { type: "OPEN_URL", url: "/kontakt" },
+          },
+          {
+            id: "resume-chat",
+            label: "Bliv i chat",
+            input: { type: "EXPLICIT_TRANSITION", target: "RESUME" },
+          },
+        ]
+      }
+      return []
+    })()
+
+    const kernelResult: KernelResult = {
+      ...kernelResult0,
+      state: {
+        ...kernelResult0.state,
+        meta: {
+          ...(kernelResult0.state?.meta ?? {}),
+          "ui.suggestions": { value: uiSuggestions, source_node: "SYSTEM_UI" },
+        },
+      },
+    }
+
+    await persistState(kernelResult)
+
+    // Canonical events (V1)
+    const assistantText = kernelResult.transition.response_message ?? kernelResult.state.active_node_message
+
+    const rawUserText =
+      (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : toUserInput(input) ?? ""
+
+    await emitCanonicalEvent({
+      userKey,
+      conversationId: kernelResult.state.conversation_id,
+      revision: kernelResult.state.revision,
+      inputId: kernelResult.state.revision,
+      nodeId: kernelResult.log.active_node_before ?? (baseState?.active_node ?? null),
+      eventType: "input_received",
+      payload: {
+        input_type: (input as any).type,
+        // Raw text is disabled by default; enable via GAARSDAL_EVENTS_INCLUDE_TEXT=1 for local/dev.
+        user_input: shouldIncludeRawText() ? truncateText(rawUserText, 1200) : undefined,
+        user_input_length: rawUserText.length,
+      },
+    })
+
+    await emitCanonicalEvent({
+      userKey,
+      conversationId: kernelResult.state.conversation_id,
+      revision: kernelResult.state.revision,
+      inputId: kernelResult.state.revision,
+      nodeId: kernelResult.state.active_node,
+      eventType: "transition_applied",
+      payload: {
+        input_type: (input as any).type,
+        transition: {
+          type: kernelResult.transition.type,
+          from: kernelResult.transition.from,
+          // Ensure canonical events always carry a concrete destination node.
+          // Some internal transitions (e.g. "NODE_HOP" with external resolution) may leave `to` unset.
+          // Falling back to the post-transition active node keeps the event self-contained.
+          to: kernelResult.transition.to ?? kernelResult.state.active_node,
+          reason: kernelResult.transition.reason,
+          meta_keys_written: kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : [],
+        },
+        status_after: kernelResult.state.status,
+      },
+    })
+
+    const activeNode = getNode(kernelResult.state.active_node)
+
+    await emitCanonicalEvent({
+      userKey,
+      conversationId: kernelResult.state.conversation_id,
+      revision: kernelResult.state.revision,
+      inputId: kernelResult.state.revision,
+      nodeId: kernelResult.state.active_node,
+      eventType: "node_rendered",
+      payload: {
+        node_id: kernelResult.state.active_node,
+        node_kind: (activeNode as any)?.kind ?? null,
+        capability_id: (activeNode as any)?.kind === "DIALOG" ? (activeNode as any)?.capability_id ?? null : null,
+        tool_id: (activeNode as any)?.kind === "TOOL" ? (activeNode as any)?.tool?.tool_id ?? null : null,
+        message: truncateText(assistantText ?? "", 800),
+        ai_output_length: (assistantText ?? "").length,
+        status: kernelResult.state.status,
+      },
+    })
+
+    // Terminal events: emit only on status change (no inference).
+    const prevStatus = typeof baseState?.status === "string" ? baseState.status : null
+    if (prevStatus !== kernelResult.state.status) {
+      if (kernelResult.state.status === "completed") {
+        await emitCanonicalEvent({
+          userKey,
+          conversationId: kernelResult.state.conversation_id,
+          revision: kernelResult.state.revision,
+          inputId: kernelResult.state.revision,
+          nodeId: kernelResult.state.active_node,
+          eventType: "conversation_completed",
+          payload: {
+            terminal_revision: kernelResult.state.revision,
+            terminal_node: kernelResult.state.active_node,
+          },
+        })
+      }
+      if (kernelResult.state.status === "rejected") {
+        await emitCanonicalEvent({
+          userKey,
+          conversationId: kernelResult.state.conversation_id,
+          revision: kernelResult.state.revision,
+          inputId: kernelResult.state.revision,
+          nodeId: kernelResult.state.active_node,
+          eventType: "conversation_rejected",
+          payload: {
+            terminal_revision: kernelResult.state.revision,
+            terminal_node: kernelResult.state.active_node,
+          },
+        })
+      }
+    }
+
+    await maybeAutoLabelThread({
+      userKey,
+      conversationId: kernelResult.state.conversation_id,
+      input,
+      revisionAfter: kernelResult.state.revision,
+    })
+
+    const metaKeysWritten = kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : []
+
+    await emitSpine({
+      userKey,
+      input,
+      kernelResult,
+      latencyMs: Date.now() - started,
+    })
+
+    await enqueueSummarizeEpisode({
+      userKey,
+      conversationId: kernelResult.state.conversation_id,
+      revisionAfter: kernelResult.state.revision,
+      threadThemeId: threadBinding?.themeId ?? (kernelResult.state.meta?.["thread.theme_id"] as any)?.value,
+      threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
+    })
+
+    await enqueueSuggestFacts({
+      userKey,
+      conversationId: kernelResult.state.conversation_id,
+      revisionAfter: kernelResult.state.revision,
+      metaKeysWritten,
+      threadThemeId: threadBinding?.themeId ?? (kernelResult.state.meta?.["thread.theme_id"] as any)?.value,
+      threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
+    })
+
+    await logAndRecord({
+      userKey,
+      input,
+      kernelResult,
+      userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined,
+    })
+
+    res.status(200).json(kernelResult)
+  } catch (e: any) {
+    await appendSpineEventV23({
+      schema_version: "v23",
+      event_id: eventId(),
+      user_key: userKey,
+      conversation_id: conversationId,
+      revision_before: stored?.revision ?? -1,
+      revision_after: stored?.revision ?? -1,
+      node_before: stored?.active_node ?? null,
+      node_after: stored?.active_node ?? (clientState?.active_node ?? "UNKNOWN"),
+      status_after: stored?.status ?? "active",
+      input_type: (input as any).type,
+      transition_type: "ERROR",
+      latency_ms: Date.now() - started,
+      error: {
+        code: "UNHANDLED",
+        message: typeof e?.message === "string" ? e.message : "Unknown error",
+      },
+    })
+
+    // Canonical event (V1): error
+    await emitCanonicalEvent({
+      userKey,
+      conversationId,
+      revision: stored?.revision ?? -1,
+      inputId: stored?.revision ?? -1,
+      nodeId: stored?.active_node ?? null,
+      eventType: "error_raised",
+      payload: {
+        code: "UNHANDLED",
+        message: typeof e?.message === "string" ? e.message : "Unknown error",
+        stage: "runtime",
+        input_type: (input as any).type,
+      },
+    })
+
+    res.status(500).json({ error: "Internal Server Error" })
+  }
 }
