@@ -256,6 +256,8 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
 
       // Update index (title/preview will be auto-filled after first meaningful user input).
       let index1 = upsertThread({ index: index0, conversationId, title: "", preview: "" })
+      // Manual thread creation is a hard break for the return stack.
+      index1 = { ...index1, navigation: { return_stack: [] } }
       index1 = setActiveThread({ index: index1, conversationId })
       await writeThreadIndex({ userKey: params.userKey, index: index1, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
 
@@ -281,6 +283,8 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
     }
 
     let index2 = upsertThread({ index: index0, conversationId: ensured.conversation_id })
+    // Manual thread switching is a hard break for the return stack.
+    index2 = { ...index2, navigation: { return_stack: [] } }
     index2 = setActiveThread({ index: index2, conversationId: ensured.conversation_id })
     await writeThreadIndex({ userKey: params.userKey, index: index2, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
 
