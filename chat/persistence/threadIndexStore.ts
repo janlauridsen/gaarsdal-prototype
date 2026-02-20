@@ -11,11 +11,21 @@ export type ThreadItem = {
   updated_at: string
 }
 
+export type ReturnLink = {
+  from: string
+  to: string
+  created_at: string
+  reason?: string
+}
+
 export type ThreadIndex = {
   version: 1
   user_key: string
   active_conversation_id: string | null
   threads: ThreadItem[]
+  navigation: {
+    return_stack: ReturnLink[]
+  }
 }
 
 const THREADS_KEY_PREFIX = "gaarsdal:threads:u:"
@@ -67,11 +77,33 @@ function normalizeThreadItem(v: Omit<ThreadItem, "preview"> & { preview?: unknow
 function normalizeThreadIndex(value: unknown): ThreadIndex | null {
   if (!isThreadIndexLoose(value)) return null
   const v = value as any
+
+  const navigation = (() => {
+    const raw = (v as any).navigation
+    if (!raw || typeof raw !== "object") return { return_stack: [] as ReturnLink[] }
+
+    const rs = (raw as any).return_stack
+    if (!Array.isArray(rs)) return { return_stack: [] as ReturnLink[] }
+
+    const cleaned: ReturnLink[] = rs
+      .filter((x: any) => x && typeof x === "object")
+      .map((x: any) => ({
+        from: typeof x.from === "string" ? x.from : "",
+        to: typeof x.to === "string" ? x.to : "",
+        created_at: typeof x.created_at === "string" ? x.created_at : "",
+        reason: typeof x.reason === "string" ? x.reason : undefined,
+      }))
+      .filter((x: ReturnLink) => !!x.from && !!x.to && !!x.created_at)
+
+    return { return_stack: cleaned }
+  })()
+
   return {
     version: 1,
     user_key: v.user_key,
     active_conversation_id: v.active_conversation_id,
     threads: (v.threads as any[]).map((t) => normalizeThreadItem(t as any)),
+    navigation,
   }
 }
 
@@ -101,6 +133,7 @@ export function createEmptyThreadIndex(userKey: string): ThreadIndex {
     user_key: userKey,
     active_conversation_id: null,
     threads: [],
+    navigation: { return_stack: [] },
   }
 }
 
