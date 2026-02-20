@@ -50,6 +50,7 @@ type TriageOutput = {
 
 const MAX_TEXT = 260
 const MAX_TRANSCRIPT_ENTRIES = 10
+const USED_CHIP_IDS_KEY = "dialog.triage.used_chip_ids"
 const MAX_QUESTIONS = 5
 
 const TRIAGE_PROMPT = `Du er en TRIAGE-assistent, der udelukkende vurderer hypnoterapi-relevans.
@@ -251,6 +252,17 @@ function readBoundedTranscript(context: AiCapabilityContext): TranscriptTurn[] {
   return out.slice(-MAX_TRANSCRIPT_ENTRIES)
 }
 
+function readUsedChipIds(context: AiCapabilityContext): string[] {
+  const raw = context.state.meta[USED_CHIP_IDS_KEY]?.value
+  if (!Array.isArray(raw)) return []
+  return raw.filter((x) => typeof x === "string") as string[]
+}
+
+function writeUsedChipIds(context: AiCapabilityContext, ids: string[]) {
+  writeMeta(context, USED_CHIP_IDS_KEY, Array.from(new Set(ids)).slice(0, 20))
+}
+
+
 function buildAssistantText(render: Render): string {
   const parts = [render.assistant_message.trim()]
   if (render.next_question.trim()) {
@@ -387,26 +399,31 @@ function trimChips(chips: Array<{ id: string; label: string }>, max = 3) {
 function deriveContextualChips(params: {
   output: TriageOutput
   questionRemaining: number
+  usedChipIds: Set<string>
 }): Array<{ id: string; label: string }> {
   const rel = params.output.decision.relevance
   const isRelevant = rel === "YES" || rel === "LIKELY"
 
   if (isRelevant) {
-    return trimChips([
+    const all = [
       { id: "evidence", label: "Er der evidens?" },
       { id: "normal", label: "Er det normalt?" },
-    ])
+    ]
+    const filtered = all.filter((c) => !params.usedChipIds.has(c.id))
+    return trimChips(filtered)
   }
 
   // Before conclusion: only provide precise clarification choices if it helps.
   // The only safe generic clarification we can offer without steering is time horizon.
   const missing = deriveUnclearPoints(params.output)
   if (params.questionRemaining > 0 && missing.includes("time_horizon")) {
-    return trimChips([
+    const all = [
       { id: "t_lt_1m", label: "Under 1 måned" },
       { id: "t_1_6m", label: "1–6 måneder" },
       { id: "t_gt_6m", label: "Over 6 måneder" },
-    ])
+    ]
+    const filtered = all.filter((c) => !params.usedChipIds.has(c.id))
+    return trimChips(filtered)
   }
 
   return []
@@ -463,7 +480,21 @@ function enforceBudgetsAndScope(params: {
 
   // Chip hard rules.
   const remainingNow = Math.max(0, MAX_QUESTIONS - used)
-  const chips = deriveContextualChips({ output, questionRemaining: remainingNow })
+
+  // Track chip usage so selected chips do not reappear.
+  const usedChipIds = new Set(readUsedChipIds(params.context))
+  const lastUserText = String(params.context.last_user_message ?? "").trim()
+  const labelToId: Record<string, string> = {
+    "Er der evidens?": "evidence",
+    "Er det normalt?": "normal",
+    "Under 1 måned": "t_lt_1m",
+    "1–6 måneder": "t_1_6m",
+    "Over 6 måneder": "t_gt_6m",
+  }
+  const picked = labelToId[lastUserText]
+  if (picked) usedChipIds.add(picked)
+
+  const chips = deriveContextualChips({ output, questionRemaining: remainingNow, usedChipIds })
   output = { ...output, render: { ...output.render, chips } }
 
   const closeSignal =
