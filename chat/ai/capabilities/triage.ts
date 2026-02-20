@@ -595,7 +595,7 @@ export const triageCapability: AiCapability = {
     } satisfies LlmChatInput
 
     const response = await llm.chatJson(payload)
-    const output = response ? normalizeOutput(response, context) : buildFallbackOutput(context)
+    let output = response ? normalizeOutput(response, context) : buildFallbackOutput(context)
 
     const enforced = enforceBudgetsAndScope({
       context,
