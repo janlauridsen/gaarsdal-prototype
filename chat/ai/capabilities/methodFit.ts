@@ -4,67 +4,103 @@ import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from
 type TranscriptTurn = { role: "user" | "assistant"; content: string }
 
 type Relevance = "YES" | "SUPPLEMENT" | "NO" | "NEEDS_ASSESSMENT"
-
 type Confidence = "low" | "medium" | "high"
+
+type Chip = { id: string; label: string }
 
 type Output = {
   assistant_message: string
   summary?: string
-
-  // v2 fields (optional for backward compatibility)
   relevance?: Relevance
   confidence?: Confidence
   tags?: string[]
-
-  // question-budget discipline
   asked_clarifying_question?: boolean
   next_question?: string
-
-  // close discipline
   close_signal?: boolean
-
-  // optional UI hints (kept minimal)
-  chips?: Array<{ id: string; label: string }>
+  chips?: Chip[]
 }
 
 const MAX_TRANSCRIPT_ENTRIES = 10
 const MAX_QUESTIONS = 4
 
-const METHOD_FIT_PROMPT = `Du er en beslutningsstøttende guide der hjælper brugeren med at vurdere:
-- om hypnoterapi typisk er et godt match
-- om hypnoterapi typisk er et supplement
-- eller om andre tilgange typisk passer bedre
+const ALT_WHITELIST = [
+  "Massage",
+  "Osteopati",
+  "manipulative terapier",
+  "Zoneterapi",
+  "Akupunktur",
+  "Kiropraktik",
+  "Healing",
+  "Reiki",
+  "Homøopati",
+  "Kosttilskud",
+  "Mindfulness",
+  "meditation",
+] as const
 
-VIGTIGT (hard rules):
-- Du giver kun overblik og positionering — ikke behandling, ikke øvelser, ikke teknikker.
-- Ingen diagnostik. Ingen garantier.
-- Tone: saglig, rolig, dansk, ikke-terapeutisk (undgå "det lyder hårdt" osv.).
-- Maks 4 afklarende spørgsmål i alt for hele episoden. (systemet holder tæller)
-- Spørg kun hvis nødvendigt for at kunne give et bedre overblik.
-- Når der er nok viden: konkludér og sæt close_signal=true og next_question="".
-- Hvis spørgebudget er opbrugt: konkludér ud fra det du har, close_signal=true og next_question="".
-- Ingen “vil du høre mere?” eller tilsvarende invitationer til dybde.
+const METHOD_FIT_PROMPT = `
+Du er en neutral beslutningsstøtte i dansk kontekst.
+Du hjælper brugeren med at vurdere:
 
-Ansvar ved fysiske symptomer:
-- Ved fysiske symptomer (fx mave/afføring, smerter, neurologisk): spørg kort om lægelig udredning/diagnose,
-  og nævn at lægelig vurdering typisk er relevant, især ved lang varighed eller bekymrende symptomer.
-- Hypnoterapi ændrer sjældent strukturelle/medicinske tilstande direkte, men kan være relevant for sekundære mål
-  (stressrespons, søvn, smerteoplevelse, mestring, vane/trigger-mønstre) når det passer.
+1) Hvad der typisk er førstevalg i Danmark for denne problemtype
+2) Hvilke alternative behandlingsformer der ofte anvendes
+3) Hvor (og om) hypnoterapi passer ind
 
-Du skal returnere KUN gyldig JSON i formatet:
+VIGTIGT – HARD RULES:
+
+- Du skal ALTID nævne mindst ét konkret alternativ til hypnoterapi.
+- Alternativet skal være relevant for problemtypen.
+- Alternativer må kun vælges fra denne whitelist:
+
+  - Massage
+  - Osteopati / manipulative terapier
+  - Zoneterapi
+  - Akupunktur
+  - Kiropraktik
+  - Healing (fx Reiki)
+  - Homøopati
+  - Kosttilskud (ikke-ordinerede)
+  - Mindfulness / meditation
+
+- Hvis problemtypen er:
+    • Neuro-udviklingsforstyrrelse (fx ADHD)
+    • Medicinsk/fysiologisk lidelse
+    • Psykiatrisk tilstand
+  skal evidensbaseret standardbehandling nævnes først.
+  Hypnoterapi må her kun beskrives som supplement.
+
+- Ingen behandling, øvelser eller teknikker.
+- Ingen garantier.
+- Ingen terapeutisk tone.
+- Fokus på overblik og positionering.
+
+STRUKTURKRAV:
+
+Svar skal have denne rækkefølge:
+
+1) Typiske førstevalg / Alternativer i Danmark
+2) Hvor hypnoterapi typisk placeres
+3) Kort konklusion (YES | SUPPLEMENT | NO | NEEDS_ASSESSMENT)
+
+Soft-close regel:
+Hvis brugeren stiller et sammenlignende opfølgende spørgsmål
+(fx "er hypnose bedre?", "hvad er bedst?", "hvorfor?")
+må du svare komparativt – ikke afvise eller lukke dialogen.
+
+Returner KUN gyldig JSON:
+
 {
   "assistant_message": string,
-  "summary": string (optional),
-  "relevance": "YES"|"SUPPLEMENT"|"NO"|"NEEDS_ASSESSMENT",
-  "confidence": "low"|"medium"|"high",
-  "tags": string[] (optional),
-
+  "summary": string,
+  "relevance": "YES" | "SUPPLEMENT" | "NO" | "NEEDS_ASSESSMENT",
+  "confidence": "low" | "medium" | "high",
+  "tags": string[],
   "asked_clarifying_question": boolean,
   "next_question": string,
   "close_signal": boolean,
-
-  "chips": [ {"id": string, "label": string} ] (optional)
-}`
+  "chips": [{"id": string, "label": string}]
+}
+`
 
 function readTranscript(context: AiCapabilityContext): TranscriptTurn[] {
   const raw = context.state.meta["method_fit.transcript"]?.value
@@ -110,9 +146,9 @@ function normalizeConfidence(v: unknown): Confidence | undefined {
   return undefined
 }
 
-function normalizeChips(v: unknown): Array<{ id: string; label: string }> | undefined {
+function normalizeChips(v: unknown): Chip[] | undefined {
   if (!Array.isArray(v)) return undefined
-  const out: Array<{ id: string; label: string }> = []
+  const out: Chip[] = []
   for (const item of v) {
     if (!item || typeof item !== "object") continue
     const obj = item as any
@@ -127,6 +163,7 @@ function normalizeChips(v: unknown): Array<{ id: string; label: string }> | unde
 
 function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
   if (!raw) return null
+
   const msg = typeof raw.assistant_message === "string" ? raw.assistant_message.trim() : ""
   if (!msg) return null
 
@@ -137,10 +174,12 @@ function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
   const tagsRaw = raw.tags
   const tags =
     Array.isArray(tagsRaw) && tagsRaw.every((x) => typeof x === "string")
-      ? (tagsRaw as string[]).map((s) => s.trim()).filter(Boolean).slice(0, 8)
+      ? (tagsRaw as string[]).map((s) => s.trim()).filter(Boolean).slice(0, 10)
       : undefined
 
-  const asked = typeof raw.asked_clarifying_question === "boolean" ? raw.asked_clarifying_question : undefined
+  const asked =
+    typeof raw.asked_clarifying_question === "boolean" ? raw.asked_clarifying_question : undefined
+
   const nextQ = typeof raw.next_question === "string" ? raw.next_question.trim() : undefined
   const close = typeof raw.close_signal === "boolean" ? raw.close_signal : undefined
   const chips = normalizeChips(raw.chips)
@@ -158,33 +197,100 @@ function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
   }
 }
 
-function buildFallback(userText: string, questionsRemaining: number): Output {
-  const u = (userText ?? "").trim()
+function hasWhitelistedAlternative(text: string): boolean {
+  const t = (text ?? "").toLowerCase()
+  return ALT_WHITELIST.some((k) => t.includes(String(k).toLowerCase()))
+}
 
+function chooseFallbackAlternatives(tags?: string[]): string[] {
+  const t = (tags ?? []).map((x) => x.toLowerCase())
+  const has = (s: string) => t.some((x) => x.includes(s))
+
+  // Heuristics: pick 2 max, from whitelist.
+  if (has("adhd") || has("neuro") || has("koncentration") || has("studie")) return ["Mindfulness / meditation", "Massage"]
+  if (has("mave") || has("fordøj") || has("ibs")) return ["Akupunktur", "Zoneterapi"]
+  if (has("smerte") || has("hovedpine") || has("migræne")) return ["Akupunktur", "Massage"]
+  if (has("stress") || has("søvn") || has("uro")) return ["Mindfulness / meditation", "Massage"]
+  return ["Mindfulness / meditation"]
+}
+
+function ensureAtLeastOneAlternative(out: Output): Output {
+  if (hasWhitelistedAlternative(out.assistant_message)) return out
+
+  const alts = chooseFallbackAlternatives(out.tags)
+  const lines = [
+    out.assistant_message.trim(),
+    "",
+    "Alternativer i Danmark (typisk):",
+    ...alts.map((a) => `• ${a}`),
+  ].join("\n")
+
+  return { ...out, assistant_message: lines }
+}
+
+function isComparativeFollowUp(userText: string): boolean {
+  const t = (userText ?? "").trim().toLowerCase()
+  if (!t) return false
+  const patterns = [
+    "er hypno bedre",
+    "er hypnose bedre",
+    "bedre end",
+    "hvad er bedst",
+    "hvad er bedre",
+    "sammenlign",
+    "vs",
+    "kontra",
+    "i forhold til",
+    "hvorfor",
+    "hvorfor ikke",
+    "hvorfor ja",
+    "hvad ville du vælge",
+    "hvad anbefaler du",
+  ]
+  return patterns.some((p) => t.includes(p))
+}
+
+function buildClosedFollowUpFallback(userText: string): Output {
+  // Short, comparative, repeats at least one alternative; no new questions.
+  return ensureAtLeastOneAlternative({
+    assistant_message:
+      "Som tommelfingerregel er hypnoterapi sjældent “bedre” end etablerede førstevalg for kerneproblemet, men kan være et supplement ved stress, søvn eller nervesystem-ro. Alternativer som Mindfulness / meditation bruges ofte som supplement i Danmark; ved kropslige spændinger kan Massage også være relevant. Det vigtigste er at matche indsatsen til det primære problem og det du vil opnå.",
+    summary: "",
+    relevance: "SUPPLEMENT",
+    confidence: "medium",
+    asked_clarifying_question: false,
+    next_question: "",
+    close_signal: true,
+    tags: ["comparison", "overview"],
+  })
+}
+
+function buildFallback(userText: string, questionsRemaining: number): Output {
   if (questionsRemaining <= 0) {
-    return {
+    return ensureAtLeastOneAlternative({
       assistant_message:
-        "Jeg kan give et generelt overblik: hypnose bruges ofte ved vane- og stressrelaterede mønstre, mens ved vedvarende fysiske symptomer er lægelig afklaring typisk første skridt.",
+        "Jeg kan give et generelt overblik: ved mange temaer er de mest almindelige førstevalg i Danmark enten sundhedsfaglig vurdering/standardtiltag eller praktiske tilpasninger, og alternativ behandling bruges ofte som supplement. Hypnoterapi kan være relevant som supplement i nogle tilfælde, men afhænger af problemtypen.",
       summary: "",
       relevance: "NEEDS_ASSESSMENT",
       confidence: "low",
       asked_clarifying_question: false,
       next_question: "",
       close_signal: true,
-    }
+      tags: ["overview"],
+    })
   }
 
-  return {
-    assistant_message: u
-      ? "Tak. For at kunne give et kort overblik: er du blevet lægeligt undersøgt/udredt for symptomerne (fx hos egen læge)?"
-      : "Er du blevet lægeligt undersøgt/udredt for symptomerne (fx hos egen læge)?",
+  return ensureAtLeastOneAlternative({
+    assistant_message:
+      "For at kunne give et kort og relevant overblik: hvad er dit primære mål (fx færre symptomer, bedre søvn, mindre stress, mere fokus), og hvad har du allerede prøvet?",
     summary: "",
     relevance: "NEEDS_ASSESSMENT",
     confidence: "low",
     asked_clarifying_question: true,
-    next_question: "Er du blevet lægeligt undersøgt/udredt for symptomerne (fx hos egen læge)?",
+    next_question: "Hvad er dit primære mål, og hvad har du allerede prøvet?",
     close_signal: false,
-  }
+    tags: ["clarify"],
+  })
 }
 
 function enforceBudgetAndClose(
@@ -196,15 +302,18 @@ function enforceBudgetAndClose(
       ? parsed.asked_clarifying_question
       : typeof parsed.next_question === "string" && parsed.next_question.trim().endsWith("?")
 
-  let nextQuestionsUsed = questionsUsed + (asked ? 1 : 0)
-  if (nextQuestionsUsed > MAX_QUESTIONS) nextQuestionsUsed = MAX_QUESTIONS
-  const nextRemaining = Math.max(0, MAX_QUESTIONS - nextQuestionsUsed)
+  let nextUsed = questionsUsed + (asked ? 1 : 0)
+  if (nextUsed > MAX_QUESTIONS) nextUsed = MAX_QUESTIONS
+  const remaining = Math.max(0, MAX_QUESTIONS - nextUsed)
 
-  const decidedRelevance = parsed.relevance === "YES" || parsed.relevance === "SUPPLEMENT" || parsed.relevance === "NO"
-  const shouldClose = parsed.close_signal === true || decidedRelevance || nextRemaining <= 0
+  const relevanceFinal =
+    parsed.relevance === "YES" || parsed.relevance === "SUPPLEMENT" || parsed.relevance === "NO"
 
-  const out: Output = { ...parsed }
+  const shouldClose = parsed.close_signal === true || remaining <= 0 || relevanceFinal
 
+  let out: Output = { ...parsed }
+
+  // Before close: we avoid chips (no steering). After close: chips allowed (max 2), but not required.
   if (shouldClose) {
     out.close_signal = true
     out.next_question = ""
@@ -213,18 +322,21 @@ function enforceBudgetAndClose(
   } else {
     out.close_signal = false
     out.chips = undefined
-
-    const nq = (out.next_question ?? "").trim()
-    out.next_question = nq
-    out.asked_clarifying_question = asked
-
-    if (!nq) {
-      // Ensure we don't silently consume budget without asking anything meaningful.
-      out.asked_clarifying_question = false
-    }
+    // Ensure only a single concrete question
+    out.next_question = (out.next_question ?? "").trim()
   }
 
-  return { output: out, questionsUsed: nextQuestionsUsed, questionsRemaining: nextRemaining }
+  // Hard rule: always include at least one whitelisted alternative
+  out = ensureAtLeastOneAlternative(out)
+
+  // If budget exhausted, force close even if model forgot.
+  if (!out.close_signal && remaining <= 0) {
+    out.close_signal = true
+    out.next_question = ""
+    out.asked_clarifying_question = false
+  }
+
+  return { output: out, questionsUsed: nextUsed, questionsRemaining: remaining }
 }
 
 export const methodFitCapability: AiCapability = {
@@ -236,25 +348,64 @@ export const methodFitCapability: AiCapability = {
     const questionsUsed0 = readNumberMeta(context, "method_fit.question_count", 0)
     const close0 = Boolean(context.state.meta["method_fit.close_signal"]?.value === true)
     const questionsRemaining0 = Math.max(0, MAX_QUESTIONS - questionsUsed0)
+    const userText = context.userText ?? ""
 
+    // Soft-close: if we are closed but user asks a comparative follow-up, answer briefly instead of blocking.
+    if (close0 && isComparativeFollowUp(userText)) {
+      const out = buildClosedFollowUpFallback(userText)
+      const updatedTranscript = appendTranscript(transcript, userText, out.assistant_message)
+
+      const meta_delta: Record<string, unknown> = {
+        "method_fit.transcript": updatedTranscript,
+        "method_fit.close_signal": true,
+        "method_fit.question_count": questionsUsed0,
+        "method_fit.questions_remaining": questionsRemaining0,
+        "method_fit.relevance": out.relevance ?? "SUPPLEMENT",
+        "method_fit.confidence": out.confidence ?? "medium",
+        "method_fit.tags": out.tags ?? ["comparison", "overview"],
+      }
+
+      if (out.summary) meta_delta["method_fit.summary"] = out.summary
+      if (out.chips) meta_delta["method_fit.chips"] = out.chips
+
+      const transition: Transition = {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        reason: "method-fit-soft-close-followup",
+        response_message: out.assistant_message,
+        meta_delta,
+      }
+
+      return { transition, debug: { capability: "method-fit-v1", used_fallback: true } }
+    }
+
+    // If closed and not a comparative follow-up: keep stable guidance (no “start forfra”-tone).
     if (close0) {
+      const msg = ensureAtLeastOneAlternative({
+        assistant_message:
+          "Hvis du vil have et nyt overblik for en anden situation, så start en ny runde i ‘Hypnoterapi eller et bedre alternativ?’. Hvis du spørger til sammenligning (fx ‘er hypnose bedre end …?’), kan jeg også svare kort på det.",
+        relevance: context.state.meta["method_fit.relevance"]?.value as any,
+        confidence: context.state.meta["method_fit.confidence"]?.value as any,
+        tags: context.state.meta["method_fit.tags"]?.value as any,
+        close_signal: true,
+        next_question: "",
+        asked_clarifying_question: false,
+        summary: "",
+      })
+
+      const updatedTranscript = appendTranscript(transcript, userText, msg.assistant_message)
+
       const transition: Transition = {
         type: "NODE_HOP",
         from: context.state.active_node,
         reason: "method-fit-closed",
-        response_message:
-          "Jeg har givet et kort overblik i denne runde. Hvis du vil starte forfra med en ny problemstilling, så åbner du ‘Hypnoterapi eller et bedre alternativ?’ igen og beskriver den nye situation kort.",
+        response_message: msg.assistant_message,
         meta_delta: {
+          "method_fit.transcript": updatedTranscript,
           "method_fit.close_signal": true,
         },
       }
-      return {
-        transition,
-        debug: {
-          capability: "method-fit-v1",
-          used_fallback: true,
-        },
-      }
+      return { transition, debug: { capability: "method-fit-v1", used_fallback: true } }
     }
 
     const payload = {
@@ -268,26 +419,25 @@ export const methodFitCapability: AiCapability = {
           role: "user" as const,
           content: JSON.stringify({
             conversation_transcript: transcript,
-            user_input: context.userText ?? "",
+            user_input: userText,
             question_budget: {
               max_questions: MAX_QUESTIONS,
               questions_used: questionsUsed0,
               questions_remaining: questionsRemaining0,
             },
             instruction:
-              "Stil højst ét konkret afklarende spørgsmål hvis nødvendigt; ellers giv overblik + positionering og luk.",
+              "Stil højst ét konkret afklarende spørgsmål hvis nødvendigt; ellers giv overblik + positionering + konklusion.",
           }),
         },
       ],
     }
 
     const response = await llm.chatJson(payload)
-    const parsed0 = normalizeOutput(response) ?? buildFallback(context.userText ?? "", questionsRemaining0)
-
+    const parsed0 = normalizeOutput(response) ?? buildFallback(userText, questionsRemaining0)
     const enforced = enforceBudgetAndClose(parsed0, questionsUsed0)
     const parsed = enforced.output
 
-    const updatedTranscript = appendTranscript(transcript, context.userText ?? "", parsed.assistant_message)
+    const updatedTranscript = appendTranscript(transcript, userText, parsed.assistant_message)
 
     const meta_delta: Record<string, unknown> = {
       "method_fit.transcript": updatedTranscript,
@@ -300,7 +450,7 @@ export const methodFitCapability: AiCapability = {
     if (parsed.relevance) meta_delta["method_fit.relevance"] = parsed.relevance
     if (parsed.confidence) meta_delta["method_fit.confidence"] = parsed.confidence
     if (parsed.tags) meta_delta["method_fit.tags"] = parsed.tags
-    if (parsed.next_question && parsed.next_question.trim()) meta_delta["method_fit.next_question"] = parsed.next_question
+    if (parsed.next_question) meta_delta["method_fit.next_question"] = parsed.next_question
     if (parsed.chips) meta_delta["method_fit.chips"] = parsed.chips
 
     const transition: Transition = {
