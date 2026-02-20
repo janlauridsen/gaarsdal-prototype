@@ -7,170 +7,307 @@ import {
   ArrowsPointingOutIcon,
   ArrowsPointingInIcon,
   InformationCircleIcon,
+  CircleStackIcon,
+  PaperAirplaneIcon,
+  HomeIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  LinkIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline"
 
-type BotMessage = { role: "assistant"; content: string }
-type UserMessage = { role: "user"; content: string }
-type ChatMessage = BotMessage | UserMessage
+import styles from "./Chatbot.module.css"
 
-type State = {
-  active_node?: string
-  allowed_transitions?: string[]
-  meta?: Record<string, any>
-  thread_id?: string
+type ConversationState = {
+  conversation_id: string
+  revision: number
+  active_node: string
+  active_node_message: string
+  allowed_transitions: string[]
+  meta: Record<string, any>
+  status: "active" | "paused" | "completed" | "rejected"
+  parentese_stack: string[]
 }
 
-type ThreadChoice = {
+type InputSignal =
+  | { type: "EXPLICIT_TRANSITION"; target: string }
+  | { type: "FREE_TEXT"; text: string }
+  | { type: "SYSTEM_INIT" }
+
+type KernelResponse = {
+  state: ConversationState
+  transition?: any
+  log?: any
+}
+
+type ChatMessage = {
   id: string
-  label: string
-  kind: string
+  role: "assistant" | "user"
+  text: string
 }
 
 type UiSuggestion = {
   id: string
   label: string
-  input?: string
+  input?: any
 }
 
-type TopicButton = {
+type ThreadChoice = {
   id: string
   label: string
+  kind: "continue" | "new" | "thread"
 }
 
-const TOPIC_NODES: string[] = ["HOME", "ABOUT", "AI_FAILSAFE", "CONTACT", "PRIVACY"]
-
-function threadCountFromState(state: State): number {
-  const count = state?.meta?.["threads.count"]
-  return typeof count === "number" ? count : 0
+const NODE_LABELS: Record<string, string> = {
+  THREAD_CHOOSER: "Tråde",
+  HOME: "Forside",
+  GEN_HYPNO: "Spørg om hypnoterapi",
+  TRIAGE: "Passer hypnoterapi til min situation?",
+  METHOD_FIT: "Hypnoterapi eller et bedre alternativ?",
+  BOOKING: "Book tid",
+  DEV_SANDBOX_INTRO: "Sandbox (dev)",
+  MAIL: "E-mail",
+  TLF: "Telefon",
+  CONTACT_FORM: "Kontakt",
+  AKUT: "Akut",
 }
 
-function asStringOrNull(x: unknown): string | null {
-  return typeof x === "string" ? x : null
+const TOPIC_TOOLTIPS: Record<string, string> = {
+  GEN_HYPNO: "Fri samtale (ingen behandling i chatten).",
+  TRIAGE: "Kort afklaring med få spørgsmål.",
+  METHOD_FIT: "Overblik over alternativer (ikke behandling).",
+  BOOKING: "Vælg kontaktvej for booking.",
+  DEV_SANDBOX_INTRO: "Dev-flow: form → tool → checkpoint → track/profile.",
 }
 
-function stripCodeFence(s: string): string {
-  const trimmed = s.trim()
-  if (trimmed.startsWith("```") && trimmed.endsWith("```")) {
-    return trimmed.replace(/^```[\w-]*\n?/, "").replace(/```$/, "").trim()
-  }
-  return s
+const TOPIC_NODES = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING", "DEV_SANDBOX_INTRO"] as const
+
+function safeId() {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
-function safeJsonParse<T = any>(raw: string): T | null {
-  try {
-    return JSON.parse(raw) as T
-  } catch {
-    return null
-  }
+function trimDuplicateTitle(s: string) {
+  // Håndter "x — x" (dobbelt titel)
+  const parts = s.split("—").map((p) => p.trim()).filter(Boolean)
+  if (parts.length === 2 && parts[0] === parts[1]) return parts[0]
+  return s.trim()
 }
-
-function normalizeConversation(messages: any): ChatMessage[] {
-  if (!Array.isArray(messages)) return []
-  const out: ChatMessage[] = []
-  for (const m of messages) {
-    if (!m || typeof m !== "object") continue
-    const role = (m as any).role
-    const content = (m as any).content
-    if ((role === "assistant" || role === "user") && typeof content === "string") {
-      out.push({ role, content } as ChatMessage)
-    }
-  }
-  return out
-}
-
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n))
-}
-
-async function postJson<T = any>(url: string, payload: any): Promise<T> {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  })
-  if (!res.ok) {
-    const t = await res.text().catch(() => "")
-    throw new Error(`HTTP ${res.status} ${res.statusText}${t ? `: ${t}` : ""}`)
-  }
-  return (await res.json()) as T
-}
-
-const LOCAL_STORAGE_KEY = "gaarsdal.chatbot.ui"
-const DEFAULT_OPEN = false
-const DEFAULT_DOCKED = true
 
 export default function Chatbot() {
-  const [open, setOpen] = useState<boolean>(DEFAULT_OPEN)
-  const [docked, setDocked] = useState<boolean>(DEFAULT_DOCKED)
+  const [open, setOpen] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
+  const [state, setState] = useState<ConversationState | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [input, setInput] = useState<string>("")
-  const [busy, setBusy] = useState<boolean>(false)
-  const [state, setState] = useState<State | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [input, setInput] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const scrollRef = useRef<HTMLDivElement | null>(null)
-  const inputRef = useRef<HTMLInputElement | null>(null)
+  const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
+  const headerNavHintTimerRef = useRef<number | null>(null)
 
-  // Persist UI state
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(LOCAL_STORAGE_KEY)
-      if (!raw) return
-      const obj = safeJsonParse<any>(raw)
-      if (!obj || typeof obj !== "object") return
-      if (typeof obj.open === "boolean") setOpen(obj.open)
-      if (typeof obj.docked === "boolean") setDocked(obj.docked)
-    } catch {
-      // ignore
-    }
-  }, [])
+  const endRef = useRef<HTMLDivElement | null>(null)
+  const didAutoStartNewThreadRef = useRef(false)
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ open, docked }))
-    } catch {
-      // ignore
-    }
-  }, [open, docked])
-
-  // Load initial state / history
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      try {
-        const res = await postJson<any>("/api/chat", { op: "init" })
-        if (cancelled) return
-        const st = res?.state as State | undefined
-        setState(st ?? null)
-        setMessages(normalizeConversation(res?.messages))
-      } catch (e: any) {
-        if (cancelled) return
-        setError(e?.message ?? "Init failed")
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  // Auto-scroll on new messages
-  useEffect(() => {
-    if (!open) return
-    const el = scrollRef.current
-    if (!el) return
-    el.scrollTop = el.scrollHeight
-  }, [messages, open])
-
-  // Focus input when opening
-  useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 50)
-    }
-  }, [open])
+  // Global footer actions must always be reachable, regardless of the current node's allowed_transitions.
+  // (Kernel also whitelists these exits.)
+  const GLOBAL_ACTIONS = useMemo(
+    () => new Set(["HOME", "TLF", "MAIL", "CONTACT_FORM", "AKUT"]),
+    []
+  )
 
   function metaValue(key: string) {
-    return state?.meta?.[key]
+    const entry = state?.meta?.[key]
+    if (entry && typeof entry === "object" && "value" in entry) return (entry as any).value
+    return entry
+  }
+
+  const activeNodeLabel = useMemo(() => {
+    if (!state) return "Initialiserer…"
+    return NODE_LABELS[state.active_node] ?? state.active_node
+  }, [state])
+
+  const placeholder = useMemo(() => {
+    if (!state) return "Initialiserer…"
+    if (state.active_node === "THREAD_CHOOSER") return "Vælg en tråd…"
+    return "Skriv her… (Enter = send, Shift+Enter = ny linje)"
+  }, [state])
+
+  const freeTextEnabled = useMemo(() => {
+    if (!state) return false
+    if (loading) return false
+    if (state.status === "completed" || state.status === "rejected") return false
+    return true
+  }, [state, loading])
+
+  useEffect(() => {
+    if (!open) return
+    endRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages, open, headerNavHint, expanded])
+
+  useEffect(() => {
+    return () => {
+      if (headerNavHintTimerRef.current) {
+        window.clearTimeout(headerNavHintTimerRef.current)
+        headerNavHintTimerRef.current = null
+      }
+    }
+  }, [])
+
+  function appendMessage(message: ChatMessage) {
+    setMessages((prev) => [...prev, message])
+  }
+
+  function appendAssistantMessage(text: string) {
+    const message = (text ?? "").trim()
+    if (!message) return
+
+    setMessages((prev) => {
+      const last = prev.length ? prev[prev.length - 1] : null
+      if (last && last.role === "assistant" && last.text.trim() === message) return prev
+      return [...prev, { id: `assistant-${safeId()}`, role: "assistant", text: message }]
+    })
+  }
+
+  function appendUserMessage(text: string) {
+    const message = (text ?? "").trim()
+    if (!message) return
+    appendMessage({ id: `user-${safeId()}`, role: "user", text: message })
+  }
+
+  function showHeaderNavHint(text: string) {
+    if (headerNavHintTimerRef.current) {
+      window.clearTimeout(headerNavHintTimerRef.current)
+      headerNavHintTimerRef.current = null
+    }
+    setHeaderNavHint(text)
+    headerNavHintTimerRef.current = window.setTimeout(() => {
+      setHeaderNavHint(null)
+      headerNavHintTimerRef.current = null
+    }, 2400)
+  }
+
+  async function callKernel(nextState: ConversationState | null, nextInput: InputSignal) {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state: nextState, input: nextInput }),
+    })
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "")
+      throw new Error(`Chat: HTTP ${res.status}${body ? ` — ${body}` : ""}`)
+    }
+
+    const data: KernelResponse = await res.json()
+    if (!data?.state) throw new Error("Chat: mangler state i svar")
+    return data
+  }
+
+  function threadCountFromState(s: ConversationState) {
+    const raw = s.meta?.["threads.count"]?.value ?? s.meta?.["threads.count"]
+    const n = typeof raw === "number" ? raw : Number(raw ?? 0)
+    return Number.isFinite(n) ? n : 0
+  }
+
+  function normalizeAssistantMessage(s: ConversationState) {
+    if (s.status === "completed") {
+      return "Samtalen er afsluttet. Start en ny tråd eller vælg en anden."
+    }
+
+    if (s.active_node === "THREAD_CHOOSER") {
+      const count = threadCountFromState(s)
+      if (count <= 0) return "Starter en ny tråd…"
+      return "Vælg en tråd, eller start en ny."
+    }
+
+    return s.active_node_message
+  }
+
+  async function init() {
+    setLoading(true)
+    didAutoStartNewThreadRef.current = false
+
+    try {
+      const data = await callKernel(null, { type: "SYSTEM_INIT" })
+      setState(data.state)
+      setMessages([])
+      setInput("")
+      setHeaderNavHint(null)
+      appendAssistantMessage(normalizeAssistantMessage(data.state))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function dispatch(nextInput: InputSignal, opts?: { silentUser?: boolean }) {
+    if (!state) return
+    setLoading(true)
+
+    try {
+      const fromNode = state.active_node
+      const data = await callKernel(state, nextInput)
+
+      if (nextInput.type === "EXPLICIT_TRANSITION") {
+        const fromLabel = NODE_LABELS[fromNode] ?? fromNode
+        const toNode = data?.state?.active_node ?? nextInput.target
+        const toLabel = NODE_LABELS[toNode] ?? toNode
+        showHeaderNavHint(`${fromLabel} → ${toLabel}`)
+      } else if (nextInput.type === "FREE_TEXT" && !opts?.silentUser) {
+        appendUserMessage(nextInput.text)
+      }
+
+      setState(data.state)
+
+      const assistantText =
+        (data.transition?.response_message as string | undefined) ?? normalizeAssistantMessage(data.state)
+
+      appendAssistantMessage(assistantText)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function openChat() {
+    setOpen(true)
+    if (!state) init()
+  }
+
+  function closeChat() {
+    setOpen(false)
+    setExpanded(false)
+  }
+
+  function toggleExpanded() {
+    setExpanded((v) => !v)
+  }
+
+  function go(target: string) {
+    if (!state) return
+
+    const allowed = new Set(state.allowed_transitions ?? [])
+    const isAllowed = allowed.has(target) || GLOBAL_ACTIONS.has(target)
+    if (!isAllowed) {
+      showHeaderNavHint("Ikke tilgængeligt her")
+      return
+    }
+
+    const goingFromHomeToTopic = state.active_node === "HOME" && target !== "HOME"
+    if (goingFromHomeToTopic) {
+      const label = NODE_LABELS[target] ?? target
+      appendUserMessage(label)
+    }
+
+    dispatch({ type: "EXPLICIT_TRANSITION", target })
+  }
+
+  // “Tråde” i header: tilbage til lobby / trådvalg
+  function goToThreadChooser() {
+    setMessages([])
+    setInput("")
+    setState(null)
+    setHeaderNavHint(null)
+    didAutoStartNewThreadRef.current = false
+    init()
   }
 
   const threadChoicesRaw = metaValue("threads.choices")
@@ -187,6 +324,7 @@ export default function Chatbot() {
   const uiSuggestions: UiSuggestion[] = Array.isArray(uiSuggestionsRaw)
     ? (uiSuggestionsRaw as any[])
         .filter((x) => x && typeof x === "object" && typeof (x as any).label === "string")
+        .slice(0, 8)
         .map((x, i) => ({
           id: String((x as any).id ?? i),
           label: String((x as any).label),
@@ -199,268 +337,295 @@ export default function Chatbot() {
   const topicButtons = showTopics
     ? TOPIC_NODES.map((id) => ({
         id,
-        label: id,
-      }))
+        label: NODE_LABELS[id] ?? id,
+        enabled: state ? allowedSet.has(id) || id === state.active_node : false,
+        tooltip: TOPIC_TOOLTIPS[id] ?? "",
+      })).filter((t) => t.id !== state?.active_node)
     : []
 
-  const canClose = true
-  const canToggleDock = true
+  // Auto: hvis der ingen tråde er, start ny tråd uden at brugeren skal skrive “new”.
+  useEffect(() => {
+    if (!open) return
+    if (!state) return
+    if (state.active_node !== "THREAD_CHOOSER") return
+    if (didAutoStartNewThreadRef.current) return
+    if (threadCount > 0) return
 
-  const headerTitle = useMemo(() => {
-    const t = asStringOrNull(metaValue("ui.title"))
-    return t ?? "Chatbot"
-  }, [state])
+    didAutoStartNewThreadRef.current = true
+    ;(async () => {
+      try {
+        await dispatch({ type: "FREE_TEXT", text: "new" }, { silentUser: true })
+      } catch {
+        // no-op
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, state?.active_node, threadCount])
 
-  const subtitle = useMemo(() => {
-    const t = asStringOrNull(metaValue("ui.subtitle"))
-    return t ?? ""
-  }, [state])
+  const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal}`
 
-  const infoText = useMemo(() => {
-    const t = asStringOrNull(metaValue("ui.info"))
-    return t ?? ""
-  }, [state])
+  const showThreadChooserCards =
+    state?.active_node === "THREAD_CHOOSER" && threadChoices.length > 0 && state.status === "active"
 
-  function pushUserMessage(text: string) {
-    const trimmed = text.trim()
-    if (!trimmed) return
-    setMessages((prev) => [...prev, { role: "user", content: trimmed }])
-  }
-
-  function pushAssistantMessage(text: string) {
-    const trimmed = text.trim()
-    if (!trimmed) return
-    setMessages((prev) => [...prev, { role: "assistant", content: trimmed }])
-  }
-
-  async function send(text: string) {
-    const trimmed = text.trim()
-    if (!trimmed || busy) return
-    setError(null)
-    pushUserMessage(trimmed)
-    setInput("")
-    setBusy(true)
-
-    try {
-      const res = await postJson<any>("/api/chat", {
-        op: "message",
-        input: trimmed,
-        state,
+  const normalizedThreadCards = useMemo(() => {
+    const base = threadChoices
+      .map((c) => {
+        const cleanLabel = trimDuplicateTitle(c.label)
+        const uiLabel =
+          c.kind === "new"
+            ? "Ny tråd"
+            : c.kind === "continue"
+              ? "Fortsæt seneste tråd"
+              : cleanLabel || "Tråd"
+        return { ...c, uiLabel }
+      })
+      .sort((a, b) => {
+        const rank = (k: ThreadChoice["kind"]) => (k === "new" ? 0 : k === "continue" ? 1 : 2)
+        return rank(a.kind) - rank(b.kind)
+      })
+      .filter((c) => {
+        // Skjul “continue” hvis der reelt ikke er noget at fortsætte
+        if (threadCount <= 0 && c.kind === "continue") return false
+        return true
+      })
+      .filter((c) => {
+        // Skjul “thread”-kort med “fjollet nummer”/tomt label
+        if (c.kind !== "thread") return true
+        const cleaned = trimDuplicateTitle(c.label || "")
+        if (!cleaned) return false
+        if (/^(tråd\s*)?\d+$/i.test(cleaned)) return false
+        return true
       })
 
-      const newState = (res?.state as State | undefined) ?? null
-      const assistantText = typeof res?.message === "string" ? res.message : ""
-      const mergedMessages = normalizeConversation(res?.messages)
-
-      setState(newState)
-      if (mergedMessages.length) {
-        setMessages(mergedMessages)
-      } else if (assistantText) {
-        pushAssistantMessage(assistantText)
-      }
-    } catch (e: any) {
-      setError(e?.message ?? "Send failed")
-    } finally {
-      setBusy(false)
+    // Hvis der kun er én tråd og “continue” i praksis er samme, kan vi skjule continue
+    const hasContinue = base.some((x) => x.kind === "continue")
+    const threadCards = base.filter((x) => x.kind === "thread")
+    if (hasContinue && threadCards.length === 1) {
+      return base.filter((x) => x.kind !== "continue")
     }
-  }
-
-  async function transition(id: string) {
-    if (busy) return
-    setError(null)
-    setBusy(true)
-    try {
-      const res = await postJson<any>("/api/chat", {
-        op: "transition",
-        id,
-        state,
-      })
-      const newState = (res?.state as State | undefined) ?? null
-      const assistantText = typeof res?.message === "string" ? res.message : ""
-      const mergedMessages = normalizeConversation(res?.messages)
-
-      setState(newState)
-      if (mergedMessages.length) {
-        setMessages(mergedMessages)
-      } else if (assistantText) {
-        pushAssistantMessage(assistantText)
-      }
-    } catch (e: any) {
-      setError(e?.message ?? "Transition failed")
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    void send(input)
-  }
-
-  function toggleDock() {
-    setDocked((v) => !v)
-  }
-
-  function close() {
-    if (!canClose) return
-    setOpen(false)
-  }
-
-  function openChat() {
-    setOpen(true)
-  }
-
-  const containerClass =
-    "fixed z-50 " +
-    (docked
-      ? "bottom-4 right-4 w-[min(420px,calc(100vw-2rem))] h-[min(640px,calc(100vh-2rem))]"
-      : "inset-4 w-[calc(100vw-2rem)] h-[calc(100vh-2rem)]") +
-    " bg-white shadow-2xl rounded-xl border border-gray-200 flex flex-col overflow-hidden"
-
-  const headerClass = "flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-200 bg-gray-50"
-  const bodyClass = "flex-1 overflow-y-auto px-3 py-3 space-y-3"
-  const footerClass = "border-t border-gray-200 px-3 py-2 bg-white"
+    return base
+  }, [threadChoices, threadCount])
 
   return (
     <>
-      {!open ? (
-        <button
-          type="button"
-          onClick={openChat}
-          className="fixed bottom-4 right-4 z-50 rounded-full shadow-lg border border-gray-200 bg-white px-4 py-3 flex items-center gap-2"
-          aria-label="Open chat"
-        >
-          <ChatBubbleOvalLeftEllipsisIcon className="w-6 h-6" />
-          <span className="text-sm font-medium">{headerTitle}</span>
+      {!open && (
+        <button className={styles.fab} onClick={openChat} aria-label="Åbn chat" title="Åbn chat">
+          <ChatBubbleOvalLeftEllipsisIcon className={styles.fabIcon} />
         </button>
-      ) : (
-        <div className={containerClass} role="dialog" aria-modal="true" aria-label={headerTitle}>
-          <div className={headerClass}>
-            <div className="min-w-0">
-              <div className="text-sm font-semibold truncate">{headerTitle}</div>
-              {subtitle ? <div className="text-xs text-gray-500 truncate">{subtitle}</div> : null}
+      )}
+
+      {open && (
+        <>
+          <div className={styles.overlay} onClick={closeChat} />
+
+          <div className={containerClass} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className={styles.header}>
+              <div className={styles.headerRow}>
+                <div className={styles.headerLeft}>
+                  <div className={styles.title}>Gaarsdal Chat</div>
+                  <div className={styles.node}>{activeNodeLabel}</div>
+                </div>
+
+                <div className={styles.headerRight}>
+                  <button className={styles.iconBtn} onClick={goToThreadChooser} title="Tråde" aria-label="Tråde">
+                    <CircleStackIcon className={styles.icon} />
+                  </button>
+
+                  <button
+                    className={styles.iconBtn}
+                    onClick={() => appendAssistantMessage("(Info er ikke aktiveret i UI endnu.)")}
+                    title="Info"
+                    aria-label="Info"
+                  >
+                    <InformationCircleIcon className={styles.icon} />
+                  </button>
+
+                  <button
+                    className={styles.iconBtn}
+                    onClick={toggleExpanded}
+                    title={expanded ? "Minimer" : "Maksimer"}
+                    aria-label={expanded ? "Minimer" : "Maksimer"}
+                  >
+                    {expanded ? (
+                      <ArrowsPointingInIcon className={styles.icon} />
+                    ) : (
+                      <ArrowsPointingOutIcon className={styles.icon} />
+                    )}
+                  </button>
+
+                  <button className={styles.iconBtn} onClick={closeChat} title="Luk" aria-label="Luk">
+                    <XMarkIcon className={styles.icon} />
+                  </button>
+                </div>
+              </div>
+
+              {headerNavHint && (
+                <div className={styles.navHint}>
+                  <span className={styles.navHintPulse}>{headerNavHint}</span>
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center gap-1">
-              {infoText ? (
-                <button
-                  type="button"
-                  className="p-2 rounded hover:bg-gray-100"
-                  title="Info"
-                  onClick={() => pushAssistantMessage(infoText)}
+            <div className={styles.messages}>
+              {messages.map((m) => (
+                <div
+                  key={m.id}
+                  className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}
                 >
-                  <InformationCircleIcon className="w-5 h-5" />
-                </button>
-              ) : null}
+                  {m.text}
+                </div>
+              ))}
 
-              {canToggleDock ? (
-                <button type="button" className="p-2 rounded hover:bg-gray-100" title="Toggle size" onClick={toggleDock}>
-                  {docked ? <ArrowsPointingOutIcon className="w-5 h-5" /> : <ArrowsPointingInIcon className="w-5 h-5" />}
-                </button>
-              ) : null}
+              {state?.status === "completed" && (
+                <div className={styles.callout}>
+                  <div className={styles.calloutTitle}>Næste</div>
+                  <div className={styles.calloutRow}>
+                    <button
+                      className={styles.chipAction}
+                      onClick={() => dispatch({ type: "FREE_TEXT", text: "new" }, { silentUser: true })}
+                      disabled={loading || !state}
+                    >
+                      Ny tråd
+                    </button>
+                    <button className={styles.chipAction} onClick={goToThreadChooser} disabled={loading}>
+                      Tråde
+                    </button>
+                  </div>
+                </div>
+              )}
 
-              {canClose ? (
-                <button type="button" className="p-2 rounded hover:bg-gray-100" title="Close" onClick={close}>
-                  <XMarkIcon className="w-5 h-5" />
+              {showThreadChooserCards && (
+                <div className="mt-3">
+                  <div className={styles.sectionTitle}>Tråde</div>
+                  <div className={styles.topicGrid}>
+                    {normalizedThreadCards.map((c) => (
+                      <button
+                        key={c.id}
+                        className={styles.topicCard}
+                        onClick={() => dispatch({ type: "FREE_TEXT", text: c.id }, { silentUser: true })}
+                        disabled={loading || !state}
+                        title={c.kind === "thread" ? trimDuplicateTitle(c.label) : ""}
+                      >
+                        <span className={styles.topicLabel}>{(c as any).uiLabel}</span>
+                        {c.kind === "continue" && (
+                          <span className={styles.topicMeta}>
+                            {trimDuplicateTitle(String(c.label ?? "").replace(/^Fortsæt:\s*/i, ""))}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {topicButtons.length > 0 && (
+                <div className="mt-3">
+                  <div className={styles.sectionTitle}>Emner</div>
+                  <div className={styles.topicGrid}>
+                    {topicButtons.map((t) => (
+                      <button
+                        key={t.id}
+                        className={styles.topicCard}
+                        onClick={() => go(t.id)}
+                        disabled={!t.enabled || loading || !state}
+                        title={t.tooltip}
+                      >
+                        <span className={styles.topicLabel}>{t.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {uiSuggestions.length > 0 && (
+                <div className="mt-3">
+                  <div className={styles.sectionTitle}>Forslag</div>
+                  <div className={styles.calloutRow}>
+                    {uiSuggestions.map((s) => (
+                      <button
+                        key={s.id}
+                        className={styles.chipAction}
+                        onClick={() => {
+                          if (s.input) {
+                            dispatch(s.input as InputSignal, { silentUser: true })
+                          } else {
+                            dispatch({ type: "FREE_TEXT", text: s.label })
+                          }
+                        }}
+                        disabled={loading || !state || !freeTextEnabled}
+                        title={s.label}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div ref={endRef} />
+            </div>
+
+            <div className={styles.footer}>
+              <div className={styles.footerRow}>
+                <button className={styles.footerIcon} onClick={() => go("HOME")} title="Forside" aria-label="Forside">
+                  <HomeIcon className={styles.footerIconSvg} />
                 </button>
-              ) : null}
+                <button className={styles.footerIcon} onClick={() => go("TLF")} title="Telefon" aria-label="Telefon">
+                  <PhoneIcon className={styles.footerIconSvg} />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("MAIL")} title="E-mail" aria-label="E-mail">
+                  <EnvelopeIcon className={styles.footerIconSvg} />
+                </button>
+                <button
+                  className={styles.footerIcon}
+                  onClick={() => go("CONTACT_FORM")}
+                  title="Kontakt"
+                  aria-label="Kontakt"
+                >
+                  <LinkIcon className={styles.footerIconSvg} />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("AKUT")} title="Akut" aria-label="Akut">
+                  <ExclamationTriangleIcon className={styles.footerIconSvg} />
+                </button>
+              </div>
+
+              <div className={styles.inputRow}>
+                <textarea
+                  className={styles.textarea}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={placeholder}
+                  rows={2}
+                  disabled={!state || !freeTextEnabled}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault()
+                      const text = input.trim()
+                      if (!text) return
+                      setInput("")
+                      dispatch({ type: "FREE_TEXT", text })
+                    }
+                  }}
+                />
+
+                <button
+                  className={styles.sendBtn}
+                  onClick={() => {
+                    const text = input.trim()
+                    if (!text) return
+                    setInput("")
+                    dispatch({ type: "FREE_TEXT", text })
+                  }}
+                  disabled={!state || !freeTextEnabled || !input.trim()}
+                  title="Send"
+                  aria-label="Send"
+                >
+                  <PaperAirplaneIcon className={styles.sendIcon} />
+                </button>
+              </div>
             </div>
           </div>
-
-          <div ref={scrollRef} className={bodyClass}>
-            {error ? (
-              <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">{error}</div>
-            ) : null}
-
-            {threadChoices.length ? (
-              <div className="flex flex-wrap gap-2">
-                {threadChoices.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    className="text-xs rounded-full border border-gray-200 px-3 py-1 hover:bg-gray-50"
-                    disabled={busy}
-                    onClick={() => transition(c.id)}
-                  >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-
-            {topicButtons.length ? (
-              <div className="flex flex-wrap gap-2">
-                {topicButtons.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    className="text-xs rounded-full border border-gray-200 px-3 py-1 hover:bg-gray-50"
-                    disabled={busy || !allowedSet.has(t.id)}
-                    onClick={() => transition(t.id)}
-                    title={!allowedSet.has(t.id) ? "Not available right now" : ""}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-
-            {uiSuggestions.length ? (
-              <div className="flex flex-wrap gap-2">
-                {uiSuggestions.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    className="text-xs rounded-full border border-gray-200 px-3 py-1 hover:bg-gray-50"
-                    disabled={busy}
-                    onClick={() => void send(s.input ?? s.label)}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-
-            {messages.map((m, idx) => (
-              <div
-                key={idx}
-                className={
-                  "max-w-[90%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap " +
-                  (m.role === "user" ? "ml-auto bg-gray-900 text-white" : "mr-auto bg-gray-100 text-gray-900")
-                }
-              >
-                {stripCodeFence(m.content)}
-              </div>
-            ))}
-
-            {busy ? <div className="text-xs text-gray-500">Working…</div> : null}
-
-            {threadCount > 0 ? (
-              <div className="text-[11px] text-gray-400 pt-2">Thread: {state?.thread_id ?? "—"} · Count: {threadCount}</div>
-            ) : null}
-          </div>
-
-          <div className={footerClass}>
-            <form onSubmit={onSubmit} className="flex gap-2">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Write a message…"
-                className="flex-1 border border-gray-200 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-200"
-                disabled={busy}
-              />
-              <button
-                type="submit"
-                disabled={busy || !input.trim()}
-                className="px-3 py-2 rounded bg-gray-900 text-white text-sm disabled:opacity-50"
-              >
-                Send
-              </button>
-            </form>
-          </div>
-        </div>
+        </>
       )}
     </>
   )
