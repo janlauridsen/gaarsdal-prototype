@@ -1,5 +1,6 @@
 import { Transition } from "../../kernel/types"
 import { readReflectionCase } from "../../persistence/reflectionCaseStore"
+import { readReflectionFocusPlan } from "../../persistence/reflectionFocusPlanStore"
 import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
 
 type TranscriptTurn = { role: "user" | "assistant"; content: string }
@@ -19,9 +20,13 @@ Increase user understanding.
 No exercises, protocols, or treatment.
 
 Rules:
-- Ask max 1–2 questions per turn.
-- Prioritize the largest information gap.
-- Follow CBA suggestions implicitly.
+- Ask max 1–3 questions per turn (prefer 1).
+- Prioritize the largest information gap for the next step.
+- If focus_plan is present:
+  - Use it as soft guidance.
+  - Prefer its suggested_questions (you may rephrase naturally).
+  - Do not ask more than focus_plan.constraints.max_questions.
+- Avoid repeating questions already asked recently (use transcript).
 - If risk_engine.override_active == true:
   shift to stabilization language.
 - If dialog_dynamics.stall_detected == true:
@@ -34,6 +39,7 @@ Rules:
 
 You receive:
 - current_schema (JSON)
+- focus_plan (JSON or null)
 - conversation_transcript (list)
 - user_input (string)
 
@@ -86,6 +92,7 @@ export const reflectionCapability: AiCapability = {
   async run(context: AiCapabilityContext, llm: LlmClient): Promise<AiCapabilityResult> {
     const transcript = readTranscript(context)
     const schema = await readReflectionCase(context.state.conversation_id)
+    const focus_plan = await readReflectionFocusPlan(context.state.conversation_id, context.state.revision)
     const contextSystem = (context.contextPack?.system ?? "").trim()
 
     const payload = {
@@ -99,6 +106,7 @@ export const reflectionCapability: AiCapability = {
           role: "user" as const,
           content: JSON.stringify({
             current_schema: schema,
+            focus_plan,
             conversation_transcript: transcript,
             user_input: context.userText ?? "",
           }),
