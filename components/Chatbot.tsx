@@ -112,8 +112,8 @@ export default function Chatbot() {
   // "System is alive" indicator text (rotates while waiting for backend).
   const WAITING_TEXTS = useMemo(
     () => [
-      "Jeg arbejder på dit svar…",
-      "Læser det igennem…",
+      "Jeg arbejder…",
+      "Læser…",
       "Samler trådene…",
       "Forbereder svar…",
     ],
