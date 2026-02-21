@@ -112,6 +112,9 @@ export type ReflectionCaseSchemaV1 = {
     goal_clarity: number // 0..1
     risk_clearance: number // 0..1
   }
+
+  // Optional, produced by CBA output. Kept small and separate from conversation meta.
+  suggestions_for_therapist?: string
 }
 
 function nowIso(): string {
@@ -215,5 +218,7 @@ export function createEmptyReflectionCase(conversationId: string): ReflectionCas
       goal_clarity: 0.0,
       risk_clearance: 0.0,
     },
+
+    suggestions_for_therapist: "",
   }
 }
