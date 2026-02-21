@@ -2,6 +2,9 @@
 import type { AsyncJobResult, AsyncJobV23 } from "./types"
 import { dequeueJobs } from "./queue"
 import { readInteractions } from "../logging/sink"
+import { createOpenAiCompatibleClient } from "../ai/provider"
+import { readReflectionCase, writeReflectionCase } from "../persistence/reflectionCaseStore"
+import { mergeReflectionCase } from "../reflection/merge"
 import {
   readEpisode,
   readFacts,
@@ -15,6 +18,52 @@ import {
 import { readConversationState } from "../persistence/conversationStateStore"
 
 const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // keep aligned with other memory TTLs for now
+const REFLECTION_TTL_SECONDS = 90 * 24 * 60 * 60
+
+const CBA_PROMPT_V1 =
+  "Role: Case Builder Agent.\n\n" +
+  "Input:\n- current_schema\n- user_message\n- therapist_message\n\n" +
+  "Rules:\n" +
+  "- Extract only explicit or strongly implied data.\n" +
+  "- Update confidence conservatively.\n" +
+  "- Compute maturity_model using rule-based coverage.\n" +
+  "- Compute risk_engine using explicit behavioral signals.\n" +
+  "- Compute dialog_dynamics baseline (novelty).\n" +
+  "- Estimate repetition_score and fatigue_signal (±0.15 cap).\n" +
+  "- Merge to progress_score.\n" +
+  "- Detect stall if progress_score < 0.25 for 3 turns.\n" +
+  "- Never propose exercises or interventions.\n" +
+  "- If override_active = true, signal stabilization.\n\n" +
+  "Output strictly JSON with:\n" +
+  "- schema updates\n" +
+  "- updated risk_engine\n" +
+  "- maturity_model\n" +
+  "- dialog_dynamics\n" +
+  "- suggestions_for_therapist\n"
+
+function isRecord(x: unknown): x is Record<string, unknown> {
+  return !!x && typeof x === "object" && !Array.isArray(x)
+}
+
+function pickSchemaPatch(out: Record<string, unknown>): Record<string, unknown> {
+  // Spec does not define canonical key names.
+  // We accept a few common envelopes to avoid brittle coupling:
+  // - { schema_updates: {...} }
+  // - { schema: {...} }
+  // - { patch: {...} }
+  // - otherwise treat the object itself as a patch.
+  const candidates = ["schema_updates", "schema", "patch", "updates"]
+  for (const k of candidates) {
+    const v = out[k]
+    if (isRecord(v)) return v
+  }
+  return out
+}
+
+function pickSuggestions(out: Record<string, unknown>): string {
+  const v = out["suggestions_for_therapist"]
+  return typeof v === "string" ? v : ""
+}
 
 function clampText(s: string, max: number): string {
   const t = (s ?? "").trim()
@@ -406,10 +455,57 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
   return { job_id: job.job_id, ok: true }
 }
 
+async function processReflectionCbaUpdate(job: AsyncJobV23): Promise<AsyncJobResult> {
+  const payload = (job as any).payload
+  const user_message = typeof payload?.user_message === "string" ? payload.user_message : ""
+  const therapist_message = typeof payload?.therapist_message === "string" ? payload.therapist_message : ""
+
+  // No-op if we do not have any meaningful text.
+  if (!user_message.trim() && !therapist_message.trim()) {
+    return { job_id: job.job_id, ok: true }
+  }
+
+  const current = await readReflectionCase(job.conversation_id)
+
+  const llm = createOpenAiCompatibleClient()
+  const model = process.env.OPENAI_MODEL_JSON ?? "gpt-4o-mini"
+
+  const inputObj = {
+    current_schema: current,
+    user_message,
+    therapist_message,
+  }
+
+  const out = await llm.chatJson({
+    model,
+    temperature: 0.2,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: CBA_PROMPT_V1 },
+      { role: "user", content: JSON.stringify(inputObj) },
+    ],
+  })
+
+  if (!out) {
+    // If LLM is unavailable (no API key) we treat as successful no-op.
+    return { job_id: job.job_id, ok: true }
+  }
+
+  const patch = pickSchemaPatch(out)
+  const suggestions = pickSuggestions(out)
+
+  const merged = mergeReflectionCase(current, patch as any)
+  if (suggestions) (merged as any).suggestions_for_therapist = suggestions
+
+  await writeReflectionCase(job.conversation_id, merged as any, REFLECTION_TTL_SECONDS)
+  return { job_id: job.job_id, ok: true }
+}
+
 export async function processJob(job: AsyncJobV23): Promise<AsyncJobResult> {
   try {
     if (job.type === "SUMMARIZE_EPISODE") return await processSummarizeEpisode(job)
     if (job.type === "SUGGEST_FACTS") return await processSuggestFacts(job)
+    if (job.type === "REFLECTION_CBA_UPDATE") return await processReflectionCbaUpdate(job)
 
     return { job_id: job.job_id, ok: false, error: { code: "UNKNOWN_JOB", message: `Unknown type: ${job.type}` } }
   } catch (e: any) {
