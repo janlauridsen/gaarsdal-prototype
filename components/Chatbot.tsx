@@ -505,6 +505,15 @@ export default function Chatbot() {
                 </div>
               ))}
 
+              {loading && (
+                <div className={`${styles.message} ${styles.messageBot} ${styles.liveIndicator}`} aria-live="polite">
+                  <span className={styles.liveHeart} aria-hidden="true">
+                    ♥
+                  </span>
+                  <span className={styles.liveText}>Jeg er her…</span>
+                </div>
+              )}
+
               {state?.status === "completed" && (
                 <div className={styles.callout}>
                   <div className={styles.calloutTitle}>Næste</div>
