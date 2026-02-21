@@ -180,6 +180,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "GEN_HYPNO",
       "TRIAGE",
       "METHOD_FIT",
+      "REFLECTION",
       "BOOKING",
       "DEV_SANDBOX_INTRO",
       "POSTPROC_STEP_1_SCAN",
@@ -190,7 +191,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     ],
     router: {
       router_id: "home-router-v1",
-      candidates: ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "BOOKING", "DEV_SANDBOX_INTRO"],
+      candidates: ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "REFLECTION", "BOOKING", "DEV_SANDBOX_INTRO"],
     },
     meta_domains_written: ["router.decision"],
   },
@@ -395,6 +396,20 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "method_fit.next_question",
       "method_fit.chips",
     ],
+  },
+
+  REFLECTION: {
+    id: "REFLECTION",
+    kind: "DIALOG",
+    goal: "Refleksionsdialog (intake + meningsskabelse)",
+    message:
+      "Vi kan tage en rolig refleksionsdialog for at skabe klarhed: hvad problemet er, hvad du ønsker, og hvordan det typisk udfolder sig. " +
+      "Jeg spørger kun 1–2 spørgsmål ad gangen. Ingen øvelser eller behandling i chatten.",
+    allow_free_text: true,
+    allow_parentese: true,
+    allowed_exits: ["HOME"],
+    capability_id: "reflection-v1",
+    meta_domains_written: ["reflection.transcript"],
   },
 
   TRIAGE_FIT_BOOKING: {
