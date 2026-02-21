@@ -9,6 +9,19 @@ const REDIS_REPLAY_HISTORY_KEY = "gaarsdal:replay:history"
 const REDIS_INTERACTIONS_ALL_KEY = "gaarsdal:interactions:all"
 const REDIS_INTERACTIONS_CONVO_PREFIX = "gaarsdal:interactions:"
 
+// Keep derived logs bounded to avoid unbounded growth in Redis.
+// These are not canonical sources of truth (sessions UI no longer depends on them).
+const MAX_LOGS_PER_LIST = 2000
+const MAX_INTERACTIONS_PER_LIST = 2000
+const DEFAULT_DERIVED_TTL_SECONDS = 7776000 // 90 days
+
+function envInt(v: string | undefined, fallback: number): number {
+  const n = Number.parseInt(String(v ?? ""), 10)
+  return Number.isFinite(n) && n > 0 ? n : fallback
+}
+
+const DERIVED_TTL_SECONDS = envInt(process.env.GAARSDAL_DERIVED_TTL_SECONDS, DEFAULT_DERIVED_TTL_SECONDS)
+
 let redisClient: Redis | null = null
 
 function getRedisClient(): Redis | null {
@@ -33,11 +46,20 @@ export async function appendLogToRedis(
   if (!client) return
 
   const payload = JSON.stringify(event)
+  const convoKey = `${REDIS_CONVO_PREFIX}${event.conversation_id}`
   await client.rpush(REDIS_ALL_KEY, payload)
-  await client.rpush(
-    `${REDIS_CONVO_PREFIX}${event.conversation_id}`,
-    payload
-  )
+  await client.rpush(convoKey, payload)
+
+  await client.ltrim(REDIS_ALL_KEY, -MAX_LOGS_PER_LIST, -1)
+  await client.ltrim(convoKey, -MAX_LOGS_PER_LIST, -1)
+
+  // Best-effort expiry to keep dev/prod environments tidy.
+  try {
+    await client.expire(REDIS_ALL_KEY, DERIVED_TTL_SECONDS)
+    await client.expire(convoKey, DERIVED_TTL_SECONDS)
+  } catch {
+    // ignore
+  }
 }
 
 function parseStoredItem<T>(item: unknown): T {
@@ -67,11 +89,19 @@ export async function appendInteractionToRedis(
   if (!client) return
 
   const payload = JSON.stringify(event)
+  const convoKey = `${REDIS_INTERACTIONS_CONVO_PREFIX}${event.conversation_id}`
   await client.rpush(REDIS_INTERACTIONS_ALL_KEY, payload)
-  await client.rpush(
-    `${REDIS_INTERACTIONS_CONVO_PREFIX}${event.conversation_id}`,
-    payload
-  )
+  await client.rpush(convoKey, payload)
+
+  await client.ltrim(REDIS_INTERACTIONS_ALL_KEY, -MAX_INTERACTIONS_PER_LIST, -1)
+  await client.ltrim(convoKey, -MAX_INTERACTIONS_PER_LIST, -1)
+
+  try {
+    await client.expire(REDIS_INTERACTIONS_ALL_KEY, DERIVED_TTL_SECONDS)
+    await client.expire(convoKey, DERIVED_TTL_SECONDS)
+  } catch {
+    // ignore
+  }
 }
 
 export async function readInteractionsFromRedis(

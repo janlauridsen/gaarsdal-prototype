@@ -1,45 +1,55 @@
 // pages/kontakt.tsx
-import { useState } from 'react'
-import Header from '../components/Header'
-import Footer from '../components/Footer'
+import { useState } from "react";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 export default function Kontakt() {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' })
-  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
-  const [errorMsg, setErrorMsg] = useState('')
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    message: "",
+  });
+  const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">(
+    "idle"
+  );
+  const [errorMsg, setErrorMsg] = useState("");
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    setForm({ ...form, [e.target.name]: e.target.value })
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) {
+    setForm({ ...form, [e.target.name]: e.target.value });
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setStatus('sending')
-    setErrorMsg('')
+    e.preventDefault();
+    setStatus("sending");
+    setErrorMsg("");
 
     if (!form.name || !form.email || !form.message) {
-      setErrorMsg('Udfyld venligst navn, email og besked.')
-      setStatus('error')
-      return
+      setErrorMsg("Udfyld venligst navn, email og besked.");
+      setStatus("error");
+      return;
     }
 
     try {
-      const res = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
-      })
+      });
+
       if (res.ok) {
-        setStatus('success')
-        setForm({ name: '', email: '', phone: '', message: '' })
+        setStatus("success");
+        setForm({ name: "", email: "", phone: "", message: "" });
       } else {
-        const txt = await res.text()
-        setErrorMsg(txt || 'Der opstod en fejl. Prøv igen senere.')
-        setStatus('error')
+        const txt = await res.text();
+        setErrorMsg(txt || "Der opstod en fejl. Prøv igen senere.");
+        setStatus("error");
       }
     } catch {
-      setErrorMsg('Netværksfejl — prøv igen.')
-      setStatus('error')
+      setErrorMsg("Netværksfejl — prøv igen.");
+      setStatus("error");
     }
   }
 
@@ -50,22 +60,25 @@ export default function Kontakt() {
         <h1 className="text-h1 font-light mb-6">Kontakt</h1>
 
         <p className="text-base-lg text-muted mb-6">
-          Du er velkommen til at tage kontakt, hvis du har spørgsmål
-          eller ønsker en indledende afklaring.
+          Kontakt mig, hvis du vil afklare om hypnoterapi – og min tilgang – er
+          relevant for dig.
         </p>
 
         <div className="grid md:grid-cols-2 gap-8 mb-10">
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <h2 className="font-medium mb-2">Kontaktoplysninger</h2>
             <p className="text-muted mb-2">
-              <strong>Telefon:</strong>{' '}
+              <strong>Telefon:</strong>{" "}
               <a href="tel:+4542807474" className="text-accent hover:underline">
                 42 80 74 74
               </a>
             </p>
             <p className="text-muted mb-2">
-              <strong>Email:</strong>{' '}
-              <a href="mailto:jan@gaarsdal.net" className="text-accent hover:underline">
+              <strong>Email:</strong>{" "}
+              <a
+                href="mailto:jan@gaarsdal.net"
+                className="text-accent hover:underline"
+              >
                 jan@gaarsdal.net
               </a>
             </p>
@@ -75,18 +88,30 @@ export default function Kontakt() {
           </div>
 
           <aside className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="font-medium mb-2">Hvordan foregår kontakt?</h3>
-            <p className="text-muted">
-              Du kan ringe, skrive en mail eller benytte formularen.
-              Henvendelser bruges til afklaring og praktisk koordinering.
+            <h3 className="font-medium mb-2">Hvad er en “afklaring”?</h3>
+            <p className="text-muted mb-3">
+              Formålet er at få et klart billede af, hvad der sker for dig – og
+              om det giver mening at arbejde med det via hypnoterapi.
             </p>
+            <p className="text-muted">
+              Hvis du skriver, kan du gerne kort nævne:
+            </p>
+            <ul className="list-disc ml-6 text-muted space-y-1 mt-2">
+              <li>hvad der gentager sig (situationer, reaktioner, mønstre)</li>
+              <li>hvad du ønsker mere af / mindre af</li>
+              <li>om der er noget, der “stjæler energi” lige nu</li>
+            </ul>
           </aside>
         </div>
 
         <section className="bg-white p-6 rounded-lg shadow-sm">
           <h2 className="font-medium mb-4">Send en besked</h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4" aria-label="Kontaktformular">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4"
+            aria-label="Kontaktformular"
+          >
             <div>
               <label className="block text-sm mb-1">Navn *</label>
               <input
@@ -138,26 +163,24 @@ export default function Kontakt() {
               <button
                 type="submit"
                 className="inline-block bg-accent text-white rounded-lg px-6 py-3 font-medium disabled:opacity-60"
-                disabled={status === 'sending'}
+                disabled={status === "sending"}
               >
-                {status === 'sending' ? 'Sender…' : 'Send besked'}
+                {status === "sending" ? "Sender…" : "Send besked"}
               </button>
 
-              {status === 'success' && (
-                <div className="text-green-600">
-                  Tak — din besked er modtaget.
-                </div>
+              {status === "success" && (
+                <div className="text-green-600">Tak — din besked er modtaget.</div>
               )}
             </div>
 
             <p className="text-xs text-muted mt-4">
-              Ved at kontakte mig accepterer du, at dine oplysninger
-              behandles i forbindelse med din henvendelse.
+              Ved at kontakte mig accepterer du, at dine oplysninger behandles i
+              forbindelse med din henvendelse.
             </p>
           </form>
         </section>
       </main>
       <Footer />
     </div>
-  )
+  );
 }

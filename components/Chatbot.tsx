@@ -1,16 +1,24 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/router"
 import {
   ChatBubbleOvalLeftEllipsisIcon,
   XMarkIcon,
+  ArrowsPointingOutIcon,
+  ArrowsPointingInIcon,
+  CircleStackIcon,
+  PlusIcon,
+  ArrowUturnLeftIcon,
+  PaperAirplaneIcon,
   HomeIcon,
   PhoneIcon,
   EnvelopeIcon,
+  LinkIcon,
   ExclamationTriangleIcon,
-  BugAntIcon,
-  TrashIcon,
 } from "@heroicons/react/24/outline"
+
+import styles from "./Chatbot.module.css"
 
 type ConversationState = {
   conversation_id: string
@@ -26,13 +34,14 @@ type ConversationState = {
 type InputSignal =
   | { type: "EXPLICIT_TRANSITION"; target: string }
   | { type: "FREE_TEXT"; text: string }
-
-type LogEvent = any
+  | { type: "SYSTEM_INIT" }
+  | { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
+  | { type: "THREAD_BACK" }
 
 type KernelResponse = {
   state: ConversationState
-  transition: any
-  log: LogEvent
+  transition?: any
+  log?: any
 }
 
 type ChatMessage = {
@@ -41,388 +50,618 @@ type ChatMessage = {
   text: string
 }
 
+type UiSuggestion = {
+  id: string
+  label: string
+  input?: any
+}
+
+type ThreadChoice = {
+  id: string
+  label: string
+  kind: "continue" | "new" | "thread"
+}
+
 const NODE_LABELS: Record<string, string> = {
+  THREAD_CHOOSER: "Tråde",
   HOME: "Forside",
-  GEN_HYPNO: "Generelt om hypnoterapi",
-  TRIAGE: "Triage",
-  TRIAGE_FIT_BOOKING: "Triage: egnet til booking",
-  TRIAGE_NOT_RELEVANT: "Triage: ikke relevant",
-  TRIAGE_NEEDS_ASSESSMENT: "Triage: afklaringssamtale",
+  GEN_HYPNO: "Spørg om hypnoterapi",
+  TRIAGE: "Passer hypnoterapi til min situation?",
+  METHOD_FIT: "Hypnoterapi eller et bedre alternativ?",
+  REFLECTION: "Refleksion",
   BOOKING: "Book tid",
+  DEV_SANDBOX_INTRO: "Sandbox (dev)",
   MAIL: "E-mail",
   TLF: "Telefon",
-  CONTACT_FORM: "Kontaktformular",
+  CONTACT_FORM: "Kontakt",
   AKUT: "Akut",
 }
 
-const QUICK_ACTIONS = ["HOME", "TLF", "MAIL", "AKUT"] as const
+const TOPIC_TOOLTIPS: Record<string, string> = {
+  GEN_HYPNO: "Fri samtale (ingen behandling i chatten).",
+  TRIAGE: "Kort afklaring med få spørgsmål.",
+  METHOD_FIT: "Overblik over alternativer (ikke behandling).",
+  REFLECTION: "Refleksionsdialog: intake og meningsskabelse (ingen øvelser).",
+  BOOKING: "Vælg kontaktvej for booking.",
+}
 
-const DEFAULT_CHIPS = [
-  { id: "tell_more", label: "Fortæl mere" },
-  { id: "why_relevant", label: "Hvorfor relevant?" },
-  { id: "next_steps", label: "Hvad er næste skridt?" },
-  { id: "stop", label: "Stop her" },
-]
+// Topic buttons shown on the HOME screen. Booking is handled via the footer UI, not as a HOME topic.
+const TOPIC_NODES = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "REFLECTION"] as const
+
+function safeId() {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+function trimDuplicateTitle(s: string) {
+  // Håndter "x — x" (dobbelt titel)
+  const parts = s.split("—").map((p) => p.trim()).filter(Boolean)
+  if (parts.length === 2 && parts[0] === parts[1]) return parts[0]
+  return s.trim()
+}
 
 export default function Chatbot() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [showLogs, setShowLogs] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
   const [state, setState] = useState<ConversationState | null>(null)
-  const [logs, setLogs] = useState<LogEvent[]>([])
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
 
+  const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
+  const headerNavHintTimerRef = useRef<number | null>(null)
+
   const endRef = useRef<HTMLDivElement | null>(null)
+  const didAutoStartNewThreadRef = useRef(false)
+
+  // Global footer actions must always be reachable, regardless of the current node's allowed_transitions.
+  // (Kernel also whitelists these exits.)
+  const GLOBAL_ACTIONS = useMemo(
+    () => new Set(["HOME", "TLF", "MAIL", "CONTACT_FORM", "AKUT"]),
+    []
+  )
+
+  function metaValue(key: string) {
+    const entry = state?.meta?.[key]
+    if (entry && typeof entry === "object" && "value" in entry) return (entry as any).value
+    return entry
+  }
+
+  const activeNodeLabel = useMemo(() => {
+    if (!state) return "Initialiserer…"
+    return NODE_LABELS[state.active_node] ?? state.active_node
+  }, [state])
+
+  const placeholder = useMemo(() => {
+    if (!state) return "Initialiserer…"
+    if (state.active_node === "THREAD_CHOOSER") return "Vælg en tråd…"
+    return "Skriv her… (Enter = send, Shift+Enter = ny linje)"
+  }, [state])
+
+  const freeTextEnabled = useMemo(() => {
+    if (!state) return false
+    if (loading) return false
+    if (state.status === "completed" || state.status === "rejected") return false
+    return true
+  }, [state, loading])
 
   useEffect(() => {
+    if (!open) return
     endRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, open, showLogs])
+  }, [messages, open, headerNavHint, expanded])
+
+  useEffect(() => {
+    return () => {
+      if (headerNavHintTimerRef.current) {
+        window.clearTimeout(headerNavHintTimerRef.current)
+        headerNavHintTimerRef.current = null
+      }
+    }
+  }, [])
 
   function appendMessage(message: ChatMessage) {
     setMessages((prev) => [...prev, message])
   }
 
   function appendAssistantMessage(text: string) {
-    const message = text.trim()
+    const message = (text ?? "").trim()
     if (!message) return
-    appendMessage({
-      id: `assistant-${Date.now()}-${Math.random()}`,
-      role: "assistant",
-      text: message,
+
+    setMessages((prev) => {
+      const last = prev.length ? prev[prev.length - 1] : null
+      if (last && last.role === "assistant" && last.text.trim() === message) return prev
+      return [...prev, { id: `assistant-${safeId()}`, role: "assistant", text: message }]
     })
   }
 
   function appendUserMessage(text: string) {
-    const message = text.trim()
+    const message = (text ?? "").trim()
     if (!message) return
-    appendMessage({
-      id: `user-${Date.now()}-${Math.random()}`,
-      role: "user",
-      text: message,
+    appendMessage({ id: `user-${safeId()}`, role: "user", text: message })
+  }
+
+  function showHeaderNavHint(text: string) {
+    if (headerNavHintTimerRef.current) {
+      window.clearTimeout(headerNavHintTimerRef.current)
+      headerNavHintTimerRef.current = null
+    }
+    setHeaderNavHint(text)
+    headerNavHintTimerRef.current = window.setTimeout(() => {
+      setHeaderNavHint(null)
+      headerNavHintTimerRef.current = null
+    }, 2400)
+  }
+
+  async function callKernel(nextState: ConversationState | null, nextInput: InputSignal) {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state: nextState, input: nextInput }),
     })
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "")
+      throw new Error(`Chat: HTTP ${res.status}${body ? ` — ${body}` : ""}`)
+    }
+
+    const data: KernelResponse = await res.json()
+    if (!data?.state) throw new Error("Chat: mangler state i svar")
+    return data
+  }
+
+  function threadCountFromState(s: ConversationState) {
+    const raw = s.meta?.["threads.count"]?.value ?? s.meta?.["threads.count"]
+    const n = typeof raw === "number" ? raw : Number(raw ?? 0)
+    return Number.isFinite(n) ? n : 0
+  }
+
+  function normalizeAssistantMessage(s: ConversationState) {
+    if (s.status === "completed") {
+      return "Samtalen er afsluttet. Start en ny tråd eller vælg en anden."
+    }
+
+    if (s.active_node === "THREAD_CHOOSER") {
+      const count = threadCountFromState(s)
+      if (count <= 0) return "Starter en ny tråd…"
+      return "Vælg en tråd, eller start en ny."
+    }
+
+    return s.active_node_message
   }
 
   async function init() {
     setLoading(true)
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          state: null,
-          input: { type: "SYSTEM_INIT" }, // ignoreres når state === null (API init branch)
-        }),
-      })
+    didAutoStartNewThreadRef.current = false
 
-      const data: KernelResponse = await res.json()
+    try {
+      const data = await callKernel(null, { type: "SYSTEM_INIT" })
       setState(data.state)
       setMessages([])
-      setLogs([])
-      appendAssistantMessage(data.state.active_node_message)
+      setInput("")
+      setHeaderNavHint(null)
+      appendAssistantMessage(normalizeAssistantMessage(data.state))
     } finally {
       setLoading(false)
     }
   }
 
-  async function dispatch(nextInput: InputSignal) {
+  async function dispatch(nextInput: InputSignal, opts?: { silentUser?: boolean }) {
     if (!state) return
+    setLoading(true)
 
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ state, input: nextInput }),
-    })
+    try {
+      const fromNode = state.active_node
+      const data = await callKernel(state, nextInput)
 
-    const data: KernelResponse = await res.json()
+      if (nextInput.type === "THREAD_CREATE" || nextInput.type === "THREAD_BACK") {
+        // Thread-level navigation is platform-managed. UI holds no per-thread transcript, so reset.
+        setMessages([])
+        setInput("")
+        setHeaderNavHint(null)
+      } else if (nextInput.type === "EXPLICIT_TRANSITION") {
+        const fromLabel = NODE_LABELS[fromNode] ?? fromNode
+        const toNode = data?.state?.active_node ?? nextInput.target
+        const toLabel = NODE_LABELS[toNode] ?? toNode
+        showHeaderNavHint(`${fromLabel} → ${toLabel}`)
+      } else if (nextInput.type === "FREE_TEXT" && !opts?.silentUser) {
+        appendUserMessage(nextInput.text)
+      }
 
-    // UI echo af bruger-handling
-    if (nextInput.type === "EXPLICIT_TRANSITION") {
-      appendUserMessage(`Valgte: ${NODE_LABELS[nextInput.target] ?? nextInput.target}`)
-    } else if (nextInput.type === "FREE_TEXT") {
-      appendUserMessage(nextInput.text)
+      setState(data.state)
+
+      const assistantText =
+        (data.transition?.response_message as string | undefined) ?? normalizeAssistantMessage(data.state)
+
+      appendAssistantMessage(assistantText)
+    } finally {
+      setLoading(false)
     }
-
-    setState(data.state)
-    setLogs((l) => [...l, data.log])
-
-    // Vis AI/Kernel output
-    const assistantText =
-      (data.transition?.response_message as string | undefined) ??
-      data.state.active_node_message
-
-    appendAssistantMessage(assistantText)
   }
 
-  function resetConversation() {
-    // Reset = ny samtale/kernel state
-    setLogs([])
-    setInput("")
-    setMessages([])
-    setState(null)
-    init()
+  function openChat() {
+    setOpen(true)
+    if (!state) init()
   }
 
-  function clearHistory() {
-    // Skraldespand = ryd kun UI-visning
-    setMessages([])
+  function closeChat() {
+    setOpen(false)
+    setExpanded(false)
+  }
+
+  function toggleExpanded() {
+    setExpanded((v) => !v)
   }
 
   function go(target: string) {
     if (!state) return
+
+    const allowed = new Set(state.allowed_transitions ?? [])
+    const isAllowed = allowed.has(target) || GLOBAL_ACTIONS.has(target)
+    if (!isAllowed) {
+      showHeaderNavHint("Ikke tilgængeligt her")
+      return
+    }
+
+    const goingFromHomeToTopic = state.active_node === "HOME" && target !== "HOME"
+    if (goingFromHomeToTopic) {
+      const label = NODE_LABELS[target] ?? target
+      appendUserMessage(label)
+    }
+
     dispatch({ type: "EXPLICIT_TRANSITION", target })
   }
 
-  function sendFreeText() {
-    if (!state) return
-    const text = input.trim()
-    if (!text) return
-    dispatch({ type: "FREE_TEXT", text })
+  // “Tråde” i header: tilbage til lobby / trådvalg
+  function goToThreadChooser() {
+    setMessages([])
     setInput("")
+    setState(null)
+    setHeaderNavHint(null)
+    didAutoStartNewThreadRef.current = false
+    init()
   }
 
-  function handleChip(chip: { id: string; label: string }) {
-    // Minimal mapping hvis du vil bruge chips til explicit navigation
-    const map: Record<string, string> = {
-      stop: "HOME",
-    }
-    const target = map[chip.id]
-    if (target) return go(target)
+  const threadChoicesRaw = metaValue("threads.choices")
+  const threadCount = state ? threadCountFromState(state) : 0
 
-    // Default: send chip label som fri tekst
-    dispatch({ type: "FREE_TEXT", text: chip.label })
-  }
+  const returnDepthRaw = metaValue("threads.return_depth")
+  const returnDepth = Number.isFinite(Number(returnDepthRaw ?? 0)) ? Number(returnDepthRaw ?? 0) : 0
+  const canThreadBack = returnDepth > 0
 
-  // Launcher
-  if (!open) {
-    return (
-      <button
-        aria-label="Åbn chatbot"
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-md flex items-center justify-center bg-[#4A5D54]"
-        onClick={() => {
-          setOpen(true)
-          if (!state) init()
-        }}
-      >
-        <ChatBubbleOvalLeftEllipsisIcon className="w-7 h-7 text-white" />
-      </button>
-    )
-  }
-
-  const nodeLabel = state
-    ? `${NODE_LABELS[state.active_node] ?? state.active_node} · rev ${state.revision}`
-    : "Initialiserer..."
-
-  // Chips: triage chips fra meta, kun i TRIAGE
-  const triageChipsRaw = state?.meta?.["triage.chips"]?.value
-  const triageChips =
-    state?.active_node === "TRIAGE"
-      ? Array.isArray(triageChipsRaw)
-        ? triageChipsRaw
-            .filter(
-              (c: any) => c && typeof c.id === "string" && typeof c.label === "string"
-            )
-            .slice(0, 8)
-        : DEFAULT_CHIPS
+  const threadChoices: ThreadChoice[] =
+    state?.active_node === "THREAD_CHOOSER" && Array.isArray(threadChoicesRaw)
+      ? (threadChoicesRaw as any[])
+          .filter((c) => c && typeof c.id === "string" && typeof c.label === "string" && typeof c.kind === "string")
+          .slice(0, 12)
       : []
 
-  // Muligheder: allowed transitions (uden quick actions)
-  const optionChips =
-    state?.allowed_transitions?.filter(
-      (t) => !QUICK_ACTIONS.includes(t as any)
-    ) ?? []
+  const uiSuggestionsRaw = metaValue("ui.suggestions")
+  const uiSuggestions: UiSuggestion[] = Array.isArray(uiSuggestionsRaw)
+    ? (uiSuggestionsRaw as any[])
+        .filter((x) => x && typeof x === "object" && typeof (x as any).label === "string")
+        .slice(0, 8)
+        .map((x, i) => ({
+          id: String((x as any).id ?? i),
+          label: String((x as any).label),
+          input: (x as any).input,
+        }))
+    : []
+
+  // Hide the topic menu immediately when the user selects a topic (explicit transition),
+  // so the HOME menu doesn't flash while waiting for the next node to render.
+  const showTopics = state?.active_node === "HOME" && !loading
+  const allowedSet = new Set(state?.allowed_transitions ?? [])
+  const topicButtons = showTopics
+    ? TOPIC_NODES.map((id) => ({
+        id,
+        label: NODE_LABELS[id] ?? id,
+        enabled: state ? allowedSet.has(id) || id === state.active_node : false,
+        tooltip: TOPIC_TOOLTIPS[id] ?? "",
+      })).filter((t) => t.id !== state?.active_node)
+    : []
+
+  // Auto: hvis der ingen tråde er, start ny tråd uden at brugeren skal skrive “new”.
+  useEffect(() => {
+    if (!open) return
+    if (!state) return
+    if (state.active_node !== "THREAD_CHOOSER") return
+    if (didAutoStartNewThreadRef.current) return
+    if (threadCount > 0) return
+
+    didAutoStartNewThreadRef.current = true
+    ;(async () => {
+      try {
+        await dispatch({ type: "FREE_TEXT", text: "new" }, { silentUser: true })
+      } catch {
+        // no-op
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, state?.active_node, threadCount])
+
+  const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal}`
+
+  const showThreadChooserCards =
+    state?.active_node === "THREAD_CHOOSER" && threadChoices.length > 0 && state.status === "active"
+
+  const normalizedThreadCards = useMemo(() => {
+    const base = threadChoices
+      .map((c) => {
+        const cleanLabel = trimDuplicateTitle(c.label)
+        const uiLabel =
+          c.kind === "new"
+            ? "Ny tråd"
+            : c.kind === "continue"
+              ? "Fortsæt seneste tråd"
+              : cleanLabel || "Tråd"
+        return { ...c, uiLabel }
+      })
+      .sort((a, b) => {
+        const rank = (k: ThreadChoice["kind"]) => (k === "new" ? 0 : k === "continue" ? 1 : 2)
+        return rank(a.kind) - rank(b.kind)
+      })
+      .filter((c) => {
+        // Skjul “continue” hvis der reelt ikke er noget at fortsætte
+        if (threadCount <= 0 && c.kind === "continue") return false
+        return true
+      })
+      .filter((c) => {
+        // Skjul “thread”-kort med “fjollet nummer”/tomt label
+        if (c.kind !== "thread") return true
+        const cleaned = trimDuplicateTitle(c.label || "")
+        if (!cleaned) return false
+        if (/^(tråd\s*)?\d+$/i.test(cleaned)) return false
+        return true
+      })
+
+    // Hvis der kun er én tråd og “continue” i praksis er samme, kan vi skjule continue
+    const hasContinue = base.some((x) => x.kind === "continue")
+    const threadCards = base.filter((x) => x.kind === "thread")
+    if (hasContinue && threadCards.length === 1) {
+      return base.filter((x) => x.kind !== "continue")
+    }
+    return base
+  }, [threadChoices, threadCount])
 
   return (
     <>
-      <div className="gaarsdal-overlay" onClick={() => setOpen(false)} />
+      {!open && (
+        <button className={styles.fab} onClick={openChat} aria-label="Åbn chat" title="Åbn chat">
+          <ChatBubbleOvalLeftEllipsisIcon className={styles.fabIcon} />
+        </button>
+      )}
 
-      <div
-        className="fixed bottom-6 right-6 w-[380px] h-[560px] gaarsdal-chatbot"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Chatbot"
-      >
-        {/* HEADER: reset + logs + close */}
-        <div className="gaarsdal-chatbot-header flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-sm font-semibold">Gaarsdal Chat</div>
-            <div className="text-xs gaarsdal-meta truncate">{nodeLabel}</div>
-          </div>
+      {open && (
+        <>
+          <div className={styles.overlay} onClick={closeChat} />
 
-          <div className="flex items-center gap-1">
-            <button
-              className="gaarsdal-icon-btn"
-              aria-label="Ny samtale (reset kernel state)"
-              title="Ny samtale"
-              onClick={resetConversation}
-              disabled={loading}
-            >
-              <ChatBubbleOvalLeftEllipsisIcon className="w-5 h-5" />
-            </button>
+          <div className={containerClass} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className={styles.header}>
+              <div className={styles.headerRow}>
+                <div className={styles.headerLeft}>
+                  <div className={styles.title}>Gaarsdal Chat</div>
+                  <div className={styles.node}>{activeNodeLabel}</div>
+                </div>
 
-            <button
-              className="gaarsdal-icon-btn"
-              aria-label="Vis logs"
-              title="Logs"
-              onClick={() => setShowLogs((v) => !v)}
-              disabled={loading}
-            >
-              <BugAntIcon className="w-5 h-5" />
-            </button>
-
-            <button
-              className="gaarsdal-icon-btn"
-              aria-label="Luk"
-              title="Luk"
-              onClick={() => setOpen(false)}
-            >
-              <XMarkIcon className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* BODY */}
-        <div className="messages">
-          {loading && <div className="text-sm gaarsdal-meta">Initialiserer…</div>}
-
-          {!loading && messages.length === 0 && (
-            <div className="text-sm gaarsdal-meta">Ingen beskeder endnu.</div>
-          )}
-
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`message ${m.role === "assistant" ? "bot" : "user"}`}
-            >
-              {m.text}
-            </div>
-          ))}
-
-          {/* TRIAGE: forslag chips */}
-          {state?.active_node === "TRIAGE" && triageChips.length > 0 && (
-            <div className="mt-3">
-              <div className="gaarsdal-section-title">Forslag</div>
-              <div className="gaarsdal-chip-group">
-                {triageChips.map((chip: any) => (
+                <div className={styles.headerRight}>
                   <button
-                    key={chip.id}
-                    className="chip"
-                    onClick={() => handleChip(chip)}
+                    className={styles.iconBtn}
+                    onClick={() => dispatch({ type: "THREAD_BACK" }, { silentUser: true })}
+                    title={canThreadBack ? "Tilbage" : "Tilbage (ingen parentese)"}
+                    aria-label="Tilbage"
+                    disabled={loading || !state || !canThreadBack}
+                  >
+                    <ArrowUturnLeftIcon className={styles.icon} />
+                  </button>
+
+                  <button
+                    className={styles.iconBtn}
+                    onClick={() => dispatch({ type: "THREAD_CREATE", mode: "parenthesis" }, { silentUser: true })}
+                    title="Parentes (ny tråd)"
+                    aria-label="Parentes"
                     disabled={loading || !state}
                   >
-                    {chip.label}
+                    <PlusIcon className={styles.icon} />
                   </button>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* OPTIONS: allowed transitions */}
-          {optionChips.length > 0 && (
-            <div className="mt-3">
-              <div className="gaarsdal-section-title">Muligheder</div>
-              <div className="gaarsdal-chip-group">
-                {optionChips.map((t) => (
+                  <button className={styles.iconBtn} onClick={goToThreadChooser} title="Tråde" aria-label="Tråde">
+                    <CircleStackIcon className={styles.icon} />
+                  </button>
+
                   <button
-                    key={t}
-                    className="chip"
-                    onClick={() => go(t)}
-                    disabled={loading || !state}
+                    className={styles.iconBtn}
+                    onClick={toggleExpanded}
+                    title={expanded ? "Minimer" : "Maksimer"}
+                    aria-label={expanded ? "Minimer" : "Maksimer"}
                   >
-                    {NODE_LABELS[t] ?? t}
+                    {expanded ? (
+                      <ArrowsPointingInIcon className={styles.icon} />
+                    ) : (
+                      <ArrowsPointingOutIcon className={styles.icon} />
+                    )}
                   </button>
-                ))}
+
+                  <button className={styles.iconBtn} onClick={closeChat} title="Luk" aria-label="Luk">
+                    <XMarkIcon className={styles.icon} />
+                  </button>
+                </div>
+              </div>
+
+              {headerNavHint && (
+                <div className={styles.navHint}>
+                  <span className={styles.navHintPulse}>{headerNavHint}</span>
+                </div>
+              )}
+            </div>
+
+            <div className={styles.messages}>
+              {messages.map((m) => (
+                <div
+                  key={m.id}
+                  className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}
+                >
+                  {m.text}
+                </div>
+              ))}
+
+              {state?.status === "completed" && (
+                <div className={styles.callout}>
+                  <div className={styles.calloutTitle}>Næste</div>
+                  <div className={styles.calloutRow}>
+                    <button
+                      className={styles.chipAction}
+                      onClick={() => dispatch({ type: "FREE_TEXT", text: "new" }, { silentUser: true })}
+                      disabled={loading || !state}
+                    >
+                      Ny tråd
+                    </button>
+                    <button className={styles.chipAction} onClick={goToThreadChooser} disabled={loading}>
+                      Tråde
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {showThreadChooserCards && (
+                <div className="mt-3">
+                  <div className={styles.sectionTitle}>Tråde</div>
+                  <div className={styles.topicGrid}>
+                    {normalizedThreadCards.map((c) => (
+                      <button
+                        key={c.id}
+                        className={styles.topicCard}
+                        onClick={() => dispatch({ type: "FREE_TEXT", text: c.id }, { silentUser: true })}
+                        disabled={loading || !state}
+                        title={c.kind === "thread" ? trimDuplicateTitle(c.label) : ""}
+                      >
+                        <span className={styles.topicLabel}>{(c as any).uiLabel}</span>
+                        {c.kind === "continue" && (
+                          <span className={styles.topicMeta}>
+                            {trimDuplicateTitle(String(c.label ?? "").replace(/^Fortsæt:\s*/i, ""))}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {topicButtons.length > 0 && (
+                <div className="mt-3">
+                  <div className={styles.sectionTitle}>Emner</div>
+                  <div className={styles.topicGrid}>
+                    {topicButtons.map((t) => (
+                      <button
+                        key={t.id}
+                        className={styles.topicCard}
+                        onClick={() => go(t.id)}
+                        disabled={!t.enabled || loading || !state}
+                        title={t.tooltip}
+                      >
+                        <span className={styles.topicLabel}>{t.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {uiSuggestions.length > 0 && (
+                <div className="mt-3">
+                  <div className={styles.sectionTitle}>Forslag</div>
+                  <div className={styles.calloutRow}>
+                    {uiSuggestions.map((s) => (
+                      <button
+                        key={s.id}
+                        className={styles.chipAction}
+                        onClick={() => {
+                          const input = s.input as any
+                          if (input && input.type === "OPEN_URL" && typeof input.url === "string") {
+                            router.push(input.url)
+                            return
+                          }
+
+                          if (input) {
+                            dispatch(input as InputSignal, { silentUser: true })
+                          } else {
+                            dispatch({ type: "FREE_TEXT", text: s.label })
+                          }
+                        }}
+                        disabled={loading || !state || !freeTextEnabled}
+                        title={s.label}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div ref={endRef} />
+            </div>
+
+            <div className={styles.footer}>
+              <div className={styles.footerRow}>
+                <button className={styles.footerIcon} onClick={() => go("HOME")} title="Forside" aria-label="Forside">
+                  <HomeIcon className={styles.footerIconSvg} />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("TLF")} title="Telefon" aria-label="Telefon">
+                  <PhoneIcon className={styles.footerIconSvg} />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("MAIL")} title="E-mail" aria-label="E-mail">
+                  <EnvelopeIcon className={styles.footerIconSvg} />
+                </button>
+                <button
+                  className={styles.footerIcon}
+                  onClick={() => router.push("/kontakt")}
+                  title="Kontakt"
+                  aria-label="Kontakt"
+                >
+                  <LinkIcon className={styles.footerIconSvg} />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("AKUT")} title="Akut" aria-label="Akut">
+                  <ExclamationTriangleIcon className={styles.footerIconSvg} />
+                </button>
+              </div>
+
+              <div className={styles.inputRow}>
+                <textarea
+                  className={styles.textarea}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={placeholder}
+                  rows={2}
+                  disabled={!state || !freeTextEnabled}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault()
+                      const text = input.trim()
+                      if (!text) return
+                      setInput("")
+                      dispatch({ type: "FREE_TEXT", text })
+                    }
+                  }}
+                />
+
+                <button
+                  className={styles.sendBtn}
+                  onClick={() => {
+                    const text = input.trim()
+                    if (!text) return
+                    setInput("")
+                    dispatch({ type: "FREE_TEXT", text })
+                  }}
+                  disabled={!state || !freeTextEnabled || !input.trim()}
+                  title="Send"
+                  aria-label="Send"
+                >
+                  <PaperAirplaneIcon className={styles.sendIcon} />
+                </button>
               </div>
             </div>
-          )}
-
-          {/* LOGS */}
-          {showLogs && (
-            <div className="mt-3">
-              <div className="gaarsdal-section-title">Logs</div>
-              <pre className="text-xs whitespace-pre-wrap bg-white/60 p-2 rounded-lg border border-black/5 max-h-[170px] overflow-auto">
-                {JSON.stringify(logs.slice(-10), null, 2)}
-              </pre>
-            </div>
-          )}
-
-          <div ref={endRef} />
-        </div>
-
-        {/* FOOTER: quick actions + input + trash */}
-        <div className="gaarsdal-chatbot-footer">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-1">
-              <button
-                className="gaarsdal-icon-btn"
-                aria-label="Forside"
-                title="Forside"
-                onClick={() => go("HOME")}
-                disabled={!state || loading}
-              >
-                <HomeIcon className="w-5 h-5" />
-              </button>
-
-              <button
-                className="gaarsdal-icon-btn"
-                aria-label="Telefon"
-                title="Telefon"
-                onClick={() => go("TLF")}
-                disabled={!state || loading}
-              >
-                <PhoneIcon className="w-5 h-5" />
-              </button>
-
-              <button
-                className="gaarsdal-icon-btn"
-                aria-label="E-mail"
-                title="E-mail"
-                onClick={() => go("MAIL")}
-                disabled={!state || loading}
-              >
-                <EnvelopeIcon className="w-5 h-5" />
-              </button>
-
-              <button
-                className="gaarsdal-icon-btn"
-                aria-label="Akut"
-                title="Akut"
-                onClick={() => go("AKUT")}
-                disabled={!state || loading}
-              >
-                <ExclamationTriangleIcon className="w-5 h-5" />
-              </button>
-            </div>
-
-            <button
-              className="gaarsdal-icon-btn"
-              aria-label="Ryd visning (bevarer kernel state)"
-              title="Ryd visning"
-              onClick={clearHistory}
-              disabled={messages.length === 0}
-            >
-              <TrashIcon className="w-5 h-5" />
-            </button>
           </div>
-
-          <div className="flex items-start gap-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Skriv her… (Enter = send, Shift+Enter = ny linje)"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault()
-                  sendFreeText()
-                }
-              }}
-              disabled={!state || loading}
-            />
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </>
   )
 }

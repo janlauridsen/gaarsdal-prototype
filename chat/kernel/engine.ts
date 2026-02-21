@@ -8,6 +8,14 @@ import {
 } from "./types"
 import { getNode } from "../nodes/registry"
 
+// Global actions should behave like HOME: they must always be reachable from any state.
+// This avoids UX dead-ends when a user triggers a global footer action from inside
+// a deep flow where the current node does not list that exit.
+// NOTE: These are allowed regardless of the active node's declared exits.
+// MAIL/TLF/CONTACT_FORM/AKUT are handled as "parentese" overlays so the user can resume.
+// HOME remains a hard break back to the menu.
+const GLOBAL_EXITS: string[] = ["HOME", "MAIL", "TLF", "CONTACT_FORM", "AKUT", "RESUME"]
+
 function assertState(state: ConversationState): void {
   if (!state.conversation_id) throw new Error("missing conversation_id")
   if (state.revision < 0) throw new Error("invalid revision")
@@ -37,6 +45,34 @@ function buildTransition(
 
   switch (input.type) {
     case "EXPLICIT_TRANSITION":
+      // RESUME: close the latest parentese (if any)
+      if (input.target === "RESUME") {
+        return {
+          type: "PARENTESE_CLOSE",
+          from: state.active_node,
+          to:
+            state.parentese_stack.length > 0
+              ? state.parentese_stack[state.parentese_stack.length - 1]
+              : null,
+          reason: "resume from parentese",
+        }
+      }
+
+      // Global overlays: open parentese (push current node onto stack).
+      // HOME is intentionally *not* a parentese; it's a break back to the menu.
+      if (
+        input.target !== "HOME" &&
+        GLOBAL_EXITS.includes(input.target) &&
+        getNode(state.active_node).allow_parentese
+      ) {
+        return {
+          type: "PARENTESE_OPEN",
+          from: state.active_node,
+          to: input.target,
+          reason: "global action (parentese)",
+        }
+      }
+
       return {
         type: "NODE_HOP",
         from: state.active_node,
@@ -176,7 +212,7 @@ function applyTransition(
     }
 
     const node = getNode(state.active_node)
-    if (!node.allowed_exits.includes(transition.to)) {
+    if (!node.allowed_exits.includes(transition.to) && !GLOBAL_EXITS.includes(transition.to)) {
       throw new Error("parentese open target not allowed")
     }
 
@@ -219,7 +255,7 @@ function applyTransition(
   }
 
   const node = getNode(state.active_node)
-  if (transition.to && !node.allowed_exits.includes(transition.to)) {
+  if (transition.to && !node.allowed_exits.includes(transition.to) && !GLOBAL_EXITS.includes(transition.to)) {
     throw new Error("transition.to not allowed")
   }
 
@@ -256,6 +292,15 @@ export function runKernel(
   const transition = buildTransition(state, input)
   const nextState = applyTransition(state, transition)
 
+  // Normalize transitions so logs/events never carry an undefined destination.
+  // In practice this happens when external routing resolves FREE_TEXT into a
+  // logical NODE_HOP but does not provide `to` (meaning the node stays the same).
+  // The state already reflects the truth; this just aligns the transition payload.
+  const normalizedTransition =
+    transition.type === "NODE_HOP" && !transition.to
+      ? { ...transition, to: nextState.active_node }
+      : transition
+
   const log: LogEvent = {
     conversation_id: state.conversation_id,
     revision_before: state.revision,
@@ -263,13 +308,13 @@ export function runKernel(
     active_node_before: state.active_node,
     active_node_after: nextState.active_node,
     input_type: input.type,
-    transition_type: transition.type,
+    transition_type: normalizedTransition.type,
     timestamp: new Date().toISOString(),
   }
 
   return {
     state: nextState,
-    transition,
+    transition: normalizedTransition,
     log,
   }
 }
