@@ -24,6 +24,7 @@ import { appendConversationEventV1 } from "../../chat/events/store"
 
 import { ensureThreadThemeAndEpisode } from "../../chat/memory/longTermMemoryStore"
 import { enqueueJob, makeJobId } from "../../chat/async/queue"
+import { runReflectionCbaUpdate } from "../../chat/reflection/cba"
 
 // Single raw stream
 import { appendRawTurn } from "../../chat/raw/store"
@@ -1076,16 +1077,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
     })
 
-    await enqueueReflectionCbaUpdate({
-      userKey,
-      conversationId: kernelResult.state.conversation_id,
-      revisionAfter: kernelResult.state.revision,
-      activeNodeAfter: kernelResult.state.active_node,
-      userMessage: (input as any).type === "FREE_TEXT" ? (input as any).text : "",
-      therapistMessage: kernelResult.transition.response_message ?? kernelResult.state.active_node_message,
-      threadThemeId: threadBinding?.themeId ?? (kernelResult.state.meta?.["thread.theme_id"] as any)?.value,
-      threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
-    })
+    // Reflection CBA updates:
+    // - Hobby cannot run frequent cron reliably, so we support a synchronous prototype mode.
+    // - If GAARSDAL_REFLECTION_CBA_SYNC=1, we run CBA in-band (adds latency but updates schema immediately).
+    // - Otherwise we enqueue an async job (requires an external worker trigger).
+    const userMessage = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : ""
+    const therapistMessage = String(kernelResult.transition.response_message ?? kernelResult.state.active_node_message ?? "")
+    const activeNodeAfter = kernelResult.state.active_node
+
+    const syncCbaEnabled = process.env.GAARSDAL_REFLECTION_CBA_SYNC === "1"
+    if (syncCbaEnabled && activeNodeAfter === "REFLECTION") {
+      // Best-effort: failures must not break chat.
+      try {
+        await runReflectionCbaUpdate({
+          conversationId: kernelResult.state.conversation_id,
+          userMessage,
+          therapistMessage,
+        })
+      } catch {
+        // ignore
+      }
+    } else {
+      await enqueueReflectionCbaUpdate({
+        userKey,
+        conversationId: kernelResult.state.conversation_id,
+        revisionAfter: kernelResult.state.revision,
+        activeNodeAfter,
+        userMessage,
+        therapistMessage,
+        threadThemeId: threadBinding?.themeId ?? (kernelResult.state.meta?.["thread.theme_id"] as any)?.value,
+        threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
+      })
+    }
 
     await logAndRecord({
       userKey,
