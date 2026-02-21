@@ -68,6 +68,7 @@ const NODE_LABELS: Record<string, string> = {
   GEN_HYPNO: "Spørg om hypnoterapi",
   TRIAGE: "Passer hypnoterapi til min situation?",
   METHOD_FIT: "Hypnoterapi eller et bedre alternativ?",
+  REFLECTION: "Refleksion",
   BOOKING: "Book tid",
   DEV_SANDBOX_INTRO: "Sandbox (dev)",
   MAIL: "E-mail",
@@ -80,11 +81,12 @@ const TOPIC_TOOLTIPS: Record<string, string> = {
   GEN_HYPNO: "Fri samtale (ingen behandling i chatten).",
   TRIAGE: "Kort afklaring med få spørgsmål.",
   METHOD_FIT: "Overblik over alternativer (ikke behandling).",
+  REFLECTION: "Refleksionsdialog: intake og meningsskabelse (ingen øvelser).",
   BOOKING: "Vælg kontaktvej for booking.",
 }
 
 // Topic buttons shown on the HOME screen. Booking is handled via the footer UI, not as a HOME topic.
-const TOPIC_NODES = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT"] as const
+const TOPIC_NODES = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "REFLECTION"] as const
 
 function safeId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`
