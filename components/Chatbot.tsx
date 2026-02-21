@@ -109,6 +109,18 @@ export default function Chatbot() {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
 
+  // "System is alive" indicator text (rotates while waiting for backend).
+  const WAITING_TEXTS = useMemo(
+    () => [
+      "Jeg er her — jeg arbejder på dit svar…",
+      "Læser det igennem…",
+      "Samler trådene…",
+      "Formulerer et roligt næste spørgsmål…",
+    ],
+    []
+  )
+  const [waitingTextIndex, setWaitingTextIndex] = useState(0)
+
   const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
   const headerNavHintTimerRef = useRef<number | null>(null)
 
@@ -150,6 +162,16 @@ export default function Chatbot() {
     if (!open) return
     endRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, open, headerNavHint, expanded])
+
+  // Rotate waiting text only while loading.
+  useEffect(() => {
+    if (!loading) return
+    setWaitingTextIndex(0)
+    const id = window.setInterval(() => {
+      setWaitingTextIndex((i) => (i + 1) % WAITING_TEXTS.length)
+    }, 2200)
+    return () => window.clearInterval(id)
+  }, [loading, WAITING_TEXTS.length])
 
   useEffect(() => {
     return () => {
@@ -505,12 +527,16 @@ export default function Chatbot() {
                 </div>
               ))}
 
+              {/* Keep the scroll anchor on the last real message.
+                  The "system is alive" indicator is rendered *after* the anchor so it can sit below the visible area. */}
+              <div ref={endRef} />
+
               {loading && (
                 <div className={`${styles.message} ${styles.messageBot} ${styles.liveIndicator}`} aria-live="polite">
                   <span className={styles.liveHeart} aria-hidden="true">
                     ♥
                   </span>
-                  <span className={styles.liveText}>Jeg er her…</span>
+                  <span className={styles.liveText}>{WAITING_TEXTS[waitingTextIndex]}</span>
                 </div>
               )}
 
@@ -606,7 +632,7 @@ export default function Chatbot() {
                 </div>
               )}
 
-              <div ref={endRef} />
+        {/* endRef moved into the scroll area to anchor on the last real message. */}
             </div>
 
             <div className={styles.footer}>
