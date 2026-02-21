@@ -380,6 +380,51 @@ async function enqueueSuggestFacts(params: {
   })
 }
 
+async function enqueueReflectionCbaUpdate(params: {
+  userKey: string
+  conversationId: string
+  revisionAfter: number
+  activeNodeAfter: string
+  userMessage: string
+  therapistMessage: string
+  threadThemeId?: string
+  threadEpisodeId?: string
+}): Promise<void> {
+  // Only runs when a REFLECTION node is active.
+  if (params.activeNodeAfter !== "REFLECTION") return
+
+  const userMessage = (params.userMessage ?? "").trim()
+  const therapistMessage = (params.therapistMessage ?? "").trim()
+  if (!userMessage && !therapistMessage) return
+
+  const themeId = params.threadThemeId
+  const episodeId = params.threadEpisodeId
+  if (typeof themeId !== "string" || typeof episodeId !== "string") return
+
+  const job_id = makeJobId({
+    type: "REFLECTION_CBA_UPDATE",
+    userKey: params.userKey,
+    episodeId,
+    revisionAfter: params.revisionAfter,
+  })
+
+  await enqueueJob({
+    schema_version: "v23",
+    job_version: 1,
+    type: "REFLECTION_CBA_UPDATE",
+    job_id,
+    user_key: params.userKey,
+    conversation_id: params.conversationId,
+    theme_id: themeId,
+    episode_id: episodeId,
+    revision_after: params.revisionAfter,
+    payload: {
+      user_message: userMessage,
+      therapist_message: therapistMessage,
+    },
+  })
+}
+
 async function ensureThreadBindingOnState(params: {
   userKey: string
   conversationId: string
@@ -1027,6 +1072,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       conversationId: kernelResult.state.conversation_id,
       revisionAfter: kernelResult.state.revision,
       metaKeysWritten,
+      threadThemeId: threadBinding?.themeId ?? (kernelResult.state.meta?.["thread.theme_id"] as any)?.value,
+      threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
+    })
+
+    await enqueueReflectionCbaUpdate({
+      userKey,
+      conversationId: kernelResult.state.conversation_id,
+      revisionAfter: kernelResult.state.revision,
+      activeNodeAfter: kernelResult.state.active_node,
+      userMessage: (input as any).type === "FREE_TEXT" ? (input as any).text : "",
+      therapistMessage: kernelResult.transition.response_message ?? kernelResult.state.active_node_message,
       threadThemeId: threadBinding?.themeId ?? (kernelResult.state.meta?.["thread.theme_id"] as any)?.value,
       threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
     })
