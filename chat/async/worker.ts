@@ -18,6 +18,8 @@ import {
   type Episode,
 } from "../memory/longTermMemoryStore"
 import { readConversationState } from "../persistence/conversationStateStore"
+import { writeReflectionFocusPlan } from "../persistence/reflectionFocusPlanStore"
+import type { ReflectionFocusPlanV1 } from "../reflection/focusPlan"
 
 const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // keep aligned with other memory TTLs for now
 const REFLECTION_TTL_SECONDS = 90 * 24 * 60 * 60
@@ -42,6 +44,33 @@ const CBA_PROMPT_V1 =
   "- maturity_model\n" +
   "- dialog_dynamics\n" +
   "- suggestions_for_therapist\n"
+
+
+const FOCUS_PLAN_PROMPT_V1 =
+  "Role: Reflection Focus Planner.\n\n" +
+  "Goal:\n" +
+  "- Select 1–3 highest-priority fields from the reflection schema to clarify next.\n" +
+  "- Provide 1–3 natural, human questions the dialogue partner can ask to reduce uncertainty.\n\n" +
+  "You receive:\n" +
+  "- current_schema (JSON)\n" +
+  "- conversation_transcript (list of {role, content})\n" +
+  "- latest_user_message (string)\n\n" +
+  "Prioritization:\n" +
+  "- Prefer fields with high uncertainty AND high downstream impact.\n" +
+  "- Prefer fields that unblock understanding of the user's goal and constraints.\n" +
+  "- Prefer safety/urgency only if explicitly signaled.\n" +
+  "- Avoid repeating recent questions (use transcript).\n\n" +
+  "Rules:\n" +
+  "- Pick at most 3 focus fields. It is OK to return fewer (including 0) if there is no meaningful gap.\n" +
+  "- Questions must be short, Danish, and non-robotic.\n" +
+  "- Do NOT mention schema field names or internal structures.\n" +
+  "- Do NOT propose exercises or structured interventions.\n\n" +
+  "Return ONLY valid JSON in this shape:\n" +
+  "{\n" +
+  '  \"focus_fields\": [{ \"path\": string, \"reason\": string, \"priority\": 1|2|3 }],\n' +
+  '  \"suggested_questions\": [{ \"field_path\": string, \"question\": string }],\n' +
+  '  \"constraints\": { \"max_questions\": 1|2|3, \"avoid_repeat_within_turns\": number }\n' +
+  "}\n"
 
 type ProcessBatchResult = {
   processed: number
@@ -297,6 +326,77 @@ async function processReflectionCbaUpdate(job: AsyncJobV23): Promise<AsyncJobRes
   }
 
   await writeReflectionCase(job.conversation_id, merged as any, REFLECTION_TTL_SECONDS)
+
+  // Generate an ephemeral focus plan (1–3 fields + 1–3 questions) for the next dialogue turn.
+  // Stored separately from the schema to avoid polluting long-lived case data.
+  try {
+    const state = await readConversationState(job.conversation_id)
+    const transcript = (state?.meta?.["reflection.transcript"]?.value as any) ?? []
+    const focusOut = await llm.chatJson({
+      model,
+      temperature: 0.2,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: FOCUS_PLAN_PROMPT_V1 },
+        {
+          role: "user",
+          content: JSON.stringify({
+            current_schema: merged,
+            conversation_transcript: transcript,
+            latest_user_message: user_message,
+          }),
+        },
+      ],
+    })
+
+    if (focusOut) {
+      const rawFields = Array.isArray((focusOut as any).focus_fields) ? (focusOut as any).focus_fields : []
+      const rawQuestions = Array.isArray((focusOut as any).suggested_questions)
+        ? (focusOut as any).suggested_questions
+        : []
+      const maxQ =
+        (focusOut as any)?.constraints?.max_questions === 1 ||
+        (focusOut as any)?.constraints?.max_questions === 2 ||
+        (focusOut as any)?.constraints?.max_questions === 3
+          ? (focusOut as any).constraints.max_questions
+          : 2
+
+      const avoidRepeat =
+        typeof (focusOut as any)?.constraints?.avoid_repeat_within_turns === "number"
+          ? (focusOut as any).constraints.avoid_repeat_within_turns
+          : 3
+
+      const plan: ReflectionFocusPlanV1 = {
+        version: "v1",
+        conversation_id: job.conversation_id,
+        episode_id: job.episode_id,
+        revision: job.revision_after,
+        focus_fields: rawFields
+          .slice(0, 3)
+          .map((f: any, i: number) => ({
+            path: typeof f?.path === "string" ? f.path : "",
+            reason: typeof f?.reason === "string" ? f.reason : "",
+            priority: (f?.priority === 1 || f?.priority === 2 || f?.priority === 3 ? f.priority : (i + 1)) as 1 | 2 | 3,
+          }))
+          .filter((f: any) => f.path && f.reason),
+        suggested_questions: rawQuestions
+          .slice(0, 3)
+          .map((q: any) => ({
+            field_path: typeof q?.field_path === "string" ? q.field_path : "",
+            question: typeof q?.question === "string" ? q.question : "",
+          }))
+          .filter((q: any) => q.field_path && q.question),
+        constraints: { max_questions: maxQ, avoid_repeat_within_turns: avoidRepeat },
+        created_at: new Date().toISOString(),
+      }
+
+      // Keep aligned with other reflection TTLs but shorter is fine; this is ephemeral guidance.
+      const FOCUS_PLAN_TTL_SECONDS = 24 * 60 * 60
+      await writeReflectionFocusPlan(job.conversation_id, job.revision_after, plan, FOCUS_PLAN_TTL_SECONDS)
+    }
+  } catch {
+    // Focus plan is best-effort; it must never fail the job.
+  }
 
   return { job_id: job.job_id, ok: true }
 }
