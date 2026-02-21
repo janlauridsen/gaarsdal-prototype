@@ -30,6 +30,11 @@ const CBA_PROMPT_V1 =
   "Rules:\n" +
   "- Extract only explicit or strongly implied data.\n" +
   "- Update confidence conservatively.\n" +
+  "- Preserve the user's own wording when it is process-relevant (e.g., 'håbløshed', 'resignation', 'ligeglad').\n" +
+  "- Capture change-talk/turning points (concern, desire, reasons, commitment) into change_dynamics and motivation/self_efficacy when explicitly present.\n" +
+  "- Capture ambivalence (wanting change AND wanting relief) into metacognition.response_style and/or change_dynamics when present.\n" +
+  "- Capture attempts/effort (e.g., tried to cut down) as evidence of agency in self_efficacy.\n" +
+  "- Prefer pattern signals (time-of-week, context, triggers, escalation) into pattern_map/context_triggers.\n" +
   "- Compute maturity_model using rule-based coverage.\n" +
   "- Compute risk_engine using explicit behavioral signals.\n" +
   "- Compute dialog_dynamics baseline (novelty).\n" +
@@ -51,6 +56,12 @@ const FOCUS_PLAN_PROMPT_V1 =
   "- Select 0–3 highest-priority uncertainties to clarify next.\n" +
   "- Provide 0–3 natural, human questions the dialogue partner can ask to reduce uncertainty.\n" +
   "- Additionally, detect process markers (vulnerability/change talk/ambivalence/resignation/agency) to support better process-holding.\n\n" +
+  "Question writing style (aligned with therapist feedback):\n" +
+  "- Prefer dwelling on the user's own ordvalg (quote 1–3 key words) before moving on.\n" +
+  "- Mark small turning points/change-talk and give them a bit more plads.\n" +
+  "- Normalize ambivalence explicitly when present (no techniques, just normalizing language).\n" +
+  "- Prefer mønsterforståelse (hvornår/hvor/hvordan det udfolder sig) frem for løsninger.\n" +
+  "- When attempts/effort appear, include an acknowledging follow-up (what helped, what made it hard).\n\n" +
   "You receive:\n" +
   "- current_schema (JSON)\n" +
   "- conversation_transcript (list of {role, content})\n" +
@@ -71,7 +82,7 @@ const FOCUS_PLAN_PROMPT_V1 =
   "- Avoid repeating recent questions (use transcript).\n\n" +
   "Rules:\n" +
   "- Pick at most 3 focus fields. It is OK to return fewer (including 0) if there is no meaningful gap.\n" +
-  "- Questions must be short, Danish, and non-robotic.\n" +
+  "- Questions must be short, Danish, and non-robotic. Prefer 1 question unless 2 are clearly needed.\n" +
   "- Do NOT mention schema field names or internal structures.\n" +
   "- Do NOT propose exercises or structured interventions.\n" +
   "- Default constraints.max_questions should be 1. Use 2 only if truly necessary.\n\n" +
