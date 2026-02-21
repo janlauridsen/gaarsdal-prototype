@@ -169,7 +169,7 @@ export default function Chatbot() {
     setWaitingTextIndex(0)
     const id = window.setInterval(() => {
       setWaitingTextIndex((i) => (i + 1) % WAITING_TEXTS.length)
-    }, 4400)
+    }, 6600)
     return () => window.clearInterval(id)
   }, [loading, WAITING_TEXTS.length])
 
