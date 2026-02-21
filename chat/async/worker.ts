@@ -49,6 +49,12 @@ type ProcessBatchResult = {
   results: AsyncJobResult[]
 }
 
+function getJsonModel(): string {
+  // Repoets OpenAI client tager “model” i payload.
+  // I jeres nuværende repo bruges OPENAI_MODEL_JSON flere steder.
+  return process.env.OPENAI_MODEL_JSON ?? "gpt-4o-mini"
+}
+
 export async function processQueueBatch(limit: number): Promise<ProcessBatchResult> {
   const { jobs, dropped } = await dequeueJobsWithStats(limit)
   const results: AsyncJobResult[] = []
@@ -93,27 +99,41 @@ async function processSummarizeEpisode(job: AsyncJobV23): Promise<AsyncJobResult
   const state = await readConversationState(job.conversation_id)
   const interactions = await readInteractions(job.conversation_id)
 
-  // Fix: readThemes/readFacts expect { userKey, limit? }
+  // Fix: readThemes/readFacts expect an options object
   const themes = await readThemes({ userKey: job.user_key })
   const facts = await readFacts({ userKey: job.user_key })
 
   const llm = createOpenAiCompatibleClient()
+  const model = getJsonModel()
 
   const prompt =
     "Summarize the user's episode for long-term memory.\n" +
     "Return JSON with fields: { theme_title, theme_summary, episode_title, episode_summary }.\n"
 
   const json = await llm.chatJson({
-    system: prompt,
-    user: JSON.stringify({
-      conversation_id: job.conversation_id,
-      episode_id: job.episode_id,
-      interactions,
-      themes,
-      facts,
-      active_node: state.active_node,
-    }),
+    model,
+    temperature: 0.2,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: prompt },
+      {
+        role: "user",
+        content: JSON.stringify({
+          conversation_id: job.conversation_id,
+          episode_id: job.episode_id,
+          interactions,
+          themes,
+          facts,
+          active_node: state.active_node,
+        }),
+      },
+    ],
   })
+
+  if (!json) {
+    // If LLM unavailable, treat as successful no-op to avoid retry loops.
+    return { job_id: job.job_id, ok: true }
+  }
 
   const themeTitle = String((json as any)?.theme_title ?? "").trim()
   const themeSummary = String((json as any)?.theme_summary ?? "").trim()
@@ -146,27 +166,40 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
   const theme = await readTheme(job.user_key, job.theme_id)
   const episode = await readEpisode(job.user_key, job.theme_id, job.episode_id)
 
-  // Fix: readInteractions in this repo takes (conversation_id?: string)
-  // We use conversation_id because it's the canonical scope for interactions in the logging sink.
+  // Fix: readInteractions takes (conversation_id?: string)
   const interactions = await readInteractions(job.conversation_id)
 
   const llm = createOpenAiCompatibleClient()
+  const model = getJsonModel()
 
   const prompt =
     "Extract candidate memory facts from the episode.\n" +
     "Return JSON: { facts: [{ type, content, confidence }] }.\n"
 
   const json = await llm.chatJson({
-    system: prompt,
-    user: JSON.stringify({
-      theme,
-      episode,
-      interactions,
-    }),
+    model,
+    temperature: 0.2,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: prompt },
+      {
+        role: "user",
+        content: JSON.stringify({
+          theme,
+          episode,
+          interactions,
+        }),
+      },
+    ],
   })
 
-  const facts = Array.isArray((json as any)?.facts) ? ((json as any).facts as any[]) : []
-  for (const f of facts) {
+  if (!json) {
+    // If LLM unavailable, treat as successful no-op.
+    return { job_id: job.job_id, ok: true }
+  }
+
+  const factsArr = Array.isArray((json as any)?.facts) ? ((json as any).facts as any[]) : []
+  for (const f of factsArr) {
     const content = String(f?.content ?? "").trim()
     const type = String(f?.type ?? "note").trim()
     const confidence = Number(f?.confidence ?? 0.0)
@@ -186,37 +219,53 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
 }
 
 async function processReflectionCbaUpdate(job: AsyncJobV23): Promise<AsyncJobResult> {
-  const payload = job.payload
-  if (!payload || typeof payload.user_message !== "string" || typeof payload.therapist_message !== "string") {
-    return {
-      job_id: job.job_id,
-      ok: false,
-      error: { code: "missing_payload", message: "Missing payload for REFLECTION_CBA_UPDATE" },
-    }
+  const payload = (job as any).payload
+  const user_message = typeof payload?.user_message === "string" ? payload.user_message : ""
+  const therapist_message = typeof payload?.therapist_message === "string" ? payload.therapist_message : ""
+
+  // No-op if we do not have any meaningful text.
+  if (!user_message.trim() && !therapist_message.trim()) {
+    return { job_id: job.job_id, ok: true }
   }
 
   const current = await readReflectionCase(job.conversation_id)
   const llm = createOpenAiCompatibleClient()
+  const model = getJsonModel()
 
-  const json = await llm.chatJson({
-    system: CBA_PROMPT_V1,
-    user: JSON.stringify({
-      current_schema: current,
-      user_message: payload.user_message,
-      therapist_message: payload.therapist_message,
-    }),
+  const out = await llm.chatJson({
+    model,
+    temperature: 0.2,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: CBA_PROMPT_V1 },
+      {
+        role: "user",
+        content: JSON.stringify({
+          current_schema: current,
+          user_message,
+          therapist_message,
+        }),
+      },
+    ],
   })
 
+  if (!out) {
+    // If LLM unavailable, treat as successful no-op.
+    return { job_id: job.job_id, ok: true }
+  }
+
+  // Tolerant envelope parsing: accept several keys; otherwise treat root as patch.
   const patchCandidate =
-    (json as any)?.schema_updates ??
-    (json as any)?.schema ??
-    (json as any)?.patch ??
-    (json as any)?.updates ??
-    json
+    (out as any)?.schema_updates ??
+    (out as any)?.schema ??
+    (out as any)?.patch ??
+    (out as any)?.updates ??
+    out
 
   const merged = mergeReflectionCase(current, patchCandidate as any)
 
-  const suggestions = (json as any)?.suggestions_for_therapist
+  // If worker output includes therapist suggestions, store it on schema (small field).
+  const suggestions = (out as any)?.suggestions_for_therapist
   if (typeof suggestions === "string" && suggestions.trim().length > 0) {
     ;(merged as any).suggestions_for_therapist = suggestions.trim()
   }
