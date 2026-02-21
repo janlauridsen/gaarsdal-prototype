@@ -7,11 +7,10 @@ import { queueSize } from "../../../chat/async/queue"
  *
  * Deploy note:
  * - Run via Vercel Cron or manual dev calls.
- * - Secure with CRON_SECRET (Vercel sends Authorization: Bearer <CRON_SECRET>) or JOB_WORKER_SECRET.
+ * - Protect with JOB_WORKER_SECRET in production.
  *
  * Usage:
- * - GET /api/jobs/worker?limit=10
- * - Optional legacy: GET /api/jobs/worker?limit=10&secret=...
+ * - GET /api/jobs/worker?limit=10&secret=...
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -19,19 +18,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Method Not Allowed" })
   }
 
-  const cronSecret = process.env.CRON_SECRET
-  const jobSecret = process.env.JOB_WORKER_SECRET
+  const configured = process.env.JOB_WORKER_SECRET
+  const provided = typeof req.query.secret === "string" ? req.query.secret : ""
 
-  const authHeader = typeof req.headers.authorization === "string" ? req.headers.authorization : ""
-  const providedQuerySecret = typeof req.query.secret === "string" ? req.query.secret : ""
-
-  const cronOk = cronSecret ? authHeader === `Bearer ${cronSecret}` : false
-  const jobOk = jobSecret
-    ? authHeader === `Bearer ${jobSecret}` || providedQuerySecret === jobSecret
-    : false
-
-  // If any secret is configured, require a match.
-  if ((cronSecret || jobSecret) && !(cronOk || jobOk)) {
+  if (configured && provided !== configured) {
     return res.status(401).json({ error: "Unauthorized" })
   }
 
@@ -43,9 +33,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const after = await queueSize()
 
   return res.status(200).json({
-    ok: true,
+    ok: true, // boolean success for endpoint
     queue_before: before,
     queue_after: after,
-    ...batch,
+    processed: batch.processed,
+    ok_count: batch.ok_count,
+    failed: batch.failed,
+    dropped: batch.dropped,
+    results: batch.results,
   })
 }
