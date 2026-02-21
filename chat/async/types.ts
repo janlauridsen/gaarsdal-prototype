@@ -1,4 +1,9 @@
-export type AsyncJobType = "SUMMARIZE_EPISODE" | "SUGGEST_FACTS"
+export type AsyncJobType = "SUMMARIZE_EPISODE" | "SUGGEST_FACTS" | "REFLECTION_CBA_UPDATE"
+
+export type ReflectionCbaPayloadV1 = {
+  user_message: string
+  therapist_message: string
+}
 
 export type AsyncJobV23 = {
   schema_version: "v23"
@@ -19,6 +24,9 @@ export type AsyncJobV23 = {
 
   // versioning for job logic changes
   job_version: number
+
+  // optional payload for job-specific inputs (kept small)
+  payload?: ReflectionCbaPayloadV1
 }
 
 export type AsyncJobResult = {
