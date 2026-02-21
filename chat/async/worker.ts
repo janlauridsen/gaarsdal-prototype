@@ -14,6 +14,8 @@ import {
   upsertFact,
   type MemoryFact,
   readTheme,
+  type Theme,
+  type Episode,
 } from "../memory/longTermMemoryStore"
 import { readConversationState } from "../persistence/conversationStateStore"
 
@@ -49,9 +51,12 @@ type ProcessBatchResult = {
   results: AsyncJobResult[]
 }
 
+function nowMs(): number {
+  return Date.now()
+}
+
 function getJsonModel(): string {
-  // Repoets OpenAI client tager “model” i payload.
-  // I jeres nuværende repo bruges OPENAI_MODEL_JSON flere steder.
+  // Use repo convention. If not set, keep a conservative default.
   return process.env.OPENAI_MODEL_JSON ?? "gpt-4o-mini"
 }
 
@@ -99,7 +104,7 @@ async function processSummarizeEpisode(job: AsyncJobV23): Promise<AsyncJobResult
   const state = await readConversationState(job.conversation_id)
   const interactions = await readInteractions(job.conversation_id)
 
-  // Fix: readThemes/readFacts expect an options object
+  // Signatures in repo: readThemes/readFacts expect an options object.
   const themes = await readThemes({ userKey: job.user_key })
   const facts = await readFacts({ userKey: job.user_key })
 
@@ -130,43 +135,61 @@ async function processSummarizeEpisode(job: AsyncJobV23): Promise<AsyncJobResult
     ],
   })
 
-  if (!json) {
-    // If LLM unavailable, treat as successful no-op to avoid retry loops.
-    return { job_id: job.job_id, ok: true }
-  }
+  // If LLM unavailable, no-op (avoid retry loops in prototype).
+  if (!json) return { job_id: job.job_id, ok: true }
 
   const themeTitle = String((json as any)?.theme_title ?? "").trim()
   const themeSummary = String((json as any)?.theme_summary ?? "").trim()
   const episodeTitle = String((json as any)?.episode_title ?? "").trim()
   const episodeSummary = String((json as any)?.episode_summary ?? "").trim()
 
+  const ts = nowMs()
+
+  // longTermMemoryStore Theme uses "label" (not title)
   if (themeTitle && themeSummary) {
-    await upsertTheme(job.user_key, {
+    const existing = await readTheme({ userKey: job.user_key, themeId: job.theme_id })
+    const theme: Theme = {
       theme_id: job.theme_id,
-      title: themeTitle,
-      summary: themeSummary,
-      updated_at_ms: Date.now(),
-    })
+      label: themeTitle,
+      status: existing?.status ?? "active",
+      created_at: existing?.created_at ?? ts,
+      updated_at: ts,
+      origin: existing?.origin ?? "system_suggested",
+    }
+
+    await upsertTheme({ userKey: job.user_key, theme, ttlSeconds: MEMORY_TTL_SECONDS })
+    // NOTE: themeSummary is not represented in Theme v23 store.
+    // If you want to persist it, we need a schema change in longTermMemoryStore.ts (out of scope here).
+    void themeSummary
   }
 
-  if (episodeTitle && episodeSummary) {
-    await upsertEpisode(job.user_key, {
-      theme_id: job.theme_id,
+  // Episode uses summary_short (not title/summary fields)
+  if (episodeTitle || episodeSummary) {
+    const existing = await readEpisode({ userKey: job.user_key, episodeId: job.episode_id })
+    const episode: Episode = {
       episode_id: job.episode_id,
-      title: episodeTitle,
-      summary: episodeSummary,
-      updated_at_ms: Date.now(),
-    })
+      theme_id: job.theme_id,
+      started_at: existing?.started_at ?? ts,
+      ended_at: existing?.ended_at,
+      summary_short: episodeSummary || existing?.summary_short,
+      open_loops: existing?.open_loops,
+      updated_at: ts,
+    }
+
+    await upsertEpisode({ userKey: job.user_key, episode, ttlSeconds: MEMORY_TTL_SECONDS })
+    // NOTE: episodeTitle is not represented in Episode v23 store.
+    void episodeTitle
   }
 
   return { job_id: job.job_id, ok: true }
 }
 
 async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
-  const theme = await readTheme(job.user_key, job.theme_id)
-  const episode = await readEpisode(job.user_key, job.theme_id, job.episode_id)
+  // Signatures in repo: readTheme/readEpisode take params object.
+  const theme = await readTheme({ userKey: job.user_key, themeId: job.theme_id })
+  const episode = await readEpisode({ userKey: job.user_key, episodeId: job.episode_id })
 
-  // Fix: readInteractions takes (conversation_id?: string)
+  // logging sink: readInteractions(conversation_id?: string)
   const interactions = await readInteractions(job.conversation_id)
 
   const llm = createOpenAiCompatibleClient()
@@ -174,7 +197,8 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
 
   const prompt =
     "Extract candidate memory facts from the episode.\n" +
-    "Return JSON: { facts: [{ type, content, confidence }] }.\n"
+    "Return JSON: { facts: [{ key, value, confidence }] }.\n" +
+    "Do not invent facts. Keep key short and stable.\n"
 
   const json = await llm.chatJson({
     model,
@@ -193,26 +217,33 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
     ],
   })
 
-  if (!json) {
-    // If LLM unavailable, treat as successful no-op.
-    return { job_id: job.job_id, ok: true }
-  }
+  if (!json) return { job_id: job.job_id, ok: true }
 
   const factsArr = Array.isArray((json as any)?.facts) ? ((json as any).facts as any[]) : []
+  const ts = nowMs()
+
   for (const f of factsArr) {
-    const content = String(f?.content ?? "").trim()
-    const type = String(f?.type ?? "note").trim()
-    const confidence = Number(f?.confidence ?? 0.0)
-    if (!content) continue
+    const key = String(f?.key ?? "").trim()
+    if (!key) continue
+
+    const confidenceRaw = Number(f?.confidence ?? 0.0)
+    const confidence = Number.isFinite(confidenceRaw) ? confidenceRaw : 0.0
 
     const memoryFact: MemoryFact = {
       fact_id: `${job.episode_id}:${Math.random().toString(16).slice(2)}`,
-      type,
-      content,
-      confidence: Number.isFinite(confidence) ? confidence : 0.0,
-      created_at_ms: Date.now(),
+      key,
+      value: (f as any)?.value,
+      status: "suggested",
+      confidence,
+      created_at: ts,
+      updated_at: ts,
+      provenance: {
+        created_by: "worker:suggest-facts-v1",
+      },
+      edit_history: undefined,
     }
-    await upsertFact(job.user_key, memoryFact)
+
+    await upsertFact({ userKey: job.user_key, fact: memoryFact, ttlSeconds: MEMORY_TTL_SECONDS })
   }
 
   return { job_id: job.job_id, ok: true }
@@ -249,12 +280,8 @@ async function processReflectionCbaUpdate(job: AsyncJobV23): Promise<AsyncJobRes
     ],
   })
 
-  if (!out) {
-    // If LLM unavailable, treat as successful no-op.
-    return { job_id: job.job_id, ok: true }
-  }
+  if (!out) return { job_id: job.job_id, ok: true }
 
-  // Tolerant envelope parsing: accept several keys; otherwise treat root as patch.
   const patchCandidate =
     (out as any)?.schema_updates ??
     (out as any)?.schema ??
@@ -264,7 +291,6 @@ async function processReflectionCbaUpdate(job: AsyncJobV23): Promise<AsyncJobRes
 
   const merged = mergeReflectionCase(current, patchCandidate as any)
 
-  // If worker output includes therapist suggestions, store it on schema (small field).
   const suggestions = (out as any)?.suggestions_for_therapist
   if (typeof suggestions === "string" && suggestions.trim().length > 0) {
     ;(merged as any).suggestions_for_therapist = suggestions.trim()
