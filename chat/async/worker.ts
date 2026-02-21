@@ -92,7 +92,7 @@ async function processJob(job: AsyncJobV23): Promise<AsyncJobResult> {
 async function processSummarizeEpisode(job: AsyncJobV23): Promise<AsyncJobResult> {
   // existing logic (unchanged)
   const state = await readConversationState(job.conversation_id)
-  const interactions = await readInteractions(job.user_key, job.episode_id)
+  const interactions = await readInteractions(job.conversation_id)
   const themes = await readThemes(job.user_key)
   const facts = await readFacts(job.user_key)
 
