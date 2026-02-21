@@ -90,11 +90,12 @@ async function processJob(job: AsyncJobV23): Promise<AsyncJobResult> {
 }
 
 async function processSummarizeEpisode(job: AsyncJobV23): Promise<AsyncJobResult> {
-  // existing logic (unchanged)
   const state = await readConversationState(job.conversation_id)
   const interactions = await readInteractions(job.conversation_id)
-  const themes = await readThemes(job.user_key)
-  const facts = await readFacts(job.user_key)
+
+  // Fix: readThemes/readFacts expect { userKey, limit? }
+  const themes = await readThemes({ userKey: job.user_key })
+  const facts = await readFacts({ userKey: job.user_key })
 
   const llm = createOpenAiCompatibleClient()
 
@@ -142,10 +143,12 @@ async function processSummarizeEpisode(job: AsyncJobV23): Promise<AsyncJobResult
 }
 
 async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
-  // existing logic (unchanged)
   const theme = await readTheme(job.user_key, job.theme_id)
   const episode = await readEpisode(job.user_key, job.theme_id, job.episode_id)
-  const interactions = await readInteractions(job.user_key, job.episode_id)
+
+  // Fix: readInteractions in this repo takes (conversation_id?: string)
+  // We use conversation_id because it's the canonical scope for interactions in the logging sink.
+  const interactions = await readInteractions(job.conversation_id)
 
   const llm = createOpenAiCompatibleClient()
 
@@ -204,7 +207,6 @@ async function processReflectionCbaUpdate(job: AsyncJobV23): Promise<AsyncJobRes
     }),
   })
 
-  // Tolerant envelope parsing: accept several keys; otherwise treat root as patch.
   const patchCandidate =
     (json as any)?.schema_updates ??
     (json as any)?.schema ??
@@ -214,7 +216,6 @@ async function processReflectionCbaUpdate(job: AsyncJobV23): Promise<AsyncJobRes
 
   const merged = mergeReflectionCase(current, patchCandidate as any)
 
-  // If worker output includes therapist suggestions, store it on schema (small field).
   const suggestions = (json as any)?.suggestions_for_therapist
   if (typeof suggestions === "string" && suggestions.trim().length > 0) {
     ;(merged as any).suggestions_for_therapist = suggestions.trim()
