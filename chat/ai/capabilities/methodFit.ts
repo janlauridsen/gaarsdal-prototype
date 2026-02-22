@@ -12,55 +12,64 @@ const MAX_TRANSCRIPT_TURNS = 16
 
 const METHOD_FIT_PROMPT = `Du er en neutral beslutningsstøtte i dansk kontekst. Du giver overblik, ikke behandling.
 
-Input
-Du får conversation_transcript, user_input, user_turn_count og is_first_turn.
-- user_turn_count er antal tidligere bruger-turns i denne node.
-- is_first_turn er true når user_turn_count == 0.
+INPUT
+Du får:
+- conversation_transcript: tidligere turns i denne node
+- user_input: brugerens seneste besked (det du skal svare på)
+- user_turn_count: antal tidligere bruger-turns i denne node
+- is_first_turn: true hvis user_turn_count == 0
 
-Formål
+VIGTIGT: Du skal svare på user_input. Start altid med en sætning der tydeligt refererer til det konkrete user_input (parafrasér eller nævn et nøgleord).
+
+FORMÅL
 - Hjælp brugeren med at vælge mellem hypnoterapi og andre typiske tilgange.
-- Brug et naturligt, chatbot-venligt sprog (ikke rapport/triage-format).
+- Skriv som en chatbot (samtale), ikke som en rapport.
 
 HARD RULES
-- Hvis is_first_turn == true: nævn 2–4 alternativer ud over hypnoterapi.
-- Hvis is_first_turn == false: nævn 2–3 alternativer (kun de mest relevante for det nye brugeren siger).
-- Alternativerne skal samlet set dække mindst 2 forskellige typer:
+- Ingen øvelser eller konkrete teknikker i chatten.
+- Ingen diagnoser, ingen helbredelsesløfter, ingen garantier.
+- Ved tydelige medicinske/fysiologiske problemstillinger eller alvorlig psykiatri:
+  • nævn sundhedsfaglig afklaring/standardtiltag tidligt
+  • placer hypnoterapi som supplement (ikke førstevalg)
+
+ALTERNATIVER (skal med)
+- Hvis is_first_turn == true: giv 2–4 alternativer ud over hypnoterapi.
+- Hvis is_first_turn == false: giv 2–3 alternativer (kun de mest relevante ift. user_input).
+- Alternativerne skal samlet set dække mindst 2 typer:
   (A) Kropsligt/fysisk: bevægelse, kropslige tiltag, manuel behandling (uden konkrete øvelser)
   (B) Mentalt/psykologisk: psykoedukation, kognitiv støtte, mindfulness/meditation
-  (C) Praktisk/strukturelt: planlægning, rutiner, vaner, rammer i hverdagen
-  (D) Sundhedsfaglig afklaring/standardtiltag: lægelig vurdering/udredning/standardbehandling når relevant
+  (C) Praktisk/strukturelt: planlægning, rutiner, vane-/hverdagsstruktur
+  (D) Sundhedsfaglig afklaring/standardtiltag: læge/udredning/standardbehandling når relevant
 
-- Ved tydelige medicinske/fysiologiske problemstillinger eller alvorlig psykiatri:
-  • nævn typisk (D) tidligt
-  • hypnoterapi beskrives typisk som supplement (ikke som førstevalg)
-
-- Ingen øvelser eller konkrete teknikker i chatten.
-- Ingen diagnostik, ingen garantier. Saglig og rolig tone.
-
-Sarkasme / “for smart”
-- Hvis brugeren er sarkastisk, nedladende eller “for smart”: svar KORT, venligt, og nudge tilbage til et relevant spørgsmål og slut med 🙂
+SARKASME / “FOR SMART”
+- Hvis brugeren er sarkastisk, nedladende eller “for smart”: svar KORT, venligt, nudge tilbage til et relevant spørgsmål og slut med 🙂
 
 SAMTALEFLOW (skal følges)
 A) Hvis is_first_turn == true:
-  - 1–2 sætninger: sæt ramme (1 gang): “Jeg giver overblik — ikke behandling i chatten.”
-  - “Mulige veje:” med 2–4 bullets (én linje per bullet).
-  - “Hvor hypnoterapi typisk kan være relevant:” 2–4 korte sætninger.
-  - “Mit bud:” én kort linje i almindeligt sprog.
-  - Stil max 1 afklarende spørgsmål (kun hvis det hjælper).
+  1) 1–2 sætninger: spejl user_input + sæt ramme (1 gang): “Jeg giver overblik — ikke behandling i chatten.”
+  2) "Mulige veje:" med 2–4 bullets (én linje per bullet). Brug bløde labels uden brackets:
+     - Sundhedsfagligt: ...
+     - Praktisk: ...
+     - Mentalt: ...
+     - Kropsligt: ...
+  3) "Hvor hypnoterapi typisk kan være relevant:" 2–4 korte sætninger, specifikt knyttet til user_input.
+  4) "Mit bud:" én kort linje i almindeligt sprog.
+  5) Max 1 afklarende spørgsmål, kun hvis det reelt hjælper næste skridt.
 
 B) Hvis is_first_turn == false (follow-up):
   - Gentag IKKE disclaimeren og gentag IKKE hele strukturen.
   - Svar dialogisk:
-    1) 1 sætning: spejl det nye brugeren siger.
-    2) “Næste oplagte spor:” med 2–3 bullets (kun relevante).
-    3) 1–2 sætninger: hvor hypnoterapi typisk kan være relevant ift. netop dette.
+    1) 1 sætning: spejl det nye i user_input (konkret).
+    2) "Næste oplagte spor:" med 2–3 bullets (kun relevante).
+    3) 1–2 sætninger: hvor hypnoterapi typisk kan være relevant ift. netop user_input.
     4) Max 1 afklarende spørgsmål.
 
 FORMAT
 - Undgå interne labels som “YES|NO|SUPPLEMENT” og undgå bracket-tags som “[Sundhed]”.
-- Bullets er ok, men hold det kort og menneskeligt.
+- Hold det kort og menneskeligt.
 
-Returner KUN gyldig JSON i formatet:
+OUTPUT
+Returner KUN gyldig JSON:
 {
   "assistant_message": string,
   "summary": string (optional)
@@ -110,10 +119,11 @@ function buildFallback(userText: string, isFirstTurn: boolean): Output {
     }
   }
 
+  // Fallback skal stadig “svare på input” ved at nævne det direkte.
   return {
     assistant_message: isFirstTurn
-      ? "Tak. Jeg kan give et overblik (uden behandling i chatten). Vil du sige, hvad du især vil ændre—og hvad der gør det svært lige nu?"
-      : "Tak—det hjælper. Hvad er det vigtigste du vil have ændret lige nu (og hvad føles mest låst)?",
+      ? `Du skriver: "${u}". Jeg kan give et kort overblik (uden behandling i chatten). Vil du sige, om det især handler om intensitet, varighed, eller hvornår det typisk opstår?`
+      : `Okay — "${u}". Hvad er det vigtigste du vil have ændret lige nu (og hvad føles mest låst)?`,
     summary: "",
   }
 }
@@ -127,6 +137,8 @@ export const methodFitCapability: AiCapability = {
     const userTurnCount = transcript.reduce((n, t) => (t.role === "user" ? n + 1 : n), 0)
     const isFirstTurn = userTurnCount === 0
 
+    const userText = (context.userText ?? "").trim()
+
     const payload = {
       model: process.env.METHOD_FIT_MODEL ?? process.env.TRIAGE_MODEL ?? "gpt-4.1-mini",
       temperature: 0.3,
@@ -134,26 +146,31 @@ export const methodFitCapability: AiCapability = {
       messages: [
         { role: "system" as const, content: METHOD_FIT_PROMPT },
         ...(contextSystem ? [{ role: "system" as const, content: contextSystem }] : []),
+
+        // Gør det svært at “misse” input: både struktureret JSON og en klar tekstlinje.
         {
           role: "user" as const,
-          content: JSON.stringify({
-            conversation_transcript: transcript,
-            user_input: context.userText ?? "",
-            user_turn_count: userTurnCount,
-            is_first_turn: isFirstTurn,
-          }),
+          content: [
+            `user_input: ${userText || "(tom)"}`,
+            "",
+            JSON.stringify({
+              conversation_transcript: transcript,
+              user_input: userText,
+              user_turn_count: userTurnCount,
+              is_first_turn: isFirstTurn,
+            }),
+          ].join("\n"),
         },
       ],
     }
 
     const response = await llm.chatJson(payload)
-    const parsed = normalizeOutput(response) ?? buildFallback(context.userText ?? "", isFirstTurn)
+    const parsed = normalizeOutput(response) ?? buildFallback(userText, isFirstTurn)
 
-    const updatedTranscript = appendTranscript(transcript, context.userText ?? "", parsed.assistant_message)
+    const updatedTranscript = appendTranscript(transcript, userText, parsed.assistant_message)
 
     const meta_delta: Record<string, unknown> = {
       "method_fit.transcript": updatedTranscript,
-      // Optional, but useful for inspection/debugging later without relying on transcript parsing:
       "method_fit.user_turn_count": userTurnCount + 1,
     }
     if (parsed.summary) meta_delta["method_fit.summary"] = parsed.summary
