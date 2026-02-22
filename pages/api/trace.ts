@@ -10,10 +10,18 @@ const STATE_PREFIX = "gaarsdal:state:";
 const V1_EVENTS_PREFIX = "gaarsdal:events:v1:conv:";
 const SPINE_PREFIX = "gaarsdal:spine:v23:events:";
 const RAW_PREFIX = "gaarsdal:raw:conversation:";
+
+// Reflection async outputs
+const REFLECTION_CASE_PREFIX = "gaarsdal:reflection:v1:case:";
 const FOCUS_PLAN_PREFIX = "gaarsdal:reflection:focus_plan:v1:";
 
 function asString(q: string | string[] | undefined): string | undefined {
   return Array.isArray(q) ? q[0] : q;
+}
+
+function asBoolFlag(v: string | undefined): boolean {
+  if (!v) return false;
+  return v === "1" || v.toLowerCase() === "true" || v.toLowerCase() === "yes" || v.toLowerCase() === "on";
 }
 
 function safeJsonParse<T = any>(v: any): T | any {
@@ -55,57 +63,25 @@ type TurnGroup = {
   spine?: any[];
 
   // diagnostics (optional)
-  diagnostics?: { line: string; block: string };
+  diagnostics?: {
+    line: string;
+    block: string;
+    scores?: {
+      progress_score?: number;
+      repetition_score?: number;
+      fatigue_signal?: number;
+      novelty_score?: number;
+      stall_counter?: number;
+      stall_detected?: boolean;
+      functional_impairment?: number;
+      dependency_risk?: number;
+      escalation_velocity?: number;
+      family_impact?: number;
+      safety_flag?: boolean;
+      override_active?: boolean;
+    };
+  };
 };
-
-function clampInt(v: any, def: number, min: number, max: number): number {
-  const n = Number(v);
-  if (!Number.isFinite(n)) return def;
-  const i = Math.trunc(n);
-  return Math.max(min, Math.min(max, i));
-}
-
-function buildDiagnosticsFromFocusPlan(plan: any): { line: string; block: string } {
-  const markers = Array.isArray(plan?.process_markers) ? plan.process_markers : [];
-
-  const short = markers
-    .slice(0, 3)
-    .map((m: any) => {
-      const t = typeof m?.type === "string" ? m.type : "unknown";
-      const s = typeof m?.strength === "string" ? m.strength : "unknown";
-      return `${t}:${s}`;
-    })
-    .join("|");
-
-  const blockMarkers = markers
-    .slice(0, 3)
-    .map((m: any) => {
-      const t = typeof m?.type === "string" ? m.type : "unknown";
-      const s = typeof m?.strength === "string" ? m.strength : "unknown";
-      const ev = typeof m?.evidence === "string" ? m.evidence : "";
-      const evShort = ev.length > 140 ? `${ev.slice(0, 140)}…` : ev;
-      return `- ${t} (${s}): "${evShort}"`;
-    })
-    .join("\n");
-
-  // Debug-only stance label (deterministic). This is NOT used to generate end-user content.
-  const hasChangeTalk = markers.some(
-    (m: any) => m?.type === "change_talk" && (m?.strength === "moderate" || m?.strength === "strong")
-  );
-  const hasStrongVulnerability = markers.some((m: any) => m?.type === "vulnerability" && m?.strength === "strong");
-
-  let stance = "REFLECT_CLARIFY";
-  if (hasChangeTalk) stance = "ELICIT_HELP";
-  else if (hasStrongVulnerability) stance = "REFLECT_DEEPEN";
-
-  const line = `markers=${short || "none"} stance=${stance}`;
-  const block =
-    "[Reflection Diagnostics]\n" +
-    `markers:\n${blockMarkers || "- none"}\n` +
-    `stance: ${stance}`;
-
-  return { line, block };
-}
 
 function setBounds(g: TurnGroup, t: number | null) {
   if (t == null) return;
@@ -132,15 +108,143 @@ function pickClosestByTime<T extends { _ms?: number | null }>(
   return best ?? candidates[0] ?? null;
 }
 
+function clampInt(v: any, def: number, min: number, max: number): number {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return def;
+  const i = Math.trunc(n);
+  return Math.max(min, Math.min(max, i));
+}
+
+function fmt01(n: any): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "n/a";
+  const v = Math.max(0, Math.min(1, n));
+  return v.toFixed(2);
+}
+
+function labelScore(n: any): "Low" | "Mod" | "High" | "n/a" {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "n/a";
+  if (n < 0.25) return "Low";
+  if (n < 0.6) return "Mod";
+  return "High";
+}
+
+function getCaseScores(caseSchema: any) {
+  const dd = caseSchema?.dialog_dynamics ?? {};
+  const re = caseSchema?.risk_engine ?? {};
+  return {
+    novelty_score: typeof dd?.novelty_score === "number" ? dd.novelty_score : undefined,
+    repetition_score: typeof dd?.repetition_score === "number" ? dd.repetition_score : undefined,
+    fatigue_signal: typeof dd?.fatigue_signal === "number" ? dd.fatigue_signal : undefined,
+    progress_score: typeof dd?.progress_score === "number" ? dd.progress_score : undefined,
+    stall_counter: typeof dd?.stall_counter === "number" ? dd.stall_counter : undefined,
+    stall_detected: typeof dd?.stall_detected === "boolean" ? dd.stall_detected : undefined,
+
+    functional_impairment: typeof re?.functional_impairment === "number" ? re.functional_impairment : undefined,
+    dependency_risk: typeof re?.dependency_risk === "number" ? re.dependency_risk : undefined,
+    escalation_velocity: typeof re?.escalation_velocity === "number" ? re.escalation_velocity : undefined,
+    family_impact: typeof re?.family_impact === "number" ? re.family_impact : undefined,
+    safety_flag: typeof re?.safety_flag === "boolean" ? re.safety_flag : undefined,
+    override_active: typeof re?.override_active === "boolean" ? re.override_active : undefined,
+  };
+}
+
+function buildDiagnostics(caseSchema: any, focusPlan: any): { line: string; block: string; scores: any } {
+  const scores = getCaseScores(caseSchema);
+
+  const markers = Array.isArray(focusPlan?.process_markers) ? focusPlan.process_markers : [];
+
+  const shortMarkers = markers
+    .slice(0, 3)
+    .map((m: any) => {
+      const t = typeof m?.type === "string" ? m.type : "unknown";
+      const s = typeof m?.strength === "string" ? m.strength : "unknown";
+      return `${t}:${s}`;
+    })
+    .join("|");
+
+  const blockMarkers = markers
+    .slice(0, 3)
+    .map((m: any) => {
+      const t = typeof m?.type === "string" ? m.type : "unknown";
+      const s = typeof m?.strength === "string" ? m.strength : "unknown";
+      const ev = typeof m?.evidence === "string" ? m.evidence : "";
+      const evShort = ev.length > 160 ? `${ev.slice(0, 160)}…` : ev;
+      return `- ${t} (${s}): "${evShort}"`;
+    })
+    .join("\n");
+
+  const hasChangeTalk = markers.some(
+    (m: any) =>
+      m?.type === "change_talk" && (m?.strength === "moderate" || m?.strength === "strong")
+  );
+  const hasStrongVulnerability = markers.some(
+    (m: any) => m?.type === "vulnerability" && m?.strength === "strong"
+  );
+
+  // Debug-only stance (deterministic). Not used for user-facing output.
+  // Goal: make "phase/fremdrift" visible in trace.
+  let stance = "REFLECT_CLARIFY";
+  if (scores.override_active === true || scores.safety_flag === true) stance = "STABILIZE";
+  else if (scores.stall_detected === true && hasChangeTalk) stance = "ELICIT_HELP";
+  else if (hasChangeTalk) stance = "ELICIT_HELP";
+  else if (hasStrongVulnerability) stance = "REFLECT_DEEPEN";
+
+  const prog = scores.progress_score;
+  const rep = scores.repetition_score;
+  const fat = scores.fatigue_signal;
+
+  const line =
+    `prog=${labelScore(prog)}(${fmt01(prog)}) ` +
+    `rep=${labelScore(rep)}(${fmt01(rep)}) ` +
+    `fat=${labelScore(fat)}(${fmt01(fat)}) ` +
+    `stall=${scores.stall_detected === true ? "Y" : scores.stall_detected === false ? "N" : "n/a"} ` +
+    `markers=${shortMarkers || "none"} ` +
+    `stance=${stance}`;
+
+  const block =
+    "[Reflection Diagnostics]\n" +
+    `scores:\n` +
+    `- progress: ${labelScore(prog)} (${fmt01(prog)})\n` +
+    `- repetition: ${labelScore(rep)} (${fmt01(rep)})\n` +
+    `- fatigue: ${labelScore(fat)} (${fmt01(fat)})\n` +
+    `- stall: ${scores.stall_detected === true ? "YES" : scores.stall_detected === false ? "NO" : "n/a"} (counter=${typeof scores.stall_counter === "number" ? scores.stall_counter : "n/a"})\n` +
+    `risk:\n` +
+    `- functional_impairment: ${fmt01(scores.functional_impairment)}\n` +
+    `- dependency_risk: ${fmt01(scores.dependency_risk)}\n` +
+    `- family_impact: ${fmt01(scores.family_impact)}\n` +
+    `- safety_flag: ${scores.safety_flag === true ? "true" : "false"}\n` +
+    `- override_active: ${scores.override_active === true ? "true" : "false"}\n` +
+    `process markers:\n${blockMarkers || "- none"}\n` +
+    `stance (debug): ${stance}`;
+
+  return { line, block, scores };
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const conversation_id = asString(req.query.conversation_id);
+    // --- Simple URL syntax (aliases) ---
+    // conversation id: ?conversation_id=... or ?c=... or ?cid=...
+    const conversation_id =
+      asString(req.query.conversation_id) ||
+      asString(req.query.c) ||
+      asString(req.query.cid);
 
-    // Default to 50 and cap at 50 for predictable payload size when using the endpoint directly.
-    const limit = clampInt(asString(req.query.limit) ?? 50, 50, 1, 50);
-    const diagnosticsEnabled = asString(req.query.diagnostics) === "1";
+    // diagnostics: ?diagnostics=1 or ?d=1 or ?diag=1
+    const diagnosticsEnabled =
+      asBoolFlag(asString(req.query.diagnostics)) ||
+      asBoolFlag(asString(req.query.d)) ||
+      asBoolFlag(asString(req.query.diag));
 
-    // LIST
+    // limit: default 50, hard cap 50 (per your request)
+    const limit =
+      clampInt(
+        asString(req.query.limit) ?? asString(req.query.n) ?? 50,
+        50,
+        1,
+        50
+      );
+
+    // LIST (no conversation id)
     if (!conversation_id) {
       const ids = await redis.zrange<string[]>(INDEX_KEY, 0, 200, { rev: true });
       return res.status(200).json({ conversations: ids ?? [] });
@@ -288,22 +392,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       g.spine.sort((a, b) => (a?._ms ?? 0) - (b?._ms ?? 0));
     }
 
-    // ---- Optional: Enrich groups with human-readable diagnostics from focus plan ----
+    // ---- Optional: Enrich groups with diagnostics (case schema + focus plan) ----
     if (diagnosticsEnabled) {
-      // Only the groups already limited by lrange calls above.
+      // Read the reflection case once (conversation-level)
+      const caseKey = `${REFLECTION_CASE_PREFIX}${conversation_id}`;
+      const caseRaw = await redis.get(caseKey);
+      const reflectionCase = safeJsonParse(caseRaw);
+
+      // Read focus plan per group revision (bounded by limit=<=50)
       for (const g of groups) {
         const rev = g.revision;
         if (typeof rev !== "number") continue;
+
         const focusKey = `${FOCUS_PLAN_PREFIX}${conversation_id}:${rev}`;
-        const raw = await redis.get(focusKey);
-        if (!raw) continue;
-        const plan = safeJsonParse(raw);
-        g.diagnostics = buildDiagnosticsFromFocusPlan(plan);
+        const focusRaw = await redis.get(focusKey);
+        if (!focusRaw) continue;
+
+        const focusPlan = safeJsonParse(focusRaw);
+        const diag = buildDiagnostics(reflectionCase, focusPlan);
+        g.diagnostics = { line: diag.line, block: diag.block, scores: diag.scores };
       }
     }
 
     return res.status(200).json({
       conversation_id,
+      // expose aliases used, for debugging request parsing
+      request: {
+        diagnosticsEnabled,
+        limit,
+        aliases: {
+          conversation_id_from: conversation_id ? "conversation_id|c|cid" : null,
+          diagnostics_from: diagnosticsEnabled ? "diagnostics|d|diag" : null,
+          limit_from: asString(req.query.limit) ? "limit" : asString(req.query.n) ? "n" : "default",
+        },
+      },
       keys: { stateKey, v1Key, spineKey, rawKey },
       ttl_ms,
       state,
