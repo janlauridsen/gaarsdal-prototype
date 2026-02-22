@@ -119,11 +119,10 @@ function buildFallback(userText: string, isFirstTurn: boolean): Output {
     }
   }
 
-  // Fallback skal stadig “svare på input” ved at nævne det direkte.
   return {
     assistant_message: isFirstTurn
-      ? `Du skriver: "${u}". Jeg kan give et kort overblik (uden behandling i chatten). Vil du sige, om det især handler om intensitet, varighed, eller hvornår det typisk opstår?`
-      : `Okay — "${u}". Hvad er det vigtigste du vil have ændret lige nu (og hvad føles mest låst)?`,
+      ? `Du skriver: "${u}". Jeg kan give et kort overblik (uden behandling i chatten). Hvad vil du især opnå, og hvad gør det svært lige nu?`
+      : `Okay — "${u}". Hvad er det vigtigste du vil have ændret lige nu?`,
     summary: "",
   }
 }
@@ -146,8 +145,6 @@ export const methodFitCapability: AiCapability = {
       messages: [
         { role: "system" as const, content: METHOD_FIT_PROMPT },
         ...(contextSystem ? [{ role: "system" as const, content: contextSystem }] : []),
-
-        // Gør det svært at “misse” input: både struktureret JSON og en klar tekstlinje.
         {
           role: "user" as const,
           content: [
@@ -169,9 +166,9 @@ export const methodFitCapability: AiCapability = {
 
     const updatedTranscript = appendTranscript(transcript, userText, parsed.assistant_message)
 
+    // NOTE: Skriv kun meta-keys som domænet allerede tillader (typisk transcript + evt summary).
     const meta_delta: Record<string, unknown> = {
       "method_fit.transcript": updatedTranscript,
-      "method_fit.user_turn_count": userTurnCount + 1,
     }
     if (parsed.summary) meta_delta["method_fit.summary"] = parsed.summary
 
