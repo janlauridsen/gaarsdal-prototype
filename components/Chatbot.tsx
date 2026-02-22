@@ -86,7 +86,8 @@ const TOPIC_TOOLTIPS: Record<string, string> = {
 }
 
 // Topic buttons shown on the HOME screen. Booking is handled via the footer UI, not as a HOME topic.
-const TOPIC_NODES = ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "REFLECTION"] as const
+// NOTE: TRIAGE is intentionally excluded from the HOME menu (feature remains in codepaths).
+const TOPIC_NODES = ["GEN_HYPNO", "METHOD_FIT", "REFLECTION"] as const
 
 function safeId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`
@@ -632,7 +633,7 @@ export default function Chatbot() {
                 </div>
               )}
 
-        {/* endRef moved into the scroll area to anchor on the last real message. */}
+              {/* endRef moved into the scroll area to anchor on the last real message. */}
             </div>
 
             <div className={styles.footer}>
