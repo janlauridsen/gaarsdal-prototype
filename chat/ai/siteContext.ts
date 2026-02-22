@@ -40,4 +40,5 @@ Praktisk (kontakt / lokation)
 - Telefon: +45 42 80 74 74
 - E-mail: jan@gaarsdal.net
 - Facebook-gruppe: https://www.facebook.com/groups/1056907644480600
+- priser aftales - default 900,- for første behandling og 600,- for de næste
 `;
