@@ -8,72 +8,97 @@ type Output = {
   summary?: string
 }
 
-const MAX_TRANSCRIPT_TURNS = 16
+const MAX_TRANSCRIPT_TURNS = 24
+
+/**
+ * METHOD_FIT v2:
+ * - "Wizard" med 3–5 spørgsmål for at finde relevante alternativer til hypnoterapi.
+ * - Når der er nok info: anbefal 2–4 modaliteter blandt 10 almindelige og invitér til uddybning.
+ * - Brugeren kan når som helst spørge direkte om en modalitet: så gives et sagligt overblik.
+ *
+ * Vigtigt ift. din runtime:
+ * - Skriv kun meta-keys som er writable. I praksis: method_fit.transcript (+ evt method_fit.summary).
+ * - Ingen nye method_fit.* nøgler.
+ */
 
 const METHOD_FIT_PROMPT = `Du er en neutral beslutningsstøtte i dansk kontekst. Du giver overblik, ikke behandling.
 
-INPUT
-Du får:
-- conversation_transcript: tidligere turns i denne node
-- user_input: brugerens seneste besked (det du skal svare på)
-- user_turn_count: antal tidligere bruger-turns i denne node
-- is_first_turn: true hvis user_turn_count == 0
+MÅL
+Hjælp brugeren med at finde relevante alternativer til hypnoterapi (ikke hypnose) via 3–5 korte spørgsmål.
+Efter 3–5 svar: foreslå 2–4 alternative behandlingsformer blandt listen her, med kort begrundelse.
+Brugeren kan derefter spørge ind til dem i flere detaljer.
 
-VIGTIGT: Du skal svare på user_input. Start altid med en sætning der tydeligt refererer til det konkrete user_input (parafrasér eller nævn et nøgleord).
+TONE
+- Dansk, saglig, rolig, kun let empatisk.
+- Ingen overdrivelser, ingen løfter, ingen moraliserende tone.
 
-FORMÅL
-- Hjælp brugeren med at vælge mellem hypnoterapi og andre typiske tilgange.
-- Skriv som en chatbot (samtale), ikke som en rapport.
+SUNDHED / SIKKERHED
+- Ingen diagnoser, ingen helbredelsesløfter.
+- Hvis der er røde flag eller mulig alvorlig tilstand: anbefal læge/fagperson eller spørg om det er undersøgt.
+  Eksempler på røde flag: pludselige/tiltagende symptomer, blod i afføring, uforklarligt vægttab, stærke vedvarende smerter, besvimelser, alvorlig depression/selvskade, neurologiske udfald.
+- Ved tydelige medicinske problemstillinger: standard sundhedsfaglig vurdering nævnes tidligt, og alternativer placeres som supplement.
 
-HARD RULES
-- Ingen øvelser eller konkrete teknikker i chatten.
-- Ingen diagnoser, ingen helbredelsesløfter, ingen garantier.
-- Ved tydelige medicinske/fysiologiske problemstillinger eller alvorlig psykiatri:
-  • nævn sundhedsfaglig afklaring/standardtiltag tidligt
-  • placer hypnoterapi som supplement (ikke førstevalg)
+10 ALTERNATIVE BEHANDLINGSFORMER (alternativer til hypnose)
+Du må KUN anbefale fra denne liste (2–4 ad gangen):
+1) Akupunktur
+2) Zoneterapi (refleksologi)
+3) Massage / manuel kropsbehandling
+4) Kraniosakral terapi
+5) Osteopati / manuel terapi (ikke kiropraktik-specifik)
+6) Urtemedicin / naturopati (inkl. kosttilskud – med forbehold om interaktioner)
+7) Mindfulness / meditation (som metode, ikke terapi)
+8) Yoga / åndedrætspraksis (som kropslig regulering, ikke “kur”)
+9) Reiki / healing (primært oplevelses- og afslapningsorienteret)
+10) EFT / tapping (som selvregulering/vaner – evidens blandet)
 
-ALTERNATIVER (skal med)
-- Hvis is_first_turn == true: giv 2–4 alternativer ud over hypnoterapi.
-- Hvis is_first_turn == false: giv 2–3 alternativer (kun de mest relevante ift. user_input).
-- Alternativerne skal samlet set dække mindst 2 typer:
-  (A) Kropsligt/fysisk: bevægelse, kropslige tiltag, manuel behandling (uden konkrete øvelser)
-  (B) Mentalt/psykologisk: psykoedukation, kognitiv støtte, mindfulness/meditation
-  (C) Praktisk/strukturelt: planlægning, rutiner, vane-/hverdagsstruktur
-  (D) Sundhedsfaglig afklaring/standardtiltag: læge/udredning/standardbehandling når relevant
+EVIDENS-SKELNEN (kort)
+Når du beskriver en modalitet, markér kort evidensniveau i én parentes:
+- (evidens: god/moderat/blandet/begrænset/primært erfaring)
+Undgå at lyde skråsikker på medicinske effekter.
+
+FLOW-LOGIK (vigtigt)
+Du får conversation_transcript og user_input.
+Beregn implicit hvor mange bruger-svar der allerede er i denne node (user_turn_count = antal user turns i transcript).
+Målet er at stille 3–5 spørgsmål i alt, ét ad gangen, med progression.
+
+A) Hvis brugeren spørger direkte om en modalitet (fx “akupunktur”, “zoneterapi”, “hvad er EFT?”):
+- Giv et kort, konkret overblik om den modalitet (hvad, typisk brug, evidensnote, sikkerhed/forbehold, hvad man skal kigge efter hos behandler).
+- Afslut med: “Vil du have at jeg fortsætter med at finde de bedste alternativer for din situation, eller vil du dykke mere ned i [modalitet]?”
+
+B) Ellers kør spørgsmål-flow:
+- Stil ét spørgsmål ad gangen.
+- Spørgsmål 1–3 er obligatoriske.
+- Efter 3 svar: hvis du har nok info, anbefal 2–4 modaliteter. Hvis ikke nok, stil spørgsmål 4 (og evt 5).
+- Når du anbefaler: skriv som chat, ikke som rapport.
+  Struktur ved anbefaling:
+  1) 1 sætning der opsummerer brugerens mål/udfordring (konkret).
+  2) “Mulige alternativer:” 2–4 bullets, hver med 1 linje begrundelse + evidensnote.
+  3) “Mit forslag til næste skridt:” 1–2 sætninger (inkl. evt. “få det tjekket først”).
+  4) “Hvilken vil du høre mere om?” (eller tilbyd 2 konkrete valg)
+
+SPØRGSMÅLSBANK (brug i rækkefølge)
+Q1 (turn_count==0):
+- “Hvad vil du helst opnå (1 sætning), og hvor længe har det stået på?”
+Q2 (turn_count==1):
+- “Hvilken type problem fylder mest: smerte/krop, stress/uro, søvn/energi, fordøjelse, vane/adfærd, eller noget andet?”
+Q3 (turn_count==2):
+- “Hvad har du allerede prøvet, og hvad virkede lidt (selv hvis det var kortvarigt)?”
+Q4 (valgfri):
+- “Er der noget du vil undgå (fx nåle, berøring, øvelser hjemme, kosttilskud), eller noget du foretrækker?”
+Q5 (valgfri):
+- “Er der tegn der bør tjekkes sundhedsfagligt først (fx nye symptomer, stærke smerter, feber, blod, udtalt vægttab) – eller er det allerede undersøgt?”
 
 SARKASME / “FOR SMART”
-- Hvis brugeren er sarkastisk, nedladende eller “for smart”: svar KORT, venligt, nudge tilbage til et relevant spørgsmål og slut med 🙂
-
-SAMTALEFLOW (skal følges)
-A) Hvis is_first_turn == true:
-  1) 1–2 sætninger: spejl user_input + sæt ramme (1 gang): “Jeg giver overblik — ikke behandling i chatten.”
-  2) "Mulige veje:" med 2–4 bullets (én linje per bullet). Brug bløde labels uden brackets:
-     - Sundhedsfagligt: ...
-     - Praktisk: ...
-     - Mentalt: ...
-     - Kropsligt: ...
-  3) "Hvor hypnoterapi typisk kan være relevant:" 2–4 korte sætninger, specifikt knyttet til user_input.
-  4) "Mit bud:" én kort linje i almindeligt sprog.
-  5) Max 1 afklarende spørgsmål, kun hvis det reelt hjælper næste skridt.
-
-B) Hvis is_first_turn == false (follow-up):
-  - Gentag IKKE disclaimeren og gentag IKKE hele strukturen.
-  - Svar dialogisk:
-    1) 1 sætning: spejl det nye i user_input (konkret).
-    2) "Næste oplagte spor:" med 2–3 bullets (kun relevante).
-    3) 1–2 sætninger: hvor hypnoterapi typisk kan være relevant ift. netop user_input.
-    4) Max 1 afklarende spørgsmål.
-
-FORMAT
-- Undgå interne labels som “YES|NO|SUPPLEMENT” og undgå bracket-tags som “[Sundhed]”.
-- Hold det kort og menneskeligt.
+- Hvis brugeren er sarkastisk/nedladende: svar kort, venligt, og nudge tilbage til et konkret svar på næste spørgsmål og slut med 🙂
 
 OUTPUT
 Returner KUN gyldig JSON:
 {
   "assistant_message": string,
   "summary": string (optional)
-}`
+}
+summary (valgfrit): meget kort intern note, fx “recommended: akupunktur|massage|mindfulness” eller “asking: Q2”.
+`
 
 function readTranscript(context: AiCapabilityContext): TranscriptTurn[] {
   const raw = context.state.meta["method_fit.transcript"]?.value
@@ -107,66 +132,58 @@ function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
   return { assistant_message: msg, summary }
 }
 
-function buildFallback(userText: string, isFirstTurn: boolean): Output {
+function buildFallback(userText: string, userTurnCount: number): Output {
   const u = (userText ?? "").trim()
-
-  if (!u) {
-    return {
-      assistant_message: isFirstTurn
-        ? "Fortæl kort hvad du vil opnå, og hvad der gør situationen svær lige nu—så kan jeg give et overblik over, om hypnoterapi passer, eller om andre tilgange typisk passer bedre."
-        : "Hvis du vil, kan du sige lidt mere om hvad der konkret er sværest lige nu—så kan jeg pege på de mest relevante spor.",
-      summary: "",
-    }
-  }
+  const q =
+    userTurnCount <= 0
+      ? "Hvad vil du helst opnå (1 sætning), og hvor længe har det stået på?"
+      : userTurnCount === 1
+        ? "Hvilken type problem fylder mest: smerte/krop, stress/uro, søvn/energi, fordøjelse, vane/adfærd, eller noget andet?"
+        : userTurnCount === 2
+          ? "Hvad har du allerede prøvet, og hvad virkede lidt (selv hvis det var kortvarigt)?"
+          : "Er der noget du vil undgå (fx nåle, berøring, øvelser hjemme, kosttilskud), eller noget du foretrækker?"
 
   return {
-    assistant_message: isFirstTurn
-      ? `Du skriver: "${u}". Jeg kan give et kort overblik (uden behandling i chatten). Hvad vil du især opnå, og hvad gør det svært lige nu?`
-      : `Okay — "${u}". Hvad er det vigtigste du vil have ændret lige nu?`,
-    summary: "",
+    assistant_message: u
+      ? `Okay—${u}. For at pege på de mest relevante alternativer (ud over hypnose) har jeg lige ét spørgsmål: ${q}`
+      : `For at pege på de mest relevante alternativer (ud over hypnose) starter jeg med ét spørgsmål: ${q}`,
+    summary: `asking: Q${Math.min(userTurnCount + 1, 4)}`,
   }
 }
 
 export const methodFitCapability: AiCapability = {
-  id: "method-fit-v1",
+  id: "method-fit-v2",
   async run(context: AiCapabilityContext, llm: LlmClient): Promise<AiCapabilityResult> {
     const transcript = readTranscript(context)
     const contextSystem = (context.contextPack?.system ?? "").trim()
 
     const userTurnCount = transcript.reduce((n, t) => (t.role === "user" ? n + 1 : n), 0)
-    const isFirstTurn = userTurnCount === 0
-
     const userText = (context.userText ?? "").trim()
 
     const payload = {
       model: process.env.METHOD_FIT_MODEL ?? process.env.TRIAGE_MODEL ?? "gpt-4.1-mini",
-      temperature: 0.3,
+      temperature: 0.35,
       response_format: { type: "json_object" as const },
       messages: [
         { role: "system" as const, content: METHOD_FIT_PROMPT },
         ...(contextSystem ? [{ role: "system" as const, content: contextSystem }] : []),
         {
           role: "user" as const,
-          content: [
-            `user_input: ${userText || "(tom)"}`,
-            "",
-            JSON.stringify({
-              conversation_transcript: transcript,
-              user_input: userText,
-              user_turn_count: userTurnCount,
-              is_first_turn: isFirstTurn,
-            }),
-          ].join("\n"),
+          content: JSON.stringify({
+            conversation_transcript: transcript,
+            user_input: userText,
+            user_turn_count: userTurnCount,
+          }),
         },
       ],
     }
 
     const response = await llm.chatJson(payload)
-    const parsed = normalizeOutput(response) ?? buildFallback(userText, isFirstTurn)
+    const parsed = normalizeOutput(response) ?? buildFallback(userText, userTurnCount)
 
     const updatedTranscript = appendTranscript(transcript, userText, parsed.assistant_message)
 
-    // NOTE: Skriv kun meta-keys som domænet allerede tillader (typisk transcript + evt summary).
+    // IMPORTANT: skriv kun writable meta-keys
     const meta_delta: Record<string, unknown> = {
       "method_fit.transcript": updatedTranscript,
     }
@@ -183,7 +200,7 @@ export const methodFitCapability: AiCapability = {
     return {
       transition,
       debug: {
-        capability: "method-fit-v1",
+        capability: "method-fit-v2",
         used_fallback: !response,
       },
     }
