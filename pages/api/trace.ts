@@ -10,6 +10,7 @@ const STATE_PREFIX = "gaarsdal:state:";
 const V1_EVENTS_PREFIX = "gaarsdal:events:v1:conv:";
 const SPINE_PREFIX = "gaarsdal:spine:v23:events:";
 const RAW_PREFIX = "gaarsdal:raw:conversation:";
+const FOCUS_PLAN_PREFIX = "gaarsdal:reflection:focus_plan:v1:";
 
 function asString(q: string | string[] | undefined): string | undefined {
   return Array.isArray(q) ? q[0] : q;
@@ -52,7 +53,59 @@ type TurnGroup = {
 
   // spine
   spine?: any[];
+
+  // diagnostics (optional)
+  diagnostics?: { line: string; block: string };
 };
+
+function clampInt(v: any, def: number, min: number, max: number): number {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return def;
+  const i = Math.trunc(n);
+  return Math.max(min, Math.min(max, i));
+}
+
+function buildDiagnosticsFromFocusPlan(plan: any): { line: string; block: string } {
+  const markers = Array.isArray(plan?.process_markers) ? plan.process_markers : [];
+
+  const short = markers
+    .slice(0, 3)
+    .map((m: any) => {
+      const t = typeof m?.type === "string" ? m.type : "unknown";
+      const s = typeof m?.strength === "string" ? m.strength : "unknown";
+      return `${t}:${s}`;
+    })
+    .join("|");
+
+  const blockMarkers = markers
+    .slice(0, 3)
+    .map((m: any) => {
+      const t = typeof m?.type === "string" ? m.type : "unknown";
+      const s = typeof m?.strength === "string" ? m.strength : "unknown";
+      const ev = typeof m?.evidence === "string" ? m.evidence : "";
+      const evShort = ev.length > 140 ? `${ev.slice(0, 140)}…` : ev;
+      return `- ${t} (${s}): "${evShort}"`;
+    })
+    .join("\n");
+
+  // Debug-only stance label (deterministic). This is NOT used to generate end-user content.
+  const hasChangeTalk = markers.some(
+    (m: any) => m?.type === "change_talk" && (m?.strength === "moderate" || m?.strength === "strong")
+  );
+  const hasStrongVulnerability = markers.some((m: any) => m?.type === "vulnerability" && m?.strength === "strong");
+
+  let stance = "REFLECT_CLARIFY";
+  if (hasChangeTalk) stance = "ELICIT_HELP";
+  else if (hasStrongVulnerability) stance = "REFLECT_DEEPEN";
+
+  const line = `markers=${short || "none"} stance=${stance}`;
+  const block =
+    "[Reflection Diagnostics]\n" +
+    `markers:\n${blockMarkers || "- none"}\n` +
+    `stance: ${stance}`;
+
+  return { line, block };
+}
 
 function setBounds(g: TurnGroup, t: number | null) {
   if (t == null) return;
@@ -82,7 +135,10 @@ function pickClosestByTime<T extends { _ms?: number | null }>(
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const conversation_id = asString(req.query.conversation_id);
-    const limit = Math.max(50, Math.min(2000, Number(asString(req.query.limit) ?? 500)));
+
+    // Default to 50 and cap at 50 for predictable payload size when using the endpoint directly.
+    const limit = clampInt(asString(req.query.limit) ?? 50, 50, 1, 50);
+    const diagnosticsEnabled = asString(req.query.diagnostics) === "1";
 
     // LIST
     if (!conversation_id) {
@@ -230,6 +286,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // sort internal arrays
       g.transition_applied.sort((a, b) => (a?.timestamp_ms ?? 0) - (b?.timestamp_ms ?? 0));
       g.spine.sort((a, b) => (a?._ms ?? 0) - (b?._ms ?? 0));
+    }
+
+    // ---- Optional: Enrich groups with human-readable diagnostics from focus plan ----
+    if (diagnosticsEnabled) {
+      // Only the groups already limited by lrange calls above.
+      for (const g of groups) {
+        const rev = g.revision;
+        if (typeof rev !== "number") continue;
+        const focusKey = `${FOCUS_PLAN_PREFIX}${conversation_id}:${rev}`;
+        const raw = await redis.get(focusKey);
+        if (!raw) continue;
+        const plan = safeJsonParse(raw);
+        g.diagnostics = buildDiagnosticsFromFocusPlan(plan);
+      }
     }
 
     return res.status(200).json({
