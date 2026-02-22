@@ -22,9 +22,9 @@ Formål
 - Brug et naturligt, chatbot-venligt sprog (ikke rapport/triage-format).
 
 HARD RULES
-- Du skal ALTID nævne 2–4 alternative muligheder ud over hypnoterapi (i første svar).
-- I follow-up svar skal du nævne 2–3 alternativer (ikke 4 hver gang) og kun de mest relevante ift. det nye brugeren siger.
-- Mulighederne skal samlet set dække mindst 2 forskellige typer:
+- Hvis is_first_turn == true: nævn 2–4 alternativer ud over hypnoterapi.
+- Hvis is_first_turn == false: nævn 2–3 alternativer (kun de mest relevante for det nye brugeren siger).
+- Alternativerne skal samlet set dække mindst 2 forskellige typer:
   (A) Kropsligt/fysisk: bevægelse, kropslige tiltag, manuel behandling (uden konkrete øvelser)
   (B) Mentalt/psykologisk: psykoedukation, kognitiv støtte, mindfulness/meditation
   (C) Praktisk/strukturelt: planlægning, rutiner, vaner, rammer i hverdagen
@@ -42,14 +42,14 @@ Sarkasme / “for smart”
 
 SAMTALEFLOW (skal følges)
 A) Hvis is_first_turn == true:
-  - Giv et kort overblik og sæt ramme (1 gang): “Jeg giver overblik — ikke behandling i chatten.”
-  - Giv “Mulige veje:” med 2–4 bullets (én linje per bullet).
-  - Giv “Hvor hypnoterapi typisk kan være relevant:” 2–4 korte sætninger.
-  - Giv “Mit bud:” én kort linje i almindeligt sprog.
+  - 1–2 sætninger: sæt ramme (1 gang): “Jeg giver overblik — ikke behandling i chatten.”
+  - “Mulige veje:” med 2–4 bullets (én linje per bullet).
+  - “Hvor hypnoterapi typisk kan være relevant:” 2–4 korte sætninger.
+  - “Mit bud:” én kort linje i almindeligt sprog.
   - Stil max 1 afklarende spørgsmål (kun hvis det hjælper).
 
 B) Hvis is_first_turn == false (follow-up):
-  - Gentag IKKE hele strukturen og gentag IKKE disclaimeren.
+  - Gentag IKKE disclaimeren og gentag IKKE hele strukturen.
   - Svar dialogisk:
     1) 1 sætning: spejl det nye brugeren siger.
     2) “Næste oplagte spor:” med 2–3 bullets (kun relevante).
@@ -58,8 +58,7 @@ B) Hvis is_first_turn == false (follow-up):
 
 FORMAT
 - Undgå interne labels som “YES|NO|SUPPLEMENT” og undgå bracket-tags som “[Sundhed]”.
-- Bullets er ok, men hold det kort.
-- Lyder det som et overblik, skal det føles som en samtale, ikke en rapport.
+- Bullets er ok, men hold det kort og menneskeligt.
 
 Returner KUN gyldig JSON i formatet:
 {
@@ -101,6 +100,7 @@ function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
 
 function buildFallback(userText: string, isFirstTurn: boolean): Output {
   const u = (userText ?? "").trim()
+
   if (!u) {
     return {
       assistant_message: isFirstTurn
@@ -112,8 +112,8 @@ function buildFallback(userText: string, isFirstTurn: boolean): Output {
 
   return {
     assistant_message: isFirstTurn
-      ? "Tak. Jeg kan give et overblik over mulige veje (uden behandling i chatten). Vil du sige, hvad du især vil ændre—indsovning, opvågninger, eller at vågne for tidligt?"
-      : "Tak—det hjælper. Hvad er det vigtigste du vil have ændret lige nu: at falde i søvn, blive sovende, eller at vågne mere udhvilet?",
+      ? "Tak. Jeg kan give et overblik (uden behandling i chatten). Vil du sige, hvad du især vil ændre—og hvad der gør det svært lige nu?"
+      : "Tak—det hjælper. Hvad er det vigtigste du vil have ændret lige nu (og hvad føles mest låst)?",
     summary: "",
   }
 }
@@ -153,6 +153,7 @@ export const methodFitCapability: AiCapability = {
 
     const meta_delta: Record<string, unknown> = {
       "method_fit.transcript": updatedTranscript,
+      // Optional, but useful for inspection/debugging later without relying on transcript parsing:
       "method_fit.user_turn_count": userTurnCount + 1,
     }
     if (parsed.summary) meta_delta["method_fit.summary"] = parsed.summary
@@ -170,8 +171,6 @@ export const methodFitCapability: AiCapability = {
       debug: {
         capability: "method-fit-v1",
         used_fallback: !response,
-        user_turn_count: userTurnCount,
-        is_first_turn: isFirstTurn,
       },
     }
   },
