@@ -6,99 +6,32 @@ type TranscriptTurn = { role: "user" | "assistant"; content: string }
 type Output = {
   assistant_message: string
   summary?: string
+
+  // Optional “structured” outputs we can write into whitelisted meta keys
+  close_signal?: boolean
+  confidence?: number
+  relevance?: number
+  tags?: string[]
+  next_question?: string
+  questions_remaining?: number
+  chips?: Array<{ id: string; label: string }>
 }
 
 const MAX_TRANSCRIPT_TURNS = 24
 
-/**
- * METHOD_FIT v2:
- * - "Wizard" med 3–5 spørgsmål for at finde relevante alternativer til hypnoterapi.
- * - Når der er nok info: anbefal 2–4 modaliteter blandt 10 almindelige og invitér til uddybning.
- * - Brugeren kan når som helst spørge direkte om en modalitet: så gives et sagligt overblik.
- *
- * Vigtigt ift. din runtime:
- * - Skriv kun meta-keys som er writable. I praksis: method_fit.transcript (+ evt method_fit.summary).
- * - Ingen nye method_fit.* nøgler.
- */
-
-const METHOD_FIT_PROMPT = `Du er en neutral beslutningsstøtte i dansk kontekst. Du giver overblik, ikke behandling.
-
-MÅL
-Hjælp brugeren med at finde relevante alternativer til hypnoterapi (ikke hypnose) via 3–5 korte spørgsmål.
-Efter 3–5 svar: foreslå 2–4 alternative behandlingsformer blandt listen her, med kort begrundelse.
-Brugeren kan derefter spørge ind til dem i flere detaljer.
-
-TONE
-- Dansk, saglig, rolig, kun let empatisk.
-- Ingen overdrivelser, ingen løfter, ingen moraliserende tone.
-
-SUNDHED / SIKKERHED
-- Ingen diagnoser, ingen helbredelsesløfter.
-- Hvis der er røde flag eller mulig alvorlig tilstand: anbefal læge/fagperson eller spørg om det er undersøgt.
-  Eksempler på røde flag: pludselige/tiltagende symptomer, blod i afføring, uforklarligt vægttab, stærke vedvarende smerter, besvimelser, alvorlig depression/selvskade, neurologiske udfald.
-- Ved tydelige medicinske problemstillinger: standard sundhedsfaglig vurdering nævnes tidligt, og alternativer placeres som supplement.
-
-10 ALTERNATIVE BEHANDLINGSFORMER (alternativer til hypnose)
-Du må KUN anbefale fra denne liste (2–4 ad gangen):
-1) Akupunktur
-2) Zoneterapi (refleksologi)
-3) Massage / manuel kropsbehandling
-4) Kraniosakral terapi
-5) Osteopati / manuel terapi (ikke kiropraktik-specifik)
-6) Urtemedicin / naturopati (inkl. kosttilskud – med forbehold om interaktioner)
-7) Mindfulness / meditation (som metode, ikke terapi)
-8) Yoga / åndedrætspraksis (som kropslig regulering, ikke “kur”)
-9) Reiki / healing (primært oplevelses- og afslapningsorienteret)
-10) EFT / tapping (som selvregulering/vaner – evidens blandet)
-
-EVIDENS-SKELNEN (kort)
-Når du beskriver en modalitet, markér kort evidensniveau i én parentes:
-- (evidens: god/moderat/blandet/begrænset/primært erfaring)
-Undgå at lyde skråsikker på medicinske effekter.
-
-FLOW-LOGIK (vigtigt)
-Du får conversation_transcript og user_input.
-Beregn implicit hvor mange bruger-svar der allerede er i denne node (user_turn_count = antal user turns i transcript).
-Målet er at stille 3–5 spørgsmål i alt, ét ad gangen, med progression.
-
-A) Hvis brugeren spørger direkte om en modalitet (fx “akupunktur”, “zoneterapi”, “hvad er EFT?”):
-- Giv et kort, konkret overblik om den modalitet (hvad, typisk brug, evidensnote, sikkerhed/forbehold, hvad man skal kigge efter hos behandler).
-- Afslut med: “Vil du have at jeg fortsætter med at finde de bedste alternativer for din situation, eller vil du dykke mere ned i [modalitet]?”
-
-B) Ellers kør spørgsmål-flow:
-- Stil ét spørgsmål ad gangen.
-- Spørgsmål 1–3 er obligatoriske.
-- Efter 3 svar: hvis du har nok info, anbefal 2–4 modaliteter. Hvis ikke nok, stil spørgsmål 4 (og evt 5).
-- Når du anbefaler: skriv som chat, ikke som rapport.
-  Struktur ved anbefaling:
-  1) 1 sætning der opsummerer brugerens mål/udfordring (konkret).
-  2) “Mulige alternativer:” 2–4 bullets, hver med 1 linje begrundelse + evidensnote.
-  3) “Mit forslag til næste skridt:” 1–2 sætninger (inkl. evt. “få det tjekket først”).
-  4) “Hvilken vil du høre mere om?” (eller tilbyd 2 konkrete valg)
-
-SPØRGSMÅLSBANK (brug i rækkefølge)
-Q1 (turn_count==0):
-- “Hvad vil du helst opnå (1 sætning), og hvor længe har det stået på?”
-Q2 (turn_count==1):
-- “Hvilken type problem fylder mest: smerte/krop, stress/uro, søvn/energi, fordøjelse, vane/adfærd, eller noget andet?”
-Q3 (turn_count==2):
-- “Hvad har du allerede prøvet, og hvad virkede lidt (selv hvis det var kortvarigt)?”
-Q4 (valgfri):
-- “Er der noget du vil undgå (fx nåle, berøring, øvelser hjemme, kosttilskud), eller noget du foretrækker?”
-Q5 (valgfri):
-- “Er der tegn der bør tjekkes sundhedsfagligt først (fx nye symptomer, stærke smerter, feber, blod, udtalt vægttab) – eller er det allerede undersøgt?”
-
-SARKASME / “FOR SMART”
-- Hvis brugeren er sarkastisk/nedladende: svar kort, venligt, og nudge tilbage til et konkret svar på næste spørgsmål og slut med 🙂
-
-OUTPUT
-Returner KUN gyldig JSON:
-{
-  "assistant_message": string,
-  "summary": string (optional)
-}
-summary (valgfrit): meget kort intern note, fx “recommended: akupunktur|massage|mindfulness” eller “asking: Q2”.
-`
+// 10 alternative modaliteter (alternativer til hypnose/hypnoterapi).
+const MODALITIES: Array<{ id: string; label: string; keywords: string[] }> = [
+  { id: "akupunktur", label: "Akupunktur", keywords: ["akupunktur", "nåle"] },
+  { id: "zoneterapi", label: "Zoneterapi", keywords: ["zoneterapi", "refleksologi"] },
+  { id: "massage", label: "Massage / manuel kropsbehandling", keywords: ["massage", "massør", "manuel"] },
+  { id: "kraniosakral", label: "Kraniosakral terapi", keywords: ["kranio", "kraniosakral"] },
+  { id: "osteopati", label: "Osteopati / manuel terapi", keywords: ["osteopati", "manuel terapi"] },
+  { id: "urter", label: "Urtemedicin / naturopati", keywords: ["urter", "urtemedicin", "naturopati", "kosttilskud"] },
+  { id: "mindfulness", label: "Mindfulness / meditation", keywords: ["mindfulness", "meditation"] },
+  { id: "yoga", label: "Yoga / åndedrætspraksis", keywords: ["yoga", "åndedræt", "vejrtrækning"] },
+  { id: "reiki", label: "Reiki / healing", keywords: ["reiki", "healing"] },
+  { id: "eft", label: "EFT / tapping", keywords: ["eft", "tapping", "bankeøvelser"] },
+]
 
 function readTranscript(context: AiCapabilityContext): TranscriptTurn[] {
   const raw = context.state.meta["method_fit.transcript"]?.value
@@ -128,37 +61,185 @@ function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
   if (!raw) return null
   const msg = typeof raw.assistant_message === "string" ? raw.assistant_message.trim() : ""
   if (!msg) return null
-  const summary = typeof raw.summary === "string" ? raw.summary.trim() : undefined
-  return { assistant_message: msg, summary }
+
+  const out: Output = { assistant_message: msg }
+
+  if (typeof raw.summary === "string") out.summary = raw.summary.trim()
+  if (typeof raw.close_signal === "boolean") out.close_signal = raw.close_signal
+  if (typeof raw.confidence === "number") out.confidence = raw.confidence
+  if (typeof raw.relevance === "number") out.relevance = raw.relevance
+  if (Array.isArray(raw.tags)) out.tags = raw.tags.filter((x) => typeof x === "string") as string[]
+  if (typeof raw.next_question === "string") out.next_question = raw.next_question.trim()
+  if (typeof raw.questions_remaining === "number") out.questions_remaining = raw.questions_remaining
+
+  if (Array.isArray(raw.chips)) {
+    const chips = raw.chips
+      .filter((c) => c && typeof c === "object")
+      .map((c: any) => ({
+        id: typeof c.id === "string" ? c.id : "",
+        label: typeof c.label === "string" ? c.label : "",
+      }))
+      .filter((c) => c.id && c.label)
+    if (chips.length) out.chips = chips
+  }
+
+  return out
 }
 
-function buildFallback(userText: string, userTurnCount: number): Output {
+function getQuestionCountFromMeta(context: AiCapabilityContext): number | null {
+  const v = context.state.meta["method_fit.question_count"]?.value
+  if (typeof v === "number" && Number.isFinite(v)) return v
+  const n = Number(v)
+  if (Number.isFinite(n)) return n
+  return null
+}
+
+function computeQuestionCountFromTranscript(transcript: TranscriptTurn[]): number {
+  // Vi tæller kun de bruger-inputs der er givet i denne node (transcript er node-specifikt).
+  // Det er “spørgsmålsflowets” count, ikke total turns.
+  return transcript.reduce((n, t) => (t.role === "user" ? n + 1 : n), 0)
+}
+
+function detectDirectModalityQuestion(userText: string): { id: string; label: string } | null {
+  const t = (userText ?? "").toLowerCase()
+  if (!t) return null
+  for (const m of MODALITIES) {
+    if (m.keywords.some((k) => t.includes(k))) return { id: m.id, label: m.label }
+  }
+  return null
+}
+
+const METHOD_FIT_PROMPT = `Du er en neutral beslutningsstøtte i dansk kontekst. Du giver overblik, ikke behandling.
+
+MÅL
+Brug 3–5 korte spørgsmål (ét ad gangen) til at finde relevante ALTERNATIVER til hypnoterapi.
+Når der er nok info: foreslå 2–4 behandlingsformer blandt de 10 nedenfor, og invitér brugeren til at spørge ind til dem.
+
+TONE
+- Dansk, rolig, saglig, kun let empatisk.
+- Start altid med at svare på / spejle det konkrete user_input.
+
+SIKKERHED
+- Ingen diagnoser, ingen helbredelsesløfter.
+- Hvis der er tegn på røde flag eller noget der bør vurderes sundhedsfagligt: foreslå læge/fagperson eller spørg om det er undersøgt.
+  Eksempler: blod, feber, pludselig forværring, uforklarligt vægttab, stærke vedvarende smerter, besvimelser, neurologiske udfald, alvorlig psykisk krise/selvskade.
+
+10 ALTERNATIVE BEHANDLINGSFORMER (du må kun foreslå fra denne liste)
+1) Akupunktur
+2) Zoneterapi
+3) Massage / manuel kropsbehandling
+4) Kraniosakral terapi
+5) Osteopati / manuel terapi
+6) Urtemedicin / naturopati (kosttilskud) — nævn interaktioner/forbehold kort
+7) Mindfulness / meditation
+8) Yoga / åndedrætspraksis
+9) Reiki / healing
+10) EFT / tapping
+
+EVIDENS-SKELNEN
+Når du beskriver en modalitet, markér kort i parentes:
+(evidens: god/moderat/blandet/begrænset/primært erfaring)
+Undgå skråsikre medicinske effekter.
+
+INPUT
+Du får JSON med:
+- conversation_transcript
+- user_input
+- question_count (antal tidligere spørgsmål/svar i flowet)
+- questions_target_min = 3
+- questions_target_max = 5
+- direct_modality (null eller {id,label})
+
+FLOW
+A) Hvis direct_modality ikke er null:
+- Giv et kort, konkret overblik om den modalitet:
+  - Hvad det typisk er
+  - Hvad det ofte bruges til
+  - Evidensnote (kort)
+  - Sikkerhed/forbehold (kort)
+  - Hvad man kan kigge efter hos behandler
+- Slut med: “Vil du dykke mere ned i [modalitet], eller vil du have at jeg finder de bedste alternativer for din situation?”
+
+B) Ellers (spørgsmål-flow):
+- Stil ét spørgsmål ad gangen.
+- Spørgsmål 1–3 er obligatoriske.
+- Efter 3 svar: hvis du har nok info, anbefal 2–4 modaliteter.
+- Hvis du mangler afgørende info, stil spørgsmål 4 (og evt 5).
+- Når du anbefaler:
+  1) 1 sætning der opsummerer brugerens mål/udfordring.
+  2) “Mulige alternativer:” 2–4 bullets med 1 linje begrundelse + evidensnote.
+  3) “Mit forslag til næste skridt:” 1–2 sætninger (inkl. evt “få tjekket først”).
+  4) Spørg: “Hvilken vil du høre mere om?” og giv 2–4 chips-forslag.
+
+SPØRGSMÅL (brug i rækkefølge)
+Q1 (question_count==0):
+- “Hvad vil du helst opnå (1 sætning), og hvor længe har det stået på?”
+Q2 (question_count==1):
+- “Hvilken type problem fylder mest: smerte/krop, stress/uro, søvn/energi, fordøjelse, vane/adfærd, eller noget andet?”
+Q3 (question_count==2):
+- “Hvad har du allerede prøvet, og hvad virkede lidt (selv hvis det var kortvarigt)?”
+Q4 (valgfri):
+- “Er der noget du vil undgå (fx nåle, berøring, øvelser hjemme, kosttilskud), eller noget du foretrækker?”
+Q5 (valgfri):
+- “Er der tegn der bør tjekkes sundhedsfagligt først (fx nye symptomer, stærke smerter, feber, blod, udtalt vægttab) – eller er det allerede undersøgt?”
+
+SARKASME
+Hvis brugeren er sarkastisk/nedladende: svar kort, venligt, nudge tilbage til næste konkrete spørgsmål og slut med 🙂
+
+OUTPUT
+Returner KUN gyldig JSON:
+{
+  "assistant_message": string,
+  "summary": string (optional),
+  "close_signal": boolean (optional),
+  "confidence": number (optional),
+  "relevance": number (optional),
+  "tags": string[] (optional),
+  "next_question": string (optional),
+  "questions_remaining": number (optional),
+  "chips": [{ "id": string, "label": string }] (optional)
+}
+
+- close_signal: true når du er i anbefalingsfasen (ikke når du spørger).
+- chips: brug til at foreslå 2–4 modaliteter at dykke ned i.
+`
+
+function buildFallbackQuestion(questionCount: number, userText: string): Output {
   const u = (userText ?? "").trim()
   const q =
-    userTurnCount <= 0
+    questionCount <= 0
       ? "Hvad vil du helst opnå (1 sætning), og hvor længe har det stået på?"
-      : userTurnCount === 1
+      : questionCount === 1
         ? "Hvilken type problem fylder mest: smerte/krop, stress/uro, søvn/energi, fordøjelse, vane/adfærd, eller noget andet?"
-        : userTurnCount === 2
+        : questionCount === 2
           ? "Hvad har du allerede prøvet, og hvad virkede lidt (selv hvis det var kortvarigt)?"
-          : "Er der noget du vil undgå (fx nåle, berøring, øvelser hjemme, kosttilskud), eller noget du foretrækker?"
+          : questionCount === 3
+            ? "Er der noget du vil undgå (fx nåle, berøring, øvelser hjemme, kosttilskud), eller noget du foretrækker?"
+            : "Er der tegn der bør tjekkes sundhedsfagligt først (fx nye symptomer, stærke smerter, feber, blod, udtalt vægttab) – eller er det allerede undersøgt?"
 
   return {
     assistant_message: u
-      ? `Okay—${u}. For at pege på de mest relevante alternativer (ud over hypnose) har jeg lige ét spørgsmål: ${q}`
-      : `For at pege på de mest relevante alternativer (ud over hypnose) starter jeg med ét spørgsmål: ${q}`,
-    summary: `asking: Q${Math.min(userTurnCount + 1, 4)}`,
+      ? `Okay—${u}. For at finde de mest relevante alternativer har jeg lige ét spørgsmål: ${q}`
+      : `For at finde de mest relevante alternativer har jeg lige ét spørgsmål: ${q}`,
+    next_question: q,
+    // 3–5 spørgsmål; her estimerer vi konservativt
+    questions_remaining: Math.max(0, 5 - Math.max(0, questionCount)),
+    summary: `asking: Q${Math.min(questionCount + 1, 5)}`,
   }
 }
 
 export const methodFitCapability: AiCapability = {
-  id: "method-fit-v2",
+  id: "method-fit-v1",
   async run(context: AiCapabilityContext, llm: LlmClient): Promise<AiCapabilityResult> {
     const transcript = readTranscript(context)
     const contextSystem = (context.contextPack?.system ?? "").trim()
 
-    const userTurnCount = transcript.reduce((n, t) => (t.role === "user" ? n + 1 : n), 0)
     const userText = (context.userText ?? "").trim()
+    const direct = detectDirectModalityQuestion(userText)
+
+    // Brug whitelisted counter hvis den findes, ellers beregn fra transcript.
+    const metaCount = getQuestionCountFromMeta(context)
+    const questionCount = metaCount ?? computeQuestionCountFromTranscript(transcript)
 
     const payload = {
       model: process.env.METHOD_FIT_MODEL ?? process.env.TRIAGE_MODEL ?? "gpt-4.1-mini",
@@ -172,22 +253,36 @@ export const methodFitCapability: AiCapability = {
           content: JSON.stringify({
             conversation_transcript: transcript,
             user_input: userText,
-            user_turn_count: userTurnCount,
+            question_count: questionCount,
+            questions_target_min: 3,
+            questions_target_max: 5,
+            direct_modality: direct,
           }),
         },
       ],
     }
 
     const response = await llm.chatJson(payload)
-    const parsed = normalizeOutput(response) ?? buildFallback(userText, userTurnCount)
+    const parsed = normalizeOutput(response) ?? buildFallbackQuestion(questionCount, userText)
 
     const updatedTranscript = appendTranscript(transcript, userText, parsed.assistant_message)
 
-    // IMPORTANT: skriv kun writable meta-keys
+    // IMPORTANT: skriv kun meta-keys der er whitelisted i METHOD_FIT.meta_domains_written
     const meta_delta: Record<string, unknown> = {
       "method_fit.transcript": updatedTranscript,
     }
-    if (parsed.summary) meta_delta["method_fit.summary"] = parsed.summary
+
+    // Disse keys er whitelisted i registry.ts; brug dem til at gøre flow stabilt og debugbart:
+    meta_delta["method_fit.question_count"] = direct ? questionCount : Math.min(questionCount + 1, 99)
+
+    if (typeof parsed.questions_remaining === "number") meta_delta["method_fit.questions_remaining"] = parsed.questions_remaining
+    if (typeof parsed.next_question === "string" && parsed.next_question.trim()) meta_delta["method_fit.next_question"] = parsed.next_question.trim()
+    if (typeof parsed.close_signal === "boolean") meta_delta["method_fit.close_signal"] = parsed.close_signal
+    if (typeof parsed.relevance === "number") meta_delta["method_fit.relevance"] = parsed.relevance
+    if (typeof parsed.confidence === "number") meta_delta["method_fit.confidence"] = parsed.confidence
+    if (Array.isArray(parsed.tags) && parsed.tags.length) meta_delta["method_fit.tags"] = parsed.tags
+    if (Array.isArray(parsed.chips) && parsed.chips.length) meta_delta["method_fit.chips"] = parsed.chips
+    if (typeof parsed.summary === "string" && parsed.summary.trim()) meta_delta["method_fit.summary"] = parsed.summary.trim()
 
     const transition: Transition = {
       type: "NODE_HOP",
@@ -200,7 +295,7 @@ export const methodFitCapability: AiCapability = {
     return {
       transition,
       debug: {
-        capability: "method-fit-v2",
+        capability: "method-fit-v1",
         used_fallback: !response,
       },
     }
