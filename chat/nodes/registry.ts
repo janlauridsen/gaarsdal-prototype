@@ -386,6 +386,16 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "method_fit.transcript",
       "method_fit.summary",
 
+      // v3: schema-backed recommendations (deterministic selection)
+      "method_fit.case_id",
+      "method_fit.problem_tags",
+      "method_fit.constraints",
+      "method_fit.red_flags",
+      "method_fit.hypnosis_fit",
+      "method_fit.recommendations",
+      "method_fit.unknown_candidates",
+      "method_fit.focus_plan",
+
       // v2: triage-like discipline + outputs
       "method_fit.question_count",
       "method_fit.questions_remaining",
