@@ -1,428 +1,674 @@
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  z-index: 30;
+"use client"
+
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/router"
+import {
+  ChatBubbleOvalLeftEllipsisIcon,
+  XMarkIcon,
+  ArrowsPointingOutIcon,
+  ArrowsPointingInIcon,
+  CircleStackIcon,
+  PlusIcon,
+  ArrowUturnLeftIcon,
+  HomeIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  LinkIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline"
+
+import styles from "./Chatbot.module.css"
+
+type ConversationState = {
+  conversation_id: string
+  revision: number
+  active_node: string
+  active_node_message: string
+  allowed_transitions: string[]
+  meta: Record<string, any>
+  status: "active" | "paused" | "completed" | "rejected"
+  parentese_stack: string[]
 }
 
-.fab {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 50;
-  width: 56px;
-  height: 56px;
-  border-radius: 9999px;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #4A5D54;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-  transition: transform 120ms ease, box-shadow 120ms ease;
+type InputSignal =
+  | { type: "EXPLICIT_TRANSITION"; target: string }
+  | { type: "FREE_TEXT"; text: string }
+  | { type: "SYSTEM_INIT" }
+  | { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
+  | { type: "THREAD_BACK" }
+
+type KernelResponse = {
+  state: ConversationState
+  transition?: any
+  log?: any
 }
 
-.fab:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16);
+type ChatMessage = {
+  id: string
+  role: "assistant" | "user"
+  text: string
 }
 
-.fab:active {
-  transform: translateY(0px);
+type UiSuggestion = {
+  id: string
+  label: string
+  input?: any
 }
 
-.fabIcon {
-  width: 26px;
-  height: 26px;
-  color: white;
+type ThreadChoice = {
+  id: string
+  label: string
+  kind: "continue" | "new" | "thread"
 }
 
-.chatbot {
-  position: fixed;
-  right: 24px;
-  bottom: 90px;
-  z-index: 60;
-  background: white;
-  border-radius: 18px;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
-  display: flex;
-  flex-direction: column;
+const NODE_LABELS: Record<string, string> = {
+  THREAD_CHOOSER: "Tråde",
+  HOME: "Forside",
+  GEN_HYPNO: "Spørg om hypnoterapi",
+  TRIAGE: "Passer hypnoterapi til min situation?",
+  METHOD_FIT: "Hypnoterapi eller et bedre alternativ?",
+  REFLECTION: "Refleksion",
+  BOOKING: "Book tid",
+  DEV_SANDBOX_INTRO: "Sandbox (dev)",
+  MAIL: "E-mail",
+  TLF: "Telefon",
+  CONTACT_FORM: "Kontakt",
+  AKUT: "Akut",
 }
 
-.normal {
-  width: 380px;
-  height: 560px;
+const TOPIC_TOOLTIPS: Record<string, string> = {
+  GEN_HYPNO: "Fri samtale (ingen behandling i chatten).",
+  TRIAGE: "Kort afklaring med få spørgsmål.",
+  METHOD_FIT: "Overblik over alternativer (ikke behandling).",
+  REFLECTION: "Refleksionsdialog: intake og meningsskabelse (ingen øvelser).",
+  BOOKING: "Vælg kontaktvej for booking.",
 }
 
-.expanded {
-  width: min(860px, calc(100vw - 48px));
-  height: min(86vh, 760px);
+// Topic buttons shown on the HOME screen. Booking is handled via the footer UI, not as a HOME topic.
+// NOTE: TRIAGE is intentionally excluded from the HOME menu (feature remains in codepaths).
+const TOPIC_NODES = ["GEN_HYPNO", "METHOD_FIT", "REFLECTION"] as const
+
+function safeId() {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
-.header {
-  padding: 14px 14px 10px 14px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  background: linear-gradient(180deg, rgba(74, 93, 84, 0.08), rgba(74, 93, 84, 0));
+function trimDuplicateTitle(s: string) {
+  // Håndter "x — x" (dobbelt titel)
+  const parts = s.split("—").map((p) => p.trim()).filter(Boolean)
+  if (parts.length === 2 && parts[0] === parts[1]) return parts[0]
+  return s.trim()
 }
 
-.headerRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
+export default function Chatbot() {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
-.headerLeft {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
+  const [state, setState] = useState<ConversationState | null>(null)
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [input, setInput] = useState("")
+  const [loading, setLoading] = useState(false)
 
-.title {
-  font-weight: 700;
-  font-size: 14px;
-  letter-spacing: 0.2px;
-  color: #1b1e1c;
-}
+  // "System is alive" indicator text (rotates while waiting for backend).
+  const WAITING_TEXTS = useMemo(
+    () => ["Jeg arbejder…", "Læser…", "Samler trådene…", "Forbereder svar…"],
+    []
+  )
+  const [waitingTextIndex, setWaitingTextIndex] = useState(0)
 
-.node {
-  font-size: 12px;
-  color: rgba(27, 30, 28, 0.7);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 220px;
-}
+  const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
+  const headerNavHintTimerRef = useRef<number | null>(null)
 
-.headerRight {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
+  const endRef = useRef<HTMLDivElement | null>(null)
+  const didAutoStartNewThreadRef = useRef(false)
 
-.iconBtn {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: rgba(74, 93, 84, 0.08);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 120ms ease, transform 120ms ease;
-}
+  // Global footer actions must always be reachable, regardless of the current node's allowed_transitions.
+  // (Kernel also whitelists these exits.)
+  const GLOBAL_ACTIONS = useMemo(() => new Set(["HOME", "TLF", "MAIL", "CONTACT_FORM", "AKUT"]), [])
 
-.iconBtn:hover {
-  background: rgba(74, 93, 84, 0.12);
-  transform: translateY(-1px);
-}
-
-.iconBtn:active {
-  transform: translateY(0px);
-}
-
-.iconBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.icon {
-  width: 18px;
-  height: 18px;
-  color: rgba(27, 30, 28, 0.82);
-}
-
-.navHint {
-  margin-top: 8px;
-  font-size: 12px;
-  color: rgba(27, 30, 28, 0.75);
-}
-
-.navHintPulse {
-  display: inline-block;
-  padding: 6px 10px;
-  border-radius: 9999px;
-  background: rgba(74, 93, 84, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.messages {
-  flex: 1;
-  overflow: auto;
-  padding: 14px;
-  background: #f7f7f5;
-}
-
-.message {
-  max-width: 78%;
-  padding: 12px 14px;
-  border-radius: 14px;
-  font-size: 14.5px;
-  line-height: 1.55;
-  margin-bottom: 8px;
-  white-space: pre-wrap; /* preserve \n from LLM output */
-  overflow-wrap: anywhere; /* prevent layout breaks on long tokens/URLs */
-}
-
-.messageBot {
-  background: #FFFFFF;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  color: rgba(27, 30, 28, 0.92);
-  align-self: flex-start;
-}
-
-.messageUser {
-  background: #4A5D54;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  color: white;
-  align-self: flex-end;
-}
-
-.liveIndicator {
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.liveHeart {
-  display: inline-block;
-  font-size: 12px;
-  opacity: 0.85;
-}
-
-.liveText {
-  font-size: 13.5px;
-}
-
-.callout {
-  margin-top: 10px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(74, 93, 84, 0.08);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.calloutTitle {
-  font-size: 12px;
-  font-weight: 700;
-  color: rgba(27, 30, 28, 0.8);
-  margin-bottom: 8px;
-}
-
-.calloutRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.chipAction {
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: white;
-  padding: 8px 10px;
-  border-radius: 9999px;
-  font-size: 13px;
-  color: rgba(27, 30, 28, 0.86);
-  cursor: pointer;
-  transition: background 120ms ease, transform 120ms ease;
-}
-
-.chipAction:hover {
-  background: rgba(74, 93, 84, 0.08);
-  transform: translateY(-1px);
-}
-
-.chipAction:active {
-  transform: translateY(0px);
-}
-
-.chipAction:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.sectionTitle {
-  font-size: 12px;
-  font-weight: 700;
-  color: rgba(27, 30, 28, 0.72);
-  margin: 10px 0 8px 0;
-}
-
-.topicGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.topicCard {
-  text-align: left;
-  padding: 12px 12px;
-  border-radius: 14px;
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-  transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
-}
-
-.topicCard:hover {
-  transform: translateY(-1px);
-  background: rgba(74, 93, 84, 0.06);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.07);
-}
-
-.topicCard:active {
-  transform: translateY(0px);
-}
-
-.topicCard:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.topicLabel {
-  display: block;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: rgba(27, 30, 28, 0.9);
-}
-
-.topicMeta {
-  display: block;
-  margin-top: 4px;
-  font-size: 12px;
-  color: rgba(27, 30, 28, 0.65);
-}
-
-.footer {
-  padding: 12px 12px 14px 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  background: white;
-}
-
-.footerRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.footerIcon {
-  width: 42px;
-  height: 36px;
-  border-radius: 12px;
-  background: rgba(74, 93, 84, 0.08);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 120ms ease, transform 120ms ease;
-}
-
-.footerIcon:hover {
-  background: rgba(74, 93, 84, 0.12);
-  transform: translateY(-1px);
-}
-
-.footerIcon:active {
-  transform: translateY(0px);
-}
-
-.footerIconSvg {
-  width: 18px;
-  height: 18px;
-  color: rgba(27, 30, 28, 0.82);
-}
-
-.inputRow {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-}
-
-.textarea {
-  flex: 1;
-  resize: none;
-  border-radius: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  padding: 10px 12px;
-  font-size: 14px;
-  line-height: 1.35;
-  outline: none;
-  background: #fbfbfa;
-}
-
-.textarea:disabled {
-  opacity: 0.6;
-}
-
-.sendBtn {
-  width: 44px;
-  height: 40px;
-  border-radius: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  background: #4A5D54;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 120ms ease, box-shadow 120ms ease;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
-}
-
-.sendBtn:hover {
-  transform: translateY(-1px);
-}
-
-.sendBtn:active {
-  transform: translateY(0px);
-}
-
-.sendBtn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.sendIcon {
-  width: 18px;
-  height: 18px;
-  color: white;
-}
-
-@media (max-width: 460px) {
-  .chatbot {
-    right: 12px;
-    left: 12px;
-    bottom: 12px;
+  function metaValue(key: string) {
+    const entry = state?.meta?.[key]
+    if (entry && typeof entry === "object" && "value" in entry) return (entry as any).value
+    return entry
   }
 
-  .normal {
-    width: auto;
-    height: min(78vh, 620px);
+  const activeNodeLabel = useMemo(() => {
+    if (!state) return "Initialiserer…"
+    return NODE_LABELS[state.active_node] ?? state.active_node
+  }, [state])
+
+  const placeholder = useMemo(() => {
+    if (!state) return "Initialiserer…"
+    if (state.active_node === "THREAD_CHOOSER") return "Vælg en tråd…"
+    return "Skriv her… (Enter = send, Shift+Enter = ny linje)"
+  }, [state])
+
+  const freeTextEnabled = useMemo(() => {
+    if (!state) return false
+    if (loading) return false
+    if (state.status === "completed" || state.status === "rejected") return false
+    return true
+  }, [state, loading])
+
+  useEffect(() => {
+    if (!open) return
+    endRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages, open, headerNavHint, expanded])
+
+  // Rotate waiting text only while loading.
+  useEffect(() => {
+    if (!loading) return
+    setWaitingTextIndex(0)
+    const id = window.setInterval(() => setWaitingTextIndex((i) => (i + 1) % WAITING_TEXTS.length), 6600)
+    return () => window.clearInterval(id)
+  }, [loading, WAITING_TEXTS.length])
+
+  useEffect(() => {
+    return () => {
+      if (headerNavHintTimerRef.current) {
+        window.clearTimeout(headerNavHintTimerRef.current)
+        headerNavHintTimerRef.current = null
+      }
+    }
+  }, [])
+
+  function appendMessage(message: ChatMessage) {
+    setMessages((prev) => [...prev, message])
   }
 
-  .expanded {
-    width: auto;
-    height: min(86vh, 740px);
+  function appendAssistantMessage(text: string) {
+    const message = (text ?? "").trim()
+    if (!message) return
+
+    setMessages((prev) => {
+      const last = prev.length ? prev[prev.length - 1] : null
+      if (last && last.role === "assistant" && last.text.trim() === message) return prev
+      return [...prev, { id: `assistant-${safeId()}`, role: "assistant", text: message }]
+    })
   }
 
-  .node {
-    max-width: 160px;
+  function appendUserMessage(text: string) {
+    const message = (text ?? "").trim()
+    if (!message) return
+    appendMessage({ id: `user-${safeId()}`, role: "user", text: message })
   }
 
-  .topicGrid {
-    grid-template-columns: 1fr;
+  function showHeaderNavHint(text: string) {
+    if (headerNavHintTimerRef.current) {
+      window.clearTimeout(headerNavHintTimerRef.current)
+      headerNavHintTimerRef.current = null
+    }
+    setHeaderNavHint(text)
+    headerNavHintTimerRef.current = window.setTimeout(() => {
+      setHeaderNavHint(null)
+      headerNavHintTimerRef.current = null
+    }, 2400)
   }
+
+  async function callKernel(nextState: ConversationState | null, nextInput: InputSignal) {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state: nextState, input: nextInput }),
+    })
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "")
+      throw new Error(`Chat: HTTP ${res.status}${body ? ` — ${body}` : ""}`)
+    }
+
+    const data: KernelResponse = await res.json()
+    if (!data?.state) throw new Error("Chat: mangler state i svar")
+    return data
+  }
+
+  function threadCountFromState(s: ConversationState) {
+    const raw = s.meta?.["threads.count"]?.value ?? s.meta?.["threads.count"]
+    const n = typeof raw === "number" ? raw : Number(raw ?? 0)
+    return Number.isFinite(n) ? n : 0
+  }
+
+  function normalizeAssistantMessage(s: ConversationState) {
+    if (s.status === "completed") {
+      return "Samtalen er afsluttet. Start en ny tråd eller vælg en anden."
+    }
+
+    if (s.active_node === "THREAD_CHOOSER") {
+      const count = threadCountFromState(s)
+      if (count <= 0) return "Starter en ny tråd…"
+      return "Vælg en tråd, eller start en ny."
+    }
+
+    return s.active_node_message
+  }
+
+  async function init() {
+    setLoading(true)
+    didAutoStartNewThreadRef.current = false
+
+    try {
+      const data = await callKernel(null, { type: "SYSTEM_INIT" })
+      setState(data.state)
+      setMessages([])
+      setInput("")
+      setHeaderNavHint(null)
+      appendAssistantMessage(normalizeAssistantMessage(data.state))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function dispatch(nextInput: InputSignal, opts?: { silentUser?: boolean }) {
+    if (!state) return
+    setLoading(true)
+
+    try {
+      const fromNode = state.active_node
+      const data = await callKernel(state, nextInput)
+
+      if (nextInput.type === "THREAD_CREATE" || nextInput.type === "THREAD_BACK") {
+        // Thread-level navigation is platform-managed. UI holds no per-thread transcript, so reset.
+        setMessages([])
+        setInput("")
+        setHeaderNavHint(null)
+      } else if (nextInput.type === "EXPLICIT_TRANSITION") {
+        const fromLabel = NODE_LABELS[fromNode] ?? fromNode
+        const toNode = data?.state?.active_node ?? nextInput.target
+        const toLabel = NODE_LABELS[toNode] ?? toNode
+        showHeaderNavHint(`${fromLabel} → ${toLabel}`)
+      } else if (nextInput.type === "FREE_TEXT" && !opts?.silentUser) {
+        appendUserMessage(nextInput.text)
+      }
+
+      setState(data.state)
+
+      const assistantText =
+        (data.transition?.response_message as string | undefined) ?? normalizeAssistantMessage(data.state)
+
+      appendAssistantMessage(assistantText)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function openChat() {
+    setOpen(true)
+    if (!state) init()
+  }
+
+  function closeChat() {
+    setOpen(false)
+    setExpanded(false)
+  }
+
+  function toggleExpanded() {
+    setExpanded((v) => !v)
+  }
+
+  function go(target: string) {
+    if (!state) return
+
+    const allowed = new Set(state.allowed_transitions ?? [])
+    const isAllowed = allowed.has(target) || GLOBAL_ACTIONS.has(target)
+    if (!isAllowed) {
+      showHeaderNavHint("Ikke tilgængeligt her")
+      return
+    }
+
+    const goingFromHomeToTopic = state.active_node === "HOME" && target !== "HOME"
+    if (goingFromHomeToTopic) {
+      const label = NODE_LABELS[target] ?? target
+      appendUserMessage(label)
+    }
+
+    dispatch({ type: "EXPLICIT_TRANSITION", target })
+  }
+
+  // “Tråde” i header: tilbage til lobby / trådvalg
+  function goToThreadChooser() {
+    setMessages([])
+    setInput("")
+    setState(null)
+    setHeaderNavHint(null)
+    didAutoStartNewThreadRef.current = false
+    init()
+  }
+
+  const threadChoicesRaw = metaValue("threads.choices")
+  const threadCount = state ? threadCountFromState(state) : 0
+
+  const returnDepthRaw = metaValue("threads.return_depth")
+  const returnDepth = Number.isFinite(Number(returnDepthRaw ?? 0)) ? Number(returnDepthRaw ?? 0) : 0
+  const canThreadBack = returnDepth > 0
+
+  const threadChoices: ThreadChoice[] =
+    state?.active_node === "THREAD_CHOOSER" && Array.isArray(threadChoicesRaw)
+      ? (threadChoicesRaw as any[])
+          .filter((c) => c && typeof c.id === "string" && typeof c.label === "string" && typeof c.kind === "string")
+          .slice(0, 12)
+      : []
+
+  const uiSuggestionsRaw = metaValue("ui.suggestions")
+  const uiSuggestions: UiSuggestion[] = Array.isArray(uiSuggestionsRaw)
+    ? (uiSuggestionsRaw as any[])
+        .filter((x) => x && typeof x === "object" && typeof (x as any).label === "string")
+        .slice(0, 8)
+        .map((x, i) => ({
+          id: String((x as any).id ?? i),
+          label: String((x as any).label),
+          input: (x as any).input,
+        }))
+    : []
+
+  // Hide the topic menu immediately when the user selects a topic (explicit transition),
+  // so the HOME menu doesn't flash while waiting for the next node to render.
+  const showTopics = state?.active_node === "HOME" && !loading
+  const allowedSet = new Set(state?.allowed_transitions ?? [])
+  const topicButtons = showTopics
+    ? TOPIC_NODES.map((id) => ({
+        id,
+        label: NODE_LABELS[id] ?? id,
+        enabled: state ? allowedSet.has(id) || id === state.active_node : false,
+        tooltip: TOPIC_TOOLTIPS[id] ?? "",
+      })).filter((t) => t.id !== state?.active_node)
+    : []
+
+  // Auto: hvis der ingen tråde er, start ny tråd uden at brugeren skal skrive “new”.
+  useEffect(() => {
+    if (!open) return
+    if (!state) return
+    if (state.active_node !== "THREAD_CHOOSER") return
+    if (didAutoStartNewThreadRef.current) return
+    if (threadCount > 0) return
+
+    didAutoStartNewThreadRef.current = true
+    ;(async () => {
+      try {
+        await dispatch({ type: "FREE_TEXT", text: "new" }, { silentUser: true })
+      } catch {
+        // no-op
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, state?.active_node, threadCount])
+
+  const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal}`
+
+  const showThreadChooserCards =
+    state?.active_node === "THREAD_CHOOSER" && threadChoices.length > 0 && state.status === "active"
+
+  const normalizedThreadCards = useMemo(() => {
+    const base = threadChoices
+      .map((c) => {
+        const cleanLabel = trimDuplicateTitle(c.label)
+        const uiLabel =
+          c.kind === "new"
+            ? "Ny tråd"
+            : c.kind === "continue"
+              ? "Fortsæt seneste tråd"
+              : cleanLabel || "Tråd"
+        return { ...c, uiLabel }
+      })
+      .sort((a, b) => {
+        const rank = (k: ThreadChoice["kind"]) => (k === "new" ? 0 : k === "continue" ? 1 : 2)
+        return rank(a.kind) - rank(b.kind)
+      })
+      .filter((c) => {
+        // Skjul “continue” hvis der reelt ikke er noget at fortsætte
+        if (threadCount <= 0 && c.kind === "continue") return false
+        return true
+      })
+      .filter((c) => {
+        // Skjul “thread”-kort med “fjollet nummer”/tomt label
+        if (c.kind !== "thread") return true
+        const cleaned = trimDuplicateTitle(c.label || "")
+        if (!cleaned) return false
+        if (/^(tråd\s*)?\d+$/i.test(cleaned)) return false
+        return true
+      })
+
+    // Hvis der kun er én tråd og “continue” i praksis er samme, kan vi skjule continue
+    const hasContinue = base.some((x) => x.kind === "continue")
+    const threadCards = base.filter((x) => x.kind === "thread")
+    if (hasContinue && threadCards.length === 1) {
+      return base.filter((x) => x.kind !== "continue")
+    }
+    return base
+  }, [threadChoices, threadCount])
+
+  return (
+    <>
+      {!open && (
+        <button className={styles.fab} onClick={openChat} aria-label="Åbn chat" title="Åbn chat">
+          <ChatBubbleOvalLeftEllipsisIcon className={styles.fabIcon} />
+        </button>
+      )}
+
+      {open && (
+        <>
+          <div className={styles.overlay} onClick={closeChat} />
+
+          <div className={containerClass} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className={styles.header}>
+              <div className={styles.headerRow}>
+                <div className={styles.headerLeft}>
+                  <div className={styles.title}>Gaarsdal Chat</div>
+                  <div className={styles.node}>{activeNodeLabel}</div>
+                </div>
+
+                <div className={styles.headerRight}>
+                  <button
+                    className={styles.iconBtn}
+                    onClick={() => dispatch({ type: "THREAD_BACK" }, { silentUser: true })}
+                    title={canThreadBack ? "Tilbage" : "Tilbage (ingen parentese)"}
+                    aria-label="Tilbage"
+                    disabled={loading || !state || !canThreadBack}
+                  >
+                    <ArrowUturnLeftIcon className={styles.icon} />
+                  </button>
+
+                  <button
+                    className={styles.iconBtn}
+                    onClick={() => dispatch({ type: "THREAD_CREATE", mode: "parenthesis" }, { silentUser: true })}
+                    title="Parentes (ny tråd)"
+                    aria-label="Parentes"
+                    disabled={loading || !state}
+                  >
+                    <PlusIcon className={styles.icon} />
+                  </button>
+
+                  <button className={styles.iconBtn} onClick={goToThreadChooser} title="Tråde" aria-label="Tråde">
+                    <CircleStackIcon className={styles.icon} />
+                  </button>
+
+                  <button
+                    className={styles.iconBtn}
+                    onClick={toggleExpanded}
+                    title={expanded ? "Minimer" : "Maksimer"}
+                    aria-label={expanded ? "Minimer" : "Maksimer"}
+                  >
+                    {expanded ? (
+                      <ArrowsPointingInIcon className={styles.icon} />
+                    ) : (
+                      <ArrowsPointingOutIcon className={styles.icon} />
+                    )}
+                  </button>
+
+                  <button className={styles.iconBtn} onClick={closeChat} title="Luk" aria-label="Luk">
+                    <XMarkIcon className={styles.icon} />
+                  </button>
+                </div>
+              </div>
+
+              {headerNavHint && (
+                <div className={styles.navHint}>
+                  <span className={styles.navHintPulse}>{headerNavHint}</span>
+                </div>
+              )}
+            </div>
+
+            <div className={styles.messages}>
+              {messages.map((m) => (
+                <div
+                  key={m.id}
+                  className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}
+                >
+                  {m.text}
+                </div>
+              ))}
+
+              {loading && (
+                <div className={`${styles.message} ${styles.messageBot} ${styles.liveIndicator}`} aria-live="polite">
+                  <span className={styles.liveHeart} aria-hidden="true">
+                    ♥
+                  </span>
+                  <span className={styles.liveText}>{WAITING_TEXTS[waitingTextIndex]}</span>
+                </div>
+              )}
+
+              {state?.status === "completed" && (
+                <div className={styles.callout}>
+                  <div className={styles.calloutTitle}>Næste</div>
+                  <div className={styles.calloutRow}>
+                    <button
+                      className={styles.chipAction}
+                      onClick={() => dispatch({ type: "FREE_TEXT", text: "new" }, { silentUser: true })}
+                      disabled={loading || !state}
+                    >
+                      Ny tråd
+                    </button>
+                    <button className={styles.chipAction} onClick={goToThreadChooser} disabled={loading}>
+                      Tråde
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {showThreadChooserCards && (
+                <div className="mt-3">
+                  <div className={styles.sectionTitle}>Tråde</div>
+                  <div className={styles.topicGrid}>
+                    {normalizedThreadCards.map((c) => (
+                      <button
+                        key={c.id}
+                        className={styles.topicCard}
+                        onClick={() => dispatch({ type: "FREE_TEXT", text: c.id }, { silentUser: true })}
+                        disabled={loading || !state}
+                        title={c.kind === "thread" ? trimDuplicateTitle(c.label) : ""}
+                      >
+                        <span className={styles.topicLabel}>{(c as any).uiLabel}</span>
+                        {c.kind === "continue" && (
+                          <span className={styles.topicMeta}>
+                            {trimDuplicateTitle(String(c.label ?? "").replace(/^Fortsæt:\s*/i, ""))}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {topicButtons.length > 0 && (
+                <div className="mt-3">
+                  <div className={styles.sectionTitle}>Emner</div>
+                  <div className={styles.topicGrid}>
+                    {topicButtons.map((t) => (
+                      <button
+                        key={t.id}
+                        className={styles.topicCard}
+                        onClick={() => go(t.id)}
+                        disabled={!t.enabled || loading || !state}
+                        title={t.tooltip}
+                      >
+                        <span className={styles.topicLabel}>{t.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {uiSuggestions.length > 0 && (
+                <div className="mt-3">
+                  <div className={styles.sectionTitle}>Forslag</div>
+                  <div className={styles.calloutRow}>
+                    {uiSuggestions.map((s) => (
+                      <button
+                        key={s.id}
+                        className={styles.chipAction}
+                        onClick={() => {
+                          const input = s.input as any
+                          if (input && input.type === "OPEN_URL" && typeof input.url === "string") {
+                            router.push(input.url)
+                            return
+                          }
+
+                          if (input) {
+                            dispatch(input as InputSignal, { silentUser: true })
+                          } else {
+                            dispatch({ type: "FREE_TEXT", text: s.label })
+                          }
+                        }}
+                        disabled={loading || !state || !freeTextEnabled}
+                        title={s.label}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Scroll anchor at the very bottom (includes waiting indicator + any callouts). */}
+              <div ref={endRef} />
+            </div>
+
+            <div className={styles.footer}>
+              <div className={styles.footerRow}>
+                <button className={styles.footerIcon} onClick={() => go("HOME")} title="Forside" aria-label="Forside">
+                  <HomeIcon className={styles.footerIconSvg} />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("TLF")} title="Telefon" aria-label="Telefon">
+                  <PhoneIcon className={styles.footerIconSvg} />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("MAIL")} title="E-mail" aria-label="E-mail">
+                  <EnvelopeIcon className={styles.footerIconSvg} />
+                </button>
+                <button
+                  className={styles.footerIcon}
+                  onClick={() => router.push("/kontakt")}
+                  title="Kontakt"
+                  aria-label="Kontakt"
+                >
+                  <LinkIcon className={styles.footerIconSvg} />
+                </button>
+                <button className={styles.footerIcon} onClick={() => go("AKUT")} title="Akut" aria-label="Akut">
+                  <ExclamationTriangleIcon className={styles.footerIconSvg} />
+                </button>
+              </div>
+
+              <div className={styles.inputRow}>
+                <textarea
+                  className={styles.textarea}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={placeholder}
+                  rows={2}
+                  disabled={!state || !freeTextEnabled}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault()
+                      const text = input.trim()
+                      if (!text) return
+                      setInput("")
+                      dispatch({ type: "FREE_TEXT", text })
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  )
 }
