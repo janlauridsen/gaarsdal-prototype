@@ -11,7 +11,7 @@ export type MethodFitFocusPlanV1 = {
   revision: number
 
   // High-level gaps that should be filled before recommending.
-  missing_fields: Array<"presenting_problem" | "desired_outcome" | "problem_tags" | "constraints"> 
+  missing_fields: Array<"presenting_problem" | "desired_outcome" | "problem_tags" | "constraints">
 
   suggested_questions: Array<{
     field_path: string
@@ -110,7 +110,18 @@ export function buildMethodFitFocusPlan(params: {
   const hasTags = caseData.problem_tags.value.length > 0 || mentionTags.length > 0
   const hasPresenting = Boolean(caseData.scope.presenting_problem.value?.trim())
   const hasOutcome = Boolean(caseData.scope.desired_outcome.value?.trim())
-  const hasConstraints = caseData.constraints.hard.value.length > 0 || caseData.constraints.soft.value.length > 0 || mentionConstraints.hard.length > 0 || mentionConstraints.soft.length > 0
+
+  // Constraints can be explicitly "none" (e.g. user answers "nej").
+  // Treat constraints as "known" if either list has items OR we have non-trivial confidence.
+  // This avoids repeatedly asking the same constraints question after the user has answered.
+  const hardConf = Number(caseData.constraints.hard.confidence ?? 0)
+  const softConf = Number(caseData.constraints.soft.confidence ?? 0)
+  const hasConstraints =
+    caseData.constraints.hard.value.length > 0 ||
+    caseData.constraints.soft.value.length > 0 ||
+    Math.max(hardConf, softConf) >= 0.25 ||
+    mentionConstraints.hard.length > 0 ||
+    mentionConstraints.soft.length > 0
 
   const missing: MethodFitFocusPlanV1["missing_fields"] = []
   if (!hasPresenting) missing.push("presenting_problem")
