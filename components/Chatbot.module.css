@@ -64,8 +64,11 @@
 
 .header {
   padding: 14px 14px 10px 14px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  background: linear-gradient(180deg, rgba(74, 93, 84, 0.08), rgba(74, 93, 84, 0));
+  border-bottom: 1px solid rgba(44, 42, 40, 0.05);
+
+  /* IMPORTANT: avoid shorthand background: ... (it resets background-color) */
+  background-color: #ECEAE4;
+  background-image: linear-gradient(180deg, rgba(74, 93, 84, 0.06), rgba(74, 93, 84, 0));
 }
 
 .headerRow {
@@ -328,8 +331,8 @@
 
 .footer {
   padding: 12px 12px 14px 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  background: white;
+  border-top: 1px solid rgba(44, 42, 40, 0.05);
+  background-color: #ECEAE4;
 }
 
 .footerRow {
