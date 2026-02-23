@@ -1,37 +1,16 @@
 import { Transition } from "../../kernel/types"
+import { readMethodFitCase, writeMethodFitCase } from "../../persistence/methodFitCaseStore"
 import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
+import { KNOWN_METHODS, KNOWN_METHODS_BY_ID, resolveKnownMethodId } from "../../methodFit/methodRegistry"
+import { mergeMethodFitCase, type MethodFitPatchV1 } from "../../methodFit/merge"
+import { buildRecommendations } from "../../methodFit/rules"
+import { buildMethodFitFocusPlan } from "../../methodFit/focusPlan"
+import { runMethodFitCbaExtraction } from "../../methodFit/cba"
 
 type TranscriptTurn = { role: "user" | "assistant"; content: string }
 
-type Output = {
-  assistant_message: string
-  summary?: string
-
-  // Optional “structured” outputs we can write into whitelisted meta keys
-  close_signal?: boolean
-  confidence?: number
-  relevance?: number
-  tags?: string[]
-  next_question?: string
-  questions_remaining?: number
-  chips?: Array<{ id: string; label: string }>
-}
-
 const MAX_TRANSCRIPT_TURNS = 24
-
-// 10 alternative modaliteter (alternativer til hypnose/hypnoterapi).
-const MODALITIES: Array<{ id: string; label: string; keywords: string[] }> = [
-  { id: "akupunktur", label: "Akupunktur", keywords: ["akupunktur", "nåle"] },
-  { id: "zoneterapi", label: "Zoneterapi", keywords: ["zoneterapi", "refleksologi"] },
-  { id: "massage", label: "Massage / manuel kropsbehandling", keywords: ["massage", "massør", "manuel"] },
-  { id: "kraniosakral", label: "Kraniosakral terapi", keywords: ["kranio", "kraniosakral"] },
-  { id: "osteopati", label: "Osteopati / manuel terapi", keywords: ["osteopati", "manuel terapi"] },
-  { id: "urter", label: "Urtemedicin / naturopati", keywords: ["urter", "urtemedicin", "naturopati", "kosttilskud"] },
-  { id: "mindfulness", label: "Mindfulness / meditation", keywords: ["mindfulness", "meditation"] },
-  { id: "yoga", label: "Yoga / åndedrætspraksis", keywords: ["yoga", "åndedræt", "vejrtrækning"] },
-  { id: "reiki", label: "Reiki / healing", keywords: ["reiki", "healing"] },
-  { id: "eft", label: "EFT / tapping", keywords: ["eft", "tapping", "bankeøvelser"] },
-]
+const METHOD_FIT_TTL_SECONDS = 90 * 24 * 60 * 60
 
 function readTranscript(context: AiCapabilityContext): TranscriptTurn[] {
   const raw = context.state.meta["method_fit.transcript"]?.value
@@ -57,245 +36,237 @@ function appendTranscript(previous: TranscriptTurn[], userText: string, assistan
   return next.slice(-MAX_TRANSCRIPT_TURNS)
 }
 
-function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
-  if (!raw) return null
-  const msg = typeof raw.assistant_message === "string" ? raw.assistant_message.trim() : ""
-  if (!msg) return null
-
-  const out: Output = { assistant_message: msg }
-
-  if (typeof raw.summary === "string") out.summary = raw.summary.trim()
-  if (typeof raw.close_signal === "boolean") out.close_signal = raw.close_signal
-  if (typeof raw.confidence === "number") out.confidence = raw.confidence
-  if (typeof raw.relevance === "number") out.relevance = raw.relevance
-  if (Array.isArray(raw.tags)) out.tags = raw.tags.filter((x) => typeof x === "string") as string[]
-  if (typeof raw.next_question === "string") out.next_question = raw.next_question.trim()
-  if (typeof raw.questions_remaining === "number") out.questions_remaining = raw.questions_remaining
-
-  if (Array.isArray(raw.chips)) {
-    const chips = raw.chips
-      .filter((c) => c && typeof c === "object")
-      .map((c: any) => ({
-        id: typeof c.id === "string" ? c.id : "",
-        label: typeof c.label === "string" ? c.label : "",
-      }))
-      .filter((c) => c.id && c.label)
-    if (chips.length) out.chips = chips
+function evidenceLabel(tier: string): string {
+  switch (tier) {
+    case "good":
+      return "god"
+    case "moderate":
+      return "moderat"
+    case "mixed":
+      return "blandet"
+    case "limited":
+      return "begrænset"
+    case "experiential":
+      return "primært erfaring"
+    default:
+      return "ukendt"
   }
-
-  return out
 }
 
-function getQuestionCountFromMeta(context: AiCapabilityContext): number | null {
-  const v = context.state.meta["method_fit.question_count"]?.value
-  if (typeof v === "number" && Number.isFinite(v)) return v
-  const n = Number(v)
-  if (Number.isFinite(n)) return n
-  return null
+function buildSafetyMessage(signals: string[]): string {
+  const extra = signals.length ? ` (tegn: ${signals.slice(0, 4).join(", ")})` : ""
+  return (
+    "Inden vi kigger på behandlingsretninger: det du beskriver kan være noget der bør vurderes sundhedsfagligt først" +
+    extra +
+    ". Har du været forbi læge/fagperson, eller er det undersøgt?"
+  )
 }
 
-function computeQuestionCountFromTranscript(transcript: TranscriptTurn[]): number {
-  // Vi tæller kun de bruger-inputs der er givet i denne node (transcript er node-specifikt).
-  // Det er “spørgsmålsflowets” count, ikke total turns.
-  return transcript.reduce((n, t) => (t.role === "user" ? n + 1 : n), 0)
-}
-
-function detectDirectModalityQuestion(userText: string): { id: string; label: string } | null {
-  const t = (userText ?? "").toLowerCase()
-  if (!t) return null
-  for (const m of MODALITIES) {
-    if (m.keywords.some((k) => t.includes(k))) return { id: m.id, label: m.label }
-  }
-  return null
-}
-
-const METHOD_FIT_PROMPT = `Du er en neutral beslutningsstøtte i dansk kontekst. Du giver overblik, ikke behandling.
-
-MÅL
-Brug 3–5 korte spørgsmål (ét ad gangen) til at finde en relevant “hypno plus” retning:
-- Hypnoterapi (altid med)
-- plus 2–3 andre almindelige alternative tilgange der typisk matcher situationen.
-Når der er nok info: foreslå hypnoterapi + 2–3 behandlingsformer blandt de 10 nedenfor, og invitér brugeren til at spørge ind til dem.
-
-TONE
-- Dansk, rolig, saglig, kun let empatisk.
-- Start altid med at svare på / spejle det konkrete user_input.
-
-SIKKERHED
-- Ingen diagnoser, ingen helbredelsesløfter.
-- Hvis der er tegn på røde flag eller noget der bør vurderes sundhedsfagligt: foreslå læge/fagperson eller spørg om det er undersøgt.
-  Eksempler: blod, feber, pludselig forværring, uforklarligt vægttab, stærke vedvarende smerter, besvimelser, neurologiske udfald, alvorlig psykisk krise/selvskade.
-
-Hypnoterapi (altid med)
-- Du må gerne anbefale hypnoterapi som relevant (eller som supplement/ikke førstevalg afhængigt af situationen).
-
-10 ALTERNATIVE BEHANDLINGSFORMER (udover hypnoterapi — du må kun foreslå fra denne liste)
-1) Akupunktur
-2) Zoneterapi
-3) Massage / manuel kropsbehandling
-4) Kraniosakral terapi
-5) Osteopati / manuel terapi
-6) Urtemedicin / naturopati (kosttilskud) — nævn interaktioner/forbehold kort
-7) Mindfulness / meditation
-8) Yoga / åndedrætspraksis
-9) Reiki / healing
-10) EFT / tapping
-
-EVIDENS-SKELNEN
-Når du beskriver en modalitet, markér kort i parentes:
-(evidens: god/moderat/blandet/begrænset/primært erfaring)
-Undgå skråsikre medicinske effekter.
-
-INPUT
-Du får JSON med:
-- conversation_transcript
-- user_input
-- question_count (antal tidligere spørgsmål/svar i flowet)
-- questions_target_min = 3
-- questions_target_max = 5
-- direct_modality (null eller {id,label})
-
-FLOW
-A) Hvis direct_modality ikke er null:
-- Giv et kort, konkret overblik om den modalitet:
-  - Hvad det typisk er
-  - Hvad det ofte bruges til
-  - Evidensnote (kort)
-  - Sikkerhed/forbehold (kort)
-  - Hvad man kan kigge efter hos behandler
-- Tilføj 1–2 sætninger: hvor hypnoterapi typisk kan supplere (eller ikke er førstevalg) ift. user_input.
-- Slut med: “Vil du dykke mere ned i [modalitet], eller vil du høre et samlet hypno+plus forslag?”
-
-B) Ellers (spørgsmål-flow):
-- Stil ét spørgsmål ad gangen.
-- Spørgsmål 1–3 er obligatoriske.
-- Efter 3 svar: hvis du har nok info, anbefal.
-- Hvis du mangler afgørende info, stil spørgsmål 4 (og evt 5).
-- Når du anbefaler:
-  1) 1 sætning der opsummerer brugerens mål/udfordring.
-  2) “Mulige veje (hypno+plus):” med 3–4 bullets:
-     - Hypnoterapi: (altid med) 1 linje om relevans/begrænsning ift. user_input + (evidens: ...)
-     - 2–3 andre fra listen, hver med 1 linje begrundelse + (evidens: ...)
-  3) “Mit forslag til næste skridt:” 1–2 sætninger (inkl. evt “få tjekket først”).
-  4) Spørg: “Hvilken vil du høre mere om?” og giv 2–4 chips-forslag (må gerne inkludere “Hypnoterapi”).
-
-SPØRGSMÅL (brug i rækkefølge)
-Q1 (question_count==0):
-- “Hvad vil du helst opnå (1 sætning), og hvor længe har det stået på?”
-Q2 (question_count==1):
-- “Hvilken type problem fylder mest: smerte/krop, stress/uro, søvn/energi, fordøjelse, vane/adfærd, eller noget andet?”
-Q3 (question_count==2):
-- “Hvad har du allerede prøvet, og hvad virkede lidt (selv hvis det var kortvarigt)?”
-Q4 (valgfri):
-- “Er der noget du vil undgå (fx nåle, berøring, øvelser hjemme, kosttilskud), eller noget du foretrækker?”
-Q5 (valgfri):
-- “Er der tegn der bør tjekkes sundhedsfagligt først (fx nye symptomer, stærke smerter, feber, blod, udtalt vægttab) – eller er det allerede undersøgt?”
-
-SARKASME
-Hvis brugeren er sarkastisk/nedladende: svar kort, venligt, nudge tilbage til næste konkrete spørgsmål og slut med 🙂
-
-OUTPUT
-Returner KUN gyldig JSON:
-{
-  "assistant_message": string,
-  "summary": string (optional),
-  "close_signal": boolean (optional),
-  "confidence": number (optional),
-  "relevance": number (optional),
-  "tags": string[] (optional),
-  "next_question": string (optional),
-  "questions_remaining": number (optional),
-  "chips": [{ "id": string, "label": string }] (optional)
-}
-
-- close_signal: true når du er i anbefalingsfasen (ikke når du spørger).
-- chips: brug til at foreslå 2–4 ting at dykke ned i.
-`
-
-function buildFallbackQuestion(questionCount: number, userText: string): Output {
+function buildQuestionMessage(userText: string, question: string): string {
   const u = (userText ?? "").trim()
-  const q =
-    questionCount <= 0
-      ? "Hvad vil du helst opnå (1 sætning), og hvor længe har det stået på?"
-      : questionCount === 1
-        ? "Hvilken type problem fylder mest: smerte/krop, stress/uro, søvn/energi, fordøjelse, vane/adfærd, eller noget andet?"
-        : questionCount === 2
-          ? "Hvad har du allerede prøvet, og hvad virkede lidt (selv hvis det var kortvarigt)?"
-          : questionCount === 3
-            ? "Er der noget du vil undgå (fx nåle, berøring, øvelser hjemme, kosttilskud), eller noget du foretrækker?"
-            : "Er der tegn der bør tjekkes sundhedsfagligt først (fx nye symptomer, stærke smerter, feber, blod, udtalt vægttab) – eller er det allerede undersøgt?"
-
-  return {
-    assistant_message: u
-      ? `Okay—${u}. For at pege på et samlet hypno+plus forslag har jeg lige ét spørgsmål: ${q}`
-      : `For at pege på et samlet hypno+plus forslag har jeg lige ét spørgsmål: ${q}`,
-    next_question: q,
-    questions_remaining: Math.max(0, 5 - Math.max(0, questionCount)),
-    summary: `asking: Q${Math.min(questionCount + 1, 5)}`,
+  if (!question.trim()) {
+    return u
+      ? `Okay—${u}. Hvad vil du helst opnå (1 sætning), og hvor længe har det stået på?`
+      : "Hvad vil du helst opnå (1 sætning), og hvor længe har det stået på?"
   }
+  return u
+    ? `Okay—${u}. For at pege på et samlet forslag har jeg ét spørgsmål: ${question}`
+    : `For at pege på et samlet forslag har jeg ét spørgsmål: ${question}`
+}
+
+function buildRecommendationMessage(params: {
+  presenting_problem: string | null
+  desired_outcome: string | null
+  recommendations: ReturnType<typeof buildRecommendations>
+  redFlagsActive: boolean
+}): string {
+  const { presenting_problem, desired_outcome, recommendations } = params
+
+  const summaryBits: string[] = []
+  if (presenting_problem?.trim()) summaryBits.push(presenting_problem.trim())
+  if (desired_outcome?.trim()) summaryBits.push(`mål: ${desired_outcome.trim()}`)
+  const summary = summaryBits.length ? summaryBits.join(" • ") : "Ud fra det du har delt" 
+
+  const lines: string[] = []
+  lines.push(`${summary}. Her er mulige veje (hypno + plus):`)
+
+  const hyp = recommendations.hypnosis
+  const hypFit = hyp.fit === "primary" ? "primær" : hyp.fit === "secondary" ? "supplement" : "lavt match"
+  lines.push(
+    `- ${hyp.label}: ${hypFit}. ${hyp.why[0] ?? ""} (evidens: ${evidenceLabel(hyp.evidence_tier)})`
+  )
+
+  for (const m of recommendations.problem_fit.slice(0, 3)) {
+    const why = m.why[0] ?? ""
+    lines.push(`- ${m.label}: ${why} (evidens: ${evidenceLabel(m.evidence_tier)})`)
+  }
+
+  if (recommendations.overall.length) {
+    const overallNames = recommendations.overall.slice(0, 3).map((m) => m.label)
+    if (overallNames.length) lines.push(`\nSamlet set (med dine rammer) ligger disse højest: ${overallNames.join(", ")}.`)
+  }
+
+  if (recommendations.unknown_other_options.length) {
+    lines.push(
+      `\nAndre mulige (uvalideret i DK i denne samtale): ${recommendations.unknown_other_options
+        .slice(0, 3)
+        .map((u) => u.raw_name)
+        .join(", ")}.`
+    )
+  }
+
+  lines.push("\nHvilken af retningerne vil du høre mere om?")
+  return lines.join("\n")
+}
+
+function buildChips(recommendations: ReturnType<typeof buildRecommendations>): Array<{ id: string; label: string }> {
+  const chips: Array<{ id: string; label: string }> = []
+  chips.push({ id: "hypnosis", label: "Hypnoterapi" })
+
+  for (const m of recommendations.overall.slice(0, 3)) {
+    chips.push({ id: m.id, label: m.label })
+  }
+
+  if (recommendations.unknown_other_options.length) {
+    chips.push({ id: "unknown", label: "Andre mulige (uvalideret)" })
+  }
+
+  // Dedupe by id
+  const seen = new Set<string>()
+  return chips.filter((c) => {
+    if (seen.has(c.id)) return false
+    seen.add(c.id)
+    return true
+  })
+}
+
+function resolveKnownIdsFromText(userText: string): string[] {
+  // Optional convenience: if user explicitly asks about a known method by name,
+  // we can bias chips/response, but we do not branch via keyword rules.
+  const t = String(userText ?? "").trim()
+  if (!t) return []
+  const id = resolveKnownMethodId(t)
+  return id ? [id] : []
 }
 
 export const methodFitCapability: AiCapability = {
   id: "method-fit-v1",
   async run(context: AiCapabilityContext, llm: LlmClient): Promise<AiCapabilityResult> {
     const transcript = readTranscript(context)
+    const userText = (context.userText ?? "").trim()
     const contextSystem = (context.contextPack?.system ?? "").trim()
 
-    const userText = (context.userText ?? "").trim()
-    const direct = detectDirectModalityQuestion(userText)
+    // 1) Load case
+    const current = await readMethodFitCase(context.state.conversation_id)
 
-    // Brug whitelisted counter hvis den findes, ellers beregn fra transcript.
-    const metaCount = getQuestionCountFromMeta(context)
-    const questionCount = metaCount ?? computeQuestionCountFromTranscript(transcript)
-
-    const payload = {
-      model: process.env.METHOD_FIT_MODEL ?? process.env.TRIAGE_MODEL ?? "gpt-4.1-mini",
-      temperature: 0.35,
-      response_format: { type: "json_object" as const },
-      messages: [
-        { role: "system" as const, content: METHOD_FIT_PROMPT },
-        ...(contextSystem ? [{ role: "system" as const, content: contextSystem }] : []),
-        {
-          role: "user" as const,
-          content: JSON.stringify({
-            conversation_transcript: transcript,
-            user_input: userText,
-            question_count: questionCount,
-            questions_target_min: 3,
-            questions_target_max: 5,
-            direct_modality: direct,
-          }),
-        },
-      ],
+    // 2) CBA extraction (patch only)
+    const model = process.env.METHOD_FIT_MODEL ?? process.env.TRIAGE_MODEL ?? "gpt-4.1-mini"
+    let patch: MethodFitPatchV1 = {}
+    try {
+      patch = await runMethodFitCbaExtraction({
+        llm,
+        model,
+        current_case: current,
+        conversation_transcript: transcript,
+        user_input: userText,
+        systemContext: contextSystem,
+      })
+    } catch {
+      patch = {}
     }
 
-    const response = await llm.chatJson(payload)
-    const parsed = normalizeOutput(response) ?? buildFallbackQuestion(questionCount, userText)
+    // 3) Merge patch into case
+    let merged = mergeMethodFitCase(current, patch)
 
-    const updatedTranscript = appendTranscript(transcript, userText, parsed.assistant_message)
+    // 4) Deterministic: recompute hypnosis fit + rankings + recommendations
+    const recommendations = buildRecommendations({ knownMethods: KNOWN_METHODS, caseData: merged })
+    merged.rankings.problem_fit = recommendations.problem_fit
+    merged.rankings.overall = recommendations.overall
+    merged.hypnosis_fit.level = recommendations.hypnosis.fit
+    merged.hypnosis_fit.rationale = recommendations.hypnosis.why.join(" ")
 
-    // IMPORTANT: skriv kun meta-keys der er whitelisted i METHOD_FIT.meta_domains_written
+    // 5) Deterministic: focus plan
+    const nextFocus = buildMethodFitFocusPlan({
+      conversationId: context.state.conversation_id,
+      revision: context.state.revision,
+      caseData: merged,
+      transcript,
+      lastUserText: userText,
+    })
+    merged.focus_plan = nextFocus
+
+    // 6) Persist case
+    await writeMethodFitCase(context.state.conversation_id, merged, METHOD_FIT_TTL_SECONDS)
+
+    // 7) Build assistant message
+    let assistant_message = ""
+
+    if (merged.red_flags.active) {
+      assistant_message = buildSafetyMessage(merged.red_flags.signals)
+    } else if (!merged.focus_plan.ready_for_recommendation) {
+      const q = merged.focus_plan.suggested_questions[0]?.question ?? ""
+      assistant_message = buildQuestionMessage(userText, q)
+    } else {
+      assistant_message = buildRecommendationMessage({
+        presenting_problem: merged.scope.presenting_problem.value,
+        desired_outcome: merged.scope.desired_outcome.value,
+        recommendations,
+        redFlagsActive: merged.red_flags.active,
+      })
+    }
+
+    const updatedTranscript = appendTranscript(transcript, userText, assistant_message)
+
+    // 8) meta_delta (only whitelisted keys)
     const meta_delta: Record<string, unknown> = {
       "method_fit.transcript": updatedTranscript,
+      "method_fit.case_id": merged.case.case_id,
+      "method_fit.problem_tags": merged.problem_tags.value,
+      "method_fit.constraints": {
+        hard: merged.constraints.hard.value,
+        soft: merged.constraints.soft.value,
+      },
+      "method_fit.red_flags": merged.red_flags,
+      "method_fit.hypnosis_fit": merged.hypnosis_fit,
+      "method_fit.unknown_candidates": merged.unknown_candidates,
+      "method_fit.focus_plan": merged.focus_plan,
     }
 
-    meta_delta["method_fit.question_count"] = direct ? questionCount : Math.min(questionCount + 1, 99)
+    const ready = merged.focus_plan.ready_for_recommendation && !merged.red_flags.active
+    if (ready) {
+      meta_delta["method_fit.recommendations"] = recommendations
+      meta_delta["method_fit.close_signal"] = true
+      meta_delta["method_fit.chips"] = buildChips(recommendations)
+      meta_delta["method_fit.summary"] = "recommendations_ready"
+    } else {
+      meta_delta["method_fit.close_signal"] = false
+      // Keep legacy v2 counters minimally updated for UI compatibility.
+      // We do not rely on them for logic in v3.
+      const prevCount = Number(context.state.meta["method_fit.question_count"]?.value ?? 0)
+      meta_delta["method_fit.question_count"] = Number.isFinite(prevCount) ? Math.min(prevCount + 1, 99) : 1
+      meta_delta["method_fit.questions_remaining"] = Math.max(0, 4 - Number(meta_delta["method_fit.question_count"]))
+      meta_delta["method_fit.next_question"] = merged.focus_plan.suggested_questions[0]?.question ?? ""
+      meta_delta["method_fit.summary"] = merged.focus_plan.missing_fields.length
+        ? `missing:${merged.focus_plan.missing_fields.join(",")}`
+        : "asking"
+    }
 
-    if (typeof parsed.questions_remaining === "number") meta_delta["method_fit.questions_remaining"] = parsed.questions_remaining
-    if (typeof parsed.next_question === "string" && parsed.next_question.trim())
-      meta_delta["method_fit.next_question"] = parsed.next_question.trim()
-    if (typeof parsed.close_signal === "boolean") meta_delta["method_fit.close_signal"] = parsed.close_signal
-    if (typeof parsed.relevance === "number") meta_delta["method_fit.relevance"] = parsed.relevance
-    if (typeof parsed.confidence === "number") meta_delta["method_fit.confidence"] = parsed.confidence
-    if (Array.isArray(parsed.tags) && parsed.tags.length) meta_delta["method_fit.tags"] = parsed.tags
-    if (Array.isArray(parsed.chips) && parsed.chips.length) meta_delta["method_fit.chips"] = parsed.chips
-    if (typeof parsed.summary === "string" && parsed.summary.trim()) meta_delta["method_fit.summary"] = parsed.summary.trim()
+    // Optional: if user asked for a specific known method, include it as a chip suggestion.
+    const directKnown = resolveKnownIdsFromText(userText)
+    if (directKnown.length && ready && Array.isArray(meta_delta["method_fit.chips"])) {
+      const chips = meta_delta["method_fit.chips"] as any[]
+      for (const id of directKnown) {
+        const m = KNOWN_METHODS_BY_ID[id]
+        if (m && !chips.some((c) => c.id === id)) chips.unshift({ id, label: m.label })
+      }
+      meta_delta["method_fit.chips"] = chips.slice(0, 4)
+    }
 
     const transition: Transition = {
       type: "NODE_HOP",
       from: context.state.active_node,
-      reason: "method-fit-free-text",
-      response_message: parsed.assistant_message,
+      reason: "method-fit-v3",
+      response_message: assistant_message,
       meta_delta,
     }
 
@@ -303,7 +274,7 @@ export const methodFitCapability: AiCapability = {
       transition,
       debug: {
         capability: "method-fit-v1",
-        used_fallback: !response,
+        used_fallback: false,
       },
     }
   },
