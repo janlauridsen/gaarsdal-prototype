@@ -112,8 +112,10 @@ function detectDirectModalityQuestion(userText: string): { id: string; label: st
 const METHOD_FIT_PROMPT = `Du er en neutral beslutningsstøtte i dansk kontekst. Du giver overblik, ikke behandling.
 
 MÅL
-Brug 3–5 korte spørgsmål (ét ad gangen) til at finde relevante ALTERNATIVER til hypnoterapi.
-Når der er nok info: foreslå 2–4 behandlingsformer blandt de 10 nedenfor, og invitér brugeren til at spørge ind til dem.
+Brug 3–5 korte spørgsmål (ét ad gangen) til at finde en relevant “hypno plus” retning:
+- Hypnoterapi (altid med)
+- plus 2–3 andre almindelige alternative tilgange der typisk matcher situationen.
+Når der er nok info: foreslå hypnoterapi + 2–3 behandlingsformer blandt de 10 nedenfor, og invitér brugeren til at spørge ind til dem.
 
 TONE
 - Dansk, rolig, saglig, kun let empatisk.
@@ -124,7 +126,10 @@ SIKKERHED
 - Hvis der er tegn på røde flag eller noget der bør vurderes sundhedsfagligt: foreslå læge/fagperson eller spørg om det er undersøgt.
   Eksempler: blod, feber, pludselig forværring, uforklarligt vægttab, stærke vedvarende smerter, besvimelser, neurologiske udfald, alvorlig psykisk krise/selvskade.
 
-10 ALTERNATIVE BEHANDLINGSFORMER (du må kun foreslå fra denne liste)
+Hypnoterapi (altid med)
+- Du må gerne anbefale hypnoterapi som relevant (eller som supplement/ikke førstevalg afhængigt af situationen).
+
+10 ALTERNATIVE BEHANDLINGSFORMER (udover hypnoterapi — du må kun foreslå fra denne liste)
 1) Akupunktur
 2) Zoneterapi
 3) Massage / manuel kropsbehandling
@@ -158,18 +163,21 @@ A) Hvis direct_modality ikke er null:
   - Evidensnote (kort)
   - Sikkerhed/forbehold (kort)
   - Hvad man kan kigge efter hos behandler
-- Slut med: “Vil du dykke mere ned i [modalitet], eller vil du have at jeg finder de bedste alternativer for din situation?”
+- Tilføj 1–2 sætninger: hvor hypnoterapi typisk kan supplere (eller ikke er førstevalg) ift. user_input.
+- Slut med: “Vil du dykke mere ned i [modalitet], eller vil du høre et samlet hypno+plus forslag?”
 
 B) Ellers (spørgsmål-flow):
 - Stil ét spørgsmål ad gangen.
 - Spørgsmål 1–3 er obligatoriske.
-- Efter 3 svar: hvis du har nok info, anbefal 2–4 modaliteter.
+- Efter 3 svar: hvis du har nok info, anbefal.
 - Hvis du mangler afgørende info, stil spørgsmål 4 (og evt 5).
 - Når du anbefaler:
   1) 1 sætning der opsummerer brugerens mål/udfordring.
-  2) “Mulige alternativer:” 2–4 bullets med 1 linje begrundelse + evidensnote.
+  2) “Mulige veje (hypno+plus):” med 3–4 bullets:
+     - Hypnoterapi: (altid med) 1 linje om relevans/begrænsning ift. user_input + (evidens: ...)
+     - 2–3 andre fra listen, hver med 1 linje begrundelse + (evidens: ...)
   3) “Mit forslag til næste skridt:” 1–2 sætninger (inkl. evt “få tjekket først”).
-  4) Spørg: “Hvilken vil du høre mere om?” og giv 2–4 chips-forslag.
+  4) Spørg: “Hvilken vil du høre mere om?” og giv 2–4 chips-forslag (må gerne inkludere “Hypnoterapi”).
 
 SPØRGSMÅL (brug i rækkefølge)
 Q1 (question_count==0):
@@ -201,7 +209,7 @@ Returner KUN gyldig JSON:
 }
 
 - close_signal: true når du er i anbefalingsfasen (ikke når du spørger).
-- chips: brug til at foreslå 2–4 modaliteter at dykke ned i.
+- chips: brug til at foreslå 2–4 ting at dykke ned i.
 `
 
 function buildFallbackQuestion(questionCount: number, userText: string): Output {
@@ -219,10 +227,9 @@ function buildFallbackQuestion(questionCount: number, userText: string): Output 
 
   return {
     assistant_message: u
-      ? `Okay—${u}. For at finde de mest relevante alternativer har jeg lige ét spørgsmål: ${q}`
-      : `For at finde de mest relevante alternativer har jeg lige ét spørgsmål: ${q}`,
+      ? `Okay—${u}. For at pege på et samlet hypno+plus forslag har jeg lige ét spørgsmål: ${q}`
+      : `For at pege på et samlet hypno+plus forslag har jeg lige ét spørgsmål: ${q}`,
     next_question: q,
-    // 3–5 spørgsmål; her estimerer vi konservativt
     questions_remaining: Math.max(0, 5 - Math.max(0, questionCount)),
     summary: `asking: Q${Math.min(questionCount + 1, 5)}`,
   }
@@ -272,11 +279,11 @@ export const methodFitCapability: AiCapability = {
       "method_fit.transcript": updatedTranscript,
     }
 
-    // Disse keys er whitelisted i registry.ts; brug dem til at gøre flow stabilt og debugbart:
     meta_delta["method_fit.question_count"] = direct ? questionCount : Math.min(questionCount + 1, 99)
 
     if (typeof parsed.questions_remaining === "number") meta_delta["method_fit.questions_remaining"] = parsed.questions_remaining
-    if (typeof parsed.next_question === "string" && parsed.next_question.trim()) meta_delta["method_fit.next_question"] = parsed.next_question.trim()
+    if (typeof parsed.next_question === "string" && parsed.next_question.trim())
+      meta_delta["method_fit.next_question"] = parsed.next_question.trim()
     if (typeof parsed.close_signal === "boolean") meta_delta["method_fit.close_signal"] = parsed.close_signal
     if (typeof parsed.relevance === "number") meta_delta["method_fit.relevance"] = parsed.relevance
     if (typeof parsed.confidence === "number") meta_delta["method_fit.confidence"] = parsed.confidence
