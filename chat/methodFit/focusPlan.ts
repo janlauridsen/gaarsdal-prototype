@@ -11,7 +11,7 @@ export type MethodFitFocusPlanV1 = {
   revision: number
 
   // High-level gaps that should be filled before recommending.
-  missing_fields: Array<"presenting_problem" | "desired_outcome" | "problem_tags" | "constraints">
+  missing_fields: Array<"presenting_problem" | "desired_outcome" | "problem_tags" | "constraints"> 
 
   suggested_questions: Array<{
     field_path: string
@@ -110,7 +110,6 @@ export function buildMethodFitFocusPlan(params: {
   const hasTags = caseData.problem_tags.value.length > 0 || mentionTags.length > 0
   const hasPresenting = Boolean(caseData.scope.presenting_problem.value?.trim())
   const hasOutcome = Boolean(caseData.scope.desired_outcome.value?.trim())
-
   // Constraints can be explicitly "none" (e.g. user answers "nej").
   // Treat constraints as "known" if either list has items OR we have non-trivial confidence.
   // This avoids repeatedly asking the same constraints question after the user has answered.
