@@ -63,15 +63,29 @@ function buildSafetyMessage(signals: string[]): string {
 }
 
 function buildQuestionMessage(userText: string, question: string): string {
-  const u = (userText ?? "").trim()
-  if (!question.trim()) {
-    return u
-      ? `Okay—${u}. Hvad vil du helst opnå (1 sætning), og hvor længe har det stået på?`
-      : "Hvad vil du helst opnå (1 sætning), og hvor længe har det stået på?"
+  // Undgå direkte ekko af brugerens tekst.
+  // Direkte ekko giver ofte forkert person ("jeg" -> assistant) og føles repetitivt.
+  const q = (question ?? "").trim()
+  if (!q) return "Okay. Fortæl lidt mere, så jeg kan pege på et samlet forslag."
+  return `Okay. ${q}`
+}
+
+function buildFallbackQuestionFromMissing(missing: string[]): string {
+  // Robust fallback hvis focus_plan af en eller anden grund ikke leverer spørgsmål.
+  const set = new Set((missing ?? []).map((s) => (s ?? "").trim()).filter(Boolean))
+  if (set.has("scope.desired_outcome") || set.has("scope.presenting_problem")) {
+    return "Hvad vil du helst opnå (1 sætning), og hvor længe har det stået på?"
   }
-  return u
-    ? `Okay—${u}. For at pege på et samlet forslag har jeg ét spørgsmål: ${question}`
-    : `For at pege på et samlet forslag har jeg ét spørgsmål: ${question}`
+  if (set.has("problem_tags")) {
+    return "Hvilken type problem fylder mest: smerte/krop, stress/uro, søvn/energi, fordøjelse, vane/adfærd, eller noget andet?"
+  }
+  if (set.has("constraints")) {
+    return "Er der noget du vil undgå (fx nåle, berøring, øvelser hjemme, kosttilskud) — eller noget du foretrækker ift. formen?"
+  }
+  if (set.has("red_flags")) {
+    return "Er der tegn der bør tjekkes sundhedsfagligt først (fx nye symptomer, stærke smerter, feber, blod, udtalt vægttab) – eller er det allerede undersøgt?"
+  }
+  return "Hvad har du allerede prøvet, og hvad virkede lidt (selv hvis det var kortvarigt)?"
 }
 
 function buildRecommendationMessage(params: {
@@ -204,7 +218,9 @@ export const methodFitCapability: AiCapability = {
     if (merged.red_flags.active) {
       assistant_message = buildSafetyMessage(merged.red_flags.signals)
     } else if (!merged.focus_plan.ready_for_recommendation) {
-      const q = merged.focus_plan.suggested_questions[0]?.question ?? ""
+      const q =
+        merged.focus_plan.suggested_questions[0]?.question ??
+        buildFallbackQuestionFromMissing(merged.focus_plan.missing_fields)
       assistant_message = buildQuestionMessage(userText, q)
     } else {
       assistant_message = buildRecommendationMessage({
@@ -245,7 +261,9 @@ export const methodFitCapability: AiCapability = {
       const prevCount = Number(context.state.meta["method_fit.question_count"]?.value ?? 0)
       meta_delta["method_fit.question_count"] = Number.isFinite(prevCount) ? Math.min(prevCount + 1, 99) : 1
       meta_delta["method_fit.questions_remaining"] = Math.max(0, 4 - Number(meta_delta["method_fit.question_count"]))
-      meta_delta["method_fit.next_question"] = merged.focus_plan.suggested_questions[0]?.question ?? ""
+      meta_delta["method_fit.next_question"] =
+        merged.focus_plan.suggested_questions[0]?.question ??
+        buildFallbackQuestionFromMissing(merged.focus_plan.missing_fields)
       meta_delta["method_fit.summary"] = merged.focus_plan.missing_fields.length
         ? `missing:${merged.focus_plan.missing_fields.join(",")}`
         : "asking"
