@@ -43,12 +43,6 @@ type KernelResponse = {
   log?: any
 }
 
-type TranscriptResponse = {
-  conversation_id: string
-  limit_turns: number
-  messages: Array<{ role: "user" | "assistant"; text: string; revision: number }>
-}
-
 type ChatMessage = {
   id: string
   role: "assistant" | "user"
@@ -199,16 +193,6 @@ export default function Chatbot() {
     appendMessage({ id: `user-${safeId()}`, role: "user", text: message })
   }
 
-  async function fetchTranscript(conversationId: string, limitTurns = 20): Promise<ChatMessage[]> {
-    const res = await fetch(`/api/transcript?conversation_id=${encodeURIComponent(conversationId)}&limit_turns=${limitTurns}`)
-    if (!res.ok) return []
-    const data: TranscriptResponse = await res.json()
-    const items = Array.isArray(data?.messages) ? data.messages : []
-    return items
-      .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.text === "string")
-      .map((m, i) => ({ id: `${m.role}-${m.revision}-${i}-${safeId()}`, role: m.role, text: m.text }))
-  }
-
   function showHeaderNavHint(text: string) {
     if (headerNavHintTimerRef.current) {
       window.clearTimeout(headerNavHintTimerRef.current)
@@ -278,25 +262,40 @@ export default function Chatbot() {
     if (!state) return
     setLoading(true)
 
+    const isThreadControlText = (t: string) => {
+      const s = (t ?? "").trim().toLowerCase()
+      if (!s) return false
+      if (s === "continue" || s === "fortsæt" || s === "fortsaet") return true
+      if (s === "new" || s === "ny") return true
+      if (s.startsWith("c:")) return true
+      return false
+    }
+
+    const loadTranscript = async (conversationId: string) => {
+      const url = `/api/transcript?conversation_id=${encodeURIComponent(conversationId)}&limit_turns=20`
+      const res = await fetch(url)
+      if (!res.ok) return [] as ChatMessage[]
+      const data = (await res.json().catch(() => null)) as any
+      const msgs = Array.isArray(data?.messages) ? data.messages : []
+      const out: ChatMessage[] = []
+      for (let i = 0; i < msgs.length; i++) {
+        const m = msgs[i]
+        if (!m || (m.role !== "user" && m.role !== "assistant")) continue
+        const text = String(m.content ?? "").trim()
+        if (!text) continue
+        out.push({ id: `${conversationId}:${i}:${m.role}`, role: m.role, text })
+      }
+      return out
+    }
+
     try {
       const fromNode = state.active_node
       const data = await callKernel(state, nextInput)
 
-      const isThreadSelectionFromChooser =
-        fromNode === "THREAD_CHOOSER" &&
-        nextInput.type === "FREE_TEXT" &&
-        !!opts?.silentUser &&
-        (nextInput.text === "new" || nextInput.text === "continue" || nextInput.text.startsWith("c:"))
-
-      const isThreadLevelNav = nextInput.type === "THREAD_CREATE" || nextInput.type === "THREAD_BACK"
-
-      // Rehydrate transcript for the selected / navigated thread.
-      if ((isThreadSelectionFromChooser || isThreadLevelNav) && data?.state?.conversation_id) {
-        const transcript = await fetchTranscript(data.state.conversation_id, 20)
-        setMessages(transcript)
-        setInput("")
-        setHeaderNavHint(null)
-      }
+      const isThreadNav =
+        nextInput.type === "THREAD_CREATE" ||
+        nextInput.type === "THREAD_BACK" ||
+        (nextInput.type === "FREE_TEXT" && !!opts?.silentUser && isThreadControlText(nextInput.text))
 
       if (nextInput.type === "EXPLICIT_TRANSITION") {
         const fromLabel = NODE_LABELS[fromNode] ?? fromNode
@@ -312,17 +311,26 @@ export default function Chatbot() {
       const assistantText =
         (data.transition?.response_message as string | undefined) ?? normalizeAssistantMessage(data.state)
 
-      // If we just rehydrated transcript, don't append an extra assistant message.
-      if (!(isThreadSelectionFromChooser || isThreadLevelNav)) {
-        appendAssistantMessage(assistantText)
+      if (isThreadNav) {
+        setInput("")
+        setHeaderNavHint(null)
+
+        const cid = String(data.state?.conversation_id ?? "")
+        const transcript = cid ? await loadTranscript(cid) : []
+        if (transcript.length) {
+          setMessages(transcript)
+
+          const last = transcript[transcript.length - 1]
+          const lastIsSameAssistant =
+            last?.role === "assistant" && last.text.trim() === String(assistantText ?? "").trim()
+
+          if (!lastIsSameAssistant) appendAssistantMessage(assistantText)
+        } else {
+          setMessages([])
+          appendAssistantMessage(assistantText)
+        }
       } else {
-        // If transcript is empty (e.g. brand new thread), show current node message.
-        setMessages((prev) => {
-          if (prev.length > 0) return prev
-          const msg = (assistantText ?? "").trim()
-          if (!msg) return prev
-          return [{ id: `assistant-${safeId()}`, role: "assistant", text: msg }]
-        })
+        appendAssistantMessage(assistantText)
       }
     } finally {
       setLoading(false)
