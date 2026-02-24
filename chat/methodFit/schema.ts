@@ -71,6 +71,14 @@ export type MethodFitCaseSchemaV1 = {
     language: LanguageCode
   }
 
+  // Added for stronger user-grounding ("troværdig" tabel) without breaking existing storage.
+  profile: {
+    motivation_stage: ConfidenceValue<"ready" | "planning" | "ambivalent" | null>
+    previous_attempts: ConfidenceValue<string | null>
+    preferences: ConfidenceValue<string | null>
+    aversions: ConfidenceValue<string | null>
+  }
+
   scope: {
     presenting_problem: ConfidenceValue<string | null>
     desired_outcome: ConfidenceValue<string | null>
@@ -113,6 +121,12 @@ export function createEmptyMethodFitCase(conversationId: string): MethodFitCaseS
       case_id: conversationId,
       created_at: nowIso(),
       language: "da",
+    },
+    profile: {
+      motivation_stage: { value: null, confidence: 0.0 },
+      previous_attempts: { value: null, confidence: 0.0 },
+      preferences: { value: null, confidence: 0.0 },
+      aversions: { value: null, confidence: 0.0 },
     },
     scope: {
       presenting_problem: { value: null, confidence: 0.0 },
