@@ -22,6 +22,10 @@ Safety:
 - If you see red flags (blood, fever, sudden worsening, unexplained weight loss, fainting, neurological deficits, severe mental crisis/self-harm): set red_flags.active=true and add short signals.
 
 Extraction fields:
+- profile.motivation_stage ("ready"|"planning"|"ambivalent"|null) + confidence
+- profile.previous_attempts (string|null) + confidence
+- profile.preferences (string|null) + confidence
+- profile.aversions (string|null) + confidence
 - scope.presenting_problem (string|null) + confidence 0..1
 - scope.desired_outcome (string|null) + confidence 0..1
 - problem_tags: array of tags + confidence
@@ -39,6 +43,11 @@ Rules:
 - Do not overwrite non-empty values with null/empty.
 - If user expresses clear form limits (e.g. 'ingen nåle'), add as hard constraint.
 - If user expresses preferences (e.g. 'helst samtale'), add as soft preference.
+- If the user is open to many methods (e.g. "åben for alle metoder"), store that in profile.preferences.
+- Use profile.motivation_stage:
+  - "ready" if the user indicates intent to act now / has decided to stop
+  - "planning" if preparing but not committed to immediate action
+  - "ambivalent" if conflicted / unsure
 
 Input JSON:
 { current_case, conversation_transcript, user_input }
@@ -46,6 +55,12 @@ Input JSON:
 Output ONLY valid JSON:
 {
   "patch": {
+    "profile": {
+      "motivation_stage": {"value": "ready"|"planning"|"ambivalent"|null, "confidence": number},
+      "previous_attempts": {"value": string|null, "confidence": number},
+      "preferences": {"value": string|null, "confidence": number},
+      "aversions": {"value": string|null, "confidence": number}
+    },
     "scope": {"presenting_problem": {"value": string|null, "confidence": number}, "desired_outcome": {"value": string|null, "confidence": number}},
     "problem_tags": {"value": string[], "confidence": number},
     "constraints": {"hard": {"value": string[], "confidence": number}, "soft": {"value": string[], "confidence": number}},
