@@ -386,6 +386,10 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "method_fit.transcript",
       "method_fit.summary",
 
+      // v3: schema-backed profile fields used by the capability
+      "method_fit.profile",
+      "method_fit.scope",
+
       // v3: schema-backed recommendations (deterministic selection)
       "method_fit.case_id",
       "method_fit.problem_tags",
