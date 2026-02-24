@@ -41,4 +41,6 @@ Praktisk (kontakt / lokation)
 - E-mail: jan@gaarsdal.net
 - Facebook-gruppe: https://www.facebook.com/groups/1056907644480600
 - priser aftales - default 900,- for første behandling og 600,- for de næste
+- ofte kan 1-2 behandlinger være nok
+- behandlinger der kræver mere end 3 gange skal aftales og betragtes som en transformation snarere end en enkelt problemstilling
 `;
