@@ -232,258 +232,116 @@ export function setActiveThread(params: { index: ThreadIndex; conversationId: st
 export function applyAutoThreadLabelFromText(params: {
   index: ThreadIndex
   conversationId: string
-  // Text sources:
-  // - titleText: used only to derive the title (typically: first user input in the thread)
-  // - previewText: used to derive the preview (typically: latest user input)
+  // Title is derived from the FIRST meaningful user input in the thread.
   titleText: string
+  // Preview is derived from the LATEST meaningful user input in the thread.
   previewText: string
   maxTitleChars?: number
   maxPreviewChars?: number
-  // If true, only set title when it's currently empty.
+  // If true, only set title when currently empty.
   setTitleIfEmpty?: boolean
-  // If true, always update preview when previewText is present.
+  // If true, preview is always updated from previewText.
   alwaysUpdatePreview?: boolean
 }): ThreadIndex {
   const maxTitleChars = params.maxTitleChars ?? 60
   const maxPreviewChars = params.maxPreviewChars ?? 120
-
   const setTitleIfEmpty = params.setTitleIfEmpty ?? true
   const alwaysUpdatePreview = params.alwaysUpdatePreview ?? true
 
-  const existing = params.index.threads.find((t) => t.conversation_id === params.conversationId)
-  const existingTitle = existing?.title ?? ""
-  const existingPreview = existing?.preview ?? ""
-
-  const rawTitleText = String(params.titleText ?? "").trim()
-  const rawPreviewText = String(params.previewText ?? "").trim()
-  if (!rawTitleText && !rawPreviewText) return params.index
-
   const truncate = (s: string, max: number): string => {
-    if (s.length <= max) return s
-    return s.slice(0, max) + "…"
+    const t = String(s ?? "").trim()
+    if (!t) return ""
+    if (t.length <= max) return t
+    return t.slice(0, max) + "…"
   }
 
-  const clean = (s: string): string => cleanOneLine(String(s ?? "")).replace(/\s+/g, " ").trim()
+  const normalize = (s: string): string => String(s ?? "").replace(/\s+/g, " ").trim()
 
-  // --- Keyword-based title derivation (B):
-  // Extract a small set of informative words from the first user input.
-  // This is intentionally deterministic and language-light (da/en stopwords).
-  const STOPWORDS = new Set(
-    [
-      // Danish
-      "jeg",
-      "du",
-      "han",
-      "hun",
-      "vi",
-      "i",
-      "de",
-      "det",
-      "den",
-      "der",
-      "som",
-      "og",
-      "eller",
-      "men",
-      "at",
-      "til",
-      "på",
-      "af",
-      "for",
-      "med",
-      "om",
-      "fra",
-      "over",
-      "under",
-      "igen",
-      "ikke",
-      "kan",
-      "kunne",
-      "skal",
-      "vil",
-      "må",
-      "måske",
-      "bare",
-      "så",
-      "når",
-      "hvor",
-      "hvad",
-      "hvordan",
-      "hvem",
-      "hvilken",
-      "hvilket",
-      "hvilke",
-      "min",
-      "mit",
-      "mine",
-      "din",
-      "dit",
-      "dine",
-      "en",
-      "et",
-      "denne",
-      "dette",
-      "disse",
-      "her",
-      "der",
-      "deres",
-      "vores",
-      "jeres",
-      "bliver",
-      "blev",
-      "er",
-      "var",
-      "har",
-      "havde",
-      "får",
-      "få",
-      "gør",
-      "gjorde",
-      "gøre",
-      "sig",
-      "sige",
-      "sagde",
-      "noget",
-      "meget",
-      "lidt",
-      // English
-      "i",
-      "you",
-      "he",
-      "she",
-      "we",
-      "they",
-      "it",
-      "that",
-      "this",
-      "there",
-      "and",
-      "or",
-      "but",
-      "to",
-      "of",
-      "for",
-      "with",
-      "about",
-      "from",
-      "over",
-      "under",
-      "again",
-      "not",
-      "can",
-      "could",
-      "should",
-      "will",
-      "would",
-      "maybe",
-      "just",
-      "when",
-      "where",
-      "what",
-      "how",
-      "who",
-      "which",
-      "my",
-      "your",
-      "a",
-      "an",
-      "the",
-      "is",
-      "are",
-      "was",
-      "were",
-      "have",
-      "has",
-      "had",
-      "do",
-      "does",
-      "did",
-      "say",
-      "says",
-      "said",
-      "something",
-      "very",
-      "little",
-    ].map((x) => x.toLowerCase())
-  )
+  const STOPWORDS = new Set<string>([
+    // Danish (minimal, pragmatic list)
+    "og","i","på","af","for","til","med","det","den","de","der","som","en","et","er","var","har","have","skal","kan",
+    "jeg","du","vi","man","mig","din","mit","dine","min","mine","jer","os","sig","sin","sine","sit",
+    "ikke","så","også","mere","meget","lidt","bare","kun","når","hvis","fordi","men","eller","da",
+    // English
+    "and","or","the","a","an","to","of","in","on","for","with","is","are","was","were","be","been","being",
+    "i","you","we","they","it","this","that","these","those","my","your","our","their","me","us",
+    "not","so","also","more","most","very","just","only","when","if","because","but",
+  ])
 
   const tokenize = (s: string): string[] => {
-    // Keep danish letters; split on non-word.
-    const normalized = s
+    const cleaned = normalize(s)
       .toLowerCase()
-      .replace(/[’'`]/g, "")
-      .replace(/[^a-z0-9æøå\s-]/gi, " ")
-      .replace(/\s+/g, " ")
+      .replace(/[^\p{L}\p{N}\s_-]+/gu, " ")
+      .replace(/[_-]+/g, " ")
       .trim()
-    if (!normalized) return []
-    return normalized
-      .split(/\s+/g)
-      .map((w) => w.trim())
-      .filter(Boolean)
+    if (!cleaned) return []
+    return cleaned.split(/\s+/).filter(Boolean)
   }
 
-  const keywordsTitle = (text: string): string => {
-    const cleaned = clean(text)
-    if (!cleaned) return ""
-    const tokens = tokenize(cleaned)
-    if (!tokens.length) return ""
-
-    const scored = new Map<string, number>()
-    for (const t of tokens) {
-      if (t.length < 3) continue
-      if (STOPWORDS.has(t)) continue
-      if (/^\d+$/.test(t)) continue
-      const prev = scored.get(t) ?? 0
-      scored.set(t, prev + 1)
+  const keywordTitle = (s: string): string => {
+    const tokens = tokenize(s).filter((t) => t.length >= 3 && !STOPWORDS.has(t))
+    if (!tokens.length) {
+      // Fallback: first 8 words from normalized text.
+      return truncate(normalize(s).split(/\s+/).slice(0, 8).join(" "), maxTitleChars)
     }
 
-    const unique = Array.from(scored.entries())
-      .sort((a, b) => {
-        if (b[1] !== a[1]) return b[1] - a[1]
-        return b[0].length - a[0].length
-      })
-      .map(([w]) => w)
+    const freq = new Map<string, number>()
+    for (const t of tokens) freq.set(t, (freq.get(t) ?? 0) + 1)
 
-    const pick = unique.slice(0, 6)
-    if (!pick.length) {
-      return truncate(cleaned.split(/\s+/).slice(0, 8).join(" "), maxTitleChars)
+    // Score: frequency desc, length desc, stable by first appearance.
+    const firstPos = new Map<string, number>()
+    tokens.forEach((t, idx) => { if (!firstPos.has(t)) firstPos.set(t, idx) })
+
+    const uniq = Array.from(freq.keys())
+    uniq.sort((a, b) => {
+      const fa = freq.get(a) ?? 0
+      const fb = freq.get(b) ?? 0
+      if (fb !== fa) return fb - fa
+      if (b.length !== a.length) return b.length - a.length
+      return (firstPos.get(a) ?? 0) - (firstPos.get(b) ?? 0)
+    })
+
+    // Keep 4–6 keywords depending on space; build until we hit maxTitleChars.
+    const picked: string[] = []
+    for (const k of uniq) {
+      const next = [...picked, k].join(" ")
+      if (picked.length >= 6) break
+      if (next.length > maxTitleChars) break
+      picked.push(k)
+      if (picked.length >= 4 && next.length >= Math.floor(maxTitleChars * 0.6)) break
     }
 
-    const title = pick.join(" ")
-    return truncate(title, maxTitleChars)
+    const title = picked.join(" ").trim()
+    return truncate(title || normalize(s), maxTitleChars)
   }
 
-  const previewFromText = (text: string): string => {
-    const cleaned = clean(text)
-    if (!cleaned) return ""
-    return truncate(cleaned, maxPreviewChars)
-  }
+  const titleText = normalize(params.titleText)
+  const previewText = normalize(params.previewText)
 
-  const nextTitle = (() => {
-    if (!rawTitleText) return existingTitle
-    if (setTitleIfEmpty && existingTitle.trim()) return existingTitle
-    const t = keywordsTitle(rawTitleText)
-    return t || existingTitle
-  })()
+  const idx = params.index
+  const thread = idx.threads.find((t) => t.conversation_id === params.conversationId)
+  if (!thread) return idx
 
-  const nextPreview = (() => {
-    if (!rawPreviewText) return existingPreview
-    if (!alwaysUpdatePreview && existingPreview.trim()) return existingPreview
-    const p = previewFromText(rawPreviewText)
-    if (p.trim().toLowerCase() === nextTitle.trim().toLowerCase()) return ""
-    return p
-  })()
+  const nextThreads = idx.threads.map((t) => {
+    if (t.conversation_id !== params.conversationId) return t
 
-  return {
-    ...params.index,
-    threads: params.index.threads.map((t) => {
-      if (t.conversation_id !== params.conversationId) return t
-      return {
-        ...t,
-        title: nextTitle,
-        preview: nextPreview,
-        updated_at: new Date().toISOString(),
-      }
-    }),
-  }
+    const nextTitle =
+      (!setTitleIfEmpty || !(t.title ?? "").trim()) && titleText
+        ? keywordTitle(titleText)
+        : (t.title ?? "")
+
+    const nextPreview =
+      alwaysUpdatePreview && previewText
+        ? truncate(previewText, maxPreviewChars)
+        : (t.preview ?? "")
+
+    return {
+      ...t,
+      title: nextTitle,
+      preview: nextPreview,
+      updated_at: new Date().toISOString(),
+    }
+  })
+
+  return { ...idx, threads: nextThreads }
 }
