@@ -183,7 +183,8 @@
   background: #51665C;
   color: #FFFFFF;
   margin-left: auto;
-  text-align: right;
+  /* Keep the bubble right-aligned via margin-left, but keep text left-aligned for readability */
+  text-align: left;
 }
 
 .liveIndicator {
