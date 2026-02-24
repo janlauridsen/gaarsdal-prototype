@@ -99,6 +99,21 @@ function trimDuplicateTitle(s: string) {
   return s.trim()
 }
 
+function splitThreadLabel(label: string): { title: string; preview: string } {
+  const cleaned = trimDuplicateTitle(label || "").trim()
+  if (!cleaned) return { title: "", preview: "" }
+
+  // Thread labels are generated as: "<title> — <preview>".
+  // Use the first em-dash as separator, keep the rest in preview.
+  const idx = cleaned.indexOf("—")
+  if (idx < 0) return { title: cleaned, preview: "" }
+
+  const title = cleaned.slice(0, idx).trim()
+  const preview = cleaned.slice(idx + 1).trim()
+  if (!title) return { title: cleaned, preview: "" }
+  return { title, preview }
+}
+
 export default function Chatbot() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -447,13 +462,27 @@ export default function Chatbot() {
     const base = threadChoices
       .map((c) => {
         const cleanLabel = trimDuplicateTitle(c.label)
-        const uiLabel =
-          c.kind === "new"
-            ? "Ny tråd"
-            : c.kind === "continue"
-              ? "Fortsæt seneste tråd"
-              : cleanLabel || "Tråd"
-        return { ...c, uiLabel }
+
+        if (c.kind === "new") {
+          return { ...c, uiLabel: "Ny tråd", uiMeta: "" }
+        }
+
+        if (c.kind === "continue") {
+          // Keep the current preferred format:
+          // header = "Fortsæt seneste tråd", details = full label (title — preview)
+          return {
+            ...c,
+            uiLabel: "Fortsæt seneste tråd",
+            uiMeta: trimDuplicateTitle(String(c.label ?? "").replace(/^Fortsæt:\s*/i, "")),
+          }
+        }
+
+        const { title, preview } = splitThreadLabel(cleanLabel)
+        return {
+          ...c,
+          uiLabel: title || cleanLabel || "Tråd",
+          uiMeta: preview,
+        }
       })
       .sort((a, b) => {
         const rank = (k: ThreadChoice["kind"]) => (k === "new" ? 0 : k === "continue" ? 1 : 2)
@@ -603,11 +632,7 @@ export default function Chatbot() {
                         title={c.kind === "thread" ? trimDuplicateTitle(c.label) : ""}
                       >
                         <span className={styles.topicLabel}>{(c as any).uiLabel}</span>
-                        {c.kind === "continue" && (
-                          <span className={styles.topicMeta}>
-                            {trimDuplicateTitle(String(c.label ?? "").replace(/^Fortsæt:\s*/i, ""))}
-                          </span>
-                        )}
+                        {!!(c as any).uiMeta && <span className={styles.topicMeta}>{(c as any).uiMeta}</span>}
                       </button>
                     ))}
                   </div>
