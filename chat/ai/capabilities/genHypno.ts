@@ -31,7 +31,7 @@ DOMÆNE OG FAKTA-GRUNDLAG
 
 - Løbende samtalestruktur (ved naturlige opsummeringer)
   - Ved hver naturlig milepæl i samtalen skal du:
-  - Opsummere forståelsen
+  - Opsummere forståelsen - dog aldrig to gange efter hinanden og naturlig milepæl skal være samtalen har flyttet sig
   - Beskriv kort, hvad du indtil nu har forstået om brugerens situation, behov eller udfordring.
   - Angive én foreløbig mulighed
   - Nævn mindst én alternativ behandlingsform i Danmark.
