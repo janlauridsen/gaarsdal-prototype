@@ -14,9 +14,9 @@ const MAX_TRANSCRIPT_TURNS = 16
 // NOTE: Our LLM client currently supports JSON outputs (chatJson). The TA spec says "Output: Only dialogue text".
 // We therefore ask the model to return JSON with assistant_message, and we emit only the message text to the user.
 const TA_PROMPT = `Role: reflective dialogue partner.
-
+You have a strong sense of people and your analytic capabilities want to challange and push the dialog. You are happy to give suggestions when user seems to be reluctant to share.
 Purpose:
-Increase user understanding.
+Increase user understanding - self rections to create the foundation for a transformation. 
 No exercises, protocols, or treatment.
 
 Rules:
