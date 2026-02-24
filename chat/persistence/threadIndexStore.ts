@@ -474,56 +474,6 @@ export function applyAutoThreadLabelFromText(params: {
     return p
   })()
 
-  // Heuristic:
-  // - title: first clause/sentence up to a strong delimiter
-  // - preview: remainder after the title (avoid duplicate lines in the UI)
-  const delimiterRe = /\s*(?:—|--|–|-|:|;|\.|\?|!)\s*/g
-
-  const firstSplit = (() => {
-    const m = delimiterRe.exec(normalized)
-    delimiterRe.lastIndex = 0
-    if (!m) return null
-    const idx = m.index
-    const delimLen = m[0].length
-    return {
-      head: normalized.slice(0, idx).trim(),
-      tail: normalized.slice(idx + delimLen).trim(),
-    }
-  })()
-
-  let titleCandidate = firstSplit?.head ?? normalized
-  let previewCandidate = firstSplit?.tail ?? ""
-
-  // If the head is too short, fall back to a word-based title.
-  if (titleCandidate.length < 12) {
-    const words = normalized.split(/\s+/).filter(Boolean)
-    titleCandidate = words.slice(0, 8).join(" ")
-    previewCandidate = words.slice(8).join(" ").trim()
-  }
-
-  const title = truncate(titleCandidate, maxTitleChars)
-
-  // Prefer remainder as preview; if empty, use full text but ensure it differs from title.
-  let preview = previewCandidate
-
-  if (!preview) {
-    preview = normalized
-  }
-
-  // If preview duplicates the title (common for short prompts), drop it.
-  if (preview.trim().toLowerCase() === title.trim().toLowerCase()) {
-    preview = ""
-  } else {
-    // If preview still contains the title as prefix (edge cases), drop the overlap.
-    const lt = titleCandidate.toLowerCase()
-    const lp = preview.toLowerCase()
-    if (lp.startsWith(lt) && preview.length > titleCandidate.length) {
-      preview = preview.slice(titleCandidate.length).trim()
-    }
-  }
-
-  preview = truncate(preview, maxPreviewChars)
-
   return {
     ...params.index,
     threads: params.index.threads.map((t) => {
