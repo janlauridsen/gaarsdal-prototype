@@ -387,6 +387,8 @@
   line-height: 1.35;
   outline: none;
   background: #fbfbfa;
+  text-align: left;
+  direction: ltr;
 }
 
 .textarea:disabled {
