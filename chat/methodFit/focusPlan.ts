@@ -13,7 +13,7 @@ export type MethodFitFocusPlanV1 = {
   // High-level gaps that should be filled before recommending.
   // Note: "preferences" is intentionally separated from constraints, since users often have
   // form/method preferences even when they have no strict constraints.
-  missing_fields: Array<"presenting_problem" | "desired_outcome" | "problem_tags" | "constraints" | "preferences"> 
+  missing_fields: Array<"presenting_problem" | "desired_outcome" | "problem_tags" | "constraints" | "preferences">
 
   suggested_questions: Array<{
     field_path: string
@@ -142,6 +142,8 @@ export function buildMethodFitFocusPlan(params: {
     "Hvilken type problem fylder mest lige nu: smerte/krop, stress/uro, søvn/energi, fordøjelse, vane/adfærd — eller noget andet?"
   const qConstraints =
     "Er der noget du vil undgå (fx nåle, berøring, øvelser hjemme, kosttilskud) — eller noget du foretrækker ift. formen?"
+  const qPreferences =
+    "Har du en præference for formen (fx samtale, kropsbehandling, eller hjemmeøvelser) — eller er du åben?"
   const qOutcome = "Hvis det lykkes: hvad vil være det tydeligste tegn på at det er blevet bedre?"
   const qSafety =
     "Inden vi foreslår retninger: er der tegn der bør tjekkes sundhedsfagligt først (fx nye stærke smerter, feber, blod, besvimelser) — eller er det allerede undersøgt?"
@@ -161,8 +163,8 @@ export function buildMethodFitFocusPlan(params: {
   } else if (missing.includes("constraints")) {
     pick("constraints", qConstraints)
   } else if (missing.includes("preferences")) {
-    // Reuse constraints question (it also asks about preferences) but route the field-path to profile.
-    pick("profile.preferences", qConstraints)
+    // Use a distinct question so repeat-detection doesn't zero out suggested_questions.
+    pick("profile.preferences", qPreferences)
   } else if (missing.includes("desired_outcome")) {
     pick("scope.desired_outcome", qOutcome)
   }
