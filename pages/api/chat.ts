@@ -28,6 +28,7 @@ import { runReflectionCbaUpdate } from "../../chat/reflection/cba"
 
 // Single raw stream
 import { appendRawTurn } from "../../chat/raw/store"
+import { readRawTurns } from "../../chat/raw/store"
 
 type ChatRequestBody = {
   state: any
@@ -255,17 +256,33 @@ async function maybeAutoLabelThread(params: {
   const index0 = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: PROFILE_TTL_SECONDS })
 
   const existing = index0.threads.find((t) => t.conversation_id === params.conversationId)
-  const needsLabel = !existing || !existing.title?.trim() || !existing.preview?.trim()
-  if (!needsLabel) return
+  const needsTitle = !existing || !existing.title?.trim()
+  const needsPreviewUpdate = true // preview should track latest user input
 
   // Ensure thread exists in index (covers restores or direct navigation).
   let index1 = upsertThread({ index: index0, conversationId: params.conversationId })
+
+  const titleText = await (async () => {
+    if (!needsTitle) return ""
+
+    // Derive from the FIRST user input in the thread.
+    // We read a generous tail window; for small threads this includes the whole conversation.
+    const rawTurns = await readRawTurns({ conversationId: params.conversationId, limit: 500 })
+    const firstUser = rawTurns.find((t) => t && t.input_type === "FREE_TEXT" && typeof t.user_input === "string")
+    const firstText = (firstUser?.user_input ?? "").trim()
+    if (firstText && !isControlInput(firstText) && firstText.length >= 3) return firstText
+    return userText
+  })()
+
   index1 = applyAutoThreadLabelFromText({
     index: index1,
     conversationId: params.conversationId,
-    userText,
+    titleText,
+    previewText: needsPreviewUpdate ? userText : "",
     maxTitleChars: 60,
     maxPreviewChars: 120,
+    setTitleIfEmpty: true,
+    alwaysUpdatePreview: true,
   })
   index1 = setActiveThread({ index: index1, conversationId: params.conversationId })
 
