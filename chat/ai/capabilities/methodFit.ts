@@ -91,10 +91,16 @@ function buildFallbackQuestionFromMissing(missing: string[]): string {
 function buildRecommendationMessage(params: {
   presenting_problem: string | null
   desired_outcome: string | null
+  profile?: {
+    motivation_stage?: string | null
+    previous_attempts?: string | null
+    preferences?: string | null
+    aversions?: string | null
+  }
   recommendations: ReturnType<typeof buildRecommendations>
   redFlagsActive: boolean
 }): string {
-  const { presenting_problem, desired_outcome, recommendations } = params
+  const { presenting_problem, desired_outcome, recommendations, profile } = params
 
   const summaryBits: string[] = []
   if (presenting_problem?.trim()) summaryBits.push(presenting_problem.trim())
@@ -102,34 +108,59 @@ function buildRecommendationMessage(params: {
   const summary = summaryBits.length ? summaryBits.join(" • ") : "Ud fra det du har delt" 
 
   const lines: string[] = []
-  lines.push(`${summary}. Her er mulige veje (hypno + plus):`)
 
-  const hyp = recommendations.hypnosis
-  const hypFit = hyp.fit === "primary" ? "primær" : hyp.fit === "secondary" ? "supplement" : "lavt match"
-  lines.push(
-    `- ${hyp.label}: ${hypFit}. ${hyp.why[0] ?? ""} (evidens: ${evidenceLabel(hyp.evidence_tier)})`
-  )
+  // 1) User-grounding (makes the table more trustworthy)
+  const grounding: string[] = []
+  if (presenting_problem?.trim()) grounding.push(`Problem: ${presenting_problem.trim()}`)
+  if (desired_outcome?.trim()) grounding.push(`Mål: ${desired_outcome.trim()}`)
+  if (profile?.motivation_stage?.trim()) grounding.push(`Motivation: ${profile.motivation_stage.trim()}`)
+  if (profile?.previous_attempts?.trim()) grounding.push(`Tidligere forsøg: ${profile.previous_attempts.trim()}`)
+  if (profile?.preferences?.trim()) grounding.push(`Præferencer: ${profile.preferences.trim()}`)
+  if (profile?.aversions?.trim()) grounding.push(`Vil undgå: ${profile.aversions.trim()}`)
 
-  for (const m of recommendations.problem_fit.slice(0, 3)) {
-    const why = m.why[0] ?? ""
-    lines.push(`- ${m.label}: ${why} (evidens: ${evidenceLabel(m.evidence_tier)})`)
+  lines.push(`${summary}.`)
+  if (grounding.length) {
+    lines.push("\n**Grundlag (det du har sagt):**")
+    for (const g of grounding) lines.push(`- ${g}`)
   }
 
-  if (recommendations.overall.length) {
-    const overallNames = recommendations.overall.slice(0, 3).map((m) => m.label)
-    if (overallNames.length) lines.push(`\nSamlet set (med dine rammer) ligger disse højest: ${overallNames.join(", ")}.`)
+  // 2) Ranked table
+  const tableRows: Array<{ label: string; fit: string; evidence: string; why: string }> = []
+  const addRow = (m: { label: string; fit: any; evidence_tier: any; why: string[] }) => {
+    const fit = m.fit === "primary" ? "Primær" : m.fit === "secondary" ? "Supplement" : "Lav" 
+    const why = (m.why?.[0] ?? "").replace(/\s+/g, " ").trim()
+    tableRows.push({ label: m.label, fit, evidence: evidenceLabel(m.evidence_tier), why })
+  }
+
+  addRow(recommendations.hypnosis)
+
+  const seen = new Set<string>()
+  seen.add(recommendations.hypnosis.id)
+  for (const m of recommendations.overall) {
+    if (tableRows.length >= 6) break
+    if (seen.has(m.id)) continue
+    seen.add(m.id)
+    addRow(m as any)
+  }
+
+  lines.push("\n**Prioriteret oversigt (fit + evidens):**")
+  lines.push("| Metode | Match | Evidens-indikator | Kort begrundelse |")
+  lines.push("|---|---:|---:|---|")
+  for (const r of tableRows) {
+    const safe = (s: string) => String(s ?? "").replace(/\|/g, "\\|")
+    lines.push(`| ${safe(r.label)} | ${safe(r.fit)} | ${safe(r.evidence)} | ${safe(r.why)} |`)
   }
 
   if (recommendations.unknown_other_options.length) {
     lines.push(
-      `\nAndre mulige (uvalideret i DK i denne samtale): ${recommendations.unknown_other_options
+      `\nAndre mulige (uvalideret/ukendt i denne samtale): ${recommendations.unknown_other_options
         .slice(0, 3)
         .map((u) => u.raw_name)
         .join(", ")}.`
     )
   }
 
-  lines.push("\nHvilken af retningerne vil du høre mere om?")
+  lines.push("\nHvilken metode vil du dykke ned i først?")
   return lines.join("\n")
 }
 
@@ -226,6 +257,12 @@ export const methodFitCapability: AiCapability = {
       assistant_message = buildRecommendationMessage({
         presenting_problem: merged.scope.presenting_problem.value,
         desired_outcome: merged.scope.desired_outcome.value,
+        profile: {
+          motivation_stage: (merged as any).profile?.motivation_stage?.value ?? null,
+          previous_attempts: (merged as any).profile?.previous_attempts?.value ?? null,
+          preferences: (merged as any).profile?.preferences?.value ?? null,
+          aversions: (merged as any).profile?.aversions?.value ?? null,
+        },
         recommendations,
         redFlagsActive: merged.red_flags.active,
       })
@@ -242,6 +279,7 @@ export const methodFitCapability: AiCapability = {
         hard: merged.constraints.hard.value,
         soft: merged.constraints.soft.value,
       },
+      "method_fit.profile": (merged as any).profile,
       "method_fit.red_flags": merged.red_flags,
       "method_fit.hypnosis_fit": merged.hypnosis_fit,
       "method_fit.unknown_candidates": merged.unknown_candidates,
