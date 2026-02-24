@@ -43,6 +43,12 @@ type KernelResponse = {
   log?: any
 }
 
+type TranscriptResponse = {
+  conversation_id: string
+  limit_turns: number
+  messages: Array<{ role: "user" | "assistant"; text: string; revision: number }>
+}
+
 type ChatMessage = {
   id: string
   role: "assistant" | "user"
@@ -193,6 +199,16 @@ export default function Chatbot() {
     appendMessage({ id: `user-${safeId()}`, role: "user", text: message })
   }
 
+  async function fetchTranscript(conversationId: string, limitTurns = 20): Promise<ChatMessage[]> {
+    const res = await fetch(`/api/transcript?conversation_id=${encodeURIComponent(conversationId)}&limit_turns=${limitTurns}`)
+    if (!res.ok) return []
+    const data: TranscriptResponse = await res.json()
+    const items = Array.isArray(data?.messages) ? data.messages : []
+    return items
+      .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.text === "string")
+      .map((m, i) => ({ id: `${m.role}-${m.revision}-${i}-${safeId()}`, role: m.role, text: m.text }))
+  }
+
   function showHeaderNavHint(text: string) {
     if (headerNavHintTimerRef.current) {
       window.clearTimeout(headerNavHintTimerRef.current)
@@ -266,12 +282,23 @@ export default function Chatbot() {
       const fromNode = state.active_node
       const data = await callKernel(state, nextInput)
 
-      if (nextInput.type === "THREAD_CREATE" || nextInput.type === "THREAD_BACK") {
-        // Thread-level navigation is platform-managed. UI holds no per-thread transcript, so reset.
-        setMessages([])
+      const isThreadSelectionFromChooser =
+        fromNode === "THREAD_CHOOSER" &&
+        nextInput.type === "FREE_TEXT" &&
+        !!opts?.silentUser &&
+        (nextInput.text === "new" || nextInput.text === "continue" || nextInput.text.startsWith("c:"))
+
+      const isThreadLevelNav = nextInput.type === "THREAD_CREATE" || nextInput.type === "THREAD_BACK"
+
+      // Rehydrate transcript for the selected / navigated thread.
+      if ((isThreadSelectionFromChooser || isThreadLevelNav) && data?.state?.conversation_id) {
+        const transcript = await fetchTranscript(data.state.conversation_id, 20)
+        setMessages(transcript)
         setInput("")
         setHeaderNavHint(null)
-      } else if (nextInput.type === "EXPLICIT_TRANSITION") {
+      }
+
+      if (nextInput.type === "EXPLICIT_TRANSITION") {
         const fromLabel = NODE_LABELS[fromNode] ?? fromNode
         const toNode = data?.state?.active_node ?? nextInput.target
         const toLabel = NODE_LABELS[toNode] ?? toNode
@@ -285,7 +312,18 @@ export default function Chatbot() {
       const assistantText =
         (data.transition?.response_message as string | undefined) ?? normalizeAssistantMessage(data.state)
 
-      appendAssistantMessage(assistantText)
+      // If we just rehydrated transcript, don't append an extra assistant message.
+      if (!(isThreadSelectionFromChooser || isThreadLevelNav)) {
+        appendAssistantMessage(assistantText)
+      } else {
+        // If transcript is empty (e.g. brand new thread), show current node message.
+        setMessages((prev) => {
+          if (prev.length > 0) return prev
+          const msg = (assistantText ?? "").trim()
+          if (!msg) return prev
+          return [{ id: `assistant-${safeId()}`, role: "assistant", text: msg }]
+        })
+      }
     } finally {
       setLoading(false)
     }
