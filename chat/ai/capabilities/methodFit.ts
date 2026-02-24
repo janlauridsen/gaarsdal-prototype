@@ -82,6 +82,10 @@ function buildFallbackQuestionFromMissing(missing: string[]): string {
   if (set.has("constraints")) {
     return "Er der noget du vil undgå (fx nåle, berøring, øvelser hjemme, kosttilskud) — eller noget du foretrækker ift. formen?"
   }
+  if (set.has("preferences")) {
+    // Eget spørgsmål for præferencer, så vi ikke låser os fast hvis constraints-spørgsmålet allerede er stillet.
+    return "Har du en præference for formen (fx samtale, kropsbehandling, eller hjemmeøvelser) — eller er du åben?"
+  }
   if (set.has("red_flags")) {
     return "Er der tegn der bør tjekkes sundhedsfagligt først (fx nye symptomer, stærke smerter, feber, blod, udtalt vægttab) – eller er det allerede undersøgt?"
   }
@@ -105,7 +109,7 @@ function buildRecommendationMessage(params: {
   const summaryBits: string[] = []
   if (presenting_problem?.trim()) summaryBits.push(presenting_problem.trim())
   if (desired_outcome?.trim()) summaryBits.push(`mål: ${desired_outcome.trim()}`)
-  const summary = summaryBits.length ? summaryBits.join(" • ") : "Ud fra det du har delt" 
+  const summary = summaryBits.length ? summaryBits.join(" • ") : "Ud fra det du har delt"
 
   const lines: string[] = []
 
@@ -127,7 +131,7 @@ function buildRecommendationMessage(params: {
   // 2) Ranked table
   const tableRows: Array<{ label: string; fit: string; evidence: string; why: string }> = []
   const addRow = (m: { label: string; fit: any; evidence_tier: any; why: string[] }) => {
-    const fit = m.fit === "primary" ? "Primær" : m.fit === "secondary" ? "Supplement" : "Lav" 
+    const fit = m.fit === "primary" ? "Primær" : m.fit === "secondary" ? "Supplement" : "Lav"
     const why = (m.why?.[0] ?? "").replace(/\s+/g, " ").trim()
     tableRows.push({ label: m.label, fit, evidence: evidenceLabel(m.evidence_tier), why })
   }
