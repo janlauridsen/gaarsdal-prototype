@@ -27,8 +27,7 @@ import { enqueueJob, makeJobId } from "../../chat/async/queue"
 import { runReflectionCbaUpdate } from "../../chat/reflection/cba"
 
 // Single raw stream
-import { appendRawTurn } from "../../chat/raw/store"
-import { readRawTurns } from "../../chat/raw/store"
+import { appendRawTurn, readRawTurns } from "../../chat/raw/store"
 
 type ChatRequestBody = {
   state: any
@@ -257,20 +256,17 @@ async function maybeAutoLabelThread(params: {
 
   const existing = index0.threads.find((t) => t.conversation_id === params.conversationId)
   const needsTitle = !existing || !existing.title?.trim()
-  const needsPreviewUpdate = true // preview should track latest user input
 
   // Ensure thread exists in index (covers restores or direct navigation).
   let index1 = upsertThread({ index: index0, conversationId: params.conversationId })
 
+  // Title text is derived from the FIRST user input in the thread.
   const titleText = await (async () => {
     if (!needsTitle) return ""
-
-    // Derive from the FIRST user input in the thread.
-    // We read a generous tail window; for small threads this includes the whole conversation.
     const rawTurns = await readRawTurns({ conversationId: params.conversationId, limit: 500 })
     const firstUser = rawTurns.find((t) => t && t.input_type === "FREE_TEXT" && typeof t.user_input === "string")
-    const firstText = (firstUser?.user_input ?? "").trim()
-    if (firstText && !isControlInput(firstText) && firstText.length >= 3) return firstText
+    const firstText = String(firstUser?.user_input ?? "").trim()
+    if (firstText && !isControlInput(firstText)) return firstText
     return userText
   })()
 
@@ -278,15 +274,15 @@ async function maybeAutoLabelThread(params: {
     index: index1,
     conversationId: params.conversationId,
     titleText,
-    previewText: needsPreviewUpdate ? userText : "",
+    previewText: userText,
     maxTitleChars: 60,
     maxPreviewChars: 120,
     setTitleIfEmpty: true,
     alwaysUpdatePreview: true,
   })
+
   index1 = setActiveThread({ index: index1, conversationId: params.conversationId })
 
-  // Only write if changed materially (simple JSON compare).
   if (JSON.stringify(index0) === JSON.stringify(index1)) return
 
   await writeThreadIndex({ userKey: params.userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
