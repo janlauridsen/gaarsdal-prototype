@@ -82,6 +82,12 @@ export function mergeConfidenceValue<T>(
 }
 
 export type MethodFitPatchV1 = {
+  profile?: {
+    motivation_stage?: ConfidenceValue<"ready" | "planning" | "ambivalent" | null>
+    previous_attempts?: ConfidenceValue<string | null>
+    preferences?: ConfidenceValue<string | null>
+    aversions?: ConfidenceValue<string | null>
+  }
   scope?: {
     presenting_problem?: ConfidenceValue<string | null>
     desired_outcome?: ConfidenceValue<string | null>
@@ -101,6 +107,29 @@ export function mergeMethodFitCase(
   patch: MethodFitPatchV1
 ): MethodFitCaseSchemaV1 {
   const next: MethodFitCaseSchemaV1 = JSON.parse(JSON.stringify(current))
+
+  // Backward compatibility: older stored cases may not have `profile`.
+  // Ensure it exists before merging.
+  if (!(next as any).profile) {
+    ;(next as any).profile = {
+      motivation_stage: { value: null, confidence: 0.0 },
+      previous_attempts: { value: null, confidence: 0.0 },
+      preferences: { value: null, confidence: 0.0 },
+      aversions: { value: null, confidence: 0.0 },
+    }
+  }
+
+  if (patch.profile?.motivation_stage)
+    next.profile.motivation_stage = mergeConfidenceValue(next.profile.motivation_stage, patch.profile.motivation_stage)
+  if (patch.profile?.previous_attempts)
+    next.profile.previous_attempts = mergeConfidenceValue(
+      next.profile.previous_attempts,
+      patch.profile.previous_attempts
+    )
+  if (patch.profile?.preferences)
+    next.profile.preferences = mergeConfidenceValue(next.profile.preferences, patch.profile.preferences)
+  if (patch.profile?.aversions)
+    next.profile.aversions = mergeConfidenceValue(next.profile.aversions, patch.profile.aversions)
 
   if (patch.scope?.presenting_problem)
     next.scope.presenting_problem = mergeConfidenceValue(
