@@ -11,7 +11,9 @@ export type MethodFitFocusPlanV1 = {
   revision: number
 
   // High-level gaps that should be filled before recommending.
-  missing_fields: Array<"presenting_problem" | "desired_outcome" | "problem_tags" | "constraints"> 
+  // Note: "preferences" is intentionally separated from constraints, since users often have
+  // form/method preferences even when they have no strict constraints.
+  missing_fields: Array<"presenting_problem" | "desired_outcome" | "problem_tags" | "constraints" | "preferences"> 
 
   suggested_questions: Array<{
     field_path: string
@@ -110,6 +112,7 @@ export function buildMethodFitFocusPlan(params: {
   const hasTags = caseData.problem_tags.value.length > 0 || mentionTags.length > 0
   const hasPresenting = Boolean(caseData.scope.presenting_problem.value?.trim())
   const hasOutcome = Boolean(caseData.scope.desired_outcome.value?.trim())
+  const hasPreferences = Boolean((caseData as any).profile?.preferences?.value?.trim())
   // Constraints can be explicitly "none" (e.g. user answers "nej").
   // Treat constraints as "known" if either list has items OR we have non-trivial confidence.
   // This avoids repeatedly asking the same constraints question after the user has answered.
@@ -127,6 +130,7 @@ export function buildMethodFitFocusPlan(params: {
   if (!hasOutcome) missing.push("desired_outcome")
   if (!hasTags) missing.push("problem_tags")
   if (!hasConstraints) missing.push("constraints")
+  if (!hasPreferences) missing.push("preferences")
 
   // Safety: if red flags are active, we consider this "ready" only in the sense of giving a safety message.
   const ready = missing.length === 0
@@ -156,6 +160,9 @@ export function buildMethodFitFocusPlan(params: {
     pick("problem_tags", qTags)
   } else if (missing.includes("constraints")) {
     pick("constraints", qConstraints)
+  } else if (missing.includes("preferences")) {
+    // Reuse constraints question (it also asks about preferences) but route the field-path to profile.
+    pick("profile.preferences", qConstraints)
   } else if (missing.includes("desired_outcome")) {
     pick("scope.desired_outcome", qOutcome)
   }
