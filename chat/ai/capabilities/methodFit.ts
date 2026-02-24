@@ -1,5 +1,5 @@
 // chat/ai/capabilities/methodFit.ts
-// Version: 2026-02-24 (build fix: AiCapabilityResult.debug)
+// Build fix: AiCapabilityResult.debug must be { capability: string; used_fallback: boolean; }
 
 import { Transition } from "../../kernel/types"
 import { readMethodFitCase, writeMethodFitCase } from "../../persistence/methodFitCaseStore"
@@ -39,7 +39,6 @@ export const methodFitCapability: AiCapability = {
 
     const userText = (context.userText ?? "").trim()
 
-    // Optional: cap transcript if needed (kept local to avoid mutating stored meta here)
     const cappedTranscript =
       transcript.length > MAX_TRANSCRIPT_TURNS ? transcript.slice(-MAX_TRANSCRIPT_TURNS) : transcript
 
@@ -65,15 +64,12 @@ export const methodFitCapability: AiCapability = {
 
     // --- Deterministic preference capture (loop fix) ---
     const isBareNo = userText.toLowerCase() === "nej"
-    let deterministicPreferenceApplied = false
-
     if (isOpenOrNoPreference(userText) || (isBareNo && lastAssistantAskedPreferences(cappedTranscript))) {
       ;(merged as any).profile = (merged as any).profile ?? {}
       ;(merged as any).profile.preferences = {
         value: "ingen præference (åben)",
         confidence: 0.85,
       }
-      deterministicPreferenceApplied = true
     }
 
     const recommendations = buildRecommendations({
@@ -115,11 +111,8 @@ export const methodFitCapability: AiCapability = {
     return {
       transition,
       debug: {
-        capability_id: "method-fit-v1",
-        extractionOk,
-        deterministicPreferenceApplied,
-        missing_fields: merged.focus_plan.missing_fields,
-        ready_for_recommendation: merged.focus_plan.ready_for_recommendation,
+        capability: "method-fit-v1",
+        used_fallback: !extractionOk,
       },
     }
   },
