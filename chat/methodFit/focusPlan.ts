@@ -68,6 +68,13 @@ function questionAlreadyAskedRecently(
   return hit >= Math.max(2, Math.floor(tokens.length / 2))
 }
 
+
+function isStandaloneNo(userText: string): boolean {
+  const t = String(userText ?? "").trim().toLowerCase()
+  // Treat short negations as "no constraints / no preference" ONLY when we can infer context from recent assistant question.
+  return t === "nej" || t === "no" || t === "næh" || t === "nah"
+}
+
 function detectConstraintMentions(userText: string): { hard: HardConstraint[]; soft: SoftPreference[] } {
   const t = String(userText ?? "").toLowerCase()
   const hard: HardConstraint[] = []
@@ -124,6 +131,13 @@ export function buildMethodFitFocusPlan(params: {
   const mentionTags = detectProblemTagMentions(lastUserText)
   const mentionConstraints = detectConstraintMentions(lastUserText)
 
+
+  const recent = recentTranscriptText(transcript, 4)
+  const standaloneNo = isStandaloneNo(lastUserText)
+  const userSaidNoToConstraints =
+    standaloneNo && /(noget\s+du\s+vil\s+undgå|vil\s+undgå|nåle|berøring|kosttilskud|hjemmeøvelser|øvelser\s+hjemme)/.test(recent)
+  const userSaidNoToPreferences =
+    standaloneNo && /(præference\s+for\s+formen|formen\s*\(|samtale|kropsbehandling|hjemmeøvelser)/.test(recent)
   const hasTags = caseData.problem_tags.value.length > 0 || mentionTags.length > 0
   const hasPresenting = Boolean(caseData.scope.presenting_problem.value?.trim())
   const hasOutcome = Boolean(caseData.scope.desired_outcome.value?.trim())
@@ -131,6 +145,7 @@ export function buildMethodFitFocusPlan(params: {
   const hasPreferences =
     Boolean((caseData as any).profile?.preferences?.value?.trim()) ||
     detectOpenPreferenceMention(lastUserText)
+    || userSaidNoToPreferences
 
   const hardConf = Number(caseData.constraints.hard.confidence ?? 0)
   const softConf = Number(caseData.constraints.soft.confidence ?? 0)
@@ -141,6 +156,7 @@ export function buildMethodFitFocusPlan(params: {
     Math.max(hardConf, softConf) >= 0.25 ||
     mentionConstraints.hard.length > 0 ||
     mentionConstraints.soft.length > 0
+    || userSaidNoToConstraints
 
   const missing: MethodFitFocusPlanV1["missing_fields"] = []
 
