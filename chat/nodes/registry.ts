@@ -91,13 +91,11 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       on_success_to: "THREAD_CHOOSER",
       on_error_to: "THREAD_CHOOSER",
     },
-    meta_domains_written: [
-      "profile.status",
+    meta_domains_written: ["ux", "profile.status",
       "profile.last_seen_at",
       "threads.count",
       "threads.active",
-      "threads.choices",
-    ],
+      "threads.choices",],
   },
 
   THREAD_CHOOSER: {
@@ -118,7 +116,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       on_success_to: "HOME",
       on_error_to: "THREAD_CHOOSER",
     },
-    meta_domains_written: ["threads.choices", "threads.count", "threads.active"],
+    meta_domains_written: ["ux", "threads.choices", "threads.count", "threads.active"],
   },
 
   POSTPROC_STEP_1_SCAN: {
@@ -134,7 +132,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       on_success_to: "POSTPROC_STEP_2_BUILD",
       on_error_to: "HOME",
     },
-    meta_domains_written: ["postproc.last"],
+    meta_domains_written: ["ux", "postproc.last"],
   },
 
   POSTPROC_STEP_2_BUILD: {
@@ -150,7 +148,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       on_success_to: "POSTPROC_STEP_3_PUBLISH",
       on_error_to: "HOME",
     },
-    meta_domains_written: ["postproc.last"],
+    meta_domains_written: ["ux", "postproc.last"],
   },
 
   POSTPROC_STEP_3_PUBLISH: {
@@ -166,7 +164,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       on_success_to: "HOME",
       on_error_to: "HOME",
     },
-    meta_domains_written: ["postproc.last"],
+    meta_domains_written: ["ux", "postproc.last"],
   },
 
   HOME: {
@@ -193,7 +191,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       router_id: "home-router-v1",
       candidates: ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "REFLECTION", "BOOKING", "DEV_SANDBOX_INTRO"],
     },
-    meta_domains_written: ["router.decision"],
+    meta_domains_written: ["ux", "router.decision"],
   },
 
   // ----------- DEV SANDBOX FLOW (FORM → TOOL → CHECKPOINT) -----------
@@ -212,7 +210,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     allow_parentese: false,
     allowed_exits: ["DEV_SANDBOX_FORM", "HOME"],
     capability_id: null,
-    meta_domains_written: [],
+    meta_domains_written: ["ux"],
   },
 
   DEV_SANDBOX_FORM: {
@@ -256,7 +254,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       on_submit_to: "DEV_SANDBOX_TOOL_APPLY",
       allow_partial: false,
     },
-    meta_domains_written: ["form.last"],
+    meta_domains_written: ["ux", "form.last"],
   },
 
   DEV_SANDBOX_TOOL_APPLY: {
@@ -272,7 +270,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       on_success_to: "DEV_SANDBOX_CHECKPOINT",
       on_error_to: "DEV_SANDBOX_FORM",
     },
-    meta_domains_written: ["sandbox.apply_result"],
+    meta_domains_written: ["ux", "sandbox.apply_result"],
   },
 
   DEV_SANDBOX_CHECKPOINT: {
@@ -287,7 +285,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       on_done_to: "DEV_SANDBOX_DONE",
       commit_domains: [],
     },
-    meta_domains_written: ["checkpoint.last"],
+    meta_domains_written: ["ux", "checkpoint.last"],
   },
 
   DEV_SANDBOX_DONE: {
@@ -304,7 +302,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: ["HOME"],
-    meta_domains_written: [],
+    meta_domains_written: ["ux"],
   },
 
   // ----------- EXISTING NODES -----------
@@ -319,7 +317,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     allow_parentese: true,
     allowed_exits: ["HOME"],
     capability_id: "gen-hypno-v1",
-    meta_domains_written: ["gen_hypno.transcript", "gen_hypno.last_topic"],
+    meta_domains_written: ["ux", "gen_hypno.transcript", "gen_hypno.last_topic"],
   },
 
   TRIAGE: {
@@ -341,8 +339,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "HOME",
     ],
     capability_id: "triage-relevance-v1",
-    meta_domains_written: [
-      "triage.question_count",
+    meta_domains_written: ["ux", "triage.question_count",
       "triage.outcome",
       "triage.summary",
       "triage.unclear_points",
@@ -367,8 +364,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "memory_candidates.goal",
       "memory_candidates.triggers",
       "memory_candidates.patterns",
-      "memory_candidates.summary",
-    ],
+      "memory_candidates.summary",],
   },
 
   METHOD_FIT: {
@@ -382,8 +378,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     // Allow self-hop so the capability can stay in METHOD_FIT without dead-ends.
     allowed_exits: ["METHOD_FIT", "HOME", "BOOKING"],
     capability_id: "method-fit-v1",
-    meta_domains_written: [
-      "method_fit.transcript",
+    meta_domains_written: ["ux", "method_fit.transcript",
       "method_fit.summary",
 
       // v3: schema-backed profile fields used by the capability
@@ -408,8 +403,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "method_fit.confidence",
       "method_fit.tags",
       "method_fit.next_question",
-      "method_fit.chips",
-    ],
+      "method_fit.chips",],
   },
 
   REFLECTION: {
@@ -423,7 +417,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     allow_parentese: true,
     allowed_exits: ["HOME"],
     capability_id: "reflection-v1",
-    meta_domains_written: ["reflection.transcript"],
+    meta_domains_written: ["ux", "reflection.transcript"],
   },
 
   TRIAGE_FIT_BOOKING: {
@@ -434,7 +428,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: QUICK_CONTACTS,
-    meta_domains_written: ["triage.outcome", "triage.summary", "triage.unclear_points"],
+    meta_domains_written: ["ux", "triage.outcome", "triage.summary", "triage.unclear_points"],
   },
 
   TRIAGE_NOT_RELEVANT: {
@@ -446,7 +440,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: QUICK_CONTACTS,
-    meta_domains_written: ["triage.outcome", "triage.summary", "triage.unclear_points"],
+    meta_domains_written: ["ux", "triage.outcome", "triage.summary", "triage.unclear_points"],
   },
 
   TRIAGE_NEEDS_ASSESSMENT: {
@@ -457,7 +451,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: QUICK_CONTACTS,
-    meta_domains_written: ["triage.outcome", "triage.summary", "triage.unclear_points"],
+    meta_domains_written: ["ux", "triage.outcome", "triage.summary", "triage.unclear_points"],
   },
 
   BOOKING: {
@@ -468,7 +462,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: ["MAIL", "TLF", "CONTACT_FORM", "HOME", "AKUT"],
-    meta_domains_written: [],
+    meta_domains_written: ["ux"],
   },
 
   MAIL: {
@@ -482,7 +476,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       show_default_chips: false,
     },
     allowed_exits: PARENTESE_EXITS,
-    meta_domains_written: [],
+    meta_domains_written: ["ux"],
   },
 
   TLF: {
@@ -496,7 +490,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       show_default_chips: false,
     },
     allowed_exits: PARENTESE_EXITS,
-    meta_domains_written: [],
+    meta_domains_written: ["ux"],
   },
 
   CONTACT_FORM: {
@@ -511,7 +505,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       show_default_chips: false,
     },
     allowed_exits: PARENTESE_EXITS,
-    meta_domains_written: [],
+    meta_domains_written: ["ux"],
   },
 
   AKUT: {
@@ -526,7 +520,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       show_default_chips: false,
     },
     allowed_exits: PARENTESE_EXITS,
-    meta_domains_written: [],
+    meta_domains_written: ["ux"],
   },
 })
 
