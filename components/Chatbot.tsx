@@ -384,6 +384,11 @@ export default function Chatbot() {
       appendUserMessage(label)
     }
 
+    if (target === "TLF") appendAssistantMessage("Åbner telefon…")
+    if (target === "MAIL") appendAssistantMessage("Åbner e-mail…")
+    if (target === "AKUT") appendAssistantMessage("Viser akut-info…")
+    if (target === "CONTACT_FORM") appendAssistantMessage("Åbner kontaktformular…")
+
     dispatch({ type: "EXPLICIT_TRANSITION", target })
   }
 
