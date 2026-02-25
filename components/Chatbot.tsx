@@ -15,6 +15,7 @@ import {
   EnvelopeIcon,
   LinkIcon,
   ExclamationTriangleIcon,
+  PaperAirplaneIcon,
 } from "@heroicons/react/24/outline"
 
 import styles from "./Chatbot.module.css"
@@ -168,7 +169,7 @@ export default function Chatbot() {
   useEffect(() => {
     if (!open) return
     endRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, open, headerNavHint, expanded])
+  }, [messages, open, headerNavHint, expanded, loading])
 
   // Rotate waiting text only while loading.
   useEffect(() => {
@@ -350,6 +351,13 @@ export default function Chatbot() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function sendCurrentInput() {
+    const text = input.trim()
+    if (!text) return
+    setInput("")
+    dispatch({ type: "FREE_TEXT", text })
   }
 
   function openChat() {
@@ -728,13 +736,20 @@ export default function Chatbot() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault()
-                      const text = input.trim()
-                      if (!text) return
-                      setInput("")
-                      dispatch({ type: "FREE_TEXT", text })
+                      sendCurrentInput()
                     }
                   }}
                 />
+
+                <button
+                  className={styles.sendBtn}
+                  onClick={sendCurrentInput}
+                  title="Send"
+                  aria-label="Send"
+                  disabled={!state || !freeTextEnabled || loading || !input.trim()}
+                >
+                  <PaperAirplaneIcon className={styles.sendBtnIcon} />
+                </button>
               </div>
             </div>
           </div>
