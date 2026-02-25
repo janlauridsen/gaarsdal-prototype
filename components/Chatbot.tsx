@@ -136,6 +136,7 @@ export default function Chatbot() {
   const headerNavHintTimerRef = useRef<number | null>(null)
 
   const endRef = useRef<HTMLDivElement | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const didAutoStartNewThreadRef = useRef(false)
 
   // Global footer actions must always be reachable, regardless of the current node's allowed_transitions.
@@ -169,7 +170,7 @@ export default function Chatbot() {
   useEffect(() => {
     if (!open) return
     endRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, open, headerNavHint, expanded, loading])
+  }, [messages, open, headerNavHint, expanded])
 
   // Rotate waiting text only while loading.
   useEffect(() => {
@@ -351,13 +352,6 @@ export default function Chatbot() {
     } finally {
       setLoading(false)
     }
-  }
-
-  function sendCurrentInput() {
-    const text = input.trim()
-    if (!text) return
-    setInput("")
-    dispatch({ type: "FREE_TEXT", text })
   }
 
   function openChat() {
@@ -726,31 +720,39 @@ export default function Chatbot() {
               </div>
 
               <div className={styles.inputRow}>
-                <textarea
-                  className={styles.textarea}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder={placeholder}
-                  rows={2}
-                  disabled={!state || !freeTextEnabled}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault()
-                      sendCurrentInput()
-                    }
-                  }}
-                />
-
-                <button
-                  className={styles.sendBtn}
-                  onClick={sendCurrentInput}
-                  title="Send"
-                  aria-label="Send"
-                  disabled={!state || !freeTextEnabled || loading || !input.trim()}
-                >
-                  <PaperAirplaneIcon className={styles.sendBtnIcon} />
-                </button>
-              </div>
+  <textarea
+    ref={textareaRef}
+    className={styles.textarea}
+    value={input}
+    onChange={(e) => setInput(e.target.value)}
+    placeholder={placeholder}
+    rows={2}
+    disabled={!state || !freeTextEnabled}
+    onKeyDown={(e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault()
+        const text = input.trim()
+        if (!text) return
+        setInput("")
+        dispatch({ type: "FREE_TEXT", text })
+      }
+    }}
+  />
+  <button
+    className={styles.sendBtn}
+    onClick={() => {
+      const text = input.trim()
+      if (!text) return
+      setInput("")
+      dispatch({ type: "FREE_TEXT", text })
+    }}
+    title="Send"
+    aria-label="Send"
+    disabled={!state || !freeTextEnabled || loading || !input.trim()}
+  >
+    <PaperAirplaneIcon className={styles.sendBtnIcon} />
+  </button>
+</div>
             </div>
           </div>
         </>
