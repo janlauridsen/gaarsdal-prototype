@@ -4,14 +4,14 @@ import { getNode } from "../nodes/registry"
 export function createInitialState(
   conversation_id: string
 ): ConversationState {
-  const home = getNode("HOME")
+  const entry = getNode("GEN_HYPNO")
 
   return {
     conversation_id,
     revision: 0,
-    active_node: home.id,
-    active_node_message: home.message,
-    allowed_transitions: home.allowed_exits,
+    active_node: entry.id,
+    active_node_message: entry.message,
+    allowed_transitions: entry.allowed_exits,
     meta: {},
     status: "active",
     parentese_stack: [],
