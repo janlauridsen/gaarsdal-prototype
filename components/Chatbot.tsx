@@ -33,6 +33,7 @@ type ConversationState = {
 
 type InputSignal =
   | { type: "EXPLICIT_TRANSITION"; target: string }
+  | { type: "UI_ACTION"; action: "TLF" | "MAIL" | "AKUT" | "CONTACT_FORM" }
   | { type: "FREE_TEXT"; text: string }
   | { type: "SYSTEM_INIT" }
   | { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
@@ -368,7 +369,7 @@ export default function Chatbot() {
     setExpanded((v) => !v)
   }
 
-  function go(target: string) {
+  async function go(target: string) {
     if (!state) return
 
     const allowed = new Set(state.allowed_transitions ?? [])
@@ -384,10 +385,22 @@ export default function Chatbot() {
       appendUserMessage(label)
     }
 
-    if (target === "TLF") appendAssistantMessage("Åbner telefon…")
-    if (target === "MAIL") appendAssistantMessage("Åbner e-mail…")
-    if (target === "AKUT") appendAssistantMessage("Viser akut-info…")
-    if (target === "CONTACT_FORM") appendAssistantMessage("Åbner kontaktformular…")
+    // Footer actions are UI-only and must not change active nodes.
+    if (target === "TLF" || target === "MAIL" || target === "AKUT" || target === "CONTACT_FORM") {
+      if (target === "TLF") appendAssistantMessage("Åbner telefon…")
+      if (target === "MAIL") appendAssistantMessage("Åbner e-mail…")
+      if (target === "AKUT") appendAssistantMessage("Viser akut-info…")
+      if (target === "CONTACT_FORM") appendAssistantMessage("Åbner kontaktformular…")
+
+      // Log + (optionally) render body text via backend without switching nodes.
+      await dispatch({ type: "UI_ACTION", action: target as any })
+
+      // CONTACT_FORM navigates to the dedicated page.
+      if (target === "CONTACT_FORM") {
+        router.push("/kontakt")
+      }
+      return
+    }
 
     dispatch({ type: "EXPLICIT_TRANSITION", target })
   }
