@@ -18,6 +18,26 @@ const GLOBAL_EXITS: string[] = ["HOME", "MAIL", "TLF", "CONTACT_FORM", "AKUT", "
 
 type UxEvent = { type: "popup_opened" | "navigate"; id: string; ts: string }
 
+function uiActionBody(action: "TLF" | "MAIL" | "AKUT" | "CONTACT_FORM"): string {
+  switch (action) {
+    case "TLF":
+      return "Du kan ringe eller sende sms til 42 80 74 74. Jeg svarer, så snart jeg kan."
+    case "MAIL":
+      return "Du kan kontakte mig via e-mail på jan@gaarsdal.net."
+    case "AKUT":
+      return (
+        "Akut hjælp i Danmark: Ring 112 ved livstruende situationer. " +
+        "Voksne: Livslinien 70 201 201 (døgnåben). " +
+        "Børn og unge: BørneTelefonen 116 111. " +
+        "Psykiatrisk akutmodtagelse kan kontaktes via 1813 (Region Hovedstaden) eller din region."
+      )
+    case "CONTACT_FORM":
+      // Navigation happens in the frontend. Keep the response empty to avoid duplicating
+      // the current node message.
+      return ""
+  }
+}
+
 function nextUxMetaValue(state: ConversationState, event: UxEvent): unknown {
   const current = (state.meta as any)?.ux?.value
   const counters = { ...(current?.counters ?? {}) } as Record<string, number>
@@ -125,6 +145,18 @@ function buildTransition(
         reason: "explicit transition",
         ...(uxMetaDelta ? { meta_delta: uxMetaDelta } : {}),
       }
+
+    case "UI_ACTION": {
+      // UI actions (footer) must never change nodes. They only emit audit messages and UX meta.
+      const uxMetaDelta = uxMetaDeltaForGlobalAction(state, input.action)
+      return {
+        type: "NODE_HOP",
+        from: state.active_node,
+        reason: "ui action",
+        response_message: uiActionBody(input.action),
+        ...(uxMetaDelta ? { meta_delta: uxMetaDelta } : {}),
+      }
+    }
 
     case "FREE_TEXT": {
       const node = getNode(state.active_node)
