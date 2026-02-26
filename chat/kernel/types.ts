@@ -45,6 +45,7 @@ export type Transition = {
 
 export type InputSignal =
   | { type: "EXPLICIT_TRANSITION"; target: NodeId }
+  | { type: "UI_ACTION"; action: "TLF" | "MAIL" | "AKUT" | "CONTACT_FORM" }
   | { type: "FREE_TEXT"; text: string }
   | {
       type: "FREE_TEXT_RESOLVED"
