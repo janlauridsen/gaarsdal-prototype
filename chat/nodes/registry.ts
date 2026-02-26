@@ -312,7 +312,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     kind: "DIALOG",
     goal: "Generelt om hypnoterapi",
     message:
-      "Spørg mig om hypnoterapi: hvad det er, hvordan et forløb typisk foregår, hvad man ofte arbejder med, og hvad du kan forvente. Jeg deler viden og erfaring—ikke behandling i chatten.",
+      "Velkommen. Du er i dialog med hypnoterapeuten. Fortæl kort hvad du ønsker hjælp eller indsigt i. Jeg kan forklare hypnoterapi og hjælpe dig med refleksion—ikke behandling i chatten.",
     allow_free_text: true,
     allow_parentese: true,
     allowed_exits: ["HOME"],
