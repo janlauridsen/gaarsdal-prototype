@@ -1,2 +1,3 @@
+// Barrel file: avoid wildcard re-export collisions (e.g. NodeKind) between modules.
 export * from "./types";
-export * from "./nodes";
+export { NODES } from "./nodes";
