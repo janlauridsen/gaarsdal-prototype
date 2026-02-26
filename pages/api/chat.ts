@@ -50,6 +50,19 @@ const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 const PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 
+function setCors(req: NextApiRequest, res: NextApiResponse) {
+  // The widget can be embedded on other origins. If that happens, browsers will send
+  // an OPTIONS preflight for JSON POST requests. We must respond to OPTIONS.
+  //
+  // Because we rely on a cookie for user identity, we must echo the Origin when present.
+  const origin = typeof req.headers.origin === "string" ? req.headers.origin : "*"
+  res.setHeader("Access-Control-Allow-Origin", origin)
+  res.setHeader("Vary", "Origin")
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+  res.setHeader("Access-Control-Allow-Credentials", "true")
+}
+
 // Defaults
 const DEFAULT_RAW_TTL_DAYS = 14
 
@@ -560,6 +573,13 @@ function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
 }
 
 function validateRequest(req: NextApiRequest, res: NextApiResponse): ChatRequestBody | null {
+  setCors(req, res)
+
+  if (req.method === "OPTIONS") {
+    res.status(200).end()
+    return null
+  }
+
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method Not Allowed" })
     return null
