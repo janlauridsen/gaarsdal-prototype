@@ -159,8 +159,22 @@
   flex: 1;
   overflow-y: auto;
   padding: 14px;
-    padding-bottom: 28px;
-background: #F6F5F2;
+  padding-bottom: 28px;
+  background: #F6F5F2;
+  position: relative;
+}
+
+/* Watermark (logo) inside chat window */
+.messages::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/gaarsdal-logo-2026-02.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: min(72%, 340px);
+  opacity: 0.045;
+  pointer-events: none;
 }
 
 .message {
@@ -172,6 +186,8 @@ background: #F6F5F2;
   margin-bottom: 8px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  position: relative;
+  z-index: 1;
 }
 
 .messageBot {
@@ -188,45 +204,75 @@ background: #F6F5F2;
   text-align: left;
 }
 
-.liveIndicator {
+
+/* Header heart (blinks while loading) */
+.headerHeart {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-size: 16px;
+  line-height: 1;
+  color: rgba(27, 30, 28, 0.45);
+  user-select: none;
+}
+
+.headerHeartActive {
+  color: rgba(27, 30, 28, 0.9);
+  animation: headerBlink 1s ease-in-out infinite;
+}
+
+@keyframes headerBlink {
+  0% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+}
+
+/* Threads overlay */
+.threadsOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: rgba(246, 245, 242, 0.96);
+  backdrop-filter: blur(6px);
+  border-radius: 0;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
-.liveHeart {
-  display: inline-block;
-  font-size: 18px;
-  line-height: 1;
-  animation: heartbeat 1.15s ease-in-out infinite;
-  transform-origin: center;
+.threadsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.liveText {
-  opacity: 0.85;
+.threadsTitle {
+  font-weight: 800;
+  font-size: 14px;
+  color: rgba(27, 30, 28, 0.9);
 }
 
-@keyframes heartbeat {
-  0% {
-    transform: scale(1);
-    opacity: 0.75;
-  }
-  20% {
-    transform: scale(1.22);
-    opacity: 1;
-  }
-  40% {
-    transform: scale(1);
-    opacity: 0.85;
-  }
-  60% {
-    transform: scale(1.12);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0.75;
-  }
+.threadsBody {
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+.threadsHint {
+  font-size: 13px;
+  color: rgba(27, 30, 28, 0.72);
+  padding: 10px 4px;
 }
 
 .callout {
