@@ -10,7 +10,6 @@ import {
   CircleStackIcon,
   PlusIcon,
   ArrowUturnLeftIcon,
-  HomeIcon,
   PhoneIcon,
   EnvelopeIcon,
   LinkIcon,
@@ -78,17 +77,7 @@ const NODE_LABELS: Record<string, string> = {
   AKUT: "Akut",
 }
 
-const TOPIC_TOOLTIPS: Record<string, string> = {
-  GEN_HYPNO: "Fri samtale (ingen behandling i chatten).",
-  TRIAGE: "Kort afklaring med få spørgsmål.",
-  METHOD_FIT: "Overblik over alternativer (ikke behandling).",
-  REFLECTION: "Refleksionsdialog: intake og meningsskabelse (ingen øvelser).",
-  BOOKING: "Vælg kontaktvej for booking.",
-}
-
-// Topic buttons shown on the HOME screen. Booking is handled via the footer UI, not as a HOME topic.
-// NOTE: TRIAGE is intentionally excluded from the HOME menu (feature remains in codepaths).
-const TOPIC_NODES = ["GEN_HYPNO", "METHOD_FIT", "REFLECTION"] as const
+// (Topic menu removed)
 
 function safeId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`
@@ -126,12 +115,8 @@ export default function Chatbot() {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
 
-  // "System is alive" indicator text (rotates while waiting for backend).
-  const WAITING_TEXTS = useMemo(
-    () => ["Jeg arbejder…", "Læser…", "Samler trådene…", "Forbereder svar…"],
-    []
-  )
-  const [waitingTextIndex, setWaitingTextIndex] = useState(0)
+  // Threads overlay (drawer) lives on top of the chat view.
+  const [threadsOpen, setThreadsOpen] = useState(false)
 
   const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
   const headerNavHintTimerRef = useRef<number | null>(null)
@@ -173,13 +158,7 @@ export default function Chatbot() {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, open, headerNavHint, expanded])
 
-  // Rotate waiting text only while loading.
-  useEffect(() => {
-    if (!loading) return
-    setWaitingTextIndex(0)
-    const id = window.setInterval(() => setWaitingTextIndex((i) => (i + 1) % WAITING_TEXTS.length), 6600)
-    return () => window.clearInterval(id)
-  }, [loading, WAITING_TEXTS.length])
+  // (Loading indicator is shown in header as a blinking heart.)
 
   useEffect(() => {
     return () => {
@@ -408,6 +387,7 @@ export default function Chatbot() {
 
   // “Tråde” i header: tilbage til lobby / trådvalg
   function goToThreadChooser() {
+    setThreadsOpen(true)
     setMessages([])
     setInput("")
     setState(null)
@@ -442,18 +422,7 @@ export default function Chatbot() {
         }))
     : []
 
-  // Hide the topic menu immediately when the user selects a topic (explicit transition),
-  // so the HOME menu doesn't flash while waiting for the next node to render.
-  const showTopics = state?.active_node === "HOME" && !loading
-  const allowedSet = new Set(state?.allowed_transitions ?? [])
-  const topicButtons = showTopics
-    ? TOPIC_NODES.map((id) => ({
-        id,
-        label: NODE_LABELS[id] ?? id,
-        enabled: state ? allowedSet.has(id) || id === state.active_node : false,
-        tooltip: TOPIC_TOOLTIPS[id] ?? "",
-      })).filter((t) => t.id !== state?.active_node)
-    : []
+  // Topic/menu structure has been removed. All dialog happens in free text.
 
   // Auto: hvis der ingen tråde er, start ny tråd uden at brugeren skal skrive “new”.
   useEffect(() => {
@@ -475,9 +444,6 @@ export default function Chatbot() {
   }, [open, state?.active_node, threadCount])
 
   const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal}`
-
-  const showThreadChooserCards =
-    state?.active_node === "THREAD_CHOOSER" && threadChoices.length > 0 && state.status === "active"
 
   const normalizedThreadCards = useMemo(() => {
     const base = threadChoices
@@ -553,6 +519,14 @@ export default function Chatbot() {
                 </div>
 
                 <div className={styles.headerRight}>
+                  <span
+                    className={`${styles.headerHeart} ${loading ? styles.headerHeartActive : ""}`}
+                    aria-label={loading ? "Arbejder" : ""}
+                    title={loading ? "Arbejder…" : ""}
+                  >
+                    ♥
+                  </span>
+
                   <button
                     className={styles.iconBtn}
                     onClick={() => dispatch({ type: "THREAD_BACK" }, { silentUser: true })}
@@ -604,6 +578,56 @@ export default function Chatbot() {
             </div>
 
             <div className={styles.messages}>
+              {/* Threads overlay (drawer). Uses THREAD_CHOOSER state behind the scenes. */}
+              {threadsOpen && (
+                <div className={styles.threadsOverlay} role="dialog" aria-modal="true">
+                  <div className={styles.threadsHeader}>
+                    <div className={styles.threadsTitle}>Tråde</div>
+                    <button
+                      className={styles.iconBtn}
+                      onClick={() => setThreadsOpen(false)}
+                      aria-label="Luk tråde"
+                      title="Luk"
+                      disabled={loading}
+                    >
+                      <XMarkIcon className={styles.icon} />
+                    </button>
+                  </div>
+
+                  <div className={styles.threadsBody}>
+                    {state?.active_node !== "THREAD_CHOOSER" && (
+                      <div className={styles.threadsHint}>Henter tråde…</div>
+                    )}
+
+                    {state?.active_node === "THREAD_CHOOSER" && (
+                      <>
+                        {normalizedThreadCards.length > 0 ? (
+                          <div className={styles.topicGrid}>
+                            {normalizedThreadCards.map((c) => (
+                              <button
+                                key={c.id}
+                                className={styles.topicCard}
+                                onClick={async () => {
+                                  await dispatch({ type: "FREE_TEXT", text: c.id }, { silentUser: true })
+                                  setThreadsOpen(false)
+                                }}
+                                disabled={loading || !state}
+                                title={c.kind === "thread" ? trimDuplicateTitle(c.label) : ""}
+                              >
+                                <span className={styles.topicLabel}>{(c as any).uiLabel}</span>
+                                {!!(c as any).uiMeta && <span className={styles.topicMeta}>{(c as any).uiMeta}</span>}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className={styles.threadsHint}>Ingen tråde endnu.</div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {messages.map((m) => (
                 <div
                   key={m.id}
@@ -612,15 +636,6 @@ export default function Chatbot() {
                   {m.text}
                 </div>
               ))}
-
-              {loading && (
-                <div className={`${styles.message} ${styles.messageBot} ${styles.liveIndicator}`} aria-live="polite">
-                  <span className={styles.liveHeart} aria-hidden="true">
-                    ♥
-                  </span>
-                  <span className={styles.liveText}>{WAITING_TEXTS[waitingTextIndex]}</span>
-                </div>
-              )}
 
               {state?.status === "completed" && (
                 <div className={styles.callout}>
@@ -640,44 +655,6 @@ export default function Chatbot() {
                 </div>
               )}
 
-              {showThreadChooserCards && (
-                <div className="mt-3">
-                  <div className={styles.sectionTitle}>Tråde</div>
-                  <div className={styles.topicGrid}>
-                    {normalizedThreadCards.map((c) => (
-                      <button
-                        key={c.id}
-                        className={styles.topicCard}
-                        onClick={() => dispatch({ type: "FREE_TEXT", text: c.id }, { silentUser: true })}
-                        disabled={loading || !state}
-                        title={c.kind === "thread" ? trimDuplicateTitle(c.label) : ""}
-                      >
-                        <span className={styles.topicLabel}>{(c as any).uiLabel}</span>
-                        {!!(c as any).uiMeta && <span className={styles.topicMeta}>{(c as any).uiMeta}</span>}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {topicButtons.length > 0 && (
-                <div className="mt-3">
-                  <div className={styles.sectionTitle}>Emner</div>
-                  <div className={styles.topicGrid}>
-                    {topicButtons.map((t) => (
-                      <button
-                        key={t.id}
-                        className={styles.topicCard}
-                        onClick={() => go(t.id)}
-                        disabled={!t.enabled || loading || !state}
-                        title={t.tooltip}
-                      >
-                        <span className={styles.topicLabel}>{t.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {uiSuggestions.length > 0 && (
                 <div className="mt-3">
@@ -716,8 +693,8 @@ export default function Chatbot() {
 
             <div className={styles.footer}>
               <div className={styles.footerRow}>
-                <button className={styles.footerIcon} onClick={() => go("HOME")} title="Forside" aria-label="Forside">
-                  <HomeIcon className={styles.footerIconSvg} />
+                <button className={styles.footerIcon} onClick={goToThreadChooser} title="Tråde" aria-label="Tråde">
+                  <CircleStackIcon className={styles.footerIconSvg} />
                 </button>
                 <button className={styles.footerIcon} onClick={() => go("TLF")} title="Telefon" aria-label="Telefon">
                   <PhoneIcon className={styles.footerIconSvg} />
