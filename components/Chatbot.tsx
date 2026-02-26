@@ -280,6 +280,13 @@ export default function Chatbot() {
         const m = msgs[i]
         if (!m || (m.role !== "user" && m.role !== "assistant")) continue
         const text = String(m.content ?? "").trim()
+        if (m.role === "user") {
+          if (isThreadControlText(text)) continue
+          if (text.startsWith("UI_ACTION:")) continue
+          if (text.startsWith("EXPLICIT_TRANSITION:")) continue
+          if (text.startsWith("THREAD_")) continue
+          if (text.startsWith("SYSTEM")) continue
+        }
         if (!text) continue
         out.push({ id: `${conversationId}:${i}:${m.role}`, role: m.role, text })
       }
@@ -435,7 +442,7 @@ export default function Chatbot() {
     didAutoStartNewThreadRef.current = true
     ;(async () => {
       try {
-        await dispatch({ type: "FREE_TEXT", text: "new" }, { silentUser: true })
+        await dispatch({ type: "THREAD_CREATE", mode: "normal" }, { silentUser: true })
       } catch {
         // no-op
       }
