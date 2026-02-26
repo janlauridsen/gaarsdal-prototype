@@ -172,8 +172,8 @@
   background-image: url("/gaarsdal-logo-2026-02.png");
   background-repeat: no-repeat;
   background-position: center;
-  background-size: min(72%, 340px);
-  opacity: 0.12;
+  background-size: min(72%, 680px);
+  opacity: 0.5;
   pointer-events: none;
 }
 
