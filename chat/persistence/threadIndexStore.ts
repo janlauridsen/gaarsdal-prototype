@@ -229,6 +229,50 @@ export function setActiveThread(params: { index: ThreadIndex; conversationId: st
   return { ...next, threads: [updated, ...others] }
 }
 
+export function archiveThread(params: { index: ThreadIndex; conversationId: string }): ThreadIndex {
+  const ts = nowIso()
+  const conversationId = params.conversationId
+
+  // If the thread doesn't exist, no-op.
+  const exists = params.index.threads.some((t) => t.conversation_id === conversationId)
+  if (!exists) return params.index
+
+  const threads = params.index.threads.map((t) =>
+    t.conversation_id === conversationId
+      ? {
+          ...t,
+          status: "archived" as ThreadStatus,
+          updated_at: ts,
+        }
+      : t
+  )
+
+  // Remove navigation links that point to/from the archived thread.
+  const return_stack = (params.index.navigation?.return_stack ?? []).filter(
+    (l) => l.from !== conversationId && l.to !== conversationId
+  )
+
+  // If the archived thread was active, pick the most recent remaining active thread (if any).
+  const activeWasArchived = params.index.active_conversation_id === conversationId
+  const nextActiveId = activeWasArchived
+    ? (threads.find((t) => t.status === "active" && t.conversation_id !== conversationId)?.conversation_id ?? null)
+    : params.index.active_conversation_id
+
+  // Keep active threads first, and cap total.
+  const active = threads.filter((t) => t.status === "active")
+  const archived = threads.filter((t) => t.status === "archived")
+  const capped = [...active, ...archived].slice(0, MAX_THREADS)
+
+  const activeStillExists = nextActiveId ? capped.some((t) => t.conversation_id === nextActiveId) : false
+
+  return {
+    ...params.index,
+    active_conversation_id: activeStillExists ? nextActiveId : null,
+    threads: capped,
+    navigation: { return_stack },
+  }
+}
+
 export function applyAutoThreadLabelFromText(params: {
   index: ThreadIndex
   conversationId: string
