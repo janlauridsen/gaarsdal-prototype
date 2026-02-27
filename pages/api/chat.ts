@@ -153,6 +153,7 @@ function withThreadNavMeta(state: any, returnDepth: number): any {
       "threads.return_depth": { value: returnDepth, source_node: "SYSTEM_UI" },
     },
   }
+}
 
 type ThreadTab = { conversation_id: string; title: string; preview: string; status: "active" | "archived"; updated_at?: string }
 
@@ -182,9 +183,6 @@ function withThreadMeta(params: { state: any; index: any }): any {
       "threads.active_id": { value: activeId, source_node: "SYSTEM_UI" },
     },
   }
-}
-
-
 }
 
 function isPlatformThreadInput(input: ApiInputSignal): input is Exclude<ApiInputSignal, InputSignal> {
