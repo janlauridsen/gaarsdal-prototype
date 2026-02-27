@@ -1091,53 +1091,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return
     }
 
-    if (input.type === "THREAD_BACK") {
-      const stack0 = index0.navigation?.return_stack ?? []
-      if (!stack0.length) {
-        res.status(200).json({
-          state: withThreadNavMeta(
-            {
-              ...baseState,
-              meta: {
-                ...(baseState?.meta ?? {}),
-                "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
-              },
-            },
-            0
-          ),
-        })
-        return
-      }
-
-      const stack1 = stack0.slice(0, -1)
-      const link = stack0[stack0.length - 1]
-      const targetConversationId = link.from
-
-      const loaded = await readConversationState(targetConversationId)
-      const ensured = loaded ?? createInitialState(targetConversationId)
-      if (!loaded) {
-        await writeConversationState(ensured, SESSION_TTL_SECONDS)
-      }
-
-      let nextIndex = { ...index0, navigation: { return_stack: stack1 } }
-      nextIndex = upsertThread({ index: nextIndex, conversationId: ensured.conversation_id })
-      nextIndex = setActiveThread({ index: nextIndex, conversationId: ensured.conversation_id })
-      await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
-
-      res.status(200).json({
-        state: withThreadNavMeta(
-          {
-            ...ensured,
-            meta: {
-              ...(ensured.meta ?? {}),
-              "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
-            },
-          },
-          stack1.length
-        ),
-      })
-      return
-    }
   }
 
   try {
