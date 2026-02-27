@@ -655,56 +655,66 @@ async function handleInitOrRestore(params: {
       transition_type: "INIT",
     })
 
-    // Auto-advance lobby through TOOL/CHECKPOINT/ROUTER nodes so the user lands on a usable prompt.
-    const advanced = await runTurnWithAutoAdvance({
-      baseState: payload.state,
-      input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
-      userKey,
-    })
+    // Only auto-advance the lobby. Auto-ticking an arbitrary thread can lead to
+    // unexpected transitions (or hangs) when restoring after browser navigation.
+    let result: KernelResult
+    if (conversationKind === "lobby") {
+      result = await runTurnWithAutoAdvance({
+        baseState: payload.state,
+        input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
+        userKey,
+      })
+      await persistState(result)
+    } else {
+      result = {
+        state: payload.state,
+        transition: {
+          type: "INIT",
+          from: null,
+          to: payload.state.active_node,
+          reason: "system init (restored)",
+        },
+      } as any
+    }
 
-    await persistState(advanced)
-
-    // Canonical events (V1): represent the resulting applied transition and rendered node after auto-advance.
+    // Canonical events (V1)
     await emitCanonicalEvent({
       userKey,
-      conversationId: advanced.state.conversation_id,
-      revision: advanced.state.revision,
-      inputId: advanced.state.revision,
-      nodeId: advanced.state.active_node,
+      conversationId: result.state.conversation_id,
+      revision: result.state.revision,
+      inputId: result.state.revision,
+      nodeId: result.state.active_node,
       eventType: "transition_applied",
       payload: {
         input_type: "SYSTEM_INIT",
         transition: {
-          type: advanced.transition.type,
-          from: advanced.transition.from,
-          // Ensure canonical events always carry a concrete destination node.
-          // Some internal transitions (e.g. "NODE_HOP" with external resolution) may leave `to` unset.
-          // Falling back to the post-transition active node keeps the event self-contained.
-          to: advanced.transition.to ?? advanced.state.active_node,
-          reason: advanced.transition.reason,
-          meta_keys_written: advanced.transition.meta_delta ? Object.keys(advanced.transition.meta_delta) : [],
+          type: (result as any).transition?.type ?? "INIT",
+          from: (result as any).transition?.from ?? null,
+          to: (result as any).transition?.to ?? result.state.active_node,
+          reason: (result as any).transition?.reason ?? "system init",
+          meta_keys_written: (result as any).transition?.meta_delta ? Object.keys((result as any).transition.meta_delta) : [],
         },
-        status_after: advanced.state.status,
+        status_after: result.state.status,
       },
     })
 
     await emitCanonicalEvent({
       userKey,
-      conversationId: advanced.state.conversation_id,
-      revision: advanced.state.revision,
-      inputId: advanced.state.revision,
-      nodeId: advanced.state.active_node,
+      conversationId: result.state.conversation_id,
+      revision: result.state.revision,
+      inputId: result.state.revision,
+      nodeId: result.state.active_node,
       eventType: "node_rendered",
       payload: {
-        node_id: advanced.state.active_node,
-        message: truncateText(advanced.state.active_node_message ?? "", 800),
-        status: advanced.state.status,
+        node_id: result.state.active_node,
+        message: truncateText(result.state.active_node_message ?? "", 800),
+        status: result.state.status,
       },
     })
 
     res.status(200).json({
-      ...advanced,
-      state: withThreadNavMeta(advanced.state, 0),
+      ...(result as any),
+      state: withThreadNavMeta(result.state, 0),
     })
     return true
   }
@@ -740,56 +750,58 @@ async function handleInitOrRestore(params: {
     transition_type: "INIT",
   })
 
-  // Auto-advance lobby through TOOL/CHECKPOINT/ROUTER nodes so the user lands on a usable prompt.
-  const advanced = await runTurnWithAutoAdvance({
-    baseState: initialState,
-    input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
-    userKey,
-  })
+  let result: KernelResult
+  if (conversationKind === "lobby") {
+    result = await runTurnWithAutoAdvance({
+      baseState: initialState,
+      input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
+      userKey,
+    })
+    await persistState(result)
+  } else {
+    result = {
+      state: initialState,
+      transition: { type: "INIT", from: null, to: initialState.active_node, reason: "system init" },
+    } as any
+  }
 
-  await persistState(advanced)
-
-  // Canonical events (V1): represent the resulting applied transition and rendered node after auto-advance.
   await emitCanonicalEvent({
     userKey,
-    conversationId: advanced.state.conversation_id,
-    revision: advanced.state.revision,
-    inputId: advanced.state.revision,
-    nodeId: advanced.state.active_node,
+    conversationId: result.state.conversation_id,
+    revision: result.state.revision,
+    inputId: result.state.revision,
+    nodeId: result.state.active_node,
     eventType: "transition_applied",
     payload: {
       input_type: "SYSTEM_INIT",
       transition: {
-        type: advanced.transition.type,
-        from: advanced.transition.from,
-        // Ensure canonical events always carry a concrete destination node.
-        // Some internal transitions (e.g. "NODE_HOP" with external resolution) may leave `to` unset.
-        // Falling back to the post-transition active node keeps the event self-contained.
-        to: advanced.transition.to ?? advanced.state.active_node,
-        reason: advanced.transition.reason,
-        meta_keys_written: advanced.transition.meta_delta ? Object.keys(advanced.transition.meta_delta) : [],
+        type: (result as any).transition?.type ?? "INIT",
+        from: (result as any).transition?.from ?? null,
+        to: (result as any).transition?.to ?? result.state.active_node,
+        reason: (result as any).transition?.reason ?? "system init",
+        meta_keys_written: (result as any).transition?.meta_delta ? Object.keys((result as any).transition.meta_delta) : [],
       },
-      status_after: advanced.state.status,
+      status_after: result.state.status,
     },
   })
 
   await emitCanonicalEvent({
     userKey,
-    conversationId: advanced.state.conversation_id,
-    revision: advanced.state.revision,
-    inputId: advanced.state.revision,
-    nodeId: advanced.state.active_node,
+    conversationId: result.state.conversation_id,
+    revision: result.state.revision,
+    inputId: result.state.revision,
+    nodeId: result.state.active_node,
     eventType: "node_rendered",
     payload: {
-      node_id: advanced.state.active_node,
-      message: truncateText(advanced.state.active_node_message ?? "", 800),
-      status: advanced.state.status,
+      node_id: result.state.active_node,
+      message: truncateText(result.state.active_node_message ?? "", 800),
+      status: result.state.status,
     },
   })
 
   res.status(200).json({
-    ...advanced,
-    state: withThreadNavMeta(advanced.state, 0),
+    ...(result as any),
+    state: withThreadNavMeta(result.state, 0),
   })
   return true
 }
