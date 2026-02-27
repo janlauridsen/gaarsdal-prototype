@@ -67,7 +67,7 @@ type ThreadChoice = {
 const NODE_LABELS: Record<string, string> = {
   THREAD_CHOOSER: "Tråde",
   HOME: "Forside",
-  GEN_HYPNO: "Spørg om hypnoterapi",
+  GEN_HYPNO: "Dialog med hypnoterapeuten…",
   TRIAGE: "Passer hypnoterapi til min situation?",
   METHOD_FIT: "Hypnoterapi eller et bedre alternativ?",
   REFLECTION: "Refleksion",
@@ -143,7 +143,9 @@ export default function Chatbot() {
 
   const activeNodeLabel = useMemo(() => {
     if (!state) return "Initialiserer…"
-    return NODE_LABELS[state.active_node] ?? state.active_node
+    const key = String(state.active_node ?? "").trim()
+    // Prefer human labels over internal node ids.
+    return NODE_LABELS[key] ?? key
   }, [state])
 
   const placeholder = useMemo(() => {
@@ -558,7 +560,7 @@ export default function Chatbot() {
             <div className={styles.header}>
               <div className={styles.headerRow}>
                 <div className={styles.headerLeft}>
-                  <div className={styles.title}>Samtale med hypnoterapeuten</div>
+                  <div className={styles.title}>Gaarsdal Chat</div>
                   <div className={styles.node}>{activeNodeLabel}</div>
                 </div>
 
@@ -570,22 +572,6 @@ export default function Chatbot() {
                   >
                     ♥
                   </span>
-
-                  <button
-                    className={styles.iconBtn}
-                    onClick={async () => {
-                      if (!canArchiveThread) return
-                      const ok = window.confirm("Arkivér denne tråd? Den vil ikke længere vises i trådelisten.")
-                      if (!ok) return
-                      await dispatch({ type: "THREAD_ARCHIVE" }, { silentUser: true })
-                    }}
-                    title={canArchiveThread ? "Arkivér tråd" : "Arkivér tråd (ikke tilgængelig)"}
-                    aria-label="Arkivér tråd"
-                    disabled={!canArchiveThread}
-                  >
-                    <ArchiveBoxIcon className={styles.icon} />
-                  </button>
-
                   <button
                     className={styles.iconBtn}
                     onClick={toggleExpanded}
@@ -768,6 +754,25 @@ export default function Chatbot() {
 
                     {secondaryMenuOpen && (
                       <div className={styles.footerMenuPanel} role="menu" aria-label="Mere handlinger">
+                        <button
+                          className={styles.footerMenuItem}
+                          role="menuitem"
+                          onClick={async () => {
+                            setSecondaryMenuOpen(false)
+                            if (!canArchiveThread) return
+                            const ok = window.confirm(
+                              "Arkivér denne tråd? Den vil ikke længere vises i trådelisten."
+                            )
+                            if (!ok) return
+                            await dispatch({ type: "THREAD_ARCHIVE" }, { silentUser: true })
+                          }}
+                          disabled={!canArchiveThread}
+                          title={canArchiveThread ? "Arkivér tråd" : "Arkivér tråd (ikke tilgængelig)"}
+                        >
+                          <ArchiveBoxIcon className={styles.footerMenuItemIcon} />
+                          <span className={styles.footerMenuItemLabel}>Arkivér tråd</span>
+                        </button>
+
                         <button
                           className={styles.footerMenuItem}
                           role="menuitem"
