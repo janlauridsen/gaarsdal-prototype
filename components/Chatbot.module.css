@@ -85,6 +85,12 @@
   min-width: 0;
 }
 
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .title {
   font-weight: 700;
   font-size: 14px;
