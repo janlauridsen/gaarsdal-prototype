@@ -35,7 +35,7 @@ type InputSignal =
   | { type: "EXPLICIT_TRANSITION"; target: string }
   | { type: "UI_ACTION"; action: "TLF" | "MAIL" | "AKUT" | "CONTACT_FORM" }
   | { type: "FREE_TEXT"; text: string }
-  | { type: "SYSTEM_INIT" }
+  | { type: "SYSTEM_INIT"; target?: "ACTIVE" | "LOBBY" }
   | { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
   | { type: "THREAD_BACK" }
   | { type: "THREAD_ARCHIVE" }
@@ -67,7 +67,7 @@ type ThreadChoice = {
 const NODE_LABELS: Record<string, string> = {
   THREAD_CHOOSER: "Tråde",
   HOME: "Forside",
-  GEN_HYPNO: "Dialog med hypnoterapeuten…",
+  GEN_HYPNO: "Spørg om hypnoterapi…",
   TRIAGE: "Passer hypnoterapi til min situation?",
   METHOD_FIT: "Hypnoterapi eller et bedre alternativ?",
   REFLECTION: "Refleksion",
@@ -260,12 +260,12 @@ export default function Chatbot() {
     return s.active_node_message
   }
 
-  async function init() {
+  async function init(target: "ACTIVE" | "LOBBY" = "ACTIVE") {
     setLoading(true)
     didAutoStartNewThreadRef.current = false
 
     try {
-      const data = await callKernel(null, { type: "SYSTEM_INIT", target: threadsOpen ? "LOBBY" : "ACTIVE" } as any)
+      const data = await callKernel(null, { type: "SYSTEM_INIT", target } as any)
       setState(data.state)
       setMessages([])
       setInput("")
@@ -429,7 +429,7 @@ export default function Chatbot() {
     setHeaderNavHint(null)
     setSecondaryMenuOpen(false)
     didAutoStartNewThreadRef.current = false
-    init()
+    init("LOBBY")
   }
 
   const threadChoicesRaw = metaValue("threads.choices")
@@ -560,18 +560,20 @@ export default function Chatbot() {
             <div className={styles.header}>
               <div className={styles.headerRow}>
                 <div className={styles.headerLeft}>
-                  <div className={styles.title}>Gaarsdal Chat</div>
+                  <div className={styles.titleRow}>
+                    <div className={styles.title}>Gaarsdal Chat</div>
+                    <span
+                      className={`${styles.headerHeart} ${loading ? styles.headerHeartActive : ""}`}
+                      aria-label={loading ? "Arbejder" : ""}
+                      title={loading ? "Arbejder…" : ""}
+                    >
+                      ♥
+                    </span>
+                  </div>
                   <div className={styles.node}>{activeNodeLabel}</div>
                 </div>
 
                 <div className={styles.headerRight}>
-                  <span
-                    className={`${styles.headerHeart} ${loading ? styles.headerHeartActive : ""}`}
-                    aria-label={loading ? "Arbejder" : ""}
-                    title={loading ? "Arbejder…" : ""}
-                  >
-                    ♥
-                  </span>
                   <button
                     className={styles.iconBtn}
                     onClick={toggleExpanded}
