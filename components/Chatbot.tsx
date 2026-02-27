@@ -114,7 +114,9 @@ export default function Chatbot() {
   const [expanded, setExpanded] = useState(false)
 
   const [state, setState] = useState<ConversationState | null>(null)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  // Messages are cached per conversation id (tabs).
+  const [messagesByConversationId, setMessagesByConversationId] = useState<Record<string, ChatMessage[]>>({})
+  const loadedConversationsRef = useRef<Set<string>>(new Set())
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -155,6 +157,11 @@ export default function Chatbot() {
 
   const activeConversationId = state?.conversation_id ?? null
 
+  const visibleMessages = useMemo(() => {
+    if (!activeConversationId) return []
+    return messagesByConversationId[activeConversationId] ?? []
+  }, [activeConversationId, messagesByConversationId])
+
 
   const placeholder = useMemo(() => {
     if (!state) return "Initialiserer…"
@@ -171,7 +178,7 @@ export default function Chatbot() {
   useEffect(() => {
     if (!open) return
     endRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, open, headerNavHint, expanded])
+  }, [visibleMessages, open, headerNavHint, expanded])
 
   // (Loading indicator is shown in header as a blinking heart.)
 
@@ -196,25 +203,82 @@ export default function Chatbot() {
     return () => document.removeEventListener("mousedown", onDocPointerDown)
   }, [secondaryMenuOpen])
 
-  function appendMessage(message: ChatMessage) {
-    setMessages((prev) => [...prev, message])
-  }
-
-  function appendAssistantMessage(text: string) {
+  function appendAssistantMessage(conversationId: string, text: string) {
     const message = (text ?? "").trim()
     if (!message) return
 
-    setMessages((prev) => {
-      const last = prev.length ? prev[prev.length - 1] : null
+    setMessagesByConversationId((prev) => {
+      const current = prev[conversationId] ?? []
+      const last = current.length ? current[current.length - 1] : null
       if (last && last.role === "assistant" && last.text.trim() === message) return prev
-      return [...prev, { id: `assistant-${safeId()}`, role: "assistant", text: message }]
+      return { ...prev, [conversationId]: [...current, { id: `assistant-${safeId()}`, role: "assistant", text: message }] }
     })
   }
 
-  function appendUserMessage(text: string) {
+  function appendUserMessage(conversationId: string, text: string) {
     const message = (text ?? "").trim()
     if (!message) return
-    appendMessage({ id: `user-${safeId()}`, role: "user", text: message })
+    setMessagesByConversationId((prev) => {
+      const current = prev[conversationId] ?? []
+      return { ...prev, [conversationId]: [...current, { id: `user-${safeId()}`, role: "user", text: message }] }
+    })
+  }
+
+  const isThreadControlText = (t: string) => {
+    const s = (t ?? "").trim().toLowerCase()
+    if (!s) return false
+    if (s === "continue" || s === "fortsæt" || s === "fortsaet") return true
+    if (s === "new" || s === "ny") return true
+    if (s.startsWith("c:")) return true
+    return false
+  }
+
+  async function loadTranscript(conversationId: string): Promise<ChatMessage[]> {
+    const url = `/api/transcript?conversation_id=${encodeURIComponent(conversationId)}&limit_turns=20`
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const data = (await res.json().catch(() => null)) as any
+    const msgs = Array.isArray(data?.messages) ? data.messages : []
+    const out: ChatMessage[] = []
+    for (let i = 0; i < msgs.length; i++) {
+      const m = msgs[i]
+      if (!m || (m.role !== "user" && m.role !== "assistant")) continue
+      const text = String(m.content ?? "").trim()
+      if (!text) continue
+
+      // Defensive filtering: do not render control pseudo-messages if they ever leak into transcript.
+      if (m.role === "user") {
+        if (isThreadControlText(text)) continue
+        if (text.startsWith("UI_ACTION:")) continue
+        if (text.startsWith("EXPLICIT_TRANSITION:")) continue
+        if (text.startsWith("THREAD_")) continue
+        if (text.startsWith("SYSTEM")) continue
+      }
+
+      out.push({ id: `${conversationId}:${i}:${m.role}`, role: m.role, text })
+    }
+    return out
+  }
+
+  async function ensureConversationLoaded(conversationId: string, s?: ConversationState) {
+    if (!conversationId) return
+    if (loadedConversationsRef.current.has(conversationId)) return
+
+    const transcript = await loadTranscript(conversationId)
+    loadedConversationsRef.current.add(conversationId)
+    setMessagesByConversationId((prev) => ({ ...prev, [conversationId]: transcript }))
+
+    // If there is no transcript yet, show the current node message as the first assistant bubble.
+    if (!transcript.length && s) {
+      const welcome = normalizeAssistantMessage(s)
+      if (welcome?.trim()) {
+        setMessagesByConversationId((prev) => {
+          const cur = prev[conversationId] ?? []
+          if (cur.length) return prev
+          return { ...prev, [conversationId]: [{ id: `assistant-${safeId()}`, role: "assistant", text: welcome.trim() }] }
+        })
+      }
+    }
   }
 
   function showHeaderNavHint(text: string) {
@@ -274,10 +338,9 @@ export default function Chatbot() {
     try {
       const data = await callKernel(null, { type: "SYSTEM_INIT" } as any)
       setState(data.state)
-      setMessages([])
       setInput("")
       setHeaderNavHint(null)
-      appendAssistantMessage(normalizeAssistantMessage(data.state))
+      await ensureConversationLoaded(data.state.conversation_id, data.state)
     } finally {
       setLoading(false)
     }
@@ -286,39 +349,6 @@ export default function Chatbot() {
   async function dispatch(nextInput: InputSignal, opts?: { silentUser?: boolean }) {
     if (!state) return
     setLoading(true)
-
-    const isThreadControlText = (t: string) => {
-      const s = (t ?? "").trim().toLowerCase()
-      if (!s) return false
-      if (s === "continue" || s === "fortsæt" || s === "fortsaet") return true
-      if (s === "new" || s === "ny") return true
-      if (s.startsWith("c:")) return true
-      return false
-    }
-
-    const loadTranscript = async (conversationId: string) => {
-      const url = `/api/transcript?conversation_id=${encodeURIComponent(conversationId)}&limit_turns=20`
-      const res = await fetch(url)
-      if (!res.ok) return [] as ChatMessage[]
-      const data = (await res.json().catch(() => null)) as any
-      const msgs = Array.isArray(data?.messages) ? data.messages : []
-      const out: ChatMessage[] = []
-      for (let i = 0; i < msgs.length; i++) {
-        const m = msgs[i]
-        if (!m || (m.role !== "user" && m.role !== "assistant")) continue
-        const text = String(m.content ?? "").trim()
-        if (m.role === "user") {
-          if (isThreadControlText(text)) continue
-          if (text.startsWith("UI_ACTION:")) continue
-          if (text.startsWith("EXPLICIT_TRANSITION:")) continue
-          if (text.startsWith("THREAD_")) continue
-          if (text.startsWith("SYSTEM")) continue
-        }
-        if (!text) continue
-        out.push({ id: `${conversationId}:${i}:${m.role}`, role: m.role, text })
-      }
-      return out
-    }
 
     try {
       const fromNode = state.active_node
@@ -335,7 +365,7 @@ export default function Chatbot() {
         const toLabel = NODE_LABELS[toNode] ?? toNode
         showHeaderNavHint(`${fromLabel} → ${toLabel}`)
       } else if (nextInput.type === "FREE_TEXT" && !opts?.silentUser) {
-        appendUserMessage(nextInput.text)
+        if (state.conversation_id) appendUserMessage(state.conversation_id, nextInput.text)
       }
 
       setState(data.state)
@@ -346,8 +376,9 @@ export default function Chatbot() {
       if (isThreadNav) {
         setInput("")
         setHeaderNavHint(null)
+        await ensureConversationLoaded(data.state.conversation_id, data.state)
       } else {
-        appendAssistantMessage(assistantText)
+        if (state.conversation_id) appendAssistantMessage(state.conversation_id, assistantText)
       }
     } finally {
       setLoading(false)
@@ -382,15 +413,17 @@ export default function Chatbot() {
     const goingFromHomeToTopic = state.active_node === "HOME" && target !== "HOME"
     if (goingFromHomeToTopic) {
       const label = NODE_LABELS[target] ?? target
-      appendUserMessage(label)
+      if (state.conversation_id) appendUserMessage(state.conversation_id, label)
     }
 
     // Footer actions are UI-only and must not change active nodes.
     if (target === "TLF" || target === "MAIL" || target === "AKUT" || target === "CONTACT_FORM") {
-      if (target === "TLF") appendAssistantMessage("Åbner telefon…")
-      if (target === "MAIL") appendAssistantMessage("Åbner e-mail…")
-      if (target === "AKUT") appendAssistantMessage("Viser akut-info…")
-      if (target === "CONTACT_FORM") appendAssistantMessage("Åbner kontaktformular…")
+      if (state.conversation_id) {
+        if (target === "TLF") appendAssistantMessage(state.conversation_id, "Åbner telefon…")
+        if (target === "MAIL") appendAssistantMessage(state.conversation_id, "Åbner e-mail…")
+        if (target === "AKUT") appendAssistantMessage(state.conversation_id, "Viser akut-info…")
+        if (target === "CONTACT_FORM") appendAssistantMessage(state.conversation_id, "Åbner kontaktformular…")
+      }
 
       // Log + (optionally) render body text via backend without switching nodes.
       await dispatch({ type: "UI_ACTION", action: target as any })
@@ -610,7 +643,7 @@ export default function Chatbot() {
 
 	            <div className={styles.messages}>
 
-              {messages.map((m) => (
+              {visibleMessages.map((m) => (
                 <div
                   key={m.id}
                   className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}
