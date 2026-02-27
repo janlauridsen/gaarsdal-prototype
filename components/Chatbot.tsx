@@ -567,33 +567,36 @@ export default function Chatbot() {
                 </div>
               </div>
 
-              <div className={styles.tabBar} role="tablist" aria-label="Tråde">
-                {threadTabs.map((tab) => {
-                  const isActive = !!activeConversationId && tab.conversation_id === activeConversationId
-                  const label = (tab.title || "").trim() || trimDuplicateTitle(tab.preview || "Samtale")
-                  return (
-                    <button
-                      key={tab.conversation_id}
-                      role="tab"
-                      aria-selected={isActive}
-                      className={`${styles.tab} ${isActive ? styles.tabActive : ""}`}
-                      onClick={() => dispatch({ type: "THREAD_SWITCH", conversation_id: tab.conversation_id } as any, { silentUser: true })}
-                      disabled={loading || !state || isActive}
-                      title={tab.preview || tab.title || ""}
-                    >
-                      <span className={styles.tabLabel}>{label}</span>
-                    </button>
-                  )
-                })}
+              <div className={styles.tabBarWrap} aria-label="Tråde">
+                <div className={styles.tabBar} role="tablist">
+                  {threadTabs.map((tab) => {
+                    const isActive = !!activeConversationId && tab.conversation_id === activeConversationId
+                    const label = (tab.title || "").trim() || trimDuplicateTitle(tab.preview || "Samtale")
+                    return (
+                      <button
+                        key={tab.conversation_id}
+                        role="tab"
+                        aria-selected={isActive}
+                        className={`${styles.tab} ${isActive ? styles.tabActive : ""}`}
+                        onClick={() => dispatch({ type: "THREAD_SWITCH", conversation_id: tab.conversation_id } as any, { silentUser: true })}
+                        disabled={loading || !state || isActive}
+                        title={tab.preview || tab.title || ""}
+                      >
+                        <span className={styles.tabLabel}>{label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
 
                 <button
-                  className={`${styles.tab} ${styles.tabPlus}`}
+                  className={`${styles.tab} ${styles.tabPlusFixed}`}
                   onClick={() => dispatch({ type: "THREAD_CREATE", mode: "normal" } as any, { silentUser: true })}
                   disabled={loading}
                   title="Ny tråd"
                   aria-label="Ny tråd"
                 >
                   <PlusIcon className={styles.tabIcon} />
+                  <span className={styles.tabPlusLabel}>Ny</span>
                 </button>
               </div>
 
