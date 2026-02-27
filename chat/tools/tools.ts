@@ -178,9 +178,15 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
 
     const index = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
 
+    const activeThreads = index.threads.filter((t) => t.status === "active")
+    const activeConversationId =
+      index.active_conversation_id && activeThreads.some((t) => t.conversation_id === index.active_conversation_id)
+        ? index.active_conversation_id
+        : null
+
     const choices = makeThreadChoices({
-      activeConversationId: index.active_conversation_id,
-      threads: index.threads.map((t) => ({
+      activeConversationId,
+      threads: activeThreads.map((t) => ({
         conversation_id: t.conversation_id,
         title: t.title,
         preview: t.preview,
@@ -194,8 +200,8 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
       meta_delta: {
         "profile.status": existing ? "known" : "new",
         "profile.last_seen_at": ts,
-        "threads.count": index.threads.length,
-        "threads.active": index.active_conversation_id,
+        "threads.count": activeThreads.length,
+        "threads.active": activeConversationId,
         "threads.choices": choices,
       },
     }
@@ -225,9 +231,15 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
     }
 
     if (mode !== "new" && (!targetConversationId || typeof targetConversationId !== "string")) {
+      const activeThreads = index0.threads.filter((t) => t.status === "active")
+      const activeConversationId =
+        index0.active_conversation_id && activeThreads.some((t) => t.conversation_id === index0.active_conversation_id)
+          ? index0.active_conversation_id
+          : null
+
       const choices = makeThreadChoices({
-        activeConversationId: index0.active_conversation_id,
-        threads: index0.threads.map((t) => ({
+        activeConversationId,
+        threads: activeThreads.map((t) => ({
           conversation_id: t.conversation_id,
           title: t.title,
           preview: t.preview,
@@ -241,8 +253,8 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
         response_message: "Vælg en tråd: skriv 'continue', 'new' eller vælg en af knapperne.",
         meta_delta: {
           "threads.choices": choices,
-          "threads.count": index0.threads.length,
-          "threads.active": index0.active_conversation_id,
+          "threads.count": activeThreads.length,
+          "threads.active": activeConversationId,
         },
       }
     }
