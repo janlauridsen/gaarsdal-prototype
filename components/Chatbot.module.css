@@ -405,6 +405,53 @@
   gap: 8px;
 }
 
+.footerMenu {
+  position: relative;
+  display: inline-flex;
+}
+
+.footerMenuPanel {
+  position: absolute;
+  right: 0;
+  bottom: 44px;
+  min-width: 170px;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(251, 251, 250, 0.98);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  z-index: 50;
+}
+
+.footerMenuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.footerMenuItem:hover {
+  background: rgba(74, 93, 84, 0.10);
+}
+
+.footerMenuItemIcon {
+  width: 18px;
+  height: 18px;
+  color: rgba(27, 30, 28, 0.78);
+}
+
+.footerMenuItemLabel {
+  font-size: 13.5px;
+  color: rgba(27, 30, 28, 0.90);
+  font-weight: 600;
+}
+
 .footerIcon {
   width: 42px;
   height: 36px;
