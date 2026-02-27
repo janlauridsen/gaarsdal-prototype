@@ -38,7 +38,7 @@ type ChatRequestBody = {
 type ApiInputSignal =
   | InputSignal
   | { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
-  | { type: "THREAD_BACK" }
+  | { type: "THREAD_SWITCH"; conversation_id: string }
   | { type: "THREAD_ARCHIVE" }
 
 type UiSuggestion = {
@@ -153,12 +153,44 @@ function withThreadNavMeta(state: any, returnDepth: number): any {
       "threads.return_depth": { value: returnDepth, source_node: "SYSTEM_UI" },
     },
   }
+
+type ThreadTab = { conversation_id: string; title: string; preview: string; status: "active" | "archived"; updated_at?: string }
+
+function makeThreadTabs(index: any): ThreadTab[] {
+  const threads = Array.isArray(index?.threads) ? index.threads : []
+  return threads
+    .filter((t: any) => t && typeof t.conversation_id === "string" && (t.status === "active" || t.status === "archived"))
+    .map((t: any) => ({
+      conversation_id: t.conversation_id,
+      title: typeof t.title === "string" ? t.title : "",
+      preview: typeof t.preview === "string" ? t.preview : "",
+      status: t.status === "archived" ? "archived" : "active",
+      updated_at: t.updated_at,
+    }))
+}
+
+function withThreadMeta(params: { state: any; index: any }): any {
+  const { state, index } = params
+  const tabs = makeThreadTabs(index).filter((t) => t.status === "active")
+  const activeId = (typeof index?.active_conversation_id === "string" ? index.active_conversation_id : state?.conversation_id) ?? null
+
+  return {
+    ...state,
+    meta: {
+      ...(state?.meta ?? {}),
+      "threads.tabs": { value: tabs, source_node: "SYSTEM_UI" },
+      "threads.active_id": { value: activeId, source_node: "SYSTEM_UI" },
+    },
+  }
+}
+
+
 }
 
 function isPlatformThreadInput(input: ApiInputSignal): input is Exclude<ApiInputSignal, InputSignal> {
   return (
     (input as any)?.type === "THREAD_CREATE" ||
-    (input as any)?.type === "THREAD_BACK" ||
+    (input as any)?.type === "THREAD_SWITCH" ||
     (input as any)?.type === "THREAD_ARCHIVE"
   )
 }
@@ -712,9 +744,10 @@ async function handleInitOrRestore(params: {
       },
     })
 
+    const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
     res.status(200).json({
       ...(result as any),
-      state: withThreadNavMeta(result.state, 0),
+      state: withThreadMeta({ state: result.state, index: indexNow }),
     })
     return true
   }
@@ -799,9 +832,11 @@ async function handleInitOrRestore(params: {
     },
   })
 
-  res.status(200).json({
+    const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+
+    res.status(200).json({
     ...(result as any),
-    state: withThreadNavMeta(result.state, 0),
+    state: withThreadMeta({ state: result.state, index: indexNow }),
   })
   return true
 }
@@ -842,30 +877,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { state: clientState, input } = body
 
-  // Init prefers the user's active thread unless the client explicitly requests the lobby.
+  // Init (tabs model): always restore the active thread if possible.
+  // If no active thread exists, create a new one and make it active.
   if (clientState === null) {
-    const initTarget = (input as any)?.type === "SYSTEM_INIT" ? (input as any)?.target : undefined
-    let initConversationId = lobbyConversationId
-    let initKind: "lobby" | "thread" = "lobby"
+    const index0 = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
 
-    if (initTarget !== "LOBBY") {
-      const index = await ensureThreadIndex({ userKey, ttlSeconds: SESSION_TTL_SECONDS })
-      const activeId = index.active_conversation_id
-      const isActiveThread =
-        typeof activeId === "string" && index.threads.some((t) => t.conversation_id === activeId && t.status === "active")
+    // Pick active thread if present and active; else pick first active thread; else create a new one.
+    let activeId = index0.active_conversation_id
+    const activeThreads = (index0.threads ?? []).filter((t: any) => t && t.status === "active")
 
-      if (isActiveThread && typeof activeId === "string") {
-        initConversationId = activeId
-        initKind = "thread"
-      }
+    if (typeof activeId !== "string" || !activeThreads.some((t: any) => t.conversation_id === activeId)) {
+      activeId = activeThreads.length ? activeThreads[0].conversation_id : null
     }
 
-    const storedInit = await readConversationState(initConversationId)
+    // Create first thread if none exist.
+    if (!activeId) {
+      const newConversationId = `c:${safeUuid()}`
+      const newState = createInitialState(newConversationId)
+      await writeConversationState(newState, SESSION_TTL_SECONDS)
+
+      let nextIndex = upsertThread({ index: index0, conversationId: newConversationId, title: "", preview: "" })
+      nextIndex = setActiveThread({ index: nextIndex, conversationId: newConversationId })
+      await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
+
+      res.status(200).json({
+        state: withThreadMeta({ state: newState, index: nextIndex }),
+      })
+      return
+    }
+
+    // Ensure thread index points to the active id.
+    if (typeof activeId === "string" && index0.active_conversation_id !== activeId) {
+      const nextIndex = setActiveThread({ index: index0, conversationId: activeId })
+      await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
+    }
+
+    const storedInit = await readConversationState(activeId as string)
     const initHandled = await handleInitOrRestore({
       clientState,
       storedState: storedInit,
-      conversationId: initConversationId,
-      conversationKind: initKind,
+      conversationId: activeId as string,
+      conversationKind: "thread",
       userKey,
       res,
     })
@@ -903,45 +955,75 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // Only archive real threads, never the lobby.
       if (!threadId || isLobbyConversation(threadId)) {
-        const returnDepth = index0.navigation?.return_stack?.length ?? 0
         res.status(200).json({
-          state: withThreadNavMeta(
-            {
+          state: withThreadMeta({
+            state: {
               ...baseState,
               meta: {
                 ...(baseState?.meta ?? {}),
                 "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
               },
             },
-            returnDepth
-          ),
+            index: index0,
+          }),
         })
         return
       }
-
-      const nextIndex = archiveThread({ index: index0, conversationId: threadId })
-      await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
-
-      // After archiving, return to the lobby so the user can pick another thread.
-      const storedLobby = await readConversationState(lobbyConversationId)
-      const lobbyState = storedLobby ?? createLobbyState(lobbyConversationId)
-      if (!storedLobby) {
-        await writeConversationState(lobbyState, SESSION_TTL_SECONDS)
-      }
-
-      res.status(200).json({
-        state: withThreadNavMeta(
-          {
-            ...lobbyState,
-            meta: {
-              ...(lobbyState.meta ?? {}),
-              "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
-            },
-          },
-          0
-        ),
-      })
-      return
+      const nextIndex0 = archiveThread({ index: index0, conversationId: threadId })
+            let nextIndex = nextIndex0
+      
+            // Pick next active thread after archiving.
+            let nextActiveId = nextIndex.active_conversation_id
+            const activeThreads = (nextIndex.threads ?? []).filter((t: any) => t && t.status === "active")
+            if (typeof nextActiveId !== "string" || !activeThreads.some((t: any) => t.conversation_id === nextActiveId)) {
+              nextActiveId = activeThreads.length ? activeThreads[0].conversation_id : null
+            }
+      
+            if (!nextActiveId) {
+              const newConversationId = `c:${safeUuid()}`
+              const newState = createInitialState(newConversationId)
+              await writeConversationState(newState, SESSION_TTL_SECONDS)
+              nextIndex = upsertThread({ index: nextIndex, conversationId: newConversationId, title: "", preview: "" })
+              nextIndex = setActiveThread({ index: nextIndex, conversationId: newConversationId })
+              await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
+      
+              res.status(200).json({
+                state: withThreadMeta({
+                  state: {
+                    ...newState,
+                    meta: {
+                      ...(newState.meta ?? {}),
+                      "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
+                    },
+                  },
+                  index: nextIndex,
+                }),
+              })
+              return
+            }
+      
+            nextIndex = setActiveThread({ index: nextIndex, conversationId: nextActiveId as string })
+            await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
+      
+            const loaded = await readConversationState(nextActiveId as string)
+            const ensured = loaded ?? createInitialState(nextActiveId as string)
+            if (!loaded) {
+              await writeConversationState(ensured, SESSION_TTL_SECONDS)
+            }
+      
+            res.status(200).json({
+              state: withThreadMeta({
+                state: {
+                  ...ensured,
+                  meta: {
+                    ...(ensured.meta ?? {}),
+                    "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
+                  },
+                },
+                index: nextIndex,
+              }),
+            })
+            return
     }
 
     if (input.type === "THREAD_CREATE") {
@@ -974,20 +1056,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       nextIndex = setActiveThread({ index: nextIndex, conversationId: newConversationId })
       await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
 
-      const returnDepth = nextIndex.navigation?.return_stack?.length ?? 0
-
       res.status(200).json({
-        state: withThreadNavMeta(
-          {
+        state: withThreadMeta({
+          state: {
             ...newState,
             meta: {
               ...(newState.meta ?? {}),
               "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
             },
           },
-          returnDepth
-        ),
+          index: nextIndex,
+        }),
       })
+      return
+    }
+
+
+    if (input.type === "THREAD_SWITCH") {
+      const targetConversationId = typeof (input as any)?.conversation_id === "string" ? (input as any).conversation_id : null
+      if (!targetConversationId || isLobbyConversation(targetConversationId)) {
+        const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+        res.status(200).json({ state: withThreadMeta({ state: baseState, index: indexNow }) })
+        return
+      }
+
+      const index1 = setActiveThread({ index: index0, conversationId: targetConversationId })
+      await writeThreadIndex({ userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
+
+      const loaded = await readConversationState(targetConversationId)
+      const ensured = loaded ?? createInitialState(targetConversationId)
+      if (!loaded) {
+        await writeConversationState(ensured, SESSION_TTL_SECONDS)
+      }
+
+      res.status(200).json({ state: withThreadMeta({ state: ensured, index: index1 }) })
       return
     }
 
@@ -1234,7 +1336,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined,
     })
 
-    res.status(200).json(kernelResult)
+    const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+
+    res.status(200).json({
+      ...kernelResult,
+      state: withThreadMeta({ state: kernelResult.state, index: indexNow }),
+    })
   } catch (e: any) {
     await appendSpineEventV23({
       schema_version: "v23",
