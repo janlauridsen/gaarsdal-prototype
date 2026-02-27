@@ -150,16 +150,19 @@ export default function Chatbot() {
 
   const placeholder = useMemo(() => {
     if (!state) return "Initialiserer…"
+    if (threadsOpen) return "Vælg en tråd eller tryk + for at starte en ny"
     if (state.active_node === "THREAD_CHOOSER") return "Vælg en tråd…"
     return "Skriv her… (Enter = send, Shift+Enter = ny linje)"
-  }, [state])
+  }, [state, threadsOpen])
 
   const freeTextEnabled = useMemo(() => {
     if (!state) return false
     if (loading) return false
+    if (threadsOpen) return false
+    if (state.active_node === "THREAD_CHOOSER" || state.active_node === "PROFILE_BOOTSTRAP") return false
     if (state.status === "completed" || state.status === "rejected") return false
     return true
-  }, [state, loading])
+  }, [state, loading, threadsOpen])
 
   useEffect(() => {
     if (!open) return
@@ -437,7 +440,6 @@ export default function Chatbot() {
 
   const returnDepthRaw = metaValue("threads.return_depth")
   const returnDepth = Number.isFinite(Number(returnDepthRaw ?? 0)) ? Number(returnDepthRaw ?? 0) : 0
-  const canThreadBack = returnDepth > 0
 
   const canArchiveThread = useMemo(() => {
     if (!state) return false
@@ -719,19 +721,33 @@ export default function Chatbot() {
                 <div className={styles.footerToolbarLeft}>
                   <button
                     className={styles.footerIcon}
-                    onClick={() => dispatch({ type: "THREAD_BACK" }, { silentUser: true })}
-                    title={canThreadBack ? "Tilbage" : "Tilbage (ingen parentese)"}
+                    onClick={() => {
+                      if (threadsOpen) {
+                        // Close threads chooser and restore active thread.
+                        setThreadsOpen(false)
+                        setMessages([])
+                        setInput("")
+                        setState(null)
+                        setHeaderNavHint(null)
+                        setSecondaryMenuOpen(false)
+                        didAutoStartNewThreadRef.current = false
+                        init("ACTIVE")
+                        return
+                      }
+                      goToThreadChooser()
+                    }}
+                    title={threadsOpen ? "Tilbage til samtalen" : "Tråde"}
                     aria-label="Tilbage"
-                    disabled={loading || !state || !canThreadBack}
+                    disabled={loading || !state}
                   >
                     <ArrowUturnLeftIcon className={styles.footerIconSvg} />
                   </button>
 
                   <button
                     className={styles.footerIcon}
-                    onClick={() => dispatch({ type: "THREAD_CREATE", mode: "parenthesis" }, { silentUser: true })}
-                    title="Parentes (ny tråd)"
-                    aria-label="Parentes"
+                    onClick={() => dispatch({ type: "THREAD_CREATE", mode: "normal" }, { silentUser: true })}
+                    title="Ny tråd"
+                    aria-label="Ny tråd"
                     disabled={loading || !state}
                   >
                     <PlusIcon className={styles.footerIconSvg} />
