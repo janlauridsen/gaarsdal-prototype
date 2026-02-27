@@ -14,6 +14,7 @@ import { consolidateV1 } from "../../chat/platform/consolidation"
 import { readConversationState, writeConversationState } from "../../chat/persistence/conversationStateStore"
 import {
   applyAutoThreadLabelFromText,
+  archiveThread,
   ensureThreadIndex,
   setActiveThread,
   upsertThread,
@@ -38,6 +39,7 @@ type ApiInputSignal =
   | InputSignal
   | { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
   | { type: "THREAD_BACK" }
+  | { type: "THREAD_ARCHIVE" }
 
 type UiSuggestion = {
   id: string
@@ -154,7 +156,11 @@ function withThreadNavMeta(state: any, returnDepth: number): any {
 }
 
 function isPlatformThreadInput(input: ApiInputSignal): input is Exclude<ApiInputSignal, InputSignal> {
-  return (input as any)?.type === "THREAD_CREATE" || (input as any)?.type === "THREAD_BACK"
+  return (
+    (input as any)?.type === "THREAD_CREATE" ||
+    (input as any)?.type === "THREAD_BACK" ||
+    (input as any)?.type === "THREAD_ARCHIVE"
+  )
 }
 
 function eventId(): string {
@@ -860,6 +866,52 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Platform-level thread navigation (explicit user actions only).
   if (isPlatformThreadInput(input)) {
     const index0 = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+
+    if (input.type === "THREAD_ARCHIVE") {
+      const threadId = typeof baseState?.conversation_id === "string" ? baseState.conversation_id : null
+
+      // Only archive real threads, never the lobby.
+      if (!threadId || isLobbyConversation(threadId)) {
+        const returnDepth = index0.navigation?.return_stack?.length ?? 0
+        res.status(200).json({
+          state: withThreadNavMeta(
+            {
+              ...baseState,
+              meta: {
+                ...(baseState?.meta ?? {}),
+                "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
+              },
+            },
+            returnDepth
+          ),
+        })
+        return
+      }
+
+      const nextIndex = archiveThread({ index: index0, conversationId: threadId })
+      await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
+
+      // After archiving, return to the lobby so the user can pick another thread.
+      const storedLobby = await readConversationState(lobbyConversationId)
+      const lobbyState = storedLobby ?? createLobbyState(lobbyConversationId)
+      if (!storedLobby) {
+        await writeConversationState(lobbyState, SESSION_TTL_SECONDS)
+      }
+
+      res.status(200).json({
+        state: withThreadNavMeta(
+          {
+            ...lobbyState,
+            meta: {
+              ...(lobbyState.meta ?? {}),
+              "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
+            },
+          },
+          0
+        ),
+      })
+      return
+    }
 
     if (input.type === "THREAD_CREATE") {
       const oldThreadId = typeof baseState?.conversation_id === "string" ? baseState.conversation_id : null
