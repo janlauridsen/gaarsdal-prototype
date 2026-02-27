@@ -263,7 +263,7 @@ export default function Chatbot() {
     didAutoStartNewThreadRef.current = false
 
     try {
-      const data = await callKernel(null, { type: "SYSTEM_INIT" })
+      const data = await callKernel(null, { type: "SYSTEM_INIT", target: threadsOpen ? "LOBBY" : "ACTIVE" } as any)
       setState(data.state)
       setMessages([])
       setInput("")
@@ -558,7 +558,7 @@ export default function Chatbot() {
             <div className={styles.header}>
               <div className={styles.headerRow}>
                 <div className={styles.headerLeft}>
-                  <div className={styles.title}>Gaarsdal Chat</div>
+                  <div className={styles.title}>Samtale med hypnoterapeuten</div>
                   <div className={styles.node}>{activeNodeLabel}</div>
                 </div>
 
