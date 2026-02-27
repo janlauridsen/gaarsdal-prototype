@@ -172,8 +172,8 @@
   background-image: url("/gaarsdal-logo-2026-02.png");
   background-repeat: no-repeat;
   background-position: center;
-  background-size: min(72%, 680px);
-  opacity: 0.5;
+  background-size: min(72%, 340px);
+  opacity: 0.045;
   pointer-events: none;
 }
 
@@ -383,12 +383,26 @@
   background-color: #ECEAE4;
 }
 
-.footerRow {
+
+/* Toolbar row above the input field */
+.footerToolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 10px;
+}
+
+.footerToolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footerToolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .footerIcon {
