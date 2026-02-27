@@ -14,7 +14,6 @@ import {
   PhoneIcon,
   EnvelopeIcon,
   LinkIcon,
-  ExclamationTriangleIcon,
   PaperAirplaneIcon,
 } from "@heroicons/react/24/outline"
 
@@ -573,10 +572,6 @@ export default function Chatbot() {
                     <PlusIcon className={styles.icon} />
                   </button>
 
-                  <button className={styles.iconBtn} onClick={goToThreadChooser} title="Tråde" aria-label="Tråde">
-                    <CircleStackIcon className={styles.icon} />
-                  </button>
-
                   <button
                     className={styles.iconBtn}
                     onClick={async () => {
@@ -733,27 +728,58 @@ export default function Chatbot() {
             </div>
 
             <div className={styles.footer}>
-              <div className={styles.footerRow}>
-                <button className={styles.footerIcon} onClick={goToThreadChooser} title="Tråde" aria-label="Tråde">
-                  <CircleStackIcon className={styles.footerIconSvg} />
-                </button>
-                <button className={styles.footerIcon} onClick={() => go("TLF")} title="Telefon" aria-label="Telefon">
-                  <PhoneIcon className={styles.footerIconSvg} />
-                </button>
-                <button className={styles.footerIcon} onClick={() => go("MAIL")} title="E-mail" aria-label="E-mail">
-                  <EnvelopeIcon className={styles.footerIconSvg} />
-                </button>
-                <button
-                  className={styles.footerIcon}
-                  onClick={() => router.push("/kontakt")}
-                  title="Kontakt"
-                  aria-label="Kontakt"
-                >
-                  <LinkIcon className={styles.footerIconSvg} />
-                </button>
-                <button className={styles.footerIcon} onClick={() => go("AKUT")} title="Akut" aria-label="Akut">
-                  <ExclamationTriangleIcon className={styles.footerIconSvg} />
-                </button>
+              <div className={styles.footerToolbar}>
+                <div className={styles.footerToolbarLeft}>
+                  <button
+                    className={styles.footerIcon}
+                    onClick={() => dispatch({ type: "THREAD_BACK" }, { silentUser: true })}
+                    title={canThreadBack ? "Tilbage" : "Tilbage (ingen parentese)"}
+                    aria-label="Tilbage"
+                    disabled={loading || !state || !canThreadBack}
+                  >
+                    <ArrowUturnLeftIcon className={styles.footerIconSvg} />
+                  </button>
+
+                  <button
+                    className={styles.footerIcon}
+                    onClick={() => dispatch({ type: "THREAD_CREATE", mode: "parenthesis" }, { silentUser: true })}
+                    title="Parentes (ny tråd)"
+                    aria-label="Parentes"
+                    disabled={loading || !state}
+                  >
+                    <PlusIcon className={styles.footerIconSvg} />
+                  </button>
+                </div>
+
+                <div className={styles.footerToolbarRight}>
+                  <button className={styles.footerIcon} onClick={goToThreadChooser} title="Tråde" aria-label="Tråde">
+                    <CircleStackIcon className={styles.footerIconSvg} />
+                  </button>
+                  <button
+                    className={styles.footerIcon}
+                    onClick={() => go("TLF")}
+                    title="Telefon"
+                    aria-label="Telefon"
+                  >
+                    <PhoneIcon className={styles.footerIconSvg} />
+                  </button>
+                  <button
+                    className={styles.footerIcon}
+                    onClick={() => go("MAIL")}
+                    title="E-mail"
+                    aria-label="E-mail"
+                  >
+                    <EnvelopeIcon className={styles.footerIconSvg} />
+                  </button>
+                  <button
+                    className={styles.footerIcon}
+                    onClick={() => router.push("/kontakt")}
+                    title="Kontakt"
+                    aria-label="Kontakt"
+                  >
+                    <LinkIcon className={styles.footerIconSvg} />
+                  </button>
+                </div>
               </div>
 
               <div className={styles.inputRow}>
