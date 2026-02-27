@@ -605,35 +605,7 @@ export default function Chatbot() {
               )}
             </div>
 
-            <div className={styles.messages}>
-              {/* Threads overlay (drawer). Uses THREAD_CHOOSER state behind the scenes. */}
-
-                    {state?.active_node === "THREAD_CHOOSER" && (
-                      <>
-                        {normalizedThreadCards.length > 0 ? (
-                          <div className={styles.topicGrid}>
-                            {normalizedThreadCards.map((c) => (
-                              <button
-                                key={c.id}
-                                className={styles.topicCard}
-                                onClick={async () => {
-                                  await dispatch({ type: "FREE_TEXT", text: c.id }, { silentUser: true })                                }}
-                                disabled={loading || !state}
-                                title={c.kind === "thread" ? trimDuplicateTitle(c.label) : ""}
-                              >
-                                <span className={styles.topicLabel}>{(c as any).uiLabel}</span>
-                                {!!(c as any).uiMeta && <span className={styles.topicMeta}>{(c as any).uiMeta}</span>}
-                              </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className={styles.threadsHint}>Ingen tråde endnu.</div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
+	            <div className={styles.messages}>
 
               {messages.map((m) => (
                 <div
