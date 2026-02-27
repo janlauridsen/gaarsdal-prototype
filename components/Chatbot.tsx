@@ -10,6 +10,7 @@ import {
   CircleStackIcon,
   PlusIcon,
   ArrowUturnLeftIcon,
+  ArchiveBoxIcon,
   PhoneIcon,
   EnvelopeIcon,
   LinkIcon,
@@ -37,6 +38,7 @@ type InputSignal =
   | { type: "SYSTEM_INIT" }
   | { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
   | { type: "THREAD_BACK" }
+  | { type: "THREAD_ARCHIVE" }
 
 type KernelResponse = {
   state: ConversationState
@@ -300,6 +302,7 @@ export default function Chatbot() {
       const isThreadNav =
         nextInput.type === "THREAD_CREATE" ||
         nextInput.type === "THREAD_BACK" ||
+        nextInput.type === "THREAD_ARCHIVE" ||
         (nextInput.type === "FREE_TEXT" && !!opts?.silentUser && isThreadControlText(nextInput.text))
 
       if (nextInput.type === "EXPLICIT_TRANSITION") {
@@ -319,6 +322,12 @@ export default function Chatbot() {
       if (isThreadNav) {
         setInput("")
         setHeaderNavHint(null)
+
+        if (nextInput.type === "THREAD_ARCHIVE") {
+          // After archiving, we land in the lobby; show the threads chooser.
+          setMessages([])
+          setThreadsOpen(true)
+        }
 
         const cid = String(data.state?.conversation_id ?? "")
         const transcript = cid ? await loadTranscript(cid) : []
@@ -409,6 +418,16 @@ export default function Chatbot() {
   const returnDepthRaw = metaValue("threads.return_depth")
   const returnDepth = Number.isFinite(Number(returnDepthRaw ?? 0)) ? Number(returnDepthRaw ?? 0) : 0
   const canThreadBack = returnDepth > 0
+
+  const canArchiveThread = useMemo(() => {
+    if (!state) return false
+    if (loading) return false
+    const cid = String(state.conversation_id ?? "")
+    if (!cid) return false
+    if (cid.startsWith("lobby:u:")) return false
+    if (state.active_node === "THREAD_CHOOSER") return false
+    return true
+  }, [state, loading])
 
   const threadChoices: ThreadChoice[] =
     state?.active_node === "THREAD_CHOOSER" && Array.isArray(threadChoicesRaw)
@@ -556,6 +575,21 @@ export default function Chatbot() {
 
                   <button className={styles.iconBtn} onClick={goToThreadChooser} title="Tråde" aria-label="Tråde">
                     <CircleStackIcon className={styles.icon} />
+                  </button>
+
+                  <button
+                    className={styles.iconBtn}
+                    onClick={async () => {
+                      if (!canArchiveThread) return
+                      const ok = window.confirm("Arkivér denne tråd? Den vil ikke længere vises i trådelisten.")
+                      if (!ok) return
+                      await dispatch({ type: "THREAD_ARCHIVE" }, { silentUser: true })
+                    }}
+                    title={canArchiveThread ? "Arkivér tråd" : "Arkivér tråd (ikke tilgængelig)"}
+                    aria-label="Arkivér tråd"
+                    disabled={!canArchiveThread}
+                  >
+                    <ArchiveBoxIcon className={styles.icon} />
                   </button>
 
                   <button
