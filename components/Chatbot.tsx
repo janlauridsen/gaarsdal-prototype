@@ -11,6 +11,7 @@ import {
   PlusIcon,
   ArrowUturnLeftIcon,
   ArchiveBoxIcon,
+  EllipsisVerticalIcon,
   PhoneIcon,
   EnvelopeIcon,
   LinkIcon,
@@ -119,6 +120,10 @@ export default function Chatbot() {
   // Threads overlay (drawer) lives on top of the chat view.
   const [threadsOpen, setThreadsOpen] = useState(false)
 
+  // Secondary (overflow) menu in the footer toolbar.
+  const [secondaryMenuOpen, setSecondaryMenuOpen] = useState(false)
+  const secondaryMenuRef = useRef<HTMLDivElement | null>(null)
+
   const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
   const headerNavHintTimerRef = useRef<number | null>(null)
 
@@ -169,6 +174,18 @@ export default function Chatbot() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (!secondaryMenuOpen) return
+    const onDocPointerDown = (e: MouseEvent) => {
+      const el = secondaryMenuRef.current
+      if (!el) return
+      if (el.contains(e.target as Node)) return
+      setSecondaryMenuOpen(false)
+    }
+    document.addEventListener("mousedown", onDocPointerDown)
+    return () => document.removeEventListener("mousedown", onDocPointerDown)
+  }, [secondaryMenuOpen])
 
   function appendMessage(message: ChatMessage) {
     setMessages((prev) => [...prev, message])
@@ -358,6 +375,7 @@ export default function Chatbot() {
   function closeChat() {
     setOpen(false)
     setExpanded(false)
+    setSecondaryMenuOpen(false)
   }
 
   function toggleExpanded() {
@@ -407,6 +425,7 @@ export default function Chatbot() {
     setInput("")
     setState(null)
     setHeaderNavHint(null)
+    setSecondaryMenuOpen(false)
     didAutoStartNewThreadRef.current = false
     init()
   }
@@ -551,26 +570,6 @@ export default function Chatbot() {
                   >
                     ♥
                   </span>
-
-                  <button
-                    className={styles.iconBtn}
-                    onClick={() => dispatch({ type: "THREAD_BACK" }, { silentUser: true })}
-                    title={canThreadBack ? "Tilbage" : "Tilbage (ingen parentese)"}
-                    aria-label="Tilbage"
-                    disabled={loading || !state || !canThreadBack}
-                  >
-                    <ArrowUturnLeftIcon className={styles.icon} />
-                  </button>
-
-                  <button
-                    className={styles.iconBtn}
-                    onClick={() => dispatch({ type: "THREAD_CREATE", mode: "parenthesis" }, { silentUser: true })}
-                    title="Parentes (ny tråd)"
-                    aria-label="Parentes"
-                    disabled={loading || !state}
-                  >
-                    <PlusIcon className={styles.icon} />
-                  </button>
 
                   <button
                     className={styles.iconBtn}
@@ -755,30 +754,56 @@ export default function Chatbot() {
                   <button className={styles.footerIcon} onClick={goToThreadChooser} title="Tråde" aria-label="Tråde">
                     <CircleStackIcon className={styles.footerIconSvg} />
                   </button>
-                  <button
-                    className={styles.footerIcon}
-                    onClick={() => go("TLF")}
-                    title="Telefon"
-                    aria-label="Telefon"
-                  >
-                    <PhoneIcon className={styles.footerIconSvg} />
-                  </button>
-                  <button
-                    className={styles.footerIcon}
-                    onClick={() => go("MAIL")}
-                    title="E-mail"
-                    aria-label="E-mail"
-                  >
-                    <EnvelopeIcon className={styles.footerIconSvg} />
-                  </button>
-                  <button
-                    className={styles.footerIcon}
-                    onClick={() => router.push("/kontakt")}
-                    title="Kontakt"
-                    aria-label="Kontakt"
-                  >
-                    <LinkIcon className={styles.footerIconSvg} />
-                  </button>
+
+                  <div className={styles.footerMenu} ref={secondaryMenuRef}>
+                    <button
+                      className={styles.footerIcon}
+                      onClick={() => setSecondaryMenuOpen((v) => !v)}
+                      title="Mere"
+                      aria-label="Mere"
+                      disabled={loading}
+                    >
+                      <EllipsisVerticalIcon className={styles.footerIconSvg} />
+                    </button>
+
+                    {secondaryMenuOpen && (
+                      <div className={styles.footerMenuPanel} role="menu" aria-label="Mere handlinger">
+                        <button
+                          className={styles.footerMenuItem}
+                          role="menuitem"
+                          onClick={() => {
+                            setSecondaryMenuOpen(false)
+                            go("TLF")
+                          }}
+                        >
+                          <PhoneIcon className={styles.footerMenuItemIcon} />
+                          <span className={styles.footerMenuItemLabel}>Telefon</span>
+                        </button>
+                        <button
+                          className={styles.footerMenuItem}
+                          role="menuitem"
+                          onClick={() => {
+                            setSecondaryMenuOpen(false)
+                            go("MAIL")
+                          }}
+                        >
+                          <EnvelopeIcon className={styles.footerMenuItemIcon} />
+                          <span className={styles.footerMenuItemLabel}>E-mail</span>
+                        </button>
+                        <button
+                          className={styles.footerMenuItem}
+                          role="menuitem"
+                          onClick={() => {
+                            setSecondaryMenuOpen(false)
+                            router.push("/kontakt")
+                          }}
+                        >
+                          <LinkIcon className={styles.footerMenuItemIcon} />
+                          <span className={styles.footerMenuItemLabel}>Kontakt</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
