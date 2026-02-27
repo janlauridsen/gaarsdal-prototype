@@ -610,10 +610,11 @@ async function handleInitOrRestore(params: {
   clientState: any
   storedState: any | null
   conversationId: string
+  conversationKind: "lobby" | "thread"
   userKey: string
   res: NextApiResponse
 }): Promise<boolean> {
-  const { clientState, storedState, conversationId, userKey, res } = params
+  const { clientState, storedState, conversationId, conversationKind, userKey, res } = params
   if (clientState !== null) return false
 
   if (storedState) {
@@ -708,7 +709,8 @@ async function handleInitOrRestore(params: {
     return true
   }
 
-  const initialState = createLobbyState(conversationId)
+  const initialState =
+    conversationKind === "lobby" ? createLobbyState(conversationId) : createInitialState(conversationId)
 
   const log: LogEvent = {
     conversation_id: initialState.conversation_id,
@@ -828,13 +830,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { state: clientState, input } = body
 
-  // Init always enters the lobby, not a specific thread.
+  // Init prefers the user's active thread unless the client explicitly requests the lobby.
   if (clientState === null) {
-    const storedLobby = await readConversationState(lobbyConversationId)
+    const initTarget = (input as any)?.type === "SYSTEM_INIT" ? (input as any)?.target : undefined
+    let initConversationId = lobbyConversationId
+    let initKind: "lobby" | "thread" = "lobby"
+
+    if (initTarget !== "LOBBY") {
+      const index = await ensureThreadIndex({ userKey, ttlSeconds: SESSION_TTL_SECONDS })
+      const activeId = index.active_conversation_id
+      const isActiveThread =
+        typeof activeId === "string" && index.threads.some((t) => t.conversation_id === activeId && t.status === "active")
+
+      if (isActiveThread && typeof activeId === "string") {
+        initConversationId = activeId
+        initKind = "thread"
+      }
+    }
+
+    const storedInit = await readConversationState(initConversationId)
     const initHandled = await handleInitOrRestore({
       clientState,
-      storedState: storedLobby,
-      conversationId: lobbyConversationId,
+      storedState: storedInit,
+      conversationId: initConversationId,
+      conversationKind: initKind,
       userKey,
       res,
     })
