@@ -67,7 +67,6 @@ type ThreadChoice = {
   kind: "continue" | "new" | "thread"
 }
 
-
 type ThreadTab = {
   conversation_id: string
   title: string
@@ -193,6 +192,13 @@ export default function Chatbot() {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const didAutoStartNewThreadRef = useRef(false)
 
+  const focusInput = () => {
+    // defer to after DOM commit
+    window.requestAnimationFrame(() => {
+      textareaRef.current?.focus()
+    })
+  }
+
   // Global footer actions must always be reachable, regardless of the current node's allowed_transitions.
   // (Kernel also whitelists these exits.)
   const GLOBAL_ACTIONS = useMemo(() => new Set(["HOME", "TLF", "MAIL", "CONTACT_FORM", "AKUT"]), [])
@@ -270,6 +276,7 @@ export default function Chatbot() {
 
   function closeJournalWizard() {
     setJournalWizardOpen(false)
+    focusInput()
   }
 
   function canCreateJournal(): boolean {
@@ -281,7 +288,6 @@ export default function Chatbot() {
     if (!activeConversationId) return []
     return messagesByConversationId[activeConversationId] ?? []
   }, [activeConversationId, messagesByConversationId])
-
 
   const placeholder = useMemo(() => {
     if (!state) return "Initialiserer…"
@@ -299,7 +305,27 @@ export default function Chatbot() {
   useEffect(() => {
     if (!open) return
     endRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [visibleMessages, open, headerNavHint, expanded])
+  }, [visibleMessages, open, headerNavHint, expanded, journalEntries])
+
+  // Autofocus after output / state updates (and after overlays close)
+  useEffect(() => {
+    if (!open) return
+    if (!state) return
+    if (loading) return
+    if (threadsOpen) return
+    if (journalWizardOpen) return
+    focusInput()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    open,
+    loading,
+    threadsOpen,
+    journalWizardOpen,
+    state?.revision,
+    visibleMessages.length,
+    journalEntries.length,
+    isJournalActive,
+  ])
 
   // (Loading indicator is shown in header as a blinking heart.)
 
@@ -465,7 +491,7 @@ export default function Chatbot() {
   }
 
   async function dispatch(nextInput: InputSignal, opts?: { silentUser?: boolean }): Promise<boolean> {
-    if (!state) return
+    if (!state) return false
     setLoading(true)
 
     try {
@@ -499,6 +525,7 @@ export default function Chatbot() {
         setJournalText("")
         setJournalDrinks("")
         setJournalUrge("")
+        setJournalStrict("")
         setHeaderNavHint(null)
         await ensureConversationLoaded(data.state.conversation_id, data.state)
       } else {
@@ -509,6 +536,7 @@ export default function Chatbot() {
           setJournalText("")
           setJournalDrinks("")
           setJournalUrge("")
+          setJournalStrict("")
         }
       }
       return true
@@ -913,10 +941,26 @@ export default function Chatbot() {
               )}
 
               {threadsOpen && (
-                <div className={styles.threadsOverlay} onClick={() => setThreadsOpen(false)} role="dialog" aria-modal="true">
+                <div
+                  className={styles.threadsOverlay}
+                  onClick={() => {
+                    setThreadsOpen(false)
+                    focusInput()
+                  }}
+                  role="dialog"
+                  aria-modal="true"
+                >
                   <div className={styles.threadsHeader} onClick={(e) => e.stopPropagation()}>
                     <div className={styles.threadsTitle}>Tråde</div>
-                    <button className={styles.iconBtn} onClick={() => setThreadsOpen(false)} title="Luk" aria-label="Luk">
+                    <button
+                      className={styles.iconBtn}
+                      onClick={() => {
+                        setThreadsOpen(false)
+                        focusInput()
+                      }}
+                      title="Luk"
+                      aria-label="Luk"
+                    >
                       <XMarkIcon className={styles.icon} />
                     </button>
                   </div>
@@ -942,8 +986,12 @@ export default function Chatbot() {
                                 key={t.conversation_id}
                                 className={`${styles.threadItem} ${isActive ? styles.threadItemActive : ""}`}
                                 onClick={() => {
-                                  if (!isActive) dispatch({ type: "THREAD_SWITCH", conversation_id: t.conversation_id } as any, { silentUser: true })
+                                  if (!isActive)
+                                    dispatch({ type: "THREAD_SWITCH", conversation_id: t.conversation_id } as any, {
+                                      silentUser: true,
+                                    })
                                   setThreadsOpen(false)
+                                  focusInput()
                                 }}
                                 disabled={loading || !state}
                                 title={t.preview || t.title || ""}
@@ -961,15 +1009,15 @@ export default function Chatbot() {
                   </div>
                 </div>
               )}
-{headerNavHint && (
+
+              {headerNavHint && (
                 <div className={styles.navHint}>
                   <span className={styles.navHintPulse}>{headerNavHint}</span>
                 </div>
               )}
             </div>
 
-	            <div className={styles.messages}>
-
+            <div className={styles.messages}>
               {!isJournalActive &&
                 visibleMessages.map((m) => (
                   <div
@@ -1040,10 +1088,9 @@ export default function Chatbot() {
                     >
                       Ny tråd
                     </button>
-                                      </div>
+                  </div>
                 </div>
               )}
-
 
               {uiSuggestions.length > 0 && (
                 <div className="mt-3">
@@ -1160,6 +1207,7 @@ export default function Chatbot() {
                       </label>
                     </div>
                   ) : null}
+
                   <div className={styles.inputRow}>
                     <textarea
                       ref={textareaRef}
