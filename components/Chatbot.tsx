@@ -80,6 +80,29 @@ type ThreadTab = {
   updated_at?: string
 }
 
+function formatThreadPreview(t: ThreadTab): string {
+  const raw = (t.preview || "").trim()
+  if (!raw) return ""
+
+  if (t.thread_type === "journal") {
+    try {
+      const obj = JSON.parse(raw)
+      const text = String(obj?.text || "").trim()
+      const parts: string[] = []
+      if (typeof obj?.drinks === "number") parts.push(`Drinks: ${obj.drinks}`)
+      if (typeof obj?.urge_0_10 === "number") parts.push(`Urge: ${obj.urge_0_10}/10`)
+      if (typeof obj?.sleep_h === "number") parts.push(`Søvn: ${obj.sleep_h}t`)
+      const suffix = parts.length ? ` • ${parts.join(" • ")}` : ""
+      return (text || "(notat)") + suffix
+    } catch {
+      // fall back to raw
+      return raw
+    }
+  }
+
+  return raw
+}
+
 type JournalEntry = {
   entry_id: string
   ts_ms: number
@@ -388,6 +411,15 @@ export default function Chatbot() {
     })
 
     if (!res.ok) {
+      // Handle expected constraints (e.g., journal limit) without throwing.
+      if (res.status === 409) {
+        const json = await res.json().catch(() => null)
+        const msg = json?.error?.message || "Handlingen kunne ikke udføres."
+        setHeaderNavHint(msg)
+        // Return a no-op response so caller can decide what to do (e.g. keep wizard open).
+        return { state: nextState as any, transition: null, error: json?.error || { code: "CONFLICT" } } as any
+      }
+
       const body = await res.text().catch(() => "")
       throw new Error(`Chat: HTTP ${res.status}${body ? ` — ${body}` : ""}`)
     }
@@ -432,13 +464,16 @@ export default function Chatbot() {
     }
   }
 
-  async function dispatch(nextInput: InputSignal, opts?: { silentUser?: boolean }) {
+  async function dispatch(nextInput: InputSignal, opts?: { silentUser?: boolean }): Promise<boolean> {
     if (!state) return
     setLoading(true)
 
     try {
       const fromNode = state.active_node
-      const data = await callKernel(state, nextInput)
+      const data: any = await callKernel(state, nextInput)
+
+      // Expected constraint errors (e.g., journal limit) should not mutate state or close UI.
+      if (data?.error?.code) return false
 
       const isThreadNav =
         nextInput.type === "THREAD_CREATE" ||
@@ -476,6 +511,7 @@ export default function Chatbot() {
           setJournalUrge("")
         }
       }
+      return true
     } finally {
       setLoading(false)
     }
@@ -845,10 +881,10 @@ export default function Chatbot() {
                               <button
                                 className={styles.primaryBtn}
                                 disabled={!journalWizardProfile || !journalWizardTitle.trim()}
-                                onClick={() => {
+                                onClick={async () => {
                                   const profile = journalWizardProfile
                                   if (!profile) return
-                                  dispatch(
+                                  const ok = await dispatch(
                                     {
                                       type: "THREAD_CREATE",
                                       mode: "normal",
@@ -862,7 +898,7 @@ export default function Chatbot() {
                                     } as any,
                                     { silentUser: true }
                                   )
-                                  closeJournalWizard()
+                                  if (ok) closeJournalWizard()
                                 }}
                               >
                                 Opret dagbog
@@ -916,7 +952,7 @@ export default function Chatbot() {
                                   <div className={styles.threadItemTitle}>{label}</div>
                                   {isJournal ? <span className={styles.threadBadge}>Dagbog</span> : null}
                                 </div>
-                                {t.preview ? <div className={styles.threadItemPreview}>{t.preview}</div> : null}
+                                {t.preview ? <div className={styles.threadItemPreview}>{formatThreadPreview(t)}</div> : null}
                               </button>
                             )
                           })}
