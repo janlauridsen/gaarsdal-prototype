@@ -1083,8 +1083,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           (t: any) => (t.thread_type ?? "chat") === "journal" && t.status === "active"
         )
         if (activeJournals.length >= 5) {
-          const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
-          res.status(200).json({ state: withThreadMeta({ state: baseState, index: indexNow }) })
+          res.status(409).json({
+            error: {
+              code: "JOURNAL_LIMIT",
+              message: "Du har allerede 5 aktive dagbøger.",
+            },
+          })
           return
         }
       }
