@@ -9,27 +9,12 @@ type Output = {
   last_topic?: string
 }
 
-const MAX_TRANSCRIPT_TURNS = 16
+const MAX_TRANSCRIPT_TURNS = 30
+const MAX_TRANSCRIPT_CHARS = 6000
 
 const GEN_HYPNO_PROMPT = `
 ROLLE
-Du er en rolig, kompetent hypnoterapeut. Du kan forklare hypnoterapi bredt og dybt:
-- historie (klassisk vs. moderne hypnose, Ericksoniansk m.fl.)
-- centrale begreber (trance, suggestion, opmærksomhed/fokus, forventning, imagery)
-- metoder (direkte/indirekte suggestion, ressourcearbejde, eksponering i trance, selvhypnose, vane- og reaktionsarbejde)
-- sikkerhed og rammer
-
-TONE
-- Dansk/skandinavisk tone.
-- Saglig, faglig, respektfuld.
-- Kun let empati.
-- Ingen store løfter.
-- Ingen moraliserende sprog.
-
-DOMÆNE OG FAKTA-GRUNDLAG
-- Hypnoterapi/hypnose er dit primære domæne.
-- Klinikspecifikke fakta må KUN komme fra SITE-KONTEKST.
-- Hvis information mangler: sig eksplicit at du ikke har den oplysning.
+Du er en rolig, kompetent hypnoterapeut...
 
 SAMTALESTRUKTUR
 Du modtager:
@@ -40,49 +25,20 @@ Du modtager:
 OPSUMMERINGSREGEL
 - Hvis assistant_turn_count > 0 OG assistant_turn_count % 4 === 0:
   Giv en kort, struktureret opsummering før du går videre.
-- Opsummer neutralt.
-- Forklar hvordan hypnoterapi kan være relevant.
-- Undgå at formulere noget som anbefaling.
-- Alle vurderinger er foreløbige.
-
-SPØRGSMÅL
 - Afslut med højst ét konkret spørgsmål.
 
 EVIDENSRAMME
-Når du omtaler effekt eller virkning, angiv evidensniveau:
-
-(A) God evidens:
-Flere systematiske reviews eller metaanalyser i internationale fagfællebedømte tidsskrifter.
-
-(B) Moderat/blandet evidens:
-Mindre RCT'er eller studier med blandede resultater.
-
-(C) Begrænset evidens:
-Få studier, små samples eller metodiske begrænsninger.
-
-(D) Primært klinisk erfaring:
-Overvejende praksisbaseret viden uden stærk forskningsunderstøttelse.
-
-Hvis evidensniveau er uklart:
-Skriv "evidens: uklar" og forklar kort hvorfor.
-
-Undgå skråsikker formulering.
-
-SIKKERHED
-- Du stiller ikke diagnoser.
-- Du lover ikke helbredelse.
-- Ved alvorlige symptomer eller risiko: foreslå relevant professionel hjælp.
-
-ADFÆRD
-- Hvis brugeren er uklar: foreslå 2–3 mulige retninger og stil derefter ét konkret opklarende spørgsmål.
-- Hvis emnet ligger udenfor hypnose: afgræns kort og peg på relevant fagperson.
+(A) God evidens: Flere systematiske reviews/metaanalyser.
+(B) Moderat/blandet: Mindre RCT'er/blandede fund.
+(C) Begrænset: Få studier/små samples.
+(D) Primært klinisk erfaring.
+Hvis uklart: skriv "evidens: uklar".
 
 LAST_TOPIC
-- last_topic skal være 1–2 ord.
-- Små bogstaver.
-- Ingen tegnsætning.
-- Vælg et stabilt, generelt begreb (fx "stress", "soevn", "vaner", "evidens").
-- Hvis emnet ikke har ændret sig væsentligt, genbrug tidligere kategori.
+- 1–2 ord
+- små bogstaver
+- generelt og stabilt
+- genbrug hvis muligt
 
 OUTPUT
 Returner KUN gyldig JSON:
@@ -107,13 +63,27 @@ function readTranscript(context: AiCapabilityContext): TranscriptTurn[] {
       typeof obj.content === "string"
     ) {
       const content = obj.content.trim()
-      if (content) {
-        turns.push({ role: obj.role, content })
-      }
+      if (content) turns.push({ role: obj.role, content })
     }
   }
 
-  return turns.slice(-MAX_TRANSCRIPT_TURNS)
+  return turns
+}
+
+function trimTranscript(turns: TranscriptTurn[]): TranscriptTurn[] {
+  const cappedByTurn = turns.slice(-MAX_TRANSCRIPT_TURNS)
+
+  const result: TranscriptTurn[] = []
+  let totalChars = 0
+
+  for (let i = cappedByTurn.length - 1; i >= 0; i--) {
+    const len = cappedByTurn[i].content.length
+    if (totalChars + len > MAX_TRANSCRIPT_CHARS) break
+    result.unshift(cappedByTurn[i])
+    totalChars += len
+  }
+
+  return result
 }
 
 function appendTranscript(
@@ -129,7 +99,7 @@ function appendTranscript(
   if (u) next.push({ role: "user", content: u })
   if (a) next.push({ role: "assistant", content: a })
 
-  return next.slice(-MAX_TRANSCRIPT_TURNS)
+  return next
 }
 
 function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
@@ -152,24 +122,21 @@ function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
 
 function buildFallbackMessage(userText: string): string {
   if (!userText.trim()) {
-    return "Hvad vil du gerne vide om hypnoterapi—fx hvordan et forløb foregår, metoder, evidens, eller hvad hypnose egentlig er?"
+    return "Hvad vil du gerne vide om hypnoterapi?"
   }
 
-  return (
-    "Tak for dit spørgsmål. Overordnet set er hypnoterapi en samarbejdsproces, hvor man arbejder med opmærksomhed, forestillingsevne og vaner i et trygt, struktureret forløb. " +
-    "Vil du høre mest om metoder, evidensniveauer, hvordan et forløb typisk foregår, eller hvad hypnose føles som?"
-  )
+  return "Tak for dit spørgsmål. Vil du høre mest om metoder, evidens eller hvordan et forløb typisk foregår?"
 }
 
 export const genHypnoCapability: AiCapability = {
   id: "gen-hypno-v1",
 
   async run(context: AiCapabilityContext, llm: LlmClient): Promise<AiCapabilityResult> {
-    const transcript = readTranscript(context)
-    const contextSystem = (context.contextPack?.system ?? "").trim()
+    const fullTranscript = readTranscript(context)
+    const trimmedTranscript = trimTranscript(fullTranscript)
 
-    const assistantTurnCount =
-      transcript.filter(t => t.role === "assistant").length
+    const previousAssistantCount =
+      Number(context.state.meta["gen_hypno.assistant_turn_count"]?.value) || 0
 
     const payload = {
       model:
@@ -181,15 +148,12 @@ export const genHypnoCapability: AiCapability = {
       messages: [
         { role: "system" as const, content: GEN_HYPNO_PROMPT },
         { role: "system" as const, content: GAARSDAL_SITE_CONTEXT_DA },
-        ...(contextSystem
-          ? [{ role: "system" as const, content: contextSystem }]
-          : []),
         {
           role: "user" as const,
           content: JSON.stringify({
-            conversation_transcript: transcript,
+            conversation_transcript: trimmedTranscript,
             user_input: context.userText ?? "",
-            assistant_turn_count: assistantTurnCount,
+            assistant_turn_count: previousAssistantCount,
           }),
         },
       ],
@@ -203,13 +167,16 @@ export const genHypnoCapability: AiCapability = {
       buildFallbackMessage(context.userText ?? "")
 
     const updatedTranscript = appendTranscript(
-      transcript,
+      fullTranscript,
       context.userText ?? "",
       assistant
     )
 
+    const newAssistantCount = previousAssistantCount + 1
+
     const meta_delta: Record<string, unknown> = {
       "gen_hypno.transcript": updatedTranscript,
+      "gen_hypno.assistant_turn_count": newAssistantCount,
     }
 
     if (parsed?.last_topic) {
@@ -228,7 +195,8 @@ export const genHypnoCapability: AiCapability = {
       transition,
       debug: {
         capability: "gen-hypno-v1",
-        assistant_turn_count: assistantTurnCount,
+        assistant_turn_count: newAssistantCount,
+        transcript_size: trimmedTranscript.length,
         used_fallback: !parsed,
       },
     }
