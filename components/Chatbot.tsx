@@ -128,6 +128,7 @@ export default function Chatbot() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [threadsOpen, setThreadsOpen] = useState(false)
 
   const [state, setState] = useState<ConversationState | null>(null)
   // Messages are cached per conversation id (tabs).
@@ -627,57 +628,98 @@ export default function Chatbot() {
                 </div>
               </div>
 
-              <div className={styles.tabBarWrap} aria-label="Tråde">
-                <div className={styles.tabBar} role="tablist">
-                  {threadTabs.map((tab) => {
-                    const isActive = !!activeConversationId && tab.conversation_id === activeConversationId
-                    const label = (tab.title || "").trim() || trimDuplicateTitle(tab.preview || "Samtale")
-                    return (
-                      <button
-                        key={tab.conversation_id}
-                        role="tab"
-                        aria-selected={isActive}
-                        className={`${styles.tab} ${isActive ? styles.tabActive : ""}`}
-                        onClick={() => dispatch({ type: "THREAD_SWITCH", conversation_id: tab.conversation_id } as any, { silentUser: true })}
-                        disabled={loading || !state || isActive}
-                        title={tab.preview || tab.title || ""}
-                      >
-                        <span className={styles.tabLabel}>{label}</span>
-                      </button>
-                    )
-                  })}
+              <div className={styles.actionsRow} aria-label="Tråde og handlinger">
+                <button
+                  className={styles.threadBtn}
+                  onClick={() => setThreadsOpen(true)}
+                  disabled={loading || !state}
+                  title="Tråde"
+                  aria-label="Tråde"
+                >
+                  <ChatBubbleOvalLeftEllipsisIcon className={styles.threadBtnIcon} />
+                  <span className={styles.threadBtnLabel}>Tråde</span>
+                </button>
+
+                <div className={styles.actionsRight}>
+                  <button
+                    className={styles.actionBtn}
+                    onClick={() => dispatch({ type: "THREAD_CREATE", mode: "normal" } as any, { silentUser: true })}
+                    disabled={loading}
+                    title="Ny tråd"
+                    aria-label="Ny tråd"
+                  >
+                    <PlusIcon className={styles.actionBtnIcon} />
+                    <span className={styles.actionBtnLabel}>Ny</span>
+                  </button>
+
+                  <button
+                    className={styles.actionBtn}
+                    onClick={() =>
+                      dispatch(
+                        { type: "THREAD_CREATE", mode: "normal", thread_type: "journal", journal_kind: "alcohol" } as any,
+                        { silentUser: true }
+                      )
+                    }
+                    disabled={loading}
+                    title="Ny dagbog"
+                    aria-label="Ny dagbog"
+                  >
+                    <PlusIcon className={styles.actionBtnIcon} />
+                    <span className={styles.actionBtnLabel}>Dagbog</span>
+                  </button>
                 </div>
-
-                <button
-                  className={`${styles.tab} ${styles.tabPlusFixed}`}
-                  onClick={() => dispatch({ type: "THREAD_CREATE", mode: "normal" } as any, { silentUser: true })}
-                  disabled={loading}
-                  title="Ny tråd"
-                  aria-label="Ny tråd"
-                >
-                  <PlusIcon className={styles.tabIcon} />
-                  <span className={styles.tabPlusLabel}>Ny</span>
-                </button>
-
-                <button
-                  className={`${styles.tab} ${styles.tabPlusFixed}`}
-                  onClick={() =>
-                    dispatch(
-                      { type: "THREAD_CREATE", mode: "normal", thread_type: "journal", journal_kind: "alcohol" } as any,
-                      { silentUser: true }
-                    )
-                  }
-                  disabled={loading}
-                  title="Ny dagbog"
-                  aria-label="Ny dagbog"
-                >
-                  <PlusIcon className={styles.tabIcon} />
-                  <span className={styles.tabPlusLabel}>Dagbog</span>
-                </button>
               </div>
 
+              {threadsOpen && (
+                <div className={styles.threadsOverlay} onClick={() => setThreadsOpen(false)} role="dialog" aria-modal="true">
+                  <div className={styles.threadsHeader} onClick={(e) => e.stopPropagation()}>
+                    <div className={styles.threadsTitle}>Tråde</div>
+                    <button className={styles.iconBtn} onClick={() => setThreadsOpen(false)} title="Luk" aria-label="Luk">
+                      <XMarkIcon className={styles.icon} />
+                    </button>
+                  </div>
 
-              {headerNavHint && (
+                  <div className={styles.threadsBody} onClick={(e) => e.stopPropagation()}>
+                    {threadTabs.length === 0 ? (
+                      <div className={styles.threadsHint}>Ingen tråde endnu.</div>
+                    ) : (
+                      <div className={styles.threadsList}>
+                        {threadTabs
+                          .slice()
+                          .sort((a, b) => {
+                            const ta = Date.parse(a.updated_at || "") || 0
+                            const tb = Date.parse(b.updated_at || "") || 0
+                            return tb - ta
+                          })
+                          .map((t) => {
+                            const isActive = !!activeConversationId && t.conversation_id === activeConversationId
+                            const label = (t.title || "").trim() || trimDuplicateTitle(t.preview || "Samtale")
+                            const isJournal = t.thread_type === "journal"
+                            return (
+                              <button
+                                key={t.conversation_id}
+                                className={`${styles.threadItem} ${isActive ? styles.threadItemActive : ""}`}
+                                onClick={() => {
+                                  if (!isActive) dispatch({ type: "THREAD_SWITCH", conversation_id: t.conversation_id } as any, { silentUser: true })
+                                  setThreadsOpen(false)
+                                }}
+                                disabled={loading || !state}
+                                title={t.preview || t.title || ""}
+                              >
+                                <div className={styles.threadItemTop}>
+                                  <div className={styles.threadItemTitle}>{label}</div>
+                                  {isJournal ? <span className={styles.threadBadge}>Dagbog</span> : null}
+                                </div>
+                                {t.preview ? <div className={styles.threadItemPreview}>{t.preview}</div> : null}
+                              </button>
+                            )
+                          })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+{headerNavHint && (
                 <div className={styles.navHint}>
                   <span className={styles.navHintPulse}>{headerNavHint}</span>
                 </div>
