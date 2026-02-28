@@ -9,10 +9,6 @@ import {
   ArrowsPointingInIcon,
   PlusIcon,
   ArchiveBoxIcon,
-  EllipsisVerticalIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  LinkIcon,
   PaperAirplaneIcon,
 } from "@heroicons/react/24/outline"
 
@@ -34,12 +30,10 @@ type ConversationState = {
 
 type InputSignal =
   | { type: "EXPLICIT_TRANSITION"; target: string }
-  | { type: "UI_ACTION"; action: "TLF" | "MAIL" | "AKUT" | "CONTACT_FORM" }
   | { type: "FREE_TEXT"; text: string }
   | { type: "SYSTEM_INIT" }
   | { type: "THREAD_CREATE"; mode: "normal" }
   | { type: "THREAD_SWITCH"; conversation_id: string }
-  | { type: "THREAD_ARCHIVE" }
 
 type KernelResponse = {
   state: ConversationState
@@ -123,11 +117,8 @@ export default function Chatbot() {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
 
-  // Threads overlay (drawer) lives on top of the chat view.
-
-  // Secondary (overflow) menu in the footer toolbar.
-  const [secondaryMenuOpen, setSecondaryMenuOpen] = useState(false)
-  const secondaryMenuRef = useRef<HTMLDivElement | null>(null)
+  // Threads drawer (overlay) lives on top of the chat view.
+  const [threadsOpen, setThreadsOpen] = useState(false)
 
   const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
   const headerNavHintTimerRef = useRef<number | null>(null)
@@ -135,10 +126,6 @@ export default function Chatbot() {
   const endRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const didAutoStartNewThreadRef = useRef(false)
-
-  // Global footer actions must always be reachable, regardless of the current node's allowed_transitions.
-  // (Kernel also whitelists these exits.)
-  const GLOBAL_ACTIONS = useMemo(() => new Set(["HOME", "TLF", "MAIL", "CONTACT_FORM", "AKUT"]), [])
 
   function metaValue(key: string) {
     const entry = state?.meta?.[key]
@@ -216,17 +203,7 @@ export default function Chatbot() {
     }
   }, [])
 
-  useEffect(() => {
-    if (!secondaryMenuOpen) return
-    const onDocPointerDown = (e: MouseEvent) => {
-      const el = secondaryMenuRef.current
-      if (!el) return
-      if (el.contains(e.target as Node)) return
-      setSecondaryMenuOpen(false)
-    }
-    document.addEventListener("mousedown", onDocPointerDown)
-    return () => document.removeEventListener("mousedown", onDocPointerDown)
-  }, [secondaryMenuOpen])
+  // No secondary menu.
 
   function appendAssistantMessage(conversationId: string, text: string) {
     const message = (text ?? "").trim()
@@ -369,8 +346,7 @@ export default function Chatbot() {
 
       const isThreadNav =
         nextInput.type === "THREAD_CREATE" ||
-        nextInput.type === "THREAD_SWITCH" ||
-        nextInput.type === "THREAD_ARCHIVE"
+        nextInput.type === "THREAD_SWITCH"
 
       if (nextInput.type === "EXPLICIT_TRANSITION") {
         const fromLabel = NODE_LABELS[fromNode] ?? fromNode
@@ -406,50 +382,14 @@ export default function Chatbot() {
   function closeChat() {
     setOpen(false)
     setExpanded(false)
-    setSecondaryMenuOpen(false)
+    setThreadsOpen(false)
   }
 
   function toggleExpanded() {
     setExpanded((v) => !v)
   }
 
-  async function go(target: string) {
-    if (!state) return
-
-    const allowed = new Set(state.allowed_transitions ?? [])
-    const isAllowed = allowed.has(target) || GLOBAL_ACTIONS.has(target)
-    if (!isAllowed) {
-      showHeaderNavHint("Ikke tilgængeligt her")
-      return
-    }
-
-    const goingFromHomeToTopic = state.active_node === "HOME" && target !== "HOME"
-    if (goingFromHomeToTopic) {
-      const label = NODE_LABELS[target] ?? target
-      if (state.conversation_id) appendUserMessage(state.conversation_id, label)
-    }
-
-    // Footer actions are UI-only and must not change active nodes.
-    if (target === "TLF" || target === "MAIL" || target === "AKUT" || target === "CONTACT_FORM") {
-      if (state.conversation_id) {
-        if (target === "TLF") appendAssistantMessage(state.conversation_id, "Åbner telefon…")
-        if (target === "MAIL") appendAssistantMessage(state.conversation_id, "Åbner e-mail…")
-        if (target === "AKUT") appendAssistantMessage(state.conversation_id, "Viser akut-info…")
-        if (target === "CONTACT_FORM") appendAssistantMessage(state.conversation_id, "Åbner kontaktformular…")
-      }
-
-      // Log + (optionally) render body text via backend without switching nodes.
-      await dispatch({ type: "UI_ACTION", action: target as any })
-
-      // CONTACT_FORM navigates to the dedicated page.
-      if (target === "CONTACT_FORM") {
-        router.push("/kontakt")
-      }
-      return
-    }
-
-    dispatch({ type: "EXPLICIT_TRANSITION", target })
-  }
+  // Explicit node transitions currently not used in this UI surface.
 
   // “Tråde” i header: tilbage til lobby / trådvalg
 
@@ -458,16 +398,6 @@ export default function Chatbot() {
 
   const returnDepthRaw = metaValue("threads.return_depth")
   const returnDepth = Number.isFinite(Number(returnDepthRaw ?? 0)) ? Number(returnDepthRaw ?? 0) : 0
-
-  const canArchiveThread = useMemo(() => {
-    if (!state) return false
-    if (loading) return false
-    const cid = String(state.conversation_id ?? "")
-    if (!cid) return false
-    if (cid.startsWith("lobby:u:")) return false
-    if (state.active_node === "THREAD_CHOOSER") return false
-    return true
-  }, [state, loading])
 
   const threadChoices: ThreadChoice[] =
     state?.active_node === "THREAD_CHOOSER" && Array.isArray(threadChoicesRaw)
@@ -489,6 +419,36 @@ export default function Chatbot() {
     : []
 
   // Topic/menu structure has been removed. All dialog happens in free text.
+
+  const threadsSorted = useMemo(() => {
+    const tabs = Array.isArray(threadTabs) ? [...threadTabs] : []
+    tabs.sort((a, b) => {
+      const ta = Date.parse(a.updated_at ?? "") || 0
+      const tb = Date.parse(b.updated_at ?? "") || 0
+      return tb - ta
+    })
+    return tabs
+  }, [threadTabs])
+
+  function openThreads() {
+    setThreadsOpen(true)
+  }
+
+  function closeThreads() {
+    setThreadsOpen(false)
+  }
+
+  async function createNewThread() {
+    if (!state || loading) return
+    await dispatch({ type: "THREAD_CREATE", mode: "normal" } as any, { silentUser: true })
+    setThreadsOpen(false)
+  }
+
+  async function switchThread(conversationId: string) {
+    if (!conversationId) return
+    await dispatch({ type: "THREAD_SWITCH", conversation_id: conversationId } as any, { silentUser: true })
+    setThreadsOpen(false)
+  }
 
   // Auto: hvis der ingen tråde er, start ny tråd uden at brugeren skal skrive “new”.
   useEffect(() => {
@@ -596,6 +556,26 @@ export default function Chatbot() {
                 <div className={styles.headerRight}>
                   <button
                     className={styles.iconBtn}
+                    onClick={openThreads}
+                    title="Tråde"
+                    aria-label="Tråde"
+                    disabled={loading || !state}
+                  >
+                    <ArchiveBoxIcon className={styles.icon} />
+                  </button>
+
+                  <button
+                    className={styles.iconBtn}
+                    onClick={createNewThread}
+                    title="Ny tråd"
+                    aria-label="Ny tråd"
+                    disabled={loading || !state}
+                  >
+                    <PlusIcon className={styles.icon} />
+                  </button>
+
+                  <button
+                    className={styles.iconBtn}
                     onClick={toggleExpanded}
                     title={expanded ? "Minimer" : "Maksimer"}
                     aria-label={expanded ? "Minimer" : "Maksimer"}
@@ -613,46 +593,57 @@ export default function Chatbot() {
                 </div>
               </div>
 
-              <div className={styles.tabBarWrap} aria-label="Tråde">
-                <div className={styles.tabBar} role="tablist">
-                  {threadTabs.map((tab) => {
-                    const isActive = !!activeConversationId && tab.conversation_id === activeConversationId
-                    const label = (tab.title || "").trim() || trimDuplicateTitle(tab.preview || "Samtale")
-                    return (
-                      <button
-                        key={tab.conversation_id}
-                        role="tab"
-                        aria-selected={isActive}
-                        className={`${styles.tab} ${isActive ? styles.tabActive : ""}`}
-                        onClick={() => dispatch({ type: "THREAD_SWITCH", conversation_id: tab.conversation_id } as any, { silentUser: true })}
-                        disabled={loading || !state || isActive}
-                        title={tab.preview || tab.title || ""}
-                      >
-                        <span className={styles.tabLabel}>{label}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <button
-                  className={`${styles.tab} ${styles.tabPlusFixed}`}
-                  onClick={() => dispatch({ type: "THREAD_CREATE", mode: "normal" } as any, { silentUser: true })}
-                  disabled={loading}
-                  title="Ny tråd"
-                  aria-label="Ny tråd"
-                >
-                  <PlusIcon className={styles.tabIcon} />
-                  <span className={styles.tabPlusLabel}>Ny</span>
-                </button>
-              </div>
-
-
               {headerNavHint && (
                 <div className={styles.navHint}>
                   <span className={styles.navHintPulse}>{headerNavHint}</span>
                 </div>
               )}
             </div>
+
+            {threadsOpen && (
+              <div className={styles.threadsOverlay} role="dialog" aria-label="Tråde">
+                <div className={styles.threadsHeader}>
+                  <div className={styles.threadsTitle}>Tråde</div>
+                  <button className={styles.iconBtn} onClick={closeThreads} aria-label="Luk" title="Luk">
+                    <XMarkIcon className={styles.icon} />
+                  </button>
+                </div>
+
+                <div className={styles.threadsBody}>
+                  <div className={styles.callout}>
+                    <div className={styles.calloutRow}>
+                      <button className={styles.chipAction} onClick={createNewThread} disabled={loading || !state}>
+                        Ny tråd
+                      </button>
+                    </div>
+                  </div>
+
+                  {threadsSorted.length === 0 ? (
+                    <div className={styles.threadsHint}>Ingen tråde endnu.</div>
+                  ) : (
+                    <div className={styles.topicGrid}>
+                      {threadsSorted.map((tab) => {
+                        const isActive = !!activeConversationId && tab.conversation_id === activeConversationId
+                        const label = (tab.title || "").trim() || trimDuplicateTitle(tab.preview || "Samtale")
+                        const meta = (tab.preview || "").trim()
+                        return (
+                          <button
+                            key={tab.conversation_id}
+                            className={styles.topicCard}
+                            onClick={() => switchThread(tab.conversation_id)}
+                            disabled={loading || !state || isActive}
+                            title={meta || label}
+                          >
+                            <span className={styles.topicLabel}>{label}</span>
+                            {meta ? <span className={styles.topicMeta}>{meta}</span> : null}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
 	            <div className={styles.messages}>
 
@@ -725,57 +716,6 @@ export default function Chatbot() {
 
             <div className={styles.footer}>
               <div className={styles.inputRow}>
-  <div className={styles.footerMenuInline} ref={secondaryMenuRef}>
-    <button
-      className={styles.footerIcon}
-      onClick={() => setSecondaryMenuOpen((v) => !v)}
-      title="Mere"
-      aria-label="Mere"
-      disabled={loading}
-      type="button"
-    >
-      <EllipsisVerticalIcon className={styles.footerIconSvg} />
-    </button>
-
-    {secondaryMenuOpen && (
-      <div className={styles.footerMenuPanel} role="menu" aria-label="Mere handlinger">
-        <button
-          className={styles.footerMenuItem}
-          onClick={() => {
-            setSecondaryMenuOpen(false)
-            dispatch({ type: "UI_ACTION", action: "MAIL" } as any)
-          }}
-          type="button"
-        >
-          <EnvelopeIcon className={styles.footerMenuItemIcon} />
-          <span className={styles.footerMenuItemLabel}>E-mail</span>
-        </button>
-        <button
-          className={styles.footerMenuItem}
-          onClick={() => {
-            setSecondaryMenuOpen(false)
-            dispatch({ type: "UI_ACTION", action: "TLF" } as any)
-          }}
-          type="button"
-        >
-          <PhoneIcon className={styles.footerMenuItemIcon} />
-          <span className={styles.footerMenuItemLabel}>Telefon</span>
-        </button>
-        <button
-          className={styles.footerMenuItem}
-          onClick={() => {
-            setSecondaryMenuOpen(false)
-            dispatch({ type: "UI_ACTION", action: "CONTACT_FORM" } as any)
-          }}
-          type="button"
-        >
-          <LinkIcon className={styles.footerMenuItemIcon} />
-          <span className={styles.footerMenuItemLabel}>Kontakt</span>
-        </button>
-      </div>
-    )}
-  </div>
-
   <textarea
     ref={textareaRef}
     className={styles.textarea}
