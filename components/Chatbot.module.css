@@ -218,10 +218,10 @@
 }
 
 .messageUser {
-  background: #51665C;
-  color: #FFFFFF;
+  background: rgba(74, 93, 84, 0.10);
+  color: rgba(27, 30, 28, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   margin-left: auto;
-  /* Keep the bubble right-aligned via margin-left, but keep text left-aligned for readability */
   text-align: left;
 }
 
@@ -320,12 +320,17 @@
 .chipAction {
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: white;
-  padding: 8px 10px;
+  padding: 6px 8px;
   border-radius: 9999px;
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1;
   color: rgba(27, 30, 28, 0.86);
   cursor: pointer;
   transition: background 120ms ease, transform 120ms ease;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chipAction:hover {
@@ -399,7 +404,7 @@
 }
 
 .footer {
-  padding: 12px 12px 14px 12px;
+  padding: 10px 12px 12px 12px;
   border-top: 1px solid rgba(44, 42, 40, 0.05);
   background-color: #ECEAE4;
 }
@@ -411,7 +416,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .footerToolbarLeft {
@@ -434,14 +439,14 @@
 .footerMenuPanel {
   position: absolute;
   right: 0;
-  bottom: 44px;
-  min-width: 170px;
-  padding: 8px;
+  bottom: 54px;
+  width: 180px;
   border-radius: 14px;
-  background: rgba(251, 251, 250, 0.98);
+  background: white;
   border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
-  z-index: 50;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  z-index: 30;
 }
 
 .footerMenuItem {
@@ -474,11 +479,11 @@
 }
 
 .footerIcon {
-  width: 42px;
-  height: 36px;
-  border-radius: 12px;
-  background: rgba(74, 93, 84, 0.08);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(27, 30, 28, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -613,15 +618,16 @@
 .tab {
   flex: 0 0 auto;
   max-width: 200px;
-  padding: 6px 8px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  border-bottom: 2px solid transparent;
-  background: transparent;
+  padding: 5px 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom-width: 2px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.65);
   cursor: pointer;
+  transition: background 120ms ease;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .tab:hover {
@@ -658,4 +664,11 @@
   width: 16px;
   height: 16px;
   color: rgba(27, 30, 28, 0.9);
+}
+
+
+.footerMenuInline {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
 }
