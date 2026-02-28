@@ -7,6 +7,11 @@ export type ThreadItem = {
   title: string
   preview: string
   status: ThreadStatus
+  // Optional thread type metadata used by the UI.
+  // Defaults to "chat" when omitted.
+  thread_type?: "chat" | "journal"
+  // Optional journal kind (only meaningful when thread_type === "journal").
+  journal_kind?: "alcohol"
   created_at: string
   updated_at: string
 }
@@ -39,13 +44,17 @@ function asString(v: unknown): string {
   return typeof v === "string" ? v : ""
 }
 
-function isThreadItemLoose(value: unknown): value is Omit<ThreadItem, "preview"> & { preview?: unknown } {
+function isThreadItemLoose(
+  value: unknown
+): value is Omit<ThreadItem, "preview"> & { preview?: unknown; thread_type?: unknown; journal_kind?: unknown } {
   if (typeof value !== "object" || value === null) return false
   const v = value as any
   return (
     typeof v.conversation_id === "string" &&
     typeof v.title === "string" &&
     (v.status === "active" || v.status === "archived") &&
+    (v.thread_type === undefined || v.thread_type === "chat" || v.thread_type === "journal") &&
+    (v.journal_kind === undefined || v.journal_kind === "alcohol") &&
     typeof v.created_at === "string" &&
     typeof v.updated_at === "string"
   )
@@ -63,12 +72,16 @@ function isThreadIndexLoose(value: unknown): value is Omit<ThreadIndex, "threads
   )
 }
 
-function normalizeThreadItem(v: Omit<ThreadItem, "preview"> & { preview?: unknown }): ThreadItem {
+function normalizeThreadItem(
+  v: Omit<ThreadItem, "preview"> & { preview?: unknown; thread_type?: unknown; journal_kind?: unknown }
+): ThreadItem {
   return {
     conversation_id: v.conversation_id,
     title: v.title,
     preview: asString((v as any).preview),
     status: v.status,
+    thread_type: (v as any).thread_type === "journal" ? "journal" : "chat",
+    journal_kind: (v as any).journal_kind === "alcohol" ? "alcohol" : undefined,
     created_at: v.created_at,
     updated_at: v.updated_at,
   }
@@ -171,11 +184,15 @@ export function upsertThread(params: {
   title?: string
   preview?: string
   status?: ThreadStatus
+  thread_type?: "chat" | "journal"
+  journal_kind?: "alcohol"
 }): ThreadIndex {
   const ts = nowIso()
   const title = params.title ?? ""
   const preview = params.preview ?? ""
   const status = params.status ?? "active"
+  const thread_type = params.thread_type ?? "chat"
+  const journal_kind = params.journal_kind
   const existingIdx = params.index.threads.findIndex((t) => t.conversation_id === params.conversationId)
 
   const nextThreads = [...params.index.threads]
@@ -186,6 +203,8 @@ export function upsertThread(params: {
       title: title || prev.title,
       preview: preview || prev.preview,
       status,
+      thread_type: prev.thread_type ?? thread_type,
+      journal_kind: prev.journal_kind ?? journal_kind,
       updated_at: ts,
     }
   } else {
@@ -194,6 +213,8 @@ export function upsertThread(params: {
       title,
       preview,
       status,
+      thread_type,
+      journal_kind,
       created_at: ts,
       updated_at: ts,
     })
