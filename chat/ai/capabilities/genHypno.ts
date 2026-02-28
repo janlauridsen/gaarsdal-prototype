@@ -1,5 +1,10 @@
 import { Transition } from "../../kernel/types"
-import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
+import {
+  AiCapability,
+  AiCapabilityContext,
+  AiCapabilityResult,
+  LlmClient,
+} from "../types"
 import { GAARSDAL_SITE_CONTEXT_DA } from "../siteContext"
 
 type TranscriptTurn = { role: "user" | "assistant"; content: string }
@@ -14,7 +19,7 @@ const MAX_TRANSCRIPT_CHARS = 6000
 
 const GEN_HYPNO_PROMPT = `
 ROLLE
-Du er en rolig, kompetent hypnoterapeut...
+Du er en rolig, kompetent hypnoterapeut.
 
 SAMTALESTRUKTUR
 Du modtager:
@@ -28,9 +33,9 @@ OPSUMMERINGSREGEL
 - Afslut med højst ét konkret spørgsmål.
 
 EVIDENSRAMME
-(A) God evidens: Flere systematiske reviews/metaanalyser.
-(B) Moderat/blandet: Mindre RCT'er/blandede fund.
-(C) Begrænset: Få studier/små samples.
+(A) God evidens: Flere systematiske reviews eller metaanalyser.
+(B) Moderat/blandet evidens: Mindre RCT'er eller blandede resultater.
+(C) Begrænset evidens: Få studier eller metodiske begrænsninger.
 (D) Primært klinisk erfaring.
 Hvis uklart: skriv "evidens: uklar".
 
@@ -131,7 +136,10 @@ function buildFallbackMessage(userText: string): string {
 export const genHypnoCapability: AiCapability = {
   id: "gen-hypno-v1",
 
-  async run(context: AiCapabilityContext, llm: LlmClient): Promise<AiCapabilityResult> {
+  async run(
+    context: AiCapabilityContext,
+    llm: LlmClient
+  ): Promise<AiCapabilityResult> {
     const fullTranscript = readTranscript(context)
     const trimmedTranscript = trimTranscript(fullTranscript)
 
@@ -195,8 +203,6 @@ export const genHypnoCapability: AiCapability = {
       transition,
       debug: {
         capability: "gen-hypno-v1",
-        assistant_turn_count: newAssistantCount,
-        transcript_size: trimmedTranscript.length,
         used_fallback: !parsed,
       },
     }
