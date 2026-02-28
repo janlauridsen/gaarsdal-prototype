@@ -41,6 +41,13 @@ type ApiInputSignal =
       type: "THREAD_CREATE"
       mode: "normal" | "parenthesis"
       thread_type?: "chat" | "journal"
+      journal_profile?: "alcohol" | "general" | "strict"
+      journal_init?: {
+        title: string
+        problem: string
+        goal: string
+      }
+      // Legacy support
       journal_kind?: "alcohol"
     }
   | { type: "THREAD_SWITCH"; conversation_id: string }
@@ -166,6 +173,7 @@ type ThreadTab = {
   preview: string
   status: "active" | "archived"
   thread_type?: "chat" | "journal"
+  journal_profile?: "alcohol" | "general" | "strict"
   journal_kind?: "alcohol"
   updated_at?: string
 }
@@ -180,6 +188,12 @@ function makeThreadTabs(index: any): ThreadTab[] {
       preview: typeof t.preview === "string" ? t.preview : "",
       status: t.status === "archived" ? "archived" : "active",
       thread_type: t.thread_type === "journal" ? "journal" : "chat",
+      journal_profile:
+        t.journal_profile === "alcohol" || t.journal_profile === "general" || t.journal_profile === "strict"
+          ? t.journal_profile
+          : t.journal_kind === "alcohol"
+          ? "alcohol"
+          : undefined,
       journal_kind: t.journal_kind === "alcohol" ? "alcohol" : undefined,
       updated_at: t.updated_at,
     }))
@@ -1044,7 +1058,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const canReturn = !!oldThreadId && !isLobbyConversation(oldThreadId)
 
       const threadType = (input as any)?.thread_type === "journal" ? ("journal" as const) : ("chat" as const)
-      const journalKind = threadType === "journal" && (input as any)?.journal_kind === "alcohol" ? ("alcohol" as const) : undefined
+
+      const journalProfileRaw = threadType === "journal" ? String((input as any)?.journal_profile ?? "") : ""
+      const journalProfile =
+        journalProfileRaw === "alcohol" || journalProfileRaw === "general" || journalProfileRaw === "strict"
+          ? (journalProfileRaw as "alcohol" | "general" | "strict")
+          : ("general" as const)
+
+      const journalInitRaw = threadType === "journal" ? ((input as any)?.journal_init ?? null) : null
+      const journalInit =
+        journalInitRaw && typeof journalInitRaw === "object"
+          ? {
+              title: typeof (journalInitRaw as any).title === "string" ? String((journalInitRaw as any).title).trim() : "",
+              problem: typeof (journalInitRaw as any).problem === "string" ? String((journalInitRaw as any).problem).trim() : "",
+              goal: typeof (journalInitRaw as any).goal === "string" ? String((journalInitRaw as any).goal).trim() : "",
+            }
+          : { title: "Dagbog", problem: "", goal: "" }
+
+      const journalTitle = journalInit.title || "Dagbog"
+
+      // Limit active journals per user (keeps UI manageable).
+      if (threadType === "journal") {
+        const activeJournals = (index0?.threads ?? []).filter(
+          (t: any) => (t.thread_type ?? "chat") === "journal" && t.status === "active"
+        )
+        if (activeJournals.length >= 5) {
+          const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+          res.status(200).json({ state: withThreadMeta({ state: baseState, index: indexNow }) })
+          return
+        }
+      }
 
       const newConversationId = `c:${safeUuid()}`
 
@@ -1059,7 +1102,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           active_node_message: entry.message,
           allowed_transitions: entry.allowed_exits,
           meta: {
-            "journal.kind": { value: journalKind ?? "alcohol", source_node: "SYSTEM_UI" },
+            "journal.config": {
+              value: {
+                profile: journalProfile,
+                title: journalTitle,
+                problem: journalInit.problem,
+                goal: journalInit.goal,
+              },
+              source_node: "SYSTEM_UI",
+            },
             "journal.phase": { value: 1, source_node: "SYSTEM_UI" },
             "journal.entries": { value: [], source_node: "SYSTEM_UI" },
           },
@@ -1073,10 +1124,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let nextIndex = upsertThread({
         index: index0,
         conversationId: newConversationId,
-        title: threadType === "journal" ? "Dagbog" : "",
+        title: threadType === "journal" ? journalTitle : "",
         preview: "",
         thread_type: threadType,
-        journal_kind: journalKind,
+        journal_profile: threadType === "journal" ? journalProfile : undefined,
       })
 
       if (input.mode === "normal") {
