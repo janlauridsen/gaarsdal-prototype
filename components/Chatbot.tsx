@@ -8,11 +8,6 @@ import {
   ArrowsPointingOutIcon,
   ArrowsPointingInIcon,
   PlusIcon,
-  ArchiveBoxIcon,
-  EllipsisVerticalIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  LinkIcon,
   PaperAirplaneIcon,
 } from "@heroicons/react/24/outline"
 
@@ -146,10 +141,6 @@ export default function Chatbot() {
 
   // Threads overlay (drawer) lives on top of the chat view.
 
-  // Secondary (overflow) menu in the footer toolbar.
-  const [secondaryMenuOpen, setSecondaryMenuOpen] = useState(false)
-  const secondaryMenuRef = useRef<HTMLDivElement | null>(null)
-
   const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
   const headerNavHintTimerRef = useRef<number | null>(null)
 
@@ -228,18 +219,6 @@ export default function Chatbot() {
       }
     }
   }, [])
-
-  useEffect(() => {
-    if (!secondaryMenuOpen) return
-    const onDocPointerDown = (e: MouseEvent) => {
-      const el = secondaryMenuRef.current
-      if (!el) return
-      if (el.contains(e.target as Node)) return
-      setSecondaryMenuOpen(false)
-    }
-    document.addEventListener("mousedown", onDocPointerDown)
-    return () => document.removeEventListener("mousedown", onDocPointerDown)
-  }, [secondaryMenuOpen])
 
   function appendAssistantMessage(conversationId: string, text: string) {
     const message = (text ?? "").trim()
@@ -811,73 +790,6 @@ export default function Chatbot() {
               <div className={styles.footerToolbar}>
                 <div className={styles.footerToolbarLeft}></div>
                 <div className={styles.footerToolbarRight}>
-
-                  <div className={styles.footerMenu} ref={secondaryMenuRef}>
-                    <button
-                      className={styles.footerIcon}
-                      onClick={() => setSecondaryMenuOpen((v) => !v)}
-                      title="Mere"
-                      aria-label="Mere"
-                      disabled={loading}
-                    >
-                      <EllipsisVerticalIcon className={styles.footerIconSvg} />
-                    </button>
-
-                    {secondaryMenuOpen && (
-                      <div className={styles.footerMenuPanel} role="menu" aria-label="Mere handlinger">
-                        <button
-                          className={styles.footerMenuItem}
-                          role="menuitem"
-                          onClick={async () => {
-                            setSecondaryMenuOpen(false)
-                            if (!canArchiveThread) return
-                            const ok = window.confirm(
-                              "Arkivér denne tråd? Den vil ikke længere vises i trådelisten."
-                            )
-                            if (!ok) return
-                            await dispatch({ type: "THREAD_ARCHIVE" }, { silentUser: true })
-                          }}
-                          disabled={!canArchiveThread}
-                          title={canArchiveThread ? "Arkivér tråd" : "Arkivér tråd (ikke tilgængelig)"}
-                        >
-                          <ArchiveBoxIcon className={styles.footerMenuItemIcon} />
-                          <span className={styles.footerMenuItemLabel}>Arkivér tråd</span>
-                        </button>
-
-                        <button
-                          className={styles.footerMenuItem}
-                          role="menuitem"
-                          onClick={() => {
-                            setSecondaryMenuOpen(false)
-                            go("TLF")
-                          }}
-                        >
-                          <PhoneIcon className={styles.footerMenuItemIcon} />
-                          <span className={styles.footerMenuItemLabel}>Telefon</span>
-                        </button>
-                        <button
-                          className={styles.footerMenuItem}
-                          role="menuitem"
-                          onClick={() => {
-                            setSecondaryMenuOpen(false)
-                            go("MAIL")
-                          }}
-                        >
-                          <EnvelopeIcon className={styles.footerMenuItemIcon} />
-                          <span className={styles.footerMenuItemLabel}>E-mail</span>
-                        </button>
-                        <button
-                          className={styles.footerMenuItem}
-                          role="menuitem"
-                          onClick={() => {
-                            setSecondaryMenuOpen(false)
-                            router.push("/kontakt")
-                          }}
-                        >
-                          <LinkIcon className={styles.footerMenuItemIcon} />
-                          <span className={styles.footerMenuItemLabel}>Kontakt</span>
-                        </button>
-                      </div>
                     )}
                   </div>
                 </div>
