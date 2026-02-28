@@ -828,14 +828,6 @@ export default function Chatbot() {
             </div>
 
             <div className={styles.footer}>
-              <div className={styles.footerToolbar}>
-                <div className={styles.footerToolbarLeft}></div>
-                <div className={styles.footerToolbarRight}>
-                    )}
-                  </div>
-                </div>
-              </div>
-
               {!isJournalActive ? (
                 <div className={styles.inputRow}>
                   <textarea
