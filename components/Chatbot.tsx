@@ -9,13 +9,14 @@ import {
   ArrowsPointingInIcon,
   PlusIcon,
   ArchiveBoxIcon,
+  EllipsisVerticalIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  LinkIcon,
   PaperAirplaneIcon,
 } from "@heroicons/react/24/outline"
 
 import styles from "./Chatbot.module.css"
-
-// UI text lives in the node registry to keep runtime + UI consistent.
-import getNode from "../chat/nodes/registry"
 
 type ConversationState = {
   conversation_id: string
@@ -30,10 +31,12 @@ type ConversationState = {
 
 type InputSignal =
   | { type: "EXPLICIT_TRANSITION"; target: string }
+  | { type: "UI_ACTION"; action: "TLF" | "MAIL" | "AKUT" | "CONTACT_FORM" }
   | { type: "FREE_TEXT"; text: string }
   | { type: "SYSTEM_INIT" }
-  | { type: "THREAD_CREATE"; mode: "normal" }
+  | { type: "THREAD_CREATE"; mode: "normal"; thread_type?: "chat" | "journal"; journal_kind?: "alcohol" }
   | { type: "THREAD_SWITCH"; conversation_id: string }
+  | { type: "THREAD_ARCHIVE" }
 
 type KernelResponse = {
   state: ConversationState
@@ -60,15 +63,36 @@ type ThreadChoice = {
 }
 
 
-type ThreadTab = { conversation_id: string; title: string; preview: string; status: "active" | "archived"; updated_at?: string }
+type ThreadTab = {
+  conversation_id: string
+  title: string
+  preview: string
+  status: "active" | "archived"
+  thread_type?: "chat" | "journal"
+  journal_kind?: "alcohol"
+  updated_at?: string
+}
+
+type JournalEntry = {
+  entry_id: string
+  ts_ms: number
+  schema_version: "v1"
+  kind: "alcohol"
+  text?: string
+  fields?: {
+    drinks?: number
+    urge_0_10?: number
+  }
+}
 
 const NODE_LABELS: Record<string, string> = {
   THREAD_CHOOSER: "Tråde",
   HOME: "Forside",
-  GEN_HYPNO: "Dialog med assistenten",
+  GEN_HYPNO: "Spørg om hypnoterapi…",
   TRIAGE: "Passer hypnoterapi til min situation?",
   METHOD_FIT: "Hypnoterapi eller et bedre alternativ?",
   REFLECTION: "Refleksion",
+  DAGBOG: "Dagbog",
   BOOKING: "Book tid",
   DEV_SANDBOX_INTRO: "Sandbox (dev)",
   MAIL: "E-mail",
@@ -115,10 +139,16 @@ export default function Chatbot() {
   const [messagesByConversationId, setMessagesByConversationId] = useState<Record<string, ChatMessage[]>>({})
   const loadedConversationsRef = useRef<Set<string>>(new Set())
   const [input, setInput] = useState("")
+  const [journalText, setJournalText] = useState("")
+  const [journalDrinks, setJournalDrinks] = useState<string>("")
+  const [journalUrge, setJournalUrge] = useState<string>("")
   const [loading, setLoading] = useState(false)
 
-  // Threads drawer (overlay) lives on top of the chat view.
-  const [threadsOpen, setThreadsOpen] = useState(false)
+  // Threads overlay (drawer) lives on top of the chat view.
+
+  // Secondary (overflow) menu in the footer toolbar.
+  const [secondaryMenuOpen, setSecondaryMenuOpen] = useState(false)
+  const secondaryMenuRef = useRef<HTMLDivElement | null>(null)
 
   const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
   const headerNavHintTimerRef = useRef<number | null>(null)
@@ -126,6 +156,10 @@ export default function Chatbot() {
   const endRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const didAutoStartNewThreadRef = useRef(false)
+
+  // Global footer actions must always be reachable, regardless of the current node's allowed_transitions.
+  // (Kernel also whitelists these exits.)
+  const GLOBAL_ACTIONS = useMemo(() => new Set(["HOME", "TLF", "MAIL", "CONTACT_FORM", "AKUT"]), [])
 
   function metaValue(key: string) {
     const entry = state?.meta?.[key]
@@ -136,13 +170,8 @@ export default function Chatbot() {
   const activeNodeLabel = useMemo(() => {
     if (!state) return "Initialiserer…"
     const key = String(state.active_node ?? "").trim()
-    // Prefer node registry subtitle/goal over internal ids.
-    try {
-      const node = getNode(key)
-      return node.ui_subtitle ?? node.goal ?? NODE_LABELS[key] ?? key
-    } catch {
-      return NODE_LABELS[key] ?? key
-    }
+    // Prefer human labels over internal node ids.
+    return NODE_LABELS[key] ?? key
   }, [state])
 
   const threadTabs: ThreadTab[] = useMemo(() => {
@@ -152,33 +181,30 @@ export default function Chatbot() {
 
   const activeConversationId = state?.conversation_id ?? null
 
+  const activeThread = useMemo(() => {
+    if (!activeConversationId) return null
+    return threadTabs.find((t) => t.conversation_id === activeConversationId) ?? null
+  }, [activeConversationId, threadTabs])
+
+  const isJournalActive = !!activeThread && (activeThread.thread_type ?? "chat") === "journal"
+
+  const journalEntries: JournalEntry[] = useMemo(() => {
+    if (!isJournalActive) return []
+    const raw = metaValue("journal.entries")
+    return Array.isArray(raw) ? (raw as any) : []
+  }, [state?.meta, isJournalActive])
+
   const visibleMessages = useMemo(() => {
     if (!activeConversationId) return []
     return messagesByConversationId[activeConversationId] ?? []
   }, [activeConversationId, messagesByConversationId])
 
-  const activeNodeHint = useMemo(() => {
-    if (!state) return null
-    const key = String(state.active_node ?? "").trim()
-    try {
-      const node = getNode(key)
-      const hint = (node.ui_hint ?? "").trim()
-      return hint || null
-    } catch {
-      return null
-    }
-  }, [state])
-
 
   const placeholder = useMemo(() => {
     if (!state) return "Initialiserer…"
-    try {
-      const node = getNode(String(state.active_node ?? "").trim())
-      return node.ui_placeholder ?? "Skriv din besked…"
-    } catch {
-      return "Skriv din besked…"
-    }
-  }, [state])
+    if (isJournalActive) return "Dagens notat…"
+    return "Skriv her… (Enter = send, Shift+Enter = ny linje)"
+  }, [state, isJournalActive])
 
   const freeTextEnabled = useMemo(() => {
     if (!state) return false
@@ -203,7 +229,17 @@ export default function Chatbot() {
     }
   }, [])
 
-  // No secondary menu.
+  useEffect(() => {
+    if (!secondaryMenuOpen) return
+    const onDocPointerDown = (e: MouseEvent) => {
+      const el = secondaryMenuRef.current
+      if (!el) return
+      if (el.contains(e.target as Node)) return
+      setSecondaryMenuOpen(false)
+    }
+    document.addEventListener("mousedown", onDocPointerDown)
+    return () => document.removeEventListener("mousedown", onDocPointerDown)
+  }, [secondaryMenuOpen])
 
   function appendAssistantMessage(conversationId: string, text: string) {
     const message = (text ?? "").trim()
@@ -269,6 +305,18 @@ export default function Chatbot() {
     const transcript = await loadTranscript(conversationId)
     loadedConversationsRef.current.add(conversationId)
     setMessagesByConversationId((prev) => ({ ...prev, [conversationId]: transcript }))
+
+    // If there is no transcript yet, show the current node message as the first assistant bubble.
+    if (!transcript.length && s) {
+      const welcome = normalizeAssistantMessage(s)
+      if (welcome?.trim()) {
+        setMessagesByConversationId((prev) => {
+          const cur = prev[conversationId] ?? []
+          if (cur.length) return prev
+          return { ...prev, [conversationId]: [{ id: `assistant-${safeId()}`, role: "assistant", text: welcome.trim() }] }
+        })
+      }
+    }
   }
 
   function showHeaderNavHint(text: string) {
@@ -346,7 +394,8 @@ export default function Chatbot() {
 
       const isThreadNav =
         nextInput.type === "THREAD_CREATE" ||
-        nextInput.type === "THREAD_SWITCH"
+        nextInput.type === "THREAD_SWITCH" ||
+        nextInput.type === "THREAD_ARCHIVE"
 
       if (nextInput.type === "EXPLICIT_TRANSITION") {
         const fromLabel = NODE_LABELS[fromNode] ?? fromNode
@@ -354,7 +403,7 @@ export default function Chatbot() {
         const toLabel = NODE_LABELS[toNode] ?? toNode
         showHeaderNavHint(`${fromLabel} → ${toLabel}`)
       } else if (nextInput.type === "FREE_TEXT" && !opts?.silentUser) {
-        if (state.conversation_id) appendUserMessage(state.conversation_id, nextInput.text)
+        if (!isJournalActive && state.conversation_id) appendUserMessage(state.conversation_id, nextInput.text)
       }
 
       setState(data.state)
@@ -364,10 +413,20 @@ export default function Chatbot() {
 
       if (isThreadNav) {
         setInput("")
+        setJournalText("")
+        setJournalDrinks("")
+        setJournalUrge("")
         setHeaderNavHint(null)
         await ensureConversationLoaded(data.state.conversation_id, data.state)
       } else {
-        if (state.conversation_id) appendAssistantMessage(state.conversation_id, assistantText)
+        if (!isJournalActive && state.conversation_id) {
+          appendAssistantMessage(state.conversation_id, assistantText)
+        } else {
+          // Journal entries are rendered from state.meta; keep chat transcript clean.
+          setJournalText("")
+          setJournalDrinks("")
+          setJournalUrge("")
+        }
       }
     } finally {
       setLoading(false)
@@ -382,14 +441,50 @@ export default function Chatbot() {
   function closeChat() {
     setOpen(false)
     setExpanded(false)
-    setThreadsOpen(false)
+    setSecondaryMenuOpen(false)
   }
 
   function toggleExpanded() {
     setExpanded((v) => !v)
   }
 
-  // Explicit node transitions currently not used in this UI surface.
+  async function go(target: string) {
+    if (!state) return
+
+    const allowed = new Set(state.allowed_transitions ?? [])
+    const isAllowed = allowed.has(target) || GLOBAL_ACTIONS.has(target)
+    if (!isAllowed) {
+      showHeaderNavHint("Ikke tilgængeligt her")
+      return
+    }
+
+    const goingFromHomeToTopic = state.active_node === "HOME" && target !== "HOME"
+    if (goingFromHomeToTopic) {
+      const label = NODE_LABELS[target] ?? target
+      if (state.conversation_id) appendUserMessage(state.conversation_id, label)
+    }
+
+    // Footer actions are UI-only and must not change active nodes.
+    if (target === "TLF" || target === "MAIL" || target === "AKUT" || target === "CONTACT_FORM") {
+      if (state.conversation_id) {
+        if (target === "TLF") appendAssistantMessage(state.conversation_id, "Åbner telefon…")
+        if (target === "MAIL") appendAssistantMessage(state.conversation_id, "Åbner e-mail…")
+        if (target === "AKUT") appendAssistantMessage(state.conversation_id, "Viser akut-info…")
+        if (target === "CONTACT_FORM") appendAssistantMessage(state.conversation_id, "Åbner kontaktformular…")
+      }
+
+      // Log + (optionally) render body text via backend without switching nodes.
+      await dispatch({ type: "UI_ACTION", action: target as any })
+
+      // CONTACT_FORM navigates to the dedicated page.
+      if (target === "CONTACT_FORM") {
+        router.push("/kontakt")
+      }
+      return
+    }
+
+    dispatch({ type: "EXPLICIT_TRANSITION", target })
+  }
 
   // “Tråde” i header: tilbage til lobby / trådvalg
 
@@ -398,6 +493,16 @@ export default function Chatbot() {
 
   const returnDepthRaw = metaValue("threads.return_depth")
   const returnDepth = Number.isFinite(Number(returnDepthRaw ?? 0)) ? Number(returnDepthRaw ?? 0) : 0
+
+  const canArchiveThread = useMemo(() => {
+    if (!state) return false
+    if (loading) return false
+    const cid = String(state.conversation_id ?? "")
+    if (!cid) return false
+    if (cid.startsWith("lobby:u:")) return false
+    if (state.active_node === "THREAD_CHOOSER") return false
+    return true
+  }, [state, loading])
 
   const threadChoices: ThreadChoice[] =
     state?.active_node === "THREAD_CHOOSER" && Array.isArray(threadChoicesRaw)
@@ -419,36 +524,6 @@ export default function Chatbot() {
     : []
 
   // Topic/menu structure has been removed. All dialog happens in free text.
-
-  const threadsSorted = useMemo(() => {
-    const tabs = Array.isArray(threadTabs) ? [...threadTabs] : []
-    tabs.sort((a, b) => {
-      const ta = Date.parse(a.updated_at ?? "") || 0
-      const tb = Date.parse(b.updated_at ?? "") || 0
-      return tb - ta
-    })
-    return tabs
-  }, [threadTabs])
-
-  function openThreads() {
-    setThreadsOpen(true)
-  }
-
-  function closeThreads() {
-    setThreadsOpen(false)
-  }
-
-  async function createNewThread() {
-    if (!state || loading) return
-    await dispatch({ type: "THREAD_CREATE", mode: "normal" } as any, { silentUser: true })
-    setThreadsOpen(false)
-  }
-
-  async function switchThread(conversationId: string) {
-    if (!conversationId) return
-    await dispatch({ type: "THREAD_SWITCH", conversation_id: conversationId } as any, { silentUser: true })
-    setThreadsOpen(false)
-  }
 
   // Auto: hvis der ingen tråde er, start ny tråd uden at brugeren skal skrive “new”.
   useEffect(() => {
@@ -556,26 +631,6 @@ export default function Chatbot() {
                 <div className={styles.headerRight}>
                   <button
                     className={styles.iconBtn}
-                    onClick={openThreads}
-                    title="Tråde"
-                    aria-label="Tråde"
-                    disabled={loading || !state}
-                  >
-                    <ArchiveBoxIcon className={styles.icon} />
-                  </button>
-
-                  <button
-                    className={styles.iconBtn}
-                    onClick={createNewThread}
-                    title="Ny tråd"
-                    aria-label="Ny tråd"
-                    disabled={loading || !state}
-                  >
-                    <PlusIcon className={styles.icon} />
-                  </button>
-
-                  <button
-                    className={styles.iconBtn}
                     onClick={toggleExpanded}
                     title={expanded ? "Minimer" : "Maksimer"}
                     aria-label={expanded ? "Minimer" : "Maksimer"}
@@ -593,6 +648,56 @@ export default function Chatbot() {
                 </div>
               </div>
 
+              <div className={styles.tabBarWrap} aria-label="Tråde">
+                <div className={styles.tabBar} role="tablist">
+                  {threadTabs.map((tab) => {
+                    const isActive = !!activeConversationId && tab.conversation_id === activeConversationId
+                    const label = (tab.title || "").trim() || trimDuplicateTitle(tab.preview || "Samtale")
+                    return (
+                      <button
+                        key={tab.conversation_id}
+                        role="tab"
+                        aria-selected={isActive}
+                        className={`${styles.tab} ${isActive ? styles.tabActive : ""}`}
+                        onClick={() => dispatch({ type: "THREAD_SWITCH", conversation_id: tab.conversation_id } as any, { silentUser: true })}
+                        disabled={loading || !state || isActive}
+                        title={tab.preview || tab.title || ""}
+                      >
+                        <span className={styles.tabLabel}>{label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <button
+                  className={`${styles.tab} ${styles.tabPlusFixed}`}
+                  onClick={() => dispatch({ type: "THREAD_CREATE", mode: "normal" } as any, { silentUser: true })}
+                  disabled={loading}
+                  title="Ny tråd"
+                  aria-label="Ny tråd"
+                >
+                  <PlusIcon className={styles.tabIcon} />
+                  <span className={styles.tabPlusLabel}>Ny</span>
+                </button>
+
+                <button
+                  className={`${styles.tab} ${styles.tabPlusFixed}`}
+                  onClick={() =>
+                    dispatch(
+                      { type: "THREAD_CREATE", mode: "normal", thread_type: "journal", journal_kind: "alcohol" } as any,
+                      { silentUser: true }
+                    )
+                  }
+                  disabled={loading}
+                  title="Ny dagbog"
+                  aria-label="Ny dagbog"
+                >
+                  <PlusIcon className={styles.tabIcon} />
+                  <span className={styles.tabPlusLabel}>Dagbog</span>
+                </button>
+              </div>
+
+
               {headerNavHint && (
                 <div className={styles.navHint}>
                   <span className={styles.navHintPulse}>{headerNavHint}</span>
@@ -600,68 +705,56 @@ export default function Chatbot() {
               )}
             </div>
 
-            {threadsOpen && (
-              <div className={styles.threadsOverlay} role="dialog" aria-label="Tråde">
-                <div className={styles.threadsHeader}>
-                  <div className={styles.threadsTitle}>Tråde</div>
-                  <button className={styles.iconBtn} onClick={closeThreads} aria-label="Luk" title="Luk">
-                    <XMarkIcon className={styles.icon} />
-                  </button>
-                </div>
+	            <div className={styles.messages}>
 
-                <div className={styles.threadsBody}>
-                  <div className={styles.callout}>
-                    <div className={styles.calloutRow}>
-                      <button className={styles.chipAction} onClick={createNewThread} disabled={loading || !state}>
-                        Ny tråd
-                      </button>
-                    </div>
+              {!isJournalActive &&
+                visibleMessages.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}
+                  >
+                    {m.text}
                   </div>
+                ))}
 
-                  {threadsSorted.length === 0 ? (
-                    <div className={styles.threadsHint}>Ingen tråde endnu.</div>
+              {isJournalActive && (
+                <div className={styles.journalWrap}>
+                  {journalEntries.length === 0 ? (
+                    <div className={styles.journalEmpty}>
+                      <div className={styles.journalEmptyTitle}>Dagbog</div>
+                      <div className={styles.journalEmptyText}>Skriv et kort notat og evt. drinks + urge (0–10).</div>
+                    </div>
                   ) : (
-                    <div className={styles.topicGrid}>
-                      {threadsSorted.map((tab) => {
-                        const isActive = !!activeConversationId && tab.conversation_id === activeConversationId
-                        const label = (tab.title || "").trim() || trimDuplicateTitle(tab.preview || "Samtale")
-                        const meta = (tab.preview || "").trim()
-                        return (
-                          <button
-                            key={tab.conversation_id}
-                            className={styles.topicCard}
-                            onClick={() => switchThread(tab.conversation_id)}
-                            disabled={loading || !state || isActive}
-                            title={meta || label}
-                          >
-                            <span className={styles.topicLabel}>{label}</span>
-                            {meta ? <span className={styles.topicMeta}>{meta}</span> : null}
-                          </button>
-                        )
-                      })}
+                    <div className={styles.journalList}>
+                      {journalEntries
+                        .slice()
+                        .sort((a, b) => (a.ts_ms ?? 0) - (b.ts_ms ?? 0))
+                        .map((e) => {
+                          const dt = new Date(e.ts_ms)
+                          const time = Number.isFinite(e.ts_ms) ? dt.toLocaleString() : ""
+                          const drinks = e.fields?.drinks
+                          const urge = e.fields?.urge_0_10
+                          return (
+                            <div key={e.entry_id} className={styles.journalEntry}>
+                              <div className={styles.journalEntryTop}>
+                                <div className={styles.journalEntryTime}>{time}</div>
+                                <div className={styles.journalEntryChips}>
+                                  {typeof drinks === "number" ? (
+                                    <span className={styles.journalChip}>Drinks: {drinks}</span>
+                                  ) : null}
+                                  {typeof urge === "number" ? (
+                                    <span className={styles.journalChip}>Urge: {urge}/10</span>
+                                  ) : null}
+                                </div>
+                              </div>
+                              {e.text ? <div className={styles.journalEntryText}>{e.text}</div> : null}
+                            </div>
+                          )
+                        })}
                     </div>
                   )}
                 </div>
-              </div>
-            )}
-
-	            <div className={styles.messages}>
-
-              {/* Calm, non-bubble hint shown only when there is no transcript yet */}
-              {visibleMessages.length === 0 && state && (
-                <div className={styles.hint}>
-                  {activeNodeHint ?? normalizeAssistantMessage(state)}
-                </div>
               )}
-
-              {visibleMessages.map((m) => (
-                <div
-                  key={m.id}
-                  className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}
-                >
-                  {m.text}
-                </div>
-              ))}
 
               {state?.status === "completed" && (
                 <div className={styles.callout}>
@@ -715,40 +808,190 @@ export default function Chatbot() {
             </div>
 
             <div className={styles.footer}>
-              <div className={styles.inputRow}>
-  <textarea
-    ref={textareaRef}
-    className={styles.textarea}
-    value={input}
-    onChange={(e) => setInput(e.target.value)}
-    placeholder={placeholder}
-    rows={2}
-    disabled={!state || !freeTextEnabled}
-    onKeyDown={(e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault()
-        const text = input.trim()
-        if (!text) return
-        setInput("")
-        dispatch({ type: "FREE_TEXT", text })
-      }
-    }}
-  />
-  <button
-    className={styles.sendBtn}
-    onClick={() => {
-      const text = input.trim()
-      if (!text) return
-      setInput("")
-      dispatch({ type: "FREE_TEXT", text })
-    }}
-    title="Send"
-    aria-label="Send"
-    disabled={!state || !freeTextEnabled || loading || !input.trim()}
-  >
-    <PaperAirplaneIcon className={styles.sendBtnIcon} />
-  </button>
-</div>
+              <div className={styles.footerToolbar}>
+                <div className={styles.footerToolbarLeft}></div>
+                <div className={styles.footerToolbarRight}>
+
+                  <div className={styles.footerMenu} ref={secondaryMenuRef}>
+                    <button
+                      className={styles.footerIcon}
+                      onClick={() => setSecondaryMenuOpen((v) => !v)}
+                      title="Mere"
+                      aria-label="Mere"
+                      disabled={loading}
+                    >
+                      <EllipsisVerticalIcon className={styles.footerIconSvg} />
+                    </button>
+
+                    {secondaryMenuOpen && (
+                      <div className={styles.footerMenuPanel} role="menu" aria-label="Mere handlinger">
+                        <button
+                          className={styles.footerMenuItem}
+                          role="menuitem"
+                          onClick={async () => {
+                            setSecondaryMenuOpen(false)
+                            if (!canArchiveThread) return
+                            const ok = window.confirm(
+                              "Arkivér denne tråd? Den vil ikke længere vises i trådelisten."
+                            )
+                            if (!ok) return
+                            await dispatch({ type: "THREAD_ARCHIVE" }, { silentUser: true })
+                          }}
+                          disabled={!canArchiveThread}
+                          title={canArchiveThread ? "Arkivér tråd" : "Arkivér tråd (ikke tilgængelig)"}
+                        >
+                          <ArchiveBoxIcon className={styles.footerMenuItemIcon} />
+                          <span className={styles.footerMenuItemLabel}>Arkivér tråd</span>
+                        </button>
+
+                        <button
+                          className={styles.footerMenuItem}
+                          role="menuitem"
+                          onClick={() => {
+                            setSecondaryMenuOpen(false)
+                            go("TLF")
+                          }}
+                        >
+                          <PhoneIcon className={styles.footerMenuItemIcon} />
+                          <span className={styles.footerMenuItemLabel}>Telefon</span>
+                        </button>
+                        <button
+                          className={styles.footerMenuItem}
+                          role="menuitem"
+                          onClick={() => {
+                            setSecondaryMenuOpen(false)
+                            go("MAIL")
+                          }}
+                        >
+                          <EnvelopeIcon className={styles.footerMenuItemIcon} />
+                          <span className={styles.footerMenuItemLabel}>E-mail</span>
+                        </button>
+                        <button
+                          className={styles.footerMenuItem}
+                          role="menuitem"
+                          onClick={() => {
+                            setSecondaryMenuOpen(false)
+                            router.push("/kontakt")
+                          }}
+                        >
+                          <LinkIcon className={styles.footerMenuItemIcon} />
+                          <span className={styles.footerMenuItemLabel}>Kontakt</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {!isJournalActive ? (
+                <div className={styles.inputRow}>
+                  <textarea
+                    ref={textareaRef}
+                    className={styles.textarea}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder={placeholder}
+                    rows={2}
+                    disabled={!state || !freeTextEnabled}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault()
+                        const text = input.trim()
+                        if (!text) return
+                        setInput("")
+                        dispatch({ type: "FREE_TEXT", text })
+                      }
+                    }}
+                  />
+                  <button
+                    className={styles.sendBtn}
+                    onClick={() => {
+                      const text = input.trim()
+                      if (!text) return
+                      setInput("")
+                      dispatch({ type: "FREE_TEXT", text })
+                    }}
+                    title="Send"
+                    aria-label="Send"
+                    disabled={!state || !freeTextEnabled || loading || !input.trim()}
+                  >
+                    <PaperAirplaneIcon className={styles.sendBtnIcon} />
+                  </button>
+                </div>
+              ) : (
+                <div className={styles.journalInputWrap}>
+                  <div className={styles.journalInputRowTop}>
+                    <label className={styles.journalField}>
+                      <span className={styles.journalFieldLabel}>Drinks</span>
+                      <input
+                        className={styles.journalFieldInput}
+                        inputMode="numeric"
+                        value={journalDrinks}
+                        onChange={(e) => setJournalDrinks(e.target.value)}
+                        placeholder="0"
+                        disabled={!state || !freeTextEnabled}
+                      />
+                    </label>
+                    <label className={styles.journalField}>
+                      <span className={styles.journalFieldLabel}>Urge (0–10)</span>
+                      <input
+                        className={styles.journalFieldInput}
+                        inputMode="numeric"
+                        value={journalUrge}
+                        onChange={(e) => setJournalUrge(e.target.value)}
+                        placeholder=""
+                        disabled={!state || !freeTextEnabled}
+                      />
+                    </label>
+                  </div>
+                  <div className={styles.inputRow}>
+                    <textarea
+                      ref={textareaRef}
+                      className={styles.textarea}
+                      value={journalText}
+                      onChange={(e) => setJournalText(e.target.value)}
+                      placeholder={placeholder}
+                      rows={2}
+                      disabled={!state || !freeTextEnabled}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault()
+                          const text = journalText.trim()
+                          const drinks = Number.parseInt(journalDrinks.trim(), 10)
+                          const urge = Number.parseInt(journalUrge.trim(), 10)
+                          if (!text && !Number.isFinite(drinks) && !Number.isFinite(urge)) return
+                          const payload = JSON.stringify({
+                            text,
+                            drinks: Number.isFinite(drinks) ? drinks : undefined,
+                            urge_0_10: Number.isFinite(urge) ? urge : undefined,
+                          })
+                          dispatch({ type: "FREE_TEXT", text: payload }, { silentUser: true })
+                        }
+                      }}
+                    />
+                    <button
+                      className={styles.sendBtn}
+                      onClick={() => {
+                        const text = journalText.trim()
+                        const drinks = Number.parseInt(journalDrinks.trim(), 10)
+                        const urge = Number.parseInt(journalUrge.trim(), 10)
+                        if (!text && !Number.isFinite(drinks) && !Number.isFinite(urge)) return
+                        const payload = JSON.stringify({
+                          text,
+                          drinks: Number.isFinite(drinks) ? drinks : undefined,
+                          urge_0_10: Number.isFinite(urge) ? urge : undefined,
+                        })
+                        dispatch({ type: "FREE_TEXT", text: payload }, { silentUser: true })
+                      }}
+                      title="Gem"
+                      aria-label="Gem"
+                      disabled={!state || !freeTextEnabled || loading}
+                    >
+                      <PaperAirplaneIcon className={styles.sendBtnIcon} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </>
