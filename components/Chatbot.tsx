@@ -18,6 +18,9 @@ import {
 
 import styles from "./Chatbot.module.css"
 
+// UI text lives in the node registry to keep runtime + UI consistent.
+import getNode from "../chat/nodes/registry"
+
 type ConversationState = {
   conversation_id: string
   revision: number
@@ -68,7 +71,7 @@ type ThreadTab = { conversation_id: string; title: string; preview: string; stat
 const NODE_LABELS: Record<string, string> = {
   THREAD_CHOOSER: "Tråde",
   HOME: "Forside",
-  GEN_HYPNO: "Spørg om hypnoterapi…",
+  GEN_HYPNO: "Dialog med assistenten",
   TRIAGE: "Passer hypnoterapi til min situation?",
   METHOD_FIT: "Hypnoterapi eller et bedre alternativ?",
   REFLECTION: "Refleksion",
@@ -146,8 +149,13 @@ export default function Chatbot() {
   const activeNodeLabel = useMemo(() => {
     if (!state) return "Initialiserer…"
     const key = String(state.active_node ?? "").trim()
-    // Prefer human labels over internal node ids.
-    return NODE_LABELS[key] ?? key
+    // Prefer node registry subtitle/goal over internal ids.
+    try {
+      const node = getNode(key)
+      return node.ui_subtitle ?? node.goal ?? NODE_LABELS[key] ?? key
+    } catch {
+      return NODE_LABELS[key] ?? key
+    }
   }, [state])
 
   const threadTabs: ThreadTab[] = useMemo(() => {
@@ -162,10 +170,27 @@ export default function Chatbot() {
     return messagesByConversationId[activeConversationId] ?? []
   }, [activeConversationId, messagesByConversationId])
 
+  const activeNodeHint = useMemo(() => {
+    if (!state) return null
+    const key = String(state.active_node ?? "").trim()
+    try {
+      const node = getNode(key)
+      const hint = (node.ui_hint ?? "").trim()
+      return hint || null
+    } catch {
+      return null
+    }
+  }, [state])
+
 
   const placeholder = useMemo(() => {
     if (!state) return "Initialiserer…"
-    return "Skriv her… (Enter = send, Shift+Enter = ny linje)"
+    try {
+      const node = getNode(String(state.active_node ?? "").trim())
+      return node.ui_placeholder ?? "Skriv din besked…"
+    } catch {
+      return "Skriv din besked…"
+    }
   }, [state])
 
   const freeTextEnabled = useMemo(() => {
@@ -267,18 +292,6 @@ export default function Chatbot() {
     const transcript = await loadTranscript(conversationId)
     loadedConversationsRef.current.add(conversationId)
     setMessagesByConversationId((prev) => ({ ...prev, [conversationId]: transcript }))
-
-    // If there is no transcript yet, show the current node message as the first assistant bubble.
-    if (!transcript.length && s) {
-      const welcome = normalizeAssistantMessage(s)
-      if (welcome?.trim()) {
-        setMessagesByConversationId((prev) => {
-          const cur = prev[conversationId] ?? []
-          if (cur.length) return prev
-          return { ...prev, [conversationId]: [{ id: `assistant-${safeId()}`, role: "assistant", text: welcome.trim() }] }
-        })
-      }
-    }
   }
 
   function showHeaderNavHint(text: string) {
@@ -642,6 +655,13 @@ export default function Chatbot() {
             </div>
 
 	            <div className={styles.messages}>
+
+              {/* Calm, non-bubble hint shown only when there is no transcript yet */}
+              {visibleMessages.length === 0 && state && (
+                <div className={styles.hint}>
+                  {activeNodeHint ?? normalizeAssistantMessage(state)}
+                </div>
+              )}
 
               {visibleMessages.map((m) => (
                 <div
