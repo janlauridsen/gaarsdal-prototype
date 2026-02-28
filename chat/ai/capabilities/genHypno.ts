@@ -11,7 +11,6 @@ type Output = {
 
 const MAX_TRANSCRIPT_TURNS = 16
 
-
 const GEN_HYPNO_PROMPT = `
 ROLLE
 Du er en rolig, kompetent hypnoterapeut. Du kan forklare hypnoterapi bredt og dybt:
@@ -92,67 +91,105 @@ Returner KUN gyldig JSON:
   "last_topic": string (optional)
 }
 `
+
 function readTranscript(context: AiCapabilityContext): TranscriptTurn[] {
   const raw = context.state.meta["gen_hypno.transcript"]?.value
   if (!Array.isArray(raw)) return []
+
   const turns: TranscriptTurn[] = []
+
   for (const item of raw) {
     if (!item || typeof item !== "object") continue
     const obj = item as any
-    if ((obj.role === "user" || obj.role === "assistant") && typeof obj.content === "string") {
+
+    if (
+      (obj.role === "user" || obj.role === "assistant") &&
+      typeof obj.content === "string"
+    ) {
       const content = obj.content.trim()
-      if (content) turns.push({ role: obj.role, content })
+      if (content) {
+        turns.push({ role: obj.role, content })
+      }
     }
   }
+
   return turns.slice(-MAX_TRANSCRIPT_TURNS)
 }
 
-function appendTranscript(previous: TranscriptTurn[], userText: string, assistantText: string): TranscriptTurn[] {
+function appendTranscript(
+  previous: TranscriptTurn[],
+  userText: string,
+  assistantText: string
+): TranscriptTurn[] {
   const next = [...previous]
+
   const u = (userText ?? "").trim()
   const a = (assistantText ?? "").trim()
+
   if (u) next.push({ role: "user", content: u })
   if (a) next.push({ role: "assistant", content: a })
+
   return next.slice(-MAX_TRANSCRIPT_TURNS)
 }
 
 function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
   if (!raw) return null
-  const msg = typeof raw.assistant_message === "string" ? raw.assistant_message.trim() : ""
+
+  const msg =
+    typeof raw.assistant_message === "string"
+      ? raw.assistant_message.trim()
+      : ""
+
   if (!msg) return null
-  const last_topic = typeof raw.last_topic === "string" ? raw.last_topic.trim() : undefined
+
+  const last_topic =
+    typeof raw.last_topic === "string"
+      ? raw.last_topic.trim()
+      : undefined
+
   return { assistant_message: msg, last_topic }
 }
 
 function buildFallbackMessage(userText: string): string {
   if (!userText.trim()) {
-    return "Hvad vil du gerne vide om hypnoterapi—fx hvordan et forløb foregår, hvad man kan arbejde med, metoder, eller hvad hypnose egentlig er?"
+    return "Hvad vil du gerne vide om hypnoterapi—fx hvordan et forløb foregår, metoder, evidens, eller hvad hypnose egentlig er?"
   }
+
   return (
     "Tak for dit spørgsmål. Overordnet set er hypnoterapi en samarbejdsproces, hvor man arbejder med opmærksomhed, forestillingsevne og vaner i et trygt, struktureret forløb. " +
-    "Vil du høre mest om metoder, evidensniveauer (hvad der er undersøgt vs. mest praksis), hvordan et forløb typisk foregår, eller hvad hypnose føles som?"
+    "Vil du høre mest om metoder, evidensniveauer, hvordan et forløb typisk foregår, eller hvad hypnose føles som?"
   )
 }
 
 export const genHypnoCapability: AiCapability = {
   id: "gen-hypno-v1",
+
   async run(context: AiCapabilityContext, llm: LlmClient): Promise<AiCapabilityResult> {
     const transcript = readTranscript(context)
     const contextSystem = (context.contextPack?.system ?? "").trim()
 
+    const assistantTurnCount =
+      transcript.filter(t => t.role === "assistant").length
+
     const payload = {
-      model: process.env.GEN_HYPNO_MODEL ?? process.env.TRIAGE_MODEL ?? "gpt-4.1-mini",
+      model:
+        process.env.GEN_HYPNO_MODEL ??
+        process.env.TRIAGE_MODEL ??
+        "gpt-4.1-mini",
       temperature: 0.4,
       response_format: { type: "json_object" as const },
       messages: [
         { role: "system" as const, content: GEN_HYPNO_PROMPT },
         { role: "system" as const, content: GAARSDAL_SITE_CONTEXT_DA },
-        ...(contextSystem ? [{ role: "system" as const, content: contextSystem }] : []),
+        ...(contextSystem
+          ? [{ role: "system" as const, content: contextSystem }]
+          : []),
         {
           role: "user" as const,
           content: JSON.stringify({
             conversation_transcript: transcript,
             user_input: context.userText ?? "",
+            assistant_turn_count: assistantTurnCount,
           }),
         },
       ],
@@ -161,12 +198,20 @@ export const genHypnoCapability: AiCapability = {
     const response = await llm.chatJson(payload)
     const parsed = normalizeOutput(response)
 
-    const assistant = parsed?.assistant_message ?? buildFallbackMessage(context.userText ?? "")
-    const updatedTranscript = appendTranscript(transcript, context.userText ?? "", assistant)
+    const assistant =
+      parsed?.assistant_message ??
+      buildFallbackMessage(context.userText ?? "")
+
+    const updatedTranscript = appendTranscript(
+      transcript,
+      context.userText ?? "",
+      assistant
+    )
 
     const meta_delta: Record<string, unknown> = {
       "gen_hypno.transcript": updatedTranscript,
     }
+
     if (parsed?.last_topic) {
       meta_delta["gen_hypno.last_topic"] = parsed.last_topic
     }
@@ -183,6 +228,7 @@ export const genHypnoCapability: AiCapability = {
       transition,
       debug: {
         capability: "gen-hypno-v1",
+        assistant_turn_count: assistantTurnCount,
         used_fallback: !parsed,
       },
     }
