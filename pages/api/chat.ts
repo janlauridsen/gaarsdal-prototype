@@ -37,7 +37,12 @@ type ChatRequestBody = {
 
 type ApiInputSignal =
   | InputSignal
-  | { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
+  | {
+      type: "THREAD_CREATE"
+      mode: "normal" | "parenthesis"
+      thread_type?: "chat" | "journal"
+      journal_kind?: "alcohol"
+    }
   | { type: "THREAD_SWITCH"; conversation_id: string }
   | { type: "THREAD_ARCHIVE" }
 
@@ -155,7 +160,15 @@ function withThreadNavMeta(state: any, returnDepth: number): any {
   }
 }
 
-type ThreadTab = { conversation_id: string; title: string; preview: string; status: "active" | "archived"; updated_at?: string }
+type ThreadTab = {
+  conversation_id: string
+  title: string
+  preview: string
+  status: "active" | "archived"
+  thread_type?: "chat" | "journal"
+  journal_kind?: "alcohol"
+  updated_at?: string
+}
 
 function makeThreadTabs(index: any): ThreadTab[] {
   const threads = Array.isArray(index?.threads) ? index.threads : []
@@ -166,6 +179,8 @@ function makeThreadTabs(index: any): ThreadTab[] {
       title: typeof t.title === "string" ? t.title : "",
       preview: typeof t.preview === "string" ? t.preview : "",
       status: t.status === "archived" ? "archived" : "active",
+      thread_type: t.thread_type === "journal" ? "journal" : "chat",
+      journal_kind: t.journal_kind === "alcohol" ? "alcohol" : undefined,
       updated_at: t.updated_at,
     }))
 }
@@ -1028,12 +1043,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const oldThreadId = typeof baseState?.conversation_id === "string" ? baseState.conversation_id : null
       const canReturn = !!oldThreadId && !isLobbyConversation(oldThreadId)
 
+      const threadType = (input as any)?.thread_type === "journal" ? ("journal" as const) : ("chat" as const)
+      const journalKind = threadType === "journal" && (input as any)?.journal_kind === "alcohol" ? ("alcohol" as const) : undefined
+
       const newConversationId = `c:${safeUuid()}`
-      const newState = createInitialState(newConversationId)
+
+      // Journal threads start in a dedicated node with their own meta namespace.
+      const newState = (() => {
+        if (threadType !== "journal") return createInitialState(newConversationId)
+        const entry = getNode("DAGBOG")
+        return {
+          conversation_id: newConversationId,
+          revision: 0,
+          active_node: entry.id,
+          active_node_message: entry.message,
+          allowed_transitions: entry.allowed_exits,
+          meta: {
+            "journal.kind": { value: journalKind ?? "alcohol", source_node: "SYSTEM_UI" },
+            "journal.phase": { value: 1, source_node: "SYSTEM_UI" },
+            "journal.entries": { value: [], source_node: "SYSTEM_UI" },
+          },
+          status: "active" as const,
+          parentese_stack: [],
+        }
+      })()
 
       await writeConversationState(newState, SESSION_TTL_SECONDS)
 
-      let nextIndex = upsertThread({ index: index0, conversationId: newConversationId, title: "", preview: "" })
+      let nextIndex = upsertThread({
+        index: index0,
+        conversationId: newConversationId,
+        title: threadType === "journal" ? "Dagbog" : "",
+        preview: "",
+        thread_type: threadType,
+        journal_kind: journalKind,
+      })
 
       if (input.mode === "normal") {
         // Hard break.
