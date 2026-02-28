@@ -218,7 +218,7 @@
 }
 
 .messageUser {
-  background: rgba(74, 93, 84, 0.10);
+  background: rgba(74, 93, 84, 0.08);
   color: rgba(27, 30, 28, 0.92);
   border: 1px solid rgba(0, 0, 0, 0.06);
   margin-left: auto;
@@ -363,19 +363,19 @@
 
 .topicCard {
   text-align: left;
-  padding: 12px 12px;
-  border-radius: 14px;
+  padding: 10px 10px;
+  border-radius: 12px;
   background: white;
   border: 1px solid rgba(0, 0, 0, 0.08);
   cursor: pointer;
   transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+  box-shadow: none;
 }
 
 .topicCard:hover {
   transform: translateY(-1px);
   background: rgba(74, 93, 84, 0.06);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.07);
+  box-shadow: none;
 }
 
 .topicCard:active {
