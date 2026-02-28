@@ -423,14 +423,14 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
   DAGBOG: {
     id: "DAGBOG",
     kind: "DIALOG",
-    goal: "Dagbog (alkohol) — observation",
+    goal: "Dagbog — observation",
     message:
-      "Dagbog: skriv et kort notat. Du kan også angive drinks og urge (0–10). Fokus er observation, ikke behandling.",
+      "Dagbog: skriv et kort notat. Fokus er observation, ikke behandling. Felter afhænger af dagbogstypen (fx alkohol/generel/streng).",
     allow_free_text: true,
     allow_parentese: false,
     allowed_exits: ["HOME"],
-    capability_id: "diary-alcohol-v1",
-    meta_domains_written: ["ux", "journal.entries", "journal.kind", "journal.phase"],
+    capability_id: "diary-v1",
+    meta_domains_written: ["ux", "journal.entries", "journal.config", "journal.phase"],
   },
 
   TRIAGE_FIT_BOOKING: {
