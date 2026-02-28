@@ -29,7 +29,17 @@ type InputSignal =
   | { type: "UI_ACTION"; action: "TLF" | "MAIL" | "AKUT" | "CONTACT_FORM" }
   | { type: "FREE_TEXT"; text: string }
   | { type: "SYSTEM_INIT" }
-  | { type: "THREAD_CREATE"; mode: "normal"; thread_type?: "chat" | "journal"; journal_kind?: "alcohol" }
+  | {
+      type: "THREAD_CREATE"
+      mode: "normal"
+      thread_type?: "chat" | "journal"
+      journal_profile?: "alcohol" | "general" | "strict"
+      journal_init?: {
+        title: string
+        problem: string
+        goal: string
+      }
+    }
   | { type: "THREAD_SWITCH"; conversation_id: string }
   | { type: "THREAD_ARCHIVE" }
 
@@ -64,6 +74,8 @@ type ThreadTab = {
   preview: string
   status: "active" | "archived"
   thread_type?: "chat" | "journal"
+  journal_profile?: "alcohol" | "general" | "strict"
+  // Legacy support (older stored items)
   journal_kind?: "alcohol"
   updated_at?: string
 }
@@ -72,11 +84,12 @@ type JournalEntry = {
   entry_id: string
   ts_ms: number
   schema_version: "v1"
-  kind: "alcohol"
+  kind: "alcohol" | "general" | "strict"
   text?: string
   fields?: {
     drinks?: number
     urge_0_10?: number
+    strict_0_10?: number
   }
 }
 
@@ -130,6 +143,13 @@ export default function Chatbot() {
   const [expanded, setExpanded] = useState(false)
   const [threadsOpen, setThreadsOpen] = useState(false)
 
+  const [journalWizardOpen, setJournalWizardOpen] = useState(false)
+  const [journalWizardStep, setJournalWizardStep] = useState<1 | 2 | 3>(1)
+  const [journalWizardProfile, setJournalWizardProfile] = useState<"alcohol" | "general" | "strict" | null>(null)
+  const [journalWizardTitle, setJournalWizardTitle] = useState("")
+  const [journalWizardProblem, setJournalWizardProblem] = useState("")
+  const [journalWizardGoal, setJournalWizardGoal] = useState("")
+
   const [state, setState] = useState<ConversationState | null>(null)
   // Messages are cached per conversation id (tabs).
   const [messagesByConversationId, setMessagesByConversationId] = useState<Record<string, ChatMessage[]>>({})
@@ -138,6 +158,7 @@ export default function Chatbot() {
   const [journalText, setJournalText] = useState("")
   const [journalDrinks, setJournalDrinks] = useState<string>("")
   const [journalUrge, setJournalUrge] = useState<string>("")
+  const [journalStrict, setJournalStrict] = useState<string>("")
   const [loading, setLoading] = useState(false)
 
   // Threads overlay (drawer) lives on top of the chat view.
@@ -159,13 +180,6 @@ export default function Chatbot() {
     return entry
   }
 
-  const activeNodeLabel = useMemo(() => {
-    if (!state) return "Initialiserer…"
-    const key = String(state.active_node ?? "").trim()
-    // Prefer human labels over internal node ids.
-    return NODE_LABELS[key] ?? key
-  }, [state])
-
   const threadTabs: ThreadTab[] = useMemo(() => {
     const raw = metaValue("threads.tabs")
     return Array.isArray(raw) ? (raw as any) : []
@@ -180,11 +194,65 @@ export default function Chatbot() {
 
   const isJournalActive = !!activeThread && (activeThread.thread_type ?? "chat") === "journal"
 
+  const journalConfig = useMemo(() => {
+    if (!isJournalActive) return null
+    const raw = metaValue("journal.config")
+    if (!raw || typeof raw !== "object") return null
+    return raw as any
+  }, [state?.meta, isJournalActive])
+
+  const journalProfile: "alcohol" | "general" | "strict" | null = useMemo(() => {
+    if (!isJournalActive) return null
+    const fromConfig = typeof (journalConfig as any)?.profile === "string" ? String((journalConfig as any).profile) : ""
+    if (fromConfig === "alcohol" || fromConfig === "general" || fromConfig === "strict") return fromConfig
+    const fromThread = activeThread?.journal_profile
+    if (fromThread === "alcohol" || fromThread === "general" || fromThread === "strict") return fromThread
+    // Legacy support.
+    if (activeThread?.journal_kind === "alcohol") return "alcohol"
+    return "general"
+  }, [isJournalActive, journalConfig, activeThread])
+
+  const journalTitle = useMemo(() => {
+    if (!isJournalActive) return ""
+    const t = (activeThread?.title || "").trim()
+    if (t) return t
+    const c = typeof (journalConfig as any)?.title === "string" ? String((journalConfig as any).title).trim() : ""
+    return c
+  }, [isJournalActive, activeThread, journalConfig])
+
+  const activeNodeLabel = useMemo(() => {
+    if (!state) return "Initialiserer…"
+    if (isJournalActive) {
+      const t = journalTitle || "Dagbog"
+      return `Dagbog – ${t}`
+    }
+    const key = String(state.active_node ?? "").trim()
+    return NODE_LABELS[key] ?? key
+  }, [state, isJournalActive, journalTitle])
+
   const journalEntries: JournalEntry[] = useMemo(() => {
     if (!isJournalActive) return []
     const raw = metaValue("journal.entries")
     return Array.isArray(raw) ? (raw as any) : []
   }, [state?.meta, isJournalActive])
+
+  function openJournalWizard() {
+    setJournalWizardOpen(true)
+    setJournalWizardStep(1)
+    setJournalWizardProfile(null)
+    setJournalWizardTitle("")
+    setJournalWizardProblem("")
+    setJournalWizardGoal("")
+  }
+
+  function closeJournalWizard() {
+    setJournalWizardOpen(false)
+  }
+
+  function canCreateJournal(): boolean {
+    const active = threadTabs.filter((t) => (t.thread_type ?? "chat") === "journal" && t.status === "active")
+    return active.length < 5
+  }
 
   const visibleMessages = useMemo(() => {
     if (!activeConversationId) return []
@@ -653,12 +721,7 @@ export default function Chatbot() {
 
                   <button
                     className={styles.actionBtn}
-                    onClick={() =>
-                      dispatch(
-                        { type: "THREAD_CREATE", mode: "normal", thread_type: "journal", journal_kind: "alcohol" } as any,
-                        { silentUser: true }
-                      )
-                    }
+                    onClick={() => openJournalWizard()}
                     disabled={loading}
                     title="Ny dagbog"
                     aria-label="Ny dagbog"
@@ -668,6 +731,150 @@ export default function Chatbot() {
                   </button>
                 </div>
               </div>
+
+              {journalWizardOpen && (
+                <div className={styles.modalOverlay} role="dialog" aria-modal="true" onClick={closeJournalWizard}>
+                  <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+                    <div className={styles.modalHeader}>
+                      <div className={styles.modalTitle}>Start dagbog</div>
+                      <button className={styles.iconBtn} onClick={closeJournalWizard} title="Luk" aria-label="Luk">
+                        <XMarkIcon className={styles.icon} />
+                      </button>
+                    </div>
+
+                    {!canCreateJournal() ? (
+                      <div className={styles.modalBody}>
+                        <div className={styles.modalText}>Du har allerede 5 aktive dagbøger.</div>
+                        <div className={styles.modalActions}>
+                          <button className={styles.primaryBtn} onClick={closeJournalWizard}>
+                            Ok
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={styles.modalBody}>
+                        {journalWizardStep === 1 && (
+                          <>
+                            <div className={styles.modalText}>Vælg type</div>
+                            <div className={styles.optionGrid}>
+                              <button
+                                className={styles.optionBtn}
+                                onClick={() => {
+                                  setJournalWizardProfile("alcohol")
+                                  setJournalWizardStep(2)
+                                }}
+                              >
+                                <div className={styles.optionTitle}>Alkohol</div>
+                                <div className={styles.optionHint}>Fritekst + drinks + urge.</div>
+                              </button>
+                              <button
+                                className={styles.optionBtn}
+                                onClick={() => {
+                                  setJournalWizardProfile("general")
+                                  setJournalWizardStep(2)
+                                }}
+                              >
+                                <div className={styles.optionTitle}>Generel</div>
+                                <div className={styles.optionHint}>Kun fritekst.</div>
+                              </button>
+                              <button
+                                className={styles.optionBtn}
+                                onClick={() => {
+                                  setJournalWizardProfile("strict")
+                                  setJournalWizardStep(2)
+                                }}
+                              >
+                                <div className={styles.optionTitle}>Streng</div>
+                                <div className={styles.optionHint}>Fritekst + én skala.</div>
+                              </button>
+                            </div>
+                          </>
+                        )}
+
+                        {journalWizardStep === 2 && (
+                          <>
+                            <div className={styles.modalText}>Giv dagbogen en titel (emne)</div>
+                            <input
+                              className={styles.modalInput}
+                              value={journalWizardTitle}
+                              onChange={(e) => setJournalWizardTitle(e.target.value)}
+                              placeholder="Fx: Alkohol – efter arbejde"
+                            />
+                            <div className={styles.modalActions}>
+                              <button className={styles.secondaryBtn} onClick={() => setJournalWizardStep(1)}>
+                                Tilbage
+                              </button>
+                              <button
+                                className={styles.primaryBtn}
+                                disabled={!journalWizardTitle.trim() || !journalWizardProfile}
+                                onClick={() => setJournalWizardStep(3)}
+                              >
+                                Næste
+                              </button>
+                            </div>
+                          </>
+                        )}
+
+                        {journalWizardStep === 3 && (
+                          <>
+                            <div className={styles.modalText}>Startdefinition</div>
+                            <label className={styles.modalField}>
+                              <span className={styles.modalLabel}>Problem / kontekst</span>
+                              <textarea
+                                className={styles.modalTextarea}
+                                value={journalWizardProblem}
+                                onChange={(e) => setJournalWizardProblem(e.target.value)}
+                                rows={3}
+                                placeholder="1–3 linjer"
+                              />
+                            </label>
+                            <label className={styles.modalField}>
+                              <span className={styles.modalLabel}>Mål / intention</span>
+                              <textarea
+                                className={styles.modalTextarea}
+                                value={journalWizardGoal}
+                                onChange={(e) => setJournalWizardGoal(e.target.value)}
+                                rows={2}
+                                placeholder="1–2 linjer"
+                              />
+                            </label>
+                            <div className={styles.modalActions}>
+                              <button className={styles.secondaryBtn} onClick={() => setJournalWizardStep(2)}>
+                                Tilbage
+                              </button>
+                              <button
+                                className={styles.primaryBtn}
+                                disabled={!journalWizardProfile || !journalWizardTitle.trim()}
+                                onClick={() => {
+                                  const profile = journalWizardProfile
+                                  if (!profile) return
+                                  dispatch(
+                                    {
+                                      type: "THREAD_CREATE",
+                                      mode: "normal",
+                                      thread_type: "journal",
+                                      journal_profile: profile,
+                                      journal_init: {
+                                        title: journalWizardTitle.trim(),
+                                        problem: journalWizardProblem.trim(),
+                                        goal: journalWizardGoal.trim(),
+                                      },
+                                    } as any,
+                                    { silentUser: true }
+                                  )
+                                  closeJournalWizard()
+                                }}
+                              >
+                                Opret dagbog
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {threadsOpen && (
                 <div className={styles.threadsOverlay} onClick={() => setThreadsOpen(false)} role="dialog" aria-modal="true">
@@ -741,8 +948,14 @@ export default function Chatbot() {
                 <div className={styles.journalWrap}>
                   {journalEntries.length === 0 ? (
                     <div className={styles.journalEmpty}>
-                      <div className={styles.journalEmptyTitle}>Dagbog</div>
-                      <div className={styles.journalEmptyText}>Skriv et kort notat og evt. drinks + urge (0–10).</div>
+                      <div className={styles.journalEmptyTitle}>{journalTitle ? `Dagbog – ${journalTitle}` : "Dagbog"}</div>
+                      <div className={styles.journalEmptyText}>
+                        {journalProfile === "alcohol"
+                          ? "Skriv et kort notat og evt. drinks + urge (0–10)."
+                          : journalProfile === "strict"
+                          ? "Skriv et kort notat og en skala (0–10)."
+                          : "Skriv et kort notat."}
+                      </div>
                     </div>
                   ) : (
                     <div className={styles.journalList}>
@@ -754,6 +967,7 @@ export default function Chatbot() {
                           const time = Number.isFinite(e.ts_ms) ? dt.toLocaleString() : ""
                           const drinks = e.fields?.drinks
                           const urge = e.fields?.urge_0_10
+                          const strict = e.fields?.strict_0_10
                           return (
                             <div key={e.entry_id} className={styles.journalEntry}>
                               <div className={styles.journalEntryTop}>
@@ -764,6 +978,9 @@ export default function Chatbot() {
                                   ) : null}
                                   {typeof urge === "number" ? (
                                     <span className={styles.journalChip}>Urge: {urge}/10</span>
+                                  ) : null}
+                                  {typeof strict === "number" ? (
+                                    <span className={styles.journalChip}>Skala: {strict}/10</span>
                                   ) : null}
                                 </div>
                               </div>
@@ -865,30 +1082,48 @@ export default function Chatbot() {
                 </div>
               ) : (
                 <div className={styles.journalInputWrap}>
-                  <div className={styles.journalInputRowTop}>
-                    <label className={styles.journalField}>
-                      <span className={styles.journalFieldLabel}>Drinks</span>
-                      <input
-                        className={styles.journalFieldInput}
-                        inputMode="numeric"
-                        value={journalDrinks}
-                        onChange={(e) => setJournalDrinks(e.target.value)}
-                        placeholder="0"
-                        disabled={!state || !freeTextEnabled}
-                      />
-                    </label>
-                    <label className={styles.journalField}>
-                      <span className={styles.journalFieldLabel}>Urge (0–10)</span>
-                      <input
-                        className={styles.journalFieldInput}
-                        inputMode="numeric"
-                        value={journalUrge}
-                        onChange={(e) => setJournalUrge(e.target.value)}
-                        placeholder=""
-                        disabled={!state || !freeTextEnabled}
-                      />
-                    </label>
-                  </div>
+                  {journalProfile === "alcohol" ? (
+                    <div className={styles.journalInputRowTop}>
+                      <label className={styles.journalField}>
+                        <span className={styles.journalFieldLabel}>Drinks</span>
+                        <input
+                          className={styles.journalFieldInput}
+                          inputMode="numeric"
+                          value={journalDrinks}
+                          onChange={(e) => setJournalDrinks(e.target.value)}
+                          placeholder="0"
+                          disabled={!state || !freeTextEnabled}
+                        />
+                      </label>
+                      <label className={styles.journalField}>
+                        <span className={styles.journalFieldLabel}>Urge (0–10)</span>
+                        <input
+                          className={styles.journalFieldInput}
+                          inputMode="numeric"
+                          value={journalUrge}
+                          onChange={(e) => setJournalUrge(e.target.value)}
+                          placeholder=""
+                          disabled={!state || !freeTextEnabled}
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+
+                  {journalProfile === "strict" ? (
+                    <div className={styles.journalInputRowTop}>
+                      <label className={styles.journalField}>
+                        <span className={styles.journalFieldLabel}>Skala (0–10)</span>
+                        <input
+                          className={styles.journalFieldInput}
+                          inputMode="numeric"
+                          value={journalStrict}
+                          onChange={(e) => setJournalStrict(e.target.value)}
+                          placeholder=""
+                          disabled={!state || !freeTextEnabled}
+                        />
+                      </label>
+                    </div>
+                  ) : null}
                   <div className={styles.inputRow}>
                     <textarea
                       ref={textareaRef}
@@ -904,11 +1139,18 @@ export default function Chatbot() {
                           const text = journalText.trim()
                           const drinks = Number.parseInt(journalDrinks.trim(), 10)
                           const urge = Number.parseInt(journalUrge.trim(), 10)
-                          if (!text && !Number.isFinite(drinks) && !Number.isFinite(urge)) return
+                          const strict = Number.parseInt(journalStrict.trim(), 10)
+                          const hasAny =
+                            !!text ||
+                            (journalProfile === "alcohol" && (Number.isFinite(drinks) || Number.isFinite(urge))) ||
+                            (journalProfile === "strict" && Number.isFinite(strict))
+                          if (!hasAny) return
                           const payload = JSON.stringify({
                             text,
-                            drinks: Number.isFinite(drinks) ? drinks : undefined,
-                            urge_0_10: Number.isFinite(urge) ? urge : undefined,
+                            profile: journalProfile,
+                            drinks: journalProfile === "alcohol" && Number.isFinite(drinks) ? drinks : undefined,
+                            urge_0_10: journalProfile === "alcohol" && Number.isFinite(urge) ? urge : undefined,
+                            strict_0_10: journalProfile === "strict" && Number.isFinite(strict) ? strict : undefined,
                           })
                           dispatch({ type: "FREE_TEXT", text: payload }, { silentUser: true })
                         }
@@ -920,11 +1162,18 @@ export default function Chatbot() {
                         const text = journalText.trim()
                         const drinks = Number.parseInt(journalDrinks.trim(), 10)
                         const urge = Number.parseInt(journalUrge.trim(), 10)
-                        if (!text && !Number.isFinite(drinks) && !Number.isFinite(urge)) return
+                        const strict = Number.parseInt(journalStrict.trim(), 10)
+                        const hasAny =
+                          !!text ||
+                          (journalProfile === "alcohol" && (Number.isFinite(drinks) || Number.isFinite(urge))) ||
+                          (journalProfile === "strict" && Number.isFinite(strict))
+                        if (!hasAny) return
                         const payload = JSON.stringify({
                           text,
-                          drinks: Number.isFinite(drinks) ? drinks : undefined,
-                          urge_0_10: Number.isFinite(urge) ? urge : undefined,
+                          profile: journalProfile,
+                          drinks: journalProfile === "alcohol" && Number.isFinite(drinks) ? drinks : undefined,
+                          urge_0_10: journalProfile === "alcohol" && Number.isFinite(urge) ? urge : undefined,
+                          strict_0_10: journalProfile === "strict" && Number.isFinite(strict) ? strict : undefined,
                         })
                         dispatch({ type: "FREE_TEXT", text: payload }, { silentUser: true })
                       }}
