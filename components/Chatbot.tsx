@@ -421,7 +421,6 @@ export default function Chatbot() {
   function closeChat() {
     setOpen(false)
     setExpanded(false)
-    setSecondaryMenuOpen(false)
   }
 
   function toggleExpanded() {
