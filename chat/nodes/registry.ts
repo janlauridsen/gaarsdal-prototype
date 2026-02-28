@@ -55,21 +55,6 @@ export type Node = {
   kind: NodeKind
   goal: string
   message: string
-  /**
-   * UI subtitle shown under the fixed header title.
-   * Kept in the node registry to avoid frontend switch/case and keep runtime + UI consistent.
-   */
-  ui_subtitle?: string
-  /**
-   * Short, calm hint shown in the chat surface when there is no transcript yet.
-   * Should be 1–2 lines. Avoid ellipsis.
-   */
-  ui_hint?: string
-  /**
-   * Input placeholder shown in the composer.
-   * Keep it short; avoid technical keyboard instructions.
-   */
-  ui_placeholder?: string
   allow_free_text: boolean
   allow_parentese: boolean
   allowed_exits: NodeId[]
@@ -326,30 +311,19 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     id: "GEN_HYPNO",
     kind: "DIALOG",
     goal: "Generelt om hypnoterapi",
-    ui_subtitle: "Dialog med assistenten",
-    ui_hint: "Skriv kort hvad du ønsker hjælp eller indsigt i.",
-    ui_placeholder: "Skriv din besked…",
     message:
       "Velkommen. Du er i dialog med hypnoterapeuten. Fortæl kort hvad du ønsker hjælp eller indsigt i. Jeg kan forklare hypnoterapi og hjælpe dig med refleksion—ikke behandling i chatten.",
     allow_free_text: true,
     allow_parentese: true,
     allowed_exits: ["HOME"],
     capability_id: "gen-hypno-v1",
-    meta_domains_written: [
-      "ux",
-      "gen_hypno.transcript",
-      "gen_hypno.last_topic",
-      "gen_hypno.assistant_turn_count",
-    ],
+    meta_domains_written: ["ux", "gen_hypno.transcript", "gen_hypno.last_topic"],
   },
 
   TRIAGE: {
     id: "TRIAGE",
     kind: "DIALOG",
     goal: "Passer hypnoterapi til min situation?",
-    ui_subtitle: "Dialog om relevans",
-    ui_hint: "Beskriv kort din situation og hvad du ønsker anderledes.",
-    ui_placeholder: "Beskriv kort din situation…",
     message:
       "Fortæl kort om din situation og hvad du ønsker anderledes. Jeg stiller få opklarende spørgsmål og vurderer, om hypnoterapi typisk vil være relevant.",
     allow_free_text: true,
@@ -397,9 +371,6 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     id: "METHOD_FIT",
     kind: "DIALOG",
     goal: "Hypnoterapi eller et bedre alternativ?",
-    ui_subtitle: "Metodeafklaring",
-    ui_hint: "Fortæl kort hvad du vil opnå, og hvad der gør det svært lige nu.",
-    ui_placeholder: "Hvad vil du opnå?…",
     message:
       "Fortæl kort hvad du vil opnå, og hvad der gør situationen svær lige nu. Jeg kan hjælpe med at vurdere, om hypnoterapi er et godt match, eller om andre tilgange typisk passer bedre. Jeg giver kun overblik—ikke behandling i chatten.",
     allow_free_text: true,
@@ -439,9 +410,6 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     id: "REFLECTION",
     kind: "DIALOG",
     goal: "Refleksionsdialog (intake + meningsskabelse)",
-    ui_subtitle: "Refleksion",
-    ui_hint: "Hvad vil du undersøge nærmere? Skriv kort og konkret.",
-    ui_placeholder: "Hvad vil du undersøge?…",
     message:
       "Vi kan tage en rolig refleksionsdialog for at skabe klarhed: hvad problemet er, hvad du ønsker, og hvordan det typisk udfolder sig. " +
       "Jeg spørger kun 1–2 spørgsmål ad gangen. Ingen øvelser eller behandling i chatten.",
@@ -450,6 +418,19 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     allowed_exits: ["HOME"],
     capability_id: "reflection-v1",
     meta_domains_written: ["ux", "reflection.transcript"],
+  },
+
+  DAGBOG: {
+    id: "DAGBOG",
+    kind: "DIALOG",
+    goal: "Dagbog (alkohol) — observation",
+    message:
+      "Dagbog: skriv et kort notat. Du kan også angive drinks og urge (0–10). Fokus er observation, ikke behandling.",
+    allow_free_text: true,
+    allow_parentese: false,
+    allowed_exits: ["HOME"],
+    capability_id: "diary-alcohol-v1",
+    meta_domains_written: ["ux", "journal.entries", "journal.kind", "journal.phase"],
   },
 
   TRIAGE_FIT_BOOKING: {
@@ -490,9 +471,6 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     id: "BOOKING",
     kind: "MENU",
     goal: "Booking",
-    ui_subtitle: "Kontakt og booking",
-    ui_hint: "Vælg en kontaktvej, eller skriv et kort spørgsmål om booking.",
-    ui_placeholder: "Skriv dit spørgsmål…",
     message: "Her kan du vælge kontaktvej for booking.",
     allow_free_text: false,
     allow_parentese: false,
