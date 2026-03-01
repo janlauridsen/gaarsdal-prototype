@@ -390,8 +390,7 @@
 }
 
 .footerJournal {
-  max-height: 46%;
-  overflow-y: auto;
+  /* Keep the footer non-scrollable; only the expanded fields area scrolls. */
   overscroll-behavior: contain;
 }
 
