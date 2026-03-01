@@ -13,7 +13,7 @@ type ParsedInput = {
   strict_0_10?: number
 }
 
-type JournalEntry = {
+export type JournalEntry = {
   entry_id: string
   ts_ms: number
   schema_version: "v1"
@@ -54,12 +54,6 @@ function clampInt(n: number, min: number, max: number): number {
   if (x < min) return min
   if (x > max) return max
   return x
-}
-
-function readEntries(context: AiCapabilityContext): JournalEntry[] {
-  const raw = (context.state.meta as any)?.["journal.entries"]?.value
-  if (!Array.isArray(raw)) return []
-  return raw.filter((e: any) => e && typeof e === "object").map((e: any) => e as JournalEntry)
 }
 
 function readProfileFromConfig(context: AiCapabilityContext): JournalProfile {
@@ -126,16 +120,14 @@ export const diaryCapability: AiCapability = {
           : undefined,
     }
 
-    const prev = readEntries(context)
-    const next = [...prev, entry].slice(-400)
-
     const transition: Transition = {
       type: "NODE_HOP",
       from: context.state.active_node,
       reason: "diary-entry",
       response_message: undefined,
       meta_delta: {
-        "journal.entries": next,
+        // Persisted externally in Redis; API layer will append and refresh tail.
+        "journal.append_entry": entry,
       },
     }
 
