@@ -13,6 +13,13 @@ import { readUserProfile, recordTurn, writeUserProfile } from "../../chat/memory
 import { consolidateV1 } from "../../chat/platform/consolidation"
 import { readConversationState, writeConversationState } from "../../chat/persistence/conversationStateStore"
 import {
+  appendJournalEntry,
+  appendManyJournalEntries,
+  readJournalEntriesTail,
+  type JournalEntry,
+} from "../../chat/persistence/journalEntryStore"
+import { writeJournalDefinition } from "../../chat/persistence/journalDefinitionStore"
+import {
   applyAutoThreadLabelFromText,
   archiveThread,
   ensureThreadIndex,
@@ -63,6 +70,7 @@ const COOKIE_NAME = "gaarsdal_uid"
 const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 const PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
+const JOURNAL_TAIL_LIMIT = 60
 
 function setCors(req: NextApiRequest, res: NextApiResponse) {
   // The widget can be embedded on other origins. If that happens, browsers will send
@@ -369,6 +377,50 @@ async function maybeAutoLabelThread(params: {
 
 async function persistState(result: KernelResult): Promise<void> {
   await writeConversationState(result.state, SESSION_TTL_SECONDS)
+}
+
+async function externalizeJournalEntriesIfNeeded(params: {
+  userKey: string
+  state: any
+}): Promise<any> {
+  const state = params.state
+  if (!state || typeof state !== "object") return state
+  const meta = state.meta
+  if (!meta || typeof meta !== "object") return state
+
+  // Heuristic: presence of journal.config indicates a journal thread.
+  const isJournal = (meta as any)?.["journal.config"]?.value != null
+  if (!isJournal) return state
+
+  const journalId = String(state.conversation_id ?? "")
+  if (!journalId) return state
+
+  // 1) Migrate legacy inline entries (best-effort).
+  const migratedFlag = (meta as any)?.["journal.entries_externalized"]?.value
+  const legacy = (meta as any)?.["journal.entries"]?.value
+  if (!migratedFlag && Array.isArray(legacy) && legacy.length) {
+    await appendManyJournalEntries(journalId, legacy as JournalEntry[])
+  }
+
+  // 2) Append a newly produced entry if present.
+  const appendEntry = (meta as any)?.["journal.append_entry"]?.value
+  if (appendEntry && typeof appendEntry === "object") {
+    await appendJournalEntry(journalId, appendEntry as JournalEntry)
+  }
+
+  // 3) Refresh tail into state meta for UI rendering.
+  const tail = await readJournalEntriesTail(journalId, JOURNAL_TAIL_LIMIT)
+
+  const nextMeta: any = {
+    ...(meta as any),
+    "journal.entries": { value: tail, source_node: "SYSTEM_UI" },
+    "journal.entries_externalized": { value: true, source_node: "SYSTEM_UI" },
+  }
+
+  // Remove transient key so it doesn't persist.
+  if ("journal.append_entry" in nextMeta) delete nextMeta["journal.append_entry"]
+
+  return { ...state, meta: nextMeta }
 }
 
 async function emitSpine(params: {
@@ -1116,7 +1168,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               source_node: "SYSTEM_UI",
             },
             "journal.phase": { value: 1, source_node: "SYSTEM_UI" },
+            // Entries are stored externally; state keeps only a small tail for UI.
             "journal.entries": { value: [], source_node: "SYSTEM_UI" },
+            "journal.entries_externalized": { value: true, source_node: "SYSTEM_UI" },
           },
           status: "active" as const,
           parentese_stack: [],
@@ -1124,6 +1178,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })()
 
       await writeConversationState(newState, SESSION_TTL_SECONDS)
+
+      if (threadType === "journal") {
+        await writeJournalDefinition(userKey, {
+          journal_id: newConversationId,
+          profile_type: journalProfile,
+          title: journalTitle,
+          problem: journalInit.problem,
+          goal: journalInit.goal,
+          schema_version: "v1",
+          created_at_ms: Date.now(),
+          updated_at_ms: Date.now(),
+        })
+      }
 
       let nextIndex = upsertThread({
         index: index0,
@@ -1214,20 +1281,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     }
 
-    await persistState(kernelResult)
+    // Externalize journal entries (append-only log in Redis) and keep a small tail in state.
+    const stateWithJournalTail = await externalizeJournalEntriesIfNeeded({ userKey, state: kernelResult.state as any })
+    const kernelResultFinal: KernelResult = { ...kernelResult, state: stateWithJournalTail }
+
+    await persistState(kernelResultFinal)
 
     // Canonical events (V1)
-    const assistantText = kernelResult.transition.response_message ?? kernelResult.state.active_node_message
+    const assistantText = kernelResultFinal.transition.response_message ?? kernelResultFinal.state.active_node_message
 
     const rawUserText =
       (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : toUserInput(input) ?? ""
 
     await emitCanonicalEvent({
       userKey,
-      conversationId: kernelResult.state.conversation_id,
-      revision: kernelResult.state.revision,
-      inputId: kernelResult.state.revision,
-      nodeId: kernelResult.log.active_node_before ?? (baseState?.active_node ?? null),
+      conversationId: kernelResultFinal.state.conversation_id,
+      revision: kernelResultFinal.state.revision,
+      inputId: kernelResultFinal.state.revision,
+      nodeId: kernelResultFinal.log.active_node_before ?? (baseState?.active_node ?? null),
       eventType: "input_received",
       payload: {
         input_type: (input as any).type,
@@ -1239,75 +1310,75 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await emitCanonicalEvent({
       userKey,
-      conversationId: kernelResult.state.conversation_id,
-      revision: kernelResult.state.revision,
-      inputId: kernelResult.state.revision,
-      nodeId: kernelResult.state.active_node,
+      conversationId: kernelResultFinal.state.conversation_id,
+      revision: kernelResultFinal.state.revision,
+      inputId: kernelResultFinal.state.revision,
+      nodeId: kernelResultFinal.state.active_node,
       eventType: "transition_applied",
       payload: {
         input_type: (input as any).type,
         transition: {
-          type: kernelResult.transition.type,
-          from: kernelResult.transition.from,
+          type: kernelResultFinal.transition.type,
+          from: kernelResultFinal.transition.from,
           // Ensure canonical events always carry a concrete destination node.
           // Some internal transitions (e.g. "NODE_HOP" with external resolution) may leave `to` unset.
           // Falling back to the post-transition active node keeps the event self-contained.
-          to: kernelResult.transition.to ?? kernelResult.state.active_node,
-          reason: kernelResult.transition.reason,
-          meta_keys_written: kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : [],
+          to: kernelResultFinal.transition.to ?? kernelResultFinal.state.active_node,
+          reason: kernelResultFinal.transition.reason,
+          meta_keys_written: kernelResultFinal.transition.meta_delta ? Object.keys(kernelResultFinal.transition.meta_delta) : [],
         },
-        status_after: kernelResult.state.status,
+        status_after: kernelResultFinal.state.status,
       },
     })
 
-    const activeNode = getNode(kernelResult.state.active_node)
+    const activeNode = getNode(kernelResultFinal.state.active_node)
 
     await emitCanonicalEvent({
       userKey,
-      conversationId: kernelResult.state.conversation_id,
-      revision: kernelResult.state.revision,
-      inputId: kernelResult.state.revision,
-      nodeId: kernelResult.state.active_node,
+      conversationId: kernelResultFinal.state.conversation_id,
+      revision: kernelResultFinal.state.revision,
+      inputId: kernelResultFinal.state.revision,
+      nodeId: kernelResultFinal.state.active_node,
       eventType: "node_rendered",
       payload: {
-        node_id: kernelResult.state.active_node,
+        node_id: kernelResultFinal.state.active_node,
         node_kind: (activeNode as any)?.kind ?? null,
         capability_id: (activeNode as any)?.kind === "DIALOG" ? (activeNode as any)?.capability_id ?? null : null,
         tool_id: (activeNode as any)?.kind === "TOOL" ? (activeNode as any)?.tool?.tool_id ?? null : null,
         message: truncateText(assistantText ?? "", 800),
         ai_output_length: (assistantText ?? "").length,
-        status: kernelResult.state.status,
+        status: kernelResultFinal.state.status,
       },
     })
 
     // Terminal events: emit only on status change (no inference).
     const prevStatus = typeof baseState?.status === "string" ? baseState.status : null
-    if (prevStatus !== kernelResult.state.status) {
-      if (kernelResult.state.status === "completed") {
+    if (prevStatus !== kernelResultFinal.state.status) {
+      if (kernelResultFinal.state.status === "completed") {
         await emitCanonicalEvent({
           userKey,
-          conversationId: kernelResult.state.conversation_id,
-          revision: kernelResult.state.revision,
-          inputId: kernelResult.state.revision,
-          nodeId: kernelResult.state.active_node,
+          conversationId: kernelResultFinal.state.conversation_id,
+          revision: kernelResultFinal.state.revision,
+          inputId: kernelResultFinal.state.revision,
+          nodeId: kernelResultFinal.state.active_node,
           eventType: "conversation_completed",
           payload: {
-            terminal_revision: kernelResult.state.revision,
-            terminal_node: kernelResult.state.active_node,
+            terminal_revision: kernelResultFinal.state.revision,
+            terminal_node: kernelResultFinal.state.active_node,
           },
         })
       }
-      if (kernelResult.state.status === "rejected") {
+      if (kernelResultFinal.state.status === "rejected") {
         await emitCanonicalEvent({
           userKey,
-          conversationId: kernelResult.state.conversation_id,
-          revision: kernelResult.state.revision,
-          inputId: kernelResult.state.revision,
-          nodeId: kernelResult.state.active_node,
+          conversationId: kernelResultFinal.state.conversation_id,
+          revision: kernelResultFinal.state.revision,
+          inputId: kernelResultFinal.state.revision,
+          nodeId: kernelResultFinal.state.active_node,
           eventType: "conversation_rejected",
           payload: {
-            terminal_revision: kernelResult.state.revision,
-            terminal_node: kernelResult.state.active_node,
+            terminal_revision: kernelResultFinal.state.revision,
+            terminal_node: kernelResultFinal.state.active_node,
           },
         })
       }
@@ -1315,35 +1386,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await maybeAutoLabelThread({
       userKey,
-      conversationId: kernelResult.state.conversation_id,
+      conversationId: kernelResultFinal.state.conversation_id,
       input,
-      revisionAfter: kernelResult.state.revision,
+      revisionAfter: kernelResultFinal.state.revision,
     })
 
-    const metaKeysWritten = kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : []
+    const metaKeysWritten = kernelResultFinal.transition.meta_delta ? Object.keys(kernelResultFinal.transition.meta_delta) : []
 
     await emitSpine({
       userKey,
       input,
-      kernelResult,
+      kernelResult: kernelResultFinal,
       latencyMs: Date.now() - started,
     })
 
     await enqueueSummarizeEpisode({
       userKey,
-      conversationId: kernelResult.state.conversation_id,
-      revisionAfter: kernelResult.state.revision,
-      threadThemeId: threadBinding?.themeId ?? (kernelResult.state.meta?.["thread.theme_id"] as any)?.value,
-      threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
+      conversationId: kernelResultFinal.state.conversation_id,
+      revisionAfter: kernelResultFinal.state.revision,
+      threadThemeId: threadBinding?.themeId ?? (kernelResultFinal.state.meta?.["thread.theme_id"] as any)?.value,
+      threadEpisodeId: threadBinding?.episodeId ?? (kernelResultFinal.state.meta?.["thread.episode_id"] as any)?.value,
     })
 
     await enqueueSuggestFacts({
       userKey,
-      conversationId: kernelResult.state.conversation_id,
-      revisionAfter: kernelResult.state.revision,
+      conversationId: kernelResultFinal.state.conversation_id,
+      revisionAfter: kernelResultFinal.state.revision,
       metaKeysWritten,
-      threadThemeId: threadBinding?.themeId ?? (kernelResult.state.meta?.["thread.theme_id"] as any)?.value,
-      threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
+      threadThemeId: threadBinding?.themeId ?? (kernelResultFinal.state.meta?.["thread.theme_id"] as any)?.value,
+      threadEpisodeId: threadBinding?.episodeId ?? (kernelResultFinal.state.meta?.["thread.episode_id"] as any)?.value,
     })
 
     // Reflection CBA updates:
@@ -1351,15 +1422,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // - If GAARSDAL_REFLECTION_CBA_SYNC=1, we run CBA in-band (adds latency but updates schema immediately).
     // - Otherwise we enqueue an async job (requires an external worker trigger).
     const userMessage = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : ""
-    const therapistMessage = String(kernelResult.transition.response_message ?? kernelResult.state.active_node_message ?? "")
-    const activeNodeAfter = kernelResult.state.active_node
+    const therapistMessage = String(kernelResultFinal.transition.response_message ?? kernelResultFinal.state.active_node_message ?? "")
+    const activeNodeAfter = kernelResultFinal.state.active_node
 
     const syncCbaEnabled = process.env.GAARSDAL_REFLECTION_CBA_SYNC === "1"
     if (syncCbaEnabled && activeNodeAfter === "REFLECTION") {
       // Best-effort: failures must not break chat.
       try {
         await runReflectionCbaUpdate({
-          conversationId: kernelResult.state.conversation_id,
+          conversationId: kernelResultFinal.state.conversation_id,
           userMessage,
           therapistMessage,
         })
@@ -1369,28 +1440,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
       await enqueueReflectionCbaUpdate({
         userKey,
-        conversationId: kernelResult.state.conversation_id,
-        revisionAfter: kernelResult.state.revision,
+        conversationId: kernelResultFinal.state.conversation_id,
+        revisionAfter: kernelResultFinal.state.revision,
         activeNodeAfter,
         userMessage,
         therapistMessage,
-        threadThemeId: threadBinding?.themeId ?? (kernelResult.state.meta?.["thread.theme_id"] as any)?.value,
-        threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
+        threadThemeId: threadBinding?.themeId ?? (kernelResultFinal.state.meta?.["thread.theme_id"] as any)?.value,
+        threadEpisodeId: threadBinding?.episodeId ?? (kernelResultFinal.state.meta?.["thread.episode_id"] as any)?.value,
       })
     }
 
     await logAndRecord({
       userKey,
       input,
-      kernelResult,
+      kernelResult: kernelResultFinal,
       userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined,
     })
 
     const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
 
     res.status(200).json({
-      ...kernelResult,
-      state: withThreadMeta({ state: kernelResult.state, index: indexNow }),
+      ...kernelResultFinal,
+      state: withThreadMeta({ state: kernelResultFinal.state, index: indexNow }),
     })
   } catch (e: any) {
     await appendSpineEventV23({
