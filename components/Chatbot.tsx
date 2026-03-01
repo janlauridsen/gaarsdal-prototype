@@ -820,7 +820,7 @@ export default function Chatbot() {
     setJournalDrinks("");
     setJournalUrge("");
     setJournalMoodTag("");
-    setJournalMoodValue("");
+    setJournalMood("");
     setJournalTriggerTag("");
     setJournalContextTag("");
     setJournalCopingTag("");
