@@ -430,7 +430,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     allow_parentese: false,
     allowed_exits: ["HOME"],
     capability_id: "diary-v1",
-    meta_domains_written: ["ux", "journal.entries", "journal.config", "journal.phase", journal.append_entry],
+    meta_domains_written: ["ux", "journal.entries", "journal.config", "journal.phase", "journal.append_entry"],
   },
 
   TRIAGE_FIT_BOOKING: {
