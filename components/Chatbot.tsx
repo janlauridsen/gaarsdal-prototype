@@ -1505,8 +1505,6 @@ export default function Chatbot() {
                     </>
                   ) : null}
 
-                  ) : null}
-
                   {journalProfile === "strict" ? (
                     <div className={styles.journalInputRowTop}>
                       <label className={styles.journalField}>
