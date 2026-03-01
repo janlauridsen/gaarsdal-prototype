@@ -389,13 +389,10 @@
   background-color: #ECEAE4;
 }
 
-/* When the diary/journal input expands, allow the footer to scroll instead of clipping content.
-   This prevents “busy” chip layouts from pushing the input field off-screen in fixed-height widget. */
 .footerJournal {
   max-height: 46%;
   overflow-y: auto;
   overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
 }
 
 
@@ -875,6 +872,135 @@
 }
 
 .journalInputRowTop {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.journalMetaRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.journalToggleBtn {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: rgba(27, 30, 28, 0.85);
+}
+
+.journalToggleBtn:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+.journalMetaInline {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.journalMetaField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: min(220px, 100%);
+}
+
+.journalMetaLabel {
+  font-size: 11px;
+  color: rgba(27, 30, 28, 0.7);
+}
+
+.journalMetaInput {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.9);
+  color: rgba(27, 30, 28, 0.9);
+  outline: none;
+}
+
+.journalMetaInput:focus {
+  border-color: rgba(74, 93, 84, 0.35);
+  box-shadow: 0 0 0 3px rgba(74, 93, 84, 0.12);
+
+
+.journalExtrasScroll {
+  margin-top: 2px;
+  max-height: min(240px, 32vh);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.journalTagSummary {
+  margin-top: 6px;
+}
+
+.journalTagSummaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.journalTagPill {
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  background: rgba(255, 255, 255, 0.70);
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  color: rgba(27, 30, 28, 0.80);
+}
+
+}
+
+.journalQuickBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.journalQuickGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.journalQuickLabel {
+  font-size: 11px;
+  color: rgba(27, 30, 28, 0.7);
+}
+
+.journalQuickRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.journalQuickChip {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: rgba(27, 30, 28, 0.85);
+}
+
+.journalQuickChip:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+.journalQuickChipActive {
+  border-color: rgba(74, 93, 84, 0.35);
+  background: rgba(74, 93, 84, 0.1);
+}
+
+.journalAdvancedGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
