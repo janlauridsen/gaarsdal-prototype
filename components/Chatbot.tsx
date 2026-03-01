@@ -169,6 +169,12 @@ function splitThreadLabel(label: string): { title: string; preview: string } {
   return { title, preview }
 }
 
+
+function toDatetimeLocalValue(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function Chatbot() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -546,18 +552,18 @@ export default function Chatbot() {
         setInput("")
         setJournalText("")
         setJournalDrinks("")
-        setJournalUrge("")
+        setJournalUrge("");
         setJournalStrict("")
         setJournalAdvancedOpen(false)
-        setJournalTsLocal("")
-        setJournalMoodTag("")
+        setJournalTsLocal("");
+        setJournalMoodTag("");
         setJournalMood("")
-        setJournalTriggerTag("")
-        setJournalContextTag("")
-        setJournalCopingTag("")
-        setJournalAction("")
-        setJournalCravingPeak("")
-        setJournalCravingDuration("")
+        setJournalTriggerTag("");
+        setJournalContextTag("");
+        setJournalCopingTag("");
+        setJournalAction("");
+        setJournalCravingPeak("");
+        setJournalCravingDuration("");
         setHeaderNavHint(null)
         await ensureConversationLoaded(data.state.conversation_id, data.state)
       } else {
@@ -567,17 +573,17 @@ export default function Chatbot() {
           // Journal entries are rendered from state.meta; keep chat transcript clean.
           setJournalText("")
           setJournalDrinks("")
-          setJournalUrge("")
+          setJournalUrge("");
           setJournalStrict("")
-          setJournalTsLocal("")
-          setJournalMoodTag("")
+          setJournalTsLocal("");
+          setJournalMoodTag("");
           setJournalMood("")
-          setJournalTriggerTag("")
-          setJournalContextTag("")
-          setJournalCopingTag("")
-          setJournalAction("")
-          setJournalCravingPeak("")
-          setJournalCravingDuration("")
+          setJournalTriggerTag("");
+          setJournalContextTag("");
+          setJournalCopingTag("");
+          setJournalAction("");
+          setJournalCravingPeak("");
+          setJournalCravingDuration("");
         }
       }
       return true
@@ -808,6 +814,26 @@ export default function Chatbot() {
     })
 
     dispatch({ type: "FREE_TEXT", text: payload }, { silentUser: true })
+
+    // reset local form state after submit
+    setJournalText("");
+    setJournalDrinks("");
+    setJournalUrge("");
+    setJournalMoodTag("");
+    setJournalMoodValue("");
+    setJournalTriggerTag("");
+    setJournalContextTag("");
+    setJournalCopingTag("");
+    setJournalAction("");
+    setJournalCravingPeak("");
+    setJournalCravingDuration("");
+    // If datetime is enabled, default to now for the next entry.
+    if (journalAdvancedOpen) {
+      setJournalTsLocal(toDatetimeLocalValue(new Date()));
+    } else {
+      setJournalTsLocal("");
+    }
+
   }
 
   return (
@@ -1329,7 +1355,13 @@ export default function Chatbot() {
                       <button
                         className={styles.journalToggleBtn}
                         type="button"
-                        onClick={() => setJournalAdvancedOpen((v) => !v)}
+                        onClick={() => setJournalAdvancedOpen((v) => {
+                          const next = !v;
+                          if (next && !journalTsLocal) {
+                            setJournalTsLocal(toDatetimeLocalValue(new Date()));;
+                          }
+                          return next;
+                        })}
                         disabled={!state || !freeTextEnabled}
                       >
                         {journalAdvancedOpen ? "Skjul felter" : "Flere felter"}
