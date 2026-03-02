@@ -149,10 +149,7 @@ function safeId() {
 
 function trimDuplicateTitle(s: string) {
   // Håndter "x — x" (dobbelt titel)
-  const parts = s
-    .split("—")
-    .map((p) => p.trim())
-    .filter(Boolean)
+  const parts = s.split("—").map((p) => p.trim()).filter(Boolean)
   if (parts.length === 2 && parts[0] === parts[1]) return parts[0]
   return s.trim()
 }
@@ -172,11 +169,10 @@ function splitThreadLabel(label: string): { title: string; preview: string } {
   return { title, preview }
 }
 
+
 function toDatetimeLocalValue(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(
-    d.getMinutes()
-  )}`
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export default function Chatbot() {
@@ -535,7 +531,9 @@ export default function Chatbot() {
       if (data?.error?.code) return false
 
       const isThreadNav =
-        nextInput.type === "THREAD_CREATE" || nextInput.type === "THREAD_SWITCH" || nextInput.type === "THREAD_ARCHIVE"
+        nextInput.type === "THREAD_CREATE" ||
+        nextInput.type === "THREAD_SWITCH" ||
+        nextInput.type === "THREAD_ARCHIVE"
 
       if (nextInput.type === "EXPLICIT_TRANSITION") {
         const fromLabel = NODE_LABELS[fromNode] ?? fromNode
@@ -548,24 +546,25 @@ export default function Chatbot() {
 
       setState(data.state)
 
-      const assistantText = (data.transition?.response_message as string | undefined) ?? normalizeAssistantMessage(data.state)
+      const assistantText =
+        (data.transition?.response_message as string | undefined) ?? normalizeAssistantMessage(data.state)
 
       if (isThreadNav) {
         setInput("")
         setJournalText("")
         setJournalDrinks("")
-        setJournalUrge("")
+        setJournalUrge("");
         setJournalStrict("")
         setJournalExtrasEnabled(false)
-        setJournalTsLocal("")
-        setJournalMoodTag("")
+        setJournalTsLocal("");
+        setJournalMoodTag("");
         setJournalMood("")
-        setJournalTriggerTag("")
-        setJournalContextTag("")
-        setJournalCopingTag("")
-        setJournalAction("")
-        setJournalCravingPeak("")
-        setJournalCravingDuration("")
+        setJournalTriggerTag("");
+        setJournalContextTag("");
+        setJournalCopingTag("");
+        setJournalAction("");
+        setJournalCravingPeak("");
+        setJournalCravingDuration("");
         setHeaderNavHint(null)
         await ensureConversationLoaded(data.state.conversation_id, data.state)
       } else {
@@ -575,17 +574,17 @@ export default function Chatbot() {
           // Journal entries are rendered from state.meta; keep chat transcript clean.
           setJournalText("")
           setJournalDrinks("")
-          setJournalUrge("")
+          setJournalUrge("");
           setJournalStrict("")
-          setJournalTsLocal("")
-          setJournalMoodTag("")
+          setJournalTsLocal("");
+          setJournalMoodTag("");
           setJournalMood("")
-          setJournalTriggerTag("")
-          setJournalContextTag("")
-          setJournalCopingTag("")
-          setJournalAction("")
-          setJournalCravingPeak("")
-          setJournalCravingDuration("")
+          setJournalTriggerTag("");
+          setJournalContextTag("");
+          setJournalCopingTag("");
+          setJournalAction("");
+          setJournalCravingPeak("");
+          setJournalCravingDuration("");
         }
       }
       return true
@@ -647,6 +646,7 @@ export default function Chatbot() {
   }
 
   // “Tråde” i header: tilbage til lobby / trådvalg
+
   const threadChoicesRaw = metaValue("threads.choices")
   const threadCount = state ? threadCountFromState(state) : 0
 
@@ -817,23 +817,24 @@ export default function Chatbot() {
     dispatch({ type: "FREE_TEXT", text: payload }, { silentUser: true })
 
     // reset local form state after submit
-    setJournalText("")
-    setJournalDrinks("")
-    setJournalUrge("")
-    setJournalMoodTag("")
-    setJournalMood("")
-    setJournalTriggerTag("")
-    setJournalContextTag("")
-    setJournalCopingTag("")
-    setJournalAction("")
-    setJournalCravingPeak("")
-    setJournalCravingDuration("")
+    setJournalText("");
+    setJournalDrinks("");
+    setJournalUrge("");
+    setJournalMoodTag("");
+    setJournalMood("");
+    setJournalTriggerTag("");
+    setJournalContextTag("");
+    setJournalCopingTag("");
+    setJournalAction("");
+    setJournalCravingPeak("");
+    setJournalCravingDuration("");
     // If datetime is enabled, default to now for the next entry.
     if (journalExtrasEnabled) {
       setJournalTsLocal(toDatetimeLocalValue(new Date()))
     } else {
       setJournalTsLocal("")
     }
+
   }
 
   return (
@@ -872,7 +873,11 @@ export default function Chatbot() {
                     title={expanded ? "Minimer" : "Maksimer"}
                     aria-label={expanded ? "Minimer" : "Maksimer"}
                   >
-                    {expanded ? <ArrowsPointingInIcon className={styles.icon} /> : <ArrowsPointingOutIcon className={styles.icon} />}
+                    {expanded ? (
+                      <ArrowsPointingInIcon className={styles.icon} />
+                    ) : (
+                      <ArrowsPointingOutIcon className={styles.icon} />
+                    )}
                   </button>
 
                   <button className={styles.iconBtn} onClick={closeChat} title="Luk" aria-label="Luk">
@@ -1060,9 +1065,9 @@ export default function Chatbot() {
                     )}
                   </div>
                 </div>
+
               )}
 
-              {/* FIX: journalWizardOpen-blokken var ikke lukket før. */}
 
               {journalProfile === "alcohol" && journalExtrasModalOpen && (
                 <div
@@ -1104,9 +1109,7 @@ export default function Chatbot() {
                               <button
                                 key={v}
                                 type="button"
-                                className={`${styles.journalQuickChip} ${
-                                  journalMoodTag === v ? styles.journalQuickChipActive : ""
-                                }`}
+                                className={`${styles.journalQuickChip} ${journalMoodTag === v ? styles.journalQuickChipActive : ""}`}
                                 onClick={() => setJournalMoodTag((cur) => (cur === v ? "" : v))}
                                 disabled={!state || !freeTextEnabled}
                               >
@@ -1123,9 +1126,7 @@ export default function Chatbot() {
                               <button
                                 key={v}
                                 type="button"
-                                className={`${styles.journalQuickChip} ${
-                                  journalTriggerTag === v ? styles.journalQuickChipActive : ""
-                                }`}
+                                className={`${styles.journalQuickChip} ${journalTriggerTag === v ? styles.journalQuickChipActive : ""}`}
                                 onClick={() => setJournalTriggerTag((cur) => (cur === v ? "" : v))}
                                 disabled={!state || !freeTextEnabled}
                               >
@@ -1142,9 +1143,7 @@ export default function Chatbot() {
                               <button
                                 key={v}
                                 type="button"
-                                className={`${styles.journalQuickChip} ${
-                                  journalContextTag === v ? styles.journalQuickChipActive : ""
-                                }`}
+                                className={`${styles.journalQuickChip} ${journalContextTag === v ? styles.journalQuickChipActive : ""}`}
                                 onClick={() => setJournalContextTag((cur) => (cur === v ? "" : v))}
                                 disabled={!state || !freeTextEnabled}
                               >
@@ -1161,9 +1160,7 @@ export default function Chatbot() {
                               <button
                                 key={v}
                                 type="button"
-                                className={`${styles.journalQuickChip} ${
-                                  journalCopingTag === v ? styles.journalQuickChipActive : ""
-                                }`}
+                                className={`${styles.journalQuickChip} ${journalCopingTag === v ? styles.journalQuickChipActive : ""}`}
                                 onClick={() => setJournalCopingTag((cur) => (cur === v ? "" : v))}
                                 disabled={!state || !freeTextEnabled}
                               >
@@ -1180,9 +1177,7 @@ export default function Chatbot() {
                               <button
                                 key={v}
                                 type="button"
-                                className={`${styles.journalQuickChip} ${
-                                  journalAction === v ? styles.journalQuickChipActive : ""
-                                }`}
+                                className={`${styles.journalQuickChip} ${journalAction === v ? styles.journalQuickChipActive : ""}`}
                                 onClick={() => setJournalAction((cur) => (cur === v ? "" : v))}
                                 disabled={!state || !freeTextEnabled}
                               >
@@ -1239,11 +1234,381 @@ export default function Chatbot() {
                 </div>
               )}
 
-              {/* ...resten af filen er uændret... */}
-              {/* (Din resterende JSX fortsætter herfra som før) */}
+              {threadsOpen && (
+                <div
+                  className={styles.threadsOverlay}
+                  onClick={() => {
+                    setThreadsOpen(false)
+                    focusInput()
+                  }}
+                  role="dialog"
+                  aria-modal="true"
+                >
+                  <div className={styles.threadsHeader} onClick={(e) => e.stopPropagation()}>
+                    <div className={styles.threadsTitle}>Tråde</div>
+                    <button
+                      className={styles.iconBtn}
+                      onClick={() => {
+                        setThreadsOpen(false)
+                        focusInput()
+                      }}
+                      title="Luk"
+                      aria-label="Luk"
+                    >
+                      <XMarkIcon className={styles.icon} />
+                    </button>
+                  </div>
+
+                  <div className={styles.threadsBody} onClick={(e) => e.stopPropagation()}>
+                    {threadTabs.length === 0 ? (
+                      <div className={styles.threadsHint}>Ingen tråde endnu.</div>
+                    ) : (
+                      <div className={styles.threadsList}>
+                        {threadTabs
+                          .slice()
+                          .sort((a, b) => {
+                            const ta = Date.parse(a.updated_at || "") || 0
+                            const tb = Date.parse(b.updated_at || "") || 0
+                            return tb - ta
+                          })
+                          .map((t) => {
+                            const isActive = !!activeConversationId && t.conversation_id === activeConversationId
+                            const label = (t.title || "").trim() || trimDuplicateTitle(t.preview || "Samtale")
+                            const isJournal = t.thread_type === "journal"
+                            return (
+                              <button
+                                key={t.conversation_id}
+                                className={`${styles.threadItem} ${isActive ? styles.threadItemActive : ""}`}
+                                onClick={() => {
+                                  if (!isActive)
+                                    dispatch({ type: "THREAD_SWITCH", conversation_id: t.conversation_id } as any, {
+                                      silentUser: true,
+                                    })
+                                  setThreadsOpen(false)
+                                  focusInput()
+                                }}
+                                disabled={loading || !state}
+                                title={t.preview || t.title || ""}
+                              >
+                                <div className={styles.threadItemTop}>
+                                  <div className={styles.threadItemTitle}>{label}</div>
+                                  {isJournal ? <span className={styles.threadBadge}>Dagbog</span> : null}
+                                </div>
+                                {t.preview ? <div className={styles.threadItemPreview}>{formatThreadPreview(t)}</div> : null}
+                              </button>
+                            )
+                          })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {headerNavHint && (
+                <div className={styles.navHint}>
+                  <span className={styles.navHintPulse}>{headerNavHint}</span>
+                </div>
+              )}
             </div>
 
-            {/* ... */}
+            <div className={styles.messages}>
+              {!isJournalActive &&
+                visibleMessages.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}
+                  >
+                    {m.text}
+                  </div>
+                ))}
+
+              {isJournalActive && (
+                <div className={styles.journalWrap}>
+                  {journalEntries.length === 0 ? (
+                    <div className={styles.journalEmpty}>
+                      <div className={styles.journalEmptyTitle}>{journalTitle ? `Dagbog – ${journalTitle}` : "Dagbog"}</div>
+                      <div className={styles.journalEmptyText}>
+                        {journalProfile === "alcohol"
+                          ? "Skriv et kort notat og evt. drinks + urge (0–10)."
+                          : journalProfile === "strict"
+                          ? "Skriv et kort notat og en skala (0–10)."
+                          : "Skriv et kort notat."}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.journalList}>
+                      {journalEntries
+                        .slice()
+                        .sort((a, b) => (a.ts_ms ?? 0) - (b.ts_ms ?? 0))
+                        .map((e) => {
+                          const dt = new Date(e.ts_ms)
+                          const time = Number.isFinite(e.ts_ms) ? dt.toLocaleString() : ""
+                          const drinks = e.fields?.drinks
+                          const urge = e.fields?.urge_0_10
+                          const strict = e.fields?.strict_0_10
+                          const moodTag = e.fields?.mood_tag
+                          const mood = e.fields?.mood_0_10
+                          const triggerTag = e.fields?.trigger_tag
+                          const contextTag = e.fields?.context_tag
+                          const copingTag = e.fields?.coping_tag
+                          const action = e.fields?.action
+                          const cravingPeak = e.fields?.craving_peak_0_10
+                          const cravingDur = e.fields?.craving_duration_min
+                          return (
+                            <div key={e.entry_id} className={styles.journalEntry}>
+                              <div className={styles.journalEntryTop}>
+                                <div className={styles.journalEntryTime}>{time}</div>
+                                <div className={styles.journalEntryChips}>
+                                  {typeof drinks === "number" ? (
+                                    <span className={styles.journalChip}>Drinks: {drinks}</span>
+                                  ) : null}
+                                  {typeof urge === "number" ? (
+                                    <span className={styles.journalChip}>Urge: {urge}/10</span>
+                                  ) : null}
+                                  {typeof moodTag === "string" && moodTag.trim() ? (
+                                    <span className={styles.journalChip}>Sind: {moodTag}</span>
+                                  ) : null}
+                                  {typeof mood === "number" ? (
+                                    <span className={styles.journalChip}>Sind: {mood}/10</span>
+                                  ) : null}
+                                  {typeof triggerTag === "string" && triggerTag.trim() ? (
+                                    <span className={styles.journalChip}>Trigger: {triggerTag}</span>
+                                  ) : null}
+                                  {typeof contextTag === "string" && contextTag.trim() ? (
+                                    <span className={styles.journalChip}>Kontekst: {contextTag}</span>
+                                  ) : null}
+                                  {typeof copingTag === "string" && copingTag.trim() ? (
+                                    <span className={styles.journalChip}>Coping: {copingTag}</span>
+                                  ) : null}
+                                  {typeof action === "string" && action.trim() ? (
+                                    <span className={styles.journalChip}>Handling: {action}</span>
+                                  ) : null}
+                                  {typeof cravingPeak === "number" ? (
+                                    <span className={styles.journalChip}>Craving: {cravingPeak}/10</span>
+                                  ) : null}
+                                  {typeof cravingDur === "number" ? (
+                                    <span className={styles.journalChip}>Varighed: {cravingDur}m</span>
+                                  ) : null}
+                                  {typeof strict === "number" ? (
+                                    <span className={styles.journalChip}>Skala: {strict}/10</span>
+                                  ) : null}
+                                </div>
+                              </div>
+                              {e.text ? <div className={styles.journalEntryText}>{e.text}</div> : null}
+                            </div>
+                          )
+                        })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {state?.status === "completed" && (
+                <div className={styles.callout}>
+                  <div className={styles.calloutTitle}>Næste</div>
+                  <div className={styles.calloutRow}>
+                    <button
+                      className={styles.chipAction}
+                      onClick={() => dispatch({ type: "FREE_TEXT", text: "new" }, { silentUser: true })}
+                      disabled={loading || !state}
+                    >
+                      Ny tråd
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {uiSuggestions.length > 0 && (
+                <div className="mt-3">
+                  <div className={styles.sectionTitle}>Forslag</div>
+                  <div className={styles.calloutRow}>
+                    {uiSuggestions.map((s) => (
+                      <button
+                        key={s.id}
+                        className={styles.chipAction}
+                        onClick={() => {
+                          const input = s.input as any
+                          if (input && input.type === "OPEN_URL" && typeof input.url === "string") {
+                            router.push(input.url)
+                            return
+                          }
+
+                          if (input) {
+                            dispatch(input as InputSignal, { silentUser: true })
+                          } else {
+                            dispatch({ type: "FREE_TEXT", text: s.label })
+                          }
+                        }}
+                        disabled={loading || !state || !freeTextEnabled}
+                        title={s.label}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Scroll anchor at the very bottom (includes waiting indicator + any callouts). */}
+              <div ref={endRef} />
+            </div>
+
+            <div className={`${styles.footer} ${isJournalActive ? styles.footerJournal : ""}`.trim()}>
+              {!isJournalActive ? (
+                <div className={styles.inputRow}>
+                  <textarea
+                    ref={textareaRef}
+                    className={styles.textarea}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder={placeholder}
+                    rows={2}
+                    disabled={!state || !freeTextEnabled}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault()
+                        const text = input.trim()
+                        if (!text) return
+                        setInput("")
+                        dispatch({ type: "FREE_TEXT", text })
+                      }
+                    }}
+                  />
+                  <button
+                    className={styles.sendBtn}
+                    onClick={() => {
+                      const text = input.trim()
+                      if (!text) return
+                      setInput("")
+                      dispatch({ type: "FREE_TEXT", text })
+                    }}
+                    title="Send"
+                    aria-label="Send"
+                    disabled={!state || !freeTextEnabled || loading || !input.trim()}
+                  >
+                    <PaperAirplaneIcon className={styles.sendBtnIcon} />
+                  </button>
+                </div>
+              ) : (
+                <div className={styles.journalInputWrap}>
+                  {journalProfile === "alcohol" ? (
+                    <div className={styles.journalInputRowTop}>
+                      <label className={styles.journalField}>
+                        <span className={styles.journalFieldLabel}>Drinks</span>
+                        <input
+                          className={styles.journalFieldInput}
+                          inputMode="numeric"
+                          value={journalDrinks}
+                          onChange={(e) => setJournalDrinks(e.target.value)}
+                          placeholder="0"
+                          disabled={!state || !freeTextEnabled}
+                        />
+                      </label>
+                      <label className={styles.journalField}>
+                        <span className={styles.journalFieldLabel}>Urge (0–10)</span>
+                        <input
+                          className={styles.journalFieldInput}
+                          inputMode="numeric"
+                          value={journalUrge}
+                          onChange={(e) => setJournalUrge(e.target.value)}
+                          placeholder=""
+                          disabled={!state || !freeTextEnabled}
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+
+                  {journalProfile === "alcohol" ? (
+                    <div className={styles.journalMetaRow}>
+                      <button
+                        className={styles.journalToggleBtn}
+                        type="button"
+                        onClick={() => {
+                          setJournalExtrasEnabled(true)
+                          if (!journalTsLocal) setJournalTsLocal(toDatetimeLocalValue(new Date()))
+                          setJournalExtrasModalOpen(true)
+                        }}
+                        disabled={!state || !freeTextEnabled}
+                      >
+                        Flere felter
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {journalProfile === "alcohol" ? (
+                    <>
+                      <div className={styles.journalTagSummary}>
+                          {(() => {
+                            const chips = [
+                              journalMoodTag ? `Sind: ${journalMoodTag}` : "",
+                              journalTriggerTag ? `Trigger: ${journalTriggerTag}` : "",
+                              journalContextTag ? `Kontekst: ${journalContextTag}` : "",
+                              journalCopingTag ? `Coping: ${journalCopingTag}` : "",
+                              journalAction ? `Handling: ${journalAction}` : "",
+                            ].filter(Boolean)
+
+                            if (!chips.length) return null
+                            return (
+                              <div className={styles.journalTagSummaryRow}>
+                                {chips.map((c) => (
+                                  <span key={c} className={styles.journalTagPill}>
+                                    {c}
+                                  </span>
+                                ))}
+                              </div>
+                            )
+                          })()}
+                        </div>
+                    </>
+                  ) : null}
+
+                  {journalProfile === "strict" ? (
+                    <div className={styles.journalInputRowTop}>
+                      <label className={styles.journalField}>
+                        <span className={styles.journalFieldLabel}>Skala (0–10)</span>
+                        <input
+                          className={styles.journalFieldInput}
+                          inputMode="numeric"
+                          value={journalStrict}
+                          onChange={(e) => setJournalStrict(e.target.value)}
+                          placeholder=""
+                          disabled={!state || !freeTextEnabled}
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+
+                  <div className={styles.inputRow}>
+                    <textarea
+                      ref={textareaRef}
+                      className={styles.textarea}
+                      value={journalText}
+                      onChange={(e) => setJournalText(e.target.value)}
+                      placeholder={placeholder}
+                      rows={2}
+                      disabled={!state || !freeTextEnabled}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault()
+                          submitJournalEntry()
+                        }
+                      }}
+                    />
+                    <button
+                      className={styles.sendBtn}
+                      onClick={() => {
+                        submitJournalEntry()
+                      }}
+                      title="Gem"
+                      aria-label="Gem"
+                      disabled={!state || !freeTextEnabled || loading}
+                    >
+                      <PaperAirplaneIcon className={styles.sendBtnIcon} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}
