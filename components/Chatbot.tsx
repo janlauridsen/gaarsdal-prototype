@@ -1231,7 +1231,6 @@ export default function Chatbot() {
                   </div>
                 </div>
               )}
-              )}
 
               {threadsOpen && (
                 <div
