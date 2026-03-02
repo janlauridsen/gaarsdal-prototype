@@ -210,6 +210,15 @@ export default function Chatbot() {
   const [journalAction, setJournalAction] = useState<string>("")
   const [journalCravingPeak, setJournalCravingPeak] = useState<string>("")
   const [journalCravingDuration, setJournalCravingDuration] = useState<string>("")
+
+  // Draft evaluation (coaching) before save
+  const [journalEvalModalOpen, setJournalEvalModalOpen] = useState(false)
+  const [journalEvalLoading, setJournalEvalLoading] = useState(false)
+  const [journalEvalError, setJournalEvalError] = useState<string | null>(null)
+  const [journalEvalQuestions, setJournalEvalQuestions] = useState<string[]>([])
+  const [journalEvalSummary, setJournalEvalSummary] = useState<string>("")
+  const [journalEvalBeforeSave, setJournalEvalBeforeSave] = useState<boolean>(true)
+  const [journalEvalLastHash, setJournalEvalLastHash] = useState<string>("")
   const [loading, setLoading] = useState(false)
 
   // Threads overlay (drawer) lives on top of the chat view.
@@ -366,6 +375,24 @@ export default function Chatbot() {
       }
     }
   }, [])
+
+  // Load persisted preference for evaluation-before-save.
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem("gaarsdal_journal_eval_before_save")
+      if (v === "0" || v === "1") setJournalEvalBeforeSave(v === "1")
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("gaarsdal_journal_eval_before_save", journalEvalBeforeSave ? "1" : "0")
+    } catch {
+      // ignore
+    }
+  }, [journalEvalBeforeSave])
 
   function appendAssistantMessage(conversationId: string, text: string) {
     const message = (text ?? "").trim()
@@ -758,8 +785,95 @@ export default function Chatbot() {
     return base
   }, [threadChoices, threadCount])
 
-  const submitJournalEntry = () => {
+  function stableHash(input: any): string {
+    try {
+      return JSON.stringify(input)
+    } catch {
+      return String(input ?? "")
+    }
+  }
+
+  async function evaluateJournalDraft() {
+    if (!state) return
+    if (journalProfile !== "alcohol" && journalProfile !== "general" && journalProfile !== "strict") return
+
+    const text = journalText.trim()
+    const drinks = Number.parseInt(journalDrinks.trim(), 10)
+    const urge = Number.parseInt(journalUrge.trim(), 10)
+    const strict = Number.parseInt(journalStrict.trim(), 10)
+
+    const mood0 = Number.parseInt(journalMood.trim(), 10)
+    const cravingPeak = Number.parseInt(journalCravingPeak.trim(), 10)
+    const cravingDur = Number.parseInt(journalCravingDuration.trim(), 10)
+
+    const ts_ms = journalTsLocal.trim() ? new Date(journalTsLocal.trim()).getTime() : undefined
+
+    const payloadObj = {
+      profile: journalProfile,
+      draft: {
+        text,
+        ts_ms: typeof ts_ms === "number" && Number.isFinite(ts_ms) ? ts_ms : undefined,
+        fields: {
+          drinks: journalProfile === "alcohol" && Number.isFinite(drinks) ? drinks : undefined,
+          urge_0_10: journalProfile === "alcohol" && Number.isFinite(urge) ? urge : undefined,
+          strict_0_10: journalProfile === "strict" && Number.isFinite(strict) ? strict : undefined,
+          mood_tag: journalProfile === "alcohol" ? (journalMoodTag.trim() || undefined) : undefined,
+          mood_0_10: journalProfile === "alcohol" && Number.isFinite(mood0) ? mood0 : undefined,
+          trigger_tag: journalProfile === "alcohol" ? (journalTriggerTag.trim() || undefined) : undefined,
+          context_tag: journalProfile === "alcohol" ? (journalContextTag.trim() || undefined) : undefined,
+          coping_tag: journalProfile === "alcohol" ? (journalCopingTag.trim() || undefined) : undefined,
+          action: journalProfile === "alcohol" ? (journalAction.trim() || undefined) : undefined,
+          craving_peak_0_10: journalProfile === "alcohol" && Number.isFinite(cravingPeak) ? cravingPeak : undefined,
+          craving_duration_min: journalProfile === "alcohol" && Number.isFinite(cravingDur) ? cravingDur : undefined,
+        },
+      },
+    }
+
+    const hash = stableHash(payloadObj)
+    if (hash === journalEvalLastHash && journalEvalQuestions.length) {
+      setJournalEvalModalOpen(true)
+      return
+    }
+
+    setJournalEvalLoading(true)
+    setJournalEvalError(null)
+    setJournalEvalQuestions([])
+    setJournalEvalSummary("")
+
+    try {
+      const res = await fetch("/api/journal/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payloadObj),
+      })
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "")
+        throw new Error(`HTTP ${res.status}${txt ? ` — ${txt}` : ""}`)
+      }
+      const data = (await res.json().catch(() => null)) as any
+      const qs = Array.isArray(data?.questions) ? data.questions.map((x: any) => String(x)).filter(Boolean) : []
+      const summary = typeof data?.summary === "string" ? data.summary.trim() : ""
+      setJournalEvalQuestions(qs.slice(0, 6))
+      setJournalEvalSummary(summary)
+      setJournalEvalLastHash(hash)
+      setJournalEvalModalOpen(true)
+    } catch (e: any) {
+      setJournalEvalError(e?.message ? String(e.message) : "Kunne ikke evaluere input")
+      setJournalEvalModalOpen(true)
+    } finally {
+      setJournalEvalLoading(false)
+    }
+  }
+
+  const submitJournalEntry = async (opts?: { bypassEval?: boolean }) => {
     if (!state || !freeTextEnabled || loading) return
+
+    // Optional coaching step before save.
+    if (!opts?.bypassEval && journalEvalBeforeSave) {
+      await evaluateJournalDraft()
+      return
+    }
 
     const text = journalText.trim()
     const drinks = Number.parseInt(journalDrinks.trim(), 10)
@@ -1234,6 +1348,96 @@ export default function Chatbot() {
                 </div>
               )}
 
+              {journalEvalModalOpen && (
+                <div
+                  className={styles.modalOverlay}
+                  role="dialog"
+                  aria-modal="true"
+                  onClick={() => setJournalEvalModalOpen(false)}
+                >
+                  <div className={`${styles.modal} ${styles.modalWide}`.trim()} onClick={(e) => e.stopPropagation()}>
+                    <div className={styles.modalHeader}>
+                      <div className={styles.modalTitle}>Evaluer input</div>
+                      <button
+                        className={styles.iconBtn}
+                        onClick={() => setJournalEvalModalOpen(false)}
+                        title="Luk"
+                        aria-label="Luk"
+                      >
+                        <XMarkIcon className={styles.icon} />
+                      </button>
+                    </div>
+
+                    <div className={`${styles.modalBody} ${styles.modalBodyScroll}`.trim()}>
+                      {journalEvalLoading ? (
+                        <div className={styles.modalText}>Arbejder…</div>
+                      ) : journalEvalError ? (
+                        <div className={styles.modalText}>Kunne ikke evaluere: {journalEvalError}</div>
+                      ) : (
+                        <>
+                          {journalEvalSummary ? <div className={styles.modalText}>{journalEvalSummary}</div> : null}
+                          {journalEvalQuestions.length ? (
+                            <div className={styles.modalText}>
+                              Overvej evt.:
+                              <ul>
+                                {journalEvalQuestions.map((q) => (
+                                  <li key={q}>{q}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : (
+                            <div className={styles.modalText}>Ingen oplagte opfølgende spørgsmål.</div>
+                          )}
+
+                          <label className={styles.modalField}>
+                            <span className={styles.modalLabel}>Evaluer før gem</span>
+                            <input
+                              type="checkbox"
+                              checked={journalEvalBeforeSave}
+                              onChange={(e) => setJournalEvalBeforeSave(e.target.checked)}
+                            />
+                          </label>
+                        </>
+                      )}
+
+                      <div className={styles.modalActions}>
+                        <button className={styles.secondaryBtn} onClick={() => setJournalEvalModalOpen(false)}>
+                          Luk
+                        </button>
+
+                        <button
+                          className={styles.secondaryBtn}
+                          onClick={() => {
+                            if (!journalEvalQuestions.length) {
+                              setJournalEvalModalOpen(false)
+                              return
+                            }
+                            const addition = `\n\nOvervejelser:\n${journalEvalQuestions.map((q) => `- ${q}`).join("\n")}\n`
+                            setJournalText((cur) => (cur ? `${cur}${addition}` : addition.trimStart()))
+                            setJournalEvalModalOpen(false)
+                            focusInput()
+                          }}
+                          disabled={journalEvalLoading || !!journalEvalError || journalEvalQuestions.length === 0}
+                        >
+                          Indsæt i notat
+                        </button>
+
+                        <button
+                          className={styles.primaryBtn}
+                          onClick={async () => {
+                            setJournalEvalModalOpen(false)
+                            await submitJournalEntry({ bypassEval: true })
+                          }}
+                          disabled={journalEvalLoading}
+                        >
+                          Gem nu
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {threadsOpen && (
                 <div
                   className={styles.threadsOverlay}
@@ -1532,6 +1736,26 @@ export default function Chatbot() {
                       >
                         Flere felter
                       </button>
+
+                      <button
+                        className={styles.journalToggleBtn}
+                        type="button"
+                        onClick={() => evaluateJournalDraft()}
+                        disabled={!state || !freeTextEnabled || journalEvalLoading}
+                        title="Evaluer input"
+                      >
+                        Evaluer input
+                      </button>
+
+                      <label className={styles.journalToggleBtn} style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+                        <input
+                          type="checkbox"
+                          checked={journalEvalBeforeSave}
+                          onChange={(e) => setJournalEvalBeforeSave(e.target.checked)}
+                          disabled={!state || !freeTextEnabled}
+                        />
+                        <span>Før gem</span>
+                      </label>
                     </div>
                   ) : null}
 
