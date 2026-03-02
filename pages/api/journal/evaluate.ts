@@ -62,7 +62,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const client = createOpenAiCompatibleClient()
   const model = process.env.OPENAI_MODEL_JSON || process.env.OPENAI_MODEL || "gpt-4o-mini"
 
-  const completion = await client.chat.completions.create({
+  const parsed = await client.chatJson({
     model,
     temperature: 0.4,
     response_format: { type: "json_object" },
@@ -70,19 +70,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       { role: "system", content: system },
       { role: "user", content: JSON.stringify(user) },
     ],
-  } as any)
+  })
 
-  const raw = String(completion?.choices?.[0]?.message?.content || "").trim()
-  let parsed: any = null
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    // If the model ignored JSON mode (rare), fall back gracefully.
-    parsed = null
-  }
-
-  const summary = typeof parsed?.summary === "string" ? parsed.summary.trim().slice(0, 320) : ""
-  const questions = clampQuestions(parsed?.questions)
+  const summary = typeof parsed?.summary === "string" ? String(parsed.summary).trim().slice(0, 320) : ""
+  const questions = clampQuestions((parsed as any)?.questions)
 
   return res.status(200).json({ summary, questions })
 }
