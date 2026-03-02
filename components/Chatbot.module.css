@@ -1053,6 +1053,15 @@
   overflow: hidden;
 }
 
+.modalWide {
+  width: min(640px, 100%);
+}
+
+.modalBodyScroll {
+  max-height: min(70vh, 560px);
+  overflow: auto;
+}
+
 .modalHeader {
   display: flex;
   align-items: center;
