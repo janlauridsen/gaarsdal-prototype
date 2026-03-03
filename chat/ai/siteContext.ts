@@ -35,10 +35,22 @@ Hvem tilgangen især passer til (som beskrevet på siden)
 - Personer der foretrækker nøgtern, respektfuld stil frem for store løfter
 - Personer der ønsker ro og klarhed mere end peptalks
 
+Hvad siger kunderne
+- "Jeg har prøvet og det var en vild oplevelse, en god oplevelse. Jeg kunne høre hvad der skete omkring mig og da jeg “vågnede” var det en oplevelse værd.👍🏼😀"
+- "Tryghed og ro er i den grad til stede og mit sind er forandret i en eller anden grad."
+- "Hypnoterapi er med til at "lukke ned" og give mig en fred..."
+- "Jeg fløj derfra på en let lille sky, tog hjem og sov i 11 stive timer (havde brug for det), og vågnede med en ny nysgerrighed på verden..."
+
+Andre udtagelser
+- "Hypnose er en kraftfuld og effektiv metode til at behandle mange psykiske problemer hurtigere og bedre end andre former for terapi. Det siger dr. med. og cand. psych., professor Bobby Zachariae.
+Hypnose kan hjælpe dig med at overvinde angstlidelser og fobier, som f.eks. tandlægeskræk, præstationsangst og højdeskræk. Men det er ikke det eneste. Hypnose kan også lindre smerter og astma og reducere dit behov for medicin, fortæller Bobby Zachariae."
+
 Praktisk (kontakt / lokation)
 - Klinikadresse: Bakkevej 36, 3460 Birkerød (Rudersdal)
 - Telefon: +45 42 80 74 74
 - E-mail: jan@gaarsdal.net
 - Facebook-gruppe: https://www.facebook.com/groups/1056907644480600
 - priser aftales - default 900,- for første behandling og 600,- for de næste
+- ofte kan 1-2 behandlinger være nok
+- behandlinger der kræver mere end 3 gange skal aftales og betragtes som en transformation snarere end en enkelt problemstilling
 `;

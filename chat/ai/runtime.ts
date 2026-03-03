@@ -4,12 +4,14 @@ import { triageCapability } from "./capabilities/triage"
 import { genHypnoCapability } from "./capabilities/genHypno"
 import { methodFitCapability } from "./capabilities/methodFit"
 import { reflectionCapability } from "./capabilities/reflection"
+import { diaryCapability } from "./capabilities/diary"
 
 const CAPABILITIES: Record<string, AiCapability> = {
   [triageCapability.id]: triageCapability,
   [genHypnoCapability.id]: genHypnoCapability,
   [methodFitCapability.id]: methodFitCapability,
   [reflectionCapability.id]: reflectionCapability,
+  [diaryCapability.id]: diaryCapability,
 }
 
 export async function runCapability(

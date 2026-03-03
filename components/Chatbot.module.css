@@ -85,6 +85,12 @@
   min-width: 0;
 }
 
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .title {
   font-weight: 700;
   font-size: 14px;
@@ -159,7 +165,22 @@
   flex: 1;
   overflow-y: auto;
   padding: 14px;
+  padding-bottom: 28px;
   background: #F6F5F2;
+  position: relative;
+}
+
+/* Watermark (logo) inside chat window */
+.messages::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/gaarsdal-logo-2026-02.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: min(72%, 680px);
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .message {
@@ -171,6 +192,8 @@
   margin-bottom: 8px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  position: relative;
+  z-index: 1;
 }
 
 .messageBot {
@@ -183,48 +206,79 @@
   background: #51665C;
   color: #FFFFFF;
   margin-left: auto;
-  text-align: right;
+  /* Keep the bubble right-aligned via margin-left, but keep text left-aligned for readability */
+  text-align: left;
 }
 
-.liveIndicator {
+
+/* Header heart (blinks while loading) */
+.headerHeart {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-size: 16px;
+  line-height: 1;
+  color: rgba(27, 30, 28, 0.45);
+  user-select: none;
+}
+
+.headerHeartActive {
+  color: rgba(27, 30, 28, 0.9);
+  animation: headerBlink 1s ease-in-out infinite;
+}
+
+@keyframes headerBlink {
+  0% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+}
+
+/* Threads overlay */
+.threadsOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: rgba(246, 245, 242, 0.96);
+  backdrop-filter: blur(6px);
+  border-radius: 0;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
-.liveHeart {
-  display: inline-block;
-  font-size: 18px;
-  line-height: 1;
-  animation: heartbeat 1.15s ease-in-out infinite;
-  transform-origin: center;
+.threadsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.liveText {
-  opacity: 0.85;
+.threadsTitle {
+  font-weight: 800;
+  font-size: 14px;
+  color: rgba(27, 30, 28, 0.9);
 }
 
-@keyframes heartbeat {
-  0% {
-    transform: scale(1);
-    opacity: 0.75;
-  }
-  20% {
-    transform: scale(1.22);
-    opacity: 1;
-  }
-  40% {
-    transform: scale(1);
-    opacity: 0.85;
-  }
-  60% {
-    transform: scale(1.12);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0.75;
-  }
+.threadsBody {
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+.threadsHint {
+  font-size: 13px;
+  color: rgba(27, 30, 28, 0.72);
+  padding: 10px 4px;
 }
 
 .callout {
@@ -335,12 +389,78 @@
   background-color: #ECEAE4;
 }
 
-.footerRow {
+.footerJournal {
+  /* Keep the footer non-scrollable; only the expanded fields area scrolls. */
+  overscroll-behavior: contain;
+}
+
+
+/* Toolbar row above the input field */
+.footerToolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 10px;
+}
+
+.footerToolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footerToolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footerMenu {
+  position: relative;
+  display: inline-flex;
+}
+
+.footerMenuPanel {
+  position: absolute;
+  right: 0;
+  bottom: 44px;
+  min-width: 170px;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(251, 251, 250, 0.98);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  z-index: 50;
+}
+
+.footerMenuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.footerMenuItem:hover {
+  background: rgba(74, 93, 84, 0.10);
+}
+
+.footerMenuItemIcon {
+  width: 18px;
+  height: 18px;
+  color: rgba(27, 30, 28, 0.78);
+}
+
+.footerMenuItemLabel {
+  font-size: 13.5px;
+  color: rgba(27, 30, 28, 0.90);
+  font-weight: 600;
 }
 
 .footerIcon {
@@ -387,6 +507,44 @@
   line-height: 1.35;
   outline: none;
   background: #fbfbfa;
+  text-align: left;
+  direction: ltr;
+}
+
+
+
+.sendBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(74, 93, 84, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 120ms ease, transform 120ms ease, opacity 120ms ease;
+}
+
+.sendBtn:hover {
+  background: rgba(74, 93, 84, 0.18);
+  transform: translateY(-1px);
+}
+
+.sendBtn:active {
+  transform: translateY(0px);
+}
+
+.sendBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.sendBtnIcon {
+  width: 18px;
+  height: 18px;
+  color: rgba(27, 30, 28, 0.82);
 }
 
 .textarea:disabled {
@@ -417,4 +575,694 @@
   .topicGrid {
     grid-template-columns: 1fr;
   }
+}
+
+
+
+.tabBarWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.actionsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px 10px;
+}
+
+.threadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(27, 30, 28, 0.12);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 9999px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: rgba(27, 30, 28, 0.84);
+  cursor: pointer;
+  max-width: 55%;
+}
+
+.threadBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.threadBtnIcon {
+  width: 16px;
+  height: 16px;
+  color: rgba(27, 30, 28, 0.64);
+  flex: 0 0 auto;
+}
+
+.threadBtnLabel {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actionsRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(27, 30, 28, 0.12);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 9999px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: rgba(27, 30, 28, 0.84);
+  cursor: pointer;
+}
+
+.actionBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.actionBtnIcon {
+  width: 16px;
+  height: 16px;
+  color: rgba(27, 30, 28, 0.64);
+}
+
+.actionBtnLabel {
+  white-space: nowrap;
+}
+
+.threadsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.threadItem {
+  text-align: left;
+  border: 1px solid rgba(27, 30, 28, 0.10);
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 14px;
+  padding: 10px 10px;
+  cursor: pointer;
+}
+
+.threadItem:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.threadItemActive {
+  border-color: rgba(27, 30, 28, 0.22);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.threadItemTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.threadItemTitle {
+  font-weight: 800;
+  font-size: 13px;
+  color: rgba(27, 30, 28, 0.88);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.threadBadge {
+  font-size: 12px;
+  border: 1px solid rgba(27, 30, 28, 0.14);
+  background: rgba(246, 245, 242, 0.9);
+  border-radius: 9999px;
+  padding: 3px 8px;
+  color: rgba(27, 30, 28, 0.72);
+  flex: 0 0 auto;
+}
+
+.threadItemPreview {
+  margin-top: 6px;
+  font-size: 13px;
+  color: rgba(27, 30, 28, 0.68);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.tabBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tabBar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tab {
+  flex: 0 0 auto;
+  max-width: 200px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(74, 93, 84, 0.06);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab:hover {
+  background: rgba(74, 93, 84, 0.09);
+}
+
+.tabActive {
+  background: rgba(74, 93, 84, 0.16);
+  border-color: rgba(74, 93, 84, 0.22);
+}
+
+.tabLabel {
+  font-size: 12px;
+  color: rgba(27, 30, 28, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
+}
+
+.tabPlusFixed {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  justify-content: center;
+}
+
+.tabPlusLabel {
+  font-size: 12px;
+  color: rgba(27, 30, 28, 0.85);
+  line-height: 1;
+}
+
+.tabIcon {
+  width: 16px;
+  height: 16px;
+  color: rgba(27, 30, 28, 0.9);
+}
+
+/* --------------------
+   Journal / Diary view
+   -------------------- */
+
+.journalWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.journalEmpty {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.journalEmptyTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(27, 30, 28, 0.85);
+  margin-bottom: 4px;
+}
+
+.journalEmptyText {
+  font-size: 12px;
+  color: rgba(27, 30, 28, 0.7);
+}
+
+.journalList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.journalEntry {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.journalEntryTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.journalEntryTime {
+  font-size: 11px;
+  color: rgba(27, 30, 28, 0.55);
+  white-space: nowrap;
+}
+
+.journalEntryChips {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.journalChip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(74, 93, 84, 0.08);
+  color: rgba(27, 30, 28, 0.8);
+}
+
+.journalEntryText {
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(27, 30, 28, 0.85);
+  white-space: pre-wrap;
+}
+
+.journalInputWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.journalInputRowTop {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.journalMetaRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.journalToggleBtn {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: rgba(27, 30, 28, 0.85);
+}
+
+.journalToggleBtn:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+.journalMetaInline {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.journalMetaField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: min(220px, 100%);
+}
+
+.journalMetaLabel {
+  font-size: 11px;
+  color: rgba(27, 30, 28, 0.7);
+}
+
+.journalMetaInput {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.9);
+  color: rgba(27, 30, 28, 0.9);
+  outline: none;
+}
+
+.journalMetaInput:focus {
+  border-color: rgba(74, 93, 84, 0.35);
+  box-shadow: 0 0 0 3px rgba(74, 93, 84, 0.12);
+
+}
+
+
+.journalExtrasScroll {
+  margin-top: 2px;
+  max-height: min(240px, 32vh);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.journalTagSummary {
+  margin-top: 6px;
+}
+
+.journalTagSummaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.journalTagPill {
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  background: rgba(255, 255, 255, 0.70);
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  color: rgba(27, 30, 28, 0.80);
+}
+
+
+.journalQuickBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+/* Dropdown-style field groups for the journal details sheet */
+
+.journalSelect {
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.65);
+  overflow: hidden;
+}
+
+.journalSelectSummary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+/* Hide native marker */
+.journalSelectSummary::-webkit-details-marker {
+  display: none;
+}
+
+.journalSelectSummary:focus {
+  outline: none;
+}
+
+.journalSelectSummary:focus-visible {
+  box-shadow: 0 0 0 3px rgba(74, 93, 84, 0.12);
+}
+
+.journalSelectSummaryLabel {
+  font-size: 12px;
+  color: rgba(27, 30, 28, 0.75);
+}
+
+.journalSelectSummaryValue {
+  font-size: 12px;
+  color: rgba(27, 30, 28, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 55%;
+}
+
+.journalSelectBody {
+  padding: 8px 12px 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.journalQuickGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.journalQuickLabel {
+  font-size: 11px;
+  color: rgba(27, 30, 28, 0.7);
+}
+
+.journalQuickRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.journalQuickChip {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: rgba(27, 30, 28, 0.85);
+}
+
+.journalQuickChip:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+.journalQuickChipActive {
+  border-color: rgba(74, 93, 84, 0.35);
+  background: rgba(74, 93, 84, 0.1);
+}
+
+.journalAdvancedGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.journalField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.journalFieldLabel {
+  font-size: 11px;
+  color: rgba(27, 30, 28, 0.7);
+}
+
+.journalFieldInput {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.9);
+  color: rgba(27, 30, 28, 0.9);
+  outline: none;
+}
+
+.journalFieldInput:focus {
+  border-color: rgba(74, 93, 84, 0.35);
+  box-shadow: 0 0 0 3px rgba(74, 93, 84, 0.12);
+}
+
+/* Modal (journal wizard) */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  padding: 16px;
+}
+
+.modal {
+  width: min(520px, 100%);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.modalWide {
+  width: min(640px, 100%);
+}
+
+.modalBodyScroll {
+  max-height: min(70vh, 560px);
+  overflow: auto;
+}
+
+/* Bottom sheet (journal details) */
+
+.sheetOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 60;
+}
+
+.sheet {
+  width: 100%;
+  max-height: 74%;
+  background: #f4f3ef;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.sheetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.sheetTitle {
+  font-size: 14px;
+  font-weight: 650;
+  color: rgba(0, 0, 0, 0.78);
+}
+
+.sheetBody {
+  padding: 12px 14px;
+  overflow: auto;
+  max-height: calc(74vh - 54px);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.modalTitle {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.modalBody {
+  padding: 12px 14px 14px;
+}
+
+.modalText {
+  font-size: 13px;
+  opacity: 0.9;
+  margin-bottom: 10px;
+}
+
+.optionGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.optionBtn {
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.optionBtn:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+.optionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.optionHint {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.modalInput {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+}
+
+.modalField {
+  display: block;
+  margin-top: 10px;
+}
+
+.modalLabel {
+  display: block;
+  font-size: 12px;
+  opacity: 0.8;
+  margin-bottom: 6px;
+}
+
+.modalTextarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  resize: vertical;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.primaryBtn,
+.secondaryBtn {
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.primaryBtn {
+  background: rgba(0, 0, 0, 0.86);
+  color: white;
+}
+
+.primaryBtn:disabled {
+  opacity: 0.4;
+}
+
+.secondaryBtn {
+  background: rgba(255, 255, 255, 0.9);
 }

@@ -1,6 +1,6 @@
 import { getRedisClient } from "../persistence/redis"
 
-export type SpineInputType = "SYSTEM_INIT" | "FREE_TEXT" | "EXPLICIT_TRANSITION" | "SYSTEM" | "INTERNAL_TICK"
+export type SpineInputType = "SYSTEM_INIT" | "FREE_TEXT" | "EXPLICIT_TRANSITION" | "UI_ACTION" | "SYSTEM" | "INTERNAL_TICK"
 
 export type SpineError = {
   code: string

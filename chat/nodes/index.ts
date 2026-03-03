@@ -1,2 +1,3 @@
+// chat/nodes/index.ts
 export * from "./types";
-export * from "./nodes";
+export { getNode } from "./registry";

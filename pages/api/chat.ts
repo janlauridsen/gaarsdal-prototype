@@ -13,7 +13,15 @@ import { readUserProfile, recordTurn, writeUserProfile } from "../../chat/memory
 import { consolidateV1 } from "../../chat/platform/consolidation"
 import { readConversationState, writeConversationState } from "../../chat/persistence/conversationStateStore"
 import {
+  appendJournalEntry,
+  appendManyJournalEntries,
+  readJournalEntriesTail,
+  type JournalEntry,
+} from "../../chat/persistence/journalEntryStore"
+import { writeJournalDefinition } from "../../chat/persistence/journalDefinitionStore"
+import {
   applyAutoThreadLabelFromText,
+  archiveThread,
   ensureThreadIndex,
   setActiveThread,
   upsertThread,
@@ -27,7 +35,7 @@ import { enqueueJob, makeJobId } from "../../chat/async/queue"
 import { runReflectionCbaUpdate } from "../../chat/reflection/cba"
 
 // Single raw stream
-import { appendRawTurn } from "../../chat/raw/store"
+import { appendRawTurn, readRawTurns } from "../../chat/raw/store"
 
 type ChatRequestBody = {
   state: any
@@ -36,8 +44,21 @@ type ChatRequestBody = {
 
 type ApiInputSignal =
   | InputSignal
-  | { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
-  | { type: "THREAD_BACK" }
+  | {
+      type: "THREAD_CREATE"
+      mode: "normal" | "parenthesis"
+      thread_type?: "chat" | "journal"
+      journal_profile?: "alcohol" | "general" | "strict"
+      journal_init?: {
+        title: string
+        problem: string
+        goal: string
+      }
+      // Legacy support
+      journal_kind?: "alcohol"
+    }
+  | { type: "THREAD_SWITCH"; conversation_id: string }
+  | { type: "THREAD_ARCHIVE" }
 
 type UiSuggestion = {
   id: string
@@ -49,6 +70,20 @@ const COOKIE_NAME = "gaarsdal_uid"
 const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 const PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
+const JOURNAL_TAIL_LIMIT = 60
+
+function setCors(req: NextApiRequest, res: NextApiResponse) {
+  // The widget can be embedded on other origins. If that happens, browsers will send
+  // an OPTIONS preflight for JSON POST requests. We must respond to OPTIONS.
+  //
+  // Because we rely on a cookie for user identity, we must echo the Origin when present.
+  const origin = typeof req.headers.origin === "string" ? req.headers.origin : "*"
+  res.setHeader("Access-Control-Allow-Origin", origin)
+  res.setHeader("Vary", "Origin")
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+  res.setHeader("Access-Control-Allow-Credentials", "true")
+}
 
 // Defaults
 const DEFAULT_RAW_TTL_DAYS = 14
@@ -119,6 +154,7 @@ function toLobbyConversationId(userKey: string): string {
 function toUserInput(input: InputSignal): string | undefined {
   if (input.type === "FREE_TEXT") return (input as any).text
   if (input.type === "EXPLICIT_TRANSITION") return `EXPLICIT_TRANSITION:${(input as any).target}`
+  if (input.type === "UI_ACTION") return `UI_ACTION:${(input as any).action}`
   if (input.type === "SYSTEM") return `SYSTEM:${(input as any).intent}`
   if (input.type === "SYSTEM_INIT") return "SYSTEM_INIT"
   return undefined
@@ -139,8 +175,59 @@ function withThreadNavMeta(state: any, returnDepth: number): any {
   }
 }
 
+type ThreadTab = {
+  conversation_id: string
+  title: string
+  preview: string
+  status: "active" | "archived"
+  thread_type?: "chat" | "journal"
+  journal_profile?: "alcohol" | "general" | "strict"
+  journal_kind?: "alcohol"
+  updated_at?: string
+}
+
+function makeThreadTabs(index: any): ThreadTab[] {
+  const threads = Array.isArray(index?.threads) ? index.threads : []
+  return threads
+    .filter((t: any) => t && typeof t.conversation_id === "string" && (t.status === "active" || t.status === "archived"))
+    .map((t: any) => ({
+      conversation_id: t.conversation_id,
+      title: typeof t.title === "string" ? t.title : "",
+      preview: typeof t.preview === "string" ? t.preview : "",
+      status: t.status === "archived" ? "archived" : "active",
+      thread_type: t.thread_type === "journal" ? "journal" : "chat",
+      journal_profile:
+        t.journal_profile === "alcohol" || t.journal_profile === "general" || t.journal_profile === "strict"
+          ? t.journal_profile
+          : t.journal_kind === "alcohol"
+          ? "alcohol"
+          : undefined,
+      journal_kind: t.journal_kind === "alcohol" ? "alcohol" : undefined,
+      updated_at: t.updated_at,
+    }))
+}
+
+function withThreadMeta(params: { state: any; index: any }): any {
+  const { state, index } = params
+  const tabs = makeThreadTabs(index).filter((t) => t.status === "active")
+  const activeId = (typeof index?.active_conversation_id === "string" ? index.active_conversation_id : state?.conversation_id) ?? null
+
+  return {
+    ...state,
+    meta: {
+      ...(state?.meta ?? {}),
+      "threads.tabs": { value: tabs, source_node: "SYSTEM_UI" },
+      "threads.active_id": { value: activeId, source_node: "SYSTEM_UI" },
+    },
+  }
+}
+
 function isPlatformThreadInput(input: ApiInputSignal): input is Exclude<ApiInputSignal, InputSignal> {
-  return (input as any)?.type === "THREAD_CREATE" || (input as any)?.type === "THREAD_BACK"
+  return (
+    (input as any)?.type === "THREAD_CREATE" ||
+    (input as any)?.type === "THREAD_SWITCH" ||
+    (input as any)?.type === "THREAD_ARCHIVE"
+  )
 }
 
 function eventId(): string {
@@ -255,21 +342,34 @@ async function maybeAutoLabelThread(params: {
   const index0 = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: PROFILE_TTL_SECONDS })
 
   const existing = index0.threads.find((t) => t.conversation_id === params.conversationId)
-  const needsLabel = !existing || !existing.title?.trim() || !existing.preview?.trim()
-  if (!needsLabel) return
+  const needsTitle = !existing || !existing.title?.trim()
 
   // Ensure thread exists in index (covers restores or direct navigation).
   let index1 = upsertThread({ index: index0, conversationId: params.conversationId })
+
+  // Title text is derived from the FIRST user input in the thread.
+  const titleText = await (async () => {
+    if (!needsTitle) return ""
+    const rawTurns = await readRawTurns({ conversationId: params.conversationId, limit: 500 })
+    const firstUser = rawTurns.find((t) => t && t.input_type === "FREE_TEXT" && typeof t.user_input === "string")
+    const firstText = String(firstUser?.user_input ?? "").trim()
+    if (firstText && !isControlInput(firstText)) return firstText
+    return userText
+  })()
+
   index1 = applyAutoThreadLabelFromText({
     index: index1,
     conversationId: params.conversationId,
-    userText,
+    titleText,
+    previewText: userText,
     maxTitleChars: 60,
     maxPreviewChars: 120,
+    setTitleIfEmpty: true,
+    alwaysUpdatePreview: true,
   })
+
   index1 = setActiveThread({ index: index1, conversationId: params.conversationId })
 
-  // Only write if changed materially (simple JSON compare).
   if (JSON.stringify(index0) === JSON.stringify(index1)) return
 
   await writeThreadIndex({ userKey: params.userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
@@ -277,6 +377,50 @@ async function maybeAutoLabelThread(params: {
 
 async function persistState(result: KernelResult): Promise<void> {
   await writeConversationState(result.state, SESSION_TTL_SECONDS)
+}
+
+async function externalizeJournalEntriesIfNeeded(params: {
+  userKey: string
+  state: any
+}): Promise<any> {
+  const state = params.state
+  if (!state || typeof state !== "object") return state
+  const meta = state.meta
+  if (!meta || typeof meta !== "object") return state
+
+  // Heuristic: presence of journal.config indicates a journal thread.
+  const isJournal = (meta as any)?.["journal.config"]?.value != null
+  if (!isJournal) return state
+
+  const journalId = String(state.conversation_id ?? "")
+  if (!journalId) return state
+
+  // 1) Migrate legacy inline entries (best-effort).
+  const migratedFlag = (meta as any)?.["journal.entries_externalized"]?.value
+  const legacy = (meta as any)?.["journal.entries"]?.value
+  if (!migratedFlag && Array.isArray(legacy) && legacy.length) {
+    await appendManyJournalEntries(journalId, legacy as JournalEntry[])
+  }
+
+  // 2) Append a newly produced entry if present.
+  const appendEntry = (meta as any)?.["journal.append_entry"]?.value
+  if (appendEntry && typeof appendEntry === "object") {
+    await appendJournalEntry(journalId, appendEntry as JournalEntry)
+  }
+
+  // 3) Refresh tail into state meta for UI rendering.
+  const tail = await readJournalEntriesTail(journalId, JOURNAL_TAIL_LIMIT)
+
+  const nextMeta: any = {
+    ...(meta as any),
+    "journal.entries": { value: tail, source_node: "SYSTEM_UI" },
+    "journal.entries_externalized": { value: true, source_node: "SYSTEM_UI" },
+  }
+
+  // Remove transient key so it doesn't persist.
+  if ("journal.append_entry" in nextMeta) delete nextMeta["journal.append_entry"]
+
+  return { ...state, meta: nextMeta }
 }
 
 async function emitSpine(params: {
@@ -546,6 +690,13 @@ function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
 }
 
 function validateRequest(req: NextApiRequest, res: NextApiResponse): ChatRequestBody | null {
+  setCors(req, res)
+
+  if (req.method === "OPTIONS") {
+    res.status(200).end()
+    return null
+  }
+
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method Not Allowed" })
     return null
@@ -570,10 +721,11 @@ async function handleInitOrRestore(params: {
   clientState: any
   storedState: any | null
   conversationId: string
+  conversationKind: "lobby" | "thread"
   userKey: string
   res: NextApiResponse
 }): Promise<boolean> {
-  const { clientState, storedState, conversationId, userKey, res } = params
+  const { clientState, storedState, conversationId, conversationKind, userKey, res } = params
   if (clientState !== null) return false
 
   if (storedState) {
@@ -614,61 +766,73 @@ async function handleInitOrRestore(params: {
       transition_type: "INIT",
     })
 
-    // Auto-advance lobby through TOOL/CHECKPOINT/ROUTER nodes so the user lands on a usable prompt.
-    const advanced = await runTurnWithAutoAdvance({
-      baseState: payload.state,
-      input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
-      userKey,
-    })
+    // Only auto-advance the lobby. Auto-ticking an arbitrary thread can lead to
+    // unexpected transitions (or hangs) when restoring after browser navigation.
+    let result: KernelResult
+    if (conversationKind === "lobby") {
+      result = await runTurnWithAutoAdvance({
+        baseState: payload.state,
+        input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
+        userKey,
+      })
+      await persistState(result)
+    } else {
+      result = {
+        state: payload.state,
+        transition: {
+          type: "INIT",
+          from: null,
+          to: payload.state.active_node,
+          reason: "system init (restored)",
+        },
+      } as any
+    }
 
-    await persistState(advanced)
-
-    // Canonical events (V1): represent the resulting applied transition and rendered node after auto-advance.
+    // Canonical events (V1)
     await emitCanonicalEvent({
       userKey,
-      conversationId: advanced.state.conversation_id,
-      revision: advanced.state.revision,
-      inputId: advanced.state.revision,
-      nodeId: advanced.state.active_node,
+      conversationId: result.state.conversation_id,
+      revision: result.state.revision,
+      inputId: result.state.revision,
+      nodeId: result.state.active_node,
       eventType: "transition_applied",
       payload: {
         input_type: "SYSTEM_INIT",
         transition: {
-          type: advanced.transition.type,
-          from: advanced.transition.from,
-          // Ensure canonical events always carry a concrete destination node.
-          // Some internal transitions (e.g. "NODE_HOP" with external resolution) may leave `to` unset.
-          // Falling back to the post-transition active node keeps the event self-contained.
-          to: advanced.transition.to ?? advanced.state.active_node,
-          reason: advanced.transition.reason,
-          meta_keys_written: advanced.transition.meta_delta ? Object.keys(advanced.transition.meta_delta) : [],
+          type: (result as any).transition?.type ?? "INIT",
+          from: (result as any).transition?.from ?? null,
+          to: (result as any).transition?.to ?? result.state.active_node,
+          reason: (result as any).transition?.reason ?? "system init",
+          meta_keys_written: (result as any).transition?.meta_delta ? Object.keys((result as any).transition.meta_delta) : [],
         },
-        status_after: advanced.state.status,
+        status_after: result.state.status,
       },
     })
 
     await emitCanonicalEvent({
       userKey,
-      conversationId: advanced.state.conversation_id,
-      revision: advanced.state.revision,
-      inputId: advanced.state.revision,
-      nodeId: advanced.state.active_node,
+      conversationId: result.state.conversation_id,
+      revision: result.state.revision,
+      inputId: result.state.revision,
+      nodeId: result.state.active_node,
       eventType: "node_rendered",
       payload: {
-        node_id: advanced.state.active_node,
-        message: truncateText(advanced.state.active_node_message ?? "", 800),
-        status: advanced.state.status,
+        node_id: result.state.active_node,
+        message: truncateText(result.state.active_node_message ?? "", 800),
+        status: result.state.status,
       },
     })
 
+    const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
     res.status(200).json({
-      ...advanced,
-      state: withThreadNavMeta(advanced.state, 0),
+      ...(result as any),
+      state: withThreadMeta({ state: result.state, index: indexNow }),
     })
     return true
   }
 
-  const initialState = createLobbyState(conversationId)
+  const initialState =
+    conversationKind === "lobby" ? createLobbyState(conversationId) : createInitialState(conversationId)
 
   const log: LogEvent = {
     conversation_id: initialState.conversation_id,
@@ -698,56 +862,60 @@ async function handleInitOrRestore(params: {
     transition_type: "INIT",
   })
 
-  // Auto-advance lobby through TOOL/CHECKPOINT/ROUTER nodes so the user lands on a usable prompt.
-  const advanced = await runTurnWithAutoAdvance({
-    baseState: initialState,
-    input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
-    userKey,
-  })
+  let result: KernelResult
+  if (conversationKind === "lobby") {
+    result = await runTurnWithAutoAdvance({
+      baseState: initialState,
+      input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
+      userKey,
+    })
+    await persistState(result)
+  } else {
+    result = {
+      state: initialState,
+      transition: { type: "INIT", from: null, to: initialState.active_node, reason: "system init" },
+    } as any
+  }
 
-  await persistState(advanced)
-
-  // Canonical events (V1): represent the resulting applied transition and rendered node after auto-advance.
   await emitCanonicalEvent({
     userKey,
-    conversationId: advanced.state.conversation_id,
-    revision: advanced.state.revision,
-    inputId: advanced.state.revision,
-    nodeId: advanced.state.active_node,
+    conversationId: result.state.conversation_id,
+    revision: result.state.revision,
+    inputId: result.state.revision,
+    nodeId: result.state.active_node,
     eventType: "transition_applied",
     payload: {
       input_type: "SYSTEM_INIT",
       transition: {
-        type: advanced.transition.type,
-        from: advanced.transition.from,
-        // Ensure canonical events always carry a concrete destination node.
-        // Some internal transitions (e.g. "NODE_HOP" with external resolution) may leave `to` unset.
-        // Falling back to the post-transition active node keeps the event self-contained.
-        to: advanced.transition.to ?? advanced.state.active_node,
-        reason: advanced.transition.reason,
-        meta_keys_written: advanced.transition.meta_delta ? Object.keys(advanced.transition.meta_delta) : [],
+        type: (result as any).transition?.type ?? "INIT",
+        from: (result as any).transition?.from ?? null,
+        to: (result as any).transition?.to ?? result.state.active_node,
+        reason: (result as any).transition?.reason ?? "system init",
+        meta_keys_written: (result as any).transition?.meta_delta ? Object.keys((result as any).transition.meta_delta) : [],
       },
-      status_after: advanced.state.status,
+      status_after: result.state.status,
     },
   })
 
   await emitCanonicalEvent({
     userKey,
-    conversationId: advanced.state.conversation_id,
-    revision: advanced.state.revision,
-    inputId: advanced.state.revision,
-    nodeId: advanced.state.active_node,
+    conversationId: result.state.conversation_id,
+    revision: result.state.revision,
+    inputId: result.state.revision,
+    nodeId: result.state.active_node,
     eventType: "node_rendered",
     payload: {
-      node_id: advanced.state.active_node,
-      message: truncateText(advanced.state.active_node_message ?? "", 800),
-      status: advanced.state.status,
+      node_id: result.state.active_node,
+      message: truncateText(result.state.active_node_message ?? "", 800),
+      status: result.state.status,
     },
   })
 
-  res.status(200).json({
-    ...advanced,
-    state: withThreadNavMeta(advanced.state, 0),
+    const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+
+    res.status(200).json({
+    ...(result as any),
+    state: withThreadMeta({ state: result.state, index: indexNow }),
   })
   return true
 }
@@ -788,13 +956,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { state: clientState, input } = body
 
-  // Init always enters the lobby, not a specific thread.
+  // Init (tabs model): always restore the active thread if possible.
+  // If no active thread exists, create a new one and make it active.
   if (clientState === null) {
-    const storedLobby = await readConversationState(lobbyConversationId)
+    const index0 = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+
+    // Pick active thread if present and active; else pick first active thread; else create a new one.
+    let activeId = index0.active_conversation_id
+    const activeThreads = (index0.threads ?? []).filter((t: any) => t && t.status === "active")
+
+    if (typeof activeId !== "string" || !activeThreads.some((t: any) => t.conversation_id === activeId)) {
+      activeId = activeThreads.length ? activeThreads[0].conversation_id : null
+    }
+
+    // Create first thread if none exist.
+    if (!activeId) {
+      const newConversationId = `c:${safeUuid()}`
+      const newState = createInitialState(newConversationId)
+      await writeConversationState(newState, SESSION_TTL_SECONDS)
+
+      let nextIndex = upsertThread({ index: index0, conversationId: newConversationId, title: "", preview: "" })
+      nextIndex = setActiveThread({ index: nextIndex, conversationId: newConversationId })
+      await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
+
+      res.status(200).json({
+        state: withThreadMeta({ state: newState, index: nextIndex }),
+      })
+      return
+    }
+
+    // Ensure thread index points to the active id.
+    if (typeof activeId === "string" && index0.active_conversation_id !== activeId) {
+      const nextIndex = setActiveThread({ index: index0, conversationId: activeId })
+      await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
+    }
+
+    const storedInit = await readConversationState(activeId as string)
     const initHandled = await handleInitOrRestore({
       clientState,
-      storedState: storedLobby,
-      conversationId: lobbyConversationId,
+      storedState: storedInit,
+      conversationId: activeId as string,
+      conversationKind: "thread",
       userKey,
       res,
     })
@@ -827,16 +1029,177 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (isPlatformThreadInput(input)) {
     const index0 = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
 
+    if (input.type === "THREAD_ARCHIVE") {
+      const threadId = typeof baseState?.conversation_id === "string" ? baseState.conversation_id : null
+
+      // Only archive real threads, never the lobby.
+      if (!threadId || isLobbyConversation(threadId)) {
+        res.status(200).json({
+          state: withThreadMeta({
+            state: {
+              ...baseState,
+              meta: {
+                ...(baseState?.meta ?? {}),
+                "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
+              },
+            },
+            index: index0,
+          }),
+        })
+        return
+      }
+      const nextIndex0 = archiveThread({ index: index0, conversationId: threadId })
+            let nextIndex = nextIndex0
+      
+            // Pick next active thread after archiving.
+            let nextActiveId = nextIndex.active_conversation_id
+            const activeThreads = (nextIndex.threads ?? []).filter((t: any) => t && t.status === "active")
+            if (typeof nextActiveId !== "string" || !activeThreads.some((t: any) => t.conversation_id === nextActiveId)) {
+              nextActiveId = activeThreads.length ? activeThreads[0].conversation_id : null
+            }
+      
+            if (!nextActiveId) {
+              const newConversationId = `c:${safeUuid()}`
+              const newState = createInitialState(newConversationId)
+              await writeConversationState(newState, SESSION_TTL_SECONDS)
+              nextIndex = upsertThread({ index: nextIndex, conversationId: newConversationId, title: "", preview: "" })
+              nextIndex = setActiveThread({ index: nextIndex, conversationId: newConversationId })
+              await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
+      
+              res.status(200).json({
+                state: withThreadMeta({
+                  state: {
+                    ...newState,
+                    meta: {
+                      ...(newState.meta ?? {}),
+                      "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
+                    },
+                  },
+                  index: nextIndex,
+                }),
+              })
+              return
+            }
+      
+            nextIndex = setActiveThread({ index: nextIndex, conversationId: nextActiveId as string })
+            await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
+      
+            const loaded = await readConversationState(nextActiveId as string)
+            const ensured = loaded ?? createInitialState(nextActiveId as string)
+            if (!loaded) {
+              await writeConversationState(ensured, SESSION_TTL_SECONDS)
+            }
+      
+            res.status(200).json({
+              state: withThreadMeta({
+                state: {
+                  ...ensured,
+                  meta: {
+                    ...(ensured.meta ?? {}),
+                    "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
+                  },
+                },
+                index: nextIndex,
+              }),
+            })
+            return
+    }
+
     if (input.type === "THREAD_CREATE") {
       const oldThreadId = typeof baseState?.conversation_id === "string" ? baseState.conversation_id : null
       const canReturn = !!oldThreadId && !isLobbyConversation(oldThreadId)
 
+      const threadType = (input as any)?.thread_type === "journal" ? ("journal" as const) : ("chat" as const)
+
+      const journalProfileRaw = threadType === "journal" ? String((input as any)?.journal_profile ?? "") : ""
+      const journalProfile =
+        journalProfileRaw === "alcohol" || journalProfileRaw === "general" || journalProfileRaw === "strict"
+          ? (journalProfileRaw as "alcohol" | "general" | "strict")
+          : ("general" as const)
+
+      const journalInitRaw = threadType === "journal" ? ((input as any)?.journal_init ?? null) : null
+      const journalInit =
+        journalInitRaw && typeof journalInitRaw === "object"
+          ? {
+              title: typeof (journalInitRaw as any).title === "string" ? String((journalInitRaw as any).title).trim() : "",
+              problem: typeof (journalInitRaw as any).problem === "string" ? String((journalInitRaw as any).problem).trim() : "",
+              goal: typeof (journalInitRaw as any).goal === "string" ? String((journalInitRaw as any).goal).trim() : "",
+            }
+          : { title: "Dagbog", problem: "", goal: "" }
+
+      const journalTitle = journalInit.title || "Dagbog"
+
+      // Limit active journals per user (keeps UI manageable).
+      if (threadType === "journal") {
+        const activeJournals = (index0?.threads ?? []).filter(
+          (t: any) => (t.thread_type ?? "chat") === "journal" && t.status === "active"
+        )
+        if (activeJournals.length >= 5) {
+          res.status(409).json({
+            error: {
+              code: "JOURNAL_LIMIT",
+              message: "Du har allerede 5 aktive dagbøger.",
+            },
+          })
+          return
+        }
+      }
+
       const newConversationId = `c:${safeUuid()}`
-      const newState = createInitialState(newConversationId)
+
+      // Journal threads start in a dedicated node with their own meta namespace.
+      const newState = (() => {
+        if (threadType !== "journal") return createInitialState(newConversationId)
+        const entry = getNode("DAGBOG")
+        return {
+          conversation_id: newConversationId,
+          revision: 0,
+          active_node: entry.id,
+          active_node_message: entry.message,
+          allowed_transitions: entry.allowed_exits,
+          meta: {
+            "journal.config": {
+              value: {
+                profile: journalProfile,
+                title: journalTitle,
+                problem: journalInit.problem,
+                goal: journalInit.goal,
+              },
+              source_node: "SYSTEM_UI",
+            },
+            "journal.phase": { value: 1, source_node: "SYSTEM_UI" },
+            // Entries are stored externally; state keeps only a small tail for UI.
+            "journal.entries": { value: [], source_node: "SYSTEM_UI" },
+            "journal.entries_externalized": { value: true, source_node: "SYSTEM_UI" },
+          },
+          status: "active" as const,
+          parentese_stack: [],
+        }
+      })()
 
       await writeConversationState(newState, SESSION_TTL_SECONDS)
 
-      let nextIndex = upsertThread({ index: index0, conversationId: newConversationId, title: "", preview: "" })
+      if (threadType === "journal") {
+        await writeJournalDefinition(userKey, {
+          journal_id: newConversationId,
+          profile_type: journalProfile,
+          title: journalTitle,
+          problem: journalInit.problem,
+          goal: journalInit.goal,
+          schema_version: "v1",
+          created_at_ms: Date.now(),
+          updated_at_ms: Date.now(),
+        })
+      }
+
+      let nextIndex = upsertThread({
+        index: index0,
+        conversationId: newConversationId,
+        title: threadType === "journal" ? journalTitle : "",
+        preview: "",
+        thread_type: threadType,
+        journal_profile: threadType === "journal" ? journalProfile : undefined,
+      })
 
       if (input.mode === "normal") {
         // Hard break.
@@ -857,44 +1220,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       nextIndex = setActiveThread({ index: nextIndex, conversationId: newConversationId })
       await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
 
-      const returnDepth = nextIndex.navigation?.return_stack?.length ?? 0
-
       res.status(200).json({
-        state: withThreadNavMeta(
-          {
+        state: withThreadMeta({
+          state: {
             ...newState,
             meta: {
               ...(newState.meta ?? {}),
               "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
             },
           },
-          returnDepth
-        ),
+          index: nextIndex,
+        }),
       })
       return
     }
 
-    if (input.type === "THREAD_BACK") {
-      const stack0 = index0.navigation?.return_stack ?? []
-      if (!stack0.length) {
-        res.status(200).json({
-          state: withThreadNavMeta(
-            {
-              ...baseState,
-              meta: {
-                ...(baseState?.meta ?? {}),
-                "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
-              },
-            },
-            0
-          ),
-        })
+
+    if (input.type === "THREAD_SWITCH") {
+      const targetConversationId = typeof (input as any)?.conversation_id === "string" ? (input as any).conversation_id : null
+      if (!targetConversationId || isLobbyConversation(targetConversationId)) {
+        const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+        res.status(200).json({ state: withThreadMeta({ state: baseState, index: indexNow }) })
         return
       }
 
-      const stack1 = stack0.slice(0, -1)
-      const link = stack0[stack0.length - 1]
-      const targetConversationId = link.from
+      const index1 = setActiveThread({ index: index0, conversationId: targetConversationId })
+      await writeThreadIndex({ userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
 
       const loaded = await readConversationState(targetConversationId)
       const ensured = loaded ?? createInitialState(targetConversationId)
@@ -902,25 +1253,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         await writeConversationState(ensured, SESSION_TTL_SECONDS)
       }
 
-      let nextIndex = { ...index0, navigation: { return_stack: stack1 } }
-      nextIndex = upsertThread({ index: nextIndex, conversationId: ensured.conversation_id })
-      nextIndex = setActiveThread({ index: nextIndex, conversationId: ensured.conversation_id })
-      await writeThreadIndex({ userKey, index: nextIndex, ttlSeconds: PROFILE_TTL_SECONDS })
-
-      res.status(200).json({
-        state: withThreadNavMeta(
-          {
-            ...ensured,
-            meta: {
-              ...(ensured.meta ?? {}),
-              "ui.suggestions": { value: [], source_node: "SYSTEM_UI" },
-            },
-          },
-          stack1.length
-        ),
-      })
+      res.status(200).json({ state: withThreadMeta({ state: ensured, index: index1 }) })
       return
     }
+
   }
 
   try {
@@ -945,20 +1281,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     }
 
-    await persistState(kernelResult)
+    // Externalize journal entries (append-only log in Redis) and keep a small tail in state.
+    const stateWithJournalTail = await externalizeJournalEntriesIfNeeded({ userKey, state: kernelResult.state as any })
+    const kernelResultFinal: KernelResult = { ...kernelResult, state: stateWithJournalTail }
+
+    await persistState(kernelResultFinal)
 
     // Canonical events (V1)
-    const assistantText = kernelResult.transition.response_message ?? kernelResult.state.active_node_message
+    const assistantText = kernelResultFinal.transition.response_message ?? kernelResultFinal.state.active_node_message
 
     const rawUserText =
       (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : toUserInput(input) ?? ""
 
     await emitCanonicalEvent({
       userKey,
-      conversationId: kernelResult.state.conversation_id,
-      revision: kernelResult.state.revision,
-      inputId: kernelResult.state.revision,
-      nodeId: kernelResult.log.active_node_before ?? (baseState?.active_node ?? null),
+      conversationId: kernelResultFinal.state.conversation_id,
+      revision: kernelResultFinal.state.revision,
+      inputId: kernelResultFinal.state.revision,
+      nodeId: kernelResultFinal.log.active_node_before ?? (baseState?.active_node ?? null),
       eventType: "input_received",
       payload: {
         input_type: (input as any).type,
@@ -970,75 +1310,75 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await emitCanonicalEvent({
       userKey,
-      conversationId: kernelResult.state.conversation_id,
-      revision: kernelResult.state.revision,
-      inputId: kernelResult.state.revision,
-      nodeId: kernelResult.state.active_node,
+      conversationId: kernelResultFinal.state.conversation_id,
+      revision: kernelResultFinal.state.revision,
+      inputId: kernelResultFinal.state.revision,
+      nodeId: kernelResultFinal.state.active_node,
       eventType: "transition_applied",
       payload: {
         input_type: (input as any).type,
         transition: {
-          type: kernelResult.transition.type,
-          from: kernelResult.transition.from,
+          type: kernelResultFinal.transition.type,
+          from: kernelResultFinal.transition.from,
           // Ensure canonical events always carry a concrete destination node.
           // Some internal transitions (e.g. "NODE_HOP" with external resolution) may leave `to` unset.
           // Falling back to the post-transition active node keeps the event self-contained.
-          to: kernelResult.transition.to ?? kernelResult.state.active_node,
-          reason: kernelResult.transition.reason,
-          meta_keys_written: kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : [],
+          to: kernelResultFinal.transition.to ?? kernelResultFinal.state.active_node,
+          reason: kernelResultFinal.transition.reason,
+          meta_keys_written: kernelResultFinal.transition.meta_delta ? Object.keys(kernelResultFinal.transition.meta_delta) : [],
         },
-        status_after: kernelResult.state.status,
+        status_after: kernelResultFinal.state.status,
       },
     })
 
-    const activeNode = getNode(kernelResult.state.active_node)
+    const activeNode = getNode(kernelResultFinal.state.active_node)
 
     await emitCanonicalEvent({
       userKey,
-      conversationId: kernelResult.state.conversation_id,
-      revision: kernelResult.state.revision,
-      inputId: kernelResult.state.revision,
-      nodeId: kernelResult.state.active_node,
+      conversationId: kernelResultFinal.state.conversation_id,
+      revision: kernelResultFinal.state.revision,
+      inputId: kernelResultFinal.state.revision,
+      nodeId: kernelResultFinal.state.active_node,
       eventType: "node_rendered",
       payload: {
-        node_id: kernelResult.state.active_node,
+        node_id: kernelResultFinal.state.active_node,
         node_kind: (activeNode as any)?.kind ?? null,
         capability_id: (activeNode as any)?.kind === "DIALOG" ? (activeNode as any)?.capability_id ?? null : null,
         tool_id: (activeNode as any)?.kind === "TOOL" ? (activeNode as any)?.tool?.tool_id ?? null : null,
         message: truncateText(assistantText ?? "", 800),
         ai_output_length: (assistantText ?? "").length,
-        status: kernelResult.state.status,
+        status: kernelResultFinal.state.status,
       },
     })
 
     // Terminal events: emit only on status change (no inference).
     const prevStatus = typeof baseState?.status === "string" ? baseState.status : null
-    if (prevStatus !== kernelResult.state.status) {
-      if (kernelResult.state.status === "completed") {
+    if (prevStatus !== kernelResultFinal.state.status) {
+      if (kernelResultFinal.state.status === "completed") {
         await emitCanonicalEvent({
           userKey,
-          conversationId: kernelResult.state.conversation_id,
-          revision: kernelResult.state.revision,
-          inputId: kernelResult.state.revision,
-          nodeId: kernelResult.state.active_node,
+          conversationId: kernelResultFinal.state.conversation_id,
+          revision: kernelResultFinal.state.revision,
+          inputId: kernelResultFinal.state.revision,
+          nodeId: kernelResultFinal.state.active_node,
           eventType: "conversation_completed",
           payload: {
-            terminal_revision: kernelResult.state.revision,
-            terminal_node: kernelResult.state.active_node,
+            terminal_revision: kernelResultFinal.state.revision,
+            terminal_node: kernelResultFinal.state.active_node,
           },
         })
       }
-      if (kernelResult.state.status === "rejected") {
+      if (kernelResultFinal.state.status === "rejected") {
         await emitCanonicalEvent({
           userKey,
-          conversationId: kernelResult.state.conversation_id,
-          revision: kernelResult.state.revision,
-          inputId: kernelResult.state.revision,
-          nodeId: kernelResult.state.active_node,
+          conversationId: kernelResultFinal.state.conversation_id,
+          revision: kernelResultFinal.state.revision,
+          inputId: kernelResultFinal.state.revision,
+          nodeId: kernelResultFinal.state.active_node,
           eventType: "conversation_rejected",
           payload: {
-            terminal_revision: kernelResult.state.revision,
-            terminal_node: kernelResult.state.active_node,
+            terminal_revision: kernelResultFinal.state.revision,
+            terminal_node: kernelResultFinal.state.active_node,
           },
         })
       }
@@ -1046,35 +1386,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await maybeAutoLabelThread({
       userKey,
-      conversationId: kernelResult.state.conversation_id,
+      conversationId: kernelResultFinal.state.conversation_id,
       input,
-      revisionAfter: kernelResult.state.revision,
+      revisionAfter: kernelResultFinal.state.revision,
     })
 
-    const metaKeysWritten = kernelResult.transition.meta_delta ? Object.keys(kernelResult.transition.meta_delta) : []
+    const metaKeysWritten = kernelResultFinal.transition.meta_delta ? Object.keys(kernelResultFinal.transition.meta_delta) : []
 
     await emitSpine({
       userKey,
       input,
-      kernelResult,
+      kernelResult: kernelResultFinal,
       latencyMs: Date.now() - started,
     })
 
     await enqueueSummarizeEpisode({
       userKey,
-      conversationId: kernelResult.state.conversation_id,
-      revisionAfter: kernelResult.state.revision,
-      threadThemeId: threadBinding?.themeId ?? (kernelResult.state.meta?.["thread.theme_id"] as any)?.value,
-      threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
+      conversationId: kernelResultFinal.state.conversation_id,
+      revisionAfter: kernelResultFinal.state.revision,
+      threadThemeId: threadBinding?.themeId ?? (kernelResultFinal.state.meta?.["thread.theme_id"] as any)?.value,
+      threadEpisodeId: threadBinding?.episodeId ?? (kernelResultFinal.state.meta?.["thread.episode_id"] as any)?.value,
     })
 
     await enqueueSuggestFacts({
       userKey,
-      conversationId: kernelResult.state.conversation_id,
-      revisionAfter: kernelResult.state.revision,
+      conversationId: kernelResultFinal.state.conversation_id,
+      revisionAfter: kernelResultFinal.state.revision,
       metaKeysWritten,
-      threadThemeId: threadBinding?.themeId ?? (kernelResult.state.meta?.["thread.theme_id"] as any)?.value,
-      threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
+      threadThemeId: threadBinding?.themeId ?? (kernelResultFinal.state.meta?.["thread.theme_id"] as any)?.value,
+      threadEpisodeId: threadBinding?.episodeId ?? (kernelResultFinal.state.meta?.["thread.episode_id"] as any)?.value,
     })
 
     // Reflection CBA updates:
@@ -1082,15 +1422,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // - If GAARSDAL_REFLECTION_CBA_SYNC=1, we run CBA in-band (adds latency but updates schema immediately).
     // - Otherwise we enqueue an async job (requires an external worker trigger).
     const userMessage = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : ""
-    const therapistMessage = String(kernelResult.transition.response_message ?? kernelResult.state.active_node_message ?? "")
-    const activeNodeAfter = kernelResult.state.active_node
+    const therapistMessage = String(kernelResultFinal.transition.response_message ?? kernelResultFinal.state.active_node_message ?? "")
+    const activeNodeAfter = kernelResultFinal.state.active_node
 
     const syncCbaEnabled = process.env.GAARSDAL_REFLECTION_CBA_SYNC === "1"
     if (syncCbaEnabled && activeNodeAfter === "REFLECTION") {
       // Best-effort: failures must not break chat.
       try {
         await runReflectionCbaUpdate({
-          conversationId: kernelResult.state.conversation_id,
+          conversationId: kernelResultFinal.state.conversation_id,
           userMessage,
           therapistMessage,
         })
@@ -1100,24 +1440,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
       await enqueueReflectionCbaUpdate({
         userKey,
-        conversationId: kernelResult.state.conversation_id,
-        revisionAfter: kernelResult.state.revision,
+        conversationId: kernelResultFinal.state.conversation_id,
+        revisionAfter: kernelResultFinal.state.revision,
         activeNodeAfter,
         userMessage,
         therapistMessage,
-        threadThemeId: threadBinding?.themeId ?? (kernelResult.state.meta?.["thread.theme_id"] as any)?.value,
-        threadEpisodeId: threadBinding?.episodeId ?? (kernelResult.state.meta?.["thread.episode_id"] as any)?.value,
+        threadThemeId: threadBinding?.themeId ?? (kernelResultFinal.state.meta?.["thread.theme_id"] as any)?.value,
+        threadEpisodeId: threadBinding?.episodeId ?? (kernelResultFinal.state.meta?.["thread.episode_id"] as any)?.value,
       })
     }
 
     await logAndRecord({
       userKey,
       input,
-      kernelResult,
+      kernelResult: kernelResultFinal,
       userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined,
     })
 
-    res.status(200).json(kernelResult)
+    const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+
+    res.status(200).json({
+      ...kernelResultFinal,
+      state: withThreadMeta({ state: kernelResultFinal.state, index: indexNow }),
+    })
   } catch (e: any) {
     await appendSpineEventV23({
       schema_version: "v23",

@@ -16,6 +16,68 @@ import { getNode } from "../nodes/registry"
 // HOME remains a hard break back to the menu.
 const GLOBAL_EXITS: string[] = ["HOME", "MAIL", "TLF", "CONTACT_FORM", "AKUT", "RESUME"]
 
+type UxEvent = { type: "popup_opened" | "navigate"; id: string; ts: string }
+
+function uiActionBody(action: "TLF" | "MAIL" | "AKUT" | "CONTACT_FORM"): string {
+  switch (action) {
+    case "TLF":
+      return "Du kan ringe eller sende sms til 42 80 74 74. Jeg svarer, så snart jeg kan."
+    case "MAIL":
+      return "Du kan kontakte mig via e-mail på jan@gaarsdal.net."
+    case "AKUT":
+      return (
+        "Akut hjælp i Danmark: Ring 112 ved livstruende situationer. " +
+        "Voksne: Livslinien 70 201 201 (døgnåben). " +
+        "Børn og unge: BørneTelefonen 116 111. " +
+        "Psykiatrisk akutmodtagelse kan kontaktes via 1813 (Region Hovedstaden) eller din region."
+      )
+    case "CONTACT_FORM":
+      // Navigation happens in the frontend. Keep the response empty to avoid duplicating
+      // the current node message.
+      return ""
+  }
+}
+
+function nextUxMetaValue(state: ConversationState, event: UxEvent): unknown {
+  const current = (state.meta as any)?.ux?.value
+  const counters = { ...(current?.counters ?? {}) } as Record<string, number>
+  const events = Array.isArray(current?.events) ? [...current.events] : []
+
+  // Counters (deterministic)
+  switch (event.id) {
+    case "TLF":
+      counters.phone_clicks = (counters.phone_clicks ?? 0) + 1
+      break
+    case "MAIL":
+      counters.mail_clicks = (counters.mail_clicks ?? 0) + 1
+      break
+    case "AKUT":
+      counters.akut_clicks = (counters.akut_clicks ?? 0) + 1
+      break
+    case "CONTACT_FORM":
+      counters.contact_page_visits = (counters.contact_page_visits ?? 0) + 1
+      break
+  }
+
+  events.push(event)
+
+  // Cap events to avoid unbounded growth
+  const MAX_EVENTS = 200
+  const capped = events.length > MAX_EVENTS ? events.slice(events.length - MAX_EVENTS) : events
+
+  return { counters, events: capped }
+}
+
+function uxMetaDeltaForGlobalAction(state: ConversationState, target: string): Record<string, unknown> | null {
+  if (target !== "TLF" && target !== "MAIL" && target !== "CONTACT_FORM" && target !== "AKUT") return null
+  const ev: UxEvent = {
+    type: target === "CONTACT_FORM" ? "navigate" : "popup_opened",
+    id: target,
+    ts: new Date().toISOString(),
+  }
+  return { ux: nextUxMetaValue(state, ev) }
+}
+
 function assertState(state: ConversationState): void {
   if (!state.conversation_id) throw new Error("missing conversation_id")
   if (state.revision < 0) throw new Error("invalid revision")
@@ -58,6 +120,8 @@ function buildTransition(
         }
       }
 
+      const uxMetaDelta = uxMetaDeltaForGlobalAction(state, input.target)
+
       // Global overlays: open parentese (push current node onto stack).
       // HOME is intentionally *not* a parentese; it's a break back to the menu.
       if (
@@ -70,6 +134,7 @@ function buildTransition(
           from: state.active_node,
           to: input.target,
           reason: "global action (parentese)",
+          ...(uxMetaDelta ? { meta_delta: uxMetaDelta } : {}),
         }
       }
 
@@ -78,7 +143,20 @@ function buildTransition(
         from: state.active_node,
         to: input.target,
         reason: "explicit transition",
+        ...(uxMetaDelta ? { meta_delta: uxMetaDelta } : {}),
       }
+
+    case "UI_ACTION": {
+      // UI actions (footer) must never change nodes. They only emit audit messages and UX meta.
+      const uxMetaDelta = uxMetaDeltaForGlobalAction(state, input.action)
+      return {
+        type: "NODE_HOP",
+        from: state.active_node,
+        reason: "ui action",
+        response_message: uiActionBody(input.action),
+        ...(uxMetaDelta ? { meta_delta: uxMetaDelta } : {}),
+      }
+    }
 
     case "FREE_TEXT": {
       const node = getNode(state.active_node)
