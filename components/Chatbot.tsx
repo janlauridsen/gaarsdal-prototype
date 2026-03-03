@@ -87,28 +87,25 @@ function formatThreadPreview(t: ThreadTab): string {
   // Journal previews are stored as a JSON-ish blob (sometimes truncated), so JSON.parse can fail.
   // Prefer a best-effort extraction of the interesting fields.
   const extractStringField = (src: string, key: string) => {
-    // Match `"key":"value...` even if the JSON is truncated before the closing quote.
-    const re = new RegExp(`"${key}"\s*:\s*"([^"]*)`, "i")
+    // Best-effort regex extraction to avoid throwing when preview JSON is truncated.
+    const re = new RegExp(`"${key}"\\s*:\\s*"([^"]*)`, "i")
     const m = src.match(re)
     if (!m) return ""
-    const v = m[1] ?? ""
+    const v = String(m[1] ?? "")
     // Reverse common JSON escapes (best effort).
     return v
-      .replace(/\n/g, "
-")
-      .replace(/\r/g, "
-")
-      .replace(/\t/g, "	")
-      .replace(/\"/g, '"')
-      .replace(/\\/g, "\")
+      .replace(/\\n/g, "\n")
+      .replace(/\\r/g, "\r")
+      .replace(/\\t/g, "\t")
+      .replace(/\\\"/g, "\"")
       .trim()
   }
 
-  const extractNumberField = (src: string, key: string) => {
-    const re = new RegExp(`"${key}"\s*:\s*(-?\d+)`, "i")
+  const extractNumberField = (src: string, key: string): number | null => {
+    const re = new RegExp(`"${key}"\\s*:\\s*(-?\\d+)`, "i")
     const m = src.match(re)
     if (!m) return null
-    const n = Number(m[1])
+    const n = Number.parseInt(String(m[1]), 10)
     return Number.isFinite(n) ? n : null
   }
 
