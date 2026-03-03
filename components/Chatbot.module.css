@@ -928,6 +928,8 @@
   border-color: rgba(74, 93, 84, 0.35);
   box-shadow: 0 0 0 3px rgba(74, 93, 84, 0.12);
 
+}
+
 
 .journalExtrasScroll {
   margin-top: 2px;
@@ -955,7 +957,6 @@
   color: rgba(27, 30, 28, 0.80);
 }
 
-}
 
 .journalQuickBlock {
   display: flex;
@@ -1060,6 +1061,48 @@
 .modalBodyScroll {
   max-height: min(70vh, 560px);
   overflow: auto;
+}
+
+/* Bottom sheet (journal details) */
+
+.sheetOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 60;
+}
+
+.sheet {
+  width: 100%;
+  max-height: 74%;
+  background: #f4f3ef;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.sheetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.sheetTitle {
+  font-size: 14px;
+  font-weight: 650;
+  color: rgba(0, 0, 0, 0.78);
+}
+
+.sheetBody {
+  padding: 12px 14px;
+  overflow: auto;
+  max-height: calc(74vh - 54px);
 }
 
 .modalHeader {
