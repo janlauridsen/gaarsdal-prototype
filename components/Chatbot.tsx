@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import type React from "react"
 import { useRouter } from "next/router"
 import {
@@ -235,6 +235,44 @@ export default function Chatbot() {
     window.requestAnimationFrame(() => {
       textareaRef.current?.focus()
     })
+  }
+
+  // Bottom sheet accessibility: ESC closes, TAB is trapped inside while open.
+  const onSheetKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault()
+      setJournalDetailsOpen(false)
+      focusInput()
+      return
+    }
+
+    if (e.key !== "Tab") return
+    const root = sheetRef.current
+    if (!root) return
+
+    const focusable = Array.from(
+      root.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((el) => !el.hasAttribute("disabled") && !el.getAttribute("aria-hidden"))
+
+    if (!focusable.length) return
+
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    const active = document.activeElement as HTMLElement | null
+
+    if (e.shiftKey) {
+      if (!active || active === first || !root.contains(active)) {
+        e.preventDefault()
+        last.focus()
+      }
+    } else {
+      if (!active || active === last || !root.contains(active)) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
   }
 
   // Global footer actions must always be reachable, regardless of the current node's allowed_transitions.
