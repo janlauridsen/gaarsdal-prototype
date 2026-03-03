@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import type React from "react"
 import { useRouter } from "next/router"
 import {
   ChatBubbleOvalLeftEllipsisIcon,
@@ -226,6 +227,7 @@ export default function Chatbot() {
 
   const endRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const sheetRef = useRef<HTMLDivElement | null>(null)
   const didAutoStartNewThreadRef = useRef(false)
 
   const focusInput = () => {
@@ -1231,14 +1233,21 @@ export default function Chatbot() {
                   className={styles.sheetOverlay}
                   role="dialog"
                   aria-modal="true"
-                  onClick={() => setJournalDetailsOpen(false)}
+                  onKeyDown={onSheetKeyDown}
+                  onClick={() => {
+                    setJournalDetailsOpen(false)
+                    focusInput()
+                  }}
                 >
                   <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
                     <div className={styles.sheetHeader}>
                       <div className={styles.sheetTitle}>Detaljer</div>
                       <button
                         className={styles.iconBtn}
-                        onClick={() => setJournalDetailsOpen(false)}
+                        onClick={() => {
+                          setJournalDetailsOpen(false)
+                          focusInput()
+                        }}
                         title="Luk"
                         aria-label="Luk"
                       >
@@ -1246,7 +1255,7 @@ export default function Chatbot() {
                       </button>
                     </div>
 
-                    <div className={styles.sheetBody}>
+                    <div className={styles.sheetBody} ref={sheetRef} tabIndex={-1}>
                       <label className={styles.modalField}>
                         <span className={styles.modalLabel}>Dato/tid</span>
                         <input
@@ -1381,7 +1390,10 @@ export default function Chatbot() {
                         </div>
                       </div>
 
-                      <div className={styles.modalActions}>
+                    </div>
+
+                    <div className={styles.sheetFooter}>
+                      <div className={styles.sheetFooterRow}>
                         <button
                           className={styles.primaryBtn}
                           onClick={() => {
