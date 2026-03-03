@@ -1306,90 +1306,115 @@ export default function Chatbot() {
                       </label>
 
                       <div className={styles.journalQuickBlock}>
-                        <div className={styles.journalQuickGroup}>
-                          <div className={styles.journalQuickLabel}>Sindstilstand</div>
-                          <div className={styles.journalQuickRow}>
-                            {["rolig", "stresset", "trist", "rastløs", "glad"].map((v) => (
-                              <button
-                                key={v}
-                                type="button"
-                                className={`${styles.journalQuickChip} ${journalMoodTag === v ? styles.journalQuickChipActive : ""}`}
-                                onClick={() => setJournalMoodTag((cur) => (cur === v ? "" : v))}
-                                disabled={!state || !freeTextEnabled}
-                              >
-                                {v}
-                              </button>
-                            ))}
+                        <details className={styles.journalSelect}>
+                          <summary className={styles.journalSelectSummary}>
+                            <span className={styles.journalSelectSummaryLabel}>Sindstilstand</span>
+                            <span className={styles.journalSelectSummaryValue}>{journalMoodTag || "Vælg"}</span>
+                          </summary>
+                          <div className={styles.journalSelectBody}>
+                            <div className={styles.journalQuickRow}>
+                              {["rolig", "stresset", "trist", "rastløs", "glad"].map((v) => (
+                                <button
+                                  key={v}
+                                  type="button"
+                                  className={`${styles.journalQuickChip} ${journalMoodTag === v ? styles.journalQuickChipActive : ""}`}
+                                  onClick={() => setJournalMoodTag((cur) => (cur === v ? "" : v))}
+                                  disabled={!state || !freeTextEnabled}
+                                >
+                                  {v}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        </details>
 
-                        <div className={styles.journalQuickGroup}>
-                          <div className={styles.journalQuickLabel}>Trigger</div>
-                          <div className={styles.journalQuickRow}>
-                            {["stress", "socialt", "konflikt", "kedsomhed", "belønning"].map((v) => (
-                              <button
-                                key={v}
-                                type="button"
-                                className={`${styles.journalQuickChip} ${journalTriggerTag === v ? styles.journalQuickChipActive : ""}`}
-                                onClick={() => setJournalTriggerTag((cur) => (cur === v ? "" : v))}
-                                disabled={!state || !freeTextEnabled}
-                              >
-                                {v}
-                              </button>
-                            ))}
+                        <details className={styles.journalSelect}>
+                          <summary className={styles.journalSelectSummary}>
+                            <span className={styles.journalSelectSummaryLabel}>Trigger</span>
+                            <span className={styles.journalSelectSummaryValue}>{journalTriggerTag || "Vælg"}</span>
+                          </summary>
+                          <div className={styles.journalSelectBody}>
+                            <div className={styles.journalQuickRow}>
+                              {["stress", "socialt", "konflikt", "kedsomhed", "belønning"].map((v) => (
+                                <button
+                                  key={v}
+                                  type="button"
+                                  className={`${styles.journalQuickChip} ${journalTriggerTag === v ? styles.journalQuickChipActive : ""}`}
+                                  onClick={() => setJournalTriggerTag((cur) => (cur === v ? "" : v))}
+                                  disabled={!state || !freeTextEnabled}
+                                >
+                                  {v}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        </details>
 
-                        <div className={styles.journalQuickGroup}>
-                          <div className={styles.journalQuickLabel}>Kontekst</div>
-                          <div className={styles.journalQuickRow}>
-                            {["alene", "sammen", "hjemme", "ude", "aften"].map((v) => (
-                              <button
-                                key={v}
-                                type="button"
-                                className={`${styles.journalQuickChip} ${journalContextTag === v ? styles.journalQuickChipActive : ""}`}
-                                onClick={() => setJournalContextTag((cur) => (cur === v ? "" : v))}
-                                disabled={!state || !freeTextEnabled}
-                              >
-                                {v}
-                              </button>
-                            ))}
+                        <details className={styles.journalSelect}>
+                          <summary className={styles.journalSelectSummary}>
+                            <span className={styles.journalSelectSummaryLabel}>Kontekst</span>
+                            <span className={styles.journalSelectSummaryValue}>{journalContextTag || "Vælg"}</span>
+                          </summary>
+                          <div className={styles.journalSelectBody}>
+                            <div className={styles.journalQuickRow}>
+                              {["alene", "sammen", "hjemme", "ude", "aften"].map((v) => (
+                                <button
+                                  key={v}
+                                  type="button"
+                                  className={`${styles.journalQuickChip} ${journalContextTag === v ? styles.journalQuickChipActive : ""}`}
+                                  onClick={() => setJournalContextTag((cur) => (cur === v ? "" : v))}
+                                  disabled={!state || !freeTextEnabled}
+                                >
+                                  {v}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        </details>
 
-                        <div className={styles.journalQuickGroup}>
-                          <div className={styles.journalQuickLabel}>Coping</div>
-                          <div className={styles.journalQuickRow}>
-                            {["gåtur", "vand", "vejrtrækning", "ring", "distraktion"].map((v) => (
-                              <button
-                                key={v}
-                                type="button"
-                                className={`${styles.journalQuickChip} ${journalCopingTag === v ? styles.journalQuickChipActive : ""}`}
-                                onClick={() => setJournalCopingTag((cur) => (cur === v ? "" : v))}
-                                disabled={!state || !freeTextEnabled}
-                              >
-                                {v}
-                              </button>
-                            ))}
+                        <details className={styles.journalSelect}>
+                          <summary className={styles.journalSelectSummary}>
+                            <span className={styles.journalSelectSummaryLabel}>Coping</span>
+                            <span className={styles.journalSelectSummaryValue}>{journalCopingTag || "Vælg"}</span>
+                          </summary>
+                          <div className={styles.journalSelectBody}>
+                            <div className={styles.journalQuickRow}>
+                              {["gåtur", "vand", "vejrtrækning", "ring", "distraktion"].map((v) => (
+                                <button
+                                  key={v}
+                                  type="button"
+                                  className={`${styles.journalQuickChip} ${journalCopingTag === v ? styles.journalQuickChipActive : ""}`}
+                                  onClick={() => setJournalCopingTag((cur) => (cur === v ? "" : v))}
+                                  disabled={!state || !freeTextEnabled}
+                                >
+                                  {v}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        </details>
 
-                        <div className={styles.journalQuickGroup}>
-                          <div className={styles.journalQuickLabel}>Handling</div>
-                          <div className={styles.journalQuickRow}>
-                            {["drak", "undlod", "skar ned"].map((v) => (
-                              <button
-                                key={v}
-                                type="button"
-                                className={`${styles.journalQuickChip} ${journalAction === v ? styles.journalQuickChipActive : ""}`}
-                                onClick={() => setJournalAction((cur) => (cur === v ? "" : v))}
-                                disabled={!state || !freeTextEnabled}
-                              >
-                                {v}
-                              </button>
-                            ))}
+                        <details className={styles.journalSelect}>
+                          <summary className={styles.journalSelectSummary}>
+                            <span className={styles.journalSelectSummaryLabel}>Handling</span>
+                            <span className={styles.journalSelectSummaryValue}>{journalAction || "Vælg"}</span>
+                          </summary>
+                          <div className={styles.journalSelectBody}>
+                            <div className={styles.journalQuickRow}>
+                              {["drak", "undlod", "skar ned"].map((v) => (
+                                <button
+                                  key={v}
+                                  type="button"
+                                  className={`${styles.journalQuickChip} ${journalAction === v ? styles.journalQuickChipActive : ""}`}
+                                  onClick={() => setJournalAction((cur) => (cur === v ? "" : v))}
+                                  disabled={!state || !freeTextEnabled}
+                                >
+                                  {v}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        </details>
 
                         <div className={styles.journalAdvancedGrid}>
                           <label className={styles.journalField}>
