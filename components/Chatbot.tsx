@@ -182,7 +182,7 @@ export default function Chatbot() {
   const [threadsOpen, setThreadsOpen] = useState(false)
 
   const [journalWizardOpen, setJournalWizardOpen] = useState(false)
-  const [journalWizardStep, setJournalWizardStep] = useState<1 | 2 | 3>(1)
+  const [journalWizardStep, setJournalWizardStep] = useState<1 | 2>(1)
   const [journalWizardProfile, setJournalWizardProfile] = useState<"alcohol" | "general" | "strict" | null>(null)
   const [journalWizardTitle, setJournalWizardTitle] = useState("")
   const [journalWizardProblem, setJournalWizardProblem] = useState("")
@@ -217,7 +217,6 @@ export default function Chatbot() {
   const [journalEvalError, setJournalEvalError] = useState<string | null>(null)
   const [journalEvalQuestions, setJournalEvalQuestions] = useState<string[]>([])
   const [journalEvalSummary, setJournalEvalSummary] = useState<string>("")
-  const [journalEvalBeforeSave, setJournalEvalBeforeSave] = useState<boolean>(true)
   const [journalEvalLastHash, setJournalEvalLastHash] = useState<string>("")
   const [loading, setLoading] = useState(false)
 
@@ -317,6 +316,14 @@ export default function Chatbot() {
     focusInput()
   }
 
+  function resetJournalWizardDraft() {
+    setJournalWizardProfile(null)
+    setJournalWizardTitle("")
+    setJournalWizardProblem("")
+    setJournalWizardGoal("")
+    setJournalWizardStep(1)
+  }
+
   function canCreateJournal(): boolean {
     const active = threadTabs.filter((t) => (t.thread_type ?? "chat") === "journal" && t.status === "active")
     return active.length < 5
@@ -375,24 +382,7 @@ export default function Chatbot() {
       }
     }
   }, [])
-
-  // Load persisted preference for evaluation-before-save.
-  useEffect(() => {
-    try {
-      const v = window.localStorage.getItem("gaarsdal_journal_eval_before_save")
-      if (v === "0" || v === "1") setJournalEvalBeforeSave(v === "1")
-    } catch {
-      // ignore
-    }
-  }, [])
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem("gaarsdal_journal_eval_before_save", journalEvalBeforeSave ? "1" : "0")
-    } catch {
-      // ignore
-    }
-  }, [journalEvalBeforeSave])
+  // (No persisted UI prefs for the journal yet.)
 
   function appendAssistantMessage(conversationId: string, text: string) {
     const message = (text ?? "").trim()
@@ -870,7 +860,7 @@ export default function Chatbot() {
     if (!state || !freeTextEnabled || loading) return
 
     // Optional coaching step before save.
-    if (!opts?.bypassEval && journalEvalBeforeSave) {
+    if (!opts?.bypassEval && journalProfile === "alcohol") {
       await evaluateJournalDraft()
       return
     }
@@ -1098,31 +1088,16 @@ export default function Chatbot() {
 
                         {journalWizardStep === 2 && (
                           <>
-                            <div className={styles.modalText}>Giv dagbogen en titel (emne)</div>
-                            <input
-                              className={styles.modalInput}
-                              value={journalWizardTitle}
-                              onChange={(e) => setJournalWizardTitle(e.target.value)}
-                              placeholder="Fx: Alkohol – efter arbejde"
-                            />
-                            <div className={styles.modalActions}>
-                              <button className={styles.secondaryBtn} onClick={() => setJournalWizardStep(1)}>
-                                Tilbage
-                              </button>
-                              <button
-                                className={styles.primaryBtn}
-                                disabled={!journalWizardTitle.trim() || !journalWizardProfile}
-                                onClick={() => setJournalWizardStep(3)}
-                              >
-                                Næste
-                              </button>
-                            </div>
-                          </>
-                        )}
-
-                        {journalWizardStep === 3 && (
-                          <>
-                            <div className={styles.modalText}>Startdefinition</div>
+                            <div className={styles.modalText}>Titel og startdefinition</div>
+                            <label className={styles.modalField}>
+                              <span className={styles.modalLabel}>Titel (emne)</span>
+                              <input
+                                className={styles.modalInput}
+                                value={journalWizardTitle}
+                                onChange={(e) => setJournalWizardTitle(e.target.value)}
+                                placeholder="Fx: Alkohol – efter arbejde"
+                              />
+                            </label>
                             <label className={styles.modalField}>
                               <span className={styles.modalLabel}>Problem / kontekst</span>
                               <textarea
@@ -1144,7 +1119,7 @@ export default function Chatbot() {
                               />
                             </label>
                             <div className={styles.modalActions}>
-                              <button className={styles.secondaryBtn} onClick={() => setJournalWizardStep(2)}>
+                              <button className={styles.secondaryBtn} onClick={resetJournalWizardDraft}>
                                 Tilbage
                               </button>
                               <button
@@ -1180,172 +1155,6 @@ export default function Chatbot() {
                   </div>
                 </div>
 
-              )}
-
-
-              {journalProfile === "alcohol" && journalExtrasModalOpen && (
-                <div
-                  className={styles.modalOverlay}
-                  role="dialog"
-                  aria-modal="true"
-                  onClick={() => setJournalExtrasModalOpen(false)}
-                >
-                  <div className={`${styles.modal} ${styles.modalWide}`.trim()} onClick={(e) => e.stopPropagation()}>
-                    <div className={styles.modalHeader}>
-                      <div className={styles.modalTitle}>Flere felter</div>
-                      <button
-                        className={styles.iconBtn}
-                        onClick={() => setJournalExtrasModalOpen(false)}
-                        title="Luk"
-                        aria-label="Luk"
-                      >
-                        <XMarkIcon className={styles.icon} />
-                      </button>
-                    </div>
-
-                    <div className={`${styles.modalBody} ${styles.modalBodyScroll}`.trim()}>
-                      <label className={styles.modalField}>
-                        <span className={styles.modalLabel}>Dato/tid</span>
-                        <input
-                          className={styles.modalInput}
-                          type="datetime-local"
-                          value={journalTsLocal}
-                          onChange={(e) => setJournalTsLocal(e.target.value)}
-                          disabled={!state || !freeTextEnabled}
-                        />
-                      </label>
-
-                      <div className={styles.journalQuickBlock}>
-                        <div className={styles.journalQuickGroup}>
-                          <div className={styles.journalQuickLabel}>Sindstilstand</div>
-                          <div className={styles.journalQuickRow}>
-                            {["rolig", "stresset", "trist", "rastløs", "glad"].map((v) => (
-                              <button
-                                key={v}
-                                type="button"
-                                className={`${styles.journalQuickChip} ${journalMoodTag === v ? styles.journalQuickChipActive : ""}`}
-                                onClick={() => setJournalMoodTag((cur) => (cur === v ? "" : v))}
-                                disabled={!state || !freeTextEnabled}
-                              >
-                                {v}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className={styles.journalQuickGroup}>
-                          <div className={styles.journalQuickLabel}>Trigger</div>
-                          <div className={styles.journalQuickRow}>
-                            {["stress", "socialt", "konflikt", "kedsomhed", "belønning"].map((v) => (
-                              <button
-                                key={v}
-                                type="button"
-                                className={`${styles.journalQuickChip} ${journalTriggerTag === v ? styles.journalQuickChipActive : ""}`}
-                                onClick={() => setJournalTriggerTag((cur) => (cur === v ? "" : v))}
-                                disabled={!state || !freeTextEnabled}
-                              >
-                                {v}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className={styles.journalQuickGroup}>
-                          <div className={styles.journalQuickLabel}>Kontekst</div>
-                          <div className={styles.journalQuickRow}>
-                            {["alene", "sammen", "hjemme", "ude", "aften"].map((v) => (
-                              <button
-                                key={v}
-                                type="button"
-                                className={`${styles.journalQuickChip} ${journalContextTag === v ? styles.journalQuickChipActive : ""}`}
-                                onClick={() => setJournalContextTag((cur) => (cur === v ? "" : v))}
-                                disabled={!state || !freeTextEnabled}
-                              >
-                                {v}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className={styles.journalQuickGroup}>
-                          <div className={styles.journalQuickLabel}>Coping</div>
-                          <div className={styles.journalQuickRow}>
-                            {["gåtur", "vand", "vejrtrækning", "ring", "distraktion"].map((v) => (
-                              <button
-                                key={v}
-                                type="button"
-                                className={`${styles.journalQuickChip} ${journalCopingTag === v ? styles.journalQuickChipActive : ""}`}
-                                onClick={() => setJournalCopingTag((cur) => (cur === v ? "" : v))}
-                                disabled={!state || !freeTextEnabled}
-                              >
-                                {v}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className={styles.journalQuickGroup}>
-                          <div className={styles.journalQuickLabel}>Handling</div>
-                          <div className={styles.journalQuickRow}>
-                            {["drak", "undlod", "skar ned"].map((v) => (
-                              <button
-                                key={v}
-                                type="button"
-                                className={`${styles.journalQuickChip} ${journalAction === v ? styles.journalQuickChipActive : ""}`}
-                                onClick={() => setJournalAction((cur) => (cur === v ? "" : v))}
-                                disabled={!state || !freeTextEnabled}
-                              >
-                                {v}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className={styles.journalAdvancedGrid}>
-                          <label className={styles.journalField}>
-                            <span className={styles.journalFieldLabel}>Sind (0–10)</span>
-                            <input
-                              className={styles.journalFieldInput}
-                              inputMode="numeric"
-                              value={journalMood}
-                              onChange={(e) => setJournalMood(e.target.value)}
-                              placeholder=""
-                              disabled={!state || !freeTextEnabled}
-                            />
-                          </label>
-                          <label className={styles.journalField}>
-                            <span className={styles.journalFieldLabel}>Craving peak (0–10)</span>
-                            <input
-                              className={styles.journalFieldInput}
-                              inputMode="numeric"
-                              value={journalCravingPeak}
-                              onChange={(e) => setJournalCravingPeak(e.target.value)}
-                              placeholder=""
-                              disabled={!state || !freeTextEnabled}
-                            />
-                          </label>
-                          <label className={styles.journalField}>
-                            <span className={styles.journalFieldLabel}>Craving varighed (min)</span>
-                            <input
-                              className={styles.journalFieldInput}
-                              inputMode="numeric"
-                              value={journalCravingDuration}
-                              onChange={(e) => setJournalCravingDuration(e.target.value)}
-                              placeholder=""
-                              disabled={!state || !freeTextEnabled}
-                            />
-                          </label>
-                        </div>
-                      </div>
-
-                      <div className={styles.modalActions}>
-                        <button className={styles.secondaryBtn} onClick={() => setJournalExtrasModalOpen(false)}>
-                          Luk
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               )}
 
               {journalEvalModalOpen && (
@@ -1388,40 +1197,22 @@ export default function Chatbot() {
                           ) : (
                             <div className={styles.modalText}>Ingen oplagte opfølgende spørgsmål.</div>
                           )}
-
-                          <label className={styles.modalField}>
-                            <span className={styles.modalLabel}>Evaluer før gem</span>
-                            <input
-                              type="checkbox"
-                              checked={journalEvalBeforeSave}
-                              onChange={(e) => setJournalEvalBeforeSave(e.target.checked)}
-                            />
-                          </label>
+                          <div className={styles.modalText}>
+                            Brug spørgsmålene som inspiration. Luk og uddybe notatet – eller gem som det er.
+                          </div>
                         </>
                       )}
 
                       <div className={styles.modalActions}>
-                        <button className={styles.secondaryBtn} onClick={() => setJournalEvalModalOpen(false)}>
-                          Luk
-                        </button>
-
                         <button
                           className={styles.secondaryBtn}
                           onClick={() => {
-                            if (!journalEvalQuestions.length) {
-                              setJournalEvalModalOpen(false)
-                              return
-                            }
-                            const addition = `\n\nOvervejelser:\n${journalEvalQuestions.map((q) => `- ${q}`).join("\n")}\n`
-                            setJournalText((cur) => (cur ? `${cur}${addition}` : addition.trimStart()))
                             setJournalEvalModalOpen(false)
                             focusInput()
                           }}
-                          disabled={journalEvalLoading || !!journalEvalError || journalEvalQuestions.length === 0}
                         >
-                          Indsæt i notat
+                          Tilbage og uddyb
                         </button>
-
                         <button
                           className={styles.primaryBtn}
                           onClick={async () => {
@@ -1430,7 +1221,7 @@ export default function Chatbot() {
                           }}
                           disabled={journalEvalLoading}
                         >
-                          Gem nu
+                          Gem
                         </button>
                       </div>
                     </div>
@@ -1730,11 +1521,11 @@ export default function Chatbot() {
                         onClick={() => {
                           setJournalExtrasEnabled(true)
                           if (!journalTsLocal) setJournalTsLocal(toDatetimeLocalValue(new Date()))
-                          setJournalExtrasModalOpen(true)
+                          setJournalExtrasModalOpen((v) => !v)
                         }}
                         disabled={!state || !freeTextEnabled}
                       >
-                        Flere felter
+                        {journalExtrasModalOpen ? "Skjul felter" : "Flere felter"}
                       </button>
 
                       <button
@@ -1742,20 +1533,146 @@ export default function Chatbot() {
                         type="button"
                         onClick={() => evaluateJournalDraft()}
                         disabled={!state || !freeTextEnabled || journalEvalLoading}
-                        title="Evaluer input"
+                        title="Få forslag"
                       >
-                        Evaluer input
+                        Få forslag
                       </button>
+                    </div>
+                  ) : null}
 
-                      <label className={styles.journalToggleBtn} style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+                  {journalProfile === "alcohol" && journalExtrasModalOpen ? (
+                    <div className={styles.journalQuickBlock}>
+                      <label className={styles.modalField}>
+                        <span className={styles.modalLabel}>Dato/tid</span>
                         <input
-                          type="checkbox"
-                          checked={journalEvalBeforeSave}
-                          onChange={(e) => setJournalEvalBeforeSave(e.target.checked)}
+                          className={styles.modalInput}
+                          type="datetime-local"
+                          value={journalTsLocal}
+                          onChange={(e) => setJournalTsLocal(e.target.value)}
                           disabled={!state || !freeTextEnabled}
                         />
-                        <span>Før gem</span>
                       </label>
+
+                      <div className={styles.journalQuickGroup}>
+                        <div className={styles.journalQuickLabel}>Sindstilstand</div>
+                        <div className={styles.journalQuickRow}>
+                          {["rolig", "stresset", "trist", "rastløs", "glad"].map((v) => (
+                            <button
+                              key={v}
+                              type="button"
+                              className={`${styles.journalQuickChip} ${journalMoodTag === v ? styles.journalQuickChipActive : ""}`}
+                              onClick={() => setJournalMoodTag((cur) => (cur === v ? "" : v))}
+                              disabled={!state || !freeTextEnabled}
+                            >
+                              {v}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className={styles.journalQuickGroup}>
+                        <div className={styles.journalQuickLabel}>Trigger</div>
+                        <div className={styles.journalQuickRow}>
+                          {["stress", "socialt", "konflikt", "kedsomhed", "belønning"].map((v) => (
+                            <button
+                              key={v}
+                              type="button"
+                              className={`${styles.journalQuickChip} ${journalTriggerTag === v ? styles.journalQuickChipActive : ""}`}
+                              onClick={() => setJournalTriggerTag((cur) => (cur === v ? "" : v))}
+                              disabled={!state || !freeTextEnabled}
+                            >
+                              {v}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className={styles.journalQuickGroup}>
+                        <div className={styles.journalQuickLabel}>Kontekst</div>
+                        <div className={styles.journalQuickRow}>
+                          {["alene", "sammen", "hjemme", "ude", "aften"].map((v) => (
+                            <button
+                              key={v}
+                              type="button"
+                              className={`${styles.journalQuickChip} ${journalContextTag === v ? styles.journalQuickChipActive : ""}`}
+                              onClick={() => setJournalContextTag((cur) => (cur === v ? "" : v))}
+                              disabled={!state || !freeTextEnabled}
+                            >
+                              {v}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className={styles.journalQuickGroup}>
+                        <div className={styles.journalQuickLabel}>Coping</div>
+                        <div className={styles.journalQuickRow}>
+                          {["gåtur", "vand", "vejrtrækning", "ring", "distraktion"].map((v) => (
+                            <button
+                              key={v}
+                              type="button"
+                              className={`${styles.journalQuickChip} ${journalCopingTag === v ? styles.journalQuickChipActive : ""}`}
+                              onClick={() => setJournalCopingTag((cur) => (cur === v ? "" : v))}
+                              disabled={!state || !freeTextEnabled}
+                            >
+                              {v}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className={styles.journalQuickGroup}>
+                        <div className={styles.journalQuickLabel}>Handling</div>
+                        <div className={styles.journalQuickRow}>
+                          {["drak", "undlod", "skar ned"].map((v) => (
+                            <button
+                              key={v}
+                              type="button"
+                              className={`${styles.journalQuickChip} ${journalAction === v ? styles.journalQuickChipActive : ""}`}
+                              onClick={() => setJournalAction((cur) => (cur === v ? "" : v))}
+                              disabled={!state || !freeTextEnabled}
+                            >
+                              {v}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className={styles.journalAdvancedGrid}>
+                        <label className={styles.journalField}>
+                          <span className={styles.journalFieldLabel}>Sind (0–10)</span>
+                          <input
+                            className={styles.journalFieldInput}
+                            inputMode="numeric"
+                            value={journalMood}
+                            onChange={(e) => setJournalMood(e.target.value)}
+                            placeholder=""
+                            disabled={!state || !freeTextEnabled}
+                          />
+                        </label>
+                        <label className={styles.journalField}>
+                          <span className={styles.journalFieldLabel}>Craving peak (0–10)</span>
+                          <input
+                            className={styles.journalFieldInput}
+                            inputMode="numeric"
+                            value={journalCravingPeak}
+                            onChange={(e) => setJournalCravingPeak(e.target.value)}
+                            placeholder=""
+                            disabled={!state || !freeTextEnabled}
+                          />
+                        </label>
+                        <label className={styles.journalField}>
+                          <span className={styles.journalFieldLabel}>Craving varighed (min)</span>
+                          <input
+                            className={styles.journalFieldInput}
+                            inputMode="numeric"
+                            value={journalCravingDuration}
+                            onChange={(e) => setJournalCravingDuration(e.target.value)}
+                            placeholder=""
+                            disabled={!state || !freeTextEnabled}
+                          />
+                        </label>
+                      </div>
                     </div>
                   ) : null}
 
