@@ -34,13 +34,13 @@ export type ChatHeaderProps = {
 
   // Journal wizard
   journalWizardOpen: boolean
-  journalWizardStep: number
+  journalWizardStep: 1 | 2
   journalWizardProfile: "general" | "alcohol" | "strict"
   journalWizardTitle: string
   journalWizardProblem: string
   journalWizardGoal: string
   canCreateJournal: boolean
-  setJournalWizardStep: (n: number) => void
+  setJournalWizardStep: (n: 1 | 2) => void
   setJournalWizardProfile: (p: "general" | "alcohol" | "strict") => void
   setJournalWizardTitle: (s: string) => void
   setJournalWizardProblem: (s: string) => void
