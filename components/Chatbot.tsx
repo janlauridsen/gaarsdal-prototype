@@ -982,7 +982,7 @@ export default function Chatbot() {
               endRef={endRef}
             />
 
-            <div className={`${styles.footer} ${isJournalActive ? styles.footerJournal : ""}`.trim()}> ${isJournalActive ? styles.footerJournal : ""}`.trim()}>
+            <div className={`${styles.footer} ${isJournalActive ? styles.footerJournal : ""}`.trim()}>
               {!isJournalActive ? (
                 <ChatComposer
                   textareaRef={textareaRef}
