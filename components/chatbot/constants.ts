@@ -1,0 +1,15 @@
+export const NODE_LABELS: Record<string, string> = {
+  THREAD_CHOOSER: "Tråde",
+  HOME: "Forside",
+  GEN_HYPNO: "Spørg om hypnoterapi…",
+  TRIAGE: "Passer hypnoterapi til min situation?",
+  METHOD_FIT: "Hypnoterapi eller et bedre alternativ?",
+  REFLECTION: "Refleksion",
+  DAGBOG: "Dagbog",
+  BOOKING: "Book tid",
+  DEV_SANDBOX_INTRO: "Sandbox (dev)",
+  MAIL: "E-mail",
+  TLF: "Telefon",
+  CONTACT_FORM: "Kontakt",
+  AKUT: "Akut",
+}
