@@ -8,7 +8,7 @@ import { ChatBubbleOvalLeftEllipsisIcon } from "@heroicons/react/24/outline"
 import styles from "./Chatbot.module.css"
 
 import { NODE_LABELS } from "./chatbot/constants"
-import { safeId, splitThreadLabel } from "./chatbot/utils"
+import { safeId, splitThreadLabel, trimDuplicateTitle } from "./chatbot/utils"
 import type {
   ChatMessage,
   ConversationState,
