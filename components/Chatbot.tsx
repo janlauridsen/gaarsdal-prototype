@@ -3,20 +3,12 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import type React from "react"
 import { useRouter } from "next/router"
-import {
-  ChatBubbleOvalLeftEllipsisIcon,
-  XMarkIcon,
-  ArrowsPointingOutIcon,
-  ArrowsPointingInIcon,
-  PlusIcon,
-  PaperAirplaneIcon,
-} from "@heroicons/react/24/outline"
+import { ChatBubbleOvalLeftEllipsisIcon } from "@heroicons/react/24/outline"
 
 import styles from "./Chatbot.module.css"
 
 import { NODE_LABELS } from "./chatbot/constants"
-import { formatThreadPreview } from "./chatbot/threadPreview"
-import { safeId, splitThreadLabel, toDatetimeLocalValue, trimDuplicateTitle } from "./chatbot/utils"
+import { safeId, splitThreadLabel } from "./chatbot/utils"
 import type {
   ChatMessage,
   ConversationState,
@@ -28,9 +20,11 @@ import type {
   UiSuggestion,
 } from "./chatbot/types"
 
-import JournalWizardModal from "./chatbot/journal/JournalWizardModal"
-import JournalEvalModal from "./chatbot/journal/JournalEvalModal"
-import JournalDetailsSheet from "./chatbot/journal/JournalDetailsSheet"
+import ChatComposer from "./chatbot/ChatComposer"
+import { ChatHeader } from "./chatbot/ChatHeader"
+import { MessagePane } from "./chatbot/MessagePane"
+import { JournalComposer } from "./chatbot/journal/JournalComposer"
+
 export default function Chatbot() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -846,490 +840,191 @@ export default function Chatbot() {
           <div className={styles.overlay} onClick={closeChat} />
 
           <div className={containerClass} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-            <div className={styles.header}>
-              <div className={styles.headerRow}>
-                <div className={styles.headerLeft}>
-                  <div className={styles.titleRow}>
-                    <div className={styles.title}>Gaarsdal Chat</div>
-                    <span
-                      className={`${styles.headerHeart} ${loading ? styles.headerHeartActive : ""}`}
-                      aria-label={loading ? "Arbejder" : ""}
-                      title={loading ? "Arbejder…" : ""}
-                    >
-                      ♥
-                    </span>
-                  </div>
-                  <div className={styles.node}>{activeNodeLabel}</div>
-                </div>
+            <ChatHeader
 
-                <div className={styles.headerRight}>
-                  <button
-                    className={styles.iconBtn}
-                    onClick={toggleExpanded}
-                    title={expanded ? "Minimer" : "Maksimer"}
-                    aria-label={expanded ? "Minimer" : "Maksimer"}
-                  >
-                    {expanded ? (
-                      <ArrowsPointingInIcon className={styles.icon} />
-                    ) : (
-                      <ArrowsPointingOutIcon className={styles.icon} />
-                    )}
-                  </button>
+              loading={loading}
 
-                  <button className={styles.iconBtn} onClick={closeChat} title="Luk" aria-label="Luk">
-                    <XMarkIcon className={styles.icon} />
-                  </button>
-                </div>
-              </div>
+              expanded={expanded}
 
-              <div className={styles.actionsRow} aria-label="Tråde og handlinger">
-                <button
-                  className={styles.threadBtn}
-                  onClick={() => setThreadsOpen(true)}
-                  disabled={loading || !state}
-                  title="Tråde"
-                  aria-label="Tråde"
-                >
-                  <ChatBubbleOvalLeftEllipsisIcon className={styles.threadBtnIcon} />
-                  <span className={styles.threadBtnLabel}>Tråde</span>
-                </button>
+              activeNodeLabel={activeNodeLabel}
 
-                <div className={styles.actionsRight}>
-                  <button
-                    className={styles.actionBtn}
-                    onClick={() => dispatch({ type: "THREAD_CREATE", mode: "normal" } as any, { silentUser: true })}
-                    disabled={loading}
-                    title="Ny tråd"
-                    aria-label="Ny tråd"
-                  >
-                    <PlusIcon className={styles.actionBtnIcon} />
-                    <span className={styles.actionBtnLabel}>Ny</span>
-                  </button>
+              openJournalWizard={openJournalWizard}
 
-                  <button
-                    className={styles.actionBtn}
-                    onClick={() => openJournalWizard()}
-                    disabled={loading}
-                    title="Ny dagbog"
-                    aria-label="Ny dagbog"
-                  >
-                    <PlusIcon className={styles.actionBtnIcon} />
-                    <span className={styles.actionBtnLabel}>Dagbog</span>
-                  </button>
-                </div>
-              </div>
+              toggleExpanded={toggleExpanded}
 
-              <JournalWizardModal
-                open={journalWizardOpen}
-                step={journalWizardStep}
-                profile={journalWizardProfile}
-                title={journalWizardTitle}
-                problem={journalWizardProblem}
-                goal={journalWizardGoal}
-                canCreate={canCreateJournal()}
-                setStep={setJournalWizardStep}
-                setProfile={setJournalWizardProfile}
-                setTitle={setJournalWizardTitle}
-                setProblem={setJournalWizardProblem}
-                setGoal={setJournalWizardGoal}
-                onClose={closeJournalWizard}
-                onResetDraft={resetJournalWizardDraft}
-                onCreate={async ({ profile, title, problem, goal }) => {
-                  const ok = await dispatch(
-                    {
-                      type: "THREAD_CREATE",
-                      mode: "normal",
-                      thread_type: "journal",
-                      journal_profile: profile,
-                      journal_init: { title, problem, goal },
-                    } as any,
-                    { silentUser: true }
-                  )
-                  if (ok) closeJournalWizard()
-                }}
-              />
+              closeChat={closeChat}
 
-              <JournalEvalModal
-                open={journalEvalModalOpen}
-                loading={journalEvalLoading}
-                error={journalEvalError}
-                summary={journalEvalSummary}
-                questions={journalEvalQuestions}
-                onClose={() => setJournalEvalModalOpen(false)}
-                onBackToEdit={() => {
-                  setJournalEvalModalOpen(false)
-                  focusInput()
-                }}
-                onSave={async () => {
-                  setJournalEvalModalOpen(false)
-                  await submitJournalEntry({ bypassEval: true })
-                }}
-              />
 
-              <JournalDetailsSheet
-                open={journalDetailsOpen && journalProfile === "alcohol"}
-                disabled={!state || !freeTextEnabled}
-                sheetRef={sheetRef}
-                onKeyDown={onSheetKeyDown}
-                onRequestClose={() => {
-                  setJournalDetailsOpen(false)
-                  focusInput()
-                }}
-                tsLocal={journalTsLocal}
-                setTsLocal={setJournalTsLocal}
-                moodTag={journalMoodTag}
-                setMoodTag={setJournalMoodTag}
-                mood={journalMood}
-                setMood={setJournalMood}
-                triggerTag={journalTriggerTag}
-                setTriggerTag={setJournalTriggerTag}
-                contextTag={journalContextTag}
-                setContextTag={setJournalContextTag}
-                copingTag={journalCopingTag}
-                setCopingTag={setJournalCopingTag}
-                action={journalAction}
-                setAction={setJournalAction}
-                cravingPeak={journalCravingPeak}
-                setCravingPeak={setJournalCravingPeak}
-                cravingDuration={journalCravingDuration}
-                setCravingDuration={setJournalCravingDuration}
-              />
+              threadsOpen={threadsOpen}
 
-              {threadsOpen && (
-                <div
-                  className={styles.threadsOverlay}
-                  onClick={() => {
-                    setThreadsOpen(false)
-                    focusInput()
-                  }}
-                  role="dialog"
-                  aria-modal="true"
-                >
-                  <div className={styles.threadsHeader} onClick={(e) => e.stopPropagation()}>
-                    <div className={styles.threadsTitle}>Tråde</div>
-                    <button
-                      className={styles.iconBtn}
-                      onClick={() => {
-                        setThreadsOpen(false)
-                        focusInput()
-                      }}
-                      title="Luk"
-                      aria-label="Luk"
-                    >
-                      <XMarkIcon className={styles.icon} />
-                    </button>
-                  </div>
+              setThreadsOpen={setThreadsOpen}
 
-                  <div className={styles.threadsBody} onClick={(e) => e.stopPropagation()}>
-                    {threadTabs.length === 0 ? (
-                      <div className={styles.threadsHint}>Ingen tråde endnu.</div>
-                    ) : (
-                      <div className={styles.threadsList}>
-                        {threadTabs
-                          .slice()
-                          .sort((a, b) => {
-                            const ta = Date.parse(a.updated_at || "") || 0
-                            const tb = Date.parse(b.updated_at || "") || 0
-                            return tb - ta
-                          })
-                          .map((t) => {
-                            const isActive = !!activeConversationId && t.conversation_id === activeConversationId
-                            const label = (t.title || "").trim() || trimDuplicateTitle(t.preview || "Samtale")
-                            const isJournal = t.thread_type === "journal"
-                            return (
-                              <button
-                                key={t.conversation_id}
-                                className={`${styles.threadItem} ${isActive ? styles.threadItemActive : ""}`}
-                                onClick={() => {
-                                  if (!isActive)
-                                    dispatch({ type: "THREAD_SWITCH", conversation_id: t.conversation_id } as any, {
-                                      silentUser: true,
-                                    })
-                                  setThreadsOpen(false)
-                                  focusInput()
-                                }}
-                                disabled={loading || !state}
-                                title={t.preview || t.title || ""}
-                              >
-                                <div className={styles.threadItemTop}>
-                                  <div className={styles.threadItemTitle}>{label}</div>
-                                  {isJournal ? <span className={styles.threadBadge}>Dagbog</span> : null}
-                                </div>
-                                {t.preview ? <div className={styles.threadItemPreview}>{formatThreadPreview(t)}</div> : null}
-                              </button>
-                            )
-                          })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              threadTabs={threadTabs}
 
-              {headerNavHint && (
-                <div className={styles.navHint}>
-                  <span className={styles.navHintPulse}>{headerNavHint}</span>
-                </div>
-              )}
-            </div>
+              activeConversationId={activeConversationId}
 
-            <div className={styles.messages}>
-              {!isJournalActive &&
-                visibleMessages.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}
-                  >
-                    {m.text}
-                  </div>
-                ))}
+              state={state}
 
-              {isJournalActive && (
-                <div className={styles.journalWrap}>
-                  {journalEntries.length === 0 ? (
-                    <div className={styles.journalEmpty}>
-                      <div className={styles.journalEmptyTitle}>{journalTitle ? `Dagbog – ${journalTitle}` : "Dagbog"}</div>
-                      <div className={styles.journalEmptyText}>
-                        {journalProfile === "alcohol"
-                          ? "Skriv et kort notat og evt. drinks + urge (0–10)."
-                          : journalProfile === "strict"
-                          ? "Skriv et kort notat og en skala (0–10)."
-                          : "Skriv et kort notat."}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={styles.journalList}>
-                      {journalEntries
-                        .slice()
-                        .sort((a, b) => (a.ts_ms ?? 0) - (b.ts_ms ?? 0))
-                        .map((e) => {
-                          const dt = new Date(e.ts_ms)
-                          const time = Number.isFinite(e.ts_ms) ? dt.toLocaleString() : ""
-                          const drinks = e.fields?.drinks
-                          const urge = e.fields?.urge_0_10
-                          const strict = e.fields?.strict_0_10
-                          const moodTag = e.fields?.mood_tag
-                          const mood = e.fields?.mood_0_10
-                          const triggerTag = e.fields?.trigger_tag
-                          const contextTag = e.fields?.context_tag
-                          const copingTag = e.fields?.coping_tag
-                          const action = e.fields?.action
-                          const cravingPeak = e.fields?.craving_peak_0_10
-                          const cravingDur = e.fields?.craving_duration_min
-                          return (
-                            <div key={e.entry_id} className={styles.journalEntry}>
-                              <div className={styles.journalEntryTop}>
-                                <div className={styles.journalEntryTime}>{time}</div>
-                                <div className={styles.journalEntryChips}>
-                                  {typeof drinks === "number" ? (
-                                    <span className={styles.journalChip}>Drinks: {drinks}</span>
-                                  ) : null}
-                                  {typeof urge === "number" ? (
-                                    <span className={styles.journalChip}>Urge: {urge}/10</span>
-                                  ) : null}
-                                  {typeof moodTag === "string" && moodTag.trim() ? (
-                                    <span className={styles.journalChip}>Sind: {moodTag}</span>
-                                  ) : null}
-                                  {typeof mood === "number" ? (
-                                    <span className={styles.journalChip}>Sind: {mood}/10</span>
-                                  ) : null}
-                                  {typeof triggerTag === "string" && triggerTag.trim() ? (
-                                    <span className={styles.journalChip}>Trigger: {triggerTag}</span>
-                                  ) : null}
-                                  {typeof contextTag === "string" && contextTag.trim() ? (
-                                    <span className={styles.journalChip}>Kontekst: {contextTag}</span>
-                                  ) : null}
-                                  {typeof copingTag === "string" && copingTag.trim() ? (
-                                    <span className={styles.journalChip}>Coping: {copingTag}</span>
-                                  ) : null}
-                                  {typeof action === "string" && action.trim() ? (
-                                    <span className={styles.journalChip}>Handling: {action}</span>
-                                  ) : null}
-                                  {typeof cravingPeak === "number" ? (
-                                    <span className={styles.journalChip}>Craving: {cravingPeak}/10</span>
-                                  ) : null}
-                                  {typeof cravingDur === "number" ? (
-                                    <span className={styles.journalChip}>Varighed: {cravingDur}m</span>
-                                  ) : null}
-                                  {typeof strict === "number" ? (
-                                    <span className={styles.journalChip}>Skala: {strict}/10</span>
-                                  ) : null}
-                                </div>
-                              </div>
-                              {e.text ? <div className={styles.journalEntryText}>{e.text}</div> : null}
-                            </div>
-                          )
-                        })}
-                    </div>
-                  )}
-                </div>
-              )}
+              dispatch={dispatch}
 
-              {state?.status === "completed" && (
-                <div className={styles.callout}>
-                  <div className={styles.calloutTitle}>Næste</div>
-                  <div className={styles.calloutRow}>
-                    <button
-                      className={styles.chipAction}
-                      onClick={() => dispatch({ type: "FREE_TEXT", text: "new" }, { silentUser: true })}
-                      disabled={loading || !state}
-                    >
-                      Ny tråd
-                    </button>
-                  </div>
-                </div>
-              )}
 
-              {uiSuggestions.length > 0 && (
-                <div className="mt-3">
-                  <div className={styles.sectionTitle}>Forslag</div>
-                  <div className={styles.calloutRow}>
-                    {uiSuggestions.map((s) => (
-                      <button
-                        key={s.id}
-                        className={styles.chipAction}
-                        onClick={() => {
-                          const input = s.input as any
-                          if (input && input.type === "OPEN_URL" && typeof input.url === "string") {
-                            router.push(input.url)
-                            return
-                          }
+              journalWizardOpen={journalWizardOpen}
 
-                          if (input) {
-                            dispatch(input as InputSignal, { silentUser: true })
-                          } else {
-                            dispatch({ type: "FREE_TEXT", text: s.label })
-                          }
-                        }}
-                        disabled={loading || !state || !freeTextEnabled}
-                        title={s.label}
-                      >
-                        {s.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              journalWizardStep={journalWizardStep}
 
-              {/* Scroll anchor at the very bottom (includes waiting indicator + any callouts). */}
-              <div ref={endRef} />
-            </div>
+              journalWizardProfile={journalWizardProfile ?? "general"}
 
-            <div className={`${styles.footer} ${isJournalActive ? styles.footerJournal : ""}`.trim()}>
+              journalWizardTitle={journalWizardTitle}
+
+              journalWizardProblem={journalWizardProblem}
+
+              journalWizardGoal={journalWizardGoal}
+
+              canCreateJournal={canCreateJournal()}
+
+              setJournalWizardStep={setJournalWizardStep as any}
+
+              setJournalWizardProfile={setJournalWizardProfile as any}
+
+              setJournalWizardTitle={setJournalWizardTitle}
+
+              setJournalWizardProblem={setJournalWizardProblem}
+
+              setJournalWizardGoal={setJournalWizardGoal}
+
+              closeJournalWizard={closeJournalWizard}
+
+              resetJournalWizardDraft={resetJournalWizardDraft}
+
+
+              journalEvalModalOpen={journalEvalModalOpen}
+
+              journalEvalLoading={journalEvalLoading}
+
+              journalEvalError={journalEvalError ?? ""}
+
+              journalEvalSummary={journalEvalSummary}
+
+              journalEvalQuestions={journalEvalQuestions}
+
+              setJournalEvalModalOpen={setJournalEvalModalOpen}
+
+              focusInput={focusInput}
+
+              submitJournalEntry={submitJournalEntry}
+
+
+              journalDetailsOpen={journalDetailsOpen}
+
+              journalProfile={journalProfile}
+
+              freeTextEnabled={freeTextEnabled}
+
+              sheetRef={sheetRef}
+
+              onSheetKeyDown={onSheetKeyDown}
+
+              setJournalDetailsOpen={setJournalDetailsOpen}
+
+              journalTsLocal={journalTsLocal}
+
+              setJournalTsLocal={setJournalTsLocal}
+
+              journalMoodTag={journalMoodTag}
+
+              setJournalMoodTag={setJournalMoodTag}
+
+              journalMood={journalMood}
+
+              setJournalMood={setJournalMood}
+
+              journalTriggerTag={journalTriggerTag}
+
+              setJournalTriggerTag={setJournalTriggerTag}
+
+              journalContextTag={journalContextTag}
+
+              setJournalContextTag={setJournalContextTag}
+
+              journalCopingTag={journalCopingTag}
+
+              setJournalCopingTag={setJournalCopingTag}
+
+              journalAction={journalAction}
+
+              setJournalAction={setJournalAction}
+
+              journalCravingPeak={journalCravingPeak}
+
+              setJournalCravingPeak={setJournalCravingPeak}
+
+              journalCravingDuration={journalCravingDuration}
+
+              setJournalCravingDuration={setJournalCravingDuration}
+
+
+              headerNavHint={headerNavHint}
+
+            />
+
+
+            <MessagePane
+              isJournalActive={isJournalActive}
+              visibleMessages={visibleMessages}
+              journalEntries={journalEntries}
+              journalTitle={journalTitle}
+              journalProfile={journalProfile}
+              state={state}
+              loading={loading}
+              freeTextEnabled={freeTextEnabled}
+              uiSuggestions={uiSuggestions}
+              dispatch={dispatch}
+              endRef={endRef}
+            />
+
+            <div className={`${styles.footer} ${isJournalActive ? styles.footerJournal : ""}`.trim()}> ${isJournalActive ? styles.footerJournal : ""}`.trim()}>
               {!isJournalActive ? (
-                <div className={styles.inputRow}>
-                  <textarea
-                    ref={textareaRef}
-                    className={styles.textarea}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder={placeholder}
-                    rows={2}
-                    disabled={!state || !freeTextEnabled}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault()
-                        const text = input.trim()
-                        if (!text) return
-                        setInput("")
-                        dispatch({ type: "FREE_TEXT", text })
-                      }
-                    }}
-                  />
-                  <button
-                    className={styles.sendBtn}
-                    onClick={() => {
-                      const text = input.trim()
-                      if (!text) return
-                      setInput("")
-                      dispatch({ type: "FREE_TEXT", text })
-                    }}
-                    title="Send"
-                    aria-label="Send"
-                    disabled={!state || !freeTextEnabled || loading || !input.trim()}
-                  >
-                    <PaperAirplaneIcon className={styles.sendBtnIcon} />
-                  </button>
-                </div>
+                <ChatComposer
+                  textareaRef={textareaRef}
+                  value={input}
+                  placeholder={placeholder}
+                  disabled={!state || !freeTextEnabled}
+                  loading={loading}
+                  onChange={setInput}
+                  onSend={(text) => {
+                    setInput("")
+                    dispatch({ type: "FREE_TEXT", text })
+                  }}
+                />
               ) : (
-                <div className={styles.journalInputWrap}>
-                  {journalProfile === "alcohol" ? (
-                    <div className={styles.journalInputRowTop}>
-                      <label className={styles.journalField}>
-                        <span className={styles.journalFieldLabel}>Drinks</span>
-                        <input
-                          className={styles.journalFieldInput}
-                          inputMode="numeric"
-                          value={journalDrinks}
-                          onChange={(e) => setJournalDrinks(e.target.value)}
-                          placeholder="0"
-                          disabled={!state || !freeTextEnabled}
-                        />
-                      </label>
-                      <label className={styles.journalField}>
-                        <span className={styles.journalFieldLabel}>Urge (0–10)</span>
-                        <input
-                          className={styles.journalFieldInput}
-                          inputMode="numeric"
-                          value={journalUrge}
-                          onChange={(e) => setJournalUrge(e.target.value)}
-                          placeholder=""
-                          disabled={!state || !freeTextEnabled}
-                        />
-                      </label>
-                    </div>
-                  ) : null}
-
-                  {journalProfile === "alcohol" ? (
-                    <div className={styles.journalMetaRow}>
-                      <button
-                        className={styles.journalToggleBtn}
-                        type="button"
-                        onClick={() => {
-                          if (!journalTsLocal) setJournalTsLocal(toDatetimeLocalValue(new Date()))
-                          setJournalDetailsOpen(true)
-                        }}
-                        disabled={!state || !freeTextEnabled}
-                      >
-                        Detaljer
-                      </button>
-
-                      <button
-                        className={styles.journalToggleBtn}
-                        type="button"
-                        onClick={() => evaluateJournalDraft()}
-                        disabled={!state || !freeTextEnabled || journalEvalLoading}
-                        title="Få forslag"
-                      >
-                        Få forslag
-                      </button>
-                    </div>
-                  ) : null}
-
-                  {/* Alcohol details are edited in a bottom sheet to keep the main input compact. */}
-
-                  {journalProfile === "alcohol" ? (
-                    <>
-                      <div className={styles.journalTagSummary}>
-                          {(() => {
-                            const chips = [
-                              journalMoodTag ? `Sind: ${journalMoodTag}` : "",
-                              journalTriggerTag ? `Trigger: ${journalTriggerTag}` : "",
-                              journalContextTag ? `Kontekst: ${journalContextTag}` : "",
-                              journalCopingTag ? `Coping: ${journalCopingTag}` : "",
-                              journalAction ? `Handling: ${journalAction}` : "",
-                            ].filter(Boolean)
-
-                            if (!chips.length) return null
-                            return (
-                              <div className={styles.journalTagSummaryRow}>
-                                {chips.map((c) => (
-                                  <span key={c} className={styles.journalTagPill}>
-                                    {c}
-                                  </span>
-                                ))}
-                              </div>
-                            )
-                          })()}
+                <JournalComposer
+                  textareaRef={textareaRef}
+                  placeholder={placeholder}
+                  disabled={!state || !freeTextEnabled}
+                  loading={loading}
+                  journalProfile={journalProfile}
+                  journalText={journalText}
+                  setJournalText={setJournalText}
+                  submitJournalEntry={submitJournalEntry}
+                  journalDrinks={journalDrinks}
+                  setJournalDrinks={setJournalDrinks}
+                  journalUrge={journalUrge}
+                  setJournalUrge={setJournalUrge}
+                  journalStrict={journalStrict}
+                  setJournalStrict={setJournalStrict}
+                  journalTsLocal={journalTsLocal}
+                  setJournalTsLocal={setJournalTsLocal}
+                  setJournalDetailsOpen={setJournalDetailsOpen}
+                  evaluateJournalDraft={evaluateJournalDraft}
+                  journalEvalLoading={journalEvalLoading}
+                  journalMoodTag={journalMoodTag}
+                  journalTriggerTag={journalTriggerTag}
+                  journalContextTag={journalContextTag}
+                  journalCopingTag={journalCopingTag}
+                  journalAction={journalAction}
+                />
+              )
+            </div>)()}
                         </div>
                     </>
                   ) : null}
