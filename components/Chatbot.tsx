@@ -1023,58 +1023,8 @@ export default function Chatbot() {
                   journalCopingTag={journalCopingTag}
                   journalAction={journalAction}
                 />
-              )
-            </div>)()}
-                        </div>
-                    </>
-                  ) : null}
-
-                  {journalProfile === "strict" ? (
-                    <div className={styles.journalInputRowTop}>
-                      <label className={styles.journalField}>
-                        <span className={styles.journalFieldLabel}>Skala (0–10)</span>
-                        <input
-                          className={styles.journalFieldInput}
-                          inputMode="numeric"
-                          value={journalStrict}
-                          onChange={(e) => setJournalStrict(e.target.value)}
-                          placeholder=""
-                          disabled={!state || !freeTextEnabled}
-                        />
-                      </label>
-                    </div>
-                  ) : null}
-
-                  <div className={styles.inputRow}>
-                    <textarea
-                      ref={textareaRef}
-                      className={styles.textarea}
-                      value={journalText}
-                      onChange={(e) => setJournalText(e.target.value)}
-                      placeholder={placeholder}
-                      rows={2}
-                      disabled={!state || !freeTextEnabled}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault()
-                          submitJournalEntry()
-                        }
-                      }}
-                    />
-                    <button
-                      className={styles.sendBtn}
-                      onClick={() => {
-                        submitJournalEntry()
-                      }}
-                      title="Gem"
-                      aria-label="Gem"
-                      disabled={!state || !freeTextEnabled || loading}
-                    >
-                      <PaperAirplaneIcon className={styles.sendBtnIcon} />
-                    </button>
-                  </div>
-                </div>
-              )}
+	              )}
+	            </div>
             </div>
           </div>
         </>
