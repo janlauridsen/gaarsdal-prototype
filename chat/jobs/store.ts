@@ -11,6 +11,7 @@ const KEY_TICK_LOCK = (jobId: string) => `${KEY_PREFIX}ticklock:job:${jobId}`
 const KEY_DEDUPE = (conversationId: string, kind: JobKind, hash: string) =>
   `${KEY_PREFIX}dedupe:conversation:${conversationId}:${kind}:${hash}`
 const KEY_DRAFT = (conversationId: string, jobId: string) => `${KEY_PREFIX}draft:conversation:${conversationId}:${jobId}`
+const KEY_DRAFT_LATEST = (conversationId: string) => `${KEY_PREFIX}draft:latest:conversation:${conversationId}`
 
 function nowMs(): number {
   return Date.now()
@@ -112,7 +113,14 @@ export async function writeDraft(draft: DraftV1, ttlSeconds: number): Promise<st
   if (!client) return ""
   const key = KEY_DRAFT(draft.conversation_id, draft.job_id)
   await client.set(key, JSON.stringify(draft), { ex: ttlSeconds })
+  await client.set(KEY_DRAFT_LATEST(draft.conversation_id), draft.job_id, { ex: ttlSeconds })
   return key
+}
+
+export async function clearLatestDraft(conversationId: string): Promise<void> {
+  const client = getRedisClient()
+  if (!client) return
+  await (client as any).del(KEY_DRAFT_LATEST(conversationId))
 }
 
 export async function readDraft(conversationId: string, jobId: string): Promise<DraftV1 | null> {
@@ -172,4 +180,12 @@ export async function triggerJob<K extends JobKind>(params: {
 
 export function isTerminal(status: JobStatus): boolean {
   return status === "completed" || status === "failed" || status === "canceled"
+}
+
+export async function readLatestDraft(conversationId: string): Promise<DraftV1 | null> {
+  const client = getRedisClient()
+  if (!client) return null
+  const latestJobId = await client.get<string>(KEY_DRAFT_LATEST(conversationId))
+  if (typeof latestJobId !== "string" || !latestJobId.trim()) return null
+  return readDraft(conversationId, latestJobId.trim())
 }
