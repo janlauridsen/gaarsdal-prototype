@@ -34,7 +34,7 @@ import { ensureThreadThemeAndEpisode } from "../../chat/memory/longTermMemorySto
 import { enqueueJob, makeJobId } from "../../chat/async/queue"
 import { runReflectionCbaUpdate } from "../../chat/reflection/cba"
 import { jobsTtlSeconds, triggerJob } from "../../chat/jobs/store"
-import type { ProblemSpecV1 } from "../../chat/jobs/types"
+import type { DeferredJobSignal, ProblemSpecV1 } from "../../chat/jobs/types"
 
 // Single raw stream
 import { appendRawTurn, readRawTurns } from "../../chat/raw/store"
@@ -1013,7 +1013,7 @@ async function maybeTriggerScanThreadsJob(params: {
   input: InputSignal
   conversationId: string
   kernelResult: KernelResult
-}): Promise<{ kernelResult: KernelResult; jobTriggered: boolean }> {
+}): Promise<{ kernelResult: KernelResult; jobTriggered: boolean; deferredJob?: DeferredJobSignal<"scan_threads"> }> {
   const { userKey, input, conversationId } = params
   let kernelResult = params.kernelResult
 
@@ -1036,6 +1036,8 @@ async function maybeTriggerScanThreadsJob(params: {
     return { kernelResult, jobTriggered: false }
   }
 
+  const basedOnRevision = typeof kernelResult.state?.revision === "number" ? kernelResult.state.revision : 0
+
   const { jobId, deduped } = await triggerJob({
     userKey,
     conversationId,
@@ -1043,6 +1045,8 @@ async function maybeTriggerScanThreadsJob(params: {
     payload: { problem },
     ttlSeconds: jobsTtlSeconds(),
     dedupe: true,
+    basedOnRevision,
+    mode: "shadow",
   })
 
   if (!jobId) return { kernelResult, jobTriggered: false }
@@ -1059,7 +1063,17 @@ async function maybeTriggerScanThreadsJob(params: {
     },
   }
 
-  return { kernelResult, jobTriggered: true }
+  return {
+    kernelResult,
+    jobTriggered: true,
+    deferredJob: {
+      pending: true,
+      job_id: jobId,
+      kind: "scan_threads",
+      mode: "shadow",
+      based_on_revision: basedOnRevision,
+    },
+  }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -1486,6 +1500,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         payload: {
           kind: "scan_threads",
           source: "chat_api",
+          based_on_revision: scanThreads.deferredJob?.based_on_revision ?? kernelResultFinal.state.revision,
+          mode: scanThreads.deferredJob?.mode ?? "shadow",
         },
       })
     }
@@ -1601,6 +1617,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(200).json({
       ...kernelResultFinal,
       state: withThreadMeta({ state: kernelResultFinal.state, index: indexNow }),
+      deferred_job: scanThreads.deferredJob ?? null,
     })
   } catch (e: any) {
     await appendSpineEventV23({
