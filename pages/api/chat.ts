@@ -33,6 +33,8 @@ import { appendConversationEventV1 } from "../../chat/events/store"
 import { ensureThreadThemeAndEpisode } from "../../chat/memory/longTermMemoryStore"
 import { enqueueJob, makeJobId } from "../../chat/async/queue"
 import { runReflectionCbaUpdate } from "../../chat/reflection/cba"
+import { jobsTtlSeconds, triggerJob } from "../../chat/jobs/store"
+import type { ProblemSpecV1 } from "../../chat/jobs/types"
 
 // Single raw stream
 import { appendRawTurn, readRawTurns } from "../../chat/raw/store"
@@ -946,6 +948,113 @@ async function runTurnWithAutoAdvance(params: { baseState: any; input: InputSign
   return kernelResult
 }
 
+function readMetaValue(state: any, key: string): unknown {
+  const entry = state?.meta?.[key]
+  if (entry && typeof entry === "object" && "value" in entry) return (entry as any).value
+  return entry
+}
+
+function toStringArray(value: unknown, max = 3): string[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, max)
+}
+
+function looksLikeHistoryReuseRequest(text: string): boolean {
+  const s = text.trim().toLowerCase()
+  if (!s) return false
+
+  const actionMatch = /(tjek|gennemgå|gennemgaa|scan|scann|søg|soeg|find|brug|genbrug|se i|kig i)/.test(s)
+  const historyMatch = /(tidligere|forrige|gamle|historik|forløb|forloeb).*(tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger)|((tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger).*(tidligere|forrige|gamle|historik))/.test(s)
+  return actionMatch && historyMatch
+}
+
+function buildProblemSpecFromGenHypno(state: any): ProblemSpecV1 | null {
+  const problemTitleRaw = readMetaValue(state, "gen_hypno.problem_title")
+  const problemSummaryRaw = readMetaValue(state, "gen_hypno.problem_summary")
+  const lastTopicRaw = readMetaValue(state, "gen_hypno.last_topic")
+  const topicTagsRaw = readMetaValue(state, "gen_hypno.topic_tags")
+
+  const problemTitle = typeof problemTitleRaw === "string" ? problemTitleRaw.trim() : ""
+  const problemSummary = typeof problemSummaryRaw === "string" ? problemSummaryRaw.trim() : ""
+  const lastTopic = typeof lastTopicRaw === "string" ? lastTopicRaw.trim() : ""
+  const topicTags = toStringArray(topicTagsRaw, 3)
+
+  const finalTitle = problemTitle || lastTopic
+  const finalSummary = problemSummary || (lastTopic ? `Aktuelt tema: ${lastTopic}.` : "")
+
+  if (!finalTitle || !finalSummary) return null
+
+  return {
+    schema_version: "v1",
+    problem_title: finalTitle,
+    problem_description: finalSummary,
+    topic_tags: topicTags.length ? topicTags : lastTopic ? [lastTopic] : undefined,
+    time_scope: "all_history",
+    search_intent: "find relevant prior context for current thread",
+    confidence: 0.7,
+  }
+}
+
+async function maybeTriggerScanThreadsJob(params: {
+  userKey: string
+  input: InputSignal
+  conversationId: string
+  kernelResult: KernelResult
+}): Promise<{ kernelResult: KernelResult; jobTriggered: boolean }> {
+  const { userKey, input, conversationId } = params
+  let kernelResult = params.kernelResult
+
+  if ((input as any)?.type !== "FREE_TEXT") return { kernelResult, jobTriggered: false }
+  if (isLobbyConversation(conversationId)) return { kernelResult, jobTriggered: false }
+
+  const userText = String((input as any).text ?? "")
+  if (!looksLikeHistoryReuseRequest(userText)) return { kernelResult, jobTriggered: false }
+
+  const problem = buildProblemSpecFromGenHypno(kernelResult.state)
+  if (!problem) {
+    const baseMessage = kernelResult.transition.response_message ?? kernelResult.state.active_node_message ?? ""
+    const extra = `\n\nJeg mangler først en kort problemformulering i denne tråd, før jeg kan scanne tidligere tråde. Beskriv kort problemet, og bed mig derefter om at tjekke tidligere forløb.`
+    kernelResult = {
+      ...kernelResult,
+      transition: {
+        ...kernelResult.transition,
+        response_message: `${baseMessage}${extra}`.trim(),
+      },
+    }
+    return { kernelResult, jobTriggered: false }
+  }
+
+  const { jobId, deduped } = await triggerJob({
+    userKey,
+    conversationId,
+    kind: "scan_threads",
+    payload: { problem },
+    ttlSeconds: jobsTtlSeconds(),
+    dedupe: true,
+  })
+
+  if (!jobId) return { kernelResult, jobTriggered: false }
+
+  const baseMessage = kernelResult.transition.response_message ?? kernelResult.state.active_node_message ?? ""
+  const extra = deduped
+    ? `\n\nJeg har allerede en scanning af tidligere tråde i gang for denne tråd. Jeg viser et forslag, når det er klar.`
+    : `\n\nJeg scanner nu tidligere tråde for relevant historik. Når scanningen er færdig, får du et forslag, som du kan acceptere eller rette.`
+
+  kernelResult = {
+    ...kernelResult,
+    transition: {
+      ...kernelResult.transition,
+      response_message: `${baseMessage}${extra}`.trim(),
+    },
+  }
+
+  return { kernelResult, jobTriggered: true }
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const started = Date.now()
   const body = validateRequest(req, res)
@@ -1283,7 +1392,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Externalize journal entries (append-only log in Redis) and keep a small tail in state.
     const stateWithJournalTail = await externalizeJournalEntriesIfNeeded({ userKey, state: kernelResult.state as any })
-    const kernelResultFinal: KernelResult = { ...kernelResult, state: stateWithJournalTail }
+    let kernelResultFinal: KernelResult = { ...kernelResult, state: stateWithJournalTail }
+
+    const scanThreads = await maybeTriggerScanThreadsJob({
+      userKey,
+      input: input as InputSignal,
+      conversationId: kernelResultFinal.state.conversation_id,
+      kernelResult: kernelResultFinal,
+    })
+    kernelResultFinal = scanThreads.kernelResult
 
     await persistState(kernelResultFinal)
 
@@ -1350,6 +1467,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         status: kernelResultFinal.state.status,
       },
     })
+
+    if (scanThreads.jobTriggered) {
+      await emitCanonicalEvent({
+        userKey,
+        conversationId: kernelResultFinal.state.conversation_id,
+        revision: kernelResultFinal.state.revision,
+        inputId: kernelResultFinal.state.revision,
+        nodeId: kernelResultFinal.state.active_node,
+        eventType: "job_queued",
+        payload: {
+          kind: "scan_threads",
+          source: "chat_api",
+        },
+      })
+    }
 
     // Terminal events: emit only on status change (no inference).
     const prevStatus = typeof baseState?.status === "string" ? baseState.status : null
