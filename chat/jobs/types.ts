@@ -2,6 +2,8 @@ export type JobKind = "scan_threads"
 
 export type JobStatus = "queued" | "running" | "completed" | "failed" | "canceled"
 
+export type JobMode = "shadow" | "visible"
+
 export type ProblemSpecV1 = {
   schema_version: "v1"
   problem_title: string
@@ -42,6 +44,8 @@ export type JobRecordV1<K extends JobKind = JobKind> = {
   attempts: number
   created_at: number
   updated_at: number
+  based_on_revision: number
+  mode: JobMode
   // Opaque internal working state for step-based jobs.
   work?: Record<string, unknown>
 }
@@ -64,4 +68,14 @@ export type DraftV1 = {
   created_at: number
   accepted_at?: number
   accepted_summary?: string
+  based_on_revision?: number
+  mode?: JobMode
+}
+
+export type DeferredJobSignal<K extends JobKind = JobKind> = {
+  pending: true
+  job_id: string
+  kind: K
+  mode: JobMode
+  based_on_revision: number
 }

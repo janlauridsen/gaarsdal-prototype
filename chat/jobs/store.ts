@@ -1,6 +1,6 @@
 import crypto from "crypto"
 import { getRedisClient } from "../persistence/redis"
-import { DraftV1, JobKind, JobRecordV1, JobStatus } from "./types"
+import { DraftV1, JobKind, JobMode, JobRecordV1, JobStatus } from "./types"
 
 const KEY_PREFIX = "gaarsdal:jobs:v1:"
 
@@ -145,6 +145,8 @@ export async function triggerJob<K extends JobKind>(params: {
   payload: JobRecordV1<K>["payload"]
   ttlSeconds: number
   dedupe?: boolean
+  basedOnRevision: number
+  mode?: JobMode
 }): Promise<{ jobId: string; deduped: boolean }> {
   const client = getRedisClient()
   if (!client) return { jobId: "", deduped: false }
@@ -177,6 +179,8 @@ export async function triggerJob<K extends JobKind>(params: {
     attempts: 0,
     created_at: ts,
     updated_at: ts,
+    based_on_revision: Math.max(0, params.basedOnRevision),
+    mode: params.mode === "visible" ? "visible" : "shadow",
   }
 
   await writeJob(job as unknown as JobRecordV1, ttlSeconds)
