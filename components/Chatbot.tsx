@@ -13,6 +13,7 @@ import type {
   AsyncConversationJob,
   AsyncDraft,
   ChatMessage,
+  DeferredJobSignal,
   ConversationState,
   InputSignal,
   JournalEntry,
@@ -339,6 +340,31 @@ export default function Chatbot() {
     return draft
   }
 
+  function upsertPendingJob(job: AsyncConversationJob) {
+    setPendingJobs((prev) => {
+      const next = prev.filter((item) => item.job_id !== job.job_id)
+      next.push(job)
+      next.sort((a, b) => (a.updated_at ?? 0) - (b.updated_at ?? 0))
+      return next
+    })
+  }
+
+  function removePendingJob(jobId: string) {
+    setPendingJobs((prev) => prev.filter((item) => item.job_id !== jobId))
+  }
+
+  function stageDeferredJob(signal: DeferredJobSignal) {
+    upsertPendingJob({
+      job_id: signal.job_id,
+      kind: signal.kind,
+      status: "queued",
+      progress: 0,
+      updated_at: Date.now(),
+      based_on_revision: signal.based_on_revision,
+      mode: signal.mode,
+    })
+  }
+
   async function acceptDraftReview() {
     if (!draftReview || !activeConversationId) return
     const summary = trimDraftText(draftSummaryInput)
@@ -393,7 +419,7 @@ export default function Chatbot() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ jobId: job.job_id }),
+        body: JSON.stringify({ jobId: job.job_id, basedOnRevision: job.based_on_revision ?? null }),
       })
       if (!startRes.ok) throw new Error(`Jobs start: HTTP ${startRes.status}`)
       const startData = (await startRes.json().catch(() => null)) as any
@@ -407,6 +433,11 @@ export default function Chatbot() {
         })
         return
       }
+      if (startData?.stale || startData?.status === "canceled") {
+        removePendingJob(job.job_id)
+        setJobRunnerState(null)
+        return
+      }
 
       let attempts = 0
       while (!loop.cancelled) {
@@ -414,7 +445,7 @@ export default function Chatbot() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ jobId: job.job_id }),
+          body: JSON.stringify({ jobId: job.job_id, basedOnRevision: job.based_on_revision ?? null }),
         })
         if (!tickRes.ok) throw new Error(`Jobs tick: HTTP ${tickRes.status}`)
         const tick = (await tickRes.json().catch(() => null)) as any
@@ -434,6 +465,7 @@ export default function Chatbot() {
           break
         }
         if (status === "failed" || status === "canceled") {
+          removePendingJob(job.job_id)
           await fetchPendingJobs(conversationId).catch(() => [])
           break
         }
@@ -779,6 +811,10 @@ export default function Chatbot() {
       }
 
       setState(data.state)
+
+      if (data.deferred_job && data.state?.conversation_id) {
+        stageDeferredJob(data.deferred_job)
+      }
 
       const assistantText =
         (data.transition?.response_message as string | undefined) ?? normalizeAssistantMessage(data.state)
