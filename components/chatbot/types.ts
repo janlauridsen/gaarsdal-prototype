@@ -28,10 +28,19 @@ export type InputSignal =
   | { type: "THREAD_SWITCH"; conversation_id: string }
   | { type: "THREAD_ARCHIVE" }
 
+export type DeferredJobSignal = {
+  pending: true
+  job_id: string
+  kind: "scan_threads"
+  mode: "shadow" | "visible"
+  based_on_revision: number
+}
+
 export type KernelResponse = {
   state: ConversationState
   transition?: any
   log?: any
+  deferred_job?: DeferredJobSignal | null
 }
 
 export type ChatMessage = {
@@ -95,6 +104,8 @@ export type AsyncConversationJob = {
   cursor?: string
   progress?: number
   updated_at?: number
+  based_on_revision?: number
+  mode?: "shadow" | "visible"
 }
 
 export type AsyncDraft = {
@@ -113,4 +124,6 @@ export type AsyncDraft = {
   created_at: number
   accepted_at?: number
   accepted_summary?: string
+  based_on_revision?: number
+  mode?: "shadow" | "visible"
 }
