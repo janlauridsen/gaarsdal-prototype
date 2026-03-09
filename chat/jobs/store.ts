@@ -108,6 +108,12 @@ export async function acquireTickLock(jobId: string, ttlSeconds = 10): Promise<b
   return Boolean(ok)
 }
 
+export async function releaseTickLock(jobId: string): Promise<void> {
+  const client = getRedisClient()
+  if (!client) return
+  await (client as any).del(KEY_TICK_LOCK(jobId))
+}
+
 export async function writeDraft(draft: DraftV1, ttlSeconds: number): Promise<string> {
   const client = getRedisClient()
   if (!client) return ""
