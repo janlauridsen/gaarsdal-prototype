@@ -317,7 +317,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     allow_parentese: true,
     allowed_exits: ["HOME"],
     capability_id: "gen-hypno-v1",
-    meta_domains_written: ["ux", "gen_hypno.transcript", "gen_hypno.last_topic", "gen_hypno.assistant_turn_count"],
+    meta_domains_written: ["ux", "gen_hypno.transcript", "gen_hypno.last_topic", "gen_hypno.problem_title", "gen_hypno.problem_summary", "gen_hypno.topic_tags", "gen_hypno.assistant_turn_count"],
   },
 
   TRIAGE: {
