@@ -51,6 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       : undefined
 
+  const basedOnRevision = typeof body.basedOnRevision === "number" ? body.basedOnRevision : 0
   const ttlSeconds = jobsTtlSeconds()
   const { jobId, deduped } = await triggerJob({
     userKey,
@@ -59,6 +60,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     payload: { problem, limits },
     ttlSeconds,
     dedupe: true,
+    basedOnRevision,
+    mode: "shadow",
   })
 
   if (!jobId) return res.status(500).json({ error: "Jobs not available" })

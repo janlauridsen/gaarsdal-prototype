@@ -1,7 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { ensureUserKey } from "../_utils/auth"
 import { setWidgetCors } from "../_utils/cors"
-import { acquireRunnerLock, jobsTtlSeconds, readJob, writeJob } from "../../../chat/jobs/store"
+import { acquireRunnerLock, jobsTtlSeconds, readJob, releaseRunnerLock, removePending, writeJob } from "../../../chat/jobs/store"
+import { readConversationState } from "../../../chat/persistence/conversationStateStore"
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   setWidgetCors(req, res, "POST, OPTIONS")
@@ -13,6 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const userKey = ensureUserKey(req, res)
   const jobId = typeof req.body?.jobId === "string" ? req.body.jobId : ""
+  const requestedRevision = typeof req.body?.basedOnRevision === "number" ? req.body.basedOnRevision : null
   if (!jobId) return res.status(400).json({ error: "Missing jobId" })
 
   const job = await readJob(jobId)
@@ -23,6 +25,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ status: job.status })
   }
 
+  const currentState = await readConversationState(job.conversation_id)
+  const currentRevision = typeof currentState?.revision === "number" ? currentState.revision : 0
+  const isStale = currentRevision > job.based_on_revision || (requestedRevision !== null && requestedRevision !== job.based_on_revision)
+  if (isStale) {
+    const ttlSeconds = jobsTtlSeconds()
+    const staleJob = {
+      ...job,
+      status: "canceled" as const,
+      last_error: `stale_job: current_revision=${currentRevision}, job_revision=${job.based_on_revision}`,
+      updated_at: Date.now(),
+    }
+    await writeJob(staleJob, ttlSeconds)
+    await removePending(job.conversation_id, job.job_id)
+    await releaseRunnerLock(job.conversation_id)
+    return res.status(200).json({ status: "canceled", stale: true, currentRevision, basedOnRevision: job.based_on_revision })
+  }
+
   const locked = await acquireRunnerLock(job.conversation_id, 30)
   if (!locked) return res.status(200).json({ status: "busy" })
 
@@ -30,5 +49,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const ttlSeconds = jobsTtlSeconds()
   const next = { ...job, updated_at: Date.now() }
   await writeJob(next, ttlSeconds)
-  return res.status(200).json({ status: next.status })
+  return res.status(200).json({ status: next.status, basedOnRevision: next.based_on_revision, mode: next.mode })
 }

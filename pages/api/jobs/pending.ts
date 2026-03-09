@@ -40,6 +40,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       cursor: job.cursor,
       progress: job.progress,
       updated_at: job.updated_at,
+      based_on_revision: job.based_on_revision,
+      mode: job.mode,
     })
   }
 

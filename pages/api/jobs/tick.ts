@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next"
 import { ensureUserKey } from "../_utils/auth"
 import { setWidgetCors } from "../_utils/cors"
 import { acquireTickLock, isTerminal, jobsTtlSeconds, readJob, releaseRunnerLock, releaseTickLock, removePending, writeJob } from "../../../chat/jobs/store"
+import { readConversationState } from "../../../chat/persistence/conversationStateStore"
 import { tickJob } from "../../../chat/jobs/registry"
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -19,6 +20,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const job = await readJob(jobId)
   if (!job) return res.status(404).json({ error: "Job not found" })
   if (job.user_key !== userKey) return res.status(404).json({ error: "Job not found" })
+
+  const currentState = await readConversationState(job.conversation_id)
+  const currentRevision = typeof currentState?.revision === "number" ? currentState.revision : 0
+  if (currentRevision > job.based_on_revision && job.status !== "completed") {
+    const canceled = {
+      ...job,
+      status: "canceled" as const,
+      updated_at: Date.now(),
+      last_error: `stale_job: current_revision=${currentRevision}, job_revision=${job.based_on_revision}`,
+    }
+    await writeJob(canceled, jobsTtlSeconds())
+    await removePending(job.conversation_id, job.job_id)
+    await releaseRunnerLock(job.conversation_id)
+    return res.status(200).json({
+      jobId: canceled.job_id,
+      status: canceled.status,
+      cursor: canceled.cursor,
+      progress: canceled.progress,
+      resultRef: canceled.result_ref,
+      lastError: canceled.last_error ?? null,
+      stale: true,
+    })
+  }
 
   if (isTerminal(job.status)) {
     // Ensure pending removed.
