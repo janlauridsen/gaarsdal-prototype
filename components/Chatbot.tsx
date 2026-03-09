@@ -27,6 +27,17 @@ import { ChatHeader } from "./chatbot/ChatHeader"
 import { MessagePane } from "./chatbot/MessagePane"
 import { JournalComposer } from "./chatbot/journal/JournalComposer"
 
+type ThreadsIndexResponse = {
+  active_conversation_id?: string | null
+  threads?: Array<{
+    conversation_id: string
+    status?: string
+    thread_type?: string
+    title?: string
+    preview?: string
+  }>
+}
+
 export default function Chatbot() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -41,6 +52,7 @@ export default function Chatbot() {
   const [journalWizardGoal, setJournalWizardGoal] = useState("")
 
   const [state, setState] = useState<ConversationState | null>(null)
+  // Messages are cached per conversation id (tabs).
   const [messagesByConversationId, setMessagesByConversationId] = useState<Record<string, ChatMessage[]>>({})
   const loadedConversationsRef = useRef<Set<string>>(new Set())
   const [input, setInput] = useState("")
@@ -51,6 +63,7 @@ export default function Chatbot() {
   const [journalDetailsOpen, setJournalDetailsOpen] = useState(false)
   const [journalTsLocal, setJournalTsLocal] = useState<string>("")
 
+  // alcohol v2 optional fields
   const [journalMoodTag, setJournalMoodTag] = useState<string>("")
   const [journalMood, setJournalMood] = useState<string>("")
   const [journalTriggerTag, setJournalTriggerTag] = useState<string>("")
@@ -60,6 +73,7 @@ export default function Chatbot() {
   const [journalCravingPeak, setJournalCravingPeak] = useState<string>("")
   const [journalCravingDuration, setJournalCravingDuration] = useState<string>("")
 
+  // Draft evaluation (coaching) before save
   const [journalEvalModalOpen, setJournalEvalModalOpen] = useState(false)
   const [journalEvalLoading, setJournalEvalLoading] = useState(false)
   const [journalEvalError, setJournalEvalError] = useState<string | null>(null)
@@ -67,7 +81,6 @@ export default function Chatbot() {
   const [journalEvalSummary, setJournalEvalSummary] = useState<string>("")
   const [journalEvalLastHash, setJournalEvalLastHash] = useState<string>("")
   const [loading, setLoading] = useState(false)
-
   const [pendingJobs, setPendingJobs] = useState<AsyncConversationJob[]>([])
   const [jobRunnerState, setJobRunnerState] = useState<{
     jobId: string
@@ -76,11 +89,12 @@ export default function Chatbot() {
     status: string
     error: string | null
   } | null>(null)
-
   const [draftReview, setDraftReview] = useState<AsyncDraft | null>(null)
   const [draftSummaryInput, setDraftSummaryInput] = useState("")
   const [draftOpenQuestionsInput, setDraftOpenQuestionsInput] = useState("")
   const [draftSaving, setDraftSaving] = useState(false)
+
+  // Threads overlay (drawer) lives on top of the chat view.
 
   const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
   const headerNavHintTimerRef = useRef<number | null>(null)
@@ -90,13 +104,16 @@ export default function Chatbot() {
   const sheetRef = useRef<HTMLDivElement | null>(null)
   const didAutoStartNewThreadRef = useRef(false)
   const jobLoopRef = useRef<{ conversationId: string; jobId: string; cancelled: boolean } | null>(null)
+  const initInFlightRef = useRef(false)
 
   const focusInput = () => {
+    // defer to after DOM commit
     window.requestAnimationFrame(() => {
       textareaRef.current?.focus()
     })
   }
 
+  // Bottom sheet accessibility: ESC closes, TAB is trapped inside while open.
   const onSheetKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Escape") {
       e.preventDefault()
@@ -134,6 +151,8 @@ export default function Chatbot() {
     }
   }
 
+  // Global footer actions must always be reachable, regardless of the current node's allowed_transitions.
+  // (Kernel also whitelists these exits.)
   const GLOBAL_ACTIONS = useMemo(() => new Set(["HOME", "TLF", "MAIL", "CONTACT_FORM", "AKUT"]), [])
 
   function metaValue(key: string) {
@@ -169,6 +188,7 @@ export default function Chatbot() {
     if (fromConfig === "alcohol" || fromConfig === "general" || fromConfig === "strict") return fromConfig
     const fromThread = activeThread?.journal_profile
     if (fromThread === "alcohol" || fromThread === "general" || fromThread === "strict") return fromThread
+    // Legacy support.
     if (activeThread?.journal_kind === "alcohol") return "alcohol"
     return "general"
   }, [isJournalActive, journalConfig, activeThread])
@@ -242,8 +262,6 @@ export default function Chatbot() {
     return true
   }, [state, loading])
 
-  const hasDraftPendingReview = !!draftReview && !draftReview.accepted_at
-
   function delay(ms: number) {
     return new Promise((resolve) => window.setTimeout(resolve, ms))
   }
@@ -270,13 +288,6 @@ export default function Chatbot() {
     setDraftReview(draft)
     setDraftSummaryInput(draft?.accepted_summary ?? draft?.summary_draft ?? "")
     setDraftOpenQuestionsInput((draft?.open_questions ?? []).join("\n"))
-  }
-
-  function isUsefulCrossThreadDraft(draft: AsyncDraft | null, conversationId: string | null) {
-    if (!draft || !conversationId) return !!draft
-    const evidence = Array.isArray(draft.evidence) ? draft.evidence : []
-    if (!evidence.length) return false
-    return evidence.some((ev: any) => String(ev?.conversation_id ?? "") !== conversationId)
   }
 
   function statusLabelForJob(job: { kind: string; cursor?: string; status?: string }) {
@@ -320,17 +331,10 @@ export default function Chatbot() {
     }
     if (!res.ok) throw new Error(`Jobs draft: HTTP ${res.status}`)
     const draft = (await res.json().catch(() => null)) as AsyncDraft | null
-
     if (!draft || draft.conversation_id !== conversationId || draft.accepted_at) {
       applyDraftToEditor(null)
       return null
     }
-
-    if (!isUsefulCrossThreadDraft(draft, conversationId)) {
-      applyDraftToEditor(null)
-      return null
-    }
-
     applyDraftToEditor(draft)
     return draft
   }
@@ -361,10 +365,7 @@ export default function Chatbot() {
         const txt = await res.text().catch(() => "")
         throw new Error(`Jobs accept: HTTP ${res.status}${txt ? ` — ${txt}` : ""}`)
       }
-
       applyDraftToEditor(null)
-      setPendingJobs([])
-      setJobRunnerState(null)
       showHeaderNavHint("Opsummering gemt")
     } catch (e: any) {
       showHeaderNavHint(e?.message ? String(e.message) : "Kunne ikke gemme opsummering")
@@ -375,12 +376,10 @@ export default function Chatbot() {
 
   async function runPendingJob(conversationId: string, job: AsyncConversationJob) {
     if (!conversationId) return
-    if (hasDraftPendingReview) return
     if (jobLoopRef.current) return
 
     const loop = { conversationId, jobId: job.job_id, cancelled: false }
     jobLoopRef.current = loop
-
     setJobRunnerState({
       jobId: job.job_id,
       label: statusLabelForJob(job),
@@ -396,9 +395,7 @@ export default function Chatbot() {
         credentials: "include",
         body: JSON.stringify({ jobId: job.job_id }),
       })
-
       if (!startRes.ok) throw new Error(`Jobs start: HTTP ${startRes.status}`)
-
       const startData = (await startRes.json().catch(() => null)) as any
       if (startData?.status === "busy") {
         setJobRunnerState({
@@ -412,22 +409,16 @@ export default function Chatbot() {
       }
 
       let attempts = 0
-
       while (!loop.cancelled) {
-        if (hasDraftPendingReview) break
-
         const tickRes = await fetch("/api/jobs/tick", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ jobId: job.job_id }),
         })
-
         if (!tickRes.ok) throw new Error(`Jobs tick: HTTP ${tickRes.status}`)
-
         const tick = (await tickRes.json().catch(() => null)) as any
         const progress = typeof tick?.progress === "number" ? tick.progress : 0
-
         setJobRunnerState({
           jobId: job.job_id,
           label: statusLabelForJob({ kind: job.kind, cursor: tick?.cursor, status: tick?.status }),
@@ -437,17 +428,11 @@ export default function Chatbot() {
         })
 
         const status = String(tick?.status ?? "")
-
         if (status === "completed") {
-          const draft = await fetchLatestDraft(conversationId).catch(() => null)
-          if (draft) {
-            setPendingJobs([])
-            break
-          }
           await fetchPendingJobs(conversationId).catch(() => [])
+          await fetchLatestDraft(conversationId).catch(() => null)
           break
         }
-
         if (status === "failed" || status === "canceled") {
           await fetchPendingJobs(conversationId).catch(() => [])
           break
@@ -465,14 +450,8 @@ export default function Chatbot() {
       )
     } finally {
       if (jobLoopRef.current === loop) jobLoopRef.current = null
-
       if (!loop.cancelled) {
-        setJobRunnerState((prev) => {
-          if (!prev) return null
-          if (prev.jobId !== job.job_id) return prev
-          if (prev.status === "failed") return prev
-          return null
-        })
+        setJobRunnerState((prev) => (prev && prev.jobId === job.job_id && prev.status !== "failed" ? null : prev))
       }
     }
   }
@@ -482,6 +461,7 @@ export default function Chatbot() {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [visibleMessages, open, headerNavHint, expanded, journalEntries])
 
+  // Autofocus after output / state updates (and after overlays close)
   useEffect(() => {
     if (!open) return
     if (!state) return
@@ -490,6 +470,7 @@ export default function Chatbot() {
     if (journalWizardOpen) return
     if (journalDetailsOpen) return
     focusInput()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     open,
     loading,
@@ -502,6 +483,8 @@ export default function Chatbot() {
     journalDetailsOpen,
   ])
 
+  // (Loading indicator is shown in header as a blinking heart.)
+
   useEffect(() => {
     return () => {
       if (headerNavHintTimerRef.current) {
@@ -511,75 +494,49 @@ export default function Chatbot() {
       if (jobLoopRef.current) jobLoopRef.current.cancelled = true
     }
   }, [])
+  // (No persisted UI prefs for the journal yet.)
 
   useEffect(() => {
     if (!open || !activeConversationId) return
 
-    let cancelled = false
-
     const refresh = async () => {
-      if (cancelled) return
-      if (jobLoopRef.current && jobLoopRef.current.conversationId === activeConversationId) return
-      if (hasDraftPendingReview) return
-
       try {
-        const latest = await fetchLatestDraft(activeConversationId)
-        if (cancelled) return
-
-        if (latest) {
-          setPendingJobs([])
-          setJobRunnerState(null)
-          if (jobLoopRef.current && jobLoopRef.current.conversationId === activeConversationId) {
-            jobLoopRef.current.cancelled = true
-            jobLoopRef.current = null
-          }
-          return
-        }
-
         await fetchPendingJobs(activeConversationId)
+        await fetchLatestDraft(activeConversationId)
       } catch {
-        // best effort
+        // Best effort only.
       }
     }
 
     refresh()
-
-    const interval = window.setInterval(() => {
-      if (!hasDraftPendingReview) refresh()
-    }, 15000)
-
+    const interval = window.setInterval(refresh, 15000)
     const onVisible = () => {
-      if (!document.hidden && !hasDraftPendingReview) refresh()
+      if (!document.hidden) refresh()
     }
-
     document.addEventListener("visibilitychange", onVisible)
 
     return () => {
-      cancelled = true
       window.clearInterval(interval)
       document.removeEventListener("visibilitychange", onVisible)
-
       if (jobLoopRef.current && jobLoopRef.current.conversationId === activeConversationId) {
         jobLoopRef.current.cancelled = true
         jobLoopRef.current = null
       }
-
       setPendingJobs([])
       setJobRunnerState(null)
       applyDraftToEditor(null)
     }
-  }, [open, activeConversationId, hasDraftPendingReview])
+  }, [open, activeConversationId])
 
   useEffect(() => {
     if (!open || !activeConversationId) return
-    if (hasDraftPendingReview) return
+    if (draftReview && !draftReview.accepted_at) return
     if (jobLoopRef.current) return
-
     const next = pendingJobs.find((job) => job.status === "queued" || job.status === "running")
     if (!next) return
-
     runPendingJob(activeConversationId, next)
-  }, [open, activeConversationId, pendingJobs, hasDraftPendingReview])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, activeConversationId, pendingJobs, draftReview?.job_id, draftReview?.accepted_at])
 
   function appendAssistantMessage(conversationId: string, text: string) {
     const message = (text ?? "").trim()
@@ -618,13 +575,13 @@ export default function Chatbot() {
     const data = (await res.json().catch(() => null)) as any
     const msgs = Array.isArray(data?.messages) ? data.messages : []
     const out: ChatMessage[] = []
-
     for (let i = 0; i < msgs.length; i++) {
       const m = msgs[i]
       if (!m || (m.role !== "user" && m.role !== "assistant")) continue
       const text = String(m.content ?? "").trim()
       if (!text) continue
 
+      // Defensive filtering: do not render control pseudo-messages if they ever leak into transcript.
       if (m.role === "user") {
         if (isThreadControlText(text)) continue
         if (text.startsWith("UI_ACTION:")) continue
@@ -635,7 +592,6 @@ export default function Chatbot() {
 
       out.push({ id: `${conversationId}:${i}:${m.role}`, role: m.role, text })
     }
-
     return out
   }
 
@@ -647,6 +603,7 @@ export default function Chatbot() {
     loadedConversationsRef.current.add(conversationId)
     setMessagesByConversationId((prev) => ({ ...prev, [conversationId]: transcript }))
 
+    // If there is no transcript yet, show the current node message as the first assistant bubble.
     if (!transcript.length && s) {
       const welcome = normalizeAssistantMessage(s)
       if (welcome?.trim()) {
@@ -671,6 +628,55 @@ export default function Chatbot() {
     }, 2400)
   }
 
+  async function fetchThreadsIndex(): Promise<ThreadsIndexResponse | null> {
+    const res = await fetch("/api/threads", {
+      credentials: "include",
+      cache: "no-store",
+    })
+
+    if (!res.ok) {
+      if (res.status === 404) return null
+      throw new Error(`Threads: HTTP ${res.status}`)
+    }
+
+    return (await res.json().catch(() => null)) as ThreadsIndexResponse | null
+  }
+
+  async function fetchConversationState(conversationId: string): Promise<ConversationState | null> {
+    const res = await fetch(`/api/state?conversationId=${encodeURIComponent(conversationId)}`, {
+      credentials: "include",
+      cache: "no-store",
+    })
+
+    if (!res.ok) {
+      if (res.status === 404) return null
+      throw new Error(`State: HTTP ${res.status}`)
+    }
+
+    const data = (await res.json().catch(() => null)) as ConversationState | null
+    if (!data?.conversation_id) return null
+    return data
+  }
+
+  function isRestorableState(s: ConversationState | null | undefined): s is ConversationState {
+    if (!s) return false
+    if (!s.conversation_id) return false
+    if (s.status === "completed" || s.status === "rejected") return false
+    return true
+  }
+
+  async function tryRestoreActiveConversation(): Promise<ConversationState | null> {
+    const threads = await fetchThreadsIndex()
+    const activeConversationId = String(threads?.active_conversation_id ?? "").trim()
+
+    if (!activeConversationId) return null
+
+    const restored = await fetchConversationState(activeConversationId)
+    if (!isRestorableState(restored)) return null
+
+    return restored
+  }
+
   async function callKernel(nextState: ConversationState | null, nextInput: InputSignal) {
     const res = await fetch("/api/chat", {
       method: "POST",
@@ -680,10 +686,12 @@ export default function Chatbot() {
     })
 
     if (!res.ok) {
+      // Handle expected constraints (e.g., journal limit) without throwing.
       if (res.status === 409) {
         const json = await res.json().catch(() => null)
         const msg = json?.error?.message || "Handlingen kunne ikke udføres."
         setHeaderNavHint(msg)
+        // Return a no-op response so caller can decide what to do (e.g. keep wizard open).
         return { state: nextState as any, transition: null, error: json?.error || { code: "CONFLICT" } } as any
       }
 
@@ -717,16 +725,30 @@ export default function Chatbot() {
   }
 
   async function init() {
+    if (initInFlightRef.current) return
+    initInFlightRef.current = true
+
     setLoading(true)
     didAutoStartNewThreadRef.current = false
 
     try {
+      const restored = await tryRestoreActiveConversation()
+
+      if (restored) {
+        setState(restored)
+        setInput("")
+        setHeaderNavHint(null)
+        await ensureConversationLoaded(restored.conversation_id, restored)
+        return
+      }
+
       const data = await callKernel(null, { type: "SYSTEM_INIT" } as any)
       setState(data.state)
       setInput("")
       setHeaderNavHint(null)
       await ensureConversationLoaded(data.state.conversation_id, data.state)
     } finally {
+      initInFlightRef.current = false
       setLoading(false)
     }
   }
@@ -739,6 +761,7 @@ export default function Chatbot() {
       const fromNode = state.active_node
       const data: any = await callKernel(state, nextInput)
 
+      // Expected constraint errors (e.g., journal limit) should not mutate state or close UI.
       if (data?.error?.code) return false
 
       const isThreadNav =
@@ -781,6 +804,7 @@ export default function Chatbot() {
         if (!isJournalActive && state.conversation_id) {
           appendAssistantMessage(state.conversation_id, assistantText)
         } else {
+          // Journal entries are rendered from state.meta; keep chat transcript clean.
           setJournalText("")
           setJournalDrinks("")
           setJournalUrge("")
@@ -804,7 +828,9 @@ export default function Chatbot() {
 
   function openChat() {
     setOpen(true)
-    if (!state) init()
+    if (!state && !loading) {
+      void init()
+    }
   }
 
   function closeChat() {
@@ -832,6 +858,7 @@ export default function Chatbot() {
       if (state.conversation_id) appendUserMessage(state.conversation_id, label)
     }
 
+    // Footer actions are UI-only and must not change active nodes.
     if (target === "TLF" || target === "MAIL" || target === "AKUT" || target === "CONTACT_FORM") {
       if (state.conversation_id) {
         if (target === "TLF") appendAssistantMessage(state.conversation_id, "Åbner telefon…")
@@ -840,8 +867,10 @@ export default function Chatbot() {
         if (target === "CONTACT_FORM") appendAssistantMessage(state.conversation_id, "Åbner kontaktformular…")
       }
 
+      // Log + (optionally) render body text via backend without switching nodes.
       await dispatch({ type: "UI_ACTION", action: target as any })
 
+      // CONTACT_FORM navigates to the dedicated page.
       if (target === "CONTACT_FORM") {
         router.push("/kontakt")
       }
@@ -850,6 +879,8 @@ export default function Chatbot() {
 
     dispatch({ type: "EXPLICIT_TRANSITION", target })
   }
+
+  // “Tråde” i header: tilbage til lobby / trådvalg
 
   const threadChoicesRaw = metaValue("threads.choices")
   const threadCount = state ? threadCountFromState(state) : 0
@@ -886,6 +917,9 @@ export default function Chatbot() {
         }))
     : []
 
+  // Topic/menu structure has been removed. All dialog happens in free text.
+
+  // Auto: hvis der ingen tråde er, start ny tråd uden at brugeren skal skrive “new”.
   useEffect(() => {
     if (!open) return
     if (!state) return
@@ -901,6 +935,7 @@ export default function Chatbot() {
         // no-op
       }
     })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, state?.active_node, threadCount])
 
   const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal}`
@@ -915,6 +950,8 @@ export default function Chatbot() {
         }
 
         if (c.kind === "continue") {
+          // Keep the current preferred format:
+          // header = "Fortsæt seneste tråd", details = full label (title — preview)
           return {
             ...c,
             uiLabel: "Fortsæt seneste tråd",
@@ -934,10 +971,12 @@ export default function Chatbot() {
         return rank(a.kind) - rank(b.kind)
       })
       .filter((c) => {
+        // Skjul “continue” hvis der reelt ikke er noget at fortsætte
         if (threadCount <= 0 && c.kind === "continue") return false
         return true
       })
       .filter((c) => {
+        // Skjul “thread”-kort med “fjollet nummer”/tomt label
         if (c.kind !== "thread") return true
         const cleaned = trimDuplicateTitle(c.label || "")
         if (!cleaned) return false
@@ -945,6 +984,7 @@ export default function Chatbot() {
         return true
       })
 
+    // Hvis der kun er én tråd og “continue” i praksis er samme, kan vi skjule continue
     const hasContinue = base.some((x) => x.kind === "continue")
     const threadCards = base.filter((x) => x.kind === "thread")
     if (hasContinue && threadCards.length === 1) {
@@ -985,12 +1025,12 @@ export default function Chatbot() {
           drinks: journalProfile === "alcohol" && Number.isFinite(drinks) ? drinks : undefined,
           urge_0_10: journalProfile === "alcohol" && Number.isFinite(urge) ? urge : undefined,
           strict_0_10: journalProfile === "strict" && Number.isFinite(strict) ? strict : undefined,
-          mood_tag: journalProfile === "alcohol" ? (journalMoodTag.trim() || undefined) : undefined,
+          mood_tag: journalProfile === "alcohol" ? journalMoodTag.trim() || undefined : undefined,
           mood_0_10: journalProfile === "alcohol" && Number.isFinite(mood0) ? mood0 : undefined,
-          trigger_tag: journalProfile === "alcohol" ? (journalTriggerTag.trim() || undefined) : undefined,
-          context_tag: journalProfile === "alcohol" ? (journalContextTag.trim() || undefined) : undefined,
-          coping_tag: journalProfile === "alcohol" ? (journalCopingTag.trim() || undefined) : undefined,
-          action: journalProfile === "alcohol" ? (journalAction.trim() || undefined) : undefined,
+          trigger_tag: journalProfile === "alcohol" ? journalTriggerTag.trim() || undefined : undefined,
+          context_tag: journalProfile === "alcohol" ? journalContextTag.trim() || undefined : undefined,
+          coping_tag: journalProfile === "alcohol" ? journalCopingTag.trim() || undefined : undefined,
+          action: journalProfile === "alcohol" ? journalAction.trim() || undefined : undefined,
           craving_peak_0_10: journalProfile === "alcohol" && Number.isFinite(cravingPeak) ? cravingPeak : undefined,
           craving_duration_min: journalProfile === "alcohol" && Number.isFinite(cravingDur) ? cravingDur : undefined,
         },
@@ -1037,6 +1077,7 @@ export default function Chatbot() {
   const submitJournalEntry = async (opts?: { bypassEval?: boolean }) => {
     if (!state || !freeTextEnabled || loading) return
 
+    // Optional coaching step before save.
     if (!opts?.bypassEval && journalProfile === "alcohol") {
       await evaluateJournalDraft()
       return
@@ -1083,6 +1124,8 @@ export default function Chatbot() {
       drinks: journalProfile === "alcohol" && Number.isFinite(drinks) ? drinks : undefined,
       urge_0_10: journalProfile === "alcohol" && Number.isFinite(urge) ? urge : undefined,
       strict_0_10: journalProfile === "strict" && Number.isFinite(strict) ? strict : undefined,
+
+      // alcohol v2 optional fields
       mood_tag: journalProfile === "alcohol" ? mood_tag : undefined,
       mood_0_10: journalProfile === "alcohol" && Number.isFinite(mood0) ? mood0 : undefined,
       trigger_tag: journalProfile === "alcohol" ? trigger_tag : undefined,
@@ -1095,6 +1138,7 @@ export default function Chatbot() {
 
     dispatch({ type: "FREE_TEXT", text: payload }, { silentUser: true })
 
+    // reset local form state after submit
     setJournalText("")
     setJournalDrinks("")
     setJournalUrge("")
@@ -1106,6 +1150,8 @@ export default function Chatbot() {
     setJournalAction("")
     setJournalCravingPeak("")
     setJournalCravingDuration("")
+    // If datetime is enabled, default to now for the next entry.
+    // Keep timestamp empty by default; user can add it via “Detaljer”.
     setJournalTsLocal("")
   }
 
