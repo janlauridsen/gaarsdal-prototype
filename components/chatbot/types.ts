@@ -86,3 +86,31 @@ export type JournalEntry = {
     craving_duration_min?: number
   }
 }
+
+
+export type AsyncConversationJob = {
+  job_id: string
+  kind: "scan_threads"
+  status: "queued" | "running" | "completed" | "failed" | "canceled"
+  cursor?: string
+  progress?: number
+  updated_at?: number
+}
+
+export type AsyncDraft = {
+  schema_version: "v1"
+  job_id: string
+  conversation_id: string
+  kind: "scan_threads"
+  summary_draft: string
+  evidence: Array<{
+    conversation_id: string
+    revision_from?: number
+    revision_to?: number
+    note?: string
+  }>
+  open_questions: string[]
+  created_at: number
+  accepted_at?: number
+  accepted_summary?: string
+}
