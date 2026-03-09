@@ -12,6 +12,9 @@ type TranscriptTurn = { role: "user" | "assistant"; content: string }
 type Output = {
   assistant_message: string
   last_topic?: string
+  problem_title?: string
+  problem_summary?: string
+  topic_tags?: string[]
 }
 
 const MAX_TRANSCRIPT_TURNS = 30
@@ -49,11 +52,21 @@ LAST_TOPIC
 - generelt og stabilt
 - genbrug hvis muligt
 
+PROBLEM_CAPTURE
+- Hvis brugerens input beskriver et konkret problem eller tema, udfyld også:
+  - "problem_title": 1-4 ord
+  - "problem_summary": 1 kort sætning, neutral og præcis
+  - "topic_tags": liste med 1-3 korte tags i små bogstaver
+- Udelad felterne hvis problemet ikke er konkret nok endnu.
+
 OUTPUT
 Returner KUN gyldig JSON:
 {
   "assistant_message": string,
-  "last_topic": string (optional)
+  "last_topic": string (optional),
+  "problem_title": string (optional),
+  "problem_summary": string (optional),
+  "topic_tags": string[] (optional)
 }
 `
 
@@ -126,7 +139,25 @@ function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
       ? raw.last_topic.trim()
       : undefined
 
-  return { assistant_message: msg, last_topic }
+  const problem_title =
+    typeof raw.problem_title === "string"
+      ? raw.problem_title.trim()
+      : undefined
+
+  const problem_summary =
+    typeof raw.problem_summary === "string"
+      ? raw.problem_summary.trim()
+      : undefined
+
+  const topic_tags = Array.isArray(raw.topic_tags)
+    ? raw.topic_tags
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, 3)
+    : undefined
+
+  return { assistant_message: msg, last_topic, problem_title, problem_summary, topic_tags }
 }
 
 function buildFallbackMessage(userText: string): string {
@@ -193,6 +224,15 @@ export const genHypnoCapability: AiCapability = {
 
     if (parsed?.last_topic) {
       meta_delta["gen_hypno.last_topic"] = parsed.last_topic
+    }
+    if (parsed?.problem_title) {
+      meta_delta["gen_hypno.problem_title"] = parsed.problem_title
+    }
+    if (parsed?.problem_summary) {
+      meta_delta["gen_hypno.problem_summary"] = parsed.problem_summary
+    }
+    if (parsed?.topic_tags?.length) {
+      meta_delta["gen_hypno.topic_tags"] = parsed.topic_tags
     }
 
     const transition: Transition = {
