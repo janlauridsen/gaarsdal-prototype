@@ -332,6 +332,8 @@ export async function tickScanThreads(job: JobRecordV1): Promise<{ job: JobRecor
         evidence: draft.evidence,
         open_questions: draft.open_questions,
         created_at: nowMs(),
+        based_on_revision: job.based_on_revision,
+        mode: job.mode,
       }
 
       const resultRef = await writeDraft(draftObj, ttlSeconds)
