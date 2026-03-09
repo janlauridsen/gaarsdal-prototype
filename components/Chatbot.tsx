@@ -10,6 +10,8 @@ import styles from "./Chatbot.module.css"
 import { NODE_LABELS } from "./chatbot/constants"
 import { safeId, splitThreadLabel, trimDuplicateTitle } from "./chatbot/utils"
 import type {
+  AsyncConversationJob,
+  AsyncDraft,
   ChatMessage,
   ConversationState,
   InputSignal,
@@ -68,6 +70,18 @@ export default function Chatbot() {
   const [journalEvalSummary, setJournalEvalSummary] = useState<string>("")
   const [journalEvalLastHash, setJournalEvalLastHash] = useState<string>("")
   const [loading, setLoading] = useState(false)
+  const [pendingJobs, setPendingJobs] = useState<AsyncConversationJob[]>([])
+  const [jobRunnerState, setJobRunnerState] = useState<{
+    jobId: string
+    label: string
+    progress: number
+    status: string
+    error: string | null
+  } | null>(null)
+  const [draftReview, setDraftReview] = useState<AsyncDraft | null>(null)
+  const [draftSummaryInput, setDraftSummaryInput] = useState("")
+  const [draftOpenQuestionsInput, setDraftOpenQuestionsInput] = useState("")
+  const [draftSaving, setDraftSaving] = useState(false)
 
   // Threads overlay (drawer) lives on top of the chat view.
 
@@ -78,6 +92,7 @@ export default function Chatbot() {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const sheetRef = useRef<HTMLDivElement | null>(null)
   const didAutoStartNewThreadRef = useRef(false)
+  const jobLoopRef = useRef<{ conversationId: string; jobId: string; cancelled: boolean } | null>(null)
 
   const focusInput = () => {
     // defer to after DOM commit
@@ -235,6 +250,200 @@ export default function Chatbot() {
     return true
   }, [state, loading])
 
+  function delay(ms: number) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms))
+  }
+
+  function trimDraftText(value: string, max = 4000) {
+    return value.replace(/\r\n?/g, "\n").trim().slice(0, max)
+  }
+
+  function parseOpenQuestions(value: string): string[] {
+    const out: string[] = []
+    const seen = new Set<string>()
+    for (const raw of value.split(/\n+/g)) {
+      const line = raw.trim()
+      const key = line.toLowerCase()
+      if (!line || seen.has(key)) continue
+      seen.add(key)
+      out.push(line)
+      if (out.length >= 10) break
+    }
+    return out
+  }
+
+  function applyDraftToEditor(draft: AsyncDraft | null) {
+    setDraftReview(draft)
+    setDraftSummaryInput(draft?.accepted_summary ?? draft?.summary_draft ?? "")
+    setDraftOpenQuestionsInput((draft?.open_questions ?? []).join("\n"))
+  }
+
+  function statusLabelForJob(job: { kind: string; cursor?: string; status?: string }) {
+    if (job.kind === "scan_threads") {
+      const cursor = String(job.cursor ?? "").toUpperCase()
+      if (cursor === "SHORTLIST") return "Finder relevante tråde…"
+      if (cursor === "SELECT") return "Vælger relevante tråde…"
+      if (cursor === "DEEP_DIVE") return "Læser tidligere samtaler…"
+      if (cursor === "BUILD_DRAFT") return "Skriver opsummering…"
+      if (job.status === "queued") return "Afventer kørsel…"
+      if (job.status === "completed") return "Opsummering klar"
+      if (job.status === "failed") return "Opgaven fejlede"
+    }
+    return "Behandler baggrundsopgave…"
+  }
+
+  async function fetchPendingJobs(conversationId: string) {
+    const res = await fetch(`/api/jobs/pending?conversationId=${encodeURIComponent(conversationId)}`, {
+      credentials: "include",
+    })
+    if (!res.ok) {
+      if (res.status === 404) {
+        setPendingJobs([])
+        return [] as AsyncConversationJob[]
+      }
+      throw new Error(`Jobs pending: HTTP ${res.status}`)
+    }
+    const data = (await res.json().catch(() => null)) as any
+    const jobs = Array.isArray(data?.jobs) ? (data.jobs as AsyncConversationJob[]) : []
+    setPendingJobs(jobs)
+    return jobs
+  }
+
+  async function fetchLatestDraft(conversationId: string) {
+    const res = await fetch(`/api/jobs/draft?conversationId=${encodeURIComponent(conversationId)}&latest=1`, {
+      credentials: "include",
+    })
+    if (res.status === 404) {
+      applyDraftToEditor(null)
+      return null
+    }
+    if (!res.ok) throw new Error(`Jobs draft: HTTP ${res.status}`)
+    const draft = (await res.json().catch(() => null)) as AsyncDraft | null
+    if (!draft || draft.conversation_id !== conversationId || draft.accepted_at) {
+      applyDraftToEditor(null)
+      return null
+    }
+    applyDraftToEditor(draft)
+    return draft
+  }
+
+  async function acceptDraftReview() {
+    if (!draftReview || !activeConversationId) return
+    const summary = trimDraftText(draftSummaryInput)
+    if (!summary) {
+      showHeaderNavHint("Opsummeringen må ikke være tom")
+      return
+    }
+
+    setDraftSaving(true)
+    try {
+      const res = await fetch("/api/jobs/accept", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          conversationId: activeConversationId,
+          jobId: draftReview.job_id,
+          accepted: true,
+          summary,
+          open_questions: parseOpenQuestions(draftOpenQuestionsInput),
+        }),
+      })
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "")
+        throw new Error(`Jobs accept: HTTP ${res.status}${txt ? ` — ${txt}` : ""}`)
+      }
+      applyDraftToEditor(null)
+      showHeaderNavHint("Opsummering gemt")
+    } catch (e: any) {
+      showHeaderNavHint(e?.message ? String(e.message) : "Kunne ikke gemme opsummering")
+    } finally {
+      setDraftSaving(false)
+    }
+  }
+
+  async function runPendingJob(conversationId: string, job: AsyncConversationJob) {
+    if (!conversationId) return
+    if (jobLoopRef.current) return
+
+    const loop = { conversationId, jobId: job.job_id, cancelled: false }
+    jobLoopRef.current = loop
+    setJobRunnerState({
+      jobId: job.job_id,
+      label: statusLabelForJob(job),
+      progress: typeof job.progress === "number" ? job.progress : 0,
+      status: job.status,
+      error: null,
+    })
+
+    try {
+      const startRes = await fetch("/api/jobs/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ jobId: job.job_id }),
+      })
+      if (!startRes.ok) throw new Error(`Jobs start: HTTP ${startRes.status}`)
+      const startData = (await startRes.json().catch(() => null)) as any
+      if (startData?.status === "busy") {
+        setJobRunnerState({
+          jobId: job.job_id,
+          label: "En anden opgave kører allerede…",
+          progress: typeof job.progress === "number" ? job.progress : 0,
+          status: "busy",
+          error: null,
+        })
+        return
+      }
+
+      let attempts = 0
+      while (!loop.cancelled) {
+        const tickRes = await fetch("/api/jobs/tick", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ jobId: job.job_id }),
+        })
+        if (!tickRes.ok) throw new Error(`Jobs tick: HTTP ${tickRes.status}`)
+        const tick = (await tickRes.json().catch(() => null)) as any
+        const progress = typeof tick?.progress === "number" ? tick.progress : 0
+        setJobRunnerState({
+          jobId: job.job_id,
+          label: statusLabelForJob({ kind: job.kind, cursor: tick?.cursor, status: tick?.status }),
+          progress,
+          status: String(tick?.status ?? "running"),
+          error: tick?.lastError ? String(tick.lastError) : null,
+        })
+
+        const status = String(tick?.status ?? "")
+        if (status === "completed") {
+          await fetchPendingJobs(conversationId).catch(() => [])
+          await fetchLatestDraft(conversationId).catch(() => null)
+          break
+        }
+        if (status === "failed" || status === "canceled") {
+          await fetchPendingJobs(conversationId).catch(() => [])
+          break
+        }
+
+        attempts += 1
+        const nextDelay = attempts < 10 ? 1000 : attempts < 30 ? 2000 : 5000
+        await delay(nextDelay)
+      }
+    } catch (e: any) {
+      setJobRunnerState((prev) =>
+        prev && prev.jobId === job.job_id
+          ? { ...prev, status: "failed", error: e?.message ? String(e.message) : "Baggrundsopgave fejlede" }
+          : prev
+      )
+    } finally {
+      if (jobLoopRef.current === loop) jobLoopRef.current = null
+      if (!loop.cancelled) {
+        setJobRunnerState((prev) => (prev && prev.jobId === job.job_id && prev.status !== "failed" ? null : prev))
+      }
+    }
+  }
+
   useEffect(() => {
     if (!open) return
     endRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -270,9 +479,52 @@ export default function Chatbot() {
         window.clearTimeout(headerNavHintTimerRef.current)
         headerNavHintTimerRef.current = null
       }
+      if (jobLoopRef.current) jobLoopRef.current.cancelled = true
     }
   }, [])
   // (No persisted UI prefs for the journal yet.)
+
+  useEffect(() => {
+    if (!open || !activeConversationId) return
+
+    const refresh = async () => {
+      try {
+        await fetchPendingJobs(activeConversationId)
+        await fetchLatestDraft(activeConversationId)
+      } catch {
+        // Best effort only.
+      }
+    }
+
+    refresh()
+    const interval = window.setInterval(refresh, 15000)
+    const onVisible = () => {
+      if (!document.hidden) refresh()
+    }
+    document.addEventListener("visibilitychange", onVisible)
+
+    return () => {
+      window.clearInterval(interval)
+      document.removeEventListener("visibilitychange", onVisible)
+      if (jobLoopRef.current && jobLoopRef.current.conversationId === activeConversationId) {
+        jobLoopRef.current.cancelled = true
+        jobLoopRef.current = null
+      }
+      setPendingJobs([])
+      setJobRunnerState(null)
+      applyDraftToEditor(null)
+    }
+  }, [open, activeConversationId])
+
+  useEffect(() => {
+    if (!open || !activeConversationId) return
+    if (draftReview && !draftReview.accepted_at) return
+    if (jobLoopRef.current) return
+    const next = pendingJobs.find((job) => job.status === "queued" || job.status === "running")
+    if (!next) return
+    runPendingJob(activeConversationId, next)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, activeConversationId, pendingJobs, draftReview?.job_id, draftReview?.accepted_at])
 
   function appendAssistantMessage(conversationId: string, text: string) {
     const message = (text ?? "").trim()
@@ -914,6 +1166,21 @@ export default function Chatbot() {
               uiSuggestions={uiSuggestions}
               dispatch={dispatch}
               endRef={endRef}
+              asyncJobStatus={jobRunnerState}
+              draftReview={
+                draftReview && !draftReview.accepted_at
+                  ? {
+                      draft: draftReview,
+                      summary: draftSummaryInput,
+                      openQuestionsText: draftOpenQuestionsInput,
+                      saving: draftSaving,
+                      onSummaryChange: setDraftSummaryInput,
+                      onOpenQuestionsChange: setDraftOpenQuestionsInput,
+                      onAccept: acceptDraftReview,
+                      onReset: () => applyDraftToEditor(draftReview),
+                    }
+                  : null
+              }
             />
 
             <div className={`${styles.footer} ${isJournalActive ? styles.footerJournal : ""}`.trim()}>
