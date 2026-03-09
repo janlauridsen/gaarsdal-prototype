@@ -62,4 +62,6 @@ export type DraftV1 = {
   evidence: EvidenceRefV1[]
   open_questions: string[]
   created_at: number
+  accepted_at?: number
+  accepted_summary?: string
 }
