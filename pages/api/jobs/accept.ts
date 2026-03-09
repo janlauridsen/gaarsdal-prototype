@@ -3,7 +3,7 @@ import crypto from "crypto"
 
 import { ensureUserKey } from "../_utils/auth"
 import { setWidgetCors } from "../_utils/cors"
-import { readDraft, readJob, jobsTtlSeconds, writeDraft } from "../../../chat/jobs/store"
+import { clearLatestDraft, readDraft, readJob, jobsTtlSeconds, writeDraft } from "../../../chat/jobs/store"
 import { ensureThreadThemeAndEpisode, upsertEpisode } from "../../../chat/memory/longTermMemoryStore"
 import { appendSpineEventV23 } from "../../../chat/observability/spineStore"
 import { readConversationState } from "../../../chat/persistence/conversationStateStore"
@@ -106,6 +106,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     },
     ttlSeconds
   )
+  await clearLatestDraft(conversationId)
 
   const state = await readConversationState(conversationId)
   const revision = typeof state?.revision === "number" ? state.revision : 0
