@@ -967,9 +967,18 @@ function looksLikeHistoryReuseRequest(text: string): boolean {
   const s = text.trim().toLowerCase()
   if (!s) return false
 
-  const actionMatch = /(tjek|gennemgå|gennemgaa|scan|scann|søg|soeg|find|brug|genbrug|se i|kig i)/.test(s)
-  const historyMatch = /(tidligere|forrige|gamle|historik|forløb|forloeb).*(tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger)|((tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger).*(tidligere|forrige|gamle|historik))/.test(s)
-  return actionMatch && historyMatch
+  const explicitCrossThreadScan = /(scan|scann|gennemgå|gennemgaa|tjek|find|søg|soeg|kig i|se i).*(på tværs af|paa tvaers af|tidligere|forrige|gamle|historik|forløb|forloeb|andre).*(tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger)/.test(s)
+    || /(på tværs af|paa tvaers af).*(tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger)/.test(s)
+
+  const explicitHistoryReuse = /(tjek|gennemgå|gennemgaa|scan|scann|søg|soeg|find|brug|genbrug|se i|kig i)/.test(s)
+    && (/(tidligere|forrige|gamle|historik|forløb|forloeb).*(tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger)/.test(s)
+      || /(tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger).*(tidligere|forrige|gamle|historik|forløb|forloeb)/.test(s)
+      || /(andre).*(samtaler|dialoger|tråde|traade)/.test(s))
+
+  const retrospectiveQuestion = /(har|hvad|ved du om).*(jeg|vi).*(talt om|nævnt|naevnt|været inde på|vaeret inde paa|fortalt).*(før|foer|tidligere)/.test(s)
+    || /(har|hvad|ved du om).*(jeg|vi).*(talt om|nævnt|naevnt|været inde på|vaeret inde paa|fortalt).*(i andre samtaler|i andre tråde|i andre traade)/.test(s)
+
+  return explicitCrossThreadScan || explicitHistoryReuse || retrospectiveQuestion
 }
 
 function buildProblemSpecFromGenHypno(state: any): ProblemSpecV1 | null {
@@ -1016,13 +1025,12 @@ async function maybeTriggerScanThreadsJob(params: {
 
   const problem = buildProblemSpecFromGenHypno(kernelResult.state)
   if (!problem) {
-    const baseMessage = kernelResult.transition.response_message ?? kernelResult.state.active_node_message ?? ""
-    const extra = `\n\nJeg mangler først en kort problemformulering i denne tråd, før jeg kan scanne tidligere tråde. Beskriv kort problemet, og bed mig derefter om at tjekke tidligere forløb.`
     kernelResult = {
       ...kernelResult,
       transition: {
         ...kernelResult.transition,
-        response_message: `${baseMessage}${extra}`.trim(),
+        response_message:
+          "Jeg mangler først en kort problemformulering i denne tråd, før jeg kan scanne tidligere tråde. Beskriv kort problemet, og bed mig derefter om at tjekke tidligere forløb.",
       },
     }
     return { kernelResult, jobTriggered: false }
@@ -1039,16 +1047,15 @@ async function maybeTriggerScanThreadsJob(params: {
 
   if (!jobId) return { kernelResult, jobTriggered: false }
 
-  const baseMessage = kernelResult.transition.response_message ?? kernelResult.state.active_node_message ?? ""
-  const extra = deduped
-    ? `\n\nJeg har allerede en scanning af tidligere tråde i gang for denne tråd. Jeg viser et forslag, når det er klar.`
-    : `\n\nJeg scanner nu tidligere tråde for relevant historik. Når scanningen er færdig, får du et forslag, som du kan acceptere eller rette.`
+  const message = deduped
+    ? "Jeg har allerede en scanning af tidligere tråde i gang for denne tråd. Jeg viser et forslag, når det er klar."
+    : "Jeg scanner nu tidligere tråde for relevant historik. Når scanningen er færdig, får du et forslag, som du kan acceptere eller rette."
 
   kernelResult = {
     ...kernelResult,
     transition: {
       ...kernelResult.transition,
-      response_message: `${baseMessage}${extra}`.trim(),
+      response_message: message,
     },
   }
 
