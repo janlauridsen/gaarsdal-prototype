@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { ensureUserKey } from "../_utils/auth"
 import { setWidgetCors } from "../_utils/cors"
-import { acquireTickLock, isTerminal, jobsTtlSeconds, readJob, releaseRunnerLock, removePending, writeJob } from "../../../chat/jobs/store"
+import { acquireTickLock, isTerminal, jobsTtlSeconds, readJob, releaseRunnerLock, releaseTickLock, removePending, writeJob } from "../../../chat/jobs/store"
 import { tickJob } from "../../../chat/jobs/registry"
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -47,21 +47,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
   }
 
-  const { job: updated, completed } = await tickJob(job)
-  const ttlSeconds = jobsTtlSeconds()
-  await writeJob(updated, ttlSeconds)
+  try {
+    const { job: updated, completed } = await tickJob(job)
+    const ttlSeconds = jobsTtlSeconds()
+    await writeJob(updated, ttlSeconds)
 
-  if (completed || isTerminal(updated.status)) {
-    await removePending(updated.conversation_id, updated.job_id)
-    await releaseRunnerLock(updated.conversation_id)
+    if (completed || isTerminal(updated.status)) {
+      await removePending(updated.conversation_id, updated.job_id)
+      await releaseRunnerLock(updated.conversation_id)
+    }
+
+    return res.status(200).json({
+      jobId: updated.job_id,
+      status: updated.status,
+      cursor: updated.cursor,
+      progress: updated.progress,
+      resultRef: updated.result_ref,
+      lastError: updated.last_error ?? null,
+    })
+  } finally {
+    await releaseTickLock(job.job_id)
   }
-
-  return res.status(200).json({
-    jobId: updated.job_id,
-    status: updated.status,
-    cursor: updated.cursor,
-    progress: updated.progress,
-    resultRef: updated.result_ref,
-    lastError: updated.last_error ?? null,
-  })
 }
