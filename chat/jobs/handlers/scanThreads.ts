@@ -12,23 +12,6 @@ type ThreadSummary = {
   summary_short: string
 }
 
-function isExternalHistoryIntent(payload: ScanThreadsPayload | null | undefined): boolean {
-  const problem = payload?.problem
-  const haystack = [
-    problem?.search_intent,
-    problem?.problem_description,
-    problem?.problem_title,
-    ...(Array.isArray(problem?.topic_tags) ? problem!.topic_tags : []),
-  ]
-    .filter((value): value is string => typeof value === "string")
-    .join(" ")
-    .toLowerCase()
-
-  if (!haystack) return true
-
-  return /(tidligere|forrige|historik|andre|tværs|other|previous|past|history|prior)/.test(haystack)
-}
-
 function nowMs(): number {
   return Date.now()
 }
@@ -68,7 +51,8 @@ async function shortlistThreads(params: {
 
   const out: ThreadSummary[] = []
   for (const t of sorted) {
-    const convId = t.conversation_id
+        const convId = t.conversation_id
+    if (!convId || convId === params.activeConversationId) continue
     const { episode } = await ensureThreadThemeAndEpisode({
       userKey: params.userKey,
       conversationId: convId,
@@ -111,7 +95,7 @@ async function llmSelectThreads(params: {
     `time_scope: ${problem.time_scope ?? ""}\n` +
     `intent: ${problem.search_intent ?? ""}\n\n` +
     `Candidates:\n${candidateText}\n\n` +
-    `Select up to ${params.maxPick} conversation_id values that most likely contain reusable relevant information.`
+    `Select up to ${params.maxPick} conversation_id values from PREVIOUS conversations only. Exclude the active conversation and prefer threads that reduce repeated questions.`
 
   const json = await llm.chatJson({
     model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
@@ -182,10 +166,26 @@ async function llmBuildDraft(params: {
   return { summary, open_questions, evidence }
 }
 
+function buildNoMatchDraft(params: { job: JobRecordV1; reason: "auto" | "explicit" }): DraftV1 | null {
+  if (params.reason === "auto") return null
+  return {
+    schema_version: "v1",
+    job_id: params.job.job_id,
+    conversation_id: params.job.conversation_id,
+    kind: "scan_threads",
+    summary_draft: "Jeg fandt ikke nogen tydeligt relevante tidligere samtaler at genbruge endnu. Du kan fortsætte her, eller pege mig mod et tidligere forløb, hvis du vil have mig til at lede mere målrettet.",
+    evidence: [],
+    open_questions: ["Er der en bestemt tidligere tråd eller et bestemt emne, du vil have mig til at lede efter?"],
+    created_at: nowMs(),
+    based_on_revision: params.job.based_on_revision,
+    mode: params.job.mode,
+  }
+}
+
 export async function tickScanThreads(job: JobRecordV1): Promise<{ job: JobRecordV1; completed: boolean }> {
   const ttlSeconds = jobsTtlSeconds()
   const payload = job.payload as unknown as ScanThreadsPayload
-  const externalHistoryOnly = isExternalHistoryIntent(payload)
+  const scanReason = payload?.scan_reason === "auto" ? "auto" : "explicit"
 
   const limits = payload?.limits ?? {}
   const maxThreads = clamp(typeof limits.max_threads === "number" ? limits.max_threads : 10, 1, 25)
@@ -248,19 +248,45 @@ export async function tickScanThreads(job: JobRecordV1): Promise<{ job: JobRecor
           updated_at: asString((c as any).updated_at),
           summary_short: asString((c as any).summary_short),
         }))
-        .filter((c) => !!c.conversation_id)
+        .filter((c) => !!c.conversation_id && c.conversation_id !== job.conversation_id)
 
-      const externalCandidates = externalHistoryOnly
-        ? typed.filter((c) => c.conversation_id !== job.conversation_id)
-        : typed
+      if (typed.length === 0) {
+        const noMatchDraft = buildNoMatchDraft({ job, reason: scanReason })
+        let resultRef = job.result_ref
+        if (noMatchDraft) resultRef = await writeDraft(noMatchDraft, ttlSeconds)
+        const next: JobRecordV1 = {
+          ...updatedBase,
+          status: "completed",
+          cursor: "DONE",
+          progress: 1,
+          result_ref: resultRef,
+        }
+        await writeJob(next, ttlSeconds)
+        return { job: next, completed: true }
+      }
 
       let selected: string[] = []
-      // If no API key, fall back to most recent.
       if (!process.env.OPENAI_API_KEY) {
-        selected = externalCandidates.slice(0, maxDeepDive).map((t) => t.conversation_id)
+        selected = typed.slice(0, maxDeepDive).map((t) => t.conversation_id)
       } else {
-        selected = await llmSelectThreads({ payload, candidates: externalCandidates, maxPick: maxDeepDive })
-        if (selected.length === 0) selected = externalCandidates.slice(0, maxDeepDive).map((t) => t.conversation_id)
+        selected = await llmSelectThreads({ payload, candidates: typed, maxPick: maxDeepDive })
+          .then((ids) => ids.filter((id) => id && id !== job.conversation_id))
+        if (selected.length === 0) selected = typed.slice(0, maxDeepDive).map((t) => t.conversation_id)
+      }
+
+      if (selected.length === 0) {
+        const noMatchDraft = buildNoMatchDraft({ job, reason: scanReason })
+        let resultRef = job.result_ref
+        if (noMatchDraft) resultRef = await writeDraft(noMatchDraft, ttlSeconds)
+        const next: JobRecordV1 = {
+          ...updatedBase,
+          status: "completed",
+          cursor: "DONE",
+          progress: 1,
+          result_ref: resultRef,
+        }
+        await writeJob(next, ttlSeconds)
+        return { job: next, completed: true }
       }
 
       const next: JobRecordV1 = {
@@ -297,6 +323,21 @@ export async function tickScanThreads(job: JobRecordV1): Promise<{ job: JobRecor
         deep.push({ conversation_id: convId, excerpt: excerpt.slice(0, 6000), revision_from, revision_to })
       }
 
+      if (deep.length === 0) {
+        const noMatchDraft = buildNoMatchDraft({ job, reason: scanReason })
+        let resultRef = job.result_ref
+        if (noMatchDraft) resultRef = await writeDraft(noMatchDraft, ttlSeconds)
+        const next: JobRecordV1 = {
+          ...updatedBase,
+          status: "completed",
+          cursor: "DONE",
+          progress: 1,
+          result_ref: resultRef,
+        }
+        await writeJob(next, ttlSeconds)
+        return { job: next, completed: true }
+      }
+
       const next: JobRecordV1 = {
         ...updatedBase,
         cursor: "BUILD_DRAFT",
@@ -322,36 +363,21 @@ export async function tickScanThreads(job: JobRecordV1): Promise<{ job: JobRecor
         }))
         .filter((d) => !!d.conversation_id)
 
-      const externalDeep = externalHistoryOnly
-        ? typed.filter((d) => d.conversation_id !== job.conversation_id)
-        : typed
-
       let draft: { summary: string; open_questions: string[]; evidence: EvidenceRefV1[] } | null = null
-      if (externalDeep.length > 0 && process.env.OPENAI_API_KEY) {
-        draft = await llmBuildDraft({ payload, deep: externalDeep })
-      }
-
-      if (!draft && externalDeep.length === 0) {
-        draft = {
-          summary:
-            "Jeg fandt ikke en tydelig relevant tidligere tråd om dette emne. Det nuværende forslag bygger derfor ikke på ekstern historik endnu.",
-          open_questions: [
-            "Vil du beskrive, om emnet tidligere har været knyttet til en bestemt tråd eller situation?",
-          ],
-          evidence: [],
-        }
+      if (process.env.OPENAI_API_KEY) {
+        draft = await llmBuildDraft({ payload, deep: typed })
       }
 
       if (!draft) {
         // Fallback: deterministic minimal draft.
-        const ids = externalDeep.map((d) => d.conversation_id)
+        const ids = typed.map((d) => d.conversation_id)
         const summary =
           `Jeg har fundet tidligere tråde der potentielt er relevante: ${ids.join(", ")}. ` +
           `Jeg kan lave en bedre opsummering når der findes tråd-summaries eller når LLM er tilgængelig.`
         draft = {
           summary,
           open_questions: ["Vil du kort opsummere hvad der tidligere var vigtigt?"],
-          evidence: externalDeep.map((d) => ({
+          evidence: typed.map((d) => ({
             conversation_id: d.conversation_id,
             revision_from: d.revision_from,
             revision_to: d.revision_to,
