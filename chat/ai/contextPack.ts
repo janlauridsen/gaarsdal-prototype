@@ -8,6 +8,7 @@ import {
   readFacts,
   readThemes,
   readTheme,
+  type MemoryFact,
 } from "../memory/longTermMemoryStore"
 
 export type ContextPackV23 = {
@@ -32,6 +33,87 @@ function safeValue(value: any): string {
   } catch {
     return ""
   }
+}
+
+function parseThreadAssetKey(key: string): { kind: "summary" | "open_loops"; conversationId: string } | null {
+  if (key.startsWith("thread.asset.summary.")) {
+    return {
+      kind: "summary",
+      conversationId: key.slice("thread.asset.summary.".length),
+    }
+  }
+  if (key.startsWith("thread.asset.open_loops.")) {
+    return {
+      kind: "open_loops",
+      conversationId: key.slice("thread.asset.open_loops.".length),
+    }
+  }
+  return null
+}
+
+function isCanonicalThreadAsset(fact: MemoryFact): boolean {
+  if (fact.status !== "canonical") return false
+  return fact.key.startsWith("thread.asset.summary.") || fact.key.startsWith("thread.asset.open_loops.")
+}
+
+function buildApprovedThreadAssetLines(params: {
+  facts: MemoryFact[]
+  currentConversationId: string
+}): string[] {
+  const grouped = new Map<
+    string,
+    {
+      summary?: string
+      openLoops?: string[]
+      updated_at: number
+    }
+  >()
+
+  for (const fact of params.facts) {
+    if (!isCanonicalThreadAsset(fact)) continue
+
+    const parsed = parseThreadAssetKey(fact.key)
+    if (!parsed) continue
+    if (!parsed.conversationId || parsed.conversationId === params.currentConversationId) continue
+
+    const entry = grouped.get(parsed.conversationId) ?? {
+      summary: undefined,
+      openLoops: undefined,
+      updated_at: fact.updated_at,
+    }
+
+    if (parsed.kind === "summary" && typeof fact.value === "string") {
+      entry.summary = clamp(fact.value, 220)
+    }
+
+    if (parsed.kind === "open_loops" && Array.isArray(fact.value)) {
+      entry.openLoops = fact.value
+        .filter((v) => typeof v === "string")
+        .map((v) => clamp(String(v), 140))
+        .filter(Boolean)
+        .slice(0, 5)
+    }
+
+    entry.updated_at = Math.max(entry.updated_at, fact.updated_at)
+    grouped.set(parsed.conversationId, entry)
+  }
+
+  const ordered = Array.from(grouped.entries())
+    .sort((a, b) => b[1].updated_at - a[1].updated_at)
+    .slice(0, 8)
+
+  const lines: string[] = []
+
+  for (const [, entry] of ordered) {
+    if (entry.summary) {
+      lines.push(`- ${entry.summary}`)
+    }
+    for (const loop of entry.openLoops ?? []) {
+      lines.push(`- Åbent loop: ${loop}`)
+    }
+  }
+
+  return lines
 }
 
 export async function buildContextPackV23(params: {
@@ -87,6 +169,13 @@ export async function buildContextPackV23(params: {
     limit: 200,
   })
 
+  const currentConversationId = params.state.conversation_id
+
+  const approvedThreadAssetLines = buildApprovedThreadAssetLines({
+    facts: canonicalFacts,
+    currentConversationId,
+  })
+
   // Bound and filter facts for prompt relevance (simple v23 heuristic):
   // prefer prefs.* + user.* + theme.* first
   const priority = (k: string): number => {
@@ -99,6 +188,7 @@ export async function buildContextPackV23(params: {
   }
 
   const facts = canonicalFacts
+    .filter((f) => !isCanonicalThreadAsset(f))
     .slice()
     .sort((a, b) => priority(a.key) - priority(b.key))
     .slice(0, 18)
@@ -128,6 +218,12 @@ export async function buildContextPackV23(params: {
     parts.push("")
     parts.push("Åbne loops (maks 5):")
     for (const l of openLoops) parts.push(`- ${clamp(String(l), 140)}`)
+  }
+
+  if (approvedThreadAssetLines.length) {
+    parts.push("")
+    parts.push("Godkendte aktiver fra tidligere tråde:")
+    parts.push(...approvedThreadAssetLines)
   }
 
   if (factLines.length) {
