@@ -1008,6 +1008,44 @@ function buildProblemSpecFromGenHypno(state: any): ProblemSpecV1 | null {
   }
 }
 
+function currentUserTurnCount(state: any): number {
+  const assistantTurnCountRaw = readMetaValue(state, "gen_hypno.assistant_turn_count")
+  const transcriptRaw = readMetaValue(state, "gen_hypno.transcript")
+
+  if (typeof assistantTurnCountRaw === "number" && Number.isFinite(assistantTurnCountRaw)) {
+    return Math.max(0, Math.trunc(assistantTurnCountRaw))
+  }
+
+  if (Array.isArray(transcriptRaw)) {
+    const assistantTurns = transcriptRaw.filter((item) => item && typeof item === "object" && (item as any).role === "assistant").length
+    return Math.max(0, assistantTurns)
+  }
+
+  return 0
+}
+
+function seemsHistoryRelevant(problem: ProblemSpecV1 | null, userText: string): boolean {
+  if (!problem) return false
+  const title = String(problem.problem_title ?? "").trim()
+  const description = String(problem.problem_description ?? "").trim()
+  const tags = Array.isArray(problem.topic_tags) ? problem.topic_tags.filter(Boolean) : []
+  const text = `${title} ${description} ${userText}`.toLowerCase()
+
+  if (title.length >= 4 && description.length >= 18) return true
+  if (tags.length >= 1 && description.length >= 12) return true
+
+  return /(angst|uro|stress|søvn|soevn|alkohol|misbrug|træt|traet|depression|bekymring|relation|flyskræk|flyskraek)/i.test(text)
+}
+
+function shouldAutoTriggerHistoryScan(params: { state: any; problem: ProblemSpecV1 | null; userText: string }): { shouldTrigger: boolean; turnCount: number } {
+  const turnCount = currentUserTurnCount(params.state)
+  if (turnCount < 2) return { shouldTrigger: false, turnCount }
+  const onCadence = turnCount === 2 || (turnCount > 2 && (turnCount - 2) % 4 === 0)
+  if (!onCadence) return { shouldTrigger: false, turnCount }
+  if (!seemsHistoryRelevant(params.problem, params.userText)) return { shouldTrigger: false, turnCount }
+  return { shouldTrigger: true, turnCount }
+}
+
 async function maybeTriggerScanThreadsJob(params: {
   userKey: string
   input: InputSignal
@@ -1021,10 +1059,14 @@ async function maybeTriggerScanThreadsJob(params: {
   if (isLobbyConversation(conversationId)) return { kernelResult, jobTriggered: false }
 
   const userText = String((input as any).text ?? "")
-  if (!looksLikeHistoryReuseRequest(userText)) return { kernelResult, jobTriggered: false }
-
+  const explicitRequest = looksLikeHistoryReuseRequest(userText)
   const problem = buildProblemSpecFromGenHypno(kernelResult.state)
+  const autoDecision = shouldAutoTriggerHistoryScan({ state: kernelResult.state, problem, userText })
+
+  if (!explicitRequest && !autoDecision.shouldTrigger) return { kernelResult, jobTriggered: false }
+
   if (!problem) {
+    if (!explicitRequest) return { kernelResult, jobTriggered: false }
     kernelResult = {
       ...kernelResult,
       transition: {
@@ -1037,12 +1079,14 @@ async function maybeTriggerScanThreadsJob(params: {
   }
 
   const basedOnRevision = typeof kernelResult.state?.revision === "number" ? kernelResult.state.revision : 0
+  const scanReason = explicitRequest ? "explicit" : "auto"
+  const triggerTurn = autoDecision.turnCount || currentUserTurnCount(kernelResult.state)
 
   const { jobId, deduped } = await triggerJob({
     userKey,
     conversationId,
     kind: "scan_threads",
-    payload: { problem },
+    payload: { problem, scan_reason: scanReason, trigger_turn: triggerTurn },
     ttlSeconds: jobsTtlSeconds(),
     dedupe: true,
     basedOnRevision,
@@ -1051,16 +1095,18 @@ async function maybeTriggerScanThreadsJob(params: {
 
   if (!jobId) return { kernelResult, jobTriggered: false }
 
-  const message = deduped
-    ? "Jeg har allerede en scanning af tidligere tråde i gang for denne tråd. Jeg viser et forslag, når det er klar."
-    : "Jeg scanner nu tidligere tråde for relevant historik. Når scanningen er færdig, får du et forslag, som du kan acceptere eller rette."
+  if (explicitRequest) {
+    const message = deduped
+      ? "Jeg har allerede en scanning af tidligere tråde i gang for denne tråd. Jeg viser et forslag, når det er klar."
+      : "Jeg scanner nu tidligere tråde for relevant historik. Når scanningen er færdig, får du et forslag, som du kan acceptere eller rette."
 
-  kernelResult = {
-    ...kernelResult,
-    transition: {
-      ...kernelResult.transition,
-      response_message: message,
-    },
+    kernelResult = {
+      ...kernelResult,
+      transition: {
+        ...kernelResult.transition,
+        response_message: message,
+      },
+    }
   }
 
   return {
