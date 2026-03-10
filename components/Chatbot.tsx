@@ -493,6 +493,13 @@ export default function Chatbot() {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [visibleMessages, open, headerNavHint, expanded, journalEntries])
 
+
+  useEffect(() => {
+    if (!open) return
+    if (!draftReview || draftReview.accepted_at) return
+    endRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [open, draftReview?.job_id, draftReview?.accepted_at])
+
   // Autofocus after output / state updates (and after overlays close)
   useEffect(() => {
     if (!open) return
