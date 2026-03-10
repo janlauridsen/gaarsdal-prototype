@@ -23,6 +23,8 @@ export type ScanThreadsLimits = {
 export type ScanThreadsPayload = {
   problem: ProblemSpecV1
   limits?: ScanThreadsLimits
+  scan_reason?: "auto" | "explicit"
+  trigger_turn?: number
 }
 
 export type JobPayloadByKind = {
