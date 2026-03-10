@@ -12,6 +12,23 @@ type ThreadSummary = {
   summary_short: string
 }
 
+function isExternalHistoryIntent(payload: ScanThreadsPayload | null | undefined): boolean {
+  const problem = payload?.problem
+  const haystack = [
+    problem?.search_intent,
+    problem?.problem_description,
+    problem?.problem_title,
+    ...(Array.isArray(problem?.topic_tags) ? problem!.topic_tags : []),
+  ]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLowerCase()
+
+  if (!haystack) return true
+
+  return /(tidligere|forrige|historik|andre|tværs|other|previous|past|history|prior)/.test(haystack)
+}
+
 function nowMs(): number {
   return Date.now()
 }
@@ -51,7 +68,6 @@ async function shortlistThreads(params: {
 
   const out: ThreadSummary[] = []
   for (const t of sorted) {
-    // Do not include the currently active conversation unless it is explicitly in the index.
     const convId = t.conversation_id
     const { episode } = await ensureThreadThemeAndEpisode({
       userKey: params.userKey,
@@ -169,6 +185,7 @@ async function llmBuildDraft(params: {
 export async function tickScanThreads(job: JobRecordV1): Promise<{ job: JobRecordV1; completed: boolean }> {
   const ttlSeconds = jobsTtlSeconds()
   const payload = job.payload as unknown as ScanThreadsPayload
+  const externalHistoryOnly = isExternalHistoryIntent(payload)
 
   const limits = payload?.limits ?? {}
   const maxThreads = clamp(typeof limits.max_threads === "number" ? limits.max_threads : 10, 1, 25)
@@ -233,13 +250,17 @@ export async function tickScanThreads(job: JobRecordV1): Promise<{ job: JobRecor
         }))
         .filter((c) => !!c.conversation_id)
 
+      const externalCandidates = externalHistoryOnly
+        ? typed.filter((c) => c.conversation_id !== job.conversation_id)
+        : typed
+
       let selected: string[] = []
       // If no API key, fall back to most recent.
       if (!process.env.OPENAI_API_KEY) {
-        selected = typed.slice(0, maxDeepDive).map((t) => t.conversation_id)
+        selected = externalCandidates.slice(0, maxDeepDive).map((t) => t.conversation_id)
       } else {
-        selected = await llmSelectThreads({ payload, candidates: typed, maxPick: maxDeepDive })
-        if (selected.length === 0) selected = typed.slice(0, maxDeepDive).map((t) => t.conversation_id)
+        selected = await llmSelectThreads({ payload, candidates: externalCandidates, maxPick: maxDeepDive })
+        if (selected.length === 0) selected = externalCandidates.slice(0, maxDeepDive).map((t) => t.conversation_id)
       }
 
       const next: JobRecordV1 = {
@@ -301,21 +322,36 @@ export async function tickScanThreads(job: JobRecordV1): Promise<{ job: JobRecor
         }))
         .filter((d) => !!d.conversation_id)
 
+      const externalDeep = externalHistoryOnly
+        ? typed.filter((d) => d.conversation_id !== job.conversation_id)
+        : typed
+
       let draft: { summary: string; open_questions: string[]; evidence: EvidenceRefV1[] } | null = null
-      if (process.env.OPENAI_API_KEY) {
-        draft = await llmBuildDraft({ payload, deep: typed })
+      if (externalDeep.length > 0 && process.env.OPENAI_API_KEY) {
+        draft = await llmBuildDraft({ payload, deep: externalDeep })
+      }
+
+      if (!draft && externalDeep.length === 0) {
+        draft = {
+          summary:
+            "Jeg fandt ikke en tydelig relevant tidligere tråd om dette emne. Det nuværende forslag bygger derfor ikke på ekstern historik endnu.",
+          open_questions: [
+            "Vil du beskrive, om emnet tidligere har været knyttet til en bestemt tråd eller situation?",
+          ],
+          evidence: [],
+        }
       }
 
       if (!draft) {
         // Fallback: deterministic minimal draft.
-        const ids = typed.map((d) => d.conversation_id)
+        const ids = externalDeep.map((d) => d.conversation_id)
         const summary =
           `Jeg har fundet tidligere tråde der potentielt er relevante: ${ids.join(", ")}. ` +
           `Jeg kan lave en bedre opsummering når der findes tråd-summaries eller når LLM er tilgængelig.`
         draft = {
           summary,
           open_questions: ["Vil du kort opsummere hvad der tidligere var vigtigt?"],
-          evidence: typed.map((d) => ({
+          evidence: externalDeep.map((d) => ({
             conversation_id: d.conversation_id,
             revision_from: d.revision_from,
             revision_to: d.revision_to,
