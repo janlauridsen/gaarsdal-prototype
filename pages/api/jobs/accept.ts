@@ -4,7 +4,12 @@ import crypto from "crypto"
 import { ensureUserKey } from "../_utils/auth"
 import { setWidgetCors } from "../_utils/cors"
 import { clearLatestDraft, readDraft, readJob, jobsTtlSeconds, writeDraft } from "../../../chat/jobs/store"
-import { ensureThreadThemeAndEpisode, upsertEpisode } from "../../../chat/memory/longTermMemoryStore"
+import {
+  ensureThreadThemeAndEpisode,
+  upsertEpisode,
+  upsertFact,
+  type MemoryFact,
+} from "../../../chat/memory/longTermMemoryStore"
 import { appendSpineEventV23 } from "../../../chat/observability/spineStore"
 import { readConversationState } from "../../../chat/persistence/conversationStateStore"
 
@@ -36,6 +41,48 @@ function uniqueStrings(values: string[], max = 10): string[] {
 
 function safeId(): string {
   return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
+}
+
+function buildThreadAssetFact(params: {
+  conversationId: string
+  now: number
+  kind: "summary" | "open_loops"
+  value: string | string[]
+}): MemoryFact {
+  const { conversationId, now, kind, value } = params
+
+  const factId =
+    kind === "summary"
+      ? `thread-asset-summary:${conversationId}`
+      : `thread-asset-open-loops:${conversationId}`
+
+  const key =
+    kind === "summary"
+      ? `thread.asset.summary.${conversationId}`
+      : `thread.asset.open_loops.${conversationId}`
+
+  return {
+    fact_id: factId,
+    key,
+    value,
+    status: "canonical",
+    confidence: 1,
+    created_at: now,
+    updated_at: now,
+    provenance: {
+      created_by: "user_accept_jobs_api",
+      last_edited_by: "user_accept_jobs_api",
+    },
+    edit_history: [
+      {
+        ts: now,
+        editor: "user",
+        prev_value: undefined,
+        next_value: value,
+        note: "accepted from job draft and promoted to canonical thread asset",
+      },
+    ],
+  }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -97,6 +144,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     ttlSeconds,
   })
 
+  const promotedFacts: MemoryFact[] = [
+    buildThreadAssetFact({
+      conversationId,
+      now,
+      kind: "summary",
+      value: acceptedSummary,
+    }),
+  ]
+
+  if (openLoops.length > 0) {
+    promotedFacts.push(
+      buildThreadAssetFact({
+        conversationId,
+        now,
+        kind: "open_loops",
+        value: openLoops,
+      })
+    )
+  }
+
+  for (const fact of promotedFacts) {
+    await upsertFact({
+      userKey,
+      fact,
+      ttlSeconds,
+    })
+  }
+
   await writeDraft(
     {
       ...draft,
@@ -122,8 +197,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     status_after: state?.status ?? "active",
     input_type: "UI_ACTION",
     transition_type: "JOB_DRAFT_ACCEPTED",
-    meta_domains_written: ["memory.episode"],
-    meta_keys_written: ["episode.summary_short", "episode.open_loops"],
+    meta_domains_written: ["memory.episode", "memory.fact"],
+    meta_keys_written: [
+      "episode.summary_short",
+      "episode.open_loops",
+      `fact.thread.asset.summary.${conversationId}`,
+      ...(openLoops.length > 0 ? [`fact.thread.asset.open_loops.${conversationId}`] : []),
+    ],
   })
 
   return res.status(200).json({
@@ -134,5 +214,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     summary_short: updatedEpisode.summary_short,
     open_loops: updatedEpisode.open_loops ?? [],
     accepted_at: now,
+    promoted_fact_ids: promotedFacts.map((f) => f.fact_id),
   })
 }
