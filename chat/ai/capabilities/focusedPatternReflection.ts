@@ -217,7 +217,6 @@ function isExitFocusedReflection(text: string): boolean {
     return true
   }
 
-  // ekstra robusthed for korte fraser uden perfekt match
   if (
     original.includes("forlade denne dialog") ||
     original.includes("forlade dialogen") ||
@@ -278,7 +277,6 @@ export const focusedPatternReflectionCapability: AiCapability = {
         debug: {
           capability: "focused-pattern-reflection-v1",
           used_fallback: false,
-          exit_detected: true,
         },
       }
     }
@@ -347,7 +345,6 @@ export const focusedPatternReflectionCapability: AiCapability = {
       debug: {
         capability: "focused-pattern-reflection-v1",
         used_fallback: usedFallback,
-        exit_detected: false,
       },
     }
   },
