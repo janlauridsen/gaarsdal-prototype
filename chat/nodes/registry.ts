@@ -1,11 +1,9 @@
 // registry.ts
-// Version: 2026-02-16T00:00:00Z
+// Version: 2026-03-11T00:00:00Z
 // Notes:
-// - Fix: allow TRIAGE to write meta keys used by triage-relevance-v1 (triage.decision, triage.render, triage.relevance).
-// - Fix: widen TRIAGE allowed exits to include nodes the capability may choose (METHOD_FIT, GEN_HYPNO, BOOKING)
-//        to avoid "transition.to not allowed" when the model routes to a non-listed node.
-// Global actions are available from anywhere via engine-level global exits.
-// Only HOME should show them as visible chips by default.
+// - TRIAGE removed from HOME routing/candidates.
+// - GEN_HYPNO is now the primary general entry node.
+// - Keep TRIAGE node definition temporarily for compatibility, but unreachable from HOME.
 
 type NodeId = string
 
@@ -64,20 +62,13 @@ export type Node = {
   tool?: ToolSpec
   checkpoint?: CheckpointSpec
   router?: RouterSpec
-  // NOTE: repo currently uses a navigation field on some MENU nodes.
-  // Keep it as 'any' here to avoid registry typing drift if present elsewhere.
   navigation?: any
 }
 
-// Chips shown on HOME (menu).
 const QUICK_CONTACTS: NodeId[] = ["MAIL", "TLF", "CONTACT_FORM", "AKUT"]
-
-// Exits shown inside a parentese overlay.
 const PARENTESE_EXITS: NodeId[] = ["RESUME", "HOME"]
 
 const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
-  // ----------- LOBBY / PROFILE / THREADS (V23.1) -----------
-
   PROFILE_BOOTSTRAP: {
     id: "PROFILE_BOOTSTRAP",
     kind: "TOOL",
@@ -91,11 +82,14 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       on_success_to: "THREAD_CHOOSER",
       on_error_to: "THREAD_CHOOSER",
     },
-    meta_domains_written: ["ux", "profile.status",
+    meta_domains_written: [
+      "ux",
+      "profile.status",
       "profile.last_seen_at",
       "threads.count",
       "threads.active",
-      "threads.choices",],
+      "threads.choices",
+    ],
   },
 
   THREAD_CHOOSER: {
@@ -176,7 +170,6 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     allow_parentese: false,
     allowed_exits: [
       "GEN_HYPNO",
-      "TRIAGE",
       "METHOD_FIT",
       "REFLECTION",
       "BOOKING",
@@ -189,12 +182,10 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     ],
     router: {
       router_id: "home-router-v1",
-      candidates: ["GEN_HYPNO", "TRIAGE", "METHOD_FIT", "REFLECTION", "BOOKING", "DEV_SANDBOX_INTRO"],
+      candidates: ["GEN_HYPNO", "METHOD_FIT", "REFLECTION", "BOOKING", "DEV_SANDBOX_INTRO"],
     },
     meta_domains_written: ["ux", "router.decision"],
   },
-
-  // ----------- DEV SANDBOX FLOW (FORM → TOOL → CHECKPOINT) -----------
 
   DEV_SANDBOX_INTRO: {
     id: "DEV_SANDBOX_INTRO",
@@ -241,9 +232,24 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
           required: false,
           placeholder: "fx arbejdsstress",
         },
-        { id: "relational_patterns", label: "Relational patterns", required: false, placeholder: "fx familien" },
-        { id: "preferred_tone", label: "Preferred tone", required: false, placeholder: "fx rolig og direkte" },
-        { id: "support_direction", label: "Support direction", required: false, placeholder: "fx ro før jeg kommer hjem" },
+        {
+          id: "relational_patterns",
+          label: "Relational patterns",
+          required: false,
+          placeholder: "fx familien",
+        },
+        {
+          id: "preferred_tone",
+          label: "Preferred tone",
+          required: false,
+          placeholder: "fx rolig og direkte",
+        },
+        {
+          id: "support_direction",
+          label: "Support direction",
+          required: false,
+          placeholder: "fx ro før jeg kommer hjem",
+        },
         {
           id: "interest_in_methods",
           label: "Interest in methods",
@@ -305,8 +311,6 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     meta_domains_written: ["ux"],
   },
 
-  // ----------- EXISTING NODES -----------
-
   GEN_HYPNO: {
     id: "GEN_HYPNO",
     kind: "DIALOG",
@@ -333,29 +337,29 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     ],
   },
 
-FOCUSED_PATTERN_REFLECTION: {
-  id: "FOCUSED_PATTERN_REFLECTION",
-  kind: "DIALOG",
-  goal: "Fokuseret refleksion over brugerens forhold til et bestemt forbrug eller vanemønster.",
-  message:
-    "Vi fortsætter her i chatten med et mere fokuseret blik på et mønster i din hverdag. Samtalen handler om refleksion – ikke behandling.",
-  allow_free_text: true,
-  allow_parentese: true,
-  allowed_exits: ["FOCUSED_PATTERN_REFLECTION", "HOME", "GEN_HYPNO", "BOOKING"],
-  capability_id: "focused-pattern-reflection-v1",
-  meta_domains_written: [
-    "ux",
-    "focused_reflection.topic",
-    "focused_reflection.entry_source",
-    "focused_reflection.user_opt_in",
-    "focused_reflection.stage",
-    "focused_reflection.summary",
-    "focused_reflection.emotions",
-    "focused_reflection.patterns",
-    "focused_reflection.conflicts",
-    "focused_reflection.transcript",
-  ],
-},
+  FOCUSED_PATTERN_REFLECTION: {
+    id: "FOCUSED_PATTERN_REFLECTION",
+    kind: "DIALOG",
+    goal: "Fokuseret refleksion over brugerens forhold til et bestemt forbrug eller vanemønster.",
+    message:
+      "Vi fortsætter her i chatten med et mere fokuseret blik på et mønster i din hverdag. Samtalen handler om refleksion – ikke behandling.",
+    allow_free_text: true,
+    allow_parentese: true,
+    allowed_exits: ["FOCUSED_PATTERN_REFLECTION", "HOME", "GEN_HYPNO", "BOOKING"],
+    capability_id: "focused-pattern-reflection-v1",
+    meta_domains_written: [
+      "ux",
+      "focused_reflection.topic",
+      "focused_reflection.entry_source",
+      "focused_reflection.user_opt_in",
+      "focused_reflection.stage",
+      "focused_reflection.summary",
+      "focused_reflection.emotions",
+      "focused_reflection.patterns",
+      "focused_reflection.conflicts",
+      "focused_reflection.transcript",
+    ],
+  },
 
   TRIAGE: {
     id: "TRIAGE",
@@ -376,7 +380,9 @@ FOCUSED_PATTERN_REFLECTION: {
       "HOME",
     ],
     capability_id: "triage-relevance-v1",
-    meta_domains_written: ["ux", "triage.question_count",
+    meta_domains_written: [
+      "ux",
+      "triage.question_count",
       "triage.outcome",
       "triage.summary",
       "triage.unclear_points",
@@ -401,7 +407,8 @@ FOCUSED_PATTERN_REFLECTION: {
       "memory_candidates.goal",
       "memory_candidates.triggers",
       "memory_candidates.patterns",
-      "memory_candidates.summary",],
+      "memory_candidates.summary",
+    ],
   },
 
   METHOD_FIT: {
@@ -412,17 +419,14 @@ FOCUSED_PATTERN_REFLECTION: {
       "Fortæl kort hvad du vil opnå, og hvad der gør situationen svær lige nu. Jeg kan hjælpe med at vurdere, om hypnoterapi er et godt match, eller om andre tilgange typisk passer bedre. Jeg giver kun overblik—ikke behandling i chatten.",
     allow_free_text: true,
     allow_parentese: true,
-    // Allow self-hop so the capability can stay in METHOD_FIT without dead-ends.
     allowed_exits: ["METHOD_FIT", "HOME", "BOOKING"],
     capability_id: "method-fit-v1",
-    meta_domains_written: ["ux", "method_fit.transcript",
+    meta_domains_written: [
+      "ux",
+      "method_fit.transcript",
       "method_fit.summary",
-
-      // v3: schema-backed profile fields used by the capability
       "method_fit.profile",
       "method_fit.scope",
-
-      // v3: schema-backed recommendations (deterministic selection)
       "method_fit.case_id",
       "method_fit.problem_tags",
       "method_fit.constraints",
@@ -431,8 +435,6 @@ FOCUSED_PATTERN_REFLECTION: {
       "method_fit.recommendations",
       "method_fit.unknown_candidates",
       "method_fit.focus_plan",
-
-      // v2: triage-like discipline + outputs
       "method_fit.question_count",
       "method_fit.questions_remaining",
       "method_fit.close_signal",
@@ -440,7 +442,8 @@ FOCUSED_PATTERN_REFLECTION: {
       "method_fit.confidence",
       "method_fit.tags",
       "method_fit.next_question",
-      "method_fit.chips",],
+      "method_fit.chips",
+    ],
   },
 
   REFLECTION: {
