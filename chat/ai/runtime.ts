@@ -5,6 +5,7 @@ import { genHypnoCapability } from "./capabilities/genHypno"
 import { methodFitCapability } from "./capabilities/methodFit"
 import { reflectionCapability } from "./capabilities/reflection"
 import { diaryCapability } from "./capabilities/diary"
+import { focusedPatternReflectionCapability } from "./capabilities/focusedPatternReflection"
 
 const CAPABILITIES: Record<string, AiCapability> = {
   [triageCapability.id]: triageCapability,
@@ -12,6 +13,7 @@ const CAPABILITIES: Record<string, AiCapability> = {
   [methodFitCapability.id]: methodFitCapability,
   [reflectionCapability.id]: reflectionCapability,
   [diaryCapability.id]: diaryCapability,
+  [focusedPatternReflectionCapability.id]: focusedPatternReflectionCapability,
 }
 
 export async function runCapability(

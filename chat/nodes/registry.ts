@@ -315,10 +315,47 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "Velkommen. Du er i dialog med hypnoterapeuten. Fortæl kort hvad du ønsker hjælp eller indsigt i. Jeg kan forklare hypnoterapi og hjælpe dig med refleksion—ikke behandling i chatten.",
     allow_free_text: true,
     allow_parentese: true,
-    allowed_exits: ["HOME"],
+    allowed_exits: ["HOME", "FOCUSED_PATTERN_REFLECTION"],
     capability_id: "gen-hypno-v1",
-    meta_domains_written: ["ux", "gen_hypno.transcript", "gen_hypno.last_topic", "gen_hypno.assistant_turn_count"],
+    meta_domains_written: [
+      "ux",
+      "gen_hypno.transcript",
+      "gen_hypno.last_topic",
+      "gen_hypno.problem_title",
+      "gen_hypno.problem_summary",
+      "gen_hypno.topic_tags",
+      "gen_hypno.assistant_turn_count",
+      "focused_reflection.topic",
+      "focused_reflection.entry_source",
+      "focused_reflection.user_opt_in",
+      "focused_reflection.stage",
+      "focused_reflection.transcript",
+    ],
   },
+
+FOCUSED_PATTERN_REFLECTION: {
+  id: "FOCUSED_PATTERN_REFLECTION",
+  kind: "DIALOG",
+  goal: "Fokuseret refleksion over brugerens forhold til et bestemt forbrug eller vanemønster.",
+  message:
+    "Vi fortsætter her i chatten med et mere fokuseret blik på et mønster i din hverdag. Samtalen handler om refleksion – ikke behandling.",
+  allow_free_text: true,
+  allow_parentese: true,
+  allowed_exits: ["FOCUSED_PATTERN_REFLECTION", "HOME", "GEN_HYPNO", "BOOKING"],
+  capability_id: "focused-pattern-reflection-v1",
+  meta_domains_written: [
+    "ux",
+    "focused_reflection.topic",
+    "focused_reflection.entry_source",
+    "focused_reflection.user_opt_in",
+    "focused_reflection.stage",
+    "focused_reflection.summary",
+    "focused_reflection.emotions",
+    "focused_reflection.patterns",
+    "focused_reflection.conflicts",
+    "focused_reflection.transcript",
+  ],
+},
 
   TRIAGE: {
     id: "TRIAGE",
@@ -524,28 +561,37 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
   AKUT: {
     id: "AKUT",
     kind: "MENU",
-    goal: "Akut",
+    goal: "Akut hjælp",
     message:
-      "Akut hjælp i Danmark: Ring 112 ved livstruende situationer. Voksne: Livslinien 70 201 201 (døgnåben). Børn og unge: BørneTelefonen 116 111. Psykiatrisk akutmodtagelse kan kontaktes via 1813 (Region Hovedstaden) eller din region.",
+      "Hvis du er i akut krise eller fare, så søg lokal akut hjælp med det samme.\n\nDanmark:\n- Alarm: 112\n- Akuttelefon/lægevagt afhænger af region\n- Psykiatrisk akutmodtagelse i din region\n\nHvis det ikke er akut, kan du gå tilbage til HOME eller vælge booking.",
     allow_free_text: false,
     allow_parentese: false,
     navigation: {
       show_default_chips: false,
     },
-    allowed_exits: PARENTESE_EXITS,
+    allowed_exits: ["HOME", "BOOKING"],
+    meta_domains_written: ["ux"],
+  },
+
+  RESUME: {
+    id: "RESUME",
+    kind: "ROUTER",
+    goal: "Resume previous visible node",
+    message: "Fortsætter…",
+    allow_free_text: false,
+    allow_parentese: false,
+    allowed_exits: ["HOME"],
+    router: {
+      router_id: "resume-router-v1",
+    },
     meta_domains_written: ["ux"],
   },
 })
 
-const REGISTRY: Record<NodeId, Readonly<Node>> = Object.freeze(
-  Object.fromEntries(Object.entries(RAW_REGISTRY).map(([k, v]) => [k, Object.freeze(v)]))
-)
+export const REGISTRY: Record<NodeId, Node> = RAW_REGISTRY
 
-function getNode(id: NodeId): Readonly<Node> {
+export function getNode(id: NodeId): Node {
   const node = REGISTRY[id]
-  if (!node) throw new Error(`unknown node: ${id}`)
+  if (!node) throw new Error(`Unknown node: ${id}`)
   return node
 }
-
-export { getNode }
-export default getNode

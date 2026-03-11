@@ -1,0 +1,25 @@
+import { JobKind, JobRecordV1 } from "./types"
+import { tickScanThreads } from "./handlers/scanThreads"
+
+export type JobTickResult = {
+  job: JobRecordV1
+  // If set, caller should remove from pending index.
+  completed: boolean
+}
+
+export async function tickJob(job: JobRecordV1): Promise<JobTickResult> {
+  switch (job.kind as JobKind) {
+    case "scan_threads":
+      return tickScanThreads(job)
+    default:
+      return {
+        job: {
+          ...job,
+          status: "failed",
+          last_error: `unknown job kind: ${String((job as any).kind)}`,
+          updated_at: Date.now(),
+        },
+        completed: true,
+      }
+  }
+}
