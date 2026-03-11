@@ -236,7 +236,7 @@ så vælg exit, når brugerens besked rimeligt kan læses som et ønske om at st
 
 export const focusedPatternReflectionCapability: AiCapability = {
   id: "focused-pattern-reflection-v1",
-  systemPrompt: SYSTEM_PROMPT,
+  prompt: SYSTEM_PROMPT,
 }
 
 export default focusedPatternReflectionCapability
