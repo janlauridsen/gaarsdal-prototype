@@ -154,6 +154,7 @@ export const focusedPatternReflectionCapability: AiCapability = {
     }
 
     let assistant = ""
+    let usedFallback = false
 
     try {
       const result = await llm.chatJson(payload)
@@ -165,10 +166,13 @@ export const focusedPatternReflectionCapability: AiCapability = {
       ) {
         assistant = result.assistant_message.trim()
       }
-    } catch {}
+    } catch {
+      usedFallback = true
+    }
 
     if (!assistant) {
       assistant = fallback(topic)
+      usedFallback = true
     }
 
     const updatedTranscript = appendTranscript(
@@ -193,6 +197,7 @@ export const focusedPatternReflectionCapability: AiCapability = {
       transition,
       debug: {
         capability: "focused-pattern-reflection-v1",
+        used_fallback: usedFallback,
       },
     }
   },
