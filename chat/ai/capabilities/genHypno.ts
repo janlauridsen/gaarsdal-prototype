@@ -20,6 +20,12 @@ type Output = {
 const MAX_TRANSCRIPT_TURNS = 30
 const MAX_TRANSCRIPT_CHARS = 6000
 
+const FOCUSED_REFLECTION_OFFER =
+  "Tak for din åbenhed. Vi kan godt fortsætte her i chatten på to måder:\n\n" +
+  "1. Fortsætte som nu med generel refleksion og information\n" +
+  "2. Skifte til et mere fokuseret refleksionsspor om dit forhold til alkohol\n\n" +
+  "Skriv fx 1, 2, 'fortsæt som nu' eller 'skift spor'."
+
 const GEN_HYPNO_PROMPT = `
 ROLLE
 Du er en rolig, kompetent hypnoterapeut.
@@ -32,16 +38,16 @@ Du modtager:
 
 INTERN ARBEJDSMÅDE
 Før du svarer, vurder kort:
-- Hvad er brugerens primære hensigt? (fx information, evidens, forløb, bekymring, refleksiv dialog)
+- Hvad er brugerens primære hensigt? (fx information, evidens, forløb, bekymring, refleksion)
 - Er input konkret eller uklart?
 - Er der tegn på et specifikt problem eller tema?
-- Er der forhold der kræver afgrænsning, fx ønske om egentlig reflekterende dialog eller hjælp til misbrug/afhængighed?
+- Er der forhold der kræver afgrænsning?
 
 Tilpas svaret derefter:
 - Ved konkrete spørgsmål: svar kort og præcist.
 - Ved uklare eller brede spørgsmål: afgræns og stil højst ét konkret spørgsmål.
 - Ved personlige eller følelsesmæssigt tunge input: svar roligt, neutralt og uden at gå ind i behandling.
-- Ved ønske om reflekterende dialog eller hjælp til misbrug/afhængighed: foreslå at oprette en ny tråd.
+- Hvis brugeren beskriver alkoholforbrug som et personligt tema, hold dig i denne node til kort afgrænsning og information. Du må ikke selv flytte brugeren til et andet spor; det håndteres udenfor denne prompt.
 
 OPSUMMERINGSREGEL
 - Hvis assistant_turn_count > 0 OG assistant_turn_count % 4 === 0:
@@ -62,9 +68,8 @@ EVIDENSFORMIDLING
 
 AFGRÆNSNING
 - Du behandler ikke, lover ikke noget og kan ikke booke eller lave andre aftaler.
-- Hvis brugeren søger egentlig reflekterende/terapeutisk dialog, personlig bearbejdning eller hjælp til misbrug/afhængighed:
-  svar kort og venligt, og foreslå at der oprettes en ny tråd til dette formål.
 - Gå ikke ind i egentlig terapeutisk proces i denne samtale.
+- Hvis brugeren ønsker dybt udforskende, personlig bearbejdning, hold svaret kort og neutralt.
 
 SVARSTIL
 - Svar roligt, klart og professionelt.
@@ -204,6 +209,119 @@ function buildFallbackMessage(userText: string): string {
   return "Tak for dit spørgsmål. Vil du høre mest om metoder, evidens eller hvordan et forløb typisk foregår?"
 }
 
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ")
+}
+
+function stripPunctuation(text: string): string {
+  return normalizeText(text).replace(/[.,!?;:()"'’“-]/g, " ")
+}
+
+function isAlcoholTopic(text: string): boolean {
+  const t = stripPunctuation(text)
+
+  const patterns = [
+    "alkohol",
+    "alkoholforbrug",
+    "mit forbrug af alkohol",
+    "drikker for meget",
+    "jeg drikker for meget",
+    "drikker lidt for meget",
+    "mit drikkeri",
+    "drikkeri",
+    "vin hver aften",
+    "øl hver aften",
+    "for meget vin",
+    "for mange øl",
+    "mit forhold til alkohol",
+    "stoppe med at drikke",
+    "skære ned på alkohol",
+  ]
+
+  return patterns.some((pattern) => t.includes(pattern))
+}
+
+function isFocusedReflectionOffer(turn: TranscriptTurn | undefined): boolean {
+  if (!turn || turn.role !== "assistant") return false
+  return turn.content.includes("Skifte til et mere fokuseret refleksionsspor om dit forhold til alkohol")
+}
+
+function isAcceptFocusedReflection(text: string): boolean {
+  const t = stripPunctuation(text)
+
+  const exact = new Set([
+    "2",
+    "ja",
+    "ja tak",
+    "ok",
+    "okay",
+    "yes",
+    "skift spor",
+    "mere fokuseret",
+    "fokuseret refleksionsspor",
+    "lad os gøre det",
+    "ja lad os gøre det",
+    "ja skift spor",
+    "ja mere fokuseret",
+    "skift til spor 2",
+    "spor 2",
+  ])
+
+  if (exact.has(t)) return true
+
+  if (
+    (t.includes("skift") && t.includes("spor")) ||
+    (t.includes("mere") && t.includes("fokuseret")) ||
+    (t.includes("fokuseret") && t.includes("alkohol")) ||
+    (t.includes("ja") && t.includes("spor")) ||
+    (t.includes("ja") && t.includes("fokuseret"))
+  ) {
+    return true
+  }
+
+  return false
+}
+
+function isDeclineFocusedReflection(text: string): boolean {
+  const t = stripPunctuation(text)
+
+  const exact = new Set([
+    "1",
+    "fortsæt",
+    "fortsæt som nu",
+    "som nu",
+    "bliv her",
+    "nej",
+    "nej tak",
+  ])
+
+  if (exact.has(t)) return true
+
+  if (
+    (t.includes("fortsæt") && t.includes("nu")) ||
+    (t.includes("bliv") && t.includes("her")) ||
+    (t.includes("generel") && t.includes("refleksion"))
+  ) {
+    return true
+  }
+
+  return false
+}
+
+function buildFocusedReflectionTranscript(userText: string): TranscriptTurn[] {
+  const transcript: TranscriptTurn[] = []
+
+  const trimmed = (userText ?? "").trim()
+  if (trimmed) {
+    transcript.push({ role: "user", content: trimmed })
+  }
+
+  return transcript
+}
+
 export const genHypnoCapability: AiCapability = {
   id: "gen-hypno-v1",
 
@@ -216,6 +334,97 @@ export const genHypnoCapability: AiCapability = {
 
     const previousAssistantCount =
       Number(context.state.meta["gen_hypno.assistant_turn_count"]?.value) || 0
+
+    const userText = context.userText ?? ""
+    const lastTurn = fullTranscript.length
+      ? fullTranscript[fullTranscript.length - 1]
+      : undefined
+
+    if (isFocusedReflectionOffer(lastTurn) && isAcceptFocusedReflection(userText)) {
+      const transition: Transition = {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        to: "FOCUSED_PATTERN_REFLECTION",
+        reason: "gen-hypno-opt-in-focused-reflection",
+        response_message:
+          "Fint. Vi fortsætter her i chatten med et mere fokuseret blik på dit forhold til alkohol. Jeg hjælper dig med at undersøge mønstre, triggere og det, der trækker i dig — uden at gøre det til behandling i chatten.",
+        meta_delta: {
+          "focused_reflection.topic": "alcohol",
+          "focused_reflection.entry_source": "GEN_HYPNO",
+          "focused_reflection.user_opt_in": true,
+          "focused_reflection.stage": "OPEN",
+          "focused_reflection.transcript": buildFocusedReflectionTranscript(userText),
+        },
+      }
+
+      return {
+        transition,
+        debug: {
+          capability: "gen-hypno-v1",
+          used_fallback: false,
+        },
+      }
+    }
+
+    if (isFocusedReflectionOffer(lastTurn) && isDeclineFocusedReflection(userText)) {
+      const assistant =
+        "Fint. Vi fortsætter som nu. Hvad vil du helst have hjælp til her: hvad hypnoterapi er, hvordan et forløb typisk foregår, eller en kort refleksion om dine alkoholvaner?"
+
+      const updatedTranscript = appendTranscript(fullTranscript, userText, assistant)
+
+      const transition: Transition = {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        reason: "gen-hypno-decline-focused-reflection",
+        response_message: assistant,
+        meta_delta: {
+          "gen_hypno.transcript": updatedTranscript,
+          "gen_hypno.assistant_turn_count": previousAssistantCount + 1,
+          "gen_hypno.last_topic": "alkohol",
+          "gen_hypno.problem_title": "alkoholforbrug",
+          "gen_hypno.problem_summary":
+            "Brugeren ønsker at blive i den generelle dialog om alkoholforbrug.",
+          "gen_hypno.topic_tags": ["alkohol", "refleksion"],
+        },
+      }
+
+      return {
+        transition,
+        debug: {
+          capability: "gen-hypno-v1",
+          used_fallback: false,
+        },
+      }
+    }
+
+    if (isAlcoholTopic(userText)) {
+      const assistant = FOCUSED_REFLECTION_OFFER
+      const updatedTranscript = appendTranscript(fullTranscript, userText, assistant)
+
+      const transition: Transition = {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        reason: "gen-hypno-offer-focused-reflection",
+        response_message: assistant,
+        meta_delta: {
+          "gen_hypno.transcript": updatedTranscript,
+          "gen_hypno.assistant_turn_count": previousAssistantCount + 1,
+          "gen_hypno.last_topic": "alkohol",
+          "gen_hypno.problem_title": "alkoholforbrug",
+          "gen_hypno.problem_summary":
+            "Brugeren ønsker at tale om sit alkoholforbrug og får tilbudt et fokuseret refleksionsspor i samme chat.",
+          "gen_hypno.topic_tags": ["alkohol", "forbrug", "refleksion"],
+        },
+      }
+
+      return {
+        transition,
+        debug: {
+          capability: "gen-hypno-v1",
+          used_fallback: false,
+        },
+      }
+    }
 
     const payload = {
       model:
@@ -231,7 +440,7 @@ export const genHypnoCapability: AiCapability = {
           role: "user" as const,
           content: JSON.stringify({
             conversation_transcript: trimmedTranscript,
-            user_input: context.userText ?? "",
+            user_input: userText,
             assistant_turn_count: previousAssistantCount,
           }),
         },
@@ -241,15 +450,9 @@ export const genHypnoCapability: AiCapability = {
     const response = await llm.chatJson(payload)
     const parsed = normalizeOutput(response)
 
-    const assistant =
-      parsed?.assistant_message ??
-      buildFallbackMessage(context.userText ?? "")
+    const assistant = parsed?.assistant_message ?? buildFallbackMessage(userText)
 
-    const updatedTranscript = appendTranscript(
-      fullTranscript,
-      context.userText ?? "",
-      assistant
-    )
+    const updatedTranscript = appendTranscript(fullTranscript, userText, assistant)
 
     const newAssistantCount = previousAssistantCount + 1
 
