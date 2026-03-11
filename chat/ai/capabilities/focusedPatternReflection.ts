@@ -112,6 +112,11 @@ function appendTranscript(
   return next
 }
 
+function readTopic(context: AiCapabilityContext): string {
+  const raw = context.state.meta["focused_reflection.topic"]?.value
+  return typeof raw === "string" && raw.trim() ? raw.trim() : "det"
+}
+
 function fallback(topic: string): string {
   return (
     "Tak fordi du deler det. Hvis du vil, kan vi se lidt nærmere på dit forhold til " +
@@ -129,9 +134,7 @@ export const focusedPatternReflectionCapability: AiCapability = {
   ): Promise<AiCapabilityResult> {
     const transcript = readTranscript(context)
     const trimmedTranscript = trimTranscript(transcript)
-
-    const topic =
-      context.state.meta["focused_reflection.topic"]?.value ?? "det"
+    const topic = readTopic(context)
 
     const payload = {
       model: process.env.REFLECTION_MODEL ?? "gpt-4.1-mini",
