@@ -1,7 +1,13 @@
-import type { NodeId } from "../../nodes/registry"
+type RouteNodeId =
+  | "GEN_HYPNO"
+  | "METHOD_FIT"
+  | "REFLECTION"
+  | "BOOKING"
+  | "DEV_SANDBOX_INTRO"
+  | "AKUT"
 
 export type RouteDecision = {
-  chosen: NodeId
+  chosen: RouteNodeId
   confidence: number
   reason: string
 }
@@ -32,7 +38,7 @@ function hasAny(text: string, needles: string[]): boolean {
  * - TRIAGE bruges ikke længere fra HOME.
  * - Default går til GEN_HYPNO.
  * - BOOKING vælges kun ved tydelig kontakt-/bookingsignal.
- * - METHOD_FIT vælges kun ved tydeligt metode-/matchsignal.
+ * - METHOD_FIT vælges kun ved tydelig metode-/matchsignal.
  * - REFLECTION vælges kun ved tydeligt refleksionssignal.
  */
 export function homeRouterV1(input: HomeRouterInput): RouteDecision {
@@ -72,6 +78,7 @@ export function homeRouterV1(input: HomeRouterInput): RouteDecision {
       "booking",
       "bestil",
       "bestille",
+      "booke",
       "tid",
       "kontakt",
       "kontakt mig",
