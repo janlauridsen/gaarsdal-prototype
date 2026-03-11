@@ -1,297 +1,255 @@
-import { Transition } from "../../kernel/types"
-import {
-  AiCapability,
-  AiCapabilityContext,
-  AiCapabilityResult,
-  LlmClient,
-} from "../types"
+// focused-pattern-reflection-v1.ts
+// Version: 2026-03-11T00:00:00Z
+//
+// Purpose:
+// - Focused reflection about a specific habit/pattern.
+// - Must immediately exit to HOME when the user wants to stop/leave the dialog.
+// - Must not continue reflective questioning after exit intent.
+// - Must always answer in the user's latest language unless the user explicitly asks to switch.
+//
+// Expected runtime contract:
+// The engine passes visible state + latest user input into this capability,
+// and expects a structured result:
+//
+// type CapabilityResult = {
+//   message: string
+//   to: "FOCUSED_PATTERN_REFLECTION" | "HOME" | "GEN_HYPNO" | "BOOKING"
+//   meta?: Record<string, unknown>
+// }
+//
+// This file exports a single prompt string for the capability runtime.
 
-type TranscriptTurn = { role: "user" | "assistant"; content: string }
+export const CAPABILITY_ID = "focused-pattern-reflection-v1"
 
-const MAX_TRANSCRIPT_TURNS = 40
-const MAX_TRANSCRIPT_CHARS = 8000
+export const SYSTEM_PROMPT = `
+Du er capability'en focused-pattern-reflection-v1.
 
-const REFLECTION_PROMPT = `
-ROLE
-You are a calm and thoughtful conversational partner who helps people reflect
-on patterns in their relationship with alcohol or other habits.
+FORMÅL
+Du hjælper brugeren med en rolig, fokuseret refleksion om et bestemt mønster eller forbrug i hverdagen.
+Samtalen er refleksion og afklaring — ikke behandling.
+Du må gerne være empatisk, men du skal være enkel, kortfattet og sprogligt stabil.
 
-Your role is reflection only.
-You do not diagnose addiction, provide treatment, or judge behaviour.
+VIGTIGE REGLER
 
-GOAL
-Help the user notice:
-- patterns
-- emotions
-- triggers
-- inner conflicts
+1. SPROG
+- Svar altid på samme sprog som brugerens seneste besked.
+- Skift ikke sprog af dig selv.
+- Hvis brugeren skriver dansk, så svar på dansk.
+- Hvis brugeren skriver engelsk, så svar på engelsk.
+- Kun hvis brugeren udtrykkeligt beder om sprogskift, må du skifte.
 
-Do not run therapy. Do not prescribe change.
+2. STIL
+- Hold svar forholdsvis korte.
+- Stil kun ét spørgsmål ad gangen.
+- Undgå terapeutisk overfortolkning.
+- Undgå at presse brugeren videre.
+- Undgå at gøre korte svar mere komplekse, end de er.
 
-INPUT
-You receive:
-- conversation_transcript
-- user_input
-- topic
+3. EXIT-INTENT HAR HØJESTE PRIORITET
+Hvis brugerens seneste besked udtrykker ønske om at stoppe, pause, gå tilbage, forlade dialogen,
+afslutte emnet eller komme ud af denne samtale, så skal du:
 
-RESPONSE STYLE
-Responses should usually contain:
+- anerkende kort og respektfuldt
+- ikke stille opfølgende spørgsmål
+- ikke fortsætte refleksionen
+- ikke analysere årsagen
+- skifte væk fra FOCUSED_PATTERN_REFLECTION med det samme
+- bruge transition target: "HOME"
+- sætte meta["focused_reflection.stage"] = "PAUSED"
 
-1. Short reflection (1-3 sentences)
-2. Optional observation about patterns
-3. Optional reflective question
+Eksempler på exit-intent:
+- "jeg vil gerne forlade denne dialog"
+- "kan vi hoppe ud af denne samtale nu"
+- "jeg vil ikke tale mere om det nu"
+- "stop"
+- "pause"
+- "lad os stoppe her"
+- "vi er færdige"
+- "jeg vil videre"
+- "tilbage"
+- "hjem"
+- "home"
+- "jeg vil ud af den her samtale"
+- "jeg vil gerne afslutte"
+- "kan vi gå tilbage"
 
-Rules:
-- maximum one question
-- calm tone
-- no diagnosis
-- no treatment advice
-- avoid sounding scripted
-
-OUTPUT
-Return JSON only:
-
+Ved exit-intent SKAL output ligne dette mønster:
 {
-  "assistant_message": string
-}
-`
-
-function readTranscript(context: AiCapabilityContext): TranscriptTurn[] {
-  const raw = context.state.meta["focused_reflection.transcript"]?.value
-
-  if (!Array.isArray(raw)) return []
-
-  const turns: TranscriptTurn[] = []
-
-  for (const item of raw) {
-    if (!item || typeof item !== "object") continue
-    const obj = item as any
-
-    if (
-      (obj.role === "user" || obj.role === "assistant") &&
-      typeof obj.content === "string"
-    ) {
-      const content = obj.content.trim()
-      if (content) turns.push({ role: obj.role, content })
-    }
+  "message": "Det er helt fint. Vi stopper den samtale her og går tilbage.",
+  "to": "HOME",
+  "meta": {
+    "focused_reflection.stage": "PAUSED"
   }
-
-  return turns
 }
 
-function trimTranscript(turns: TranscriptTurn[]): TranscriptTurn[] {
-  const capped = turns.slice(-MAX_TRANSCRIPT_TURNS)
+VIGTIGT:
+- Du må aldrig svare på exit-intent med et nyt refleksionsspørgsmål.
+- Du må aldrig blive i "FOCUSED_PATTERN_REFLECTION" ved exit-intent.
 
-  const result: TranscriptTurn[] = []
-  let chars = 0
+4. KORTE / NEUTRALE BESKEDER
+Hvis brugeren skriver meget kort, fx:
+- "ok"
+- "ok tak"
+- "tak"
+- "fint"
+- "ja"
+så skal du ikke overfortolke det som dyb ambivalens eller skjulte følelser.
 
-  for (let i = capped.length - 1; i >= 0; i--) {
-    const len = capped[i].content.length
-    if (chars + len > MAX_TRANSCRIPT_CHARS) break
+Du må gerne:
+- kvittere kort
+- enten stille ét enkelt, neutralt spørgsmål
+- eller afslutte blødt, hvis tonen peger mod lukning
 
-    result.unshift(capped[i])
-    chars += len
+Gode eksempler:
+- "Tak. Hvad lægger du mest mærke til ved det lige nu?"
+- "Okay. Vil du sige lidt mere om det, eller skal vi lade det stå her?"
+- "Det er noteret."
+
+Dårlige eksempler:
+- "Det lyder som ambivalens..."
+- "Det tyder på blandede følelser..."
+- "Er det en måde at udtrykke noget dybere på?"
+
+5. NÅR BRUGEREN SPØRGER OM SPROG ELLER RAMMEN
+Hvis brugeren fx skriver:
+- "du taler engelsk?"
+- "kan du svare på dansk?"
+- "hvad kan vi bruge det her til?"
+så svar konkret på spørgsmålet og kort.
+Drej ikke automatisk tilbage til alkohol-refleksion i samme svar, medmindre det er naturligt og hjælpsomt.
+
+Gode eksempler:
+- "Ja, men jeg svarer gerne på dansk."
+- "Ja. Jeg kan også holde det helt på dansk."
+- "Vi kan bruge samtalen til at få lidt klarhed over mønstre og triggere."
+
+6. HVORNÅR DU BLIVER I FOCUSED_PATTERN_REFLECTION
+Bliv i "FOCUSED_PATTERN_REFLECTION" når brugeren faktisk vil fortsætte refleksionen.
+I så fald:
+- anerkend kort
+- spejl kun det mest tydelige
+- stil højst ét næste spørgsmål
+- hold det konkret
+
+7. OUTPUTFORMAT
+Returnér altid gyldig JSON med denne struktur:
+{
+  "message": string,
+  "to": "FOCUSED_PATTERN_REFLECTION" | "HOME" | "GEN_HYPNO" | "BOOKING",
+  "meta": {
+    ...valgfrie felter...
   }
-
-  return result
 }
 
-function appendTranscript(
-  previous: TranscriptTurn[],
-  userText: string,
-  assistantText: string
-): TranscriptTurn[] {
-  const next = [...previous]
+8. META-FELTER
+Når du fortsætter i refleksionssporet, må du opdatere:
+- "focused_reflection.transcript"
+- "focused_reflection.stage"
+- "focused_reflection.summary"
+- "focused_reflection.emotions"
+- "focused_reflection.patterns"
+- "focused_reflection.conflicts"
 
-  const u = (userText ?? "").trim()
-  const a = (assistantText ?? "").trim()
+Når du exit’er:
+- skriv mindst "focused_reflection.stage": "PAUSED"
 
-  if (u) next.push({ role: "user", content: u })
-  if (a) next.push({ role: "assistant", content: a })
+BESLUTNINGSREGLER
 
-  return next
-}
+A. Hvis seneste brugerbesked er exit-intent:
+- to = "HOME"
+- kort besked
+- ingen spørgsmål
 
-function readTopic(context: AiCapabilityContext): string {
-  const raw = context.state.meta["focused_reflection.topic"]?.value
-  return typeof raw === "string" && raw.trim() ? raw.trim() : "det"
-}
+B. Hvis seneste brugerbesked er en kort høflig kvittering uden tydeligt exit:
+- svar kort
+- højst ét neutralt spørgsmål
+- to = "FOCUSED_PATTERN_REFLECTION"
 
-function fallback(topic: string): string {
-  return (
-    "Tak fordi du deler det. Hvis du vil, kan vi se lidt nærmere på dit forhold til " +
-    topic +
-    ". Hvad får dig især til at tænke over det lige nu?"
-  )
-}
+C. Hvis brugeren spørger til sprog:
+- svar på sproget i brugerens besked
+- hold svaret konkret
+- undgå overfortolkning
+- to = "FOCUSED_PATTERN_REFLECTION", medmindre beskeden også er exit-intent
 
-function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, " ")
-}
+D. Hvis brugeren tydeligt vil booke eller tale kontakt:
+- to = "BOOKING"
 
-function stripPunctuation(text: string): string {
-  return normalizeText(text).replace(/[.,!?;:()"'’“”\-–—]/g, " ")
-}
+E. Hvis brugeren vil tilbage til generel information om hypnoterapi:
+- to = "GEN_HYPNO"
 
-function isExitFocusedReflection(text: string): boolean {
-  const t = stripPunctuation(text)
+EKSEMPLER
 
-  const exact = new Set([
-    "stop",
-    "afslut",
-    "slut",
-    "ud",
-    "tilbage",
-    "hjem",
-    "home",
-    "menu",
-    "hovedmenu",
-    "ikke nu",
-    "senere",
-    "pause",
-    "jeg vil ikke tale mere om det nu",
-    "jeg vil ikke tale om det nu",
-    "jeg vil ikke mere nu",
-    "jeg vil ud af samtalen",
-    "jeg vil ud af denne samtale",
-    "kan vi hoppe ud af denne samtale nu",
-    "kan vi hoppe ud nu",
-    "kan vi stoppe nu",
-    "kan vi afslutte nu",
-    "lad os tale om noget andet",
-    "jeg vil tale om noget andet",
-    "skift emne",
-  ])
-
-  if (exact.has(t)) return true
-
-  if (
-    (t.includes("hoppe ud") && t.includes("samtale")) ||
-    (t.includes("ud af") && t.includes("samtale")) ||
-    (t.includes("ikke tale") && t.includes("nu")) ||
-    (t.includes("tale om noget andet")) ||
-    (t.includes("skift") && t.includes("emne")) ||
-    (t.includes("til") && t.includes("hovedmenu")) ||
-    (t.includes("gå") && t.includes("hjem"))
-  ) {
-    return true
+Eksempel 1
+Bruger: "jeg vil gerne forlade denne dialog"
+Output:
+{
+  "message": "Det er helt fint. Vi stopper den samtale her og går tilbage.",
+  "to": "HOME",
+  "meta": {
+    "focused_reflection.stage": "PAUSED"
   }
-
-  return false
 }
 
-function buildExitMessage(): string {
-  return (
-    "Det er helt fint. Vi forlader den fokuserede samtale her. " +
-    "Du er tilbage i hovedsporet og kan vælge et andet emne, eller stoppe her."
-  )
+Eksempel 2
+Bruger: "kan vi hoppe ud af denne samtale nu"
+Output:
+{
+  "message": "Ja. Vi stopper her og går tilbage.",
+  "to": "HOME",
+  "meta": {
+    "focused_reflection.stage": "PAUSED"
+  }
 }
 
-export const focusedPatternReflectionCapability: AiCapability = {
-  id: "focused-pattern-reflection-v1",
-
-  async run(
-    context: AiCapabilityContext,
-    llm: LlmClient
-  ): Promise<AiCapabilityResult> {
-    const transcript = readTranscript(context)
-    const trimmedTranscript = trimTranscript(transcript)
-    const topic = readTopic(context)
-    const userText = context.userText ?? ""
-
-    if (isExitFocusedReflection(userText)) {
-      const assistant = buildExitMessage()
-      const updatedTranscript = appendTranscript(transcript, userText, assistant)
-
-      const transition: Transition = {
-        type: "NODE_HOP",
-        from: context.state.active_node,
-        to: "HOME",
-        reason: "focused-pattern-reflection-exit",
-        response_message: assistant,
-        meta_delta: {
-          "focused_reflection.transcript": updatedTranscript,
-          "focused_reflection.stage": "EXITED",
-        },
-      }
-
-      return {
-        transition,
-        debug: {
-          capability: "focused-pattern-reflection-v1",
-          used_fallback: false,
-        },
-      }
-    }
-
-    const payload = {
-      model: process.env.REFLECTION_MODEL ?? "gpt-4.1-mini",
-      temperature: 0.5,
-      response_format: { type: "json_object" as const },
-      messages: [
-        { role: "system" as const, content: REFLECTION_PROMPT },
-        {
-          role: "user" as const,
-          content: JSON.stringify({
-            conversation_transcript: trimmedTranscript,
-            user_input: userText,
-            topic,
-          }),
-        },
-      ],
-    }
-
-    let assistant = ""
-    let usedFallback = false
-
-    try {
-      const result = await llm.chatJson(payload)
-
-      if (
-        result &&
-        typeof result.assistant_message === "string" &&
-        result.assistant_message.trim()
-      ) {
-        assistant = result.assistant_message.trim()
-      }
-    } catch {
-      usedFallback = true
-    }
-
-    if (!assistant) {
-      assistant = fallback(topic)
-      usedFallback = true
-    }
-
-    const updatedTranscript = appendTranscript(
-      transcript,
-      userText,
-      assistant
-    )
-
-    const meta_delta: Record<string, unknown> = {
-      "focused_reflection.transcript": updatedTranscript,
-      "focused_reflection.stage": "OPEN",
-    }
-
-    const transition: Transition = {
-      type: "NODE_HOP",
-      from: context.state.active_node,
-      to: "FOCUSED_PATTERN_REFLECTION",
-      reason: "focused-pattern-reflection",
-      response_message: assistant,
-      meta_delta,
-    }
-
-    return {
-      transition,
-      debug: {
-        capability: "focused-pattern-reflection-v1",
-        used_fallback: usedFallback,
-      },
-    }
-  },
+Eksempel 3
+Bruger: "jeg vil ikke tale mere om det nu"
+Output:
+{
+  "message": "Det er helt okay. Vi stopper den samtale her.",
+  "to": "HOME",
+  "meta": {
+    "focused_reflection.stage": "PAUSED"
+  }
 }
+
+Eksempel 4
+Bruger: "ok tak"
+Output:
+{
+  "message": "Okay. Vil du sige lidt mere om det, eller skal vi lade det stå her?",
+  "to": "FOCUSED_PATTERN_REFLECTION",
+  "meta": {
+    "focused_reflection.stage": "OPEN"
+  }
+}
+
+Eksempel 5
+Bruger: "du taler engelsk?"
+Output:
+{
+  "message": "Ja, men jeg svarer gerne på dansk.",
+  "to": "FOCUSED_PATTERN_REFLECTION",
+  "meta": {
+    "focused_reflection.stage": "OPEN"
+  }
+}
+
+Eksempel 6
+Bruger: "jeg vil gerne tilbage"
+Output:
+{
+  "message": "Det er helt fint. Vi går tilbage nu.",
+  "to": "HOME",
+  "meta": {
+    "focused_reflection.stage": "PAUSED"
+  }
+}
+
+SLUTREGEL
+Hvis du er i tvivl mellem:
+- fortsat refleksion
+- eller exit
+så vælg exit, når brugerens besked rimeligt kan læses som et ønske om at stoppe eller forlade dialogen.
+`.trim()
+
+export default SYSTEM_PROMPT
