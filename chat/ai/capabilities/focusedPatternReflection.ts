@@ -125,6 +125,71 @@ function fallback(topic: string): string {
   )
 }
 
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ")
+}
+
+function stripPunctuation(text: string): string {
+  return normalizeText(text).replace(/[.,!?;:()"'’“”\-–—]/g, " ")
+}
+
+function isExitFocusedReflection(text: string): boolean {
+  const t = stripPunctuation(text)
+
+  const exact = new Set([
+    "stop",
+    "afslut",
+    "slut",
+    "ud",
+    "tilbage",
+    "hjem",
+    "home",
+    "menu",
+    "hovedmenu",
+    "ikke nu",
+    "senere",
+    "pause",
+    "jeg vil ikke tale mere om det nu",
+    "jeg vil ikke tale om det nu",
+    "jeg vil ikke mere nu",
+    "jeg vil ud af samtalen",
+    "jeg vil ud af denne samtale",
+    "kan vi hoppe ud af denne samtale nu",
+    "kan vi hoppe ud nu",
+    "kan vi stoppe nu",
+    "kan vi afslutte nu",
+    "lad os tale om noget andet",
+    "jeg vil tale om noget andet",
+    "skift emne",
+  ])
+
+  if (exact.has(t)) return true
+
+  if (
+    (t.includes("hoppe ud") && t.includes("samtale")) ||
+    (t.includes("ud af") && t.includes("samtale")) ||
+    (t.includes("ikke tale") && t.includes("nu")) ||
+    (t.includes("tale om noget andet")) ||
+    (t.includes("skift") && t.includes("emne")) ||
+    (t.includes("til") && t.includes("hovedmenu")) ||
+    (t.includes("gå") && t.includes("hjem"))
+  ) {
+    return true
+  }
+
+  return false
+}
+
+function buildExitMessage(): string {
+  return (
+    "Det er helt fint. Vi forlader den fokuserede samtale her. " +
+    "Du er tilbage i hovedsporet og kan vælge et andet emne, eller stoppe her."
+  )
+}
+
 export const focusedPatternReflectionCapability: AiCapability = {
   id: "focused-pattern-reflection-v1",
 
@@ -135,6 +200,32 @@ export const focusedPatternReflectionCapability: AiCapability = {
     const transcript = readTranscript(context)
     const trimmedTranscript = trimTranscript(transcript)
     const topic = readTopic(context)
+    const userText = context.userText ?? ""
+
+    if (isExitFocusedReflection(userText)) {
+      const assistant = buildExitMessage()
+      const updatedTranscript = appendTranscript(transcript, userText, assistant)
+
+      const transition: Transition = {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        to: "HOME",
+        reason: "focused-pattern-reflection-exit",
+        response_message: assistant,
+        meta_delta: {
+          "focused_reflection.transcript": updatedTranscript,
+          "focused_reflection.stage": "EXITED",
+        },
+      }
+
+      return {
+        transition,
+        debug: {
+          capability: "focused-pattern-reflection-v1",
+          used_fallback: false,
+        },
+      }
+    }
 
     const payload = {
       model: process.env.REFLECTION_MODEL ?? "gpt-4.1-mini",
@@ -146,7 +237,7 @@ export const focusedPatternReflectionCapability: AiCapability = {
           role: "user" as const,
           content: JSON.stringify({
             conversation_transcript: trimmedTranscript,
-            user_input: context.userText ?? "",
+            user_input: userText,
             topic,
           }),
         },
@@ -177,17 +268,19 @@ export const focusedPatternReflectionCapability: AiCapability = {
 
     const updatedTranscript = appendTranscript(
       transcript,
-      context.userText ?? "",
+      userText,
       assistant
     )
 
     const meta_delta: Record<string, unknown> = {
       "focused_reflection.transcript": updatedTranscript,
+      "focused_reflection.stage": "OPEN",
     }
 
     const transition: Transition = {
       type: "NODE_HOP",
       from: context.state.active_node,
+      to: "FOCUSED_PATTERN_REFLECTION",
       reason: "focused-pattern-reflection",
       response_message: assistant,
       meta_delta,
