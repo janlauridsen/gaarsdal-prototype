@@ -450,9 +450,15 @@ export const genHypnoCapability: AiCapability = {
     const response = await llm.chatJson(payload)
     const parsed = normalizeOutput(response)
 
-    const assistant = parsed?.assistant_message ?? buildFallbackMessage(userText)
+    const assistant =
+      parsed?.assistant_message ??
+      buildFallbackMessage(userText)
 
-    const updatedTranscript = appendTranscript(fullTranscript, userText, assistant)
+    const updatedTranscript = appendTranscript(
+      fullTranscript,
+      userText,
+      assistant
+    )
 
     const newAssistantCount = previousAssistantCount + 1
 
