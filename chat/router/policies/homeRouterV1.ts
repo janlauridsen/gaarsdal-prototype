@@ -5,49 +5,64 @@ type RouteNodeId =
   | "BOOKING"
   | "DEV_SANDBOX_INTRO"
   | "AKUT"
+  | "HOME"
 
 export type RouteDecision = {
-  chosen: RouteNodeId
+  nextNodeId: RouteNodeId
   confidence: number
   reason: string
 }
 
-type HomeRouterInput =
-  | string
-  | {
-      userText?: string | null
-    }
+export type HomeRouterInput = {
+  userText?: string
+  candidates?: string[]
+}
 
 function normalize(text: string): string {
   return text.toLowerCase().trim().replace(/\s+/g, " ")
-}
-
-function readUserText(input: HomeRouterInput): string {
-  if (typeof input === "string") return input
-  return input?.userText ?? ""
 }
 
 function hasAny(text: string, needles: string[]): boolean {
   return needles.some((needle) => text.includes(needle))
 }
 
+function candidateSet(candidates?: string[]): Set<string> {
+  return new Set(Array.isArray(candidates) ? candidates : [])
+}
+
+function pickIfAllowed(
+  allowed: Set<string>,
+  preferred: RouteNodeId,
+  fallback: RouteNodeId = "GEN_HYPNO"
+): RouteNodeId {
+  if (allowed.size === 0) return preferred
+  if (allowed.has(preferred)) return preferred
+  if (allowed.has(fallback)) return fallback
+  if (allowed.has("GEN_HYPNO")) return "GEN_HYPNO"
+  if (allowed.has("BOOKING")) return "BOOKING"
+  if (allowed.has("METHOD_FIT")) return "METHOD_FIT"
+  if (allowed.has("REFLECTION")) return "REFLECTION"
+  if (allowed.has("DEV_SANDBOX_INTRO")) return "DEV_SANDBOX_INTRO"
+  if (allowed.has("AKUT")) return "AKUT"
+  if (allowed.has("HOME")) return "HOME"
+
+  return fallback
+}
+
 /**
  * HOME router policy
  *
- * Design:
- * - TRIAGE bruges ikke længere fra HOME.
- * - Default går til GEN_HYPNO.
- * - BOOKING vælges kun ved tydelig kontakt-/bookingsignal.
- * - METHOD_FIT vælges kun ved tydelig metode-/matchsignal.
- * - REFLECTION vælges kun ved tydeligt refleksionssignal.
+ * TRIAGE bruges ikke længere fra HOME.
+ * Default går til GEN_HYPNO.
  */
-export function homeRouterV1(input: HomeRouterInput): RouteDecision {
-  const raw = readUserText(input)
+export function homeRouterV1(params: HomeRouterInput): RouteDecision {
+  const raw = params.userText ?? ""
   const t = normalize(raw)
+  const allowed = candidateSet(params.candidates)
 
   if (!t) {
     return {
-      chosen: "GEN_HYPNO",
+      nextNodeId: pickIfAllowed(allowed, "GEN_HYPNO"),
       confidence: 0.7,
       reason: "empty input defaults to general hypnotherapy dialogue",
     }
@@ -66,7 +81,7 @@ export function homeRouterV1(input: HomeRouterInput): RouteDecision {
     ])
   ) {
     return {
-      chosen: "AKUT",
+      nextNodeId: pickIfAllowed(allowed, "AKUT", "GEN_HYPNO"),
       confidence: 0.95,
       reason: "acute help intent",
     }
@@ -102,7 +117,7 @@ export function homeRouterV1(input: HomeRouterInput): RouteDecision {
     ])
   ) {
     return {
-      chosen: "BOOKING",
+      nextNodeId: pickIfAllowed(allowed, "BOOKING", "GEN_HYPNO"),
       confidence: 0.92,
       reason: "clear contact or booking intent",
     }
@@ -125,7 +140,7 @@ export function homeRouterV1(input: HomeRouterInput): RouteDecision {
     ])
   ) {
     return {
-      chosen: "METHOD_FIT",
+      nextNodeId: pickIfAllowed(allowed, "METHOD_FIT", "GEN_HYPNO"),
       confidence: 0.84,
       reason: "clear method-fit intent",
     }
@@ -144,7 +159,7 @@ export function homeRouterV1(input: HomeRouterInput): RouteDecision {
     ])
   ) {
     return {
-      chosen: "REFLECTION",
+      nextNodeId: pickIfAllowed(allowed, "REFLECTION", "GEN_HYPNO"),
       confidence: 0.8,
       reason: "clear reflection intent",
     }
@@ -160,18 +175,17 @@ export function homeRouterV1(input: HomeRouterInput): RouteDecision {
     ])
   ) {
     return {
-      chosen: "DEV_SANDBOX_INTRO",
+      nextNodeId: pickIfAllowed(allowed, "DEV_SANDBOX_INTRO", "GEN_HYPNO"),
       confidence: 0.95,
       reason: "developer sandbox intent",
     }
   }
 
   return {
-    chosen: "GEN_HYPNO",
+    nextNodeId: pickIfAllowed(allowed, "GEN_HYPNO"),
     confidence: 0.78,
     reason: "default to general hypnotherapy dialogue instead of triage",
   }
 }
 
-export const routeHome = homeRouterV1
 export default homeRouterV1
