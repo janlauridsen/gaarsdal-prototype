@@ -1,27 +1,9 @@
-// focused-pattern-reflection-v1.ts
+// chat/ai/capabilities/focusedPatternReflection.ts
 // Version: 2026-03-11T00:00:00Z
-//
-// Purpose:
-// - Focused reflection about a specific habit/pattern.
-// - Must immediately exit to HOME when the user wants to stop/leave the dialog.
-// - Must not continue reflective questioning after exit intent.
-// - Must always answer in the user's latest language unless the user explicitly asks to switch.
-//
-// Expected runtime contract:
-// The engine passes visible state + latest user input into this capability,
-// and expects a structured result:
-//
-// type CapabilityResult = {
-//   message: string
-//   to: "FOCUSED_PATTERN_REFLECTION" | "HOME" | "GEN_HYPNO" | "BOOKING"
-//   meta?: Record<string, unknown>
-// }
-//
-// This file exports a single prompt string for the capability runtime.
 
-export const CAPABILITY_ID = "focused-pattern-reflection-v1"
+import type { AiCapability } from "../types"
 
-export const SYSTEM_PROMPT = `
+const SYSTEM_PROMPT = `
 Du er capability'en focused-pattern-reflection-v1.
 
 FORMÅL
@@ -252,4 +234,9 @@ Hvis du er i tvivl mellem:
 så vælg exit, når brugerens besked rimeligt kan læses som et ønske om at stoppe eller forlade dialogen.
 `.trim()
 
-export default SYSTEM_PROMPT
+export const focusedPatternReflectionCapability: AiCapability = {
+  id: "focused-pattern-reflection-v1",
+  systemPrompt: SYSTEM_PROMPT,
+}
+
+export default focusedPatternReflectionCapability
