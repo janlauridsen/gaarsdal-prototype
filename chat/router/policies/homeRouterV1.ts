@@ -1,4 +1,4 @@
-import type { NodeId } from "../../registry"
+type NodeId = string
 
 type RouteDecision = {
   chosen: NodeId
