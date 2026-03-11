@@ -333,29 +333,29 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     ],
   },
 
-  FOCUSED_PATTERN_REFLECTION: {
-    id: "FOCUSED_PATTERN_REFLECTION",
-    kind: "DIALOG",
-    goal: "Fokuseret refleksion over brugerens forhold til et bestemt forbrug eller vanemønster.",
-    message:
-      "Vi fortsætter her i chatten med et mere fokuseret blik på et mønster i din hverdag. Samtalen handler om refleksion – ikke behandling.",
-    allow_free_text: true,
-    allow_parentese: true,
-    allowed_exits: ["HOME", "GEN_HYPNO", "BOOKING"],
-    capability_id: "focused-pattern-reflection-v1",
-    meta_domains_written: [
-      "ux",
-      "focused_reflection.topic",
-      "focused_reflection.entry_source",
-      "focused_reflection.user_opt_in",
-      "focused_reflection.stage",
-      "focused_reflection.summary",
-      "focused_reflection.emotions",
-      "focused_reflection.patterns",
-      "focused_reflection.conflicts",
-      "focused_reflection.transcript",
-    ],
-  },
+FOCUSED_PATTERN_REFLECTION: {
+  id: "FOCUSED_PATTERN_REFLECTION",
+  kind: "DIALOG",
+  goal: "Fokuseret refleksion over brugerens forhold til et bestemt forbrug eller vanemønster.",
+  message:
+    "Vi fortsætter her i chatten med et mere fokuseret blik på et mønster i din hverdag. Samtalen handler om refleksion – ikke behandling.",
+  allow_free_text: true,
+  allow_parentese: true,
+  allowed_exits: ["FOCUSED_PATTERN_REFLECTION", "HOME", "GEN_HYPNO", "BOOKING"],
+  capability_id: "focused-pattern-reflection-v1",
+  meta_domains_written: [
+    "ux",
+    "focused_reflection.topic",
+    "focused_reflection.entry_source",
+    "focused_reflection.user_opt_in",
+    "focused_reflection.stage",
+    "focused_reflection.summary",
+    "focused_reflection.emotions",
+    "focused_reflection.patterns",
+    "focused_reflection.conflicts",
+    "focused_reflection.transcript",
+  ],
+},
 
   TRIAGE: {
     id: "TRIAGE",
