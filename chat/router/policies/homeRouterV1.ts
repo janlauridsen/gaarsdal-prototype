@@ -1,87 +1,73 @@
-export type HomeRouterDecision = {
-  nextNodeId: string
+import type { NodeId } from "../../registry"
+
+type RouteDecision = {
+  chosen: NodeId
   confidence: number
   reason: string
 }
 
-function norm(s: string): string {
-  return s.toLowerCase().trim()
+function normalize(text: string): string {
+  return text.toLowerCase().trim()
 }
 
-function includesAny(haystack: string, needles: string[]): boolean {
-  return needles.some((n) => haystack.includes(n))
-}
+export function routeHome(userText: string): RouteDecision {
+  const t = normalize(userText)
 
-/**
- * Deterministic, low-risk router for the "HOME" node.
- * Uses simple keyword matching.
- */
-export function homeRouterV1(params: {
-  userText: string
-  candidates: string[]
-}): HomeRouterDecision {
-  const text = norm(params.userText)
-  const candidates = params.candidates
-
-  if (!text) {
+  if (!t) {
     return {
-      nextNodeId: candidates[0] ?? "HOME",
-      confidence: 0,
-      reason: "empty input",
+      chosen: "GEN_HYPNO",
+      confidence: 0.6,
+      reason: "empty input defaults to general conversation",
     }
   }
 
-  // DEV sandbox
-  if (includesAny(text, ["sandbox", "dev sandbox", "dev", "test form", "test tool", "test checkpoint"])) {
-    if (candidates.includes("DEV_SANDBOX_INTRO")) {
-      return { nextNodeId: "DEV_SANDBOX_INTRO", confidence: 0.9, reason: "sandbox keywords" }
-    }
-  }
-
-  // Booking/contact intent
   if (
-    includesAny(text, [
-      "booking",
-      "book",
-      "tid",
-      "aftale",
-      "pris",
-      "kontakt",
-      "mail",
-      "e-mail",
-      "email",
-      "telefon",
-      "sms",
-    ])
+    t.includes("book") ||
+    t.includes("booking") ||
+    t.includes("bestille tid") ||
+    t.includes("kontakt") ||
+    t.includes("mail") ||
+    t.includes("telefon") ||
+    t.includes("ringe") ||
+    t.includes("sms")
   ) {
-    if (candidates.includes("BOOKING")) {
-      return { nextNodeId: "BOOKING", confidence: 0.7, reason: "booking/contact keywords" }
+    return {
+      chosen: "BOOKING",
+      confidence: 0.85,
+      reason: "contact or booking intent",
     }
   }
 
-  // Hypno info intent
-  if (includesAny(text, ["hypnose", "hypno", "hypnoterapi", "trance"])) {
-    if (candidates.includes("GEN_HYPNO")) {
-      return { nextNodeId: "GEN_HYPNO", confidence: 0.7, reason: "hypno keywords" }
+  if (
+    t.includes("passer hypnoterapi") ||
+    t.includes("er hypnoterapi relevant") ||
+    t.includes("god metode") ||
+    t.includes("hvilken metode") ||
+    t.includes("bedre alternativ")
+  ) {
+    return {
+      chosen: "METHOD_FIT",
+      confidence: 0.8,
+      reason: "method-fit intent",
     }
   }
 
-  // Method fit intent
-  if (includesAny(text, ["passer", "relevant", "metode", "alternativ", "hvilken tilgang", "hvad bør jeg"])) {
-    if (candidates.includes("METHOD_FIT")) {
-      return { nextNodeId: "METHOD_FIT", confidence: 0.6, reason: "method-fit keywords" }
+  if (
+    t.includes("refleksion") ||
+    t.includes("forstå mig selv") ||
+    t.includes("mønster") ||
+    t.includes("klarhed")
+  ) {
+    return {
+      chosen: "REFLECTION",
+      confidence: 0.7,
+      reason: "reflection intent",
     }
   }
 
-  // Default to screening/triage if present
-  if (candidates.includes("TRIAGE")) {
-    return { nextNodeId: "TRIAGE", confidence: 0.45, reason: "default to screening" }
-  }
-
-  // Fallback to first candidate
   return {
-    nextNodeId: candidates[0] ?? "HOME",
-    confidence: 0.2,
-    reason: "fallback to first candidate",
+    chosen: "GEN_HYPNO",
+    confidence: 0.7,
+    reason: "default to general hypnotist conversation",
   }
 }
