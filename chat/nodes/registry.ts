@@ -316,7 +316,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     kind: "DIALOG",
     goal: "Generelt om hypnoterapi",
     message:
-      "Velkommen. Du er i dialog med hypnoterapeuten. Fortæl kort hvad du ønsker hjælp eller indsigt i. Jeg kan forklare hypnoterapi og hjælpe dig med refleksion—ikke behandling i chatten.",
+      "Velkommen. Her kan du få information om hypnoterapi og hvordan et forløb typisk foregår. Chatten kan hjælpe med afklaring og refleksion, men den erstatter ikke behandling.",
     allow_free_text: true,
     allow_parentese: true,
     allowed_exits: ["HOME", "FOCUSED_PATTERN_REFLECTION"],
@@ -334,6 +334,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "focused_reflection.user_opt_in",
       "focused_reflection.stage",
       "focused_reflection.transcript",
+      "focused_reflection.readiness",
     ],
   },
 
