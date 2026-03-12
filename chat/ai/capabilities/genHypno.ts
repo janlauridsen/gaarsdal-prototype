@@ -31,13 +31,27 @@ const MAX_TRANSCRIPT_TURNS = 30
 const MAX_TRANSCRIPT_CHARS = 6000
 
 const FOCUSED_REFLECTION_OFFER =
-  "Hvis du vil, kan vi også skifte til et mere fokuseret refleksionsspor om dit forhold til alkohol. " +
-  "Så ser vi mere konkret på mønstre, triggere og det, der trækker i dig. " +
+  "Hvis du senere vil, kan vi også skifte til et mere fokuseret refleksionsspor om dit forhold til alkohol. " +
+  "Der kan vi undersøge mønstre og triggere mere systematisk. " +
   "Skriv fx 'skift spor' hvis du vil det."
 
 const GEN_HYPNO_PROMPT = `
 ROLLE
-Du er en rolig, kompetent hypnoterapeut.
+Du er en rolig, kompetent hypnoterapeutisk informations- og afklaringsassistent.
+
+PRIMÆR FUNKTION
+Du giver:
+- kort og nøgtern information om hypnoterapi
+- afklaring af hvordan et forløb typisk foregår
+- overblik over metode, anvendelse og evidens
+- rolig afgrænsning af næste relevante emne
+
+DU GØR IKKE
+- behandling
+- egentlig terapeutisk proces
+- dyb personlig udforskning
+- refleksionsdialog om triggere, mønstre, konflikter eller følelser
+- spørgsmål der inviterer til selvudforskning på et terapeutisk niveau
 
 SAMTALESTRUKTUR
 Du modtager:
@@ -45,23 +59,56 @@ Du modtager:
 - user_input
 - assistant_turn_count
 
-INTERN ARBEJDSMÅDE
-Før du svarer, vurder kort:
-- Hvad er brugerens primære hensigt? (fx information, evidens, forløb, bekymring, refleksion)
-- Er input konkret eller uklart?
-- Er der tegn på et specifikt problem eller tema?
-- Er der forhold der kræver afgrænsning?
+INTERN VURDERING FØR SVAR
+Vurder kort:
+- Er brugerens hensigt primært information, evidens, forløb, relevans eller kontakt?
+- Er spørgsmålet konkret eller bredt?
+- Skal svaret være forklarende, afgrænsende eller orienterende?
+- Er brugeren ved at søge personlig refleksion? Hvis ja, så bliv stadig i den generelle informationsrolle.
 
-Tilpas svaret derefter:
-- Ved konkrete spørgsmål: svar kort og præcist.
-- Ved uklare eller brede spørgsmål: afgræns og stil højst ét konkret spørgsmål.
-- Ved personlige eller følelsesmæssigt tunge input: svar roligt, neutralt og uden at gå ind i behandling.
-- Hvis brugeren beskriver alkoholforbrug som et personligt tema, hold dig i denne node til kort afgrænsning og information. Du må ikke selv flytte brugeren til et andet spor; det håndteres udenfor denne prompt.
+HÅRD AFGRÆNSNING
+Hvis brugeren beskriver alkoholforbrug eller ønsker bedre selvforståelse:
+- forklar kun generelt hvordan hypnoterapi typisk kan arbejde med vaner, automatreaktioner og opmærksomhed
+- du må IKKE gå ind i konkret udforskning af brugerens egne triggere, følelser, mønstre eller underliggende årsager
+- du må IKKE stille spørgsmål som undersøger brugerens indre tilstand eller specifikke situationer
+- du må IKKE opføre dig som om et fokuseret refleksionsspor allerede er aktivt
+
+TILLADTE SPØRGSMÅL
+Du må højst stille ét spørgsmål, og kun hvis det hjælper med at afgrænse informationsbehov.
+Gode spørgsmål er fx:
+- "Vil du helst høre om hvordan et forløb typisk foregår, eller om hvordan metoden bruges ved vaner?"
+- "Vil du helst høre om evidens eller om den praktiske form?"
+Undgå spørgsmål om:
+- bestemte følelser
+- svære situationer
+- konkrete triggere
+- hvorfor brugeren gør noget
+- hvad der ligger bag et mønster
+
+SVARSTIL
+- rolig
+- klar
+- professionel
+- nøgtern
+- kort til moderat længde
+- ingen terapeutisk tone
+- ingen følelsesudforskning
+- ingen formuleringer der lyder som guidet selvindsigt
+
+VED KONKRETE SPØRGSMÅL
+- svar direkte først
+- tilføj højst lidt nødvendig kontekst
+- stil kun ét afgrænsende spørgsmål hvis det faktisk hjælper
+
+VED BREDERE INPUT
+- afgræns nænsomt
+- giv et kort overblik
+- peg på 1 næste relevant retning
 
 OPSUMMERINGSREGEL
 - Hvis assistant_turn_count > 0 OG assistant_turn_count % 4 === 0:
   Giv en kort, struktureret opsummering før du går videre.
-- Afslut med højst ét konkret spørgsmål.
+- Afslut med højst ét konkret informationsspørgsmål.
 
 EVIDENSRAMME
 (A) God evidens: Flere systematiske reviews eller metaanalyser.
@@ -75,20 +122,11 @@ EVIDENSFORMIDLING
 - Skeln tydeligt mellem evidensniveau og klinisk erfaring.
 - Undgå sikre løfter eller overdrivelser.
 
-AFGRÆNSNING
-- Du behandler ikke, lover ikke noget og kan ikke booke eller lave andre aftaler.
-- Gå ikke ind i egentlig terapeutisk proces i denne samtale.
-- Hvis brugeren ønsker dybt udforskende, personlig bearbejdning, hold svaret kort og neutralt.
-
-SVARSTIL
-- Svar roligt, klart og professionelt.
-- Brug gerne en kort, neutral spejling af brugerens emne eller bekymring, men uden at gå ind i terapi.
-- Hold fokus på information, afklaring og næste relevante skridt.
-
-SPØRGSMÅL
-- Stil kun spørgsmål hvis det hjælper med at afgrænse brugerens behov eller næste relevante emne.
-- Stil højst ét konkret spørgsmål.
-- Undgå åbne terapeutiske eller dybt udforskende spørgsmål.
+KONTAKT / BOOKING
+Hvis brugeren vil i kontakt, spørger til Jan, booking, telefon eller mail:
+- svar kort og praktisk
+- hold fokus på kontaktinformation og næste konkrete skridt
+- skift ikke til refleksionsspor
 
 LAST_TOPIC
 - 1–2 ord
@@ -215,7 +253,7 @@ function buildFallbackMessage(userText: string): string {
     return "Hvad vil du gerne vide om hypnoterapi?"
   }
 
-  return "Tak for dit spørgsmål. Vil du høre mest om metoder, evidens eller hvordan et forløb typisk foregår?"
+  return "Tak for dit spørgsmål. Vil du helst høre om metoden, evidensen eller hvordan et forløb typisk foregår?"
 }
 
 function normalizeText(text: string): string {
@@ -226,7 +264,7 @@ function normalizeText(text: string): string {
 }
 
 function stripPunctuation(text: string): string {
-  return normalizeText(text).replace(/[.,!?;:()"'’“-]/g, " ")
+  return normalizeText(text).replace(/[.,!?;:()"'’“”‘’\\-]/g, " ")
 }
 
 function isAlcoholTopic(text: string): boolean {
@@ -278,6 +316,7 @@ function hasReflectionIntent(text: string): boolean {
     "mit forhold til alkohol",
     "triggere",
     "hvad der trækker i mig",
+    "forstå mig selv bedre",
   ]
 
   return phrases.some((phrase) => t.includes(phrase))
@@ -296,6 +335,9 @@ function isLikelyConcreteInfoQuestion(text: string): boolean {
     "hvordan et forløb foregår",
     "virker det",
     "hjælper det",
+    "hvordan kan det virke",
+    "vil gerne have hjælp og forstå hvordan det kan virke",
+    "hvordan bruges det",
   ]
 
   if (phrases.some((phrase) => t.includes(phrase))) return true
@@ -318,7 +360,10 @@ function shouldOfferFocusedReflection(params: {
   }
 
   if (hasReflectionIntent(params.userText) && (currentIsAlcoholTopic || topicHitsTotal >= 1)) {
-    return { eligible: true, reason: "explicit_reflection_intent" }
+    if (params.assistantTurnCount >= 2 || topicHitsTotal >= 2) {
+      return { eligible: true, reason: "explicit_reflection_intent" }
+    }
+    return { eligible: false, reason: "insufficient_turns" }
   }
 
   if (isLikelyConcreteInfoQuestion(params.userText) && userTurnsBefore < 2) {
@@ -338,7 +383,10 @@ function shouldOfferFocusedReflection(params: {
 
 function isFocusedReflectionOffer(turn: TranscriptTurn | undefined): boolean {
   if (!turn || turn.role !== "assistant") return false
-  return turn.content.includes("fokuseret refleksionsspor om dit forhold til alkohol")
+  return (
+    turn.content.includes("mere fokuseret refleksionsspor om dit forhold til alkohol") ||
+    turn.content.includes("skifte til et mere fokuseret refleksionsspor om dit forhold til alkohol")
+  )
 }
 
 function isAcceptFocusedReflection(text: string): boolean {
@@ -395,7 +443,7 @@ function isDeclineFocusedReflection(text: string): boolean {
   if (
     (t.includes("fortsæt") && t.includes("nu")) ||
     (t.includes("bliv") && t.includes("her")) ||
-    (t.includes("generel") && t.includes("refleksion"))
+    (t.includes("generel") && t.includes("spor"))
   ) {
     return true
   }
@@ -409,7 +457,7 @@ function buildFocusedReflectionTranscript(
 ): TranscriptTurn[] {
   const base = previous
     .filter((turn) => !(turn.role === "assistant" && isFocusedReflectionOffer(turn)))
-    .slice(-6)
+    .slice(-8)
 
   const transcript: TranscriptTurn[] = [...base]
   const trimmed = (userText ?? "").trim()
@@ -446,7 +494,7 @@ export const genHypnoCapability: AiCapability = {
         to: "FOCUSED_PATTERN_REFLECTION",
         reason: "gen-hypno-opt-in-focused-reflection",
         response_message:
-          "Fint. Vi fortsætter her i chatten med et mere fokuseret blik på dit forhold til alkohol. Jeg hjælper dig med at undersøge mønstre, triggere og det, der trækker i dig — uden at gøre det til behandling i chatten.",
+          "Fint. Vi skifter til et mere fokuseret refleksionsspor om dit forhold til alkohol. Her kan vi undersøge mønstre og triggere mere systematisk, uden at gøre det til behandling i chatten.",
         meta_delta: {
           "focused_reflection.topic": "alkohol",
           "focused_reflection.entry_source": "GEN_HYPNO",
@@ -467,7 +515,7 @@ export const genHypnoCapability: AiCapability = {
 
     if (isFocusedReflectionOffer(lastTurn) && isDeclineFocusedReflection(userText)) {
       const assistant =
-        "Fint. Vi bliver i det generelle spor. Vil du helst høre om, hvordan hypnoterapi typisk bruges ved alkoholvaner, eller hvordan et forløb typisk foregår?"
+        "Fint. Vi bliver i det generelle spor. Vil du helst høre mere om, hvordan hypnoterapi typisk bruges ved alkoholvaner, eller om hvordan et forløb praktisk foregår?"
 
       const updatedTranscript = appendTranscript(fullTranscript, userText, assistant)
 
@@ -483,7 +531,8 @@ export const genHypnoCapability: AiCapability = {
           "gen_hypno.problem_title": "alkoholforbrug",
           "gen_hypno.problem_summary":
             "Brugeren ønsker at blive i den generelle dialog om alkoholforbrug.",
-          "gen_hypno.topic_tags": ["alkohol", "refleksion"],
+          "gen_hypno.topic_tags": ["alkohol", "information"],
+          "focused_reflection.readiness": "information_question_only",
         },
       }
 
@@ -501,7 +550,7 @@ export const genHypnoCapability: AiCapability = {
         process.env.GEN_HYPNO_MODEL ??
         process.env.TRIAGE_MODEL ??
         "gpt-4.1-mini",
-      temperature: 0.4,
+      temperature: 0.3,
       response_format: { type: "json_object" as const },
       messages: [
         { role: "system" as const, content: GEN_HYPNO_PROMPT },
