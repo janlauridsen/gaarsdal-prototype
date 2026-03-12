@@ -17,14 +17,23 @@ type Output = {
   topic_tags?: string[]
 }
 
+type FocusedReflectionReadiness = {
+  eligible: boolean
+  reason:
+    | "explicit_reflection_intent"
+    | "repeated_personal_theme"
+    | "insufficient_turns"
+    | "information_question_only"
+    | "topic_not_established"
+}
+
 const MAX_TRANSCRIPT_TURNS = 30
 const MAX_TRANSCRIPT_CHARS = 6000
 
 const FOCUSED_REFLECTION_OFFER =
-  "Tak for din åbenhed. Vi kan godt fortsætte her i chatten på to måder:\n\n" +
-  "1. Fortsætte som nu med generel refleksion og information\n" +
-  "2. Skifte til et mere fokuseret refleksionsspor om dit forhold til alkohol\n\n" +
-  "Skriv fx 1, 2, 'fortsæt som nu' eller 'skift spor'."
+  "Hvis du vil, kan vi også skifte til et mere fokuseret refleksionsspor om dit forhold til alkohol. " +
+  "Så ser vi mere konkret på mønstre, triggere og det, der trækker i dig. " +
+  "Skriv fx 'skift spor' hvis du vil det."
 
 const GEN_HYPNO_PROMPT = `
 ROLLE
@@ -244,9 +253,92 @@ function isAlcoholTopic(text: string): boolean {
   return patterns.some((pattern) => t.includes(pattern))
 }
 
+function countUserTurns(turns: TranscriptTurn[]): number {
+  return turns.filter((turn) => turn.role === "user").length
+}
+
+function countTopicMatches(
+  turns: TranscriptTurn[],
+  matcher: (text: string) => boolean
+): number {
+  return turns.filter((turn) => turn.role === "user" && matcher(turn.content)).length
+}
+
+function hasReflectionIntent(text: string): boolean {
+  const t = stripPunctuation(text)
+
+  const phrases = [
+    "refleksion",
+    "reflektere",
+    "forstå mit mønster",
+    "forstå mine mønstre",
+    "forstå hvorfor",
+    "undersøge mønster",
+    "undersøge mine mønstre",
+    "mit forhold til alkohol",
+    "triggere",
+    "hvad der trækker i mig",
+  ]
+
+  return phrases.some((phrase) => t.includes(phrase))
+}
+
+function isLikelyConcreteInfoQuestion(text: string): boolean {
+  const t = stripPunctuation(text)
+
+  const phrases = [
+    "kan du hjælpe",
+    "kan hypnoterapi hjælpe",
+    "kan hypnose hjælpe",
+    "hvordan virker",
+    "hvad er hypnoterapi",
+    "hvordan foregår",
+    "hvordan et forløb foregår",
+    "virker det",
+    "hjælper det",
+  ]
+
+  if (phrases.some((phrase) => t.includes(phrase))) return true
+
+  return text.trim().endsWith("?")
+}
+
+function shouldOfferFocusedReflection(params: {
+  transcript: TranscriptTurn[]
+  userText: string
+  assistantTurnCount: number
+}): FocusedReflectionReadiness {
+  const userTurnsBefore = countUserTurns(params.transcript)
+  const topicHitsBefore = countTopicMatches(params.transcript, isAlcoholTopic)
+  const currentIsAlcoholTopic = isAlcoholTopic(params.userText)
+  const topicHitsTotal = topicHitsBefore + (currentIsAlcoholTopic ? 1 : 0)
+
+  if (!currentIsAlcoholTopic && topicHitsTotal < 2) {
+    return { eligible: false, reason: "topic_not_established" }
+  }
+
+  if (hasReflectionIntent(params.userText) && (currentIsAlcoholTopic || topicHitsTotal >= 1)) {
+    return { eligible: true, reason: "explicit_reflection_intent" }
+  }
+
+  if (isLikelyConcreteInfoQuestion(params.userText) && userTurnsBefore < 2) {
+    return { eligible: false, reason: "information_question_only" }
+  }
+
+  if (topicHitsTotal < 2) {
+    return { eligible: false, reason: "topic_not_established" }
+  }
+
+  if (params.assistantTurnCount < 2) {
+    return { eligible: false, reason: "insufficient_turns" }
+  }
+
+  return { eligible: true, reason: "repeated_personal_theme" }
+}
+
 function isFocusedReflectionOffer(turn: TranscriptTurn | undefined): boolean {
   if (!turn || turn.role !== "assistant") return false
-  return turn.content.includes("Skifte til et mere fokuseret refleksionsspor om dit forhold til alkohol")
+  return turn.content.includes("fokuseret refleksionsspor om dit forhold til alkohol")
 }
 
 function isAcceptFocusedReflection(text: string): boolean {
@@ -311,10 +403,17 @@ function isDeclineFocusedReflection(text: string): boolean {
   return false
 }
 
-function buildFocusedReflectionTranscript(userText: string): TranscriptTurn[] {
-  const transcript: TranscriptTurn[] = []
+function buildFocusedReflectionTranscript(
+  previous: TranscriptTurn[],
+  userText: string
+): TranscriptTurn[] {
+  const base = previous
+    .filter((turn) => !(turn.role === "assistant" && isFocusedReflectionOffer(turn)))
+    .slice(-6)
 
+  const transcript: TranscriptTurn[] = [...base]
   const trimmed = (userText ?? "").trim()
+
   if (trimmed) {
     transcript.push({ role: "user", content: trimmed })
   }
@@ -349,11 +448,11 @@ export const genHypnoCapability: AiCapability = {
         response_message:
           "Fint. Vi fortsætter her i chatten med et mere fokuseret blik på dit forhold til alkohol. Jeg hjælper dig med at undersøge mønstre, triggere og det, der trækker i dig — uden at gøre det til behandling i chatten.",
         meta_delta: {
-          "focused_reflection.topic": "alcohol",
+          "focused_reflection.topic": "alkohol",
           "focused_reflection.entry_source": "GEN_HYPNO",
           "focused_reflection.user_opt_in": true,
           "focused_reflection.stage": "OPEN",
-          "focused_reflection.transcript": buildFocusedReflectionTranscript(userText),
+          "focused_reflection.transcript": buildFocusedReflectionTranscript(fullTranscript, userText),
         },
       }
 
@@ -368,7 +467,7 @@ export const genHypnoCapability: AiCapability = {
 
     if (isFocusedReflectionOffer(lastTurn) && isDeclineFocusedReflection(userText)) {
       const assistant =
-        "Fint. Vi fortsætter som nu. Hvad vil du helst have hjælp til her: hvad hypnoterapi er, hvordan et forløb typisk foregår, eller en kort refleksion om dine alkoholvaner?"
+        "Fint. Vi bliver i det generelle spor. Vil du helst høre om, hvordan hypnoterapi typisk bruges ved alkoholvaner, eller hvordan et forløb typisk foregår?"
 
       const updatedTranscript = appendTranscript(fullTranscript, userText, assistant)
 
@@ -385,35 +484,6 @@ export const genHypnoCapability: AiCapability = {
           "gen_hypno.problem_summary":
             "Brugeren ønsker at blive i den generelle dialog om alkoholforbrug.",
           "gen_hypno.topic_tags": ["alkohol", "refleksion"],
-        },
-      }
-
-      return {
-        transition,
-        debug: {
-          capability: "gen-hypno-v1",
-          used_fallback: false,
-        },
-      }
-    }
-
-    if (isAlcoholTopic(userText)) {
-      const assistant = FOCUSED_REFLECTION_OFFER
-      const updatedTranscript = appendTranscript(fullTranscript, userText, assistant)
-
-      const transition: Transition = {
-        type: "NODE_HOP",
-        from: context.state.active_node,
-        reason: "gen-hypno-offer-focused-reflection",
-        response_message: assistant,
-        meta_delta: {
-          "gen_hypno.transcript": updatedTranscript,
-          "gen_hypno.assistant_turn_count": previousAssistantCount + 1,
-          "gen_hypno.last_topic": "alkohol",
-          "gen_hypno.problem_title": "alkoholforbrug",
-          "gen_hypno.problem_summary":
-            "Brugeren ønsker at tale om sit alkoholforbrug og får tilbudt et fokuseret refleksionsspor i samme chat.",
-          "gen_hypno.topic_tags": ["alkohol", "forbrug", "refleksion"],
         },
       }
 
@@ -450,9 +520,19 @@ export const genHypnoCapability: AiCapability = {
     const response = await llm.chatJson(payload)
     const parsed = normalizeOutput(response)
 
-    const assistant =
+    let assistant =
       parsed?.assistant_message ??
       buildFallbackMessage(userText)
+
+    const readiness = shouldOfferFocusedReflection({
+      transcript: fullTranscript,
+      userText,
+      assistantTurnCount: previousAssistantCount,
+    })
+
+    if (readiness.eligible) {
+      assistant = `${assistant}\n\n${FOCUSED_REFLECTION_OFFER}`
+    }
 
     const updatedTranscript = appendTranscript(
       fullTranscript,
@@ -465,6 +545,7 @@ export const genHypnoCapability: AiCapability = {
     const meta_delta: Record<string, unknown> = {
       "gen_hypno.transcript": updatedTranscript,
       "gen_hypno.assistant_turn_count": newAssistantCount,
+      "focused_reflection.readiness": readiness.reason,
     }
 
     if (parsed?.last_topic) {
@@ -483,7 +564,9 @@ export const genHypnoCapability: AiCapability = {
     const transition: Transition = {
       type: "NODE_HOP",
       from: context.state.active_node,
-      reason: "gen-hypno-free-text",
+      reason: readiness.eligible
+        ? "gen-hypno-free-text-with-focused-reflection-offer"
+        : "gen-hypno-free-text",
       response_message: assistant,
       meta_delta,
     }
