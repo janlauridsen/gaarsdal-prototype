@@ -36,7 +36,8 @@ export const nodeRegistry: Record<string, Node> = {
 
     capability_id: "gen-hypno-v1",
 
-    allowed_exits: ["HOME", "BOOKING"],
+    // FIX: capability bliver på samme node under dialog
+    allowed_exits: ["GEN_HYPNO", "HOME", "BOOKING"],
 
     meta_domains_written: [
       "ux",
