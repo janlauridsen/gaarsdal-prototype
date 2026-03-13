@@ -57,6 +57,10 @@ export type ChatNode = {
   router?: RouterSpec
 }
 
+// Compatibility export for existing imports like:
+// import type { Node } from "../nodes/registry"
+export type Node = ChatNode
+
 export const NODE_REGISTRY: Record<string, ChatNode> = {
   HOME: {
     id: "HOME",
