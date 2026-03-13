@@ -1,4 +1,4 @@
-import type { ConversationState } from "../kernel/types"
+import type { CheckpointSpec, ConversationState, ToolSpec } from "../kernel/types"
 import crypto from "crypto"
 
 import { createInitialState } from "../kernel/state"
@@ -11,7 +11,6 @@ import {
 } from "../persistence/threadIndexStore"
 
 import { readUserProfile, writeUserProfile } from "../memory/store"
-import type { CheckpointSpec, ToolSpec } from "../nodes/registry"
 import { consolidateV1, ensureTrack } from "../platform/consolidation"
 
 type ToolRunParams = {
@@ -83,7 +82,6 @@ function makeThreadChoices(params: {
     s
       .trim()
       .replace(/\s+/g, " ")
-      // Treat both ASCII and unicode ellipsis the same for comparisons.
       .replace(/\.{3,}$/g, "…")
       .replace(/…+$/g, "…")
 
@@ -95,7 +93,6 @@ function makeThreadChoices(params: {
     const nBase = normalize(base).toLowerCase()
     const nPreview = normalize(preview).toLowerCase()
 
-    // Avoid labels like: "X — X" (common when title==preview or one is a truncated copy).
     if (nPreview === nBase) return base
     if (nPreview.startsWith(nBase) && nPreview.length - nBase.length <= 3) return preview
     if (nBase.startsWith(nPreview) && nBase.length - nPreview.length <= 3) return base
@@ -127,7 +124,6 @@ function makeThreadChoices(params: {
 }
 
 function safeUuid(): string {
-  // Node 18+ has crypto.randomUUID; fallback for older runtimes.
   return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
 }
 
@@ -138,7 +134,6 @@ function asString(v: unknown): string {
 function asStringArrayFromDelimited(v: unknown): string[] {
   const s = asString(v).trim()
   if (!s) return []
-  // split by ; or ,
   return s
     .split(/[;,]/g)
     .map((x) => x.trim())
@@ -164,7 +159,6 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
   const specAny = params.spec as any
   const toolId = typeof specAny?.tool_id === "string" ? specAny.tool_id : ""
 
-  // Special tools that must work even if profile is missing.
   if (params.kind === "TOOL" && toolId === "profile-bootstrap-v1") {
     const ts = nowIso()
 
@@ -263,17 +257,13 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
       const conversationId = `c:${safeUuid()}`
       const newState = createInitialState(conversationId)
 
-      // Persist thread state.
       await writeConversationState(newState, DEFAULT_SESSION_TTL_SECONDS)
 
-      // Update index (title/preview will be auto-filled after first meaningful user input).
       let index1 = upsertThread({ index: index0, conversationId, title: "", preview: "" })
-      // Manual thread creation is a hard break for the return stack.
       index1 = { ...index1, navigation: { return_stack: [] } }
       index1 = setActiveThread({ index: index1, conversationId })
       await writeThreadIndex({ userKey: params.userKey, index: index1, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
 
-      // Stamp meta into the new state's meta store for UI hints.
       newState.meta = {
         ...(newState.meta ?? {}),
         "threads.last_switch": metaEntry("THREAD_CHOOSER", { at: ts, mode: "new", from: params.state.conversation_id }),
@@ -286,7 +276,6 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
       }
     }
 
-    // Continue/select
     const loaded = targetConversationId ? await readConversationState(targetConversationId) : null
 
     const ensured = loaded ?? createInitialState(targetConversationId as string)
@@ -295,7 +284,6 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
     }
 
     let index2 = upsertThread({ index: index0, conversationId: ensured.conversation_id })
-    // Manual thread switching is a hard break for the return stack.
     index2 = { ...index2, navigation: { return_stack: [] } }
     index2 = setActiveThread({ index: index2, conversationId: ensured.conversation_id })
     await writeThreadIndex({ userKey: params.userKey, index: index2, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
@@ -339,7 +327,6 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
   const profile = await readUserProfile(params.userKey)
 
   if (!profile) {
-    // If profile is missing, don't block flow; return no-op.
     const nextNode = (params.spec as any).on_success_to ?? (params.spec as any).on_done_to
     return {
       nextNode,
@@ -347,7 +334,6 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
     }
   }
 
-  // TOOL behavior is keyed by spec fields.
   if (params.kind === "TOOL") {
     const spec = params.spec as ToolSpec
     try {
@@ -372,7 +358,6 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
           }
         }
 
-        // Ensure/activate sandbox track
         const { profile: p2, track, created } = ensureTrack({
           profile,
           program: "sandbox",
@@ -381,7 +366,6 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
 
         const ts = nowIso()
 
-        // Map a minimal set of fields to track.core_overlay
         const topic = asString(values["topic"])
         const goal = asString(values["goal"])
         const time_patterns = asString(values["time_patterns"])
@@ -395,7 +379,6 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
           if (!track.core_overlay.topics.includes(topic)) {
             track.core_overlay.topics = [topic, ...track.core_overlay.topics].slice(0, 20)
           }
-          // Conservative core hint
           if (!p2.core.semantic.topics.includes(topic)) {
             p2.core.semantic.topics = [topic, ...p2.core.semantic.topics].slice(0, 50)
           }
@@ -416,7 +399,6 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
 
         if (preferred_tone) {
           track.core_overlay.help_orientation.preferred_tone = preferred_tone
-          // Also lift to core preferences (low-risk)
           p2.core.preferences.preferred_tone = preferred_tone
         }
         if (support_direction) track.core_overlay.help_orientation.support_direction = support_direction
@@ -425,7 +407,6 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
         track.updated_at = ts
         p2.updated_at = ts
 
-        // Evidence snippets: store short quotes per mapped field (dev v1)
         const evidenceKey = "evidence.v1"
         const existingEvidence =
           (track.extensions &&
@@ -497,10 +478,8 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
     }
   }
 
-  // CHECKPOINT
   const spec = params.spec as CheckpointSpec
 
-  // Minimal checkpoint: consolidate, and write a visible meta marker.
   const { profile: updated, updated: didUpdate } = consolidateV1({ profile, state: params.state })
   if (didUpdate) {
     await writeUserProfile({
