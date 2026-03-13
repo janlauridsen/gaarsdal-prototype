@@ -39,6 +39,13 @@ type UnifiedRunOptions = {
   forcedMode?: Exclude<DialogMode, "closing">
 }
 
+type ReflectionContext = {
+  isActive: boolean
+  topic?: string
+  transcript: TranscriptTurn[]
+  stage?: string
+}
+
 const MAX_TRANSCRIPT_TURNS = 30
 const MAX_TRANSCRIPT_CHARS = 6000
 
@@ -145,6 +152,17 @@ function readTranscriptByKey(
   return turns
 }
 
+function readStringMeta(context: AiCapabilityContext, key: string): string | undefined {
+  const value = context.state.meta[key]?.value
+  if (typeof value !== "string") return undefined
+  const trimmed = value.trim()
+  return trimmed || undefined
+}
+
+function readBooleanMeta(context: AiCapabilityContext, key: string): boolean {
+  return context.state.meta[key]?.value === true
+}
+
 function trimTranscript(turns: TranscriptTurn[]): TranscriptTurn[] {
   const cappedByTurn = turns.slice(-MAX_TRANSCRIPT_TURNS)
   const result: TranscriptTurn[] = []
@@ -240,6 +258,16 @@ function isAlcoholTopic(text: string): boolean {
     "mit forhold til alkohol",
     "stoppe med at drikke",
     "skære ned på alkohol",
+    "rødvin",
+    "rodvin",
+    "hvidvin",
+    "vin",
+    "øl",
+    "oel",
+    "druk",
+    "drikke",
+    "drikker",
+    "glas vin",
   ]
 
   return patterns.some((pattern) => t.includes(pattern))
@@ -318,10 +346,67 @@ function isHardExit(text: string): boolean {
   ].some((phrase) => t === phrase || t.includes(phrase))
 }
 
-function inferReadiness(
-  transcript: TranscriptTurn[],
+function hasActiveReflectionContext(context: AiCapabilityContext): ReflectionContext {
+  const transcript = readTranscriptByKey(context, "focused_reflection.transcript")
+  const userOptIn = readBooleanMeta(context, "focused_reflection.user_opt_in")
+  const mode = readStringMeta(context, "dialog.mode")
+  const stage = readStringMeta(context, "focused_reflection.stage")
+  const topic =
+    readStringMeta(context, "focused_reflection.topic") ||
+    readStringMeta(context, "dialog.topic") ||
+    readStringMeta(context, "gen_hypno.last_topic")
+
+  return {
+    isActive: userOptIn || mode === "guided_reflection" || transcript.length > 0,
+    topic,
+    transcript,
+    stage,
+  }
+}
+
+function isReflectionFollowUp(text: string): boolean {
+  const t = stripPunctuation(text)
+
+  if (!t) return false
+
+  return [
+    "når",
+    "typisk",
+    "ofte",
+    "især",
+    "saerligt",
+    "jeg får lyst",
+    "jeg faar lyst",
+    "efter arbejde",
+    "om aftenen",
+    "hen på ugen",
+    "hen paa ugen",
+    "jeg bliver træt",
+    "jeg bliver traet",
+    "når jeg er træt",
+    "naar jeg er traet",
+    "det sker når",
+    "det sker naar",
+    "i weekenden",
+    "hjemme",
+    "socialt",
+    "automatisk",
+    "rutine",
+    "vane",
+    "trang",
+    "trigger",
+    "følelse",
+    "foelelse",
+  ].some((phrase) => t.includes(phrase))
+}
+
+function inferReadiness(params: {
+  transcript: TranscriptTurn[]
   userText: string
-): ReadinessReason {
+  reflectionContext: ReflectionContext
+}): ReadinessReason {
+  const { transcript, userText, reflectionContext } = params
+
   if (isSoftClosing(userText)) return "closing_signal"
   if (hasReflectionIntent(userText)) return "explicit_reflection_intent"
 
@@ -331,17 +416,28 @@ function inferReadiness(
 
   if (currentAlcohol && topicHitsTotal >= 2) return "repeated_personal_theme"
   if (isEvidenceQuestion(userText)) return "information_question_only"
+
+  if (reflectionContext.isActive && (currentAlcohol || isReflectionFollowUp(userText))) {
+    return "repeated_personal_theme"
+  }
+
   if (!currentAlcohol && topicHitsTotal < 2) return "topic_not_established"
 
   return "general"
 }
 
 function decideMode(params: {
+  context: AiCapabilityContext
   transcript: TranscriptTurn[]
   userText: string
   forcedMode?: Exclude<DialogMode, "closing">
+  reflectionContext: ReflectionContext
 }): { mode: DialogMode; readiness: ReadinessReason } {
-  const readiness = inferReadiness(params.transcript, params.userText)
+  const readiness = inferReadiness({
+    transcript: params.transcript,
+    userText: params.userText,
+    reflectionContext: params.reflectionContext,
+  })
 
   if (params.forcedMode) {
     return {
@@ -361,13 +457,17 @@ function decideMode(params: {
     return { mode: "guided_reflection", readiness }
   }
 
+  if (params.reflectionContext.isActive && isReflectionFollowUp(params.userText)) {
+    return { mode: "guided_reflection", readiness: "repeated_personal_theme" }
+  }
+
   return { mode: "informational", readiness }
 }
 
 function extractTopic(text: string, fallback?: string): string | undefined {
   const t = stripPunctuation(text)
 
-  if (t.includes("alkohol")) return "alkohol"
+  if (t.includes("alkohol") || t.includes("rødvin") || t.includes("rodvin") || t.includes("vin")) return "alkohol"
   if (t.includes("vaner") || t.includes("vane")) return "vaner"
   if (t.includes("søvn") || t.includes("soevn")) return "søvn"
   if (t.includes("stress")) return "stress"
@@ -429,6 +529,7 @@ function buildMetaDelta(params: {
   topic: string | undefined
   sourceNode: string
   transcriptKey: string
+  reflectionContext: ReflectionContext
 }): Record<string, unknown> {
   const previousTranscript = readTranscriptByKey(params.context, params.transcriptKey)
   const previousAssistantCount = countAssistantTurns(previousTranscript)
@@ -436,18 +537,34 @@ function buildMetaDelta(params: {
     ? previousAssistantCount + 1
     : previousAssistantCount
 
+  const reflectionActive =
+    params.mode === "guided_reflection" ||
+    params.reflectionContext.isActive
+
+  const dialogMode: DialogMode =
+    reflectionActive && params.mode === "informational"
+      ? "guided_reflection"
+      : params.mode
+
+  const dialogStage =
+    dialogMode === "closing"
+      ? "close"
+      : dialogMode === "guided_reflection"
+        ? "explore_patterns"
+        : "open"
+
+  const effectiveReadiness: ReadinessReason =
+    reflectionActive && params.readiness === "topic_not_established"
+      ? "repeated_personal_theme"
+      : params.readiness
+
   const meta: Record<string, unknown> = {
     [params.transcriptKey]: params.updatedTranscript,
     "gen_hypno.transcript": params.updatedTranscript,
     "gen_hypno.assistant_turn_count": nextAssistantCount,
-    "focused_reflection.readiness": params.readiness,
-    "dialog.mode": params.mode,
-    "dialog.stage":
-      params.mode === "closing"
-        ? "close"
-        : params.mode === "guided_reflection"
-          ? "explore_patterns"
-          : "open",
+    "focused_reflection.readiness": effectiveReadiness,
+    "dialog.mode": dialogMode,
+    "dialog.stage": dialogStage,
   }
 
   if (params.topic) {
@@ -456,10 +573,12 @@ function buildMetaDelta(params: {
     meta["dialog.topic"] = params.topic
   }
 
-  if (params.mode === "guided_reflection") {
-    meta["focused_reflection.entry_source"] = params.sourceNode
+  if (reflectionActive) {
+    meta["focused_reflection.entry_source"] =
+      readStringMeta(params.context, "focused_reflection.entry_source") ||
+      params.sourceNode
     meta["focused_reflection.user_opt_in"] = true
-    meta["focused_reflection.stage"] = "OPEN"
+    meta["focused_reflection.stage"] = dialogMode === "closing" ? "CLOSED" : "OPEN"
     meta["focused_reflection.transcript"] = params.updatedTranscript
   }
 
@@ -497,11 +616,11 @@ export async function runUnifiedHypnoCapability(
   const transcript = readTranscriptByKey(context, options.transcriptKey)
   const trimmedTranscript = trimTranscript(transcript)
   const userText = context.userText ?? ""
+  const reflectionContext = hasActiveReflectionContext(context)
 
   const previousTopic =
-    typeof context.state.meta["gen_hypno.last_topic"]?.value === "string"
-      ? String(context.state.meta["gen_hypno.last_topic"]?.value).trim()
-      : undefined
+    readStringMeta(context, "gen_hypno.last_topic") ||
+    reflectionContext.topic
 
   if (isHardExit(userText)) {
     const assistant = "Helt fint. Vi stopper her, og du kan vende tilbage senere."
@@ -523,6 +642,7 @@ export async function runUnifiedHypnoCapability(
         topic: previousTopic,
         sourceNode: options.sourceNode,
         transcriptKey: options.transcriptKey,
+        reflectionContext,
       }),
     }
 
@@ -536,9 +656,11 @@ export async function runUnifiedHypnoCapability(
   }
 
   const { mode, readiness } = decideMode({
+    context,
     transcript,
     userText,
     forcedMode: options.forcedMode,
+    reflectionContext,
   })
 
   let assistant = ""
@@ -563,6 +685,8 @@ export async function runUnifiedHypnoCapability(
               conversation_transcript: trimmedTranscript,
               user_input: userText,
               last_topic: previousTopic ?? "",
+              reflection_active: reflectionContext.isActive,
+              reflection_topic: reflectionContext.topic ?? "",
             }),
           },
         ],
@@ -602,6 +726,7 @@ export async function runUnifiedHypnoCapability(
       topic,
       sourceNode: options.sourceNode,
       transcriptKey: options.transcriptKey,
+      reflectionContext,
     }),
   }
 
