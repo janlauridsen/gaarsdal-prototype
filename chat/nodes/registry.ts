@@ -1,11 +1,4 @@
-// registry.ts
-// Version: 2026-03-11T00:00:00Z
-// Notes:
-// - TRIAGE removed from HOME routing/candidates.
-// - GEN_HYPNO is now the primary general entry node.
-// - Keep TRIAGE node definition temporarily for compatibility, but unreachable from HOME.
-
-type NodeId = string
+// chat/nodes/registry.ts
 
 export type NodeKind =
   | "MENU"
@@ -28,237 +21,196 @@ export type FormField = {
 export type FormSpec = {
   instructions?: string
   fields: FormField[]
-  on_submit_to: NodeId
+  on_submit_to: string
   allow_partial?: boolean
 }
 
 export type ToolSpec = {
   tool_id: string
-  on_success_to: NodeId
-  on_error_to?: NodeId
+  on_success_to: string
+  on_error_to?: string
 }
 
 export type CheckpointSpec = {
-  on_done_to: NodeId
+  on_done_to: string
   commit_domains?: string[]
 }
 
 export type RouterSpec = {
   router_id: string
-  candidates?: NodeId[]
+  candidates?: string[]
 }
 
-export type Node = {
-  id: NodeId
+export type ChatNode = {
+  id: string
   kind: NodeKind
   goal: string
   message: string
   allow_free_text: boolean
   allow_parentese: boolean
-  allowed_exits: NodeId[]
+  allowed_exits: string[]
   meta_domains_written: string[]
   capability_id?: string | null
   form?: FormSpec
   tool?: ToolSpec
   checkpoint?: CheckpointSpec
   router?: RouterSpec
-  navigation?: any
 }
 
-const QUICK_CONTACTS: NodeId[] = ["MAIL", "TLF", "CONTACT_FORM", "AKUT"]
-const PARENTESE_EXITS: NodeId[] = ["RESUME", "HOME"]
-
-const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
-  PROFILE_BOOTSTRAP: {
-    id: "PROFILE_BOOTSTRAP",
-    kind: "TOOL",
-    goal: "bootstrap profile + thread index",
-    message: "System step: loader profil og tråde…",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: ["THREAD_CHOOSER"],
-    tool: {
-      tool_id: "profile-bootstrap-v1",
-      on_success_to: "THREAD_CHOOSER",
-      on_error_to: "THREAD_CHOOSER",
-    },
-    meta_domains_written: [
-      "ux",
-      "profile.status",
-      "profile.last_seen_at",
-      "threads.count",
-      "threads.active",
-      "threads.choices",
-    ],
-  },
-
-  THREAD_CHOOSER: {
-    id: "THREAD_CHOOSER",
-    kind: "TOOL",
-    goal: "choose thread or start new",
-    message:
-      "Vælg en tråd:\n" +
-      "- Tryk 'Fortsæt' for at fortsætte seneste\n" +
-      "- Tryk 'Start ny tråd' for at starte på en frisk\n" +
-      "- Eller vælg en eksisterende tråd\n\n" +
-      "Du kan også skrive: continue / new.",
-    allow_free_text: true,
-    allow_parentese: false,
-    allowed_exits: ["THREAD_CHOOSER", "HOME"],
-    tool: {
-      tool_id: "thread-switch-v1",
-      on_success_to: "HOME",
-      on_error_to: "THREAD_CHOOSER",
-    },
-    meta_domains_written: ["ux", "threads.choices", "threads.count", "threads.active"],
-  },
-
-  POSTPROC_STEP_1_SCAN: {
-    id: "POSTPROC_STEP_1_SCAN",
-    kind: "TOOL",
-    goal: "post processing step 1 (scan)",
-    message: "System step: post processing (1/3) — scan…",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: ["POSTPROC_STEP_2_BUILD", "HOME"],
-    tool: {
-      tool_id: "postproc-step-1-v1",
-      on_success_to: "POSTPROC_STEP_2_BUILD",
-      on_error_to: "HOME",
-    },
-    meta_domains_written: ["ux", "postproc.last"],
-  },
-
-  POSTPROC_STEP_2_BUILD: {
-    id: "POSTPROC_STEP_2_BUILD",
-    kind: "TOOL",
-    goal: "post processing step 2 (build)",
-    message: "System step: post processing (2/3) — build…",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: ["POSTPROC_STEP_3_PUBLISH", "HOME"],
-    tool: {
-      tool_id: "postproc-step-2-v1",
-      on_success_to: "POSTPROC_STEP_3_PUBLISH",
-      on_error_to: "HOME",
-    },
-    meta_domains_written: ["ux", "postproc.last"],
-  },
-
-  POSTPROC_STEP_3_PUBLISH: {
-    id: "POSTPROC_STEP_3_PUBLISH",
-    kind: "TOOL",
-    goal: "post processing step 3 (publish)",
-    message: "System step: post processing (3/3) — publish…",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: ["HOME"],
-    tool: {
-      tool_id: "postproc-step-3-v1",
-      on_success_to: "HOME",
-      on_error_to: "HOME",
-    },
-    meta_domains_written: ["ux", "postproc.last"],
-  },
-
+export const NODE_REGISTRY: Record<string, ChatNode> = {
   HOME: {
     id: "HOME",
-    kind: "ROUTER",
-    goal: "root",
-    message: "Velkommen. Vælg et emne eller skriv frit.",
+    kind: "MENU",
+    goal: "Start og overblik",
+    message:
+      "Velkommen.\n\n" +
+      "Jeg kan hjælpe dig med:\n\n" +
+      "1) Generelt om hypnoterapi\n" +
+      "2) Metode og anvendelse\n" +
+      "3) Praktisk info og booking\n\n" +
+      "Du kan også bare skrive frit.",
     allow_free_text: true,
-    allow_parentese: false,
+    allow_parentese: true,
     allowed_exits: [
       "GEN_HYPNO",
       "METHOD_FIT",
-      "REFLECTION",
       "BOOKING",
       "DEV_SANDBOX_INTRO",
       "POSTPROC_STEP_1_SCAN",
-      "MAIL",
-      "TLF",
-      "CONTACT_FORM",
-      "AKUT",
     ],
-    router: {
-      router_id: "home-router-v1",
-      candidates: ["GEN_HYPNO", "METHOD_FIT", "REFLECTION", "BOOKING", "DEV_SANDBOX_INTRO"],
-    },
     meta_domains_written: ["ux", "router.decision"],
+  },
+
+  METHOD_FIT: {
+    id: "METHOD_FIT",
+    kind: "DIALOG",
+    goal: "Forstå metode og anvendelse",
+    message:
+      "Her kan du få et overblik over, hvad hypnoterapi typisk bruges til, og hvornår det giver mening at overveje det.",
+    allow_free_text: true,
+    allow_parentese: true,
+    allowed_exits: ["METHOD_FIT", "GEN_HYPNO", "BOOKING", "HOME"],
+    capability_id: "method-fit-v1",
+    meta_domains_written: [
+      "ux",
+      "method_fit.summary",
+      "method_fit.tags",
+      "method_fit.last_topic",
+    ],
+  },
+
+  BOOKING: {
+    id: "BOOKING",
+    kind: "DIALOG",
+    goal: "Praktisk info og booking",
+    message:
+      "Her kan du få praktisk information om kontakt, forløb, tider og booking.",
+    allow_free_text: true,
+    allow_parentese: true,
+    allowed_exits: ["BOOKING", "HOME", "GEN_HYPNO"],
+    capability_id: "booking-v1",
+    meta_domains_written: [
+      "ux",
+      "booking.last_topic",
+      "booking.intent",
+      "booking.summary",
+    ],
+  },
+
+  GEN_HYPNO: {
+    id: "GEN_HYPNO",
+    kind: "DIALOG",
+    goal: "Generelt om hypnoterapi og let refleksion",
+    message:
+      "Her kan du få information om hypnoterapi, hvordan et forløb typisk foregår, og hjælp til at forstå vaner og mønstre.",
+    allow_free_text: true,
+    allow_parentese: true,
+    allowed_exits: ["HOME", "BOOKING"],
+    capability_id: "gen-hypno-v1",
+    meta_domains_written: [
+      "ux",
+      "gen_hypno.transcript",
+      "gen_hypno.last_topic",
+      "gen_hypno.problem_title",
+      "gen_hypno.problem_summary",
+      "gen_hypno.topic_tags",
+      "gen_hypno.assistant_turn_count",
+      "dialog.mode",
+      "dialog.stage",
+      "dialog.topic",
+    ],
+  },
+
+  FOCUSED_PATTERN_REFLECTION: {
+    id: "FOCUSED_PATTERN_REFLECTION",
+    kind: "DIALOG",
+    goal: "Fokuseret refleksion over mønstre",
+    message:
+      "Her ser vi nærmere på et konkret mønster i din hverdag. Samtalen handler om refleksion og afklaring – ikke behandling.",
+    allow_free_text: true,
+    allow_parentese: true,
+    allowed_exits: [
+      "FOCUSED_PATTERN_REFLECTION",
+      "GEN_HYPNO",
+      "HOME",
+      "BOOKING",
+    ],
+    capability_id: "focused-pattern-reflection-v1",
+    meta_domains_written: [
+      "ux",
+      "focused_reflection.topic",
+      "focused_reflection.transcript",
+      "focused_reflection.stage",
+      "focused_reflection.readiness",
+      "dialog.mode",
+      "dialog.stage",
+      "dialog.topic",
+    ],
   },
 
   DEV_SANDBOX_INTRO: {
     id: "DEV_SANDBOX_INTRO",
     kind: "DIALOG",
-    goal: "dev sandbox intro",
+    goal: "sandbox intro",
     message:
       "Sandbox-flow:\n\n" +
-      "1) Udfyld en mini-form (key:value pr linje)\n" +
-      "2) Systemet kører et TOOL (apply-form-to-track-v1)\n" +
-      "3) Systemet kører CHECKPOINT\n\n" +
-      "Skriv 'ok' for at gå videre til form.",
+      "1) Udfyld en mini-form\n" +
+      "2) Systemet kører et TOOL\n" +
+      "3) Systemet laver checkpoint\n\n" +
+      "Skriv 'ok' for at fortsætte.",
     allow_free_text: true,
     allow_parentese: false,
     allowed_exits: ["DEV_SANDBOX_FORM", "HOME"],
-    capability_id: null,
     meta_domains_written: ["ux"],
   },
 
   DEV_SANDBOX_FORM: {
     id: "DEV_SANDBOX_FORM",
     kind: "FORM",
-    goal: "dev sandbox form",
+    goal: "sandbox form",
     message:
-      "Udfyld form som key:value pr linje.\n\n" +
+      "Skriv key:value pr linje.\n\n" +
       "Eksempel:\n" +
       "topic: alkohol om aftenen\n" +
-      "goal: drikke mindre\n" +
-      "time_patterns: aftenen\n" +
-      "situational_triggers: arbejdsstress\n" +
-      "relational_patterns: familien\n" +
-      "preferred_tone: rolig og direkte\n",
+      "goal: drikke mindre",
     allow_free_text: true,
     allow_parentese: false,
     allowed_exits: ["DEV_SANDBOX_FORM", "DEV_SANDBOX_TOOL_APPLY", "HOME"],
     form: {
       instructions: "Skriv key:value pr linje.",
       fields: [
-        { id: "topic", label: "Topic", required: true, placeholder: "fx alkohol om aftenen" },
-        { id: "goal", label: "Goal", required: true, placeholder: "fx drikke mindre" },
-        { id: "time_patterns", label: "Time patterns", required: false, placeholder: "fx aftenen" },
         {
-          id: "situational_triggers",
-          label: "Situational triggers",
-          required: false,
-          placeholder: "fx arbejdsstress",
+          id: "topic",
+          label: "Topic",
+          required: true,
         },
         {
-          id: "relational_patterns",
-          label: "Relational patterns",
-          required: false,
-          placeholder: "fx familien",
-        },
-        {
-          id: "preferred_tone",
-          label: "Preferred tone",
-          required: false,
-          placeholder: "fx rolig og direkte",
-        },
-        {
-          id: "support_direction",
-          label: "Support direction",
-          required: false,
-          placeholder: "fx ro før jeg kommer hjem",
-        },
-        {
-          id: "interest_in_methods",
-          label: "Interest in methods",
-          required: false,
-          placeholder: "fx gåtur; pause; registrering",
+          id: "goal",
+          label: "Goal",
+          required: true,
         },
       ],
       on_submit_to: "DEV_SANDBOX_TOOL_APPLY",
-      allow_partial: false,
     },
     meta_domains_written: ["ux", "form.last"],
   },
@@ -266,15 +218,15 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
   DEV_SANDBOX_TOOL_APPLY: {
     id: "DEV_SANDBOX_TOOL_APPLY",
     kind: "TOOL",
-    goal: "apply form to sandbox track",
-    message: "System step: applying form to sandbox track…",
+    goal: "apply sandbox form",
+    message: "System step: applying sandbox form…",
     allow_free_text: false,
     allow_parentese: false,
-    allowed_exits: ["DEV_SANDBOX_CHECKPOINT", "DEV_SANDBOX_FORM", "HOME"],
+    allowed_exits: ["DEV_SANDBOX_CHECKPOINT", "HOME"],
     tool: {
       tool_id: "apply-form-to-track-v1",
       on_success_to: "DEV_SANDBOX_CHECKPOINT",
-      on_error_to: "DEV_SANDBOX_FORM",
+      on_error_to: "HOME",
     },
     meta_domains_written: ["ux", "sandbox.apply_result"],
   },
@@ -302,8 +254,7 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
       "Sandbox complete.\n\n" +
       "Du kan nu tjekke:\n" +
       "- /api/telemetry\n" +
-      "- Redis profile (core + tracks)\n" +
-      "- state.meta['form.last'] / state.meta['router.decision']\n\n" +
+      "- Redis profile\n\n" +
       "Vælg HOME for at fortsætte.",
     allow_free_text: false,
     allow_parentese: false,
@@ -311,291 +262,55 @@ const RAW_REGISTRY: Record<NodeId, Node> = Object.freeze({
     meta_domains_written: ["ux"],
   },
 
-  GEN_HYPNO: {
-    id: "GEN_HYPNO",
-    kind: "DIALOG",
-    goal: "Generelt om hypnoterapi",
-    message:
-      "Velkommen. Her kan du få information om hypnoterapi og hvordan et forløb typisk foregår. Chatten kan hjælpe med afklaring og refleksion, men den erstatter ikke behandling.",
-    allow_free_text: true,
-    allow_parentese: true,
-    allowed_exits: ["HOME", "FOCUSED_PATTERN_REFLECTION"],
-    capability_id: "gen-hypno-v1",
-    meta_domains_written: [
-      "ux",
-      "gen_hypno.transcript",
-      "gen_hypno.last_topic",
-      "gen_hypno.problem_title",
-      "gen_hypno.problem_summary",
-      "gen_hypno.topic_tags",
-      "gen_hypno.assistant_turn_count",
-      "focused_reflection.topic",
-      "focused_reflection.entry_source",
-      "focused_reflection.user_opt_in",
-      "focused_reflection.stage",
-      "focused_reflection.transcript",
-      "focused_reflection.readiness",
-    ],
-  },
-
-  FOCUSED_PATTERN_REFLECTION: {
-    id: "FOCUSED_PATTERN_REFLECTION",
-    kind: "DIALOG",
-    goal: "Fokuseret refleksion over brugerens forhold til et bestemt forbrug eller vanemønster.",
-    message:
-      "Vi fortsætter her i chatten med et mere fokuseret blik på et mønster i din hverdag. Samtalen handler om refleksion – ikke behandling.",
-    allow_free_text: true,
-    allow_parentese: true,
-    allowed_exits: ["FOCUSED_PATTERN_REFLECTION", "HOME", "GEN_HYPNO", "BOOKING"],
-    capability_id: "focused-pattern-reflection-v1",
-    meta_domains_written: [
-      "ux",
-      "focused_reflection.topic",
-      "focused_reflection.entry_source",
-      "focused_reflection.user_opt_in",
-      "focused_reflection.stage",
-      "focused_reflection.summary",
-      "focused_reflection.emotions",
-      "focused_reflection.patterns",
-      "focused_reflection.conflicts",
-      "focused_reflection.transcript",
-    ],
-  },
-
-  TRIAGE: {
-    id: "TRIAGE",
-    kind: "DIALOG",
-    goal: "Passer hypnoterapi til min situation?",
-    message:
-      "Fortæl kort om din situation og hvad du ønsker anderledes. Jeg stiller få opklarende spørgsmål og vurderer, om hypnoterapi typisk vil være relevant.",
-    allow_free_text: true,
-    allow_parentese: true,
-    allowed_exits: [
-      "TRIAGE",
-      "TRIAGE_FIT_BOOKING",
-      "TRIAGE_NOT_RELEVANT",
-      "TRIAGE_NEEDS_ASSESSMENT",
-      "BOOKING",
-      "METHOD_FIT",
-      "GEN_HYPNO",
-      "HOME",
-    ],
-    capability_id: "triage-relevance-v1",
-    meta_domains_written: [
-      "ux",
-      "triage.question_count",
-      "triage.outcome",
-      "triage.summary",
-      "triage.unclear_points",
-      "triage.topic_tags",
-      "triage.user_goal",
-      "triage.key_triggers",
-      "triage.time_horizon",
-      "triage.confidence",
-      "triage.next_state",
-      "triage.notes_for_context",
-      "triage.next_question",
-      "triage.chips",
-      "triage.close_signal",
-      "triage.decision",
-      "triage.render",
-      "triage.relevance",
-      "dialog.triage.transcript",
-      "dialog.triage.used_chip_ids",
-      "dialog.triage.post_close_chips_shown",
-      "dialog.triage.post_close_chips_consumed",
-      "memory_candidates.theme",
-      "memory_candidates.goal",
-      "memory_candidates.triggers",
-      "memory_candidates.patterns",
-      "memory_candidates.summary",
-    ],
-  },
-
-  METHOD_FIT: {
-    id: "METHOD_FIT",
-    kind: "DIALOG",
-    goal: "Hypnoterapi eller et bedre alternativ?",
-    message:
-      "Fortæl kort hvad du vil opnå, og hvad der gør situationen svær lige nu. Jeg kan hjælpe med at vurdere, om hypnoterapi er et godt match, eller om andre tilgange typisk passer bedre. Jeg giver kun overblik—ikke behandling i chatten.",
-    allow_free_text: true,
-    allow_parentese: true,
-    allowed_exits: ["METHOD_FIT", "HOME", "BOOKING"],
-    capability_id: "method-fit-v1",
-    meta_domains_written: [
-      "ux",
-      "method_fit.transcript",
-      "method_fit.summary",
-      "method_fit.profile",
-      "method_fit.scope",
-      "method_fit.case_id",
-      "method_fit.problem_tags",
-      "method_fit.constraints",
-      "method_fit.red_flags",
-      "method_fit.hypnosis_fit",
-      "method_fit.recommendations",
-      "method_fit.unknown_candidates",
-      "method_fit.focus_plan",
-      "method_fit.question_count",
-      "method_fit.questions_remaining",
-      "method_fit.close_signal",
-      "method_fit.relevance",
-      "method_fit.confidence",
-      "method_fit.tags",
-      "method_fit.next_question",
-      "method_fit.chips",
-    ],
-  },
-
-  REFLECTION: {
-    id: "REFLECTION",
-    kind: "DIALOG",
-    goal: "Refleksionsdialog (intake + meningsskabelse)",
-    message:
-      "Vi kan tage en rolig refleksionsdialog for at skabe klarhed: hvad problemet er, hvad du ønsker, og hvordan det typisk udfolder sig. " +
-      "Jeg spørger kun 1–2 spørgsmål ad gangen. Ingen øvelser eller behandling i chatten.",
-    allow_free_text: true,
-    allow_parentese: true,
-    allowed_exits: ["HOME"],
-    capability_id: "reflection-v1",
-    meta_domains_written: ["ux", "reflection.transcript"],
-  },
-
-  DAGBOG: {
-    id: "DAGBOG",
-    kind: "DIALOG",
-    goal: "Dagbog — observation",
-    message:
-      "Dagbog: skriv et kort notat. Fokus er observation, ikke behandling. Felter afhænger af dagbogstypen (fx alkohol/generel/streng).",
-    allow_free_text: true,
-    allow_parentese: false,
-    allowed_exits: ["HOME"],
-    capability_id: "diary-v1",
-    meta_domains_written: ["ux", "journal.entries", "journal.config", "journal.phase", "journal.append_entry"],
-  },
-
-  TRIAGE_FIT_BOOKING: {
-    id: "TRIAGE_FIT_BOOKING",
-    kind: "TERMINAL",
-    goal: "Egnet til booking",
-    message: "Foreløbig triage: dit tema virker relevant for hypnoterapi. Næste skridt er booking.",
+  POSTPROC_STEP_1_SCAN: {
+    id: "POSTPROC_STEP_1_SCAN",
+    kind: "TOOL",
+    goal: "post processing step 1",
+    message: "System step: post processing (1/3)…",
     allow_free_text: false,
     allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
-    meta_domains_written: ["ux", "triage.outcome", "triage.summary", "triage.unclear_points"],
-  },
-
-  TRIAGE_NOT_RELEVANT: {
-    id: "TRIAGE_NOT_RELEVANT",
-    kind: "TERMINAL",
-    goal: "Ikke relevant",
-    message:
-      "Foreløbig triage: det lyder ikke som et klassisk hypnoterapi-spor. Vi anbefaler afklaring af anden støtte.",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
-    meta_domains_written: ["ux", "triage.outcome", "triage.summary", "triage.unclear_points"],
-  },
-
-  TRIAGE_NEEDS_ASSESSMENT: {
-    id: "TRIAGE_NEEDS_ASSESSMENT",
-    kind: "TERMINAL",
-    goal: "Kræver afklaringssamtale",
-    message: "Foreløbig triage: der er stadig uklarheder. Start med en afklaringssamtale.",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: QUICK_CONTACTS,
-    meta_domains_written: ["ux", "triage.outcome", "triage.summary", "triage.unclear_points"],
-  },
-
-  BOOKING: {
-    id: "BOOKING",
-    kind: "MENU",
-    goal: "Booking",
-    message: "Her kan du vælge kontaktvej for booking.",
-    allow_free_text: false,
-    allow_parentese: false,
-    allowed_exits: ["MAIL", "TLF", "CONTACT_FORM", "HOME", "AKUT"],
-    meta_domains_written: ["ux"],
-  },
-
-  MAIL: {
-    id: "MAIL",
-    kind: "MENU",
-    goal: "Mail kontakt",
-    message: "Du kan kontakte mig via e-mail på jan@gaarsdal.net.",
-    allow_free_text: false,
-    allow_parentese: false,
-    navigation: {
-      show_default_chips: false,
+    allowed_exits: ["POSTPROC_STEP_2_BUILD", "HOME"],
+    tool: {
+      tool_id: "postproc-step-1-v1",
+      on_success_to: "POSTPROC_STEP_2_BUILD",
+      on_error_to: "HOME",
     },
-    allowed_exits: PARENTESE_EXITS,
-    meta_domains_written: ["ux"],
+    meta_domains_written: ["ux", "postproc.last"],
   },
 
-  TLF: {
-    id: "TLF",
-    kind: "MENU",
-    goal: "Telefon kontakt",
-    message: "Du kan ringe eller sende sms til 42 80 74 74. Jeg svarer, så snart jeg kan.",
+  POSTPROC_STEP_2_BUILD: {
+    id: "POSTPROC_STEP_2_BUILD",
+    kind: "TOOL",
+    goal: "post processing step 2",
+    message: "System step: post processing (2/3)…",
     allow_free_text: false,
     allow_parentese: false,
-    navigation: {
-      show_default_chips: false,
+    allowed_exits: ["POSTPROC_STEP_3_PUBLISH", "HOME"],
+    tool: {
+      tool_id: "postproc-step-2-v1",
+      on_success_to: "POSTPROC_STEP_3_PUBLISH",
+      on_error_to: "HOME",
     },
-    allowed_exits: PARENTESE_EXITS,
-    meta_domains_written: ["ux"],
+    meta_domains_written: ["ux", "postproc.last"],
   },
 
-  CONTACT_FORM: {
-    id: "CONTACT_FORM",
-    kind: "MENU",
-    goal: "Kontaktformular",
-    message:
-      "Vil du åbne kontaktsiden, eller blive her i chatten?\n\nE-mail: jan@gaarsdal.net\nTelefon/SMS: 42 80 74 74\nKontaktformular: /kontakt",
-    allow_free_text: false,
-    allow_parentese: false,
-    navigation: {
-      show_default_chips: false,
-    },
-    allowed_exits: PARENTESE_EXITS,
-    meta_domains_written: ["ux"],
-  },
-
-  AKUT: {
-    id: "AKUT",
-    kind: "MENU",
-    goal: "Akut hjælp",
-    message:
-      "Hvis du er i akut krise eller fare, så søg lokal akut hjælp med det samme.\n\nDanmark:\n- Alarm: 112\n- Akuttelefon/lægevagt afhænger af region\n- Psykiatrisk akutmodtagelse i din region\n\nHvis det ikke er akut, kan du gå tilbage til HOME eller vælge booking.",
-    allow_free_text: false,
-    allow_parentese: false,
-    navigation: {
-      show_default_chips: false,
-    },
-    allowed_exits: ["HOME", "BOOKING"],
-    meta_domains_written: ["ux"],
-  },
-
-  RESUME: {
-    id: "RESUME",
-    kind: "ROUTER",
-    goal: "Resume previous visible node",
-    message: "Fortsætter…",
+  POSTPROC_STEP_3_PUBLISH: {
+    id: "POSTPROC_STEP_3_PUBLISH",
+    kind: "TOOL",
+    goal: "post processing step 3",
+    message: "System step: post processing (3/3)…",
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: ["HOME"],
-    router: {
-      router_id: "resume-router-v1",
+    tool: {
+      tool_id: "postproc-step-3-v1",
+      on_success_to: "HOME",
+      on_error_to: "HOME",
     },
-    meta_domains_written: ["ux"],
+    meta_domains_written: ["ux", "postproc.last"],
   },
-})
+}
 
-export const REGISTRY: Record<NodeId, Node> = RAW_REGISTRY
-
-export function getNode(id: NodeId): Node {
-  const node = REGISTRY[id]
-  if (!node) throw new Error(`Unknown node: ${id}`)
-  return node
+export function getNode(nodeId: string): ChatNode | undefined {
+  return NODE_REGISTRY[nodeId]
 }
