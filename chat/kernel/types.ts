@@ -71,7 +71,47 @@ export type KernelResult = {
   log: LogEvent
 }
 
-export type NodeKind = "MENU" | "DIALOG" | "INFO" | "STATIC" | "TERMINAL"
+export type NodeKind =
+  | "MENU"
+  | "DIALOG"
+  | "INFO"
+  | "STATIC"
+  | "TERMINAL"
+  | "ROUTER"
+  | "TOOL"
+  | "CHECKPOINT"
+  | "FORM"
+
+export type FormField = {
+  id: string
+  label: string
+  required?: boolean
+  placeholder?: string
+}
+
+export type FormSpec = {
+  fields: FormField[]
+  allow_partial?: boolean
+  on_submit_to: NodeId
+}
+
+export type RouterSpec = {
+  candidates?: NodeId[]
+}
+
+export type ToolSpec = {
+  name: string
+  on_success_to?: NodeId
+  on_failure_to?: NodeId
+  config?: Record<string, unknown>
+}
+
+export type CheckpointSpec = {
+  name: string
+  on_success_to?: NodeId
+  on_failure_to?: NodeId
+  config?: Record<string, unknown>
+}
 
 export type Node = {
   id: NodeId
@@ -83,7 +123,8 @@ export type Node = {
   capability_id?: string
   allowed_exits: NodeId[]
   meta_domains_written: string[]
-  router?: {
-    candidates?: NodeId[]
-  }
+  router?: RouterSpec
+  form?: FormSpec
+  tool?: ToolSpec
+  checkpoint?: CheckpointSpec
 }
