@@ -1,8 +1,13 @@
-import type { ConversationState, InputSignal, KernelResult, Transition } from "../kernel/types"
+import type {
+  ConversationState,
+  InputSignal,
+  KernelResult,
+  Transition,
+  Node,
+} from "../kernel/types"
 import { runKernel } from "../kernel/engine"
 import { getNode } from "../nodes/registry"
 import { runCapability } from "../ai/runtime"
-import type { Node } from "../nodes/registry"
 import { parseFormText } from "../tools/formParsing"
 import { runTool } from "../tools/tools"
 import { runRouter } from "../router/runRouter"
