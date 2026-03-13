@@ -121,7 +121,7 @@ export const NODE_REGISTRY: Record<string, ChatNode> = {
     ],
   },
 
-  GEN_HYPNO: {
+   GEN_HYPNO: {
     id: "GEN_HYPNO",
     kind: "DIALOG",
     goal: "Generelt om hypnoterapi og let refleksion",
@@ -139,6 +139,7 @@ export const NODE_REGISTRY: Record<string, ChatNode> = {
       "gen_hypno.problem_summary",
       "gen_hypno.topic_tags",
       "gen_hypno.assistant_turn_count",
+      "focused_reflection.readiness",
       "dialog.mode",
       "dialog.stage",
       "dialog.topic",
