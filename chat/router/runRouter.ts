@@ -1,5 +1,4 @@
-import type { ConversationState, Transition } from "../kernel/types"
-import type { Node } from "../nodes/registry"
+import type { ConversationState, Transition, Node } from "../kernel/types"
 import { homeRouterV1 } from "./policies/homeRouterV1"
 
 export type RouterRunResult = {
@@ -22,9 +21,14 @@ function chooseAllowed(next: string, allowed: string[]): string {
   return allowed[0] ?? "HOME"
 }
 
+function resolveRouterId(node: Readonly<Node>): string {
+  if (node.id === "HOME") return "home-router-v1"
+  return "unknown-router"
+}
+
 /**
  * Runs a ROUTER node deterministically.
- * In PR2, this is rule-based. LLM-assisted routing (guarded) is intentionally deferred.
+ * Rule-based only.
  */
 export function runRouter(params: {
   node: Readonly<Node>
@@ -32,8 +36,11 @@ export function runRouter(params: {
   userText: string
 }): RouterRunResult {
   const node = params.node
-  const routerId = node.router?.router_id ?? "unknown-router"
-  const candidates = (node.router?.candidates?.length ? node.router.candidates : node.allowed_exits) ?? []
+  const routerId = resolveRouterId(node)
+  const candidates =
+    (node.router?.candidates?.length
+      ? node.router.candidates
+      : node.allowed_exits) ?? []
   const allowed = node.allowed_exits ?? []
 
   let nextNodeId = candidates[0] ?? allowed[0] ?? node.id
@@ -41,7 +48,10 @@ export function runRouter(params: {
   let reason = "no policy"
 
   if (routerId === "home-router-v1") {
-    const decision = homeRouterV1({ userText: params.userText, candidates: candidates })
+    const decision = homeRouterV1({
+      userText: params.userText,
+      candidates,
+    })
     nextNodeId = decision.nextNodeId
     confidence = decision.confidence
     reason = decision.reason
