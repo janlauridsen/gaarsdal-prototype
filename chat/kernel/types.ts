@@ -70,3 +70,20 @@ export type KernelResult = {
   transition: Transition
   log: LogEvent
 }
+
+export type NodeKind = "MENU" | "DIALOG" | "INFO" | "STATIC" | "TERMINAL"
+
+export type Node = {
+  id: NodeId
+  kind: NodeKind
+  goal: string
+  message: string
+  allow_free_text: boolean
+  allow_parentese: boolean
+  capability_id?: string
+  allowed_exits: NodeId[]
+  meta_domains_written: string[]
+  router?: {
+    candidates?: NodeId[]
+  }
+}
