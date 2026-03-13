@@ -17,129 +17,89 @@ type Output = {
   topic_tags?: string[]
 }
 
-type FocusedReflectionReadiness = {
-  eligible: boolean
-  reason:
-    | "explicit_reflection_intent"
-    | "repeated_personal_theme"
-    | "insufficient_turns"
-    | "information_question_only"
-    | "topic_not_established"
+type DialogMode =
+  | "informational"
+  | "guided_reflection"
+  | "evidence"
+  | "practical"
+  | "closing"
+
+type ReadinessReason =
+  | "explicit_reflection_intent"
+  | "repeated_personal_theme"
+  | "information_question_only"
+  | "topic_not_established"
+  | "closing_signal"
+  | "general"
+
+type UnifiedRunOptions = {
+  transcriptKey: string
+  sourceNode: string
+  stayOnNode: string
+  forcedMode?: Exclude<DialogMode, "closing">
 }
 
 const MAX_TRANSCRIPT_TURNS = 30
 const MAX_TRANSCRIPT_CHARS = 6000
 
-const FOCUSED_REFLECTION_OFFER =
-  "Hvis du senere vil, kan vi også skifte til et mere fokuseret refleksionsspor om dit forhold til alkohol. " +
-  "Der kan vi undersøge mønstre og triggere mere systematisk. " +
-  "Skriv fx 'skift spor' hvis du vil det."
-
-const GEN_HYPNO_PROMPT = `
+const HYPNO_CONVERSATION_PROMPT = `
 ROLLE
-Du er en rolig, kompetent hypnoterapeutisk informations- og afklaringsassistent.
+Du er en rolig, klar og nøgtern samtalepartner om hypnoterapi, vaneændring og mønsterforståelse.
 
-PRIMÆR FUNKTION
-Du giver:
-- kort og nøgtern information om hypnoterapi
-- afklaring af hvordan et forløb typisk foregår
-- overblik over metode, anvendelse og evidens
-- rolig afgrænsning af næste relevante emne
+RAMME
+Du må gerne:
+- forklare hypnoterapi og hvordan et forløb typisk foregår
+- svare nøgternt om evidens og praktisk anvendelse
+- hjælpe brugeren med let, ikke-klinisk refleksion om vaner, mønstre og triggere
 
-DU GØR IKKE
-- behandling
-- egentlig terapeutisk proces
-- dyb personlig udforskning
-- refleksionsdialog om triggere, mønstre, konflikter eller følelser
-- spørgsmål der inviterer til selvudforskning på et terapeutisk niveau
+Du må ikke:
+- diagnosticere
+- love effekt
+- opføre dig som om chatten er behandling
+- presse brugeren ind i dyb terapi eller intens følelsesudforskning
 
-SAMTALESTRUKTUR
-Du modtager:
-- conversation_transcript
-- user_input
-- assistant_turn_count
+STIL
+- svar direkte på det vigtigste først
+- hold tonen rolig, enkel og professionel
+- ved refleksion: højst ét fokuseret spørgsmål
+- ved information: højst ét afgrænsende spørgsmål
+- undgå lange taler og gentagelser
 
-INTERN VURDERING FØR SVAR
-Vurder kort:
-- Er brugerens hensigt primært information, evidens, forløb, relevans eller kontakt?
-- Er spørgsmålet konkret eller bredt?
-- Skal svaret være forklarende, afgrænsende eller orienterende?
-- Er brugeren ved at søge personlig refleksion? Hvis ja, så bliv stadig i den generelle informationsrolle.
+MODES
+1) informational
+   Bruges når brugeren vil forstå metode, forløb eller generel relevans.
 
-HÅRD AFGRÆNSNING
-Hvis brugeren beskriver alkoholforbrug eller ønsker bedre selvforståelse:
-- forklar kun generelt hvordan hypnoterapi typisk kan arbejde med vaner, automatreaktioner og opmærksomhed
-- du må IKKE gå ind i konkret udforskning af brugerens egne triggere, følelser, mønstre eller underliggende årsager
-- du må IKKE stille spørgsmål som undersøger brugerens indre tilstand eller specifikke situationer
-- du må IKKE opføre dig som om et fokuseret refleksionsspor allerede er aktivt
+2) evidence
+   Bruges når brugeren spørger om effekt, dokumentation eller om det virker.
+   Skeln tydeligt mellem evidens og klinisk erfaring.
 
-TILLADTE SPØRGSMÅL
-Du må højst stille ét spørgsmål, og kun hvis det hjælper med at afgrænse informationsbehov.
-Gode spørgsmål er fx:
-- "Vil du helst høre om hvordan et forløb typisk foregår, eller om hvordan metoden bruges ved vaner?"
-- "Vil du helst høre om evidens eller om den praktiske form?"
-Undgå spørgsmål om:
-- bestemte følelser
-- svære situationer
-- konkrete triggere
-- hvorfor brugeren gør noget
-- hvad der ligger bag et mønster
+3) practical
+   Bruges ved kontakt, booking, pris, adresse, telefon, mail eller praktiske næste skridt.
 
-SVARSTIL
-- rolig
-- klar
-- professionel
-- nøgtern
-- kort til moderat længde
-- ingen terapeutisk tone
-- ingen følelsesudforskning
-- ingen formuleringer der lyder som guidet selvindsigt
+4) guided_reflection
+   Bruges når brugeren tydeligt vil forstå egne mønstre, vaner eller triggere.
+   Det er stadig ikke terapi. Hjælp med rolig, let struktur:
+   - anerkend temaet kort
+   - giv 1-3 konkrete observationsvinkler
+   - stil højst ét enkelt spørgsmål, som hjælper brugeren med at lægge mærke til mønstre
+   Undgå tung terapeutisk tone.
 
-VED KONKRETE SPØRGSMÅL
-- svar direkte først
-- tilføj højst lidt nødvendig kontekst
-- stil kun ét afgrænsende spørgsmål hvis det faktisk hjælper
+5) closing
+   Bruges ved korte sociale lukninger som "tak".
+   Svar meget kort. Gentag ikke en fuld afslutning.
 
-VED BREDERE INPUT
-- afgræns nænsomt
-- giv et kort overblik
-- peg på 1 næste relevant retning
-
-OPSUMMERINGSREGEL
-- Hvis assistant_turn_count > 0 OG assistant_turn_count % 4 === 0:
-  Giv en kort, struktureret opsummering før du går videre.
-- Afslut med højst ét konkret informationsspørgsmål.
+ALKOHOL / VANER
+Når brugeren taler om alkohol eller vaner:
+- du må gerne tale om mønstre, situationer, automatreaktioner og typiske triggere på et let, konkret niveau
+- du må ikke diagnosticere afhængighed eller lave behandlingsplan
+- du må gerne foreslå observationer i hverdagen frem for tolkninger af dybe årsager
 
 EVIDENSRAMME
-(A) God evidens: Flere systematiske reviews eller metaanalyser.
-(B) Moderat/blandet evidens: Mindre RCT'er eller blandede resultater.
-(C) Begrænset evidens: Få studier eller metodiske begrænsninger.
-(D) Primært klinisk erfaring.
-Hvis uklart: skriv "evidens: uklar".
-
-EVIDENSFORMIDLING
-- Når brugeren spørger til effekt eller dokumentation, svar nøgternt og kort.
-- Skeln tydeligt mellem evidensniveau og klinisk erfaring.
-- Undgå sikre løfter eller overdrivelser.
-
-KONTAKT / BOOKING
-Hvis brugeren vil i kontakt, spørger til Jan, booking, telefon eller mail:
-- svar kort og praktisk
-- hold fokus på kontaktinformation og næste konkrete skridt
-- skift ikke til refleksionsspor
-
-LAST_TOPIC
-- 1–2 ord
-- små bogstaver
-- generelt og stabilt
-- genbrug hvis muligt
-
-PROBLEM_CAPTURE
-- Hvis brugerens input beskriver et konkret problem eller tema, udfyld også:
-  - "problem_title": 1-4 ord
-  - "problem_summary": 1 kort sætning, neutral og præcis
-  - "topic_tags": liste med 1-3 korte tags i små bogstaver
-- Udelad felterne hvis problemet ikke er konkret nok endnu.
+(A) God evidens: flere systematiske reviews/metaanalyser
+(B) Moderat/blandet evidens: mindre RCT'er eller blandede resultater
+(C) Begrænset evidens: få studier eller metodiske begrænsninger
+(D) Primært klinisk erfaring
+Hvis uklart: skriv "evidens: uklar"
 
 OUTPUT
 Returner KUN gyldig JSON:
@@ -152,8 +112,19 @@ Returner KUN gyldig JSON:
 }
 `
 
-function readTranscript(context: AiCapabilityContext): TranscriptTurn[] {
-  const raw = context.state.meta["gen_hypno.transcript"]?.value
+function normalizeText(text: string): string {
+  return text.toLowerCase().trim().replace(/\s+/g, " ")
+}
+
+function stripPunctuation(text: string): string {
+  return normalizeText(text).replace(/[.,!?;:()"'\u2019\u201c\u201d\u2018\\/-]/g, " ")
+}
+
+function readTranscriptByKey(
+  context: AiCapabilityContext,
+  key: string
+): TranscriptTurn[] {
+  const raw = context.state.meta[key]?.value
   if (!Array.isArray(raw)) return []
 
   const turns: TranscriptTurn[] = []
@@ -176,7 +147,6 @@ function readTranscript(context: AiCapabilityContext): TranscriptTurn[] {
 
 function trimTranscript(turns: TranscriptTurn[]): TranscriptTurn[] {
   const cappedByTurn = turns.slice(-MAX_TRANSCRIPT_TURNS)
-
   const result: TranscriptTurn[] = []
   let totalChars = 0
 
@@ -197,8 +167,8 @@ function appendTranscript(
 ): TranscriptTurn[] {
   const next = [...previous]
 
-  const u = (userText ?? "").trim()
-  const a = (assistantText ?? "").trim()
+  const u = userText.trim()
+  const a = assistantText.trim()
 
   if (u) next.push({ role: "user", content: u })
   if (a) next.push({ role: "assistant", content: a })
@@ -209,17 +179,15 @@ function appendTranscript(
 function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
   if (!raw) return null
 
-  const msg =
+  const assistant_message =
     typeof raw.assistant_message === "string"
       ? raw.assistant_message.trim()
       : ""
 
-  if (!msg) return null
+  if (!assistant_message) return null
 
   const last_topic =
-    typeof raw.last_topic === "string"
-      ? raw.last_topic.trim()
-      : undefined
+    typeof raw.last_topic === "string" ? raw.last_topic.trim() : undefined
 
   const problem_title =
     typeof raw.problem_title === "string"
@@ -240,7 +208,7 @@ function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
     : undefined
 
   return {
-    assistant_message: msg,
+    assistant_message,
     last_topic,
     problem_title,
     problem_summary,
@@ -248,51 +216,8 @@ function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
   }
 }
 
-function buildFallbackMessage(userText: string): string {
-  if (!userText.trim()) {
-    return "Hvad vil du gerne vide om hypnoterapi?"
-  }
-
-  return "Tak for dit spørgsmål. Vil du helst høre om metoden, evidensen eller hvordan et forløb typisk foregår?"
-}
-
-function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, " ")
-}
-
-function stripPunctuation(text: string): string {
-  return normalizeText(text).replace(/[.,!?;:()"'’“”‘’\\-]/g, " ")
-}
-
-function isAlcoholTopic(text: string): boolean {
-  const t = stripPunctuation(text)
-
-  const patterns = [
-    "alkohol",
-    "alkoholforbrug",
-    "mit forbrug af alkohol",
-    "drikker for meget",
-    "jeg drikker for meget",
-    "drikker lidt for meget",
-    "mit drikkeri",
-    "drikkeri",
-    "vin hver aften",
-    "øl hver aften",
-    "for meget vin",
-    "for mange øl",
-    "mit forhold til alkohol",
-    "stoppe med at drikke",
-    "skære ned på alkohol",
-  ]
-
-  return patterns.some((pattern) => t.includes(pattern))
-}
-
-function countUserTurns(turns: TranscriptTurn[]): number {
-  return turns.filter((turn) => turn.role === "user").length
+function countAssistantTurns(turns: TranscriptTurn[]): number {
+  return turns.filter((turn) => turn.role === "assistant").length
 }
 
 function countTopicMatches(
@@ -302,171 +227,391 @@ function countTopicMatches(
   return turns.filter((turn) => turn.role === "user" && matcher(turn.content)).length
 }
 
+function isAlcoholTopic(text: string): boolean {
+  const t = stripPunctuation(text)
+
+  const patterns = [
+    "alkohol",
+    "alkoholforbrug",
+    "drikker for meget",
+    "mit drikkeri",
+    "vin hver aften",
+    "øl hver aften",
+    "mit forhold til alkohol",
+    "stoppe med at drikke",
+    "skære ned på alkohol",
+  ]
+
+  return patterns.some((pattern) => t.includes(pattern))
+}
+
 function hasReflectionIntent(text: string): boolean {
   const t = stripPunctuation(text)
 
   const phrases = [
     "refleksion",
     "reflektere",
-    "forstå mit mønster",
+    "selvindsigt",
     "forstå mine mønstre",
+    "forstå mit mønster",
     "forstå hvorfor",
-    "undersøge mønster",
-    "undersøge mine mønstre",
-    "mit forhold til alkohol",
     "triggere",
-    "hvad der trækker i mig",
     "forstå mig selv bedre",
+    "hvad der sker i mig",
+    "undersøge mine vaner",
+    "forhold til alkohol",
   ]
 
   return phrases.some((phrase) => t.includes(phrase))
 }
 
-function isLikelyConcreteInfoQuestion(text: string): boolean {
+function isEvidenceQuestion(text: string): boolean {
   const t = stripPunctuation(text)
 
-  const phrases = [
-    "kan du hjælpe",
-    "kan hypnoterapi hjælpe",
-    "kan hypnose hjælpe",
-    "hvordan virker",
-    "hvad er hypnoterapi",
-    "hvordan foregår",
-    "hvordan et forløb foregår",
+  return [
     "virker det",
     "hjælper det",
-    "hvordan kan det virke",
-    "vil gerne have hjælp og forstå hvordan det kan virke",
-    "hvordan bruges det",
-  ]
-
-  if (phrases.some((phrase) => t.includes(phrase))) return true
-
-  return text.trim().endsWith("?")
+    "evidens",
+    "dokumentation",
+    "dokumenteret",
+    "forskning",
+    "studier",
+  ].some((phrase) => t.includes(phrase))
 }
 
-function shouldOfferFocusedReflection(params: {
+function isPracticalIntent(text: string): boolean {
+  const t = stripPunctuation(text)
+
+  return [
+    "booking",
+    "booke",
+    "kontakt",
+    "telefon",
+    "mail",
+    "email",
+    "e mail",
+    "adresse",
+    "pris",
+    "priser",
+    "jan",
+  ].some((phrase) => t.includes(phrase))
+}
+
+function isSoftClosing(text: string): boolean {
+  const t = normalizeText(text)
+  return ["tak", "mange tak", "super", "fint", "okay tak", "ok tak", "selv tak"].includes(t)
+}
+
+function isHardExit(text: string): boolean {
+  const t = stripPunctuation(text)
+
+  return [
+    "stop",
+    "afslut",
+    "slut",
+    "tilbage",
+    "hjem",
+    "home",
+    "menu",
+    "hovedmenu",
+    "ikke nu",
+  ].some((phrase) => t === phrase || t.includes(phrase))
+}
+
+function inferReadiness(
+  transcript: TranscriptTurn[],
+  userText: string
+): ReadinessReason {
+  if (isSoftClosing(userText)) return "closing_signal"
+  if (hasReflectionIntent(userText)) return "explicit_reflection_intent"
+
+  const currentAlcohol = isAlcoholTopic(userText)
+  const topicHitsBefore = countTopicMatches(transcript, isAlcoholTopic)
+  const topicHitsTotal = topicHitsBefore + (currentAlcohol ? 1 : 0)
+
+  if (currentAlcohol && topicHitsTotal >= 2) return "repeated_personal_theme"
+  if (isEvidenceQuestion(userText)) return "information_question_only"
+  if (!currentAlcohol && topicHitsTotal < 2) return "topic_not_established"
+
+  return "general"
+}
+
+function decideMode(params: {
   transcript: TranscriptTurn[]
   userText: string
-  assistantTurnCount: number
-}): FocusedReflectionReadiness {
-  const userTurnsBefore = countUserTurns(params.transcript)
-  const topicHitsBefore = countTopicMatches(params.transcript, isAlcoholTopic)
-  const currentIsAlcoholTopic = isAlcoholTopic(params.userText)
-  const topicHitsTotal = topicHitsBefore + (currentIsAlcoholTopic ? 1 : 0)
+  forcedMode?: Exclude<DialogMode, "closing">
+}): { mode: DialogMode; readiness: ReadinessReason } {
+  const readiness = inferReadiness(params.transcript, params.userText)
 
-  if (!currentIsAlcoholTopic && topicHitsTotal < 2) {
-    return { eligible: false, reason: "topic_not_established" }
-  }
-
-  if (hasReflectionIntent(params.userText) && (currentIsAlcoholTopic || topicHitsTotal >= 1)) {
-    if (params.assistantTurnCount >= 2 || topicHitsTotal >= 2) {
-      return { eligible: true, reason: "explicit_reflection_intent" }
+  if (params.forcedMode) {
+    return {
+      mode: readiness === "closing_signal" ? "closing" : params.forcedMode,
+      readiness,
     }
-    return { eligible: false, reason: "insufficient_turns" }
   }
 
-  if (isLikelyConcreteInfoQuestion(params.userText) && userTurnsBefore < 2) {
-    return { eligible: false, reason: "information_question_only" }
+  if (readiness === "closing_signal") return { mode: "closing", readiness }
+  if (isPracticalIntent(params.userText)) return { mode: "practical", readiness }
+  if (isEvidenceQuestion(params.userText)) return { mode: "evidence", readiness }
+
+  if (
+    readiness === "explicit_reflection_intent" ||
+    readiness === "repeated_personal_theme"
+  ) {
+    return { mode: "guided_reflection", readiness }
   }
 
-  if (topicHitsTotal < 2) {
-    return { eligible: false, reason: "topic_not_established" }
-  }
-
-  if (params.assistantTurnCount < 2) {
-    return { eligible: false, reason: "insufficient_turns" }
-  }
-
-  return { eligible: true, reason: "repeated_personal_theme" }
+  return { mode: "informational", readiness }
 }
 
-function isFocusedReflectionOffer(turn: TranscriptTurn | undefined): boolean {
-  if (!turn || turn.role !== "assistant") return false
+function extractTopic(text: string, fallback?: string): string | undefined {
+  const t = stripPunctuation(text)
+
+  if (t.includes("alkohol")) return "alkohol"
+  if (t.includes("vaner") || t.includes("vane")) return "vaner"
+  if (t.includes("søvn") || t.includes("soevn")) return "søvn"
+  if (t.includes("stress")) return "stress"
+  if (t.includes("angst")) return "angst"
+
+  return fallback && fallback.trim() ? fallback.trim() : undefined
+}
+
+function buildClosingMessage(transcript: TranscriptTurn[]): string {
+  const lastAssistant = [...transcript].reverse().find((turn) => turn.role === "assistant")
+  if (!lastAssistant) return "Selv tak."
+  if (/^selv tak[.!]?$/i.test(lastAssistant.content.trim())) return "Det var så lidt."
+  return "Selv tak."
+}
+
+function buildFallbackMessage(params: {
+  mode: DialogMode
+  transcript: TranscriptTurn[]
+}): string {
+  if (params.mode === "closing") {
+    return buildClosingMessage(params.transcript)
+  }
+
+  if (params.mode === "practical") {
+    return (
+      "Du kan kontakte Jan på +45 42 80 74 74 eller jan@gaarsdal.net. " +
+      "Klinikken ligger på Bakkevej 36, 3460 Birkerød."
+    )
+  }
+
+  if (params.mode === "evidence") {
+    return (
+      "Hypnoterapi kan støtte vaneændring, men evidensen specifikt for alkoholproblemer er begrænset og blandet (evidensniveau C). " +
+      "Det giver mest mening som supplement i en bredere indsats frem for som eneste løsning."
+    )
+  }
+
+  if (params.mode === "guided_reflection") {
+    return (
+      "Når alkohol bliver en vane, hænger det ofte sammen med bestemte situationer, tidspunkter eller skift i energi og uro. " +
+      "Et enkelt sted at starte er at lægge mærke til, om trangen typisk kommer efter belastning, i overgange på dagen eller som en fast aftenrutine. " +
+      "Hvornår på dagen lægger du oftest mærke til mønsteret?"
+    )
+  }
+
   return (
-    turn.content.includes("mere fokuseret refleksionsspor om dit forhold til alkohol") ||
-    turn.content.includes("skifte til et mere fokuseret refleksionsspor om dit forhold til alkohol")
+    "Hypnoterapi bruges ofte til at arbejde med vaner, automatiske reaktioner og opmærksomhed. " +
+    "Jeg kan enten forklare, hvordan et typisk forløb foregår, eller hvordan metoden typisk bruges ved vaneændring."
   )
 }
 
-function isAcceptFocusedReflection(text: string): boolean {
-  const t = stripPunctuation(text)
+function buildMetaDelta(params: {
+  context: AiCapabilityContext
+  assistantMessage: string
+  updatedTranscript: TranscriptTurn[]
+  mode: DialogMode
+  readiness: ReadinessReason
+  parsed: Output | null
+  topic: string | undefined
+  sourceNode: string
+  transcriptKey: string
+}): Record<string, unknown> {
+  const previousTranscript = readTranscriptByKey(params.context, params.transcriptKey)
+  const previousAssistantCount = countAssistantTurns(previousTranscript)
+  const nextAssistantCount = params.assistantMessage
+    ? previousAssistantCount + 1
+    : previousAssistantCount
 
-  const exact = new Set([
-    "2",
-    "ja",
-    "ja tak",
-    "ok",
-    "okay",
-    "yes",
-    "skift spor",
-    "mere fokuseret",
-    "fokuseret refleksionsspor",
-    "lad os gøre det",
-    "ja lad os gøre det",
-    "ja skift spor",
-    "ja mere fokuseret",
-    "skift til spor 2",
-    "spor 2",
-  ])
+  const meta: Record<string, unknown> = {
+    [params.transcriptKey]: params.updatedTranscript,
+    "gen_hypno.transcript": params.updatedTranscript,
+    "gen_hypno.assistant_turn_count": nextAssistantCount,
+    "focused_reflection.readiness": params.readiness,
+    "dialog.mode": params.mode,
+    "dialog.stage":
+      params.mode === "closing"
+        ? "close"
+        : params.mode === "guided_reflection"
+          ? "explore_patterns"
+          : "open",
+  }
 
-  if (exact.has(t)) return true
+  if (params.topic) {
+    meta["gen_hypno.last_topic"] = params.topic
+    meta["focused_reflection.topic"] = params.topic
+    meta["dialog.topic"] = params.topic
+  }
+
+  if (params.mode === "guided_reflection") {
+    meta["focused_reflection.entry_source"] = params.sourceNode
+    meta["focused_reflection.user_opt_in"] = true
+    meta["focused_reflection.stage"] = "OPEN"
+    meta["focused_reflection.transcript"] = params.updatedTranscript
+  }
+
+  if (params.parsed?.problem_title) {
+    meta["gen_hypno.problem_title"] = params.parsed.problem_title
+  }
+
+  if (params.parsed?.problem_summary) {
+    meta["gen_hypno.problem_summary"] = params.parsed.problem_summary
+  }
+
+  if (params.parsed?.topic_tags?.length) {
+    meta["gen_hypno.topic_tags"] = params.parsed.topic_tags
+  }
 
   if (
-    (t.includes("skift") && t.includes("spor")) ||
-    (t.includes("mere") && t.includes("fokuseret")) ||
-    (t.includes("fokuseret") && t.includes("alkohol")) ||
-    (t.includes("ja") && t.includes("spor")) ||
-    (t.includes("ja") && t.includes("fokuseret"))
+    params.topic === "alkohol" &&
+    !params.parsed?.problem_title &&
+    !params.context.state.meta["gen_hypno.problem_title"]?.value
   ) {
-    return true
+    meta["gen_hypno.problem_title"] = "alkoholvaner"
+    meta["gen_hypno.problem_summary"] =
+      "Ønske om at forstå eller ændre alkoholvaner."
+    meta["gen_hypno.topic_tags"] = ["alkohol", "vaner", "hypnoterapi"]
   }
 
-  return false
+  return meta
 }
 
-function isDeclineFocusedReflection(text: string): boolean {
-  const t = stripPunctuation(text)
+export async function runUnifiedHypnoCapability(
+  context: AiCapabilityContext,
+  llm: LlmClient,
+  options: UnifiedRunOptions
+): Promise<AiCapabilityResult> {
+  const transcript = readTranscriptByKey(context, options.transcriptKey)
+  const trimmedTranscript = trimTranscript(transcript)
+  const userText = context.userText ?? ""
 
-  const exact = new Set([
-    "1",
-    "fortsæt",
-    "fortsæt som nu",
-    "som nu",
-    "bliv her",
-    "nej",
-    "nej tak",
-  ])
+  const previousTopic =
+    typeof context.state.meta["gen_hypno.last_topic"]?.value === "string"
+      ? String(context.state.meta["gen_hypno.last_topic"]?.value).trim()
+      : undefined
 
-  if (exact.has(t)) return true
+  if (isHardExit(userText)) {
+    const assistant = "Helt fint. Vi stopper her, og du kan vende tilbage senere."
+    const updatedTranscript = appendTranscript(transcript, userText, assistant)
 
-  if (
-    (t.includes("fortsæt") && t.includes("nu")) ||
-    (t.includes("bliv") && t.includes("her")) ||
-    (t.includes("generel") && t.includes("spor"))
-  ) {
-    return true
+    const transition: Transition = {
+      type: "NODE_HOP",
+      from: context.state.active_node,
+      to: "HOME",
+      reason: "user-requested-exit",
+      response_message: assistant,
+      meta_delta: buildMetaDelta({
+        context,
+        assistantMessage: assistant,
+        updatedTranscript,
+        mode: "closing",
+        readiness: "closing_signal",
+        parsed: null,
+        topic: previousTopic,
+        sourceNode: options.sourceNode,
+        transcriptKey: options.transcriptKey,
+      }),
+    }
+
+    return {
+      transition,
+      debug: {
+        capability: "unified-hypno-v2",
+        used_fallback: false,
+      },
+    }
   }
 
-  return false
-}
+  const { mode, readiness } = decideMode({
+    transcript,
+    userText,
+    forcedMode: options.forcedMode,
+  })
 
-function buildFocusedReflectionTranscript(
-  previous: TranscriptTurn[],
-  userText: string
-): TranscriptTurn[] {
-  const base = previous
-    .filter((turn) => !(turn.role === "assistant" && isFocusedReflectionOffer(turn)))
-    .slice(-8)
+  let assistant = ""
+  let parsed: Output | null = null
+  let usedFallback = false
 
-  const transcript: TranscriptTurn[] = [...base]
-  const trimmed = (userText ?? "").trim()
+  if (mode === "closing") {
+    assistant = buildClosingMessage(transcript)
+  } else {
+    try {
+      const result = await llm.chatJson({
+        model: process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
+        temperature: mode === "guided_reflection" ? 0.45 : 0.3,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: HYPNO_CONVERSATION_PROMPT },
+          {
+            role: "user",
+            content: JSON.stringify({
+              mode,
+              site_context: GAARSDAL_SITE_CONTEXT_DA,
+              conversation_transcript: trimmedTranscript,
+              user_input: userText,
+              last_topic: previousTopic ?? "",
+            }),
+          },
+        ],
+      })
 
-  if (trimmed) {
-    transcript.push({ role: "user", content: trimmed })
+      parsed = normalizeOutput(result)
+
+      if (parsed?.assistant_message) {
+        assistant = parsed.assistant_message
+      }
+    } catch {
+      usedFallback = true
+    }
   }
 
-  return transcript
+  if (!assistant && mode !== "closing") {
+    assistant = buildFallbackMessage({ mode, transcript })
+    usedFallback = true
+  }
+
+  const updatedTranscript = appendTranscript(transcript, userText, assistant)
+  const topic = parsed?.last_topic || extractTopic(userText, previousTopic)
+
+  const transition: Transition = {
+    type: "NODE_HOP",
+    from: context.state.active_node,
+    to: options.stayOnNode,
+    reason: `unified-hypno:${mode}`,
+    response_message: assistant,
+    meta_delta: buildMetaDelta({
+      context,
+      assistantMessage: assistant,
+      updatedTranscript,
+      mode,
+      readiness,
+      parsed,
+      topic,
+      sourceNode: options.sourceNode,
+      transcriptKey: options.transcriptKey,
+    }),
+  }
+
+  return {
+    transition,
+    debug: {
+      capability: "unified-hypno-v2",
+      used_fallback: usedFallback,
+    },
+  }
 }
 
 export const genHypnoCapability: AiCapability = {
@@ -476,156 +621,12 @@ export const genHypnoCapability: AiCapability = {
     context: AiCapabilityContext,
     llm: LlmClient
   ): Promise<AiCapabilityResult> {
-    const fullTranscript = readTranscript(context)
-    const trimmedTranscript = trimTranscript(fullTranscript)
-
-    const previousAssistantCount =
-      Number(context.state.meta["gen_hypno.assistant_turn_count"]?.value) || 0
-
-    const userText = context.userText ?? ""
-    const lastTurn = fullTranscript.length
-      ? fullTranscript[fullTranscript.length - 1]
-      : undefined
-
-    if (isFocusedReflectionOffer(lastTurn) && isAcceptFocusedReflection(userText)) {
-      const transition: Transition = {
-        type: "NODE_HOP",
-        from: context.state.active_node,
-        to: "FOCUSED_PATTERN_REFLECTION",
-        reason: "gen-hypno-opt-in-focused-reflection",
-        response_message:
-          "Fint. Vi skifter til et mere fokuseret refleksionsspor om dit forhold til alkohol. Her kan vi undersøge mønstre og triggere mere systematisk, uden at gøre det til behandling i chatten.",
-        meta_delta: {
-          "focused_reflection.topic": "alkohol",
-          "focused_reflection.entry_source": "GEN_HYPNO",
-          "focused_reflection.user_opt_in": true,
-          "focused_reflection.stage": "OPEN",
-          "focused_reflection.transcript": buildFocusedReflectionTranscript(fullTranscript, userText),
-        },
-      }
-
-      return {
-        transition,
-        debug: {
-          capability: "gen-hypno-v1",
-          used_fallback: false,
-        },
-      }
-    }
-
-    if (isFocusedReflectionOffer(lastTurn) && isDeclineFocusedReflection(userText)) {
-      const assistant =
-        "Fint. Vi bliver i det generelle spor. Vil du helst høre mere om, hvordan hypnoterapi typisk bruges ved alkoholvaner, eller om hvordan et forløb praktisk foregår?"
-
-      const updatedTranscript = appendTranscript(fullTranscript, userText, assistant)
-
-      const transition: Transition = {
-        type: "NODE_HOP",
-        from: context.state.active_node,
-        reason: "gen-hypno-decline-focused-reflection",
-        response_message: assistant,
-        meta_delta: {
-          "gen_hypno.transcript": updatedTranscript,
-          "gen_hypno.assistant_turn_count": previousAssistantCount + 1,
-          "gen_hypno.last_topic": "alkohol",
-          "gen_hypno.problem_title": "alkoholforbrug",
-          "gen_hypno.problem_summary":
-            "Brugeren ønsker at blive i den generelle dialog om alkoholforbrug.",
-          "gen_hypno.topic_tags": ["alkohol", "information"],
-          "focused_reflection.readiness": "information_question_only",
-        },
-      }
-
-      return {
-        transition,
-        debug: {
-          capability: "gen-hypno-v1",
-          used_fallback: false,
-        },
-      }
-    }
-
-    const payload = {
-      model:
-        process.env.GEN_HYPNO_MODEL ??
-        process.env.TRIAGE_MODEL ??
-        "gpt-4.1-mini",
-      temperature: 0.3,
-      response_format: { type: "json_object" as const },
-      messages: [
-        { role: "system" as const, content: GEN_HYPNO_PROMPT },
-        { role: "system" as const, content: GAARSDAL_SITE_CONTEXT_DA },
-        {
-          role: "user" as const,
-          content: JSON.stringify({
-            conversation_transcript: trimmedTranscript,
-            user_input: userText,
-            assistant_turn_count: previousAssistantCount,
-          }),
-        },
-      ],
-    }
-
-    const response = await llm.chatJson(payload)
-    const parsed = normalizeOutput(response)
-
-    let assistant =
-      parsed?.assistant_message ??
-      buildFallbackMessage(userText)
-
-    const readiness = shouldOfferFocusedReflection({
-      transcript: fullTranscript,
-      userText,
-      assistantTurnCount: previousAssistantCount,
+    return runUnifiedHypnoCapability(context, llm, {
+      transcriptKey: "gen_hypno.transcript",
+      sourceNode: "GEN_HYPNO",
+      stayOnNode: "GEN_HYPNO",
     })
-
-    if (readiness.eligible) {
-      assistant = `${assistant}\n\n${FOCUSED_REFLECTION_OFFER}`
-    }
-
-    const updatedTranscript = appendTranscript(
-      fullTranscript,
-      userText,
-      assistant
-    )
-
-    const newAssistantCount = previousAssistantCount + 1
-
-    const meta_delta: Record<string, unknown> = {
-      "gen_hypno.transcript": updatedTranscript,
-      "gen_hypno.assistant_turn_count": newAssistantCount,
-      "focused_reflection.readiness": readiness.reason,
-    }
-
-    if (parsed?.last_topic) {
-      meta_delta["gen_hypno.last_topic"] = parsed.last_topic
-    }
-    if (parsed?.problem_title) {
-      meta_delta["gen_hypno.problem_title"] = parsed.problem_title
-    }
-    if (parsed?.problem_summary) {
-      meta_delta["gen_hypno.problem_summary"] = parsed.problem_summary
-    }
-    if (parsed?.topic_tags?.length) {
-      meta_delta["gen_hypno.topic_tags"] = parsed.topic_tags
-    }
-
-    const transition: Transition = {
-      type: "NODE_HOP",
-      from: context.state.active_node,
-      reason: readiness.eligible
-        ? "gen-hypno-free-text-with-focused-reflection-offer"
-        : "gen-hypno-free-text",
-      response_message: assistant,
-      meta_delta,
-    }
-
-    return {
-      transition,
-      debug: {
-        capability: "gen-hypno-v1",
-        used_fallback: !parsed,
-      },
-    }
   },
 }
+
+export default genHypnoCapability
