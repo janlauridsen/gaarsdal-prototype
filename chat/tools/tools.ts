@@ -157,9 +157,9 @@ function getFormLastValues(state: ConversationState): Record<string, unknown> | 
  */
 export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
   const specAny = params.spec as any
-  const toolId = typeof specAny?.tool_id === "string" ? specAny.tool_id : ""
+  const toolName = typeof specAny?.name === "string" ? specAny.name : ""
 
-  if (params.kind === "TOOL" && toolId === "profile-bootstrap-v1") {
+  if (params.kind === "TOOL" && toolName === "profile-bootstrap-v1") {
     const ts = nowIso()
 
     const existing = await readUserProfile(params.userKey)
@@ -189,7 +189,7 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
     })
 
     return {
-      nextNode: specAny.on_success_to,
+      nextNode: specAny.on_success_to ?? params.state.active_node,
       reason: "profile bootstrap ok",
       meta_delta: {
         "profile.status": existing ? "known" : "new",
@@ -201,7 +201,7 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
     }
   }
 
-  if (params.kind === "TOOL" && toolId === "thread-switch-v1") {
+  if (params.kind === "TOOL" && toolName === "thread-switch-v1") {
     const ts = nowIso()
     const index0 = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
 
@@ -306,12 +306,12 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
 
   if (
     params.kind === "TOOL" &&
-    (toolId === "postproc-step-1-v1" || toolId === "postproc-step-2-v1" || toolId === "postproc-step-3-v1")
+    (toolName === "postproc-step-1-v1" || toolName === "postproc-step-2-v1" || toolName === "postproc-step-3-v1")
   ) {
-    const step = toolId === "postproc-step-1-v1" ? 1 : toolId === "postproc-step-2-v1" ? 2 : 3
+    const step = toolName === "postproc-step-1-v1" ? 1 : toolName === "postproc-step-2-v1" ? 2 : 3
     const ts = nowIso()
     return {
-      nextNode: specAny.on_success_to,
+      nextNode: specAny.on_success_to ?? params.state.active_node,
       reason: `postproc step ${step} ok`,
       meta_delta: {
         "postproc.last": {
@@ -327,7 +327,7 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
   const profile = await readUserProfile(params.userKey)
 
   if (!profile) {
-    const nextNode = (params.spec as any).on_success_to ?? (params.spec as any).on_done_to
+    const nextNode = specAny.on_success_to ?? params.state.active_node
     return {
       nextNode,
       reason: "profile missing (noop)",
@@ -337,7 +337,7 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
   if (params.kind === "TOOL") {
     const spec = params.spec as ToolSpec
     try {
-      if (spec.tool_id === "consolidate-v1") {
+      if (spec.name === "consolidate-v1") {
         const { profile: updated, updated: didUpdate } = consolidateV1({ profile, state: params.state })
         if (didUpdate) {
           await writeUserProfile({
@@ -348,11 +348,11 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
         }
       }
 
-      if (spec.tool_id === "apply-form-to-track-v1") {
+      if (spec.name === "apply-form-to-track-v1") {
         const values = getFormLastValues(params.state)
         if (!values) {
           return {
-            nextNode: spec.on_error_to ?? spec.on_success_to,
+            nextNode: spec.on_failure_to ?? spec.on_success_to ?? params.state.active_node,
             reason: "tool:apply-form-to-track-v1 missing form.last",
             response_message: "Mangler form.last i state.meta (kør form først).",
           }
@@ -452,7 +452,7 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
         })
 
         return {
-          nextNode: spec.on_success_to,
+          nextNode: spec.on_success_to ?? params.state.active_node,
           reason: "tool:apply-form-to-track-v1 ok",
           meta_delta: {
             "sandbox.apply_result": {
@@ -466,13 +466,13 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
       }
 
       return {
-        nextNode: spec.on_success_to,
-        reason: `tool:${spec.tool_id} ok`,
+        nextNode: spec.on_success_to ?? params.state.active_node,
+        reason: `tool:${spec.name} ok`,
       }
     } catch (e: any) {
       return {
-        nextNode: spec.on_error_to ?? spec.on_success_to,
-        reason: `tool:${spec.tool_id} failed`,
+        nextNode: spec.on_failure_to ?? spec.on_success_to ?? params.state.active_node,
+        reason: `tool:${spec.name} failed`,
         response_message: typeof e?.message === "string" ? e.message : "Tool failed",
       }
     }
@@ -491,7 +491,7 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
 
   const ts = nowIso()
   return {
-    nextNode: spec.on_done_to,
+    nextNode: spec.on_success_to ?? params.state.active_node,
     reason: "checkpoint committed",
     meta_delta: {
       "checkpoint.last": {
