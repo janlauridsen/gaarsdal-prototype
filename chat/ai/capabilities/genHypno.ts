@@ -26,7 +26,8 @@ type DialogMode =
 
 type ReadinessReason =
   | "explicit_reflection_intent"
-  | "repeated_personal_theme"
+  | "pattern_signal_detected"
+  | "active_reflection_follow_up"
   | "information_question_only"
   | "topic_not_established"
   | "closing_signal"
@@ -51,19 +52,20 @@ const MAX_TRANSCRIPT_CHARS = 6000
 
 const HYPNO_CONVERSATION_PROMPT = `
 ROLLE
-Du er en rolig, klar og nøgtern samtalepartner om hypnoterapi, vaneændring og mønsterforståelse.
+Du er en rolig, klar og nøgtern samtalepartner om hypnoterapi, vaneændring, mønsterforståelse og bevidstgørelse af adfærd.
 
 RAMME
 Du må gerne:
 - forklare hypnoterapi og hvordan et forløb typisk foregår
 - svare nøgternt om evidens og praktisk anvendelse
-- hjælpe brugeren med let, ikke-klinisk refleksion om vaner, mønstre og triggere
+- hjælpe brugeren med let, ikke-klinisk refleksion om vaner, adfærd, mønstre, triggere og metakognitive tendenser
 
 Du må ikke:
 - diagnosticere
 - love effekt
 - opføre dig som om chatten er behandling
 - presse brugeren ind i dyb terapi eller intens følelsesudforskning
+- låse brugerens problem til én bestemt forklaring
 
 STIL
 - svar direkte på det vigtigste først
@@ -84,22 +86,38 @@ MODES
    Bruges ved kontakt, booking, pris, adresse, telefon, mail eller praktiske næste skridt.
 
 4) guided_reflection
-   Bruges når brugeren tydeligt vil forstå egne mønstre, vaner eller triggere.
+   Bruges når brugeren tydeligt vil forstå egne vaner, adfærd, reaktioner, relationelle mønstre eller metakognitive problemstillinger.
    Det er stadig ikke terapi. Hjælp med rolig, let struktur:
    - anerkend temaet kort
    - giv 1-3 konkrete observationsvinkler
-   - stil højst ét enkelt spørgsmål, som hjælper brugeren med at lægge mærke til mønstre
-   Undgå tung terapeutisk tone.
+   - spørg højst én ting, som hjælper brugeren med at lægge mærke til et mønster
+   Brug observation frem for tolkning.
+   Relevante vinkler kan være:
+   - situation eller trigger
+   - tanker eller forventninger lige før reaktionen
+   - kropslige signaler
+   - følelser
+   - automatisk adfærd eller tilbagetrækning
+   - hvad der sker bagefter
+   - ved metakognitive temaer: hvordan brugeren forholder sig til egne tanker, grublen, overvågning af sig selv eller indre pres
 
 5) closing
    Bruges ved korte sociale lukninger som "tak".
    Svar meget kort. Gentag ikke en fuld afslutning.
 
-ALKOHOL / VANER
-Når brugeren taler om alkohol eller vaner:
-- du må gerne tale om mønstre, situationer, automatreaktioner og typiske triggere på et let, konkret niveau
-- du må ikke diagnosticere afhængighed eller lave behandlingsplan
-- du må gerne foreslå observationer i hverdagen frem for tolkninger af dybe årsager
+PROBLEMFORSTÅELSE
+Refleksion skal være generisk og kunne bruges på mange temaer, fx:
+- vaner
+- relationelle mønstre
+- energitab
+- undgåelse
+- uro
+- selvkritik
+- overtænkning
+- kontrolbehov
+- stressreaktioner
+- alkohol eller andre konkrete vaner
+Behandl disse som variationer af mønsterforståelse, ikke som særskilte specialspor.
 
 EVIDENSRAMME
 (A) God evidens: flere systematiske reviews/metaanalyser
@@ -222,7 +240,7 @@ function normalizeOutput(raw: Record<string, unknown> | null): Output | null {
         .filter((item): item is string => typeof item === "string")
         .map((item) => item.trim())
         .filter(Boolean)
-        .slice(0, 3)
+        .slice(0, 4)
     : undefined
 
   return {
@@ -238,39 +256,11 @@ function countAssistantTurns(turns: TranscriptTurn[]): number {
   return turns.filter((turn) => turn.role === "assistant").length
 }
 
-function countTopicMatches(
+function countUserMatches(
   turns: TranscriptTurn[],
   matcher: (text: string) => boolean
 ): number {
   return turns.filter((turn) => turn.role === "user" && matcher(turn.content)).length
-}
-
-function isAlcoholTopic(text: string): boolean {
-  const t = stripPunctuation(text)
-
-  const patterns = [
-    "alkohol",
-    "alkoholforbrug",
-    "drikker for meget",
-    "mit drikkeri",
-    "vin hver aften",
-    "øl hver aften",
-    "mit forhold til alkohol",
-    "stoppe med at drikke",
-    "skære ned på alkohol",
-    "rødvin",
-    "rodvin",
-    "hvidvin",
-    "vin",
-    "øl",
-    "oel",
-    "druk",
-    "drikke",
-    "drikker",
-    "glas vin",
-  ]
-
-  return patterns.some((pattern) => t.includes(pattern))
 }
 
 function hasReflectionIntent(text: string): boolean {
@@ -279,15 +269,24 @@ function hasReflectionIntent(text: string): boolean {
   const phrases = [
     "refleksion",
     "reflektere",
+    "reflektere over det",
     "selvindsigt",
     "forstå mine mønstre",
     "forstå mit mønster",
     "forstå hvorfor",
-    "triggere",
+    "forstå hvad der sker i mig",
     "forstå mig selv bedre",
-    "hvad der sker i mig",
+    "blive mere bevidst",
+    "være mere bevidst",
+    "lægge mærke til",
     "undersøge mine vaner",
-    "forhold til alkohol",
+    "undersøge min adfærd",
+    "se på mit mønster",
+    "se på min reaktion",
+    "meta kognitiv",
+    "metakognitiv",
+    "jeg vil gerne reflektere",
+    "kan vi reflektere",
   ]
 
   return phrases.some((phrase) => t.includes(phrase))
@@ -364,6 +363,101 @@ function hasActiveReflectionContext(context: AiCapabilityContext): ReflectionCon
   }
 }
 
+function isPatternStatement(text: string): boolean {
+  const t = stripPunctuation(text)
+
+  return [
+    "jeg plejer",
+    "jeg ender ofte",
+    "jeg ender tit",
+    "jeg gør altid",
+    "jeg gør tit",
+    "jeg bliver altid",
+    "jeg bliver tit",
+    "jeg mister energien",
+    "jeg bliver træt",
+    "jeg bliver stille",
+    "jeg trækker mig",
+    "jeg lukker ned",
+    "jeg undgår",
+    "jeg protesterer",
+    "det sker når",
+    "typisk",
+    "ofte",
+    "især",
+    "særligt",
+    "saerligt",
+    "hver gang",
+    "når det handler om",
+    "når jeg",
+    "naar jeg",
+    "når vi",
+    "naar vi",
+  ].some((phrase) => t.includes(phrase))
+}
+
+function isBehaviorTheme(text: string): boolean {
+  const t = stripPunctuation(text)
+
+  return [
+    "vane",
+    "vaner",
+    "adfærd",
+    "adfaerd",
+    "mønster",
+    "moenster",
+    "reaktion",
+    "reaktioner",
+    "trigger",
+    "triggere",
+    "energi",
+    "energitab",
+    "konflikt",
+    "relation",
+    "kone",
+    "mand",
+    "partner",
+    "arbejde",
+    "stress",
+    "søvn",
+    "soevn",
+    "uro",
+    "angst",
+    "selvkritik",
+    "overtænker",
+    "overtaenker",
+    "grubler",
+    "gruble",
+    "kontrol",
+    "protest",
+    "alkohol",
+    "vin",
+    "øl",
+    "oel",
+  ].some((phrase) => t.includes(phrase))
+}
+
+function isMetaCognitiveTheme(text: string): boolean {
+  const t = stripPunctuation(text)
+
+  return [
+    "jeg tænker meget over hvad jeg tænker",
+    "jeg taenker meget over hvad jeg taenker",
+    "jeg overvåger mig selv",
+    "jeg analyserer mig selv hele tiden",
+    "jeg grubler",
+    "jeg overtænker",
+    "jeg overtaenker",
+    "jeg går i ring",
+    "jeg gaar i ring",
+    "jeg kan ikke slippe tanken",
+    "jeg holder øje med mig selv",
+    "jeg vurderer mine egne tanker",
+    "metakognitiv",
+    "meta kognitiv",
+  ].some((phrase) => t.includes(phrase))
+}
+
 function isReflectionFollowUp(text: string): boolean {
   const t = stripPunctuation(text)
 
@@ -371,32 +465,33 @@ function isReflectionFollowUp(text: string): boolean {
 
   return [
     "når",
+    "naar",
     "typisk",
     "ofte",
     "især",
     "saerligt",
-    "jeg får lyst",
-    "jeg faar lyst",
-    "efter arbejde",
-    "om aftenen",
-    "hen på ugen",
-    "hen paa ugen",
-    "jeg bliver træt",
-    "jeg bliver traet",
-    "når jeg er træt",
-    "naar jeg er traet",
+    "lige før",
+    "lige foer",
+    "bagefter",
     "det sker når",
     "det sker naar",
-    "i weekenden",
-    "hjemme",
-    "socialt",
-    "automatisk",
-    "rutine",
-    "vane",
-    "trang",
-    "trigger",
-    "følelse",
-    "foelelse",
+    "i kroppen",
+    "i mine tanker",
+    "i tankerne",
+    "jeg mærker",
+    "jeg maerker",
+    "jeg bliver",
+    "jeg får",
+    "jeg faar",
+    "jeg ender",
+    "jeg trækker mig",
+    "jeg traekker mig",
+    "jeg lukker ned",
+    "jeg protesterer",
+    "relation",
+    "kone",
+    "partner",
+    "arbejde",
   ].some((phrase) => t.includes(phrase))
 }
 
@@ -409,25 +504,26 @@ function inferReadiness(params: {
 
   if (isSoftClosing(userText)) return "closing_signal"
   if (hasReflectionIntent(userText)) return "explicit_reflection_intent"
-
-  const currentAlcohol = isAlcoholTopic(userText)
-  const topicHitsBefore = countTopicMatches(transcript, isAlcoholTopic)
-  const topicHitsTotal = topicHitsBefore + (currentAlcohol ? 1 : 0)
-
-  if (currentAlcohol && topicHitsTotal >= 2) return "repeated_personal_theme"
   if (isEvidenceQuestion(userText)) return "information_question_only"
 
-  if (reflectionContext.isActive && (currentAlcohol || isReflectionFollowUp(userText))) {
-    return "repeated_personal_theme"
+  const patternHitsBefore = countUserMatches(transcript, isPatternStatement)
+  const patternSignalsNow =
+    isPatternStatement(userText) ||
+    isBehaviorTheme(userText) ||
+    isMetaCognitiveTheme(userText)
+
+  if (patternSignalsNow && patternHitsBefore >= 1) return "pattern_signal_detected"
+
+  if (reflectionContext.isActive && (patternSignalsNow || isReflectionFollowUp(userText))) {
+    return "active_reflection_follow_up"
   }
 
-  if (!currentAlcohol && topicHitsTotal < 2) return "topic_not_established"
+  if (!patternSignalsNow) return "topic_not_established"
 
   return "general"
 }
 
 function decideMode(params: {
-  context: AiCapabilityContext
   transcript: TranscriptTurn[]
   userText: string
   forcedMode?: Exclude<DialogMode, "closing">
@@ -452,13 +548,10 @@ function decideMode(params: {
 
   if (
     readiness === "explicit_reflection_intent" ||
-    readiness === "repeated_personal_theme"
+    readiness === "pattern_signal_detected" ||
+    readiness === "active_reflection_follow_up"
   ) {
     return { mode: "guided_reflection", readiness }
-  }
-
-  if (params.reflectionContext.isActive && isReflectionFollowUp(params.userText)) {
-    return { mode: "guided_reflection", readiness: "repeated_personal_theme" }
   }
 
   return { mode: "informational", readiness }
@@ -467,13 +560,105 @@ function decideMode(params: {
 function extractTopic(text: string, fallback?: string): string | undefined {
   const t = stripPunctuation(text)
 
-  if (t.includes("alkohol") || t.includes("rødvin") || t.includes("rodvin") || t.includes("vin")) return "alkohol"
-  if (t.includes("vaner") || t.includes("vane")) return "vaner"
-  if (t.includes("søvn") || t.includes("soevn")) return "søvn"
-  if (t.includes("stress")) return "stress"
-  if (t.includes("angst")) return "angst"
+  if (["kone", "mand", "partner", "forhold", "relation", "relationer"].some((x) => t.includes(x))) {
+    return "relationer"
+  }
+
+  if (["træt", "traet", "energi", "energitab", "udmattet", "stille"].some((x) => t.includes(x))) {
+    return "energi og reaktioner"
+  }
+
+  if (["alkohol", "vin", "øl", "oel", "drikker", "drikke"].some((x) => t.includes(x))) {
+    return "alkohol og vaner"
+  }
+
+  if (["vane", "vaner", "rutine", "automatisk"].some((x) => t.includes(x))) {
+    return "vaner og mønstre"
+  }
+
+  if (["søvn", "soevn", "sove"].some((x) => t.includes(x))) {
+    return "søvn"
+  }
+
+  if (["stress", "pres", "uro"].some((x) => t.includes(x))) {
+    return "stress og uro"
+  }
+
+  if (["angst", "bekymring", "grubler", "overtænker", "overtaenker"].some((x) => t.includes(x))) {
+    return "bekymringer og tankeprocesser"
+  }
+
+  if (["meta", "metakognitiv", "meta kognitiv"].some((x) => t.includes(x))) {
+    return "metakognitive mønstre"
+  }
 
   return fallback && fallback.trim() ? fallback.trim() : undefined
+}
+
+function inferTopicTags(text: string, topic?: string): string[] {
+  const t = stripPunctuation(text)
+  const tags = new Set<string>()
+
+  if (topic) tags.add(topic)
+
+  if (["vane", "vaner", "rutine", "automatisk", "gentager"].some((x) => t.includes(x))) {
+    tags.add("vaner")
+  }
+
+  if (["adfærd", "adfaerd", "reaktion", "reaktioner", "protest"].some((x) => t.includes(x))) {
+    tags.add("reaktioner")
+  }
+
+  if (["relation", "relationer", "kone", "mand", "partner", "forhold"].some((x) => t.includes(x))) {
+    tags.add("relationer")
+  }
+
+  if (["træt", "traet", "energi", "energitab", "udmattet"].some((x) => t.includes(x))) {
+    tags.add("energi")
+  }
+
+  if (["grubler", "overtænker", "overtaenker", "metakognitiv", "meta kognitiv"].some((x) => t.includes(x))) {
+    tags.add("metakognition")
+  }
+
+  if (["alkohol", "vin", "øl", "oel", "drikker"].some((x) => t.includes(x))) {
+    tags.add("alkohol")
+  }
+
+  if (tags.size === 0 && topic) {
+    tags.add(topic)
+  }
+
+  return Array.from(tags).slice(0, 4)
+}
+
+function inferProblemTitle(topic: string | undefined, text: string): string | undefined {
+  if (!topic) return undefined
+
+  if (topic === "relationer") return "mønster i relationer"
+  if (topic === "energi og reaktioner") return "energitab og tilbagetrækning"
+  if (topic === "alkohol og vaner") return "vane omkring alkohol"
+  if (topic === "metakognitive mønstre") return "metakognitive mønstre"
+
+  const normalized = normalizeText(text)
+  if (normalized.length <= 80) return normalized
+  return topic
+}
+
+function inferProblemSummary(topic: string | undefined): string | undefined {
+  if (!topic) return undefined
+
+  const map: Record<string, string> = {
+    "relationer": "Ønske om at forstå mønstre, energitab eller reaktioner i relationer.",
+    "energi og reaktioner": "Ønske om at forstå situationer hvor energi falder, og hvordan reaktionen udvikler sig.",
+    "alkohol og vaner": "Ønske om at forstå eller ændre en vane forbundet med alkohol.",
+    "vaner og mønstre": "Ønske om at forstå en tilbagevendende vane eller et mønster i adfærd.",
+    "stress og uro": "Ønske om at forstå triggere, reaktioner og mønstre ved stress eller uro.",
+    "bekymringer og tankeprocesser": "Ønske om at forstå bekymringer, overtænkning eller tilbagevendende tankeprocesser.",
+    "metakognitive mønstre": "Ønske om at blive mere bevidst om hvordan egne tanker, grublen eller selvobservation udvikler sig.",
+  }
+
+  return map[topic] ?? `Ønske om at forstå mønstre relateret til ${topic}.`
 }
 
 function buildClosingMessage(transcript: TranscriptTurn[]): string {
@@ -486,6 +671,7 @@ function buildClosingMessage(transcript: TranscriptTurn[]): string {
 function buildFallbackMessage(params: {
   mode: DialogMode
   transcript: TranscriptTurn[]
+  topic?: string
 }): string {
   if (params.mode === "closing") {
     return buildClosingMessage(params.transcript)
@@ -500,22 +686,26 @@ function buildFallbackMessage(params: {
 
   if (params.mode === "evidence") {
     return (
-      "Hypnoterapi kan støtte vaneændring, men evidensen specifikt for alkoholproblemer er begrænset og blandet (evidensniveau C). " +
-      "Det giver mest mening som supplement i en bredere indsats frem for som eneste løsning."
+      "Hypnoterapi bruges ofte som støtte til vaneændring, ro og mønsterarbejde, men evidensen varierer efter problemtype og er ofte blandet. " +
+      "Det giver typisk mest mening som del af en bredere indsats frem for som én universel løsning."
     )
   }
 
   if (params.mode === "guided_reflection") {
+    const topicLead = params.topic
+      ? `Når et tema som ${params.topic} begynder at gentage sig, `
+      : "Når en reaktion eller vane begynder at gentage sig, "
+
     return (
-      "Når alkohol bliver en vane, hænger det ofte sammen med bestemte situationer, tidspunkter eller skift i energi og uro. " +
-      "Et enkelt sted at starte er at lægge mærke til, om trangen typisk kommer efter belastning, i overgange på dagen eller som en fast aftenrutine. " +
-      "Hvornår på dagen lægger du oftest mærke til mønsteret?"
+      topicLead +
+      "kan det hjælpe at lægge mærke til situationen lige før, hvad der sker i kroppen eller tankerne, og hvad der typisk følger bagefter. " +
+      "Hvad lægger du først mærke til, lige inden mønsteret går i gang?"
     )
   }
 
   return (
     "Hypnoterapi bruges ofte til at arbejde med vaner, automatiske reaktioner og opmærksomhed. " +
-    "Jeg kan enten forklare, hvordan et typisk forløb foregår, eller hvordan metoden typisk bruges ved vaneændring."
+    "Jeg kan enten forklare, hvordan et typisk forløb foregår, eller hjælpe med at undersøge et mønster, du gerne vil forstå bedre."
   )
 }
 
@@ -530,6 +720,7 @@ function buildMetaDelta(params: {
   sourceNode: string
   transcriptKey: string
   reflectionContext: ReflectionContext
+  userText: string
 }): Record<string, unknown> {
   const previousTranscript = readTranscriptByKey(params.context, params.transcriptKey)
   const previousAssistantCount = countAssistantTurns(previousTranscript)
@@ -555,8 +746,12 @@ function buildMetaDelta(params: {
 
   const effectiveReadiness: ReadinessReason =
     reflectionActive && params.readiness === "topic_not_established"
-      ? "repeated_personal_theme"
+      ? "active_reflection_follow_up"
       : params.readiness
+
+  const derivedTopicTags = inferTopicTags(params.userText, params.topic)
+  const derivedProblemTitle = inferProblemTitle(params.topic, params.userText)
+  const derivedProblemSummary = inferProblemSummary(params.topic)
 
   const meta: Record<string, unknown> = {
     [params.transcriptKey]: params.updatedTranscript,
@@ -582,27 +777,18 @@ function buildMetaDelta(params: {
     meta["focused_reflection.transcript"] = params.updatedTranscript
   }
 
-  if (params.parsed?.problem_title) {
-    meta["gen_hypno.problem_title"] = params.parsed.problem_title
+  if (params.parsed?.problem_title || derivedProblemTitle) {
+    meta["gen_hypno.problem_title"] = params.parsed?.problem_title || derivedProblemTitle
   }
 
-  if (params.parsed?.problem_summary) {
-    meta["gen_hypno.problem_summary"] = params.parsed.problem_summary
+  if (params.parsed?.problem_summary || derivedProblemSummary) {
+    meta["gen_hypno.problem_summary"] = params.parsed?.problem_summary || derivedProblemSummary
   }
 
-  if (params.parsed?.topic_tags?.length) {
-    meta["gen_hypno.topic_tags"] = params.parsed.topic_tags
-  }
-
-  if (
-    params.topic === "alkohol" &&
-    !params.parsed?.problem_title &&
-    !params.context.state.meta["gen_hypno.problem_title"]?.value
-  ) {
-    meta["gen_hypno.problem_title"] = "alkoholvaner"
-    meta["gen_hypno.problem_summary"] =
-      "Ønske om at forstå eller ændre alkoholvaner."
-    meta["gen_hypno.topic_tags"] = ["alkohol", "vaner", "hypnoterapi"]
+  if (params.parsed?.topic_tags?.length || derivedTopicTags.length) {
+    meta["gen_hypno.topic_tags"] = params.parsed?.topic_tags?.length
+      ? params.parsed.topic_tags
+      : derivedTopicTags
   }
 
   return meta
@@ -643,20 +829,20 @@ export async function runUnifiedHypnoCapability(
         sourceNode: options.sourceNode,
         transcriptKey: options.transcriptKey,
         reflectionContext,
+        userText,
       }),
     }
 
     return {
       transition,
       debug: {
-        capability: "unified-hypno-v2",
+        capability: "unified-hypno-v3",
         used_fallback: false,
       },
     }
   }
 
   const { mode, readiness } = decideMode({
-    context,
     transcript,
     userText,
     forcedMode: options.forcedMode,
@@ -702,13 +888,14 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
+  const topic = parsed?.last_topic || extractTopic(userText, previousTopic)
+
   if (!assistant && mode !== "closing") {
-    assistant = buildFallbackMessage({ mode, transcript })
+    assistant = buildFallbackMessage({ mode, transcript, topic })
     usedFallback = true
   }
 
   const updatedTranscript = appendTranscript(transcript, userText, assistant)
-  const topic = parsed?.last_topic || extractTopic(userText, previousTopic)
 
   const transition: Transition = {
     type: "NODE_HOP",
@@ -727,13 +914,14 @@ export async function runUnifiedHypnoCapability(
       sourceNode: options.sourceNode,
       transcriptKey: options.transcriptKey,
       reflectionContext,
+      userText,
     }),
   }
 
   return {
     transition,
     debug: {
-      capability: "unified-hypno-v2",
+      capability: "unified-hypno-v3",
       used_fallback: usedFallback,
     },
   }
