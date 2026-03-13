@@ -129,7 +129,7 @@ export const NODE_REGISTRY: Record<string, ChatNode> = {
       "Her kan du få information om hypnoterapi, hvordan et forløb typisk foregår, og hjælp til at forstå vaner og mønstre.",
     allow_free_text: true,
     allow_parentese: true,
-    allowed_exits: ["HOME", "BOOKING"],
+    allowed_exits: ["GEN_HYPNO", "HOME", "BOOKING"],
     capability_id: "gen-hypno-v1",
     meta_domains_written: [
       "ux",
