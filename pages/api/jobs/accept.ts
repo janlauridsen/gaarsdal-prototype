@@ -10,8 +10,6 @@ import {
   upsertFact,
   type MemoryFact,
 } from "../../../chat/memory/longTermMemoryStore"
-import { appendSpineEventV23 } from "../../../chat/observability/spineStore"
-import { readConversationState } from "../../../chat/persistence/conversationStateStore"
 
 function asString(v: unknown): string {
   return typeof v === "string" ? v.trim() : ""
@@ -37,10 +35,6 @@ function uniqueStrings(values: string[], max = 10): string[] {
     if (out.length >= max) break
   }
   return out
-}
-
-function safeId(): string {
-  return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
 }
 
 function buildThreadAssetFact(params: {
@@ -182,29 +176,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     ttlSeconds
   )
   await clearLatestDraft(conversationId)
-
-  const state = await readConversationState(conversationId)
-  const revision = typeof state?.revision === "number" ? state.revision : 0
-  await appendSpineEventV23({
-    schema_version: "v23",
-    event_id: safeId(),
-    user_key: userKey,
-    conversation_id: conversationId,
-    revision_before: revision,
-    revision_after: revision,
-    node_before: state?.active_node ?? null,
-    node_after: state?.active_node ?? "SYSTEM_JOB_ACCEPT",
-    status_after: state?.status ?? "active",
-    input_type: "UI_ACTION",
-    transition_type: "JOB_DRAFT_ACCEPTED",
-    meta_domains_written: ["memory.episode", "memory.fact"],
-    meta_keys_written: [
-      "episode.summary_short",
-      "episode.open_loops",
-      `fact.thread.asset.summary.${conversationId}`,
-      ...(openLoops.length > 0 ? [`fact.thread.asset.open_loops.${conversationId}`] : []),
-    ],
-  })
 
   return res.status(200).json({
     ok: true,
