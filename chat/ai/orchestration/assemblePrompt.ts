@@ -1,4 +1,3 @@
-import { FinalResponse } from "../contracts/responseContract"
 import { PromptMode, TurnAnalysis } from "../contracts/turnAnalysis"
 import { BASE_ROLE_PROMPT } from "../prompts/baseRole"
 import { DOMAIN_BOUNDARY_PROMPT } from "../prompts/domainBoundary"
@@ -12,6 +11,7 @@ import { MODE_PRACTICAL_PROMPT } from "../prompts/modes/practical"
 import { MODE_REFLECTION_PROMPT } from "../prompts/modes/reflection"
 import { SAFETY_PROMPT } from "../prompts/safety"
 import { TONE_CALM_NEUTRAL_PROMPT } from "../prompts/tones/calmNeutral"
+import { GAARSDAL_SITE_CONTEXT_DA } from "../siteContext"
 import { PolicyDecision } from "./applyPolicy"
 
 type TranscriptTurn = { role: "user" | "assistant"; content: string }
@@ -38,6 +38,41 @@ function getFormatPrompt(policy: PolicyDecision): string {
   return FORMAT_DIRECT_ANSWER_PROMPT
 }
 
+function buildPolicyInstruction(policy: PolicyDecision): string {
+  const lines = [
+    "POLICY BESLUTNING",
+    `- allow_mode: ${policy.allow_mode}`,
+    `- allow_question: ${policy.allow_question}`,
+    `- max_questions: ${policy.max_questions}`,
+    `- response_length: ${policy.response_length}`,
+    `- require_redirect: ${policy.require_redirect ?? "none"}`,
+  ]
+
+  if (policy.require_redirect === "contact") {
+    lines.push(
+      "",
+      "KRITISK REGLER FOR KONTAKT-SVAR:",
+      "- Brug den konkrete kontaktinformation fra SITE-KONTEKST.",
+      "- Skriv ikke generiske formuleringer som 'besøg den officielle hjemmeside' eller 'brug kontaktinformation der er angivet der'.",
+      "- Hvis brugeren vil tale med Jan eller spørger om kontakt, så giv direkte telefon, e-mail og adresse kort og præcist.",
+      "- Hvis brugeren spørger om pris, så brug prisoplysningerne fra SITE-KONTEKST.",
+      "- Opfind ikke nye priser eller kontaktveje."
+    )
+  }
+
+  if (policy.allow_mode === "practical") {
+    lines.push(
+      "",
+      "KRITISK REGLER FOR PRACTICAL:",
+      "- Svar konkret og handlingsrettet.",
+      "- Brug SITE-KONTEKST som faktakilde.",
+      "- Undgå generiske sikkerheds- eller hjemmesideformuleringer, når konkrete fakta findes i SITE-KONTEKST."
+    )
+  }
+
+  return lines.join("\n")
+}
+
 export function assembleResponseMessages(params: {
   analysis: TurnAnalysis
   policy: PolicyDecision
@@ -52,8 +87,15 @@ export function assembleResponseMessages(params: {
     getModePrompt(params.policy.allow_mode),
     TONE_CALM_NEUTRAL_PROMPT,
     getFormatPrompt(params.policy),
-    `Policy decision:\n- allow_mode: ${params.policy.allow_mode}\n- allow_question: ${params.policy.allow_question}\n- max_questions: ${params.policy.max_questions}\n- response_length: ${params.policy.response_length}\n- require_redirect: ${params.policy.require_redirect ?? "none"}`,
-    `Returner kun gyldig JSON:\n{\n  "assistant_message": string,\n  "topic": string | null,\n  "objective": string | null,\n  "mode_used": "info" | "evidence" | "practical" | "reflection" | "closing"\n}`,
+    buildPolicyInstruction(params.policy),
+    `SITE-KONTEKST\n${GAARSDAL_SITE_CONTEXT_DA}`,
+    `Returner kun gyldig JSON:
+{
+  "assistant_message": string,
+  "topic": string | null,
+  "objective": string | null,
+  "mode_used": "info" | "evidence" | "practical" | "reflection" | "closing"
+}`,
   ].join("\n\n")
 
   return [
