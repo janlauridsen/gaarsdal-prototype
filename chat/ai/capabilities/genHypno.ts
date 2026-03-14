@@ -56,7 +56,10 @@ function readTranscriptByKey(
   return turns
 }
 
-function readStringMeta(context: AiCapabilityContext, key: string): string | undefined {
+function readStringMeta(
+  context: AiCapabilityContext,
+  key: string
+): string | undefined {
   const value = context.state.meta[key]?.value
   if (typeof value !== "string") return undefined
   const trimmed = value.trim()
@@ -119,7 +122,10 @@ function isHardExit(text: string): boolean {
 }
 
 function buildClosingMessage(transcript: TranscriptTurn[]): string {
-  const lastAssistant = [...transcript].reverse().find((turn) => turn.role === "assistant")
+  const lastAssistant = [...transcript]
+    .reverse()
+    .find((turn) => turn.role === "assistant")
+
   if (!lastAssistant) return "Selv tak."
   if (/^selv tak[.!]?$/i.test(lastAssistant.content.trim())) return "Det var så lidt."
   return "Selv tak."
@@ -128,13 +134,25 @@ function buildClosingMessage(transcript: TranscriptTurn[]): string {
 function extractTopic(text: string, fallback?: string): string | undefined {
   const t = stripPunctuation(text)
 
-  if (["kone", "mand", "partner", "forhold", "relation", "relationer"].some((x) => t.includes(x))) {
+  if (
+    ["kone", "mand", "partner", "forhold", "relation", "relationer"].some((x) =>
+      t.includes(x)
+    )
+  ) {
     return "relationer"
   }
-  if (["træt", "traet", "energi", "energitab", "udmattet", "stille"].some((x) => t.includes(x))) {
+  if (
+    ["træt", "traet", "energi", "energitab", "udmattet", "stille"].some((x) =>
+      t.includes(x)
+    )
+  ) {
     return "energi og reaktioner"
   }
-  if (["alkohol", "vin", "øl", "oel", "drikker", "drikke"].some((x) => t.includes(x))) {
+  if (
+    ["alkohol", "vin", "øl", "oel", "drikker", "drikke"].some((x) =>
+      t.includes(x)
+    )
+  ) {
     return "alkohol og vaner"
   }
   if (["vane", "vaner", "rutine", "automatisk"].some((x) => t.includes(x))) {
@@ -146,7 +164,11 @@ function extractTopic(text: string, fallback?: string): string | undefined {
   if (["stress", "pres", "uro"].some((x) => t.includes(x))) {
     return "stress og uro"
   }
-  if (["angst", "bekymring", "grubler", "overtænker", "overtaenker"].some((x) => t.includes(x))) {
+  if (
+    ["angst", "bekymring", "grubler", "overtænker", "overtaenker"].some((x) =>
+      t.includes(x)
+    )
+  ) {
     return "bekymringer og tankeprocesser"
   }
   if (["meta", "metakognitiv", "meta kognitiv"].some((x) => t.includes(x))) {
@@ -161,23 +183,59 @@ function inferTopicTags(text: string, topic?: string): string[] {
   const tags = new Set<string>()
   if (topic) tags.add(topic)
 
-  if (["vane", "vaner", "rutine", "automatisk", "gentager"].some((x) => t.includes(x))) tags.add("vaner")
-  if (["adfærd", "adfaerd", "reaktion", "reaktioner", "protest"].some((x) => t.includes(x))) tags.add("reaktioner")
-  if (["relation", "relationer", "kone", "mand", "partner", "forhold"].some((x) => t.includes(x))) tags.add("relationer")
-  if (["træt", "traet", "energi", "energitab", "udmattet"].some((x) => t.includes(x))) tags.add("energi")
-  if (["grubler", "overtænker", "overtaenker", "metakognitiv", "meta kognitiv"].some((x) => t.includes(x))) tags.add("metakognition")
-  if (["alkohol", "vin", "øl", "oel", "drikker"].some((x) => t.includes(x))) tags.add("alkohol")
+  if (
+    ["vane", "vaner", "rutine", "automatisk", "gentager"].some((x) =>
+      t.includes(x)
+    )
+  ) {
+    tags.add("vaner")
+  }
+  if (
+    ["adfærd", "adfaerd", "reaktion", "reaktioner", "protest"].some((x) =>
+      t.includes(x)
+    )
+  ) {
+    tags.add("reaktioner")
+  }
+  if (
+    ["relation", "relationer", "kone", "mand", "partner", "forhold"].some((x) =>
+      t.includes(x)
+    )
+  ) {
+    tags.add("relationer")
+  }
+  if (
+    ["træt", "traet", "energi", "energitab", "udmattet"].some((x) =>
+      t.includes(x)
+    )
+  ) {
+    tags.add("energi")
+  }
+  if (
+    ["grubler", "overtænker", "overtaenker", "metakognitiv", "meta kognitiv"].some(
+      (x) => t.includes(x)
+    )
+  ) {
+    tags.add("metakognition")
+  }
+  if (["alkohol", "vin", "øl", "oel", "drikker"].some((x) => t.includes(x))) {
+    tags.add("alkohol")
+  }
 
   if (tags.size === 0 && topic) tags.add(topic)
   return Array.from(tags).slice(0, 4)
 }
 
-function inferProblemTitle(topic: string | undefined, text: string): string | undefined {
+function inferProblemTitle(
+  topic: string | undefined,
+  text: string
+): string | undefined {
   if (!topic) return undefined
   if (topic === "relationer") return "mønster i relationer"
   if (topic === "energi og reaktioner") return "energitab og tilbagetrækning"
   if (topic === "alkohol og vaner") return "vane omkring alkohol"
   if (topic === "metakognitive mønstre") return "metakognitive mønstre"
+
   const normalized = normalizeText(text)
   if (normalized.length <= 80) return normalized
   return topic
@@ -187,13 +245,20 @@ function inferProblemSummary(topic: string | undefined): string | undefined {
   if (!topic) return undefined
 
   const map: Record<string, string> = {
-    relationer: "Ønske om at forstå mønstre, energitab eller reaktioner i relationer.",
-    "energi og reaktioner": "Ønske om at forstå situationer hvor energi falder, og hvordan reaktionen udvikler sig.",
-    "alkohol og vaner": "Ønske om at forstå eller ændre en vane forbundet med alkohol.",
-    "vaner og mønstre": "Ønske om at forstå en tilbagevendende vane eller et mønster i adfærd.",
-    "stress og uro": "Ønske om at forstå triggere, reaktioner og mønstre ved stress eller uro.",
-    "bekymringer og tankeprocesser": "Ønske om at forstå bekymringer, overtænkning eller tilbagevendende tankeprocesser.",
-    "metakognitive mønstre": "Ønske om at blive mere bevidst om hvordan egne tanker, grublen eller selvobservation udvikler sig.",
+    relationer:
+      "Ønske om at forstå mønstre, energitab eller reaktioner i relationer.",
+    "energi og reaktioner":
+      "Ønske om at forstå situationer hvor energi falder, og hvordan reaktionen udvikler sig.",
+    "alkohol og vaner":
+      "Ønske om at forstå eller ændre en vane forbundet med alkohol.",
+    "vaner og mønstre":
+      "Ønske om at forstå en tilbagevendende vane eller et mønster i adfærd.",
+    "stress og uro":
+      "Ønske om at forstå triggere, reaktioner og mønstre ved stress eller uro.",
+    "bekymringer og tankeprocesser":
+      "Ønske om at forstå bekymringer, overtænkning eller tilbagevendende tankeprocesser.",
+    "metakognitive mønstre":
+      "Ønske om at blive mere bevidst om hvordan egne tanker, grublen eller selvobservation udvikler sig.",
   }
 
   return map[topic] ?? `Ønske om at forstå mønstre relateret til ${topic}.`
@@ -228,7 +293,11 @@ function buildFallbackMessage(params: {
   return "Hypnoterapi bruges ofte til at arbejde med vaner, automatiske reaktioner og opmærksomhed. Jeg kan enten forklare, hvordan et typisk forløb foregår, eller hjælpe med at undersøge et mønster, du gerne vil forstå bedre."
 }
 
-function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMode?: Exclude<PromptMode, "closing">): TurnAnalysis {
+function buildDefaultAnalysis(
+  userText: string,
+  previousTopic?: string,
+  forcedMode?: Exclude<PromptMode, "closing">
+): TurnAnalysis {
   const normalized = normalizeText(userText)
 
   if (isSoftClosing(userText)) {
@@ -245,9 +314,17 @@ function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMo
 
   if (forcedMode) {
     return {
-      intent: forcedMode === "reflection" ? "explore_pattern" : forcedMode === "evidence" ? "ask_evidence" : "understand_method",
+      intent:
+        forcedMode === "reflection"
+          ? "explore_pattern"
+          : forcedMode === "evidence"
+            ? "ask_evidence"
+            : "understand_method",
       proposed_mode: forcedMode,
-      response_goal: forcedMode === "reflection" ? "answer_then_one_question" : "answer_directly",
+      response_goal:
+        forcedMode === "reflection"
+          ? "answer_then_one_question"
+          : "answer_directly",
       topic: previousTopic,
       sensitivity: "medium",
       signals: ["forced_mode"],
@@ -255,7 +332,11 @@ function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMo
     }
   }
 
-  if (["kontakt", "booking", "booke", "telefon", "mail", "pris", "adresse"].some((x) => normalized.includes(x))) {
+  if (
+    ["kontakt", "booking", "booke", "telefon", "mail", "pris", "adresse"].some(
+      (x) => normalized.includes(x)
+    )
+  ) {
     return {
       intent: "seek_practical_help",
       proposed_mode: "practical",
@@ -267,7 +348,11 @@ function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMo
     }
   }
 
-  if (["evidens", "virker", "forskning", "studier", "dokumentation"].some((x) => normalized.includes(x))) {
+  if (
+    ["evidens", "virker", "forskning", "studier", "dokumentation"].some((x) =>
+      normalized.includes(x)
+    )
+  ) {
     return {
       intent: "ask_evidence",
       proposed_mode: "evidence",
@@ -304,9 +389,16 @@ function buildMetaDelta(params: {
 }): Record<string, unknown> {
   const previousTranscript = readTranscriptByKey(params.context, params.transcriptKey)
   const previousAssistantCount = countAssistantTurns(previousTranscript)
-  const nextAssistantCount = params.assistantMessage ? previousAssistantCount + 1 : previousAssistantCount
+  const nextAssistantCount = params.assistantMessage
+    ? previousAssistantCount + 1
+    : previousAssistantCount
 
-  const dialogStage = params.mode === "closing" ? "close" : params.mode === "reflection" ? "explore_patterns" : "open"
+  const dialogStage =
+    params.mode === "closing"
+      ? "close"
+      : params.mode === "reflection"
+        ? "explore_patterns"
+        : "open"
 
   const derivedTopicTags = inferTopicTags(params.userText, params.topic)
   const derivedProblemTitle = inferProblemTitle(params.topic, params.userText)
@@ -334,8 +426,12 @@ function buildMetaDelta(params: {
   if (params.mode === "reflection") {
     meta["focused_reflection.entry_source"] = params.sourceNode
     meta["focused_reflection.user_opt_in"] = true
-    meta["focused_reflection.stage"] = params.mode === "closing" ? "CLOSED" : "OPEN"
+    meta["focused_reflection.stage"] = "OPEN"
     meta["focused_reflection.transcript"] = params.updatedTranscript
+  }
+
+  if (params.mode === "closing") {
+    meta["focused_reflection.stage"] = "CLOSED"
   }
 
   if (derivedProblemTitle) meta["gen_hypno.problem_title"] = derivedProblemTitle
@@ -353,7 +449,9 @@ export async function runUnifiedHypnoCapability(
   const transcript = readTranscriptByKey(context, options.transcriptKey)
   const trimmedTranscript = trimTranscript(transcript)
   const userText = context.userText ?? ""
-  const previousTopic = readStringMeta(context, "gen_hypno.last_topic") || readStringMeta(context, "dialog.topic")
+  const previousTopic =
+    readStringMeta(context, "gen_hypno.last_topic") ||
+    readStringMeta(context, "dialog.topic")
 
   if (isHardExit(userText)) {
     const assistant = "Helt fint. Vi stopper her, og du kan vende tilbage senere."
@@ -407,8 +505,14 @@ export async function runUnifiedHypnoCapability(
     analysis = {
       ...analysis,
       proposed_mode: options.forcedMode,
-      intent: options.forcedMode === "reflection" ? "explore_pattern" : analysis.intent,
-      response_goal: options.forcedMode === "reflection" ? "answer_then_one_question" : analysis.response_goal,
+      intent:
+        options.forcedMode === "reflection"
+          ? "explore_pattern"
+          : analysis.intent,
+      response_goal:
+        options.forcedMode === "reflection"
+          ? "answer_then_one_question"
+          : analysis.response_goal,
     }
   }
 
