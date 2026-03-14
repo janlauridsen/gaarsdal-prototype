@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import crypto from "crypto"
 
 import { ensureUserKey } from "../_utils/auth"
 import { setWidgetCors } from "../_utils/cors"
