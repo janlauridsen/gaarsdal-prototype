@@ -1,12 +1,10 @@
 import { createOpenAiCompatibleClient } from "./provider"
 import { AiCapability, AiCapabilityContext, AiCapabilityResult } from "./types"
 import { genHypnoCapability } from "./capabilities/genHypno"
-import { diaryCapability } from "./capabilities/diary"
 import { focusedPatternReflectionCapability } from "./capabilities/focusedPatternReflection"
 
 const CAPABILITIES: Record<string, AiCapability> = {
   [genHypnoCapability.id]: genHypnoCapability,
-  [diaryCapability.id]: diaryCapability,
   [focusedPatternReflectionCapability.id]: focusedPatternReflectionCapability,
 }
 
