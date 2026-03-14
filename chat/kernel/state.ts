@@ -19,18 +19,18 @@ export function createInitialState(
 }
 
 /**
- * Creates the "lobby" state used for profile/thread bootstrap before entering a specific thread.
- * This state is intentionally separate from regular thread conversations.
+ * Creates the "lobby" state used before entering a specific thread.
+ * The lobby must point to an existing node in the current registry.
  */
 export function createLobbyState(conversation_id: string): ConversationState {
-  const bootstrap = getNode("PROFILE_BOOTSTRAP")
+  const entry = getNode("HOME")
 
   return {
     conversation_id,
     revision: 0,
-    active_node: bootstrap.id,
-    active_node_message: bootstrap.message,
-    allowed_transitions: bootstrap.allowed_exits,
+    active_node: entry.id,
+    active_node_message: entry.message,
+    allowed_transitions: entry.allowed_exits,
     meta: {},
     status: "active",
     parentese_stack: [],
