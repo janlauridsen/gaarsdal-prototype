@@ -1278,16 +1278,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if ((input as any).type === "FREE_TEXT") {
       try {
-        await runReflectionCbaUpdate({
-          userKey,
-          conversationId: kernelResultFinal.state.conversation_id,
-          revisionAfter: kernelResultFinal.state.revision,
-          activeNodeAfter,
-          userMessage: String((input as any).text ?? ""),
-          therapistMessage,
-          threadThemeId: binding?.themeId ?? (kernelResultFinal.state.meta?.["thread.theme_id"] as any)?.value,
-          threadEpisodeId: binding?.episodeId ?? (kernelResultFinal.state.meta?.["thread.episode_id"] as any)?.value,
-        })
+        if (activeNodeAfter === "REFLECTION") {
+          await runReflectionCbaUpdate({
+            conversationId: kernelResultFinal.state.conversation_id,
+            userMessage: String((input as any).text ?? ""),
+            therapistMessage,
+            ttlSeconds: jobsTtlSeconds(),
+          })
+        }
       } catch {
         // ignore
       }
