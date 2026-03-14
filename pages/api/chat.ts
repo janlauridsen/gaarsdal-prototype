@@ -13,13 +13,6 @@ import { readUserProfile, recordTurn, writeUserProfile } from "../../chat/memory
 import { consolidateV1 } from "../../chat/platform/consolidation"
 import { readConversationState, writeConversationState } from "../../chat/persistence/conversationStateStore"
 import {
-  appendJournalEntry,
-  appendManyJournalEntries,
-  readJournalEntriesTail,
-  type JournalEntry,
-} from "../../chat/persistence/journalEntryStore"
-import { writeJournalDefinition } from "../../chat/persistence/journalDefinitionStore"
-import {
   applyAutoThreadLabelFromText,
   archiveThread,
   ensureThreadIndex,
@@ -49,15 +42,6 @@ type ApiInputSignal =
   | {
       type: "THREAD_CREATE"
       mode: "normal" | "parenthesis"
-      thread_type?: "chat" | "journal"
-      journal_profile?: "alcohol" | "general" | "strict"
-      journal_init?: {
-        title: string
-        problem: string
-        goal: string
-      }
-      // Legacy support
-      journal_kind?: "alcohol"
     }
   | { type: "THREAD_SWITCH"; conversation_id: string }
   | { type: "THREAD_ARCHIVE" }
@@ -72,7 +56,6 @@ const COOKIE_NAME = "gaarsdal_uid"
 const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 const PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
-const JOURNAL_TAIL_LIMIT = 60
 
 function setCors(req: NextApiRequest, res: NextApiResponse) {
   // The widget can be embedded on other origins. If that happens, browsers will send
@@ -182,9 +165,6 @@ type ThreadTab = {
   title: string
   preview: string
   status: "active" | "archived"
-  thread_type?: "chat" | "journal"
-  journal_profile?: "alcohol" | "general" | "strict"
-  journal_kind?: "alcohol"
   updated_at?: string
 }
 
@@ -197,14 +177,6 @@ function makeThreadTabs(index: any): ThreadTab[] {
       title: typeof t.title === "string" ? t.title : "",
       preview: typeof t.preview === "string" ? t.preview : "",
       status: t.status === "archived" ? "archived" : "active",
-      thread_type: t.thread_type === "journal" ? "journal" : "chat",
-      journal_profile:
-        t.journal_profile === "alcohol" || t.journal_profile === "general" || t.journal_profile === "strict"
-          ? t.journal_profile
-          : t.journal_kind === "alcohol"
-          ? "alcohol"
-          : undefined,
-      journal_kind: t.journal_kind === "alcohol" ? "alcohol" : undefined,
       updated_at: t.updated_at,
     }))
 }
@@ -379,50 +351,6 @@ async function maybeAutoLabelThread(params: {
 
 async function persistState(result: KernelResult): Promise<void> {
   await writeConversationState(result.state, SESSION_TTL_SECONDS)
-}
-
-async function externalizeJournalEntriesIfNeeded(params: {
-  userKey: string
-  state: any
-}): Promise<any> {
-  const state = params.state
-  if (!state || typeof state !== "object") return state
-  const meta = state.meta
-  if (!meta || typeof meta !== "object") return state
-
-  // Heuristic: presence of journal.config indicates a journal thread.
-  const isJournal = (meta as any)?.["journal.config"]?.value != null
-  if (!isJournal) return state
-
-  const journalId = String(state.conversation_id ?? "")
-  if (!journalId) return state
-
-  // 1) Migrate legacy inline entries (best-effort).
-  const migratedFlag = (meta as any)?.["journal.entries_externalized"]?.value
-  const legacy = (meta as any)?.["journal.entries"]?.value
-  if (!migratedFlag && Array.isArray(legacy) && legacy.length) {
-    await appendManyJournalEntries(journalId, legacy as JournalEntry[])
-  }
-
-  // 2) Append a newly produced entry if present.
-  const appendEntry = (meta as any)?.["journal.append_entry"]?.value
-  if (appendEntry && typeof appendEntry === "object") {
-    await appendJournalEntry(journalId, appendEntry as JournalEntry)
-  }
-
-  // 3) Refresh tail into state meta for UI rendering.
-  const tail = await readJournalEntriesTail(journalId, JOURNAL_TAIL_LIMIT)
-
-  const nextMeta: any = {
-    ...(meta as any),
-    "journal.entries": { value: tail, source_node: "SYSTEM_UI" },
-    "journal.entries_externalized": { value: true, source_node: "SYSTEM_UI" },
-  }
-
-  // Remove transient key so it doesn't persist.
-  if ("journal.append_entry" in nextMeta) delete nextMeta["journal.append_entry"]
-
-  return { ...state, meta: nextMeta }
 }
 
 async function emitSpine(params: {
@@ -1285,100 +1213,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const oldThreadId = typeof baseState?.conversation_id === "string" ? baseState.conversation_id : null
       const canReturn = !!oldThreadId && !isLobbyConversation(oldThreadId)
 
-      const threadType = (input as any)?.thread_type === "journal" ? ("journal" as const) : ("chat" as const)
-
-      const journalProfileRaw = threadType === "journal" ? String((input as any)?.journal_profile ?? "") : ""
-      const journalProfile =
-        journalProfileRaw === "alcohol" || journalProfileRaw === "general" || journalProfileRaw === "strict"
-          ? (journalProfileRaw as "alcohol" | "general" | "strict")
-          : ("general" as const)
-
-      const journalInitRaw = threadType === "journal" ? ((input as any)?.journal_init ?? null) : null
-      const journalInit =
-        journalInitRaw && typeof journalInitRaw === "object"
-          ? {
-              title: typeof (journalInitRaw as any).title === "string" ? String((journalInitRaw as any).title).trim() : "",
-              problem: typeof (journalInitRaw as any).problem === "string" ? String((journalInitRaw as any).problem).trim() : "",
-              goal: typeof (journalInitRaw as any).goal === "string" ? String((journalInitRaw as any).goal).trim() : "",
-            }
-          : { title: "Dagbog", problem: "", goal: "" }
-
-      const journalTitle = journalInit.title || "Dagbog"
-
-      // Limit active journals per user (keeps UI manageable).
-      if (threadType === "journal") {
-        const activeJournals = (index0?.threads ?? []).filter(
-          (t: any) => (t.thread_type ?? "chat") === "journal" && t.status === "active"
-        )
-        if (activeJournals.length >= 5) {
-          res.status(409).json({
-            error: {
-              code: "JOURNAL_LIMIT",
-              message: "Du har allerede 5 aktive dagbøger.",
-            },
-          })
-          return
-        }
-      }
-
       const newConversationId = `c:${safeUuid()}`
-
-      // Journal threads start in a dedicated node with their own meta namespace.
-      const newState = (() => {
-        if (threadType !== "journal") return createInitialState(newConversationId)
-        const entry = getNode("DAGBOG")
-        return {
-          conversation_id: newConversationId,
-          revision: 0,
-          active_node: entry.id,
-          active_node_message: entry.message,
-          allowed_transitions: entry.allowed_exits,
-          meta: {
-            "journal.config": {
-              value: {
-                profile: journalProfile,
-                title: journalTitle,
-                problem: journalInit.problem,
-                goal: journalInit.goal,
-              },
-              source_node: "SYSTEM_UI",
-            },
-            "journal.phase": { value: 1, source_node: "SYSTEM_UI" },
-            // Entries are stored externally; state keeps only a small tail for UI.
-            "journal.entries": { value: [], source_node: "SYSTEM_UI" },
-            "journal.entries_externalized": { value: true, source_node: "SYSTEM_UI" },
-          },
-          status: "active" as const,
-          parentese_stack: [],
-        }
-      })()
+      const newState = createInitialState(newConversationId)
 
       await writeConversationState(newState, SESSION_TTL_SECONDS)
-
-      if (threadType === "journal") {
-        await writeJournalDefinition(userKey, {
-          journal_id: newConversationId,
-          profile_type: journalProfile,
-          title: journalTitle,
-          problem: journalInit.problem,
-          goal: journalInit.goal,
-          schema_version: "v1",
-          created_at_ms: Date.now(),
-          updated_at_ms: Date.now(),
-        })
-      }
 
       let nextIndex = upsertThread({
         index: index0,
         conversationId: newConversationId,
-        title: threadType === "journal" ? journalTitle : "",
+        title: "",
         preview: "",
-        thread_type: threadType,
-        journal_profile: threadType === "journal" ? journalProfile : undefined,
       })
 
       if (input.mode === "normal") {
-        // Hard break.
         nextIndex = { ...nextIndex, navigation: { return_stack: [] } }
       } else {
         const stack = [...(nextIndex.navigation?.return_stack ?? [])]
@@ -1457,9 +1304,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     }
 
-    // Externalize journal entries (append-only log in Redis) and keep a small tail in state.
-    const stateWithJournalTail = await externalizeJournalEntriesIfNeeded({ userKey, state: kernelResult.state as any })
-    let kernelResultFinal: KernelResult = { ...kernelResult, state: stateWithJournalTail }
+    let kernelResultFinal: KernelResult = kernelResult
 
     const scanThreads = await maybeTriggerScanThreadsJob({
       userKey,
