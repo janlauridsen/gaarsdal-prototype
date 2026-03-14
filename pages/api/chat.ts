@@ -56,10 +56,6 @@ const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 const PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 
 function setCors(req: NextApiRequest, res: NextApiResponse) {
-  // The widget can be embedded on other origins. If that happens, browsers will send
-  // an OPTIONS preflight for JSON POST requests. We must respond to OPTIONS.
-  //
-  // Because we rely on a cookie for user identity, we must echo the Origin when present.
   const origin = typeof req.headers.origin === "string" ? req.headers.origin : "*"
   res.setHeader("Access-Control-Allow-Origin", origin)
   res.setHeader("Vary", "Origin")
@@ -68,7 +64,6 @@ function setCors(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader("Access-Control-Allow-Credentials", "true")
 }
 
-// Defaults
 const DEFAULT_RAW_TTL_DAYS = 14
 
 function envInt(name: string, fallback: number): number {
@@ -144,7 +139,6 @@ function toUserInput(input: InputSignal): string | undefined {
 }
 
 function safeUuid(): string {
-  // Node 18+ has crypto.randomUUID; fallback for older runtimes.
   return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
 }
 
@@ -223,13 +217,10 @@ function truncateText(s: string, max: number): string {
 }
 
 function shouldIncludeRawText(): boolean {
-  // Default off to reduce risk of PII in canonical events.
   return envTrue("GAARSDAL_EVENTS_INCLUDE_TEXT")
 }
 
 function legacyRawLogsEnabled(): boolean {
-  // When true, keep writing raw text into legacy interaction/telemetry/memory logs.
-  // Default is false to honor single raw stream + TTL.
   return envTrue("GAARSDAL_LEGACY_RAW_LOGS")
 }
 
@@ -274,7 +265,6 @@ function deriveUiSuggestionsFromState(state: any): UiSuggestion[] {
       return {
         id: String((c as any).id ?? i),
         label,
-        // Default behavior: chips send FREE_TEXT with the label (the runtime already resolves intent).
         input: { type: "FREE_TEXT", text: label },
       }
     })
@@ -307,10 +297,8 @@ async function maybeAutoLabelThread(params: {
   const existing = index0.threads.find((t) => t.conversation_id === params.conversationId)
   const needsTitle = !existing || !existing.title?.trim()
 
-  // Ensure thread exists in index (covers restores or direct navigation).
   let index1 = upsertThread({ index: index0, conversationId: params.conversationId })
 
-  // Title text is derived from the FIRST user input in the thread.
   const titleText = await (async () => {
     if (!needsTitle) return ""
     const rawTurns = await readRawTurns({ conversationId: params.conversationId, limit: 500 })
@@ -385,8 +373,6 @@ async function enqueueSuggestFacts(params: {
   threadThemeId?: string
   threadEpisodeId?: string
 }): Promise<void> {
-  // Trigger rule (v23):
-  // - when triage.* OR memory_candidates.* writes occur, enqueue; otherwise no-op.
   const touched = params.metaKeysWritten.some((k) => k.startsWith("triage.") || k.startsWith("memory_candidates."))
   if (!touched) return
 
@@ -424,7 +410,6 @@ async function enqueueReflectionCbaUpdate(params: {
   threadThemeId?: string
   threadEpisodeId?: string
 }): Promise<void> {
-  // Only runs when a REFLECTION node is active.
   if (params.activeNodeAfter !== "REFLECTION") return
 
   const userMessage = (params.userMessage ?? "").trim()
@@ -498,7 +483,6 @@ async function logAndRecord(params: {
 
   const assistantText = kernelResult.transition.response_message ?? kernelResult.state.active_node_message
 
-  // Raw text goes into exactly one place (TTL).
   await appendRawTurn({
     conversationId: kernelResult.state.conversation_id,
     revision: kernelResult.state.revision,
@@ -509,12 +493,10 @@ async function logAndRecord(params: {
     ttlSeconds: rawTtlSeconds(),
   })
 
-  // Always keep kernel log.
   await appendLog(kernelResult.log)
 
   const includeLegacyRaw = legacyRawLogsEnabled()
 
-  // Interaction log: keep minimal event; only include raw text if legacy enabled.
   if (includeLegacyRaw) {
     await appendInteraction({
       conversation_id: kernelResult.state.conversation_id,
@@ -537,7 +519,6 @@ async function logAndRecord(params: {
     })
   }
 
-  // Memory events: includeText is controlled by legacy flag.
   await recordTurn({
     userKey: params.userKey,
     conversationId: kernelResult.state.conversation_id,
@@ -626,8 +607,6 @@ async function handleInitOrRestore(params: {
 
     await appendLog(payload.log)
 
-    // Only auto-advance the lobby. Auto-ticking an arbitrary thread can lead to
-    // unexpected transitions (or hangs) when restoring after browser navigation.
     let result: KernelResult
     if (conversationKind === "lobby") {
       result = await runTurnWithAutoAdvance({
@@ -648,7 +627,6 @@ async function handleInitOrRestore(params: {
       } as any
     }
 
-    // Canonical events (V1)
     await emitCanonicalEvent({
       userKey,
       conversationId: result.state.conversation_id,
@@ -811,16 +789,19 @@ function looksLikeHistoryReuseRequest(text: string): boolean {
   const s = text.trim().toLowerCase()
   if (!s) return false
 
-  const explicitCrossThreadScan = /(scan|scann|gennemgå|gennemgaa|tjek|find|søg|soeg|kig i|se i).*(på tværs af|paa tvaers af|tidligere|forrige|gamle|historik|forløb|forloeb|andre).*(tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger)/.test(s)
-    || /(på tværs af|paa tvaers af).*(tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger)/.test(s)
+  const explicitCrossThreadScan =
+    /(scan|scann|gennemgå|gennemgaa|tjek|find|søg|soeg|kig i|se i).*(på tværs af|paa tvaers af|tidligere|forrige|gamle|historik|forløb|forloeb|andre).*(tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger)/.test(s) ||
+    /(på tværs af|paa tvaers af).*(tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger)/.test(s)
 
-  const explicitHistoryReuse = /(tjek|gennemgå|gennemgaa|scan|scann|søg|soeg|find|brug|genbrug|se i|kig i)/.test(s)
-    && (/(tidligere|forrige|gamle|historik|forløb|forloeb).*(tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger)/.test(s)
-      || /(tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger).*(tidligere|forrige|gamle|historik|forløb|forloeb)/.test(s)
-      || /(andre).*(samtaler|dialoger|tråde|traade)/.test(s))
+  const explicitHistoryReuse =
+    /(tjek|gennemgå|gennemgaa|scan|scann|søg|soeg|find|brug|genbrug|se i|kig i)/.test(s) &&
+    (/(tidligere|forrige|gamle|historik|forløb|forloeb).*(tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger)/.test(s) ||
+      /(tråd|traad|tråde|traade|samtale|samtaler|dialog|dialoger).*(tidligere|forrige|gamle|historik|forløb|forloeb)/.test(s) ||
+      /(andre).*(samtaler|dialoger|tråde|traade)/.test(s))
 
-  const retrospectiveQuestion = /(har|hvad|ved du om).*(jeg|vi).*(talt om|nævnt|naevnt|været inde på|vaeret inde paa|fortalt).*(før|foer|tidligere)/.test(s)
-    || /(har|hvad|ved du om).*(jeg|vi).*(talt om|nævnt|naevnt|været inde på|vaeret inde paa|fortalt).*(i andre samtaler|i andre tråde|i andre traade)/.test(s)
+  const retrospectiveQuestion =
+    /(har|hvad|ved du om).*(jeg|vi).*(talt om|nævnt|naevnt|været inde på|vaeret inde paa|fortalt).*(før|foer|tidligere)/.test(s) ||
+    /(har|hvad|ved du om).*(jeg|vi).*(talt om|nævnt|naevnt|været inde på|vaeret inde paa|fortalt).*(i andre samtaler|i andre tråde|i andre traade)/.test(s)
 
   return explicitCrossThreadScan || explicitHistoryReuse || retrospectiveQuestion
 }
@@ -967,7 +948,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const body = validateRequest(req, res)
   if (!body) return
 
-  const started = Date.now()
   const userKey = ensureUserKey(req, res)
   const clientState = body.state ?? null
   const input = body.input
@@ -978,8 +958,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const conversationId = requestedConversationId || toLobbyConversationId(userKey)
   const conversationKind: "lobby" | "thread" = isLobbyConversation(conversationId) ? "lobby" : "thread"
 
+  const stored = await readConversationState(conversationId)
+
   try {
-    // Thread platform operations are handled without entering the kernel.
     if (isPlatformThreadInput(input)) {
       const index0 = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
 
@@ -1060,7 +1041,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(400).json({ error: "Missing conversation_id for THREAD_SWITCH" })
         }
 
-        const stored = await readConversationState(targetId)
         if (!stored) {
           return res.status(404).json({ error: "Thread not found" })
         }
@@ -1148,7 +1128,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    const stored = await readConversationState(conversationId)
     const restored = await handleInitOrRestore({
       clientState,
       storedState: stored,
@@ -1361,7 +1340,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       deferred_job: scanThreads.deferredJob ?? null,
     })
   } catch (e: any) {
-    // Canonical event (V1): error
     await emitCanonicalEvent({
       userKey,
       conversationId,
