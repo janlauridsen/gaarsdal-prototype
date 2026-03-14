@@ -17,7 +17,7 @@ export const focusedPatternReflectionCapability: AiCapability = {
       transcriptKey: "focused_reflection.transcript",
       sourceNode: "FOCUSED_PATTERN_REFLECTION",
       stayOnNode: "FOCUSED_PATTERN_REFLECTION",
-      forcedMode: "guided_reflection",
+      forcedMode: "reflection",
     })
   },
 }
