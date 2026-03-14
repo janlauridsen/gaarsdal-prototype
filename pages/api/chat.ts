@@ -891,55 +891,34 @@ async function maybeTriggerScanThreadsJob(params: {
   if (!explicitReuse && !auto.shouldTrigger) return { deferredJob: null }
   if (!problem) return { deferredJob: null }
 
-  const themeId = readMetaValue(state, "thread.theme_id")
-  const episodeId = readMetaValue(state, "thread.episode_id")
-  if (typeof themeId !== "string" || typeof episodeId !== "string") return { deferredJob: null }
+  const basedOnRevision = Math.max(0, revisionAfter)
+  const scanReason = explicitReuse ? "explicit" : "auto"
+  const triggerTurn = auto.turnCount > 0 ? auto.turnCount : undefined
 
-  const jobId = makeJobId({
-    type: "SCAN_THREADS",
+  const { jobId } = await triggerJob({
     userKey,
-    episodeId,
-    revisionAfter,
+    conversationId,
+    kind: "scan_threads",
+    payload: {
+      problem,
+      scan_reason: scanReason,
+      trigger_turn: triggerTurn,
+    },
+    ttlSeconds: jobsTtlSeconds(),
+    dedupe: true,
+    basedOnRevision,
+    mode: "shadow",
   })
 
-  const payload = {
-    schema_version: "v1" as const,
-    source: explicitReuse ? "explicit_request" as const : "auto_turn_cadence" as const,
-    problem,
-  }
-
-  await enqueueJob({
-    schema_version: "v23",
-    job_version: 1,
-    type: "SCAN_THREADS",
-    job_id: jobId,
-    user_key: userKey,
-    conversation_id: conversationId,
-    theme_id: themeId,
-    episode_id: episodeId,
-    revision_after: revisionAfter,
-    payload,
-  })
-
-  let draftState: "queued" | "running" | "completed" = "queued"
-  try {
-    await triggerJob(jobId)
-    draftState = "running"
-  } catch {
-    draftState = "queued"
-  }
+  if (!jobId) return { deferredJob: null }
 
   return {
     deferredJob: {
+      pending: true,
       job_id: jobId,
-      type: "SCAN_THREADS",
-      state: draftState,
-      message:
-        explicitReuse
-          ? "Jeg gennemgår tidligere samtaler for relevante mønstre og vender tilbage."
-          : "Jeg gennemgår tidligere samtaler for relevante mønstre og vender tilbage, hvis jeg finder noget vigtigt.",
-      revision_after: revisionAfter,
-      source: explicitReuse ? "explicit_request" : "auto_turn_cadence",
+      kind: "scan_threads",
+      mode: "shadow",
+      based_on_revision: basedOnRevision,
     },
   }
 }
