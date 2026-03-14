@@ -5,7 +5,6 @@ export const NODE_LABELS: Record<string, string> = {
   TRIAGE: "Passer hypnoterapi til min situation?",
   METHOD_FIT: "Hypnoterapi eller et bedre alternativ?",
   REFLECTION: "Refleksion",
-  DAGBOG: "Dagbog",
   BOOKING: "Book tid",
   DEV_SANDBOX_INTRO: "Sandbox (dev)",
   MAIL: "E-mail",

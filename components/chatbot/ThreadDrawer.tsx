@@ -51,7 +51,6 @@ export default function ThreadDrawer({
               .map((t) => {
                 const isActive = !!activeConversationId && t.conversation_id === activeConversationId
                 const label = (t.title || "").trim() || trimDuplicateTitle(t.preview || "Samtale")
-                const isJournal = t.thread_type === "journal"
 
                 return (
                   <button
@@ -66,7 +65,6 @@ export default function ThreadDrawer({
                   >
                     <div className={styles.threadItemTop}>
                       <div className={styles.threadItemTitle}>{label}</div>
-                      {isJournal ? <span className={styles.threadBadge}>Dagbog</span> : null}
                     </div>
                     {t.preview ? <div className={styles.threadItemPreview}>{formatThreadPreview(t)}</div> : null}
                   </button>

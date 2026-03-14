@@ -17,13 +17,6 @@ export type InputSignal =
   | {
       type: "THREAD_CREATE"
       mode: "normal"
-      thread_type?: "chat" | "journal"
-      journal_profile?: "alcohol" | "general" | "strict"
-      journal_init?: {
-        title: string
-        problem: string
-        goal: string
-      }
     }
   | { type: "THREAD_SWITCH"; conversation_id: string }
   | { type: "THREAD_ARCHIVE" }
@@ -66,34 +59,7 @@ export type ThreadTab = {
   title: string
   preview: string
   status: "active" | "archived"
-  thread_type?: "chat" | "journal"
-  journal_profile?: "alcohol" | "general" | "strict"
-  // Legacy support (older stored items)
-  journal_kind?: "alcohol"
   updated_at?: string
-}
-
-export type JournalEntry = {
-  entry_id: string
-  ts_ms: number
-  schema_version: "v1" | "v2"
-  kind: "alcohol" | "general" | "strict"
-  text?: string
-  fields?: {
-    drinks?: number
-    urge_0_10?: number
-    strict_0_10?: number
-
-    // alcohol v2 (optional)
-    mood_tag?: string
-    mood_0_10?: number
-    trigger_tag?: string
-    context_tag?: string
-    coping_tag?: string
-    action?: string
-    craving_peak_0_10?: number
-    craving_duration_min?: number
-  }
 }
 
 
