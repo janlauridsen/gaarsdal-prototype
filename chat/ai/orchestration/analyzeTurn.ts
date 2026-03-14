@@ -1,5 +1,5 @@
-import { LlmClient } from "../types"
 import { normalizeTurnAnalysis, TurnAnalysis } from "../contracts/turnAnalysis"
+import { LlmClient } from "../types"
 
 type TranscriptTurn = { role: "user" | "assistant"; content: string }
 
@@ -18,13 +18,23 @@ Vælg:
 - signals
 - confidence
 
-Regler:
+Vigtige regler:
+- vælg practical kun ved praktiske eller administrative behov som kontakt, booking, pris, adresse, telefon, e-mail eller konkrete næste skridt om at tage kontakt
+- vælg IKKE practical bare fordi brugeren skriver "kan du hjælpe"
+- hvis brugeren beskriver et problem, en vane, et mønster, alkohol, søvn, stress, uro, tanker eller reaktioner, så er det normalt info eller reflection
 - vælg reflection kun hvis brugeren tydeligt undersøger egne mønstre, vaner, reaktioner eller indre processer
 - vælg evidence kun hvis brugeren tydeligt spørger til effekt, dokumentation eller om det virker
-- vælg practical kun ved praktiske eller administrative behov
 - vælg closing ved korte sociale lukninger
 - vælg info som default ved forklaring, relevans eller forståelse
 - vælg unclear hvis intentionen er for svag eller blandet
+
+Præcise eksempler:
+- "jeg vil gerne tale med Jan" => practical
+- "hvad koster det?" => practical
+- "hvor ligger klinikken?" => practical
+- "kan du hjælpe med et alkohol problem" => info eller reflection, ikke practical
+- "jeg forstår ikke hvorfor jeg reagerer sådan" => reflection
+- "virker hypnoterapi mod søvnproblemer?" => evidence eller info afhængigt af formuleringen
 
 Returner kun gyldig JSON efter kontrakten.`
 
