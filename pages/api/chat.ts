@@ -176,7 +176,8 @@ function makeThreadTabs(index: any): ThreadTab[] {
 function withThreadMeta(params: { state: any; index: any }): any {
   const { state, index } = params
   const tabs = makeThreadTabs(index).filter((t) => t.status === "active")
-  const activeId = (typeof index?.active_conversation_id === "string" ? index.active_conversation_id : state?.conversation_id) ?? null
+  const activeId =
+    (typeof index?.active_conversation_id === "string" ? index.active_conversation_id : state?.conversation_id) ?? null
 
   return {
     ...state,
@@ -607,25 +608,16 @@ async function handleInitOrRestore(params: {
 
     await appendLog(payload.log)
 
-    let result: KernelResult
-    if (conversationKind === "lobby") {
-      result = await runTurnWithAutoAdvance({
-        baseState: payload.state,
-        input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
-        userKey,
-      })
-      await persistState(result)
-    } else {
-      result = {
-        state: payload.state,
-        transition: {
-          type: "INIT",
-          from: null,
-          to: payload.state.active_node,
-          reason: "system init (restored)",
-        },
-      } as any
-    }
+    const result: KernelResult = {
+      state: payload.state,
+      transition: {
+        type: "INIT",
+        from: null,
+        to: payload.state.active_node,
+        reason: "system init (restored)",
+      },
+      log: payload.log,
+    } as any
 
     await emitCanonicalEvent({
       userKey,
@@ -686,20 +678,11 @@ async function handleInitOrRestore(params: {
   await writeConversationState(initialState, SESSION_TTL_SECONDS)
   await appendLog(log)
 
-  let result: KernelResult
-  if (conversationKind === "lobby") {
-    result = await runTurnWithAutoAdvance({
-      baseState: initialState,
-      input: { type: "SYSTEM", intent: "AUTO_TICK" } as any,
-      userKey,
-    })
-    await persistState(result)
-  } else {
-    result = {
-      state: initialState,
-      transition: { type: "INIT", from: null, to: initialState.active_node, reason: "system init" },
-    } as any
-  }
+  const result: KernelResult = {
+    state: initialState,
+    transition: { type: "INIT", from: null, to: initialState.active_node, reason: "system init" },
+    log,
+  } as any
 
   await emitCanonicalEvent({
     userKey,
