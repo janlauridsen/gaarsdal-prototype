@@ -695,6 +695,7 @@ export default function Chatbot() {
     if (!open) return
     if (!state) return
     if (loading) return
+    if (initInFlightRef.current) return
 
     const isLobbyConversation = String(state.conversation_id ?? "").startsWith("lobby:u:")
     const shouldHandleLobby = isLobbyConversation && state.active_node === "HOME"
@@ -706,6 +707,11 @@ export default function Chatbot() {
 
     ;(async () => {
       try {
+        if (initInFlightRef.current) {
+          didAutoStartNewThreadRef.current = false
+          return
+        }
+
         const restored = await tryRestoreActiveConversation()
         if (restored && restored.conversation_id !== state.conversation_id) {
           setState(restored)
@@ -716,6 +722,19 @@ export default function Chatbot() {
         }
 
         const threadsIndex = await fetchThreadsIndex()
+        const restoredConversationId = String(threadsIndex?.active_conversation_id ?? "").trim()
+        if (restoredConversationId) {
+          const restoredState = await fetchConversationState(restoredConversationId)
+          if (isRestorableState(restoredState) && restoredState.conversation_id !== state.conversation_id) {
+            setState(restoredState)
+            setInput("")
+            setHeaderNavHint(null)
+            await ensureConversationLoaded(restoredState.conversation_id, restoredState)
+            return
+          }
+          return
+        }
+
         const existingThreads = Array.isArray(threadsIndex?.threads) ? threadsIndex!.threads : []
         if (existingThreads.length > 0) {
           return
