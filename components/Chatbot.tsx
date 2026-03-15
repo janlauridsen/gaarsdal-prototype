@@ -691,24 +691,26 @@ export default function Chatbot() {
         }))
     : []
 
-  const threadCount = state ? threadCountFromState(state) : 0
-
   useEffect(() => {
     if (!open) return
     if (!state) return
-    if (state.active_node !== "THREAD_CHOOSER") return
+    if (loading) return
+
+    const isLobbyConversation = String(state.conversation_id ?? "").startsWith("lobby:u:")
+    const shouldAutoCreateThread = isLobbyConversation && state.active_node === "HOME"
+
+    if (!shouldAutoCreateThread) return
     if (didAutoStartNewThreadRef.current) return
-    if (threadCount > 0) return
 
     didAutoStartNewThreadRef.current = true
     ;(async () => {
       try {
         await dispatch({ type: "THREAD_CREATE", mode: "normal" }, { silentUser: true })
       } catch {
-        // no-op
+        didAutoStartNewThreadRef.current = false
       }
     })()
-  }, [open, state?.active_node, threadCount])
+  }, [open, loading, state?.conversation_id, state?.active_node])
 
   const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal}`
 
