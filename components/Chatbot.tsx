@@ -697,14 +697,30 @@ export default function Chatbot() {
     if (loading) return
 
     const isLobbyConversation = String(state.conversation_id ?? "").startsWith("lobby:u:")
-    const shouldAutoCreateThread = isLobbyConversation && state.active_node === "HOME"
+    const shouldHandleLobby = isLobbyConversation && state.active_node === "HOME"
 
-    if (!shouldAutoCreateThread) return
+    if (!shouldHandleLobby) return
     if (didAutoStartNewThreadRef.current) return
 
     didAutoStartNewThreadRef.current = true
+
     ;(async () => {
       try {
+        const restored = await tryRestoreActiveConversation()
+        if (restored && restored.conversation_id !== state.conversation_id) {
+          setState(restored)
+          setInput("")
+          setHeaderNavHint(null)
+          await ensureConversationLoaded(restored.conversation_id, restored)
+          return
+        }
+
+        const threadsIndex = await fetchThreadsIndex()
+        const existingThreads = Array.isArray(threadsIndex?.threads) ? threadsIndex!.threads : []
+        if (existingThreads.length > 0) {
+          return
+        }
+
         await dispatch({ type: "THREAD_CREATE", mode: "normal" }, { silentUser: true })
       } catch {
         didAutoStartNewThreadRef.current = false
