@@ -4,7 +4,7 @@ import { ensureUserKey } from "../_utils/auth"
 import { setWidgetCors } from "../_utils/cors"
 import { clearLatestDraft, readDraft, readJob, jobsTtlSeconds, writeDraft } from "../../../chat/jobs/store"
 import {
-  ensureThreadThemeAndEpisode,
+  getOrCreateThreadThemeAndEpisode,
   upsertEpisode,
   upsertFact,
   type MemoryFact,
@@ -117,7 +117,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const openLoops = uniqueStrings(asStringArray(body.open_questions).length > 0 ? asStringArray(body.open_questions) : draft.open_questions)
   const ttlSeconds = jobsTtlSeconds()
-  const { episode } = await ensureThreadThemeAndEpisode({
+  const { episode } = await getOrCreateThreadThemeAndEpisode({
     userKey,
     conversationId,
     ttlSeconds,
