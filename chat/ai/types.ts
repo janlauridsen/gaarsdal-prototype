@@ -21,6 +21,7 @@ export type AiCapabilityContext = {
   userText: string
   contextPack?: {
     system: string
+    user_profile?: string
   }
 }
 
