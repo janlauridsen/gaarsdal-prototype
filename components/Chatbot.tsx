@@ -368,8 +368,11 @@ export default function Chatbot() {
 
     const refresh = async () => {
       try {
-        await fetchPendingJobs(activeConversationId)
-        await fetchLatestDraft(activeConversationId)
+        const jobs = await fetchPendingJobs(activeConversationId)
+        const shouldFetchDraft = jobs.length > 0 || (!!draftReview && !draftReview.accepted_at)
+        if (shouldFetchDraft) {
+          await fetchLatestDraft(activeConversationId)
+        }
       } catch {
         // Best effort only.
       }
@@ -393,7 +396,7 @@ export default function Chatbot() {
       setJobRunnerState(null)
       applyDraftToEditor(null)
     }
-  }, [open, activeConversationId])
+  }, [open, activeConversationId, draftReview?.job_id, draftReview?.accepted_at])
 
   useEffect(() => {
     if (!open || !activeConversationId) return
