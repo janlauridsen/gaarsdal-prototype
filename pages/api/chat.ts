@@ -1,5 +1,5 @@
 // pages/api/chat.ts
-import type { NextApiRequest, NextApiResponse } from "next/api"
+import type { NextApiRequest, NextApiResponse } from "next"
 import crypto from "crypto"
 
 import { runNode } from "../../chat/runtime/nodeRunner"
