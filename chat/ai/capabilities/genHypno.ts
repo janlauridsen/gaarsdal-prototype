@@ -105,10 +105,16 @@ function isSoftClosing(text: string): boolean {
   return ["tak", "mange tak", "super", "fint", "okay tak", "ok tak", "selv tak"].includes(t)
 }
 
+function hasCommandPhrase(text: string, phrase: string): boolean {
+  const padded = ` ${text} `
+  const target = ` ${phrase} `
+  return padded.includes(target)
+}
+
 function isHardExit(text: string): boolean {
   const t = stripPunctuation(text)
 
-  return [
+  const exactCommands = [
     "stop",
     "afslut",
     "slut",
@@ -118,7 +124,22 @@ function isHardExit(text: string): boolean {
     "menu",
     "hovedmenu",
     "ikke nu",
-  ].some((phrase) => t === phrase || t.includes(phrase))
+  ]
+
+  if (exactCommands.includes(t)) return true
+
+  const commandPhrases = [
+    "gå tilbage",
+    "gaa tilbage",
+    "tilbage til menu",
+    "tilbage til hovedmenu",
+    "gå til menu",
+    "gaa til menu",
+    "gå hjem",
+    "gaa hjem",
+  ].map(stripPunctuation)
+
+  return commandPhrases.some((phrase) => hasCommandPhrase(t, phrase))
 }
 
 function buildClosingMessage(transcript: TranscriptTurn[]): string {
