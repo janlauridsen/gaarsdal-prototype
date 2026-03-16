@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { useRouter } from "next/router"
 import { ChatBubbleOvalLeftEllipsisIcon } from "@heroicons/react/24/outline"
 
 import styles from "./Chatbot.module.css"
@@ -35,7 +34,6 @@ type ThreadsIndexResponse = {
 }
 
 export default function Chatbot() {
-  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [threadsOpen, setThreadsOpen] = useState(false)
