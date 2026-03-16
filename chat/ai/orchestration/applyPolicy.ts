@@ -39,7 +39,7 @@ export function applyPolicy(params: {
       allow_mode: "practical",
       allow_question: false,
       max_questions: 0,
-      response_length: "short",
+      response_length: analysis.relational_state === "decision_support" ? "medium" : "short",
       require_redirect: analysis.response_goal === "route_to_contact" ? "contact" : "none",
     }
   }
@@ -78,7 +78,12 @@ export function applyPolicy(params: {
     allow_mode: analysis.proposed_mode,
     allow_question: analysis.response_goal !== "answer_directly",
     max_questions: analysis.response_goal === "answer_then_one_question" ? 1 : 0,
-    response_length: analysis.response_goal === "close_briefly" ? "short" : "medium",
+    response_length:
+      analysis.response_goal === "close_briefly"
+        ? "short"
+        : analysis.relational_state === "building_trust"
+          ? "medium"
+          : "medium",
     require_redirect: "none",
   }
 }

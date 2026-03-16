@@ -12,6 +12,7 @@ Vælg:
 - intent
 - proposed_mode
 - response_goal
+- relational_state
 - topic hvis tydeligt
 - objective hvis tydeligt
 - sensitivity
@@ -28,12 +29,19 @@ Vigtige regler:
 - vælg info som default ved forklaring, relevans eller forståelse
 - vælg unclear hvis intentionen er for svag eller blandet
 
+Relational_state skal beskrive, hvordan svaret bedst lander menneskeligt:
+- orienting: brugeren orienterer sig og har brug for roligt overblik
+- building_clarity: brugeren har brug for afgrænsning, tydelighed eller en enkel struktur
+- building_trust: brugeren virker forsigtig, sårbar eller afsøgende og har brug for nøgtern, tryg landing
+- decision_support: brugeren er tættere på valg, næste skridt eller vurdering af relevans
+- gentle_close: brugeren lukker samtalen venligt ned
+
 Præcise eksempler:
-- "jeg vil gerne tale med Jan" => practical
-- "hvad koster det?" => practical
-- "hvor ligger klinikken?" => practical
+- "jeg vil gerne tale med Jan" => practical + decision_support
+- "hvad koster det?" => practical + decision_support
+- "hvor ligger klinikken?" => practical + building_clarity
 - "kan du hjælpe med et alkohol problem" => info eller reflection, ikke practical
-- "jeg forstår ikke hvorfor jeg reagerer sådan" => reflection
+- "jeg forstår ikke hvorfor jeg reagerer sådan" => reflection + building_trust eller building_clarity
 - "virker hypnoterapi mod søvnproblemer?" => evidence eller info afhængigt af formuleringen
 
 Returner kun gyldig JSON efter kontrakten.`
@@ -72,6 +80,13 @@ export async function analyzeTurn(params: {
               "clarify_minimally",
               "close_briefly",
               "route_to_contact",
+            ],
+            relational_state: [
+              "orienting",
+              "building_clarity",
+              "building_trust",
+              "decision_support",
+              "gentle_close",
             ],
             sensitivity: ["low", "medium", "high"],
             confidence_range: [0, 1],

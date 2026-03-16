@@ -1,4 +1,4 @@
-import { PromptMode, TurnAnalysis } from "../contracts/turnAnalysis"
+import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
 import { BASE_ROLE_PROMPT } from "../prompts/baseRole"
 import { DOMAIN_BOUNDARY_PROMPT } from "../prompts/domainBoundary"
 import { FORMAT_ANSWER_PLUS_ONE_QUESTION_PROMPT } from "../prompts/formats/answerPlusOneQuestion"
@@ -37,9 +37,7 @@ function getModePrompt(mode: PromptMode): string {
 
 function getFormatPrompt(policy: PolicyDecision): string {
   if (policy.allow_mode === "closing") return FORMAT_BRIEF_CLOSE_PROMPT
-  if (policy.max_questions === 1) {
-    return FORMAT_ANSWER_PLUS_ONE_QUESTION_PROMPT
-  }
+  if (policy.max_questions === 1) return FORMAT_ANSWER_PLUS_ONE_QUESTION_PROMPT
   return FORMAT_DIRECT_ANSWER_PROMPT
 }
 
@@ -82,9 +80,10 @@ function buildPolicyInstruction(policy: PolicyDecision): string {
       "EKSTRA REGLER FOR REFLECTION",
       "- Hold refleksionen enkel, rolig og observerende.",
       "- Brug observation før fortolkning.",
-      "- Giv højst 1-3 observationsvinkler, men formuler dem som udsagn, ikke som flere spørgsmål.",
+      "- Giv højst 1-2 observationsvinkler, men formuler dem som udsagn, ikke som flere spørgsmål.",
       "- Afslut med ét enkelt fokuseret spørgsmål, hvis policy tillader det.",
-      "- Undgå spørgebarrager som 'hvad sker der før, under og efter' i spørgsmålform."
+      "- Undgå spørgebarrager som 'hvad sker der før, under og efter' i spørgsmålform.",
+      "- Lad svaret lyde som en samtale, ikke som en metodebeskrivelse."
     )
   }
 
@@ -152,11 +151,90 @@ function buildSiteContextInstruction(mode: PromptMode): string {
 function buildResponseContractInstruction(): string {
   return `Returner kun gyldig JSON:
 {
-  "assistant_message": string,
+  "acknowledgement": string | null,
+  "core_answer": string,
+  "next_step": string | null,
   "topic": string | null,
   "objective": string | null,
   "mode_used": "info" | "evidence" | "practical" | "reflection" | "closing"
-}`
+}
+
+Regler for felterne:
+- acknowledgement: 0-1 korte sætninger som lander brugerens situation menneskeligt uden varmefraser eller overinvolvering
+- core_answer: selve det faglige eller praktiske svar
+- next_step: kun hvis det naturligt hjælper videre; ellers null
+- core_answer må ikke være tom
+- svar skal lyde naturligt og sammenhængende når felterne læses i rækkefølgen acknowledgement -> core_answer -> next_step`
+}
+
+function buildRelationalInstruction(relationalState: RelationalState): string {
+  const lines: string[] = [
+    "RELATIONEL STYRING",
+    `- relational_state: ${relationalState}`,
+  ]
+
+  switch (relationalState) {
+    case "building_clarity":
+      lines.push(
+        "- Hjælp brugeren med afgrænsning og enkel struktur.",
+        "- Skær overflødig tekst væk.",
+        "- Gør forskelle og næste forståelige skridt tydelige."
+      )
+      break
+    case "building_trust":
+      lines.push(
+        "- Land svaret roligt og nøgternt.",
+        "- Gør det tydeligt hvad der er typisk, hvad der er muligt, og hvad der afhænger af personen.",
+        "- Undgå push, oversalg eller for hurtig fortolkning."
+      )
+      break
+    case "decision_support":
+      lines.push(
+        "- Hjælp brugeren med vurdering, relevans eller næste skridt.",
+        "- Vær konkret om hvad man normalt kan gøre herfra.",
+        "- Hold fokus på det valg eller den afklaring, brugeren står i."
+      )
+      break
+    case "gentle_close":
+      lines.push(
+        "- Luk venligt og kort.",
+        "- Lad svaret føles afsluttet uden at skubbe videre."
+      )
+      break
+    case "orienting":
+    default:
+      lines.push(
+        "- Hjælp brugeren med overblik og tryg orientering.",
+        "- Start med det vigtigste først.",
+        "- Lad svaret føles jordnært og ukompliceret."
+      )
+      break
+  }
+
+  return lines.join("\n")
+}
+
+function buildContextPackInstruction(contextPackSystem?: string): string {
+  const trimmed = (contextPackSystem ?? "").trim()
+  if (!trimmed) return ""
+
+  return [
+    "LANGTIDSKONTEKST",
+    "Brug denne kontekst lavmælt og kun hvis den hjælper den aktuelle turn.",
+    "Prioritér altid brugerens nuværende besked over ældre kontekst.",
+    trimmed,
+  ].join("\n")
+}
+
+function buildUserProfileInstruction(userProfileSystem?: string): string {
+  const trimmed = (userProfileSystem ?? "").trim()
+  if (!trimmed) return ""
+
+  return [
+    "BRUGERPRÆFERENCER",
+    "Brug dette som bløde signaler, ikke som hårde regler.",
+    trimmed,
+  ].join("\n")
 }
 
 function buildUserPayload(params: {
@@ -177,6 +255,7 @@ function buildUserPayload(params: {
       price_contact_only_if_relevant: params.policy.allow_mode !== "practical",
       max_questions: params.policy.max_questions,
       reflection_single_question_only: params.policy.allow_mode === "reflection",
+      natural_dialogue_goal: true,
     },
   })
 }
@@ -187,23 +266,28 @@ export function assembleResponseMessages(params: {
   transcript: TranscriptTurn[]
   userText: string
   lastTopic?: string
+  contextPackSystem?: string
+  userProfileSystem?: string
 }): Array<{ role: "system" | "user"; content: string }> {
-  const systemPrompt = [
+  const systemBlocks = [
     BASE_ROLE_PROMPT,
     DOMAIN_BOUNDARY_PROMPT,
     SAFETY_PROMPT,
     getModePrompt(params.policy.allow_mode),
     TONE_CALM_NEUTRAL_PROMPT,
     getFormatPrompt(params.policy),
+    buildRelationalInstruction(params.analysis.relational_state),
     buildPolicyInstruction(params.policy),
+    buildContextPackInstruction(params.contextPackSystem),
+    buildUserProfileInstruction(params.userProfileSystem),
     buildSiteContextInstruction(params.policy.allow_mode),
     buildResponseContractInstruction(),
-  ].join("\n\n")
+  ].filter(Boolean)
 
   return [
     {
       role: "system",
-      content: systemPrompt,
+      content: systemBlocks.join("\n\n"),
     },
     {
       role: "user",
