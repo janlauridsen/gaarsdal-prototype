@@ -24,7 +24,7 @@ export type InputSignal =
 export type DeferredJobSignal = {
   pending: true
   job_id: string
-  kind: "scan_threads"
+  kind: "scan_threads" | "derive_thread_title"
   mode: "shadow" | "visible"
   based_on_revision: number
 }
@@ -65,7 +65,7 @@ export type ThreadTab = {
 
 export type AsyncConversationJob = {
   job_id: string
-  kind: "scan_threads"
+  kind: "scan_threads" | "derive_thread_title"
   status: "queued" | "running" | "completed" | "failed" | "canceled"
   cursor?: string
   progress?: number
