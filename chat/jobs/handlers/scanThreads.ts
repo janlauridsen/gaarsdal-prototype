@@ -1,6 +1,6 @@
 import { createOpenAiCompatibleClient } from "../../ai/provider"
 import { readThreadIndex } from "../../persistence/threadIndexStore"
-import { ensureThreadThemeAndEpisode } from "../../memory/longTermMemoryStore"
+import { readThreadThemeAndEpisode } from "../../memory/longTermMemoryStore"
 import { readRawTurns } from "../../raw/store"
 import { jobsTtlSeconds, writeDraft, writeJob } from "../store"
 import { DraftV1, EvidenceRefV1, JobRecordV1, ScanThreadsPayload } from "../types"
@@ -167,11 +167,11 @@ async function shortlistThreads(params: {
   for (const t of sorted) {
         const convId = t.conversation_id
     if (!convId || convId === params.activeConversationId) continue
-    const { episode } = await ensureThreadThemeAndEpisode({
+    const threadMemory = await readThreadThemeAndEpisode({
       userKey: params.userKey,
       conversationId: convId,
-      ttlSeconds: params.ttlSeconds,
     })
+    const episode = threadMemory?.episode
     const candidate = {
       conversation_id: convId,
       title: t.title,
