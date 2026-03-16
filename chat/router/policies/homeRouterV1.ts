@@ -1,11 +1,4 @@
-type RouteNodeId =
-  | "GEN_HYPNO"
-  | "METHOD_FIT"
-  | "REFLECTION"
-  | "BOOKING"
-  | "DEV_SANDBOX_INTRO"
-  | "AKUT"
-  | "HOME"
+type RouteNodeId = "GEN_HYPNO" | "BOOKING" | "AKUT" | "HOME"
 
 export type RouteDecision = {
   nextNodeId: RouteNodeId
@@ -40,9 +33,6 @@ function pickIfAllowed(
   if (allowed.has(fallback)) return fallback
   if (allowed.has("GEN_HYPNO")) return "GEN_HYPNO"
   if (allowed.has("BOOKING")) return "BOOKING"
-  if (allowed.has("METHOD_FIT")) return "METHOD_FIT"
-  if (allowed.has("REFLECTION")) return "REFLECTION"
-  if (allowed.has("DEV_SANDBOX_INTRO")) return "DEV_SANDBOX_INTRO"
   if (allowed.has("AKUT")) return "AKUT"
   if (allowed.has("HOME")) return "HOME"
 
@@ -50,10 +40,13 @@ function pickIfAllowed(
 }
 
 /**
- * HOME router policy
+ * HOME router policy for the current narrow runtime.
  *
- * TRIAGE bruges ikke længere fra HOME.
- * Default går til GEN_HYPNO.
+ * Allowed runtime targets:
+ * - GEN_HYPNO
+ * - BOOKING
+ * - AKUT (UI utility label only; if not allowed it falls back safely)
+ * - HOME
  */
 export function homeRouterV1(params: HomeRouterInput): RouteDecision {
   const raw = params.userText ?? ""
@@ -123,68 +116,10 @@ export function homeRouterV1(params: HomeRouterInput): RouteDecision {
     }
   }
 
-  if (
-    hasAny(t, [
-      "passer hypnoterapi",
-      "er hypnoterapi noget for mig",
-      "er hypnose noget for mig",
-      "vil hypnoterapi hjælpe",
-      "hvilken metode",
-      "bedste metode",
-      "god metode",
-      "alternativ til hypnoterapi",
-      "hypnoterapi eller",
-      "metode",
-      "method fit",
-      "match",
-    ])
-  ) {
-    return {
-      nextNodeId: pickIfAllowed(allowed, "METHOD_FIT", "GEN_HYPNO"),
-      confidence: 0.84,
-      reason: "clear method-fit intent",
-    }
-  }
-
-  if (
-    hasAny(t, [
-      "refleksion",
-      "reflektere",
-      "forstå mig selv",
-      "forstå mønster",
-      "forstå mine mønstre",
-      "klarhed",
-      "meningsskabelse",
-      "undersøge mønster",
-    ])
-  ) {
-    return {
-      nextNodeId: pickIfAllowed(allowed, "REFLECTION", "GEN_HYPNO"),
-      confidence: 0.8,
-      reason: "clear reflection intent",
-    }
-  }
-
-  if (
-    hasAny(t, [
-      "sandbox",
-      "dev sandbox",
-      "test flow",
-      "udviklerflow",
-      "debug flow",
-    ])
-  ) {
-    return {
-      nextNodeId: pickIfAllowed(allowed, "DEV_SANDBOX_INTRO", "GEN_HYPNO"),
-      confidence: 0.95,
-      reason: "developer sandbox intent",
-    }
-  }
-
   return {
     nextNodeId: pickIfAllowed(allowed, "GEN_HYPNO"),
     confidence: 0.78,
-    reason: "default to general hypnotherapy dialogue instead of triage",
+    reason: "default to general hypnotherapy dialogue",
   }
 }
 
