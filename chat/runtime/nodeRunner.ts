@@ -12,6 +12,7 @@ import { parseFormText } from "../tools/formParsing"
 import { runTool } from "../tools/tools"
 import { runRouter } from "../router/runRouter"
 import { buildContextPackV23 } from "../ai/contextPack"
+import { buildUserProfilePromptContext, readUserProfile } from "../memory/store"
 
 export type NodeRunParams = {
   state: ConversationState
@@ -162,11 +163,14 @@ export async function runNode(params: NodeRunParams): Promise<KernelResult> {
       state,
       ttlSeconds: MEMORY_TTL_SECONDS,
     })
-
+    const profile = await readUserProfile(params.userKey)
     const capabilityResult = await runCapability(capabilityId, {
       state,
       userText: input.text,
-      contextPack: { system: contextPack.system },
+      contextPack: {
+        system: contextPack.system,
+        user_profile: buildUserProfilePromptContext(profile),
+      },
     })
 
     return runKernel(state, {
