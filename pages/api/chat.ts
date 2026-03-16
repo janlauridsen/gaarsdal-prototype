@@ -1,5 +1,5 @@
 // pages/api/chat.ts
-import type { NextApiRequest, NextApiResponse } from "next"
+import type { NextApiRequest, NextApiResponse } from "next/api"
 import crypto from "crypto"
 
 import { runNode } from "../../chat/runtime/nodeRunner"
@@ -909,39 +909,6 @@ async function maybeTriggerScanThreadsJob(params: {
   }
 }
 
-async function findReusableThread(params: {
-  userKey: string
-  index: any
-}): Promise<{ conversationId: string; state: any } | null> {
-  const ids: string[] = []
-  const seen = new Set<string>()
-
-  const pushId = (value: unknown) => {
-    if (typeof value !== "string") return
-    const id = value.trim()
-    if (!id || seen.has(id) || isLobbyConversation(id)) return
-    seen.add(id)
-    ids.push(id)
-  }
-
-  pushId(params.index?.active_conversation_id)
-
-  const threads = Array.isArray(params.index?.threads) ? params.index.threads : []
-  for (const thread of threads) {
-    if (!thread || thread.status === "archived") continue
-    pushId(thread.conversation_id)
-  }
-
-  for (const conversationId of ids) {
-    const threadState = await readConversationState(conversationId)
-    if (!threadState) continue
-    if (threadState.status === "completed" || threadState.status === "rejected") continue
-    return { conversationId, state: threadState }
-  }
-
-  return null
-}
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const body = validateRequest(req, res)
   if (!body) return
@@ -963,47 +930,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const index0 = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
 
       if (input.type === "THREAD_CREATE") {
-        const reusable = await findReusableThread({ userKey, index: index0 })
-
-        if (reusable) {
-          let index1 = upsertThread({ index: index0, conversationId: reusable.conversationId })
-          index1 = setActiveThread({ index: index1, conversationId: reusable.conversationId })
-          await writeThreadIndex({ userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
-
-          await emitCanonicalEvent({
-            userKey,
-            conversationId: reusable.conversationId,
-            revision: reusable.state.revision,
-            inputId: reusable.state.revision,
-            nodeId: reusable.state.active_node,
-            eventType: "thread_switched",
-            payload: {
-              active_node: reusable.state.active_node,
-              reused_existing_thread: true,
-            },
-          })
-
-          return res.status(200).json({
-            state: withThreadMeta({ state: reusable.state, index: index1 }),
-            transition: {
-              type: "THREAD_SWITCH",
-              from: null,
-              to: reusable.state.active_node,
-              reason: "reused existing active thread",
-            },
-            log: {
-              conversation_id: reusable.state.conversation_id,
-              revision_before: reusable.state.revision,
-              revision_after: reusable.state.revision,
-              active_node_before: reusable.state.active_node,
-              active_node_after: reusable.state.active_node,
-              input_type: "UI_ACTION",
-              transition_type: "THREAD_SWITCH",
-              timestamp: new Date().toISOString(),
-            },
-          })
-        }
-
         const newId = safeUuid()
         const initialThreadState = createInitialState(newId)
         const mode = input.mode === "parenthesis" ? "parenthesis" : "normal"
