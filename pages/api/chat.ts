@@ -22,9 +22,8 @@ import {
 } from "../../chat/persistence/threadIndexStore"
 import { appendConversationEventV1 } from "../../chat/events/store"
 
-import { ensureThreadThemeAndEpisode } from "../../chat/memory/longTermMemoryStore"
+import { getOrCreateThreadThemeAndEpisode } from "../../chat/memory/longTermMemoryStore"
 import { enqueueJob, makeJobId } from "../../chat/async/queue"
-import { runReflectionCbaUpdate } from "../../chat/reflection/cba"
 import { jobsTtlSeconds, triggerJob } from "../../chat/jobs/store"
 import type { DeferredJobSignal, ProblemSpecV1 } from "../../chat/jobs/types"
 
@@ -379,49 +378,6 @@ async function enqueueSuggestFacts(params: {
   })
 }
 
-async function enqueueReflectionCbaUpdate(params: {
-  userKey: string
-  conversationId: string
-  revisionAfter: number
-  activeNodeAfter: string
-  userMessage: string
-  therapistMessage: string
-  threadThemeId?: string
-  threadEpisodeId?: string
-}): Promise<void> {
-  if (params.activeNodeAfter !== "REFLECTION") return
-
-  const userMessage = (params.userMessage ?? "").trim()
-  const therapistMessage = (params.therapistMessage ?? "").trim()
-  if (!userMessage && !therapistMessage) return
-
-  const themeId = params.threadThemeId
-  const episodeId = params.threadEpisodeId
-  if (typeof themeId !== "string" || typeof episodeId !== "string") return
-
-  const job_id = makeJobId({
-    type: "REFLECTION_CBA_UPDATE",
-    userKey: params.userKey,
-    episodeId,
-    revisionAfter: params.revisionAfter,
-  })
-
-  await enqueueJob({
-    schema_version: "v23",
-    job_version: 1,
-    type: "REFLECTION_CBA_UPDATE",
-    job_id,
-    user_key: params.userKey,
-    conversation_id: params.conversationId,
-    theme_id: themeId,
-    episode_id: episodeId,
-    revision_after: params.revisionAfter,
-    payload: {
-      user_message: userMessage,
-      therapist_message: therapistMessage,
-    },
-  })
-}
 
 async function ensureThreadBindingOnState(params: {
   userKey: string
@@ -436,7 +392,7 @@ async function ensureThreadBindingOnState(params: {
     return { state: params.state, themeId: existingThemeId, episodeId: existingEpisodeId }
   }
 
-  const ensured = await ensureThreadThemeAndEpisode({
+  const ensured = await getOrCreateThreadThemeAndEpisode({
     userKey: params.userKey,
     conversationId: params.conversationId,
     ttlSeconds: MEMORY_TTL_SECONDS,
@@ -1272,34 +1228,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       threadEpisodeId: binding?.episodeId ?? (kernelResultFinal.state.meta?.["thread.episode_id"] as any)?.value,
     })
 
-    const activeNodeAfter = kernelResultFinal.state.active_node
-    const therapistMessage = assistantText
-
-    if ((input as any).type === "FREE_TEXT") {
-      try {
-        if (activeNodeAfter === "REFLECTION") {
-          await runReflectionCbaUpdate({
-            conversationId: kernelResultFinal.state.conversation_id,
-            userMessage: String((input as any).text ?? ""),
-            therapistMessage,
-            ttlSeconds: jobsTtlSeconds(),
-          })
-        }
-      } catch {
-        // ignore
-      }
-    } else {
-      await enqueueReflectionCbaUpdate({
-        userKey,
-        conversationId: kernelResultFinal.state.conversation_id,
-        revisionAfter: kernelResultFinal.state.revision,
-        activeNodeAfter,
-        userMessage: userText ?? "",
-        therapistMessage,
-        threadThemeId: binding?.themeId ?? (kernelResultFinal.state.meta?.["thread.theme_id"] as any)?.value,
-        threadEpisodeId: binding?.episodeId ?? (kernelResultFinal.state.meta?.["thread.episode_id"] as any)?.value,
-      })
-    }
 
     await logAndRecord({
       userKey,
