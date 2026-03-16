@@ -6,7 +6,7 @@ import {
   LlmClient,
 } from "../types"
 import { normalizeFinalResponse } from "../contracts/responseContract"
-import { PromptMode, TurnAnalysis } from "../contracts/turnAnalysis"
+import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
 import { analyzeTurn } from "../orchestration/analyzeTurn"
 import { applyPolicy } from "../orchestration/applyPolicy"
 import { assembleResponseMessages } from "../orchestration/assemblePrompt"
@@ -326,6 +326,7 @@ function buildDefaultAnalysis(
       intent: "social_closing",
       proposed_mode: "closing",
       response_goal: "close_briefly",
+      relational_state: "gentle_close",
       topic: previousTopic,
       sensitivity: "low",
       signals: ["soft_closing"],
@@ -346,6 +347,8 @@ function buildDefaultAnalysis(
         forcedMode === "reflection"
           ? "answer_then_one_question"
           : "answer_directly",
+      relational_state:
+        forcedMode === "reflection" ? "building_trust" : forcedMode === "practical" ? "decision_support" : "building_clarity",
       topic: previousTopic,
       sensitivity: "medium",
       signals: ["forced_mode"],
@@ -362,6 +365,7 @@ function buildDefaultAnalysis(
       intent: "seek_practical_help",
       proposed_mode: "practical",
       response_goal: "answer_directly",
+      relational_state: "decision_support",
       topic: previousTopic,
       sensitivity: "low",
       signals: ["practical_keyword"],
@@ -378,6 +382,7 @@ function buildDefaultAnalysis(
       intent: "ask_evidence",
       proposed_mode: "evidence",
       response_goal: "answer_directly",
+      relational_state: "decision_support",
       topic: previousTopic,
       sensitivity: "low",
       signals: ["evidence_keyword"],
@@ -389,6 +394,7 @@ function buildDefaultAnalysis(
     intent: "understand_method",
     proposed_mode: "info",
     response_goal: "answer_directly",
+    relational_state: "orienting",
     topic: previousTopic,
     sensitivity: "low",
     signals: ["default_info"],
@@ -407,6 +413,7 @@ function buildMetaDelta(params: {
   analysis: TurnAnalysis
   mode: PromptMode
   objective?: string
+  relationalState: RelationalState
 }): Record<string, unknown> {
   const previousTranscript = readTranscriptByKey(params.context, params.transcriptKey)
   const previousAssistantCount = countAssistantTurns(previousTranscript)
@@ -431,6 +438,7 @@ function buildMetaDelta(params: {
     "gen_hypno.assistant_turn_count": nextAssistantCount,
     "dialog.mode": params.mode,
     "dialog.stage": dialogStage,
+    "dialog.relational_state": params.relationalState,
     "gen_hypno.analysis": params.analysis,
   }
 
@@ -494,6 +502,7 @@ export async function runUnifiedHypnoCapability(
         userText,
         analysis: buildDefaultAnalysis(userText, previousTopic, "info"),
         mode: "closing",
+        relationalState: "gentle_close",
       }),
     }
 
@@ -534,6 +543,12 @@ export async function runUnifiedHypnoCapability(
         options.forcedMode === "reflection"
           ? "answer_then_one_question"
           : analysis.response_goal,
+      relational_state:
+        options.forcedMode === "reflection"
+          ? "building_trust"
+          : options.forcedMode === "practical"
+            ? "decision_support"
+            : "building_clarity",
     }
   }
 
@@ -558,6 +573,8 @@ export async function runUnifiedHypnoCapability(
           transcript: trimmedTranscript,
           userText,
           lastTopic: previousTopic,
+          contextPackSystem: context.contextPack?.system,
+          userProfileSystem: context.contextPack?.user_profile,
         }),
       })
 
@@ -603,6 +620,7 @@ export async function runUnifiedHypnoCapability(
       analysis,
       mode: modeUsed,
       objective: responseObjective,
+      relationalState: analysis.relational_state,
     }),
   }
 
