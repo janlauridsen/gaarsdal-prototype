@@ -296,7 +296,8 @@ async function maybeAutoLabelThread(params: {
   const index0 = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: PROFILE_TTL_SECONDS })
 
   const existing = index0.threads.find((t) => t.conversation_id === params.conversationId)
-  const needsTitle = !existing || !existing.title?.trim()
+  const existingTitle = String(existing?.title ?? "").trim().toLowerCase()
+  const needsTitle = !existingTitle || existingTitle === "ny samtale" || existingTitle === "parentesespor"
 
   let index1 = upsertThread({ index: index0, conversationId: params.conversationId })
 
@@ -316,7 +317,7 @@ async function maybeAutoLabelThread(params: {
     previewText: userText,
     maxTitleChars: 60,
     maxPreviewChars: 120,
-    setTitleIfEmpty: true,
+    setTitleIfEmpty: false,
     alwaysUpdatePreview: true,
   })
 
