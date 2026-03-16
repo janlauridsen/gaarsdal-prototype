@@ -12,10 +12,11 @@ import { readUserProfile, recordTurn, writeUserProfile } from "../../chat/memory
 import { consolidateV1 } from "../../chat/platform/consolidation"
 import { readConversationState, writeConversationState } from "../../chat/persistence/conversationStateStore"
 import {
-  applyAutoThreadLabelFromText,
   archiveThread,
   ensureThreadIndex,
+  isGenericThreadTitle,
   setActiveThread,
+  updateThreadPreview,
   upsertThread,
   writeThreadIndex,
 } from "../../chat/persistence/threadIndexStore"
@@ -28,7 +29,7 @@ import { jobsTtlSeconds, triggerJob } from "../../chat/jobs/store"
 import type { DeferredJobSignal, ProblemSpecV1 } from "../../chat/jobs/types"
 
 // Single raw stream
-import { appendRawTurn, readRawTurns } from "../../chat/raw/store"
+import { appendRawTurn } from "../../chat/raw/store"
 
 type ChatRequestBody = {
   state: any
@@ -280,51 +281,27 @@ function isControlInput(text: string): boolean {
   return false
 }
 
-async function maybeAutoLabelThread(params: {
+async function maybeUpdateThreadPreview(params: {
   userKey: string
   conversationId: string
   input: InputSignal
-  revisionAfter: number
 }): Promise<void> {
   if (isLobbyConversation(params.conversationId)) return
   if (params.input.type !== "FREE_TEXT") return
 
-  const userText = params.input.text ?? ""
-  if (userText.trim().length < 12) return
+  const userText = (params.input.text ?? "").trim()
+  if (!userText) return
   if (isControlInput(userText)) return
 
   const index0 = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: PROFILE_TTL_SECONDS })
-
-  const existing = index0.threads.find((t) => t.conversation_id === params.conversationId)
-  const existingTitle = String(existing?.title ?? "").trim().toLowerCase()
-  const needsTitle = !existingTitle || existingTitle === "ny samtale" || existingTitle === "parentesespor"
-
-  let index1 = upsertThread({ index: index0, conversationId: params.conversationId })
-
-  const titleText = await (async () => {
-    if (!needsTitle) return ""
-    const rawTurns = await readRawTurns({ conversationId: params.conversationId, limit: 500 })
-    const firstUser = rawTurns.find((t) => t && t.input_type === "FREE_TEXT" && typeof t.user_input === "string")
-    const firstText = String(firstUser?.user_input ?? "").trim()
-    if (firstText && !isControlInput(firstText)) return firstText
-    return userText
-  })()
-
-  index1 = applyAutoThreadLabelFromText({
-    index: index1,
+  let index1 = updateThreadPreview({
+    index: index0,
     conversationId: params.conversationId,
-    titleText,
     previewText: userText,
-    maxTitleChars: 60,
     maxPreviewChars: 120,
-    setTitleIfEmpty: false,
-    alwaysUpdatePreview: true,
   })
-
   index1 = setActiveThread({ index: index1, conversationId: params.conversationId })
-
   if (JSON.stringify(index0) === JSON.stringify(index1)) return
-
   await writeThreadIndex({ userKey: params.userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
 }
 
@@ -858,6 +835,42 @@ function shouldAutoTriggerHistoryScan(params: {
   return { shouldTrigger: true, turnCount }
 }
 
+async function maybeTriggerDeriveThreadTitleJob(params: {
+  userKey: string
+  input: InputSignal
+  conversationId: string
+  revisionAfter: number
+}): Promise<void> {
+  const { userKey, input, conversationId, revisionAfter } = params
+  if (isLobbyConversation(conversationId)) return
+  if (input.type !== "FREE_TEXT") return
+
+  const userText = (input.text ?? "").trim()
+  if (!userText || isControlInput(userText)) return
+  if (revisionAfter < 1 || revisionAfter > 3) return
+
+  const index = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+  const thread = index.threads.find((t) => t.conversation_id === conversationId)
+  if (!thread) return
+
+  const currentConfidence = typeof (thread as any).title_confidence === "number" ? Number((thread as any).title_confidence) : 0
+  const currentBasisRevision = typeof (thread as any).title_basis_revision === "number" ? Number((thread as any).title_basis_revision) : 0
+  const generic = isGenericThreadTitle(thread.title)
+  const frozen = currentConfidence >= 0.8 || currentBasisRevision >= 4
+  if (!generic && frozen) return
+
+  await triggerJob({
+    userKey,
+    conversationId,
+    kind: "derive_thread_title",
+    payload: { trigger_turn: revisionAfter },
+    ttlSeconds: jobsTtlSeconds(),
+    dedupe: true,
+    basedOnRevision: Math.max(0, revisionAfter),
+    mode: "shadow",
+  })
+}
+
 async function maybeTriggerScanThreadsJob(params: {
   userKey: string
   input: InputSignal
@@ -1234,11 +1247,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    await maybeAutoLabelThread({
+    await maybeUpdateThreadPreview({
       userKey,
       conversationId: kernelResultFinal.state.conversation_id,
       input: input as InputSignal,
-      revisionAfter: kernelResultFinal.state.revision,
     })
 
     const metaKeysWritten = kernelResultFinal.transition.meta_delta ? Object.keys(kernelResultFinal.transition.meta_delta) : []
@@ -1294,6 +1306,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       input: input as InputSignal,
       kernelResult: kernelResultFinal,
       userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined,
+    })
+
+    await maybeTriggerDeriveThreadTitleJob({
+      userKey,
+      input: input as InputSignal,
+      conversationId: kernelResultFinal.state.conversation_id,
+      revisionAfter: kernelResultFinal.state.revision,
     })
 
     const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
