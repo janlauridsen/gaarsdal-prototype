@@ -199,6 +199,10 @@ export default function Chatbot() {
     setPendingJobs((prev) => prev.filter((item) => item.job_id !== jobId))
   }
 
+  function hasDraftProducingJobs(jobs: AsyncConversationJob[]): boolean {
+    return jobs.some((job) => job.kind === "scan_threads")
+  }
+
   function stageDeferredJob(signal: DeferredJobSignal) {
     upsertPendingJob({
       job_id: signal.job_id,
@@ -252,13 +256,16 @@ export default function Chatbot() {
 
     const loop = { conversationId, jobId: job.job_id, cancelled: false }
     jobLoopRef.current = loop
-    setJobRunnerState({
-      jobId: job.job_id,
-      label: statusLabelForJob(job),
-      progress: typeof job.progress === "number" ? job.progress : 0,
-      status: job.status,
-      error: null,
-    })
+    const silentJob = job.kind === "derive_thread_title"
+    if (!silentJob) {
+      setJobRunnerState({
+        jobId: job.job_id,
+        label: statusLabelForJob(job),
+        progress: typeof job.progress === "number" ? job.progress : 0,
+        status: job.status,
+        error: null,
+      })
+    }
 
     try {
       const startRes = await fetch("/api/jobs/start", {
@@ -270,13 +277,15 @@ export default function Chatbot() {
       if (!startRes.ok) throw new Error(`Jobs start: HTTP ${startRes.status}`)
       const startData = (await startRes.json().catch(() => null)) as any
       if (startData?.status === "busy") {
-        setJobRunnerState({
-          jobId: job.job_id,
-          label: "En anden opgave kører allerede…",
-          progress: typeof job.progress === "number" ? job.progress : 0,
-          status: "busy",
-          error: null,
-        })
+        if (!silentJob) {
+          setJobRunnerState({
+            jobId: job.job_id,
+            label: "En anden opgave kører allerede…",
+            progress: typeof job.progress === "number" ? job.progress : 0,
+            status: "busy",
+            error: null,
+          })
+        }
         return
       }
       if (startData?.stale || startData?.status === "canceled") {
@@ -296,18 +305,22 @@ export default function Chatbot() {
         if (!tickRes.ok) throw new Error(`Jobs tick: HTTP ${tickRes.status}`)
         const tick = (await tickRes.json().catch(() => null)) as any
         const progress = typeof tick?.progress === "number" ? tick.progress : 0
-        setJobRunnerState({
-          jobId: job.job_id,
-          label: statusLabelForJob({ kind: job.kind, cursor: tick?.cursor, status: tick?.status }),
-          progress,
-          status: String(tick?.status ?? "running"),
-          error: tick?.lastError ? String(tick.lastError) : null,
-        })
+        if (!silentJob) {
+          setJobRunnerState({
+            jobId: job.job_id,
+            label: statusLabelForJob({ kind: job.kind, cursor: tick?.cursor, status: tick?.status }),
+            progress,
+            status: String(tick?.status ?? "running"),
+            error: tick?.lastError ? String(tick.lastError) : null,
+          })
+        }
 
         const status = String(tick?.status ?? "")
         if (status === "completed") {
-          await fetchPendingJobs(conversationId).catch(() => [])
-          await fetchLatestDraft(conversationId).catch(() => null)
+          const jobs = await fetchPendingJobs(conversationId).catch(() => [] as AsyncConversationJob[])
+          if (hasDraftProducingJobs(jobs)) {
+            await fetchLatestDraft(conversationId).catch(() => null)
+          }
           break
         }
         if (status === "failed" || status === "canceled") {
@@ -321,14 +334,16 @@ export default function Chatbot() {
         await delay(nextDelay)
       }
     } catch (e: any) {
-      setJobRunnerState((prev) =>
-        prev && prev.jobId === job.job_id
-          ? { ...prev, status: "failed", error: e?.message ? String(e.message) : "Baggrundsopgave fejlede" }
-          : prev
-      )
+      if (!silentJob) {
+        setJobRunnerState((prev) =>
+          prev && prev.jobId === job.job_id
+            ? { ...prev, status: "failed", error: e?.message ? String(e.message) : "Baggrundsopgave fejlede" }
+            : prev
+        )
+      }
     } finally {
       if (jobLoopRef.current === loop) jobLoopRef.current = null
-      if (!loop.cancelled) {
+      if (!loop.cancelled && !silentJob) {
         setJobRunnerState((prev) => (prev && prev.jobId === job.job_id && prev.status !== "failed" ? null : prev))
       }
     }
@@ -369,7 +384,7 @@ export default function Chatbot() {
     const refresh = async () => {
       try {
         const jobs = await fetchPendingJobs(activeConversationId)
-        const shouldFetchDraft = jobs.length > 0 || (!!draftReview && !draftReview.accepted_at)
+        const shouldFetchDraft = hasDraftProducingJobs(jobs) || (!!draftReview && !draftReview.accepted_at)
         if (shouldFetchDraft) {
           await fetchLatestDraft(activeConversationId)
         }
