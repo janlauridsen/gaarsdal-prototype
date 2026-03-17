@@ -50,10 +50,12 @@ export const nodeRegistry: Record<string, Node> = {
       "gen_hypno.analysis",
 
       "dialog.mode",
+      "dialog.move",
+      "dialog.investigation_focus",
       "dialog.stage",
-      "dialog.relational_state",
       "dialog.topic",
       "dialog.objective",
+      "dialog.relational_state",
 
       "focused_reflection.readiness",
       "focused_reflection.topic",
