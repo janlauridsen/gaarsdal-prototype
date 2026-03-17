@@ -105,6 +105,133 @@ function isSoftClosing(text: string): boolean {
   return ["tak", "mange tak", "super", "fint", "okay tak", "ok tak", "selv tak"].includes(t)
 }
 
+type SimpleTurnHandling = {
+  assistant: string
+  analysis: TurnAnalysis
+  mode: PromptMode
+  topic?: string
+  objective?: string
+}
+
+function capitalizeName(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/g)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ")
+}
+
+function extractIntroducedName(text: string): string | null {
+  const raw = text.trim()
+  const match = raw.match(/^(?:hej[,\s]+)?(?:jeg hedder|mit navn er)\s+([\p{L}][\p{L}\s.'-]{0,40})$/iu)
+  if (!match) return null
+
+  const cleaned = match[1].trim().replace(/[.!?,;:]+$/g, "")
+  if (!cleaned) return null
+
+  const first = cleaned.split(/\s+/g)[0] ?? ""
+  if (!first) return null
+  return capitalizeName(first)
+}
+
+function isGreetingOnly(text: string): boolean {
+  const t = stripPunctuation(text).replace(/\s+/g, " ").trim()
+  return ["hej", "hejsa", "goddag", "hallo", "hello", "hi", "hey"].includes(t)
+}
+
+function isWhyDidYouWriteThat(text: string): boolean {
+  const t = stripPunctuation(text).replace(/\s+/g, " ").trim()
+  return [
+    "hvorfor skriver du det",
+    "hvorfor siger du det",
+    "hvorfor skrev du det",
+    "hvad mener du med det",
+    "hvorfor svarer du sådan",
+    "hvorfor svarer du saadan",
+  ].includes(t)
+}
+
+function lastAssistantTurn(transcript: TranscriptTurn[]): TranscriptTurn | undefined {
+  return [...transcript].reverse().find((turn) => turn.role === "assistant")
+}
+
+function tryHandleSimpleTurn(params: {
+  userText: string
+  transcript: TranscriptTurn[]
+  previousTopic?: string
+}): SimpleTurnHandling | null {
+  const userText = params.userText.trim()
+  if (!userText) return null
+
+  const introducedName = extractIntroducedName(userText)
+  if (introducedName) {
+    return {
+      assistant: `Hej ${introducedName}. Du kan skrive lidt om det, du gerne vil have hjælp til, når du er klar.`,
+      mode: "info",
+      analysis: {
+        intent: "understand_method",
+        proposed_mode: "info",
+        conversation_move: "direct_answer",
+        investigation_focus: "none",
+        response_goal: "answer_directly",
+        relational_state: "orienting",
+        sensitivity: "low",
+        signals: ["self_introduction"],
+        confidence: 0.99,
+      },
+      objective: "åbne samtalen enkelt",
+    }
+  }
+
+  if (isGreetingOnly(userText)) {
+    return {
+      assistant: "Hej. Du kan skrive, hvad du gerne vil have hjælp til, når du er klar.",
+      mode: "info",
+      analysis: {
+        intent: "understand_method",
+        proposed_mode: "info",
+        conversation_move: "direct_answer",
+        investigation_focus: "none",
+        response_goal: "answer_directly",
+        relational_state: "orienting",
+        sensitivity: "low",
+        signals: ["greeting"],
+        confidence: 0.99,
+      },
+      objective: "åbne samtalen enkelt",
+    }
+  }
+
+  if (isWhyDidYouWriteThat(userText)) {
+    const previousAssistant = lastAssistantTurn(params.transcript)?.content ?? ""
+    const mentionsOverinterpretation = /du har oplyst dit navn|du har sagt hej|identitet i samtalen|markere starten på en samtale/i.test(previousAssistant)
+    if (mentionsOverinterpretation) {
+      return {
+        assistant:
+          "Du har ret. Det blev for fortolkende. Når du bare præsenterer dig eller siger hej, bør jeg svare enkelt og direkte i stedet for at analysere det.",
+        mode: "info",
+        analysis: {
+          intent: "understand_method",
+          proposed_mode: "info",
+          conversation_move: "direct_answer",
+          investigation_focus: "none",
+          response_goal: "answer_directly",
+          relational_state: "building_clarity",
+          topic: params.previousTopic,
+          sensitivity: "low",
+          signals: ["meta_feedback", "overinterpretation_repair"],
+          confidence: 0.98,
+        },
+        topic: params.previousTopic,
+        objective: "rette samtalestilen til",
+      }
+    }
+  }
+
+  return null
+}
+
 function hasCommandPhrase(text: string, phrase: string): boolean {
   const padded = ` ${text} `
   const target = ` ${phrase} `
@@ -320,6 +447,20 @@ function buildDefaultAnalysis(
   forcedMode?: Exclude<PromptMode, "closing">
 ): TurnAnalysis {
   const normalized = normalizeText(userText)
+
+  if (extractIntroducedName(userText) || isGreetingOnly(userText)) {
+    return {
+      intent: "understand_method",
+      proposed_mode: "info",
+      conversation_move: "direct_answer",
+      investigation_focus: "none",
+      response_goal: "answer_directly",
+      relational_state: "orienting",
+      sensitivity: "low",
+      signals: [extractIntroducedName(userText) ? "self_introduction" : "greeting"],
+      confidence: 0.99,
+    }
+  }
 
   if (isSoftClosing(userText)) {
     return {
@@ -537,18 +678,26 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  let analysis: TurnAnalysis | null = null
+  const simpleTurn = tryHandleSimpleTurn({
+    userText,
+    transcript: trimmedTranscript,
+    previousTopic,
+  })
+
+  let analysis: TurnAnalysis | null = simpleTurn?.analysis ?? null
   let usedFallback = false
 
-  try {
-    analysis = await analyzeTurn({
-      llm,
-      transcript: trimmedTranscript,
-      userText,
-      lastTopic: previousTopic,
-    })
-  } catch {
-    usedFallback = true
+  if (!simpleTurn) {
+    try {
+      analysis = await analyzeTurn({
+        llm,
+        transcript: trimmedTranscript,
+        userText,
+        lastTopic: previousTopic,
+      })
+    } catch {
+      usedFallback = true
+    }
   }
 
   analysis = analysis ?? buildDefaultAnalysis(userText, previousTopic, options.forcedMode)
@@ -588,14 +737,14 @@ export async function runUnifiedHypnoCapability(
 
   const policy = applyPolicy({ userText, analysis, transcript: trimmedTranscript })
 
-  let assistant = ""
-  let responseTopic: string | undefined = analysis.topic
-  let responseObjective: string | undefined = analysis.objective
-  let modeUsed: PromptMode = policy.allow_mode
+  let assistant = simpleTurn?.assistant ?? ""
+  let responseTopic: string | undefined = simpleTurn?.topic ?? analysis.topic
+  let responseObjective: string | undefined = simpleTurn?.objective ?? analysis.objective
+  let modeUsed: PromptMode = simpleTurn?.mode ?? policy.allow_mode
 
-  if (policy.allow_mode === "closing") {
+  if (!simpleTurn && policy.allow_mode === "closing") {
     assistant = buildClosingMessage(transcript)
-  } else {
+  } else if (!simpleTurn) {
     try {
       const raw = await llm.chatJson({
         model: process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
