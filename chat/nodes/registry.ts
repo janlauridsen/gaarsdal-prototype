@@ -53,9 +53,7 @@ export const nodeRegistry: Record<string, Node> = {
       "dialog.stage",
       "dialog.topic",
       "dialog.objective",
-      "dialog.relational_state",
 
-      "focused_reflection.readiness",
       "focused_reflection.topic",
       "focused_reflection.entry_source",
       "focused_reflection.user_opt_in",
