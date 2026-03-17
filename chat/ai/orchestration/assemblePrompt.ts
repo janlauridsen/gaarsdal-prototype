@@ -1,4 +1,4 @@
-import { ConversationMove, InvestigationFocus, PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
+import { PromptMode, ConversationMove, InvestigationFocus, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
 import { BASE_ROLE_PROMPT } from "../prompts/baseRole"
 import { DOMAIN_BOUNDARY_PROMPT } from "../prompts/domainBoundary"
 import { FORMAT_ANSWER_PLUS_ONE_QUESTION_PROMPT } from "../prompts/formats/answerPlusOneQuestion"
@@ -137,6 +137,7 @@ function buildPolicyInstruction(policy: PolicyDecision): string {
     "- Svar på dansk.",
     "- Første sætning skal være konkret, ikke en varm eller generisk landing.",
     "- Undgå standardsprog som 'det er naturligt at', 'det kan være relevant at' og lignende.",
+    "- Når brugerens input er en enkel hilsen, præsentation af navn eller stilfeedback, så svar enkelt og direkte uden psykologisk fortolkning.",
     "- Hvis svaret kunne passe til mange forskellige samtaler, er det for generisk.",
   ]
 
@@ -173,6 +174,7 @@ function buildPolicyInstruction(policy: PolicyDecision): string {
       "",
       "EKSTRA REGLER FOR INFO",
       "- Besvar brugerens aktuelle spørgsmål direkte.",
+      "- Hvis brugeren blot orienterer sig socialt eller reparerer samtalen, så vær enkel og jordnær.",
       "- Tilføj ikke pris, kontakt eller bookinginformation, medmindre brugeren spørger om det eller policy kræver det.",
       "- Giv kun en ekstra nuance hvis den forbedrer forståelsen."
     )
@@ -339,6 +341,7 @@ function buildUserPayload(params: {
       reflection_single_question_only: params.policy.allow_mode === "reflection",
       natural_dialogue_goal: true,
       avoid_repetition: true,
+      plain_social_openings: true,
     },
   })
 }
