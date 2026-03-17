@@ -1,4 +1,5 @@
 export const FORMAT_ANSWER_PLUS_ONE_QUESTION_PROMPT = `Format:
-- svar direkte først
-- giv derefter kort struktur
-- afslut med præcis ét fokuseret spørgsmål`
+- svar konkret først
+- gør derefter fokus skarpere i 1-2 korte afsnit
+- brug kun ét spørgsmål hvis det tydeligt indsnævrer opmærksomheden
+- spørgsmålet må ikke være bredt, ritualiseret eller generisk`
