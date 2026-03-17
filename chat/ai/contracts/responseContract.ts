@@ -35,7 +35,13 @@ export function normalizeFinalResponse(raw: Record<string, unknown> | null): Fin
   const objective = normalizeOptionalString(raw.objective)
   const mode_used = typeof raw.mode_used === "string" ? raw.mode_used : "info"
 
-  if (!["info", "evidence", "practical", "reflection", "closing"].includes(mode_used)) {
+  if (![
+    "info",
+    "evidence",
+    "practical",
+    "reflection",
+    "closing",
+  ].includes(mode_used)) {
     return null
   }
 
