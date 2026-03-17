@@ -1,5 +1,23 @@
 export type PromptMode = "info" | "evidence" | "practical" | "reflection" | "closing"
 
+export type ConversationMove =
+  | "direct_answer"
+  | "guided_observation"
+  | "pattern_detection"
+  | "metacognitive_probe"
+  | "mild_challenge"
+  | "practical_preparation"
+  | "synthesis"
+  | "close"
+
+export type InvestigationFocus =
+  | "attention"
+  | "interpretation"
+  | "regulation"
+  | "pattern"
+  | "preparation"
+  | "none"
+
 export type TurnIntent =
   | "understand_method"
   | "ask_evidence"
@@ -25,6 +43,8 @@ export type RelationalState =
 export type TurnAnalysis = {
   intent: TurnIntent
   proposed_mode: PromptMode
+  conversation_move: ConversationMove
+  investigation_focus: InvestigationFocus
   response_goal: ResponseGoal
   relational_state: RelationalState
   topic?: string
@@ -39,6 +59,8 @@ export function normalizeTurnAnalysis(raw: Record<string, unknown> | null): Turn
 
   const intent = typeof raw.intent === "string" ? raw.intent : "unclear"
   const proposed_mode = typeof raw.proposed_mode === "string" ? raw.proposed_mode : "info"
+  const conversation_move = typeof raw.conversation_move === "string" ? raw.conversation_move : "direct_answer"
+  const investigation_focus = typeof raw.investigation_focus === "string" ? raw.investigation_focus : "none"
   const response_goal = typeof raw.response_goal === "string" ? raw.response_goal : "answer_directly"
   const relational_state = typeof raw.relational_state === "string" ? raw.relational_state : "orienting"
   const sensitivity = typeof raw.sensitivity === "string" ? raw.sensitivity : "low"
@@ -51,6 +73,17 @@ export function normalizeTurnAnalysis(raw: Record<string, unknown> | null): Turn
   const confidence = Number.isFinite(confidenceRaw) ? Math.max(0, Math.min(1, confidenceRaw)) : 0.5
 
   const validMode = ["info", "evidence", "practical", "reflection", "closing"].includes(proposed_mode)
+  const validMove = [
+    "direct_answer",
+    "guided_observation",
+    "pattern_detection",
+    "metacognitive_probe",
+    "mild_challenge",
+    "practical_preparation",
+    "synthesis",
+    "close",
+  ].includes(conversation_move)
+  const validFocus = ["attention", "interpretation", "regulation", "pattern", "preparation", "none"].includes(investigation_focus)
   const validIntent = [
     "understand_method",
     "ask_evidence",
@@ -75,11 +108,13 @@ export function normalizeTurnAnalysis(raw: Record<string, unknown> | null): Turn
   ].includes(relational_state)
   const validSensitivity = ["low", "medium", "high"].includes(sensitivity)
 
-  if (!validMode || !validIntent || !validGoal || !validRelationalState || !validSensitivity) return null
+  if (!validMode || !validMove || !validFocus || !validIntent || !validGoal || !validRelationalState || !validSensitivity) return null
 
   return {
     intent: intent as TurnIntent,
     proposed_mode: proposed_mode as PromptMode,
+    conversation_move: conversation_move as ConversationMove,
+    investigation_focus: investigation_focus as InvestigationFocus,
     response_goal: response_goal as ResponseGoal,
     relational_state: relational_state as RelationalState,
     topic,
