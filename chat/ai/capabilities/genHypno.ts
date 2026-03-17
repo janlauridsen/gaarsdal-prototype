@@ -302,12 +302,12 @@ function buildFallbackMessage(params: {
 
   if (params.mode === "reflection") {
     const topicLead = params.topic
-      ? `Når et tema som ${params.topic} begynder at gentage sig, `
-      : "Når en reaktion eller vane begynder at gentage sig, "
+      ? `Når et tema som ${params.topic} bliver aktivt, `
+      : "Når et mønster bliver aktivt, "
 
     return (
       topicLead +
-      "kan det hjælpe at lægge mærke til situationen lige før, hvad der sker i kroppen eller tankerne, og hvad der typisk følger bagefter. Hvad lægger du først mærke til, lige inden mønsteret går i gang?"
+      "giver det ofte mere mening at se på, hvad du straks begynder at holde øje med, hvad du tror det betyder, og hvad du automatisk prøver at styre. Det er ofte dér mønsteret bliver tydeligere."
     )
   }
 
@@ -325,6 +325,8 @@ function buildDefaultAnalysis(
     return {
       intent: "social_closing",
       proposed_mode: "closing",
+      conversation_move: "close",
+      investigation_focus: "none",
       response_goal: "close_briefly",
       relational_state: "gentle_close",
       topic: previousTopic,
@@ -343,6 +345,18 @@ function buildDefaultAnalysis(
             ? "ask_evidence"
             : "understand_method",
       proposed_mode: forcedMode,
+      conversation_move:
+        forcedMode === "reflection"
+          ? "guided_observation"
+          : forcedMode === "practical"
+            ? "practical_preparation"
+            : "direct_answer",
+      investigation_focus:
+        forcedMode === "reflection"
+          ? "attention"
+          : forcedMode === "practical"
+            ? "preparation"
+            : "none",
       response_goal:
         forcedMode === "reflection"
           ? "answer_then_one_question"
@@ -364,6 +378,8 @@ function buildDefaultAnalysis(
     return {
       intent: "seek_practical_help",
       proposed_mode: "practical",
+      conversation_move: "practical_preparation",
+      investigation_focus: "preparation",
       response_goal: "answer_directly",
       relational_state: "decision_support",
       topic: previousTopic,
@@ -381,6 +397,8 @@ function buildDefaultAnalysis(
     return {
       intent: "ask_evidence",
       proposed_mode: "evidence",
+      conversation_move: "direct_answer",
+      investigation_focus: "none",
       response_goal: "answer_directly",
       relational_state: "decision_support",
       topic: previousTopic,
@@ -393,6 +411,8 @@ function buildDefaultAnalysis(
   return {
     intent: "understand_method",
     proposed_mode: "info",
+    conversation_move: "direct_answer",
+    investigation_focus: "none",
     response_goal: "answer_directly",
     relational_state: "orienting",
     topic: previousTopic,
@@ -437,6 +457,8 @@ function buildMetaDelta(params: {
     "gen_hypno.transcript": params.updatedTranscript,
     "gen_hypno.assistant_turn_count": nextAssistantCount,
     "dialog.mode": params.mode,
+    "dialog.move": params.analysis.conversation_move,
+    "dialog.investigation_focus": params.analysis.investigation_focus,
     "dialog.stage": dialogStage,
     "dialog.relational_state": params.relationalState,
     "gen_hypno.analysis": params.analysis,
@@ -539,6 +561,18 @@ export async function runUnifiedHypnoCapability(
         options.forcedMode === "reflection"
           ? "explore_pattern"
           : analysis.intent,
+      conversation_move:
+        options.forcedMode === "reflection"
+          ? "guided_observation"
+          : options.forcedMode === "practical"
+            ? "practical_preparation"
+            : analysis.conversation_move,
+      investigation_focus:
+        options.forcedMode === "reflection"
+          ? "attention"
+          : options.forcedMode === "practical"
+            ? "preparation"
+            : analysis.investigation_focus,
       response_goal:
         options.forcedMode === "reflection"
           ? "answer_then_one_question"
@@ -552,7 +586,7 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  const policy = applyPolicy({ userText, analysis })
+  const policy = applyPolicy({ userText, analysis, transcript: trimmedTranscript })
 
   let assistant = ""
   let responseTopic: string | undefined = analysis.topic
