@@ -35,6 +35,8 @@ Vigtige regler:
 - hvis brugeren spørger "kan det være..." eller søger en forklaring, så vælg ofte direct_answer eller mild_challenge frem for bred reflection
 - hvis brugeren spørger "hvad kan jeg være opmærksom på" eller "hvad skal jeg lægge mærke til" så vælg practical_preparation eller guided_observation
 - hvis brugeren allerede har fået et bredt refleksionsspørgsmål, så vælg helst en mere præcis bevægelse nu: pattern_detection, metacognitive_probe, mild_challenge eller synthesis
+- korte sociale åbninger som "hej", "goddag", "jeg hedder X" og lignende skal behandles som orientering, ikke som terapeutisk materiale
+- feedback på stil som "hvorfor skriver du det?" skal behandles som behov for afklaring eller reparation, ikke som refleksion over brugerens identitet
 - undgå at vælge et move som blot åbner samtalen igen uden at gøre fokus skarpere
 
 Definitioner:
