@@ -620,7 +620,22 @@ export default function Chatbot() {
         return
       }
 
-      const data = await callKernel(null, { type: "SYSTEM_INIT" } as any)
+      const threadsIndex = await fetchThreadsIndex().catch(() => null)
+      const existingThreads = Array.isArray(threadsIndex?.threads) ? threadsIndex.threads : []
+      const fallbackConversationId = String(existingThreads[0]?.conversation_id ?? "").trim()
+
+      if (fallbackConversationId) {
+        const fallbackState = await fetchConversationState(fallbackConversationId).catch(() => null)
+        if (isRestorableState(fallbackState)) {
+          setState(fallbackState)
+          setInput("")
+          setHeaderNavHint(null)
+          await ensureConversationLoaded(fallbackState.conversation_id, fallbackState)
+          return
+        }
+      }
+
+      const data = await callKernel(null, { type: "THREAD_CREATE", mode: "normal" } as any)
       setState(data.state)
       setInput("")
       setHeaderNavHint(null)
@@ -707,61 +722,7 @@ export default function Chatbot() {
         }))
     : []
 
-  useEffect(() => {
-    if (!open) return
-    if (!state) return
-    if (loading) return
-    if (initInFlightRef.current) return
 
-    const isLobbyConversation = String(state.conversation_id ?? "").startsWith("lobby:u:")
-    const shouldHandleLobby = isLobbyConversation && state.active_node === "HOME"
-
-    if (!shouldHandleLobby) return
-    if (didAutoStartNewThreadRef.current) return
-
-    didAutoStartNewThreadRef.current = true
-
-    ;(async () => {
-      try {
-        if (initInFlightRef.current) {
-          didAutoStartNewThreadRef.current = false
-          return
-        }
-
-        const restored = await tryRestoreActiveConversation()
-        if (restored && restored.conversation_id !== state.conversation_id) {
-          setState(restored)
-          setInput("")
-          setHeaderNavHint(null)
-          await ensureConversationLoaded(restored.conversation_id, restored)
-          return
-        }
-
-        const threadsIndex = await fetchThreadsIndex()
-        const restoredConversationId = String(threadsIndex?.active_conversation_id ?? "").trim()
-        if (restoredConversationId) {
-          const restoredState = await fetchConversationState(restoredConversationId)
-          if (isRestorableState(restoredState) && restoredState.conversation_id !== state.conversation_id) {
-            setState(restoredState)
-            setInput("")
-            setHeaderNavHint(null)
-            await ensureConversationLoaded(restoredState.conversation_id, restoredState)
-            return
-          }
-          return
-        }
-
-        const existingThreads = Array.isArray(threadsIndex?.threads) ? threadsIndex!.threads : []
-        if (existingThreads.length > 0) {
-          return
-        }
-
-        await dispatch({ type: "THREAD_CREATE", mode: "normal" }, { silentUser: true })
-      } catch {
-        didAutoStartNewThreadRef.current = false
-      }
-    })()
-  }, [open, loading, state?.conversation_id, state?.active_node])
 
   const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal}`
 
