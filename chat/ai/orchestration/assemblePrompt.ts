@@ -1,4 +1,4 @@
-import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
+import { ConversationMove, InvestigationFocus, PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
 import { BASE_ROLE_PROMPT } from "../prompts/baseRole"
 import { DOMAIN_BOUNDARY_PROMPT } from "../prompts/domainBoundary"
 import { FORMAT_ANSWER_PLUS_ONE_QUESTION_PROMPT } from "../prompts/formats/answerPlusOneQuestion"
@@ -41,6 +41,87 @@ function getFormatPrompt(policy: PolicyDecision): string {
   return FORMAT_DIRECT_ANSWER_PROMPT
 }
 
+function buildMoveInstruction(move: ConversationMove, focus: InvestigationFocus): string {
+  const lines = [
+    "SAMTALETRÆK",
+    `- conversation_move: ${move}`,
+    `- investigation_focus: ${focus}`,
+  ]
+
+  switch (move) {
+    case "mild_challenge":
+      lines.push(
+        "- Anerkend brugerens tanke kort.",
+        "- Tilbyd derefter en alternativ eller bredere forklaring.",
+        "- Gør det tydeligt hvad der er vigtigere at undersøge end brugerens første forklaring."
+      )
+      break
+    case "metacognitive_probe":
+      lines.push(
+        "- Undersøg hvad brugeren tror om egne tanker, symptomer eller reaktioner.",
+        "- Kig efter betydning, antagelser, forventninger eller indre regler."
+      )
+      break
+    case "pattern_detection":
+      lines.push(
+        "- Hjælp brugeren med at se hvornår noget gentager sig, og hvornår det fylder mindre.",
+        "- Brug kontraster og undtagelser hvis det skaber klarhed."
+      )
+      break
+    case "guided_observation":
+      lines.push(
+        "- Giv brugeren et snævert observationsfokus.",
+        "- Undgå brede lister og brede processpørgsmål."
+      )
+      break
+    case "practical_preparation":
+      lines.push(
+        "- Giv 2-4 konkrete fokuspunkter eller næste forberedende skridt.",
+        "- Svaret skal kunne bruges direkte uden mere forklaring."
+      )
+      break
+    case "synthesis":
+      lines.push(
+        "- Saml trådene kort.",
+        "- Reducér kompleksitet og gør mønsteret tydeligere uden at åbne nyt spor."
+      )
+      break
+    case "close":
+      lines.push("- Luk kort og naturligt.")
+      break
+    case "direct_answer":
+    default:
+      lines.push(
+        "- Besvar brugerens aktuelle spørgsmål direkte.",
+        "- Tilføj højst én skarp nuance hvis det forbedrer forståelsen."
+      )
+      break
+  }
+
+  switch (focus) {
+    case "attention":
+      lines.push("- Fokusér på hvad brugeren straks lægger mærke til, og hvad der let overses.")
+      break
+    case "interpretation":
+      lines.push("- Fokusér på hvad oplevelsen hurtigt kommer til at betyde for brugeren.")
+      break
+    case "regulation":
+      lines.push("- Fokusér på hvad brugeren automatisk prøver at styre, undgå eller få til at stoppe.")
+      break
+    case "pattern":
+      lines.push("- Fokusér på hvornår mønsteret træder frem, og hvornår det ændrer sig.")
+      break
+    case "preparation":
+      lines.push("- Fokusér på hvad brugeren konkret kan lægge mærke til eller forberede til videre hjælp.")
+      break
+    case "none":
+    default:
+      break
+  }
+
+  return lines.join("\n")
+}
+
 function buildPolicyInstruction(policy: PolicyDecision): string {
   const lines: string[] = [
     "POLICY BESLUTNING",
@@ -54,6 +135,9 @@ function buildPolicyInstruction(policy: PolicyDecision): string {
     "- Følg policy-beslutningen over alt andet.",
     "- Returner kun gyldig JSON.",
     "- Svar på dansk.",
+    "- Første sætning skal være konkret, ikke en varm eller generisk landing.",
+    "- Undgå standardsprog som 'det er naturligt at', 'det kan være relevant at' og lignende.",
+    "- Hvis svaret kunne passe til mange forskellige samtaler, er det for generisk.",
   ]
 
   if (!policy.allow_question || policy.max_questions === 0) {
@@ -66,11 +150,10 @@ function buildPolicyInstruction(policy: PolicyDecision): string {
   if (policy.max_questions === 1) {
     lines.push(
       "- Du må højst stille ét spørgsmål i hele svaret.",
-      "- Ét spørgsmål betyder præcis én afsluttende spørgesætning.",
+      "- Spørgsmålet skal skærpe fokus og må ikke bare holde samtalen i gang.",
       "- Du må ikke stille en serie af delspørgsmål.",
       "- Du må ikke stille flere spørgsmål i samme sætning.",
-      "- Vælg ét fokuseret spørgsmål, som bedst hjælper videre.",
-      "- Resten af svaret skal være forklaring eller struktur, ikke spørgsmål."
+      "- Spørgsmålet må ikke gentage den type åbning der blev brugt i forrige svar."
     )
   }
 
@@ -78,12 +161,10 @@ function buildPolicyInstruction(policy: PolicyDecision): string {
     lines.push(
       "",
       "EKSTRA REGLER FOR REFLECTION",
-      "- Hold refleksionen enkel, rolig og observerende.",
-      "- Brug observation før fortolkning.",
-      "- Giv højst 1-2 observationsvinkler, men formuler dem som udsagn, ikke som flere spørgsmål.",
-      "- Afslut med ét enkelt fokuseret spørgsmål, hvis policy tillader det.",
-      "- Undgå spørgebarrager som 'hvad sker der før, under og efter' i spørgsmålform.",
-      "- Lad svaret lyde som en samtale, ikke som en metodebeskrivelse."
+      "- Flyt brugerens opmærksomhed fra symptom eller fortælling til et mere præcist niveau.",
+      "- Vælg ét undersøgelsesspor: opmærksomhed, fortolkning, regulering eller mønster.",
+      "- Brug mild udfordring når det giver mere klarhed.",
+      "- Undgå brede refleksionsinvitationer og undgå at slutte med spørgsmål af vane."
     )
   }
 
@@ -93,7 +174,7 @@ function buildPolicyInstruction(policy: PolicyDecision): string {
       "EKSTRA REGLER FOR INFO",
       "- Besvar brugerens aktuelle spørgsmål direkte.",
       "- Tilføj ikke pris, kontakt eller bookinginformation, medmindre brugeren spørger om det eller policy kræver det.",
-      "- Brug kun praktiske oplysninger, hvis de er direkte relevante for denne turn."
+      "- Giv kun en ekstra nuance hvis den forbedrer forståelsen."
     )
   }
 
@@ -161,8 +242,9 @@ function buildResponseContractInstruction(): string {
 
 Regler for felterne:
 - acknowledgement: 0-1 korte sætninger som lander brugerens situation menneskeligt uden varmefraser eller overinvolvering
-- core_answer: selve det faglige eller praktiske svar
+- core_answer: selve det faglige, undersøgende eller praktiske svar
 - next_step: kun hvis det naturligt hjælper videre; ellers null
+- next_step må gerne være en neutral afrunding og behøver ikke være et spørgsmål
 - core_answer må ikke være tom
 - svar skal lyde naturligt og sammenhængende når felterne læses i rækkefølgen acknowledgement -> core_answer -> next_step`
 }
@@ -256,6 +338,7 @@ function buildUserPayload(params: {
       max_questions: params.policy.max_questions,
       reflection_single_question_only: params.policy.allow_mode === "reflection",
       natural_dialogue_goal: true,
+      avoid_repetition: true,
     },
   })
 }
@@ -276,6 +359,7 @@ export function assembleResponseMessages(params: {
     getModePrompt(params.policy.allow_mode),
     TONE_CALM_NEUTRAL_PROMPT,
     getFormatPrompt(params.policy),
+    buildMoveInstruction(params.analysis.conversation_move, params.analysis.investigation_focus),
     buildRelationalInstruction(params.analysis.relational_state),
     buildPolicyInstruction(params.policy),
     buildContextPackInstruction(params.contextPackSystem),
