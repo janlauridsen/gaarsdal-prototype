@@ -6,14 +6,75 @@ export type PolicyDecision = {
   max_questions: 0 | 1
   response_length: "short" | "medium"
   require_redirect?: "contact" | "none"
+  preferred_style?: PreferredResponseStyle
 }
 
 type TranscriptTurn = { role: "user" | "assistant"; content: string }
+
+export type PreferredResponseStyle = "default" | "compressed" | "challenging"
 
 type ModeScoreMap = Record<PromptMode, number>
 
 function normalize(text: string): string {
   return text.toLowerCase().trim().replace(/\s+/g, " ")
+}
+
+function inferAssistantMove(content: string): ConversationMoveLike {
+  const t = normalize(content)
+  if (!t) return "direct_answer"
+  if (t.includes("?") || t.includes("hvad ") || t.includes("hvornår ") || t.includes("hvilken ")) return "guided_observation"
+  if (t.includes("det ligner") || t.includes("det peger på") || t.includes("det sker") || t.includes("det hele ser ud til")) return "synthesis"
+  if (t.includes("ikke kun") || t.includes("mere end") || t.includes("snarere") || t.includes("også når") || t.includes("bliver din måde")) return "mild_challenge"
+  if (t.includes("automatisk") || t.includes("reguleringsstrategi") || t.includes("fortolk") || t.includes("betyder")) return "metacognitive_probe"
+  return "direct_answer"
+}
+
+type ConversationMoveLike = "direct_answer" | "guided_observation" | "metacognitive_probe" | "mild_challenge" | "synthesis"
+
+function lastAssistantMove(transcript: TranscriptTurn[]): ConversationMoveLike | null {
+  const lastAssistant = [...transcript].reverse().find((turn) => turn.role === "assistant")
+  return lastAssistant ? inferAssistantMove(lastAssistant.content) : null
+}
+
+function assistantTurnCount(transcript: TranscriptTurn[]): number {
+  return transcript.filter((turn) => turn.role === "assistant").length
+}
+
+function mentionsExplicitPattern(text: string): boolean {
+  const t = normalize(text)
+  return [
+    "hver gang",
+    "med det samme",
+    "jeg leder efter",
+    "jeg søger",
+    "jeg venter på",
+    "jeg udsætter",
+    "jeg undgår",
+    "jeg finder en grund",
+    "undskyldninger",
+    "retfærdiggør",
+  ].some((x) => t.includes(x))
+}
+
+function pickPreferredStyle(params: {
+  chosenMode: PromptMode
+  analysis: TurnAnalysis
+  transcript: TranscriptTurn[]
+  userText: string
+}): PreferredResponseStyle {
+  if (params.chosenMode !== "reflection") return "default"
+
+  const assistantCount = assistantTurnCount(params.transcript)
+  const lastMove = lastAssistantMove(params.transcript)
+  const currentMove = params.analysis.conversation_move
+  const explicitPattern = mentionsExplicitPattern(params.userText)
+
+  if (assistantCount >= 3 && explicitPattern) return "compressed"
+  if (lastMove && lastMove === currentMove && explicitPattern) return "challenging"
+  if (lastMove && lastMove === currentMove && assistantCount >= 2) return "compressed"
+  if (explicitPattern && ["guided_observation", "metacognitive_probe"].includes(currentMove)) return "challenging"
+
+  return "default"
 }
 
 function isPracticalKeyword(text: string): boolean {
@@ -164,6 +225,7 @@ export function applyPolicy(params: {
   const lastEndedWithQuestion = previousAssistantEndedWithQuestion(transcript)
   const recentQuestion = hadRecentAssistantQuestion(transcript)
   const chosenMode = chooseMode(params)
+  const preferredStyle = pickPreferredStyle({ chosenMode, analysis, transcript, userText })
   const directContact = isDirectContactRequest(userText)
   const practicalStep = asksForPracticalNextStep(userText)
 
@@ -174,6 +236,7 @@ export function applyPolicy(params: {
       max_questions: 0,
       response_length: "short",
       require_redirect: "none",
+      preferred_style: "default",
     }
   }
 
@@ -184,6 +247,7 @@ export function applyPolicy(params: {
       max_questions: 0,
       response_length: analysis.relational_state === "decision_support" || practicalStep ? "medium" : "short",
       require_redirect: directContact ? "contact" : "none",
+      preferred_style: "default",
     }
   }
 
@@ -194,6 +258,7 @@ export function applyPolicy(params: {
       max_questions: 0,
       response_length: "medium",
       require_redirect: "none",
+      preferred_style: "default",
     }
   }
 
@@ -209,6 +274,7 @@ export function applyPolicy(params: {
       max_questions: allowQuestion ? 1 : 0,
       response_length: "medium",
       require_redirect: "none",
+      preferred_style: preferredStyle,
     }
   }
 
@@ -223,5 +289,6 @@ export function applyPolicy(params: {
     max_questions: allowQuestion ? 1 : 0,
     response_length: analysis.response_goal === "close_briefly" ? "short" : "medium",
     require_redirect: "none",
+    preferred_style: "default",
   }
 }

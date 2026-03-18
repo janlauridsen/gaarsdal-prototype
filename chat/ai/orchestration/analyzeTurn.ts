@@ -82,6 +82,8 @@ export async function analyzeTurn(params: {
   transcript: TranscriptTurn[]
   userText: string
   lastTopic?: string
+  lastMove?: string
+  lastAssistantExcerpt?: string
 }): Promise<TurnAnalysis | null> {
   const result = await params.llm.chatJson({
     model: process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
@@ -95,6 +97,8 @@ export async function analyzeTurn(params: {
           transcript: params.transcript,
           user_input: params.userText,
           last_topic: params.lastTopic ?? "",
+          last_move: params.lastMove ?? "",
+          last_assistant_excerpt: params.lastAssistantExcerpt ?? "",
           contract: {
             intent: [
               "understand_method",

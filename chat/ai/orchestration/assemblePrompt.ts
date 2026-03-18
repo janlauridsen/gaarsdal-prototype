@@ -19,6 +19,14 @@ type TranscriptTurn = {
   content: string
 }
 
+function assistantTurns(transcript: TranscriptTurn[]): TranscriptTurn[] {
+  return transcript.filter((turn) => turn.role === "assistant")
+}
+
+function lastAssistantContent(transcript: TranscriptTurn[]): string {
+  return assistantTurns(transcript).slice(-1)[0]?.content ?? ""
+}
+
 function getModePrompt(mode: PromptMode): string {
   switch (mode) {
     case "evidence":
@@ -137,7 +145,8 @@ function buildPolicyInstruction(policy: PolicyDecision): string {
     "- Svar på dansk.",
     "- Første sætning skal være konkret, ikke en varm eller generisk landing.",
     "- Undgå standardsprog som 'det er naturligt at', 'det kan være relevant at' og lignende.",
-    "- Hvis svaret kunne passe til mange forskellige samtaler, er det for generisk.",
+    "- Hvis svaret kunne passe til mange forskellige samtaler, er det for generisk.
+    - Undgå standardsikringer som 'det kan være' medmindre reel usikkerhed er vigtig.",
   ]
 
   if (!policy.allow_question || policy.max_questions === 0) {
@@ -166,8 +175,25 @@ function buildPolicyInstruction(policy: PolicyDecision): string {
       "- Brug mild udfordring når det giver mere klarhed.",
       "- Hold refleksionssvar korte og jordnære.",
       "- Brug hellere en arbejdshypotese end en lille teori.",
+      "- Giv kun én central observation pr. svar.",
       "- Undgå brede refleksionsinvitationer og undgå at slutte med spørgsmål af vane."
     )
+
+    if (policy.preferred_style === "compressed") {
+      lines.push(
+        "- Komprimér mønsteret tydeligt i stedet for at forklare mekanismen igen.",
+        "- Vis gerne et kort forløb som: tanke → kropslig reaktion → undvigelse.",
+        "- Hold svaret stramt og uden lange forbehold."
+      )
+    }
+
+    if (policy.preferred_style === "challenging") {
+      lines.push(
+        "- Vælg en mere direkte, men stadig rolig formulering.",
+        "- Peg på hvad der sandsynligvis bliver brugerens måde at slippe for at starte på.",
+        "- Undgå at pakke den centrale pointe ind i flere lag af forklaring."
+      )
+    }
   }
 
   if (policy.allow_mode === "info") {
@@ -325,6 +351,50 @@ function buildUserProfileInstruction(userProfileSystem?: string): string {
   ].join("\n")
 }
 
+
+function buildVariationInstruction(params: {
+  policy: PolicyDecision
+  transcript: TranscriptTurn[]
+  analysis: TurnAnalysis
+}): string {
+  const assistantCount = assistantTurns(params.transcript).length
+  const lastAssistant = lastAssistantContent(params.transcript)
+  const lines = [
+    "VARIATION OG SKARPHED",
+    "- Gentag ikke samme forklaring med nye ord.",
+    "- Brug helst 'det ligner', 'det peger på' eller en konkret formulering frem for 'det kan være'.",
+    "- Vælg én præcis observation og byg svaret omkring den.",
+  ]
+
+  if (assistantCount >= 2) {
+    lines.push(
+      "- Der har allerede været flere assistantsvar. Gå et niveau dybere eller gør mønsteret kortere og tydeligere nu.",
+      "- Hvis sidste svar allerede forklarede mekanismen, så vælg nu enten en mild udfordring eller en kort syntese."
+    )
+  }
+
+  if (lastAssistant) {
+    lines.push(`- Sidste assistantsvar begyndte sådan her: ${JSON.stringify(lastAssistant.slice(0, 180))}`)
+    lines.push("- Din åbning må ikke ligne den forrige åbning for meget.")
+  }
+
+  if (params.policy.preferred_style === "compressed") {
+    lines.push(
+      "- Komprimér mønsteret i én skarp sætning før du uddyber minimalt.",
+      "- Vis relationen mellem tanke, kropslig fornemmelse og undvigelse tydeligt."
+    )
+  }
+
+  if (params.policy.preferred_style === "challenging") {
+    lines.push(
+      "- Brug en mere direkte arbejdshypotese.",
+      "- Peg på hvad der hurtigt bliver brugerens legitime grund til at lade være."
+    )
+  }
+
+  return lines.join("\n")
+}
+
 function buildUserPayload(params: {
   analysis: TurnAnalysis
   policy: PolicyDecision
@@ -368,6 +438,7 @@ export function assembleResponseMessages(params: {
     buildMoveInstruction(params.analysis.conversation_move, params.analysis.investigation_focus),
     buildRelationalInstruction(params.analysis.relational_state),
     buildPolicyInstruction(params.policy),
+    buildVariationInstruction({ policy: params.policy, transcript: params.transcript, analysis: params.analysis }),
     buildSiteContextInstruction(params.policy.allow_mode),
     buildResponseContractInstruction(),
     buildContextPackInstruction(params.contextPackSystem),
