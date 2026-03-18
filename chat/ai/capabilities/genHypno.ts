@@ -1,3 +1,5 @@
+declare const process: { env: Record<string, string | undefined> }
+
 import { Transition } from "../../kernel/types"
 import {
   AiCapability,
@@ -18,6 +20,84 @@ type UnifiedRunOptions = {
   sourceNode: string
   stayOnNode: string
   forcedMode?: Exclude<PromptMode, "closing">
+}
+
+
+type FallbackScoreMap = {
+  info: number
+  evidence: number
+  practical: number
+  reflection: number
+  closing: number
+}
+
+function normalizedWords(text: string): string {
+  return stripPunctuation(text).replace(/\s+/g, " ").trim()
+}
+
+function startsLikeNameIntro(text: string): boolean {
+  const t = normalizedWords(text)
+  return /^jeg hedder\s+/.test(t) || /^mit navn er\s+/.test(t)
+}
+
+function isSimpleGreeting(text: string): boolean {
+  const t = normalizedWords(text)
+  return ["hej", "hejsa", "goddag", "hallo", "halløj"].includes(t)
+}
+
+function isStyleRepair(text: string): boolean {
+  const t = normalizedWords(text)
+  return [
+    "hvorfor skriver du det",
+    "hvorfor siger du det",
+    "hvorfor spørger du",
+    "det giver ikke mening",
+    "hvad mener du med det",
+  ].some((x) => t.includes(x))
+}
+
+function computeFallbackScores(userText: string, previousTopic?: string): FallbackScoreMap {
+  const t = normalizedWords(userText)
+  const scores: FallbackScoreMap = {
+    info: 0.35,
+    evidence: 0,
+    practical: 0,
+    reflection: previousTopic ? 0.15 : 0,
+    closing: 0,
+  }
+
+  if (isSoftClosing(userText)) scores.closing += 4
+  if (isSimpleGreeting(userText) || startsLikeNameIntro(userText) || isStyleRepair(userText)) scores.info += 3
+  if (/(kontakt|booking|booke|telefon|mail|pris|adresse|jan)/.test(t)) scores.practical += 3
+  if (/(evidens|virker|forskning|studier|dokumentation|effekt)/.test(t)) scores.evidence += 3
+  if (/(mønster|vane|vaner|trang|utryg|uro|spænding|følelser|tanker|hvorfor|sker|opmærksom)/.test(t)) scores.reflection += 1.8
+  if (/(kan det være|hvordan hænger|hvad gør jeg|hvad kan jeg lægge mærke til)/.test(t)) scores.reflection += 1.2
+  if (/(hvordan foregår|hvordan virker hypnoterapi|hvad er hypnoterapi)/.test(t)) scores.info += 1.6
+
+  return scores
+}
+
+function selectFallbackMode(scores: FallbackScoreMap): Exclude<PromptMode, "closing"> | "closing" {
+  return Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0] as Exclude<PromptMode, "closing"> | "closing"
+}
+
+function buildPlainSocialReply(userText: string): string | null {
+  if (isSimpleGreeting(userText)) {
+    return "Hej. Du kan skrive, hvad du gerne vil have hjælp til, når du er klar."
+  }
+
+  if (startsLikeNameIntro(userText)) {
+    const t = userText.trim()
+    const match = t.match(/^(?:jeg hedder|mit navn er)\s+(.+)$/i)
+    const name = match?.[1]?.trim()
+    return name ? `Hej ${name}. Hvad vil du gerne have hjælp til i dag?` : "Hej. Hvad vil du gerne have hjælp til i dag?"
+  }
+
+  if (isStyleRepair(userText)) {
+    return "Det var for abstrakt formuleret. Jeg svarer mere direkte herfra."
+  }
+
+  return null
 }
 
 const MAX_TRANSCRIPT_TURNS = 30
@@ -103,133 +183,6 @@ function countAssistantTurns(turns: TranscriptTurn[]): number {
 function isSoftClosing(text: string): boolean {
   const t = normalizeText(text)
   return ["tak", "mange tak", "super", "fint", "okay tak", "ok tak", "selv tak"].includes(t)
-}
-
-type SimpleTurnHandling = {
-  assistant: string
-  analysis: TurnAnalysis
-  mode: PromptMode
-  topic?: string
-  objective?: string
-}
-
-function capitalizeName(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/g)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join(" ")
-}
-
-function extractIntroducedName(text: string): string | null {
-  const raw = text.trim()
-  const match = raw.match(/^(?:hej[,\s]+)?(?:jeg hedder|mit navn er)\s+([\p{L}][\p{L}\s.'-]{0,40})$/iu)
-  if (!match) return null
-
-  const cleaned = match[1].trim().replace(/[.!?,;:]+$/g, "")
-  if (!cleaned) return null
-
-  const first = cleaned.split(/\s+/g)[0] ?? ""
-  if (!first) return null
-  return capitalizeName(first)
-}
-
-function isGreetingOnly(text: string): boolean {
-  const t = stripPunctuation(text).replace(/\s+/g, " ").trim()
-  return ["hej", "hejsa", "goddag", "hallo", "hello", "hi", "hey"].includes(t)
-}
-
-function isWhyDidYouWriteThat(text: string): boolean {
-  const t = stripPunctuation(text).replace(/\s+/g, " ").trim()
-  return [
-    "hvorfor skriver du det",
-    "hvorfor siger du det",
-    "hvorfor skrev du det",
-    "hvad mener du med det",
-    "hvorfor svarer du sådan",
-    "hvorfor svarer du saadan",
-  ].includes(t)
-}
-
-function lastAssistantTurn(transcript: TranscriptTurn[]): TranscriptTurn | undefined {
-  return [...transcript].reverse().find((turn) => turn.role === "assistant")
-}
-
-function tryHandleSimpleTurn(params: {
-  userText: string
-  transcript: TranscriptTurn[]
-  previousTopic?: string
-}): SimpleTurnHandling | null {
-  const userText = params.userText.trim()
-  if (!userText) return null
-
-  const introducedName = extractIntroducedName(userText)
-  if (introducedName) {
-    return {
-      assistant: `Hej ${introducedName}. Du kan skrive lidt om det, du gerne vil have hjælp til, når du er klar.`,
-      mode: "info",
-      analysis: {
-        intent: "understand_method",
-        proposed_mode: "info",
-        conversation_move: "direct_answer",
-        investigation_focus: "none",
-        response_goal: "answer_directly",
-        relational_state: "orienting",
-        sensitivity: "low",
-        signals: ["self_introduction"],
-        confidence: 0.99,
-      },
-      objective: "åbne samtalen enkelt",
-    }
-  }
-
-  if (isGreetingOnly(userText)) {
-    return {
-      assistant: "Hej. Du kan skrive, hvad du gerne vil have hjælp til, når du er klar.",
-      mode: "info",
-      analysis: {
-        intent: "understand_method",
-        proposed_mode: "info",
-        conversation_move: "direct_answer",
-        investigation_focus: "none",
-        response_goal: "answer_directly",
-        relational_state: "orienting",
-        sensitivity: "low",
-        signals: ["greeting"],
-        confidence: 0.99,
-      },
-      objective: "åbne samtalen enkelt",
-    }
-  }
-
-  if (isWhyDidYouWriteThat(userText)) {
-    const previousAssistant = lastAssistantTurn(params.transcript)?.content ?? ""
-    const mentionsOverinterpretation = /du har oplyst dit navn|du har sagt hej|identitet i samtalen|markere starten på en samtale/i.test(previousAssistant)
-    if (mentionsOverinterpretation) {
-      return {
-        assistant:
-          "Du har ret. Det blev for fortolkende. Når du bare præsenterer dig eller siger hej, bør jeg svare enkelt og direkte i stedet for at analysere det.",
-        mode: "info",
-        analysis: {
-          intent: "understand_method",
-          proposed_mode: "info",
-          conversation_move: "direct_answer",
-          investigation_focus: "none",
-          response_goal: "answer_directly",
-          relational_state: "building_clarity",
-          topic: params.previousTopic,
-          sensitivity: "low",
-          signals: ["meta_feedback", "overinterpretation_repair"],
-          confidence: 0.98,
-        },
-        topic: params.previousTopic,
-        objective: "rette samtalestilen til",
-      }
-    }
-  }
-
-  return null
 }
 
 function hasCommandPhrase(text: string, phrase: string): boolean {
@@ -446,22 +399,6 @@ function buildDefaultAnalysis(
   previousTopic?: string,
   forcedMode?: Exclude<PromptMode, "closing">
 ): TurnAnalysis {
-  const normalized = normalizeText(userText)
-
-  if (extractIntroducedName(userText) || isGreetingOnly(userText)) {
-    return {
-      intent: "understand_method",
-      proposed_mode: "info",
-      conversation_move: "direct_answer",
-      investigation_focus: "none",
-      response_goal: "answer_directly",
-      relational_state: "orienting",
-      sensitivity: "low",
-      signals: [extractIntroducedName(userText) ? "self_introduction" : "greeting"],
-      confidence: 0.99,
-    }
-  }
-
   if (isSoftClosing(userText)) {
     return {
       intent: "social_closing",
@@ -484,7 +421,9 @@ function buildDefaultAnalysis(
           ? "explore_pattern"
           : forcedMode === "evidence"
             ? "ask_evidence"
-            : "understand_method",
+            : forcedMode === "practical"
+              ? "seek_practical_help"
+              : "understand_method",
       proposed_mode: forcedMode,
       conversation_move:
         forcedMode === "reflection"
@@ -503,7 +442,11 @@ function buildDefaultAnalysis(
           ? "answer_then_one_question"
           : "answer_directly",
       relational_state:
-        forcedMode === "reflection" ? "building_trust" : forcedMode === "practical" ? "decision_support" : "building_clarity",
+        forcedMode === "reflection"
+          ? "building_trust"
+          : forcedMode === "practical"
+            ? "decision_support"
+            : "building_clarity",
       topic: previousTopic,
       sensitivity: "medium",
       signals: ["forced_mode"],
@@ -511,11 +454,11 @@ function buildDefaultAnalysis(
     }
   }
 
-  if (
-    ["kontakt", "booking", "booke", "telefon", "mail", "pris", "adresse"].some(
-      (x) => normalized.includes(x)
-    )
-  ) {
+  const scores = computeFallbackScores(userText, previousTopic)
+  const selectedMode = selectFallbackMode(scores)
+  const simpleSocial = isSimpleGreeting(userText) || startsLikeNameIntro(userText) || isStyleRepair(userText)
+
+  if (selectedMode === "practical") {
     return {
       intent: "seek_practical_help",
       proposed_mode: "practical",
@@ -525,16 +468,12 @@ function buildDefaultAnalysis(
       relational_state: "decision_support",
       topic: previousTopic,
       sensitivity: "low",
-      signals: ["practical_keyword"],
-      confidence: 0.82,
+      signals: ["fallback_weighted", "practical"],
+      confidence: 0.8,
     }
   }
 
-  if (
-    ["evidens", "virker", "forskning", "studier", "dokumentation"].some((x) =>
-      normalized.includes(x)
-    )
-  ) {
+  if (selectedMode === "evidence") {
     return {
       intent: "ask_evidence",
       proposed_mode: "evidence",
@@ -544,22 +483,37 @@ function buildDefaultAnalysis(
       relational_state: "decision_support",
       topic: previousTopic,
       sensitivity: "low",
-      signals: ["evidence_keyword"],
-      confidence: 0.8,
+      signals: ["fallback_weighted", "evidence"],
+      confidence: 0.78,
+    }
+  }
+
+  if (selectedMode === "reflection") {
+    return {
+      intent: "explore_pattern",
+      proposed_mode: "reflection",
+      conversation_move: previousTopic ? "metacognitive_probe" : "guided_observation",
+      investigation_focus: previousTopic ? "regulation" : "attention",
+      response_goal: "answer_then_one_question",
+      relational_state: "building_trust",
+      topic: previousTopic,
+      sensitivity: "medium",
+      signals: ["fallback_weighted", "reflection"],
+      confidence: 0.72,
     }
   }
 
   return {
-    intent: "understand_method",
+    intent: simpleSocial ? "unclear" : "understand_method",
     proposed_mode: "info",
     conversation_move: "direct_answer",
     investigation_focus: "none",
     response_goal: "answer_directly",
-    relational_state: "orienting",
+    relational_state: simpleSocial ? "orienting" : "building_clarity",
     topic: previousTopic,
     sensitivity: "low",
-    signals: ["default_info"],
-    confidence: 0.55,
+    signals: simpleSocial ? ["fallback_weighted", "social_or_repair"] : ["fallback_weighted", "info"],
+    confidence: 0.68,
   }
 }
 
@@ -678,26 +632,18 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  const simpleTurn = tryHandleSimpleTurn({
-    userText,
-    transcript: trimmedTranscript,
-    previousTopic,
-  })
-
-  let analysis: TurnAnalysis | null = simpleTurn?.analysis ?? null
+  let analysis: TurnAnalysis | null = null
   let usedFallback = false
 
-  if (!simpleTurn) {
-    try {
-      analysis = await analyzeTurn({
-        llm,
-        transcript: trimmedTranscript,
-        userText,
-        lastTopic: previousTopic,
-      })
-    } catch {
-      usedFallback = true
-    }
+  try {
+    analysis = await analyzeTurn({
+      llm,
+      transcript: trimmedTranscript,
+      userText,
+      lastTopic: previousTopic,
+    })
+  } catch {
+    usedFallback = true
   }
 
   analysis = analysis ?? buildDefaultAnalysis(userText, previousTopic, options.forcedMode)
@@ -737,14 +683,14 @@ export async function runUnifiedHypnoCapability(
 
   const policy = applyPolicy({ userText, analysis, transcript: trimmedTranscript })
 
-  let assistant = simpleTurn?.assistant ?? ""
-  let responseTopic: string | undefined = simpleTurn?.topic ?? analysis.topic
-  let responseObjective: string | undefined = simpleTurn?.objective ?? analysis.objective
-  let modeUsed: PromptMode = simpleTurn?.mode ?? policy.allow_mode
+  let assistant = buildPlainSocialReply(userText) ?? ""
+  let responseTopic: string | undefined = analysis.topic
+  let responseObjective: string | undefined = analysis.objective
+  let modeUsed: PromptMode = policy.allow_mode
 
-  if (!simpleTurn && policy.allow_mode === "closing") {
+  if (policy.allow_mode === "closing") {
     assistant = buildClosingMessage(transcript)
-  } else if (!simpleTurn) {
+  } else if (!assistant) {
     try {
       const raw = await llm.chatJson({
         model: process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
