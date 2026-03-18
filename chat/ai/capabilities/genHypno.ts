@@ -1,5 +1,3 @@
-declare const process: { env: Record<string, string | undefined> }
-
 import { Transition } from "../../kernel/types"
 import {
   AiCapability,
@@ -20,84 +18,6 @@ type UnifiedRunOptions = {
   sourceNode: string
   stayOnNode: string
   forcedMode?: Exclude<PromptMode, "closing">
-}
-
-
-type FallbackScoreMap = {
-  info: number
-  evidence: number
-  practical: number
-  reflection: number
-  closing: number
-}
-
-function normalizedWords(text: string): string {
-  return stripPunctuation(text).replace(/\s+/g, " ").trim()
-}
-
-function startsLikeNameIntro(text: string): boolean {
-  const t = normalizedWords(text)
-  return /^jeg hedder\s+/.test(t) || /^mit navn er\s+/.test(t)
-}
-
-function isSimpleGreeting(text: string): boolean {
-  const t = normalizedWords(text)
-  return ["hej", "hejsa", "goddag", "hallo", "halløj"].includes(t)
-}
-
-function isStyleRepair(text: string): boolean {
-  const t = normalizedWords(text)
-  return [
-    "hvorfor skriver du det",
-    "hvorfor siger du det",
-    "hvorfor spørger du",
-    "det giver ikke mening",
-    "hvad mener du med det",
-  ].some((x) => t.includes(x))
-}
-
-function computeFallbackScores(userText: string, previousTopic?: string): FallbackScoreMap {
-  const t = normalizedWords(userText)
-  const scores: FallbackScoreMap = {
-    info: 0.35,
-    evidence: 0,
-    practical: 0,
-    reflection: previousTopic ? 0.15 : 0,
-    closing: 0,
-  }
-
-  if (isSoftClosing(userText)) scores.closing += 4
-  if (isSimpleGreeting(userText) || startsLikeNameIntro(userText) || isStyleRepair(userText)) scores.info += 3
-  if (/(kontakt|booking|booke|telefon|mail|pris|adresse|jan)/.test(t)) scores.practical += 3
-  if (/(evidens|virker|forskning|studier|dokumentation|effekt)/.test(t)) scores.evidence += 3
-  if (/(mønster|vane|vaner|trang|utryg|uro|spænding|følelser|tanker|hvorfor|sker|opmærksom)/.test(t)) scores.reflection += 1.8
-  if (/(kan det være|hvordan hænger|hvad gør jeg|hvad kan jeg lægge mærke til)/.test(t)) scores.reflection += 1.2
-  if (/(hvordan foregår|hvordan virker hypnoterapi|hvad er hypnoterapi)/.test(t)) scores.info += 1.6
-
-  return scores
-}
-
-function selectFallbackMode(scores: FallbackScoreMap): Exclude<PromptMode, "closing"> | "closing" {
-  return Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0] as Exclude<PromptMode, "closing"> | "closing"
-}
-
-function buildPlainSocialReply(userText: string): string | null {
-  if (isSimpleGreeting(userText)) {
-    return "Hej. Du kan skrive, hvad du gerne vil have hjælp til, når du er klar."
-  }
-
-  if (startsLikeNameIntro(userText)) {
-    const t = userText.trim()
-    const match = t.match(/^(?:jeg hedder|mit navn er)\s+(.+)$/i)
-    const name = match?.[1]?.trim()
-    return name ? `Hej ${name}. Hvad vil du gerne have hjælp til i dag?` : "Hej. Hvad vil du gerne have hjælp til i dag?"
-  }
-
-  if (isStyleRepair(userText)) {
-    return "Det var for abstrakt formuleret. Jeg svarer mere direkte herfra."
-  }
-
-  return null
 }
 
 const MAX_TRANSCRIPT_TURNS = 30
@@ -373,7 +293,7 @@ function buildFallbackMessage(params: {
   if (params.mode === "closing") return buildClosingMessage(params.transcript)
 
   if (params.mode === "practical") {
-    return "Du kan kontakte Jan på +45 42 80 74 74 eller jan@gaarsdal.net. Klinikken ligger på Bakkevej 36, 3460 Birkerød."
+    return "Du kan kontakte Jan på +45 42 80 74 74 eller jan@gaarsdal.net. Hvis du vil, kan du kort beskrive hvad du ønsker hjælp til og spørge om ledige tider."
   }
 
   if (params.mode === "evidence") {
@@ -382,16 +302,16 @@ function buildFallbackMessage(params: {
 
   if (params.mode === "reflection") {
     const topicLead = params.topic
-      ? `Når et tema som ${params.topic} bliver aktivt, `
-      : "Når et mønster bliver aktivt, "
+      ? `Mit bedste gæt er, at noget i ${params.topic} hurtigt bliver et sted, hvor du prøver at få kontrol eller ro. `
+      : "Mit bedste gæt er, at der hurtigt sker et skift fra oplevelse til forsøg på at få kontrol eller ro. "
 
     return (
       topicLead +
-      "giver det ofte mere mening at se på, hvad du straks begynder at holde øje med, hvad du tror det betyder, og hvad du automatisk prøver at styre. Det er ofte dér mønsteret bliver tydeligere."
+      "Det mest interessante er ofte ikke kun selve følelsen eller symptomet, men hvad du begynder at gøre i samme øjeblik."
     )
   }
 
-  return "Hypnoterapi bruges ofte til at arbejde med vaner, automatiske reaktioner og opmærksomhed. Jeg kan enten forklare, hvordan et typisk forløb foregår, eller hjælpe med at undersøge et mønster, du gerne vil forstå bedre."
+  return "Jeg kan godt hjælpe med at forstå det nærmere. Det giver mest mening at tage udgangspunkt i, hvad der sker i dig eller i din hverdag, frem for at blive i generel metodeforklaring."
 }
 
 function buildDefaultAnalysis(
@@ -399,6 +319,8 @@ function buildDefaultAnalysis(
   previousTopic?: string,
   forcedMode?: Exclude<PromptMode, "closing">
 ): TurnAnalysis {
+  const normalized = normalizeText(userText)
+
   if (isSoftClosing(userText)) {
     return {
       intent: "social_closing",
@@ -421,9 +343,7 @@ function buildDefaultAnalysis(
           ? "explore_pattern"
           : forcedMode === "evidence"
             ? "ask_evidence"
-            : forcedMode === "practical"
-              ? "seek_practical_help"
-              : "understand_method",
+            : "understand_method",
       proposed_mode: forcedMode,
       conversation_move:
         forcedMode === "reflection"
@@ -442,11 +362,7 @@ function buildDefaultAnalysis(
           ? "answer_then_one_question"
           : "answer_directly",
       relational_state:
-        forcedMode === "reflection"
-          ? "building_trust"
-          : forcedMode === "practical"
-            ? "decision_support"
-            : "building_clarity",
+        forcedMode === "reflection" ? "building_trust" : forcedMode === "practical" ? "decision_support" : "building_clarity",
       topic: previousTopic,
       sensitivity: "medium",
       signals: ["forced_mode"],
@@ -454,11 +370,11 @@ function buildDefaultAnalysis(
     }
   }
 
-  const scores = computeFallbackScores(userText, previousTopic)
-  const selectedMode = selectFallbackMode(scores)
-  const simpleSocial = isSimpleGreeting(userText) || startsLikeNameIntro(userText) || isStyleRepair(userText)
-
-  if (selectedMode === "practical") {
+  if (
+    ["kontakt", "booking", "booke", "telefon", "mail", "pris", "adresse", "email", "e-mail"].some(
+      (x) => normalized.includes(x)
+    )
+  ) {
     return {
       intent: "seek_practical_help",
       proposed_mode: "practical",
@@ -468,12 +384,16 @@ function buildDefaultAnalysis(
       relational_state: "decision_support",
       topic: previousTopic,
       sensitivity: "low",
-      signals: ["fallback_weighted", "practical"],
-      confidence: 0.8,
+      signals: ["practical_keyword"],
+      confidence: 0.82,
     }
   }
 
-  if (selectedMode === "evidence") {
+  if (
+    ["evidens", "virker", "forskning", "studier", "dokumentation"].some((x) =>
+      normalized.includes(x)
+    )
+  ) {
     return {
       intent: "ask_evidence",
       proposed_mode: "evidence",
@@ -483,37 +403,39 @@ function buildDefaultAnalysis(
       relational_state: "decision_support",
       topic: previousTopic,
       sensitivity: "low",
-      signals: ["fallback_weighted", "evidence"],
-      confidence: 0.78,
+      signals: ["evidence_keyword"],
+      confidence: 0.8,
     }
   }
 
-  if (selectedMode === "reflection") {
+  const personalDifficulty = ["har svært ved", "kan ikke", "kommer ikke i gang", "holde ved", "utryg", "urolig", "træt", "tung", "modstand", "barriere"].some((x) => normalized.includes(x))
+
+  if (personalDifficulty) {
     return {
       intent: "explore_pattern",
       proposed_mode: "reflection",
-      conversation_move: previousTopic ? "metacognitive_probe" : "guided_observation",
-      investigation_focus: previousTopic ? "regulation" : "attention",
+      conversation_move: "guided_observation",
+      investigation_focus: normalized.includes("trang") || normalized.includes("uro") ? "regulation" : "pattern",
       response_goal: "answer_then_one_question",
       relational_state: "building_trust",
       topic: previousTopic,
       sensitivity: "medium",
-      signals: ["fallback_weighted", "reflection"],
+      signals: ["personal_difficulty"],
       confidence: 0.72,
     }
   }
 
   return {
-    intent: simpleSocial ? "unclear" : "understand_method",
+    intent: "understand_method",
     proposed_mode: "info",
     conversation_move: "direct_answer",
     investigation_focus: "none",
     response_goal: "answer_directly",
-    relational_state: simpleSocial ? "orienting" : "building_clarity",
+    relational_state: "orienting",
     topic: previousTopic,
     sensitivity: "low",
-    signals: simpleSocial ? ["fallback_weighted", "social_or_repair"] : ["fallback_weighted", "info"],
-    confidence: 0.68,
+    signals: ["default_info"],
+    confidence: 0.55,
   }
 }
 
@@ -683,14 +605,14 @@ export async function runUnifiedHypnoCapability(
 
   const policy = applyPolicy({ userText, analysis, transcript: trimmedTranscript })
 
-  let assistant = buildPlainSocialReply(userText) ?? ""
+  let assistant = ""
   let responseTopic: string | undefined = analysis.topic
   let responseObjective: string | undefined = analysis.objective
   let modeUsed: PromptMode = policy.allow_mode
 
   if (policy.allow_mode === "closing") {
     assistant = buildClosingMessage(transcript)
-  } else if (!assistant) {
+  } else {
     try {
       const raw = await llm.chatJson({
         model: process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
