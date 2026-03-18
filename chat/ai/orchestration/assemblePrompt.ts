@@ -145,8 +145,8 @@ function buildPolicyInstruction(policy: PolicyDecision): string {
     "- Svar på dansk.",
     "- Første sætning skal være konkret, ikke en varm eller generisk landing.",
     "- Undgå standardsprog som 'det er naturligt at', 'det kan være relevant at' og lignende.",
-    "- Hvis svaret kunne passe til mange forskellige samtaler, er det for generisk.
-    - Undgå standardsikringer som 'det kan være' medmindre reel usikkerhed er vigtig.",
+    "- Hvis svaret kunne passe til mange forskellige samtaler, er det for generisk.",
+    "- Undgå standardsikringer som 'det kan være' medmindre reel usikkerhed er vigtig.",
   ]
 
   if (!policy.allow_question || policy.max_questions === 0) {
