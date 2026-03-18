@@ -1,3 +1,5 @@
+declare const process: { env: Record<string, string | undefined> }
+
 import { normalizeTurnAnalysis, TurnAnalysis } from "../contracts/turnAnalysis"
 import { LlmClient } from "../types"
 
@@ -14,6 +16,9 @@ Målet i dette domæne er ikke behandling. Målet er at hjælpe brugeren med at:
 - blive nysgerrig på sig selv uden at føle sig presset
 - blive bedre forberedt til evt. at søge hjælp
 
+Tænk som en vægtet beslutning, ikke som en hård regelmotor.
+Du skal vælge den bevægelse, der samlet set passer bedst til brugerens aktuelle intention, samtalens stadie og det menneskelige behov i turnen.
+
 Vælg:
 - intent
 - proposed_mode
@@ -27,17 +32,21 @@ Vælg:
 - signals
 - confidence
 
-Vigtige regler:
-- vælg practical kun ved praktiske eller administrative behov som kontakt, booking, pris, adresse, telefon, e-mail eller konkrete næste skridt om at tage kontakt
-- vælg IKKE practical bare fordi brugeren skriver "kan du hjælpe"
-- vælg evidence kun hvis brugeren tydeligt spørger til effekt, dokumentation eller om det virker
-- reflection er legitimt og ofte ønskeligt, men kun hvis refleksionen skal være præcis og undersøgende, ikke generisk
-- hvis brugeren spørger "kan det være..." eller søger en forklaring, så vælg ofte direct_answer eller mild_challenge frem for bred reflection
-- hvis brugeren spørger "hvad kan jeg være opmærksom på" eller "hvad skal jeg lægge mærke til" så vælg practical_preparation eller guided_observation
-- hvis brugeren allerede har fået et bredt refleksionsspørgsmål, så vælg helst en mere præcis bevægelse nu: pattern_detection, metacognitive_probe, mild_challenge eller synthesis
-- korte sociale åbninger som "hej", "goddag", "jeg hedder X" og lignende skal behandles som orientering, ikke som terapeutisk materiale
-- feedback på stil som "hvorfor skriver du det?" skal behandles som behov for afklaring eller reparation, ikke som refleksion over brugerens identitet
-- undgå at vælge et move som blot åbner samtalen igen uden at gøre fokus skarpere
+Vigtige prioriteringsprincipper:
+- Praktisk eller administrativ afklaring skal kun vælges, når brugerens behov faktisk er praktisk.
+- Evidens skal kun vælges, når brugeren tydeligt spørger til effekt, dokumentation eller om noget virker.
+- Reflection er ofte ønskeligt, men kun når det hjælper brugeren tættere på et mønster, en antagelse eller en reguleringsstrategi.
+- Hvis brugeren beskriver et personligt problem eller en indre oplevelse, så prioriter undersøgelse over generel metodeforklaring.
+- Hvis brugeren søger forklaring med "kan det være..." eller "hvorfor sker...", så vælg ofte direct_answer, mild_challenge eller metacognitive_probe frem for bred reflection.
+- Hvis brugeren spørger "hvad kan jeg være opmærksom på" eller "hvad skal jeg lægge mærke til", så vælg practical_preparation eller guided_observation.
+- Hvis brugeren allerede har fået et bredt refleksionsspørgsmål, så vælg helst en mere præcis bevægelse nu: pattern_detection, metacognitive_probe, mild_challenge eller synthesis.
+- Undgå at vælge et move som blot åbner samtalen igen uden at gøre fokus skarpere.
+
+Særligt for enkle sociale eller meta-kommunikative turns:
+- En hilsen, en præsentation af navn eller en enkel social åbning er normalt ikke terapeutisk materiale.
+- Når brugeren siger "hej", "jeg hedder..." eller lignende, skal du som udgangspunkt vælge en enkel, jordnær orientering frem for refleksion.
+- Når brugeren kommenterer på assistentens stil eller spørger "hvorfor skriver du det?", skal du prioritere klar forklaring eller reparation, ikke psykologisk fortolkning.
+- Overfortolk ikke phatic input, small talk eller samtale-reparation.
 
 Definitioner:
 - direct_answer: kort, konkret afklaring eller afgrænsning
