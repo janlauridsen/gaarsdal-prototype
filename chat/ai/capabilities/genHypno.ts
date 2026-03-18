@@ -66,6 +66,76 @@ function readStringMeta(
   return trimmed || undefined
 }
 
+
+function readMoveMeta(context: AiCapabilityContext): string | undefined {
+  const value = context.state.meta["dialog.move"]?.value
+  return typeof value === "string" && value.trim() ? value.trim() : undefined
+}
+
+function lastAssistantExcerpt(transcript: TranscriptTurn[]): string | undefined {
+  return [...transcript].reverse().find((turn) => turn.role === "assistant")?.content
+}
+
+function mentionsExplicitAvoidance(text: string): boolean {
+  const t = normalizeText(text)
+  return [
+    "undskyld",
+    "undskyldninger",
+    "leder efter",
+    "venter på",
+    "udsætter",
+    "udsaetter",
+    "finder en grund",
+    "lader være",
+    "lader vaere",
+    "slippe for",
+  ].some((x) => t.includes(x))
+}
+
+function rebalanceAnalysisForVariation(params: {
+  analysis: TurnAnalysis
+  previousMove?: string
+  transcript: TranscriptTurn[]
+  userText: string
+}): TurnAnalysis {
+  const { analysis, previousMove, transcript, userText } = params
+  if (analysis.proposed_mode !== "reflection") return analysis
+
+  const assistantCount = countAssistantTurns(transcript)
+  const explicitAvoidance = mentionsExplicitAvoidance(userText)
+
+  if (previousMove && previousMove === analysis.conversation_move) {
+    if (explicitAvoidance) {
+      return {
+        ...analysis,
+        conversation_move: "mild_challenge",
+        investigation_focus: analysis.investigation_focus === "none" ? "interpretation" : analysis.investigation_focus,
+        response_goal: "answer_directly",
+      }
+    }
+
+    if (assistantCount >= 2) {
+      return {
+        ...analysis,
+        conversation_move: "synthesis",
+        investigation_focus: "pattern",
+        response_goal: "answer_directly",
+      }
+    }
+  }
+
+  if (assistantCount >= 3 && explicitAvoidance && analysis.conversation_move !== "synthesis") {
+    return {
+      ...analysis,
+      conversation_move: "synthesis",
+      investigation_focus: "pattern",
+      response_goal: "answer_directly",
+    }
+  }
+
+  return analysis
+}
+
 function trimTranscript(turns: TranscriptTurn[]): TranscriptTurn[] {
   const cappedByTurn = turns.slice(-MAX_TRANSCRIPT_TURNS)
   const result: TranscriptTurn[] = []
@@ -302,13 +372,10 @@ function buildFallbackMessage(params: {
 
   if (params.mode === "reflection") {
     const topicLead = params.topic
-      ? `Mit bedste gæt er, at noget i ${params.topic} hurtigt bliver et sted, hvor du prøver at få kontrol eller ro. `
-      : "Mit bedste gæt er, at der hurtigt sker et skift fra oplevelse til forsøg på at få kontrol eller ro. "
+      ? `Det ligner, at ${params.topic} hurtigt bliver et sted, hvor du prøver at få kontrol eller afstand. `
+      : "Det ligner, at oplevelse, kropslig reaktion og forsøg på at få kontrol hurtigt smelter sammen. "
 
-    return (
-      topicLead +
-      "Det mest interessante er ofte ikke kun selve følelsen eller symptomet, men hvad du begynder at gøre i samme øjeblik."
-    )
+    return topicLead + "Det mest interessante er derfor ikke kun følelsen, men hvad du gør i samme øjeblik for at slippe væk fra den."
   }
 
   return "Jeg kan godt hjælpe med at forstå det nærmere. Det giver mest mening at tage udgangspunkt i, hvad der sker i dig eller i din hverdag, frem for at blive i generel metodeforklaring."
@@ -556,6 +623,7 @@ export async function runUnifiedHypnoCapability(
 
   let analysis: TurnAnalysis | null = null
   let usedFallback = false
+  const previousMove = readMoveMeta(context)
 
   try {
     analysis = await analyzeTurn({
@@ -563,12 +631,15 @@ export async function runUnifiedHypnoCapability(
       transcript: trimmedTranscript,
       userText,
       lastTopic: previousTopic,
+      lastMove: previousMove,
+      lastAssistantExcerpt: lastAssistantExcerpt(trimmedTranscript),
     })
   } catch {
     usedFallback = true
   }
 
   analysis = analysis ?? buildDefaultAnalysis(userText, previousTopic, options.forcedMode)
+  analysis = rebalanceAnalysisForVariation({ analysis, previousMove, transcript: trimmedTranscript, userText })
 
   if (options.forcedMode && analysis.proposed_mode !== "closing") {
     analysis = {
