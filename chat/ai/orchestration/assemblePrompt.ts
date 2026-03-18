@@ -1,4 +1,4 @@
-import { PromptMode, ConversationMove, InvestigationFocus, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
+import { ConversationMove, InvestigationFocus, PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
 import { BASE_ROLE_PROMPT } from "../prompts/baseRole"
 import { DOMAIN_BOUNDARY_PROMPT } from "../prompts/domainBoundary"
 import { FORMAT_ANSWER_PLUS_ONE_QUESTION_PROMPT } from "../prompts/formats/answerPlusOneQuestion"
@@ -137,7 +137,6 @@ function buildPolicyInstruction(policy: PolicyDecision): string {
     "- Svar på dansk.",
     "- Første sætning skal være konkret, ikke en varm eller generisk landing.",
     "- Undgå standardsprog som 'det er naturligt at', 'det kan være relevant at' og lignende.",
-    "- Når brugerens input er en enkel hilsen, præsentation af navn eller stilfeedback, så svar enkelt og direkte uden psykologisk fortolkning.",
     "- Hvis svaret kunne passe til mange forskellige samtaler, er det for generisk.",
   ]
 
@@ -165,6 +164,8 @@ function buildPolicyInstruction(policy: PolicyDecision): string {
       "- Flyt brugerens opmærksomhed fra symptom eller fortælling til et mere præcist niveau.",
       "- Vælg ét undersøgelsesspor: opmærksomhed, fortolkning, regulering eller mønster.",
       "- Brug mild udfordring når det giver mere klarhed.",
+      "- Hold refleksionssvar korte og jordnære.",
+      "- Brug hellere en arbejdshypotese end en lille teori.",
       "- Undgå brede refleksionsinvitationer og undgå at slutte med spørgsmål af vane."
     )
   }
@@ -174,9 +175,9 @@ function buildPolicyInstruction(policy: PolicyDecision): string {
       "",
       "EKSTRA REGLER FOR INFO",
       "- Besvar brugerens aktuelle spørgsmål direkte.",
-      "- Hvis brugeren blot orienterer sig socialt eller reparerer samtalen, så vær enkel og jordnær.",
       "- Tilføj ikke pris, kontakt eller bookinginformation, medmindre brugeren spørger om det eller policy kræver det.",
-      "- Giv kun en ekstra nuance hvis den forbedrer forståelsen."
+      "- Hvis brugeren beskriver egen barriere eller friktion, så hold metodeforklaring kort og gør derefter fokus personligt og konkret.",
+      "- Giv ikke lange generelle afsnit om hypnoterapi, hvis brugeren allerede taler om sin egen oplevelse."
     )
   }
 
@@ -196,8 +197,9 @@ function buildPolicyInstruction(policy: PolicyDecision): string {
       "- Svar konkret og handlingsrettet.",
       "- Brug praktiske fakta fra SITE-KONTEKST som kilde.",
       "- Undgå generiske formuleringer som 'besøg hjemmesiden' hvis konkrete oplysninger findes.",
-      "- Hvis brugeren spørger om kontakt, så giv konkret telefon, e-mail og adresse.",
-      "- Hvis brugeren spørger om pris, så giv konkret prisinformation fra SITE-KONTEKST."
+      "- Giv kun kontaktoplysninger, hvis brugeren faktisk spørger om kontakt, booking eller næste praktiske skridt.",
+      "- Hvis brugeren spørger om pris, så giv konkret prisinformation fra SITE-KONTEKST.",
+      "- Hvis brugeren stadig udforsker sit problem, så svar ikke som om samtalen allerede er klar til booking."
     )
   }
 
@@ -245,8 +247,10 @@ function buildResponseContractInstruction(): string {
 Regler for felterne:
 - acknowledgement: 0-1 korte sætninger som lander brugerens situation menneskeligt uden varmefraser eller overinvolvering
 - core_answer: selve det faglige, undersøgende eller praktiske svar
+- core_answer skal prioritere brugerens konkrete situation over generel metodeforklaring
 - next_step: kun hvis det naturligt hjælper videre; ellers null
 - next_step må gerne være en neutral afrunding og behøver ikke være et spørgsmål
+- next_step må ikke være kontakt- eller bookingopfordring medmindre policy eller brugerens spørgsmål klart peger derhen
 - core_answer må ikke være tom
 - svar skal lyde naturligt og sammenhængende når felterne læses i rækkefølgen acknowledgement -> core_answer -> next_step`
 }
@@ -341,7 +345,6 @@ function buildUserPayload(params: {
       reflection_single_question_only: params.policy.allow_mode === "reflection",
       natural_dialogue_goal: true,
       avoid_repetition: true,
-      plain_social_openings: true,
     },
   })
 }
@@ -357,28 +360,31 @@ export function assembleResponseMessages(params: {
 }): Array<{ role: "system" | "user"; content: string }> {
   const systemBlocks = [
     BASE_ROLE_PROMPT,
+    TONE_CALM_NEUTRAL_PROMPT,
     DOMAIN_BOUNDARY_PROMPT,
     SAFETY_PROMPT,
     getModePrompt(params.policy.allow_mode),
-    TONE_CALM_NEUTRAL_PROMPT,
     getFormatPrompt(params.policy),
     buildMoveInstruction(params.analysis.conversation_move, params.analysis.investigation_focus),
     buildRelationalInstruction(params.analysis.relational_state),
     buildPolicyInstruction(params.policy),
-    buildContextPackInstruction(params.contextPackSystem),
-    buildUserProfileInstruction(params.userProfileSystem),
     buildSiteContextInstruction(params.policy.allow_mode),
     buildResponseContractInstruction(),
+    buildContextPackInstruction(params.contextPackSystem),
+    buildUserProfileInstruction(params.userProfileSystem),
   ].filter(Boolean)
 
   return [
-    {
-      role: "system",
-      content: systemBlocks.join("\n\n"),
-    },
+    { role: "system", content: systemBlocks.join("\n\n") },
     {
       role: "user",
-      content: buildUserPayload(params),
+      content: buildUserPayload({
+        analysis: params.analysis,
+        policy: params.policy,
+        transcript: params.transcript,
+        userText: params.userText,
+        lastTopic: params.lastTopic,
+      }),
     },
   ]
 }

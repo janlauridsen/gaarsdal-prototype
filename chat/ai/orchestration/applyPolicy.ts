@@ -12,8 +12,23 @@ type TranscriptTurn = { role: "user" | "assistant"; content: string }
 
 type ModeScoreMap = Record<PromptMode, number>
 
-function normalized(text: string): string {
-  return text.toLowerCase().trim()
+function normalize(text: string): string {
+  return text.toLowerCase().trim().replace(/\s+/g, " ")
+}
+
+function isPracticalKeyword(text: string): boolean {
+  const t = normalize(text)
+  return ["kontakt", "booking", "booke", "telefon", "mail", "pris", "adresse", "tid", "ledige tider", "email", "e-mail"].some((x) => t.includes(x))
+}
+
+function isDirectContactRequest(text: string): boolean {
+  const t = normalize(text)
+  return ["kontakte", "kontakt", "ringe", "telefon", "mail", "e-mail", "email", "booke", "booking", "ledige tider", "adresse"].some((x) => t.includes(x))
+}
+
+function isClosingText(text: string): boolean {
+  const t = text.trim().toLowerCase()
+  return ["tak", "ok tak", "okay tak", "mange tak", "fint", "super"].includes(t)
 }
 
 function containsQuestion(text: string): boolean {
@@ -31,69 +46,113 @@ function hadRecentAssistantQuestion(transcript: TranscriptTurn[]): boolean {
   return lastTwoAssistantTurns.some((turn) => containsQuestion(turn.content))
 }
 
-function isClosingText(text: string): boolean {
-  const t = normalized(text)
-  return ["tak", "ok tak", "okay tak", "mange tak", "fint", "super"].includes(t)
+function countRecentAssistantModes(transcript: TranscriptTurn[]): { questionTurns: number; infoLikeTurns: number } {
+  const lastAssistantTurns = transcript.filter((turn) => turn.role === "assistant").slice(-3)
+  return {
+    questionTurns: lastAssistantTurns.filter((turn) => containsQuestion(turn.content)).length,
+    infoLikeTurns: lastAssistantTurns.filter((turn) => turn.content.length > 220 && !containsQuestion(turn.content)).length,
+  }
 }
 
-function startsLikeGreeting(text: string): boolean {
-  const t = normalized(text)
-  return ["hej", "hejsa", "goddag", "halløj", "hallo", "yo"].includes(t)
+function mentionsDifficultyWithSelfImplication(text: string): boolean {
+  const t = normalize(text)
+  const difficulty = [
+    "har svært ved",
+    "kan ikke",
+    "kommer ikke i gang",
+    "holde ved",
+    "falder tilbage",
+    "går i stå",
+    "ud af de følelser",
+    "utryg",
+    "urolig",
+    "tung",
+    "træt",
+    "modstand",
+    "barriere",
+    "frustreret",
+  ]
+  const desire = ["vil gerne", "ønsker", "prøver", "overvejer", "jeg vil", "jeg ønsker"]
+  return difficulty.some((x) => t.includes(x)) || (desire.some((x) => t.includes(x)) && difficulty.some((x) => t.includes(x)))
 }
 
-function computeModeScores(userText: string, analysis: TurnAnalysis, transcript: TranscriptTurn[]): ModeScoreMap {
-  const t = normalized(userText)
-  const scores: ModeScoreMap = {
-    info: 0.25,
+function asksForReflection(text: string): boolean {
+  const t = normalize(text)
+  return ["reflektere", "forstå mig selv", "hvad sker der i mig", "lægge mærke til", "opmærksom på", "mønster", "kan vi det i chatten"].some((x) => t.includes(x))
+}
+
+function asksForMethodOrEvidence(text: string): boolean {
+  const t = normalize(text)
+  return ["hvordan foregår", "hvordan virker", "virker det", "evidens", "dokumentation", "forskning", "studier", "hvad er hypnoterapi"].some((x) => t.includes(x))
+}
+
+function asksForPracticalNextStep(text: string): boolean {
+  const t = normalize(text)
+  return ["næste skridt", "hvad gør jeg", "hvordan kontakter", "hvordan kan jeg kontakte", "hvordan booker", "hvad skal jeg fortælle"].some((x) => t.includes(x))
+}
+
+function chooseMode(params: { userText: string; analysis: TurnAnalysis; transcript: TranscriptTurn[] }): PromptMode {
+  const { userText, analysis, transcript } = params
+  const t = normalize(userText)
+  const modeScores: ModeScoreMap = {
+    info: 0,
     evidence: 0,
     practical: 0,
     reflection: 0,
     closing: 0,
   }
 
-  scores[analysis.proposed_mode] += 0.9
+  modeScores[analysis.proposed_mode] += 2.2
+  if (analysis.confidence >= 0.8) modeScores[analysis.proposed_mode] += 0.5
 
-  if (analysis.intent === "social_closing" || analysis.conversation_move === "close" || isClosingText(userText)) {
-    scores.closing += 4
-  }
+  if (analysis.intent === "social_closing" || analysis.conversation_move === "close") modeScores.closing += 5
+  if (analysis.intent === "ask_evidence") modeScores.evidence += 2
+  if (analysis.intent === "seek_practical_help") modeScores.practical += 1.5
+  if (analysis.intent === "explore_pattern") modeScores.reflection += 1.8
+  if (analysis.intent === "understand_method") modeScores.info += 1.2
 
-  if (analysis.intent === "seek_practical_help") scores.practical += 2.2
-  if (analysis.intent === "ask_evidence") scores.evidence += 2.2
-  if (analysis.intent === "explore_pattern") scores.reflection += 1.8
-  if (analysis.intent === "understand_method") scores.info += 1.3
-
-  if (analysis.conversation_move === "practical_preparation") scores.practical += 1.2
   if (["guided_observation", "pattern_detection", "metacognitive_probe", "mild_challenge", "synthesis"].includes(analysis.conversation_move)) {
-    scores.reflection += 1.1
+    modeScores.reflection += 1.4
   }
-  if (analysis.conversation_move === "direct_answer") scores.info += 0.6
+  if (analysis.conversation_move === "practical_preparation") modeScores.practical += 1.2
+  if (analysis.conversation_move === "direct_answer") modeScores.info += 0.8
 
-  if (analysis.investigation_focus !== "none") scores.reflection += 0.9
-  if (analysis.investigation_focus === "preparation") scores.practical += 1.1
+  if (mentionsDifficultyWithSelfImplication(t)) {
+    modeScores.reflection += 2.0
+    modeScores.info -= 1.0
+  }
 
-  if (analysis.response_goal === "route_to_contact") scores.practical += 1.2
-  if (analysis.response_goal === "answer_then_one_question") scores.reflection += 0.4
-  if (analysis.response_goal === "answer_directly") scores.info += 0.2
+  if (asksForReflection(t)) {
+    modeScores.reflection += 2.5
+    modeScores.info -= 0.8
+  }
 
-  if (analysis.relational_state === "decision_support") scores.practical += 0.4
-  if (["building_trust", "building_clarity"].includes(analysis.relational_state)) scores.reflection += 0.25
+  if (asksForMethodOrEvidence(t)) {
+    modeScores.info += 1.6
+    modeScores.evidence += 1.2
+  }
 
-  if (/(kontakt|booking|booke|telefon|mail|pris|adresse|tid|ledige tider)/.test(t)) scores.practical += 2.2
-  if (/(virker|evidens|forskning|studier|dokumentation|effekt)/.test(t)) scores.evidence += 2.2
-  if (/(mønster|vant|vane|vaner|hvorfor|sker|lægge mærke|opmærksom|trang|utryg|uro|spænding|følelse|følelser)/.test(t)) scores.reflection += 0.8
-  if (startsLikeGreeting(t) || /^jeg hedder\b/.test(t)) scores.info += 1.8
-  if (/(hvorfor skriver du det|hvorfor spørger du|det giver ikke mening)/.test(t)) scores.info += 2.1
+  if (isDirectContactRequest(t) || asksForPracticalNextStep(t)) {
+    modeScores.practical += 2.2
+  }
 
-  const assistantTurns = transcript.filter((turn) => turn.role === "assistant").length
-  if (assistantTurns <= 1) scores.info += 0.15
-  if (assistantTurns >= 2) scores.reflection += 0.15
+  const recent = countRecentAssistantModes(transcript)
+  if (recent.infoLikeTurns >= 2) {
+    modeScores.info -= 1.4
+    modeScores.reflection += 0.8
+  }
 
-  return scores
-}
+  if (!isDirectContactRequest(t) && !asksForPracticalNextStep(t) && !isPracticalKeyword(t)) {
+    modeScores.practical -= 1.2
+  }
 
-function selectMode(scores: ModeScoreMap): PromptMode {
-  const ordered = (Object.entries(scores) as Array<[PromptMode, number]>).sort((a, b) => b[1] - a[1])
-  return ordered[0][0]
+  if (analysis.response_goal === "route_to_contact" && (isDirectContactRequest(t) || asksForPracticalNextStep(t))) {
+    modeScores.practical += 1.5
+  }
+
+  if (isClosingText(userText)) modeScores.closing += 5
+
+  return (Object.entries(modeScores).sort((a, b) => b[1] - a[1])[0]?.[0] as PromptMode) ?? analysis.proposed_mode
 }
 
 export function applyPolicy(params: {
@@ -104,10 +163,11 @@ export function applyPolicy(params: {
   const { userText, analysis, transcript } = params
   const lastEndedWithQuestion = previousAssistantEndedWithQuestion(transcript)
   const recentQuestion = hadRecentAssistantQuestion(transcript)
-  const scores = computeModeScores(userText, analysis, transcript)
-  const selectedMode = selectMode(scores)
+  const chosenMode = chooseMode(params)
+  const directContact = isDirectContactRequest(userText)
+  const practicalStep = asksForPracticalNextStep(userText)
 
-  if (selectedMode === "closing") {
+  if (isClosingText(userText) || chosenMode === "closing") {
     return {
       allow_mode: "closing",
       allow_question: false,
@@ -117,17 +177,17 @@ export function applyPolicy(params: {
     }
   }
 
-  if (selectedMode === "practical") {
+  if (chosenMode === "practical") {
     return {
       allow_mode: "practical",
       allow_question: false,
       max_questions: 0,
-      response_length: analysis.relational_state === "decision_support" ? "medium" : "short",
-      require_redirect: analysis.response_goal === "route_to_contact" ? "contact" : "none",
+      response_length: analysis.relational_state === "decision_support" || practicalStep ? "medium" : "short",
+      require_redirect: directContact ? "contact" : "none",
     }
   }
 
-  if (selectedMode === "evidence") {
+  if (chosenMode === "evidence") {
     return {
       allow_mode: "evidence",
       allow_question: false,
@@ -137,9 +197,8 @@ export function applyPolicy(params: {
     }
   }
 
-  if (selectedMode === "reflection") {
+  if (chosenMode === "reflection") {
     const allowQuestion =
-      analysis.response_goal === "answer_then_one_question" &&
       !lastEndedWithQuestion &&
       !recentQuestion &&
       ["guided_observation", "pattern_detection", "metacognitive_probe", "mild_challenge"].includes(analysis.conversation_move)
@@ -156,8 +215,7 @@ export function applyPolicy(params: {
   const allowQuestion =
     analysis.response_goal === "clarify_minimally" &&
     !lastEndedWithQuestion &&
-    !recentQuestion &&
-    !startsLikeGreeting(userText)
+    !recentQuestion
 
   return {
     allow_mode: "info",

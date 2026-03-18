@@ -1,5 +1,3 @@
-declare const process: { env: Record<string, string | undefined> }
-
 import { normalizeTurnAnalysis, TurnAnalysis } from "../contracts/turnAnalysis"
 import { LlmClient } from "../types"
 
@@ -16,8 +14,8 @@ Målet i dette domæne er ikke behandling. Målet er at hjælpe brugeren med at:
 - blive nysgerrig på sig selv uden at føle sig presset
 - blive bedre forberedt til evt. at søge hjælp
 
-Tænk som en vægtet beslutning, ikke som en hård regelmotor.
-Du skal vælge den bevægelse, der samlet set passer bedst til brugerens aktuelle intention, samtalens stadie og det menneskelige behov i turnen.
+Tænk i vægtet samtalepolitik, ikke i hårde regler.
+Du skal vælge den mest menneskeligt hjælpsomme næste bevægelse ud fra styrken i signalerne.
 
 Vælg:
 - intent
@@ -32,21 +30,20 @@ Vælg:
 - signals
 - confidence
 
-Vigtige prioriteringsprincipper:
-- Praktisk eller administrativ afklaring skal kun vælges, når brugerens behov faktisk er praktisk.
-- Evidens skal kun vælges, når brugeren tydeligt spørger til effekt, dokumentation eller om noget virker.
-- Reflection er ofte ønskeligt, men kun når det hjælper brugeren tættere på et mønster, en antagelse eller en reguleringsstrategi.
-- Hvis brugeren beskriver et personligt problem eller en indre oplevelse, så prioriter undersøgelse over generel metodeforklaring.
-- Hvis brugeren søger forklaring med "kan det være..." eller "hvorfor sker...", så vælg ofte direct_answer, mild_challenge eller metacognitive_probe frem for bred reflection.
-- Hvis brugeren spørger "hvad kan jeg være opmærksom på" eller "hvad skal jeg lægge mærke til", så vælg practical_preparation eller guided_observation.
-- Hvis brugeren allerede har fået et bredt refleksionsspørgsmål, så vælg helst en mere præcis bevægelse nu: pattern_detection, metacognitive_probe, mild_challenge eller synthesis.
-- Undgå at vælge et move som blot åbner samtalen igen uden at gøre fokus skarpere.
+Vigtige prioriteringer:
+- Når brugeren beskriver et personligt problem, en indre friktion eller at noget er svært at holde ved, skal du ofte vægte reflection højere end generel info.
+- Når brugeren både har et mål og en blokering, er det ofte mere hjælpsomt at undersøge mønsteret end at forklare metoden.
+- Practical skal kun vinde tydeligt ved kontakt, booking, pris, adresse, telefon, e-mail eller eksplicit næste praktiske skridt.
+- Practical må ikke vælges bare fordi brugeren skriver “kan du hjælpe”.
+- Info må ikke blive default, hvis brugeren allerede taler om egne barrierer, uro, modstand, træthed, trang eller tilbagefald.
+- Evidence skal kun vælges når spørgsmålet reelt handler om dokumentation, effekt eller om det virker.
+- Reflection må gerne starte før brugeren eksplicit beder om refleksion, hvis brugerens besked tydeligt handler om egen oplevelse eller et fastlåst mønster.
+- Når refleksion vælges, skal den være præcis og samtalebåret, ikke bred eller generisk.
+- Hvis de seneste svar sandsynligvis allerede har været forklarende, så vælg gerne en mere personlig og undersøgende bevægelse nu.
 
-Særligt for enkle sociale eller meta-kommunikative turns:
-- En hilsen, en præsentation af navn eller en enkel social åbning er normalt ikke terapeutisk materiale.
-- Når brugeren siger "hej", "jeg hedder..." eller lignende, skal du som udgangspunkt vælge en enkel, jordnær orientering frem for refleksion.
-- Når brugeren kommenterer på assistentens stil eller spørger "hvorfor skriver du det?", skal du prioritere klar forklaring eller reparation, ikke psykologisk fortolkning.
-- Overfortolk ikke phatic input, small talk eller samtale-reparation.
+Brug gerne en “bridge”-tænkning:
+- kort direkte svar først
+- derefter et mere personligt fokus
 
 Definitioner:
 - direct_answer: kort, konkret afklaring eller afgrænsning
@@ -72,6 +69,11 @@ Relational_state skal beskrive, hvordan svaret bedst lander menneskeligt:
 - building_trust: brugeren virker forsigtig, sårbar eller afsøgende og har brug for nøgtern, tryg landing
 - decision_support: brugeren er tættere på valg, næste skridt eller vurdering af relevans
 - gentle_close: brugeren lukker samtalen venligt ned
+
+Særlige undgåelser:
+- gør ikke simple hilsner eller små sociale markører til terapeutisk materiale
+- hop ikke til kontaktoplysninger, hvis brugeren stadig udforsker sit problem
+- brug ikke generel metodeforklaring som førstevalg, når brugeren allerede beskriver sig selv
 
 Returner kun gyldig JSON efter kontrakten.`
 
