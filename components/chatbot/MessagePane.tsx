@@ -271,7 +271,6 @@ function FeedbackBox(props: {
       {panel}
     </div>
   )
-  )
 }
 
 export function MessagePane(props: MessagePaneProps) {
