@@ -140,7 +140,7 @@ function FeedbackBox(props: {
         {props.compact ? (
           <button
             type="button"
-            className={styles.feedbackIconButton}
+            className={styles.feedbackCompactButton}
             onClick={() => {
               setOpen(true)
               setError(null)
@@ -148,7 +148,7 @@ function FeedbackBox(props: {
             aria-label="Giv feedback"
             title="Giv feedback"
           >
-            ◦
+            Feedback
           </button>
         ) : (
           <>
