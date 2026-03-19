@@ -2,7 +2,12 @@ import type { NextApiRequest, NextApiResponse } from "next"
 
 import { readRawTurns } from "../../chat/raw/store"
 
-type TranscriptMessage = { role: "user" | "assistant"; content: string }
+type TranscriptMessage = {
+  role: "user" | "assistant"
+  content: string
+  revision?: number
+  node_id?: string
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -28,6 +33,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     .map((t) => ({
       user: typeof t.user_input === "string" ? t.user_input : "",
       assistant: typeof t.assistant_output === "string" ? t.assistant_output : "",
+      revision: typeof t.revision === "number" ? t.revision : undefined,
+      node_id: typeof t.node_id === "string" ? t.node_id : undefined,
     }))
     .filter((t) => t.user.trim() || t.assistant.trim())
 
@@ -35,8 +42,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const messages: TranscriptMessage[] = []
   for (const t of last) {
-    if (t.user.trim()) messages.push({ role: "user", content: t.user })
-    if (t.assistant.trim()) messages.push({ role: "assistant", content: t.assistant })
+    if (t.user.trim()) messages.push({ role: "user", content: t.user, revision: t.revision, node_id: t.node_id })
+    if (t.assistant.trim()) messages.push({ role: "assistant", content: t.assistant, revision: t.revision, node_id: t.node_id })
   }
 
   res.status(200).json({ conversation_id, limit_turns: limitTurns, messages })
