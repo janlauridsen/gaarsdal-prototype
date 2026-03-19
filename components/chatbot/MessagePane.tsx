@@ -70,6 +70,7 @@ function FeedbackBox(props: {
   node?: string
   mode?: string
   move?: string
+  compact?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [rating, setRating] = useState<FeedbackRating | null>(null)
@@ -136,41 +137,58 @@ function FeedbackBox(props: {
   return (
     <div className={styles.feedbackWrap}>
       <div className={styles.feedbackInline}>
-        <span className={styles.feedbackPrompt}>Hjalp dette?</span>
-        <button
-          type="button"
-          className={styles.feedbackChip}
-          onClick={() => {
-            setOpen(true)
-            setRating("positive")
-            setSelectedTags([])
-            setError(null)
-          }}
-        >
-          Ja
-        </button>
-        <button
-          type="button"
-          className={styles.feedbackChip}
-          onClick={() => {
-            setOpen(true)
-            setRating("partial")
-            setError(null)
-          }}
-        >
-          Delvist
-        </button>
-        <button
-          type="button"
-          className={styles.feedbackChip}
-          onClick={() => {
-            setOpen(true)
-            setRating("negative")
-            setError(null)
-          }}
-        >
-          Nej
-        </button>
+        {props.compact ? (
+          <button
+            type="button"
+            className={styles.feedbackIconButton}
+            onClick={() => {
+              setOpen(true)
+              setError(null)
+            }}
+            aria-label="Giv feedback"
+            title="Giv feedback"
+          >
+            ◦
+          </button>
+        ) : (
+          <>
+            <span className={styles.feedbackPrompt}>Hjalp dette?</span>
+            <button
+              type="button"
+              className={styles.feedbackChip}
+              onClick={() => {
+                setOpen(true)
+                setRating("positive")
+                setSelectedTags([])
+                setError(null)
+              }}
+            >
+              Ja
+            </button>
+            <button
+              type="button"
+              className={styles.feedbackChip}
+              onClick={() => {
+                setOpen(true)
+                setRating("partial")
+                setError(null)
+              }}
+            >
+              Delvist
+            </button>
+            <button
+              type="button"
+              className={styles.feedbackChip}
+              onClick={() => {
+                setOpen(true)
+                setRating("negative")
+                setError(null)
+              }}
+            >
+              Nej
+            </button>
+          </>
+        )}
       </div>
 
       {open ? (
@@ -259,14 +277,21 @@ export function MessagePane(props: MessagePaneProps) {
         <div key={m.id} className={styles.messageStack}>
           <div className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}>{m.text}</div>
           {m.role === "assistant" && conversationId ? (
-            <FeedbackBox
-              message={m}
-              messageIndex={index}
-              conversationId={conversationId}
-              node={m.nodeId || props.state?.active_node}
-              mode={feedbackMode}
-              move={feedbackMove}
-            />
+            (() => {
+              const revision = typeof m.revision === "number" ? m.revision : null
+              if (revision === 0) return null
+              return (
+                <FeedbackBox
+                  message={m}
+                  messageIndex={index}
+                  conversationId={conversationId}
+                  node={m.nodeId || props.state?.active_node}
+                  mode={feedbackMode}
+                  move={feedbackMove}
+                  compact={revision === 1}
+                />
+              )
+            })()
           ) : null}
         </div>
       ))}
