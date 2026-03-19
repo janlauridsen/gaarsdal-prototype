@@ -40,6 +40,8 @@ export type ChatMessage = {
   id: string
   role: "assistant" | "user"
   text: string
+  revision?: number
+  nodeId?: string
 }
 
 export type UiSuggestion = {

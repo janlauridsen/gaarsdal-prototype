@@ -1,14 +1,36 @@
 "use client"
 
 import type React from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/router"
 
 import styles from "../Chatbot.module.css"
 
-import type { AsyncDraft, ConversationState, InputSignal, UiSuggestion } from "./types"
+import type { AsyncDraft, ChatMessage, ConversationState, InputSignal, UiSuggestion } from "./types"
+
+type FeedbackRating = "positive" | "partial" | "negative"
+type FeedbackTag =
+  | "helpful"
+  | "too_interpretive"
+  | "too_directive"
+  | "too_generic"
+  | "not_concrete"
+  | "misunderstood"
+  | "too_reflective"
+  | "other"
+
+const NEGATIVE_TAG_OPTIONS: Array<{ value: FeedbackTag; label: string }> = [
+  { value: "too_interpretive", label: "For fortolkende" },
+  { value: "too_directive", label: "For styrende" },
+  { value: "too_generic", label: "For generisk" },
+  { value: "not_concrete", label: "Ikke konkret nok" },
+  { value: "misunderstood", label: "Misforstod mig" },
+  { value: "too_reflective", label: "For meget fokus på refleksion" },
+  { value: "other", label: "Andet" },
+]
 
 export type MessagePaneProps = {
-  visibleMessages: Array<{ id: string; role: "user" | "assistant"; text: string }>
+  visibleMessages: ChatMessage[]
   state: ConversationState | null
   loading: boolean
   freeTextEnabled: boolean
@@ -41,14 +63,211 @@ function formatEvidenceLine(e: AsyncDraft["evidence"][number]) {
   return e.conversation_id
 }
 
+function FeedbackBox(props: {
+  message: ChatMessage
+  messageIndex: number
+  conversationId: string
+  node?: string
+  mode?: string
+  move?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [rating, setRating] = useState<FeedbackRating | null>(null)
+  const [selectedTags, setSelectedTags] = useState<FeedbackTag[]>([])
+  const [note, setNote] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const canSubmit = useMemo(() => {
+    if (!rating || saving) return false
+    if (rating === "positive") return true
+    return selectedTags.length > 0 || note.trim().length > 0
+  }, [rating, saving, selectedTags, note])
+
+  function toggleTag(tag: FeedbackTag) {
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag]))
+  }
+
+  async function submit() {
+    if (!canSubmit || !rating) return
+    setSaving(true)
+    setError(null)
+    try {
+      const payload = {
+        conversationId: props.conversationId,
+        revision: props.message.revision,
+        messageIndex: props.messageIndex,
+        rating,
+        tags: rating === "positive" ? ["helpful"] : selectedTags,
+        note: note.trim() || undefined,
+        meta: {
+          node: props.node,
+          mode: props.mode,
+          move: props.move,
+        },
+      }
+
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(typeof data?.error === "string" ? data.error : `HTTP ${res.status}`)
+      }
+
+      setSubmitted(true)
+      setOpen(false)
+    } catch (e: any) {
+      setError(e?.message ? String(e.message) : "Kunne ikke gemme feedback")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (submitted) {
+    return <div className={styles.feedbackSaved}>Tak for feedback.</div>
+  }
+
+  return (
+    <div className={styles.feedbackWrap}>
+      <div className={styles.feedbackInline}>
+        <span className={styles.feedbackPrompt}>Hjalp dette?</span>
+        <button
+          type="button"
+          className={styles.feedbackChip}
+          onClick={() => {
+            setOpen(true)
+            setRating("positive")
+            setSelectedTags([])
+            setError(null)
+          }}
+        >
+          Ja
+        </button>
+        <button
+          type="button"
+          className={styles.feedbackChip}
+          onClick={() => {
+            setOpen(true)
+            setRating("partial")
+            setError(null)
+          }}
+        >
+          Delvist
+        </button>
+        <button
+          type="button"
+          className={styles.feedbackChip}
+          onClick={() => {
+            setOpen(true)
+            setRating("negative")
+            setError(null)
+          }}
+        >
+          Nej
+        </button>
+      </div>
+
+      {open ? (
+        <div className={styles.feedbackPanel}>
+          <div className={styles.feedbackSection}>
+            <div className={styles.feedbackSectionTitle}>Vurdering</div>
+            <div className={styles.feedbackChoiceRow}>
+              <button type="button" className={`${styles.feedbackChoice} ${rating === "positive" ? styles.feedbackChoiceActive : ""}`} onClick={() => setRating("positive")}>Ja</button>
+              <button type="button" className={`${styles.feedbackChoice} ${rating === "partial" ? styles.feedbackChoiceActive : ""}`} onClick={() => setRating("partial")}>Delvist</button>
+              <button type="button" className={`${styles.feedbackChoice} ${rating === "negative" ? styles.feedbackChoiceActive : ""}`} onClick={() => setRating("negative")}>Nej</button>
+            </div>
+          </div>
+
+          {rating === "positive" ? (
+            <label className={styles.feedbackLabel}>
+              <span>Hvad var hjælpsomt? (valgfrit)</span>
+              <textarea className={styles.feedbackTextarea} value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={2000} />
+            </label>
+          ) : (
+            <>
+              <div className={styles.feedbackSection}>
+                <div className={styles.feedbackSectionTitle}>Hvad var problemet?</div>
+                <div className={styles.feedbackTagGrid}>
+                  {NEGATIVE_TAG_OPTIONS.map((option) => {
+                    const active = selectedTags.includes(option.value)
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`${styles.feedbackTag} ${active ? styles.feedbackTagActive : ""}`}
+                        onClick={() => toggleTag(option.value)}
+                      >
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <label className={styles.feedbackLabel}>
+                <span>Uddyb gerne (valgfrit)</span>
+                <textarea className={styles.feedbackTextarea} value={note} onChange={(e) => setNote(e.target.value)} rows={4} maxLength={2000} />
+              </label>
+            </>
+          )}
+
+          {error ? <div className={styles.feedbackError}>{error}</div> : null}
+
+          <div className={styles.feedbackActions}>
+            <button type="button" className={styles.feedbackPrimary} onClick={submit} disabled={!canSubmit}>
+              {saving ? "Gemmer…" : "Send feedback"}
+            </button>
+            <button
+              type="button"
+              className={styles.feedbackSecondary}
+              onClick={() => {
+                setOpen(false)
+                setError(null)
+              }}
+              disabled={saving}
+            >
+              Luk
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export function MessagePane(props: MessagePaneProps) {
   const router = useRouter()
+  const conversationId = props.state?.conversation_id ?? null
+  const feedbackMode = (() => {
+    const entry = props.state?.meta?.["dialog.mode"]
+    return entry && typeof entry === "object" && "value" in entry ? String((entry as any).value ?? "") : typeof entry === "string" ? entry : undefined
+  })()
+  const feedbackMove = (() => {
+    const entry = props.state?.meta?.["dialog.move"]
+    return entry && typeof entry === "object" && "value" in entry ? String((entry as any).value ?? "") : typeof entry === "string" ? entry : undefined
+  })()
 
   return (
     <div className={styles.messages}>
-      {props.visibleMessages.map((m) => (
-        <div key={m.id} className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}>
-          {m.text}
+      {props.visibleMessages.map((m, index) => (
+        <div key={m.id} className={styles.messageStack}>
+          <div className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}>{m.text}</div>
+          {m.role === "assistant" && conversationId ? (
+            <FeedbackBox
+              message={m}
+              messageIndex={index}
+              conversationId={conversationId}
+              node={m.nodeId || props.state?.active_node}
+              mode={feedbackMode}
+              move={feedbackMove}
+            />
+          ) : null}
         </div>
       ))}
 
