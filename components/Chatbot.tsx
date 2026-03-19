@@ -420,7 +420,7 @@ export default function Chatbot() {
     runPendingJob(activeConversationId, next)
   }, [open, activeConversationId, pendingJobs, draftReview?.job_id, draftReview?.accepted_at])
 
-  function appendAssistantMessage(conversationId: string, text: string) {
+  function appendAssistantMessage(conversationId: string, text: string, meta?: { revision?: number; nodeId?: string }) {
     const message = (text ?? "").trim()
     if (!message) return
 
@@ -428,7 +428,13 @@ export default function Chatbot() {
       const current = prev[conversationId] ?? []
       const last = current.length ? current[current.length - 1] : null
       if (last && last.role === "assistant" && last.text.trim() === message) return prev
-      return { ...prev, [conversationId]: [...current, { id: `assistant-${safeId()}`, role: "assistant", text: message }] }
+      return {
+        ...prev,
+        [conversationId]: [
+          ...current,
+          { id: `assistant-${safeId()}`, role: "assistant", text: message, revision: meta?.revision, nodeId: meta?.nodeId },
+        ],
+      }
     })
   }
 
@@ -471,7 +477,13 @@ export default function Chatbot() {
         if (text.startsWith("SYSTEM")) continue
       }
 
-      out.push({ id: `${conversationId}:${i}:${m.role}`, role: m.role, text })
+      out.push({
+        id: `${conversationId}:${i}:${m.role}`,
+        role: m.role,
+        text,
+        revision: typeof m.revision === "number" ? m.revision : undefined,
+        nodeId: typeof m.node_id === "string" ? m.node_id : undefined,
+      })
     }
     return out
   }
@@ -490,7 +502,10 @@ export default function Chatbot() {
         setMessagesByConversationId((prev) => {
           const cur = prev[conversationId] ?? []
           if (cur.length) return prev
-          return { ...prev, [conversationId]: [{ id: `assistant-${safeId()}`, role: "assistant", text: welcome.trim() }] }
+          return {
+            ...prev,
+            [conversationId]: [{ id: `assistant-${safeId()}`, role: "assistant", text: welcome.trim(), revision: s.revision, nodeId: s.active_node }],
+          }
         })
       }
     }
@@ -685,7 +700,10 @@ export default function Chatbot() {
         await ensureConversationLoaded(data.state.conversation_id, data.state)
       } else {
         if (state.conversation_id) {
-          appendAssistantMessage(state.conversation_id, assistantText)
+          appendAssistantMessage(state.conversation_id, assistantText, {
+            revision: typeof data?.state?.revision === "number" ? data.state.revision : undefined,
+            nodeId: typeof data?.state?.active_node === "string" ? data.state.active_node : undefined,
+          })
         }
       }
       return true
