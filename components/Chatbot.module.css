@@ -1402,27 +1402,25 @@
   transform: translateY(-1px);
 }
 
-.feedbackIconButton {
-  width: 28px;
-  height: 28px;
-  border-radius: 9999px;
-  border: 1px solid rgba(44, 42, 40, 0.1);
-  background: rgba(255, 255, 255, 0.72);
-  color: rgba(44, 42, 40, 0.7);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.feedbackCompactButton {
+  border: 0;
+  background: transparent;
+  color: rgba(27, 30, 28, 0.56);
+  padding: 2px 0;
+  font-size: 12px;
+  line-height: 1.2;
   cursor: pointer;
-  transition: background 120ms ease, transform 120ms ease, border-color 120ms ease;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 120ms ease, transform 120ms ease;
 }
 
-.feedbackIconButton:hover {
-  background: rgba(255, 255, 255, 0.92);
-  border-color: rgba(44, 42, 40, 0.16);
+.feedbackCompactButton:hover {
+  color: rgba(27, 30, 28, 0.78);
   transform: translateY(-1px);
 }
 
-.feedbackIconButton:active {
+.feedbackCompactButton:active {
   transform: translateY(0);
 }
 
