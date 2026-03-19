@@ -3,7 +3,6 @@
 import type React from "react"
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/router"
-import { createPortal } from "react-dom"
 
 import styles from "../Chatbot.module.css"
 
@@ -80,18 +79,33 @@ function FeedbackBox(props: {
   const [saving, setSaving] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-    return () => setMounted(false)
-  }, [])
 
   const canSubmit = useMemo(() => {
     if (!rating || saving) return false
     if (rating === "positive") return true
     return selectedTags.length > 0 || note.trim().length > 0
   }, [rating, saving, selectedTags, note])
+
+  useEffect(() => {
+    if (!open) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previous
+    }
+  }, [open])
+
+  function openFeedback(nextRating?: FeedbackRating) {
+    setOpen(true)
+    setError(null)
+    if (nextRating) setRating(nextRating)
+  }
+
+  function closeFeedback() {
+    if (saving) return
+    setOpen(false)
+    setError(null)
+  }
 
   function toggleTag(tag: FeedbackTag) {
     setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag]))
@@ -141,22 +155,38 @@ function FeedbackBox(props: {
     return <div className={styles.feedbackSaved}>Tak for feedback.</div>
   }
 
-  const panel = open && mounted
-    ? createPortal(
-        <div
-          className={styles.feedbackModalBackdrop}
-          onClick={() => {
-            setOpen(false)
-            setError(null)
-          }}
-        >
-          <div
-            className={styles.feedbackModalCard}
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Feedback"
+  return (
+    <div className={styles.feedbackWrap}>
+      <div className={styles.feedbackInline}>
+        {props.compact ? (
+          <button
+            type="button"
+            className={styles.feedbackTextButton}
+            onClick={() => openFeedback()}
+            aria-label="Giv feedback"
+            title="Giv feedback"
           >
+            Feedback
+          </button>
+        ) : (
+          <>
+            <span className={styles.feedbackPrompt}>Hjalp dette?</span>
+            <button type="button" className={styles.feedbackChip} onClick={() => openFeedback("positive")}>Ja</button>
+            <button type="button" className={styles.feedbackChip} onClick={() => openFeedback("partial")}>Delvist</button>
+            <button type="button" className={styles.feedbackChip} onClick={() => openFeedback("negative")}>Nej</button>
+          </>
+        )}
+      </div>
+
+      {open ? (
+        <div className={styles.feedbackModal} role="dialog" aria-modal="true" aria-label="Feedback">
+          <button type="button" className={styles.feedbackBackdrop} onClick={closeFeedback} aria-label="Luk feedback" />
+          <div className={styles.feedbackDialog}>
+            <div className={styles.feedbackDialogHeader}>
+              <div className={styles.feedbackDialogTitle}>Feedback</div>
+              <button type="button" className={styles.feedbackCloseButton} onClick={closeFeedback} disabled={saving} aria-label="Luk feedback">×</button>
+            </div>
+
             <div className={styles.feedbackPanel}>
               <div className={styles.feedbackSection}>
                 <div className={styles.feedbackSectionTitle}>Vurdering</div>
@@ -206,91 +236,14 @@ function FeedbackBox(props: {
                 <button type="button" className={styles.feedbackPrimary} onClick={submit} disabled={!canSubmit}>
                   {saving ? "Gemmer…" : "Send feedback"}
                 </button>
-                <button
-                  type="button"
-                  className={styles.feedbackSecondary}
-                  onClick={() => {
-                    setOpen(false)
-                    setError(null)
-                  }}
-                  disabled={saving}
-                >
+                <button type="button" className={styles.feedbackSecondary} onClick={closeFeedback} disabled={saving}>
                   Luk
                 </button>
               </div>
             </div>
           </div>
-        </div>,
-        document.body
-      )
-    : null
-
-  return (
-    <div className={styles.feedbackWrap}>
-      <div className={styles.feedbackInline}>
-        {props.compact ? (
-          <button
-            type="button"
-            className={styles.feedbackTextButton}
-            onClick={() => {
-              setOpen(true)
-              setRating(null)
-              setSelectedTags([])
-              setNote("")
-              setError(null)
-            }}
-            aria-label="Giv feedback"
-            title="Giv feedback"
-          >
-            Feedback
-          </button>
-        ) : (
-          <>
-            <span className={styles.feedbackPrompt}>Hjalp dette?</span>
-            <button
-              type="button"
-              className={styles.feedbackChip}
-              onClick={() => {
-                setOpen(true)
-                setRating("positive")
-                setSelectedTags([])
-                setNote("")
-                setError(null)
-              }}
-            >
-              Ja
-            </button>
-            <button
-              type="button"
-              className={styles.feedbackChip}
-              onClick={() => {
-                setOpen(true)
-                setRating("partial")
-                setSelectedTags([])
-                setNote("")
-                setError(null)
-              }}
-            >
-              Delvist
-            </button>
-            <button
-              type="button"
-              className={styles.feedbackChip}
-              onClick={() => {
-                setOpen(true)
-                setRating("negative")
-                setSelectedTags([])
-                setNote("")
-                setError(null)
-              }}
-            >
-              Nej
-            </button>
-          </>
-        )}
-      </div>
-
-      {panel}
+        </div>
+      ) : null}
     </div>
   )
 }
