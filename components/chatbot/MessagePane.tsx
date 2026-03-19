@@ -1,8 +1,9 @@
 "use client"
 
 import type React from "react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/router"
+import { createPortal } from "react-dom"
 
 import styles from "../Chatbot.module.css"
 
@@ -79,6 +80,12 @@ function FeedbackBox(props: {
   const [saving, setSaving] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
 
   const canSubmit = useMemo(() => {
     if (!rating || saving) return false
@@ -134,64 +141,9 @@ function FeedbackBox(props: {
     return <div className={styles.feedbackSaved}>Tak for feedback.</div>
   }
 
-  return (
-    <div className={styles.feedbackWrap}>
-      <div className={styles.feedbackInline}>
-        {props.compact ? (
-          <button
-            type="button"
-            className={styles.feedbackCompactButton}
-            onClick={() => {
-              setOpen(true)
-              setError(null)
-            }}
-            aria-label="Giv feedback"
-            title="Giv feedback"
-          >
-            Feedback
-          </button>
-        ) : (
-          <>
-            <span className={styles.feedbackPrompt}>Hjalp dette?</span>
-            <button
-              type="button"
-              className={styles.feedbackChip}
-              onClick={() => {
-                setOpen(true)
-                setRating("positive")
-                setSelectedTags([])
-                setError(null)
-              }}
-            >
-              Ja
-            </button>
-            <button
-              type="button"
-              className={styles.feedbackChip}
-              onClick={() => {
-                setOpen(true)
-                setRating("partial")
-                setError(null)
-              }}
-            >
-              Delvist
-            </button>
-            <button
-              type="button"
-              className={styles.feedbackChip}
-              onClick={() => {
-                setOpen(true)
-                setRating("negative")
-                setError(null)
-              }}
-            >
-              Nej
-            </button>
-          </>
-        )}
-      </div>
-
-      {open ? (
+  const panel = open && mounted ? createPortal(
+    <div className={styles.feedbackModalBackdrop} onClick={() => { setOpen(false); setError(null) }}>
+      <div className={styles.feedbackModalCard} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Feedback">
         <div className={styles.feedbackPanel}>
           <div className={styles.feedbackSection}>
             <div className={styles.feedbackSectionTitle}>Vurdering</div>
@@ -254,8 +206,71 @@ function FeedbackBox(props: {
             </button>
           </div>
         </div>
-      ) : null}
+      </div>
+    </div>,
+    document.body
+  ) : null
+
+  return (
+    <div className={styles.feedbackWrap}>
+      <div className={styles.feedbackInline}>
+        {props.compact ? (
+          <button
+            type="button"
+            className={styles.feedbackTextButton}
+            onClick={() => {
+              setOpen(true)
+              setError(null)
+            }}
+            aria-label="Giv feedback"
+            title="Giv feedback"
+          >
+            Feedback
+          </button>
+        ) : (
+          <>
+            <span className={styles.feedbackPrompt}>Hjalp dette?</span>
+            <button
+              type="button"
+              className={styles.feedbackChip}
+              onClick={() => {
+                setOpen(true)
+                setRating("positive")
+                setSelectedTags([])
+                setError(null)
+              }}
+            >
+              Ja
+            </button>
+            <button
+              type="button"
+              className={styles.feedbackChip}
+              onClick={() => {
+                setOpen(true)
+                setRating("partial")
+                setError(null)
+              }}
+            >
+              Delvist
+            </button>
+            <button
+              type="button"
+              className={styles.feedbackChip}
+              onClick={() => {
+                setOpen(true)
+                setRating("negative")
+                setError(null)
+              }}
+            >
+              Nej
+            </button>
+          </>
+        )}
+      </div>
+
+      {panel}
     </div>
+  )
   )
 }
 
