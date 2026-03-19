@@ -141,75 +141,89 @@ function FeedbackBox(props: {
     return <div className={styles.feedbackSaved}>Tak for feedback.</div>
   }
 
-  const panel = open && mounted ? createPortal(
-    <div className={styles.feedbackModalBackdrop} onClick={() => { setOpen(false); setError(null) }}>
-      <div className={styles.feedbackModalCard} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Feedback">
-        <div className={styles.feedbackPanel}>
-          <div className={styles.feedbackSection}>
-            <div className={styles.feedbackSectionTitle}>Vurdering</div>
-            <div className={styles.feedbackChoiceRow}>
-              <button type="button" className={`${styles.feedbackChoice} ${rating === "positive" ? styles.feedbackChoiceActive : ""}`} onClick={() => setRating("positive")}>Ja</button>
-              <button type="button" className={`${styles.feedbackChoice} ${rating === "partial" ? styles.feedbackChoiceActive : ""}`} onClick={() => setRating("partial")}>Delvist</button>
-              <button type="button" className={`${styles.feedbackChoice} ${rating === "negative" ? styles.feedbackChoiceActive : ""}`} onClick={() => setRating("negative")}>Nej</button>
-            </div>
-          </div>
-
-          {rating === "positive" ? (
-            <label className={styles.feedbackLabel}>
-              <span>Hvad var hjælpsomt? (valgfrit)</span>
-              <textarea className={styles.feedbackTextarea} value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={2000} />
-            </label>
-          ) : (
-            <>
+  const panel = open && mounted
+    ? createPortal(
+        <div
+          className={styles.feedbackModalBackdrop}
+          onClick={() => {
+            setOpen(false)
+            setError(null)
+          }}
+        >
+          <div
+            className={styles.feedbackModalCard}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Feedback"
+          >
+            <div className={styles.feedbackPanel}>
               <div className={styles.feedbackSection}>
-                <div className={styles.feedbackSectionTitle}>Hvad var problemet?</div>
-                <div className={styles.feedbackTagGrid}>
-                  {NEGATIVE_TAG_OPTIONS.map((option) => {
-                    const active = selectedTags.includes(option.value)
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={`${styles.feedbackTag} ${active ? styles.feedbackTagActive : ""}`}
-                        onClick={() => toggleTag(option.value)}
-                      >
-                        {option.label}
-                      </button>
-                    )
-                  })}
+                <div className={styles.feedbackSectionTitle}>Vurdering</div>
+                <div className={styles.feedbackChoiceRow}>
+                  <button type="button" className={`${styles.feedbackChoice} ${rating === "positive" ? styles.feedbackChoiceActive : ""}`} onClick={() => setRating("positive")}>Ja</button>
+                  <button type="button" className={`${styles.feedbackChoice} ${rating === "partial" ? styles.feedbackChoiceActive : ""}`} onClick={() => setRating("partial")}>Delvist</button>
+                  <button type="button" className={`${styles.feedbackChoice} ${rating === "negative" ? styles.feedbackChoiceActive : ""}`} onClick={() => setRating("negative")}>Nej</button>
                 </div>
               </div>
 
-              <label className={styles.feedbackLabel}>
-                <span>Uddyb gerne (valgfrit)</span>
-                <textarea className={styles.feedbackTextarea} value={note} onChange={(e) => setNote(e.target.value)} rows={4} maxLength={2000} />
-              </label>
-            </>
-          )}
+              {rating === "positive" ? (
+                <label className={styles.feedbackLabel}>
+                  <span>Hvad var hjælpsomt? (valgfrit)</span>
+                  <textarea className={styles.feedbackTextarea} value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={2000} />
+                </label>
+              ) : (
+                <>
+                  <div className={styles.feedbackSection}>
+                    <div className={styles.feedbackSectionTitle}>Hvad var problemet?</div>
+                    <div className={styles.feedbackTagGrid}>
+                      {NEGATIVE_TAG_OPTIONS.map((option) => {
+                        const active = selectedTags.includes(option.value)
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            className={`${styles.feedbackTag} ${active ? styles.feedbackTagActive : ""}`}
+                            onClick={() => toggleTag(option.value)}
+                          >
+                            {option.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
 
-          {error ? <div className={styles.feedbackError}>{error}</div> : null}
+                  <label className={styles.feedbackLabel}>
+                    <span>Uddyb gerne (valgfrit)</span>
+                    <textarea className={styles.feedbackTextarea} value={note} onChange={(e) => setNote(e.target.value)} rows={4} maxLength={2000} />
+                  </label>
+                </>
+              )}
 
-          <div className={styles.feedbackActions}>
-            <button type="button" className={styles.feedbackPrimary} onClick={submit} disabled={!canSubmit}>
-              {saving ? "Gemmer…" : "Send feedback"}
-            </button>
-            <button
-              type="button"
-              className={styles.feedbackSecondary}
-              onClick={() => {
-                setOpen(false)
-                setError(null)
-              }}
-              disabled={saving}
-            >
-              Luk
-            </button>
+              {error ? <div className={styles.feedbackError}>{error}</div> : null}
+
+              <div className={styles.feedbackActions}>
+                <button type="button" className={styles.feedbackPrimary} onClick={submit} disabled={!canSubmit}>
+                  {saving ? "Gemmer…" : "Send feedback"}
+                </button>
+                <button
+                  type="button"
+                  className={styles.feedbackSecondary}
+                  onClick={() => {
+                    setOpen(false)
+                    setError(null)
+                  }}
+                  disabled={saving}
+                >
+                  Luk
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>,
-    document.body
-  ) : null
+        </div>,
+        document.body
+      )
+    : null
 
   return (
     <div className={styles.feedbackWrap}>
@@ -220,6 +234,9 @@ function FeedbackBox(props: {
             className={styles.feedbackTextButton}
             onClick={() => {
               setOpen(true)
+              setRating(null)
+              setSelectedTags([])
+              setNote("")
               setError(null)
             }}
             aria-label="Giv feedback"
@@ -237,6 +254,7 @@ function FeedbackBox(props: {
                 setOpen(true)
                 setRating("positive")
                 setSelectedTags([])
+                setNote("")
                 setError(null)
               }}
             >
@@ -248,6 +266,8 @@ function FeedbackBox(props: {
               onClick={() => {
                 setOpen(true)
                 setRating("partial")
+                setSelectedTags([])
+                setNote("")
                 setError(null)
               }}
             >
@@ -259,6 +279,8 @@ function FeedbackBox(props: {
               onClick={() => {
                 setOpen(true)
                 setRating("negative")
+                setSelectedTags([])
+                setNote("")
                 setError(null)
               }}
             >
