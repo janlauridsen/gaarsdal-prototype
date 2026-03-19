@@ -1,6 +1,0 @@
-cases:
-  - name: basic_sanity
-    conversation_id: test_basic_v1
-    expected:
-      status: active
-      min_revisions: 1

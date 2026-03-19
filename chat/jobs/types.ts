@@ -1,4 +1,4 @@
-export type JobKind = "scan_threads"
+export type JobKind = "scan_threads" | "derive_thread_title"
 
 export type JobStatus = "queued" | "running" | "completed" | "failed" | "canceled"
 
@@ -27,8 +27,14 @@ export type ScanThreadsPayload = {
   trigger_turn?: number
 }
 
+
+export type DeriveThreadTitlePayload = {
+  trigger_turn?: number
+}
+
 export type JobPayloadByKind = {
   scan_threads: ScanThreadsPayload
+  derive_thread_title: DeriveThreadTitlePayload
 }
 
 export type JobRecordV1<K extends JobKind = JobKind> = {

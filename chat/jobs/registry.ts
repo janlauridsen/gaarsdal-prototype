@@ -1,5 +1,6 @@
 import { JobKind, JobRecordV1 } from "./types"
 import { tickScanThreads } from "./handlers/scanThreads"
+import { tickDeriveThreadTitle } from "./handlers/deriveThreadTitle"
 
 export type JobTickResult = {
   job: JobRecordV1
@@ -11,6 +12,8 @@ export async function tickJob(job: JobRecordV1): Promise<JobTickResult> {
   switch (job.kind as JobKind) {
     case "scan_threads":
       return tickScanThreads(job)
+    case "derive_thread_title":
+      return tickDeriveThreadTitle(job)
     default:
       return {
         job: {

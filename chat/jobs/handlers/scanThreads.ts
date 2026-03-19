@@ -1,6 +1,6 @@
 import { createOpenAiCompatibleClient } from "../../ai/provider"
 import { readThreadIndex } from "../../persistence/threadIndexStore"
-import { ensureThreadThemeAndEpisode } from "../../memory/longTermMemoryStore"
+import { readThreadThemeAndEpisode } from "../../memory/longTermMemoryStore"
 import { readRawTurns } from "../../raw/store"
 import { jobsTtlSeconds, writeDraft, writeJob } from "../store"
 import { DraftV1, EvidenceRefV1, JobRecordV1, ScanThreadsPayload } from "../types"
@@ -8,8 +8,10 @@ import { DraftV1, EvidenceRefV1, JobRecordV1, ScanThreadsPayload } from "../type
 type ThreadSummary = {
   conversation_id: string
   title: string
+  preview: string
   updated_at: string
   summary_short: string
+  lexical_score?: number
 }
 
 function nowMs(): number {
@@ -36,6 +38,118 @@ function safeLines(input: string, max = 6): string {
   return parts.slice(0, max * 20).join(" ")
 }
 
+
+const STOPWORDS = new Set([
+  "og",
+  "i",
+  "på",
+  "paa",
+  "for",
+  "til",
+  "af",
+  "at",
+  "om",
+  "er",
+  "det",
+  "der",
+  "de",
+  "en",
+  "et",
+  "den",
+  "som",
+  "med",
+  "kan",
+  "vil",
+  "jeg",
+  "du",
+  "vi",
+  "man",
+  "har",
+  "have",
+  "mere",
+  "hvor",
+  "hvordan",
+  "hvad",
+  "ca",
+  "her",
+  "ny",
+  "samtale",
+  "tråd",
+  "traad",
+])
+
+function normalizeText(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[æ]/g, "ae")
+    .replace(/[ø]/g, "oe")
+    .replace(/[å]/g, "aa")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function tokenize(input: string): string[] {
+  return normalizeText(input)
+    .split(" ")
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 3 && !STOPWORDS.has(part))
+}
+
+function uniqueTokens(input: string): string[] {
+  return Array.from(new Set(tokenize(input)))
+}
+
+function looksGenericTitle(input: string): boolean {
+  const s = normalizeText(input)
+  return !s || s === "ny samtale" || s === "parentesespor"
+}
+
+function candidateContext(candidate: Pick<ThreadSummary, "title" | "summary_short" | "preview">): string {
+  return [candidate.title, candidate.summary_short, candidate.preview].filter(Boolean).join(" ")
+}
+
+function hasMeaningfulCandidateSignal(candidate: Pick<ThreadSummary, "title" | "summary_short" | "preview">): boolean {
+  if (candidate.summary_short.trim().length >= 24) return true
+  if (candidate.preview.trim().length >= 24) return true
+  if (!looksGenericTitle(candidate.title) && candidate.title.trim().length >= 12) return true
+  return false
+}
+
+function lexicalScore(problem: ScanThreadsPayload["problem"], candidate: Pick<ThreadSummary, "title" | "summary_short" | "preview">): number {
+  const problemText = [problem.problem_title, problem.problem_description, ...(problem.topic_tags ?? [])].join(" ")
+  const problemTokens = uniqueTokens(problemText)
+  if (problemTokens.length === 0) return 0
+
+  const candidateTokens = new Set(uniqueTokens(candidateContext(candidate)))
+  if (candidateTokens.size === 0) return 0
+
+  let score = 0
+  for (const token of problemTokens) {
+    if (candidateTokens.has(token)) score += token.length >= 7 ? 2 : 1
+  }
+  return score
+}
+
+function pickDeterministicCandidates(params: {
+  problem: ScanThreadsPayload["problem"]
+  candidates: ThreadSummary[]
+  maxPick: number
+}): string[] {
+  const ranked = params.candidates
+    .map((candidate) => ({
+      candidate,
+      score: lexicalScore(params.problem, candidate),
+    }))
+    .filter((entry) => entry.score >= 2)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return a.candidate.updated_at < b.candidate.updated_at ? 1 : -1
+    })
+
+  return ranked.slice(0, params.maxPick).map((entry) => entry.candidate.conversation_id)
+}
+
 async function shortlistThreads(params: {
   userKey: string
   activeConversationId: string
@@ -53,17 +167,20 @@ async function shortlistThreads(params: {
   for (const t of sorted) {
         const convId = t.conversation_id
     if (!convId || convId === params.activeConversationId) continue
-    const { episode } = await ensureThreadThemeAndEpisode({
+    const threadMemory = await readThreadThemeAndEpisode({
       userKey: params.userKey,
       conversationId: convId,
-      ttlSeconds: params.ttlSeconds,
     })
-    out.push({
+    const episode = threadMemory?.episode
+    const candidate = {
       conversation_id: convId,
       title: t.title,
+      preview: typeof t.preview === "string" ? t.preview : "",
       updated_at: t.updated_at,
       summary_short: asString(episode.summary_short),
-    })
+    }
+    if (!hasMeaningfulCandidateSignal(candidate)) continue
+    out.push(candidate)
   }
   return out
 }
@@ -79,7 +196,9 @@ async function llmSelectThreads(params: {
   const candidateText = params.candidates
     .map((c) => {
       const s = c.summary_short ? safeLines(c.summary_short, 8) : "(no summary yet)"
-      return `- conversation_id: ${c.conversation_id}\n  title: ${safeLines(c.title, 2)}\n  updated_at: ${c.updated_at}\n  summary_short: ${s}`
+      const p = c.preview ? safeLines(c.preview, 3) : "(no preview yet)"
+      const score = typeof c.lexical_score === "number" ? c.lexical_score : 0
+      return `- conversation_id: ${c.conversation_id}\n  title: ${safeLines(c.title, 2)}\n  updated_at: ${c.updated_at}\n  lexical_score: ${score}\n  preview: ${p}\n  summary_short: ${s}`
     })
     .join("\n")
 
@@ -245,10 +364,16 @@ export async function tickScanThreads(job: JobRecordV1): Promise<{ job: JobRecor
         .map((c) => ({
           conversation_id: asString((c as any).conversation_id),
           title: asString((c as any).title),
+          preview: asString((c as any).preview),
           updated_at: asString((c as any).updated_at),
           summary_short: asString((c as any).summary_short),
         }))
         .filter((c) => !!c.conversation_id && c.conversation_id !== job.conversation_id)
+        .map((c) => ({
+          ...c,
+          lexical_score: lexicalScore(payload.problem, c),
+        }))
+        .filter((c) => hasMeaningfulCandidateSignal(c) && (c.lexical_score ?? 0) >= 2)
 
       if (typed.length === 0) {
         const noMatchDraft = buildNoMatchDraft({ job, reason: scanReason })
@@ -265,13 +390,19 @@ export async function tickScanThreads(job: JobRecordV1): Promise<{ job: JobRecor
         return { job: next, completed: true }
       }
 
+      const deterministic = pickDeterministicCandidates({
+        problem: payload.problem,
+        candidates: typed,
+        maxPick: maxDeepDive,
+      })
+
       let selected: string[] = []
       if (!process.env.OPENAI_API_KEY) {
-        selected = typed.slice(0, maxDeepDive).map((t) => t.conversation_id)
+        selected = deterministic
       } else {
         selected = await llmSelectThreads({ payload, candidates: typed, maxPick: maxDeepDive })
           .then((ids) => ids.filter((id) => id && id !== job.conversation_id))
-        if (selected.length === 0) selected = typed.slice(0, maxDeepDive).map((t) => t.conversation_id)
+          .then((ids) => ids.filter((id) => deterministic.includes(id)))
       }
 
       if (selected.length === 0) {

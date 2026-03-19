@@ -1,18 +1,37 @@
 "use client"
 
 import type React from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/router"
+import { createPortal } from "react-dom"
 
 import styles from "../Chatbot.module.css"
 
-import type { AsyncDraft, ConversationState, InputSignal, UiSuggestion } from "./types"
+import type { AsyncDraft, ChatMessage, ConversationState, InputSignal, UiSuggestion } from "./types"
+
+type FeedbackRating = "positive" | "partial" | "negative"
+type FeedbackTag =
+  | "helpful"
+  | "too_interpretive"
+  | "too_directive"
+  | "too_generic"
+  | "not_concrete"
+  | "misunderstood"
+  | "too_reflective"
+  | "other"
+
+const NEGATIVE_TAG_OPTIONS: Array<{ value: FeedbackTag; label: string }> = [
+  { value: "too_interpretive", label: "For fortolkende" },
+  { value: "too_directive", label: "For styrende" },
+  { value: "too_generic", label: "For generisk" },
+  { value: "not_concrete", label: "Ikke konkret nok" },
+  { value: "misunderstood", label: "Misforstod mig" },
+  { value: "too_reflective", label: "For meget fokus på refleksion" },
+  { value: "other", label: "Andet" },
+]
 
 export type MessagePaneProps = {
-  isJournalActive: boolean
-  visibleMessages: Array<{ id: string; role: "user" | "assistant"; text: string }>
-  journalEntries: any[]
-  journalTitle: string
-  journalProfile: "general" | "alcohol" | "strict"
+  visibleMessages: ChatMessage[]
   state: ConversationState | null
   loading: boolean
   freeTextEnabled: boolean
@@ -45,84 +64,273 @@ function formatEvidenceLine(e: AsyncDraft["evidence"][number]) {
   return e.conversation_id
 }
 
+function FeedbackBox(props: {
+  message: ChatMessage
+  messageIndex: number
+  conversationId: string
+  node?: string
+  mode?: string
+  move?: string
+  compact?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const [rating, setRating] = useState<FeedbackRating | null>(null)
+  const [selectedTags, setSelectedTags] = useState<FeedbackTag[]>([])
+  const [note, setNote] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
+
+  const canSubmit = useMemo(() => {
+    if (!rating || saving) return false
+    if (rating === "positive") return true
+    return selectedTags.length > 0 || note.trim().length > 0
+  }, [rating, saving, selectedTags, note])
+
+  function toggleTag(tag: FeedbackTag) {
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag]))
+  }
+
+  async function submit() {
+    if (!canSubmit || !rating) return
+    setSaving(true)
+    setError(null)
+    try {
+      const payload = {
+        conversationId: props.conversationId,
+        revision: props.message.revision,
+        messageIndex: props.messageIndex,
+        rating,
+        tags: rating === "positive" ? ["helpful"] : selectedTags,
+        note: note.trim() || undefined,
+        meta: {
+          node: props.node,
+          mode: props.mode,
+          move: props.move,
+        },
+      }
+
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(typeof data?.error === "string" ? data.error : `HTTP ${res.status}`)
+      }
+
+      setSubmitted(true)
+      setOpen(false)
+    } catch (e: any) {
+      setError(e?.message ? String(e.message) : "Kunne ikke gemme feedback")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (submitted) {
+    return <div className={styles.feedbackSaved}>Tak for feedback.</div>
+  }
+
+  const panel = open && mounted
+    ? createPortal(
+        <div
+          className={styles.feedbackModalBackdrop}
+          onClick={() => {
+            setOpen(false)
+            setError(null)
+          }}
+        >
+          <div
+            className={styles.feedbackModalCard}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Feedback"
+          >
+            <div className={styles.feedbackPanel}>
+              <div className={styles.feedbackSection}>
+                <div className={styles.feedbackSectionTitle}>Vurdering</div>
+                <div className={styles.feedbackChoiceRow}>
+                  <button type="button" className={`${styles.feedbackChoice} ${rating === "positive" ? styles.feedbackChoiceActive : ""}`} onClick={() => setRating("positive")}>Ja</button>
+                  <button type="button" className={`${styles.feedbackChoice} ${rating === "partial" ? styles.feedbackChoiceActive : ""}`} onClick={() => setRating("partial")}>Delvist</button>
+                  <button type="button" className={`${styles.feedbackChoice} ${rating === "negative" ? styles.feedbackChoiceActive : ""}`} onClick={() => setRating("negative")}>Nej</button>
+                </div>
+              </div>
+
+              {rating === "positive" ? (
+                <label className={styles.feedbackLabel}>
+                  <span>Hvad var hjælpsomt? (valgfrit)</span>
+                  <textarea className={styles.feedbackTextarea} value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={2000} />
+                </label>
+              ) : (
+                <>
+                  <div className={styles.feedbackSection}>
+                    <div className={styles.feedbackSectionTitle}>Hvad var problemet?</div>
+                    <div className={styles.feedbackTagGrid}>
+                      {NEGATIVE_TAG_OPTIONS.map((option) => {
+                        const active = selectedTags.includes(option.value)
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            className={`${styles.feedbackTag} ${active ? styles.feedbackTagActive : ""}`}
+                            onClick={() => toggleTag(option.value)}
+                          >
+                            {option.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <label className={styles.feedbackLabel}>
+                    <span>Uddyb gerne (valgfrit)</span>
+                    <textarea className={styles.feedbackTextarea} value={note} onChange={(e) => setNote(e.target.value)} rows={4} maxLength={2000} />
+                  </label>
+                </>
+              )}
+
+              {error ? <div className={styles.feedbackError}>{error}</div> : null}
+
+              <div className={styles.feedbackActions}>
+                <button type="button" className={styles.feedbackPrimary} onClick={submit} disabled={!canSubmit}>
+                  {saving ? "Gemmer…" : "Send feedback"}
+                </button>
+                <button
+                  type="button"
+                  className={styles.feedbackSecondary}
+                  onClick={() => {
+                    setOpen(false)
+                    setError(null)
+                  }}
+                  disabled={saving}
+                >
+                  Luk
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )
+    : null
+
+  return (
+    <div className={styles.feedbackWrap}>
+      <div className={styles.feedbackInline}>
+        {props.compact ? (
+          <button
+            type="button"
+            className={styles.feedbackTextButton}
+            onClick={() => {
+              setOpen(true)
+              setRating(null)
+              setSelectedTags([])
+              setNote("")
+              setError(null)
+            }}
+            aria-label="Giv feedback"
+            title="Giv feedback"
+          >
+            Feedback
+          </button>
+        ) : (
+          <>
+            <span className={styles.feedbackPrompt}>Hjalp dette?</span>
+            <button
+              type="button"
+              className={styles.feedbackChip}
+              onClick={() => {
+                setOpen(true)
+                setRating("positive")
+                setSelectedTags([])
+                setNote("")
+                setError(null)
+              }}
+            >
+              Ja
+            </button>
+            <button
+              type="button"
+              className={styles.feedbackChip}
+              onClick={() => {
+                setOpen(true)
+                setRating("partial")
+                setSelectedTags([])
+                setNote("")
+                setError(null)
+              }}
+            >
+              Delvist
+            </button>
+            <button
+              type="button"
+              className={styles.feedbackChip}
+              onClick={() => {
+                setOpen(true)
+                setRating("negative")
+                setSelectedTags([])
+                setNote("")
+                setError(null)
+              }}
+            >
+              Nej
+            </button>
+          </>
+        )}
+      </div>
+
+      {panel}
+    </div>
+  )
+}
+
 export function MessagePane(props: MessagePaneProps) {
   const router = useRouter()
+  const conversationId = props.state?.conversation_id ?? null
+  const feedbackMode = (() => {
+    const entry = props.state?.meta?.["dialog.mode"]
+    return entry && typeof entry === "object" && "value" in entry ? String((entry as any).value ?? "") : typeof entry === "string" ? entry : undefined
+  })()
+  const feedbackMove = (() => {
+    const entry = props.state?.meta?.["dialog.move"]
+    return entry && typeof entry === "object" && "value" in entry ? String((entry as any).value ?? "") : typeof entry === "string" ? entry : undefined
+  })()
 
   return (
     <div className={styles.messages}>
-      {!props.isJournalActive &&
-        props.visibleMessages.map((m) => (
-          <div key={m.id} className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}>
-            {m.text}
-          </div>
-        ))}
-
-      {props.isJournalActive && (
-        <div className={styles.journalWrap}>
-          {props.journalEntries.length === 0 ? (
-            <div className={styles.journalEmpty}>
-              <div className={styles.journalEmptyTitle}>{props.journalTitle ? `Dagbog – ${props.journalTitle}` : "Dagbog"}</div>
-              <div className={styles.journalEmptyText}>
-                {props.journalProfile === "alcohol"
-                  ? "Skriv et kort notat og evt. drinks + urge (0–10)."
-                  : props.journalProfile === "strict"
-                    ? "Skriv et kort notat og en skala (0–10)."
-                    : "Skriv et kort notat."}
-              </div>
-            </div>
-          ) : (
-            <div className={styles.journalList}>
-              {props.journalEntries
-                .slice()
-                .sort((a, b) => (a.ts_ms ?? 0) - (b.ts_ms ?? 0))
-                .map((e) => {
-                  const dt = new Date(e.ts_ms)
-                  const time = Number.isFinite(e.ts_ms) ? dt.toLocaleString() : ""
-                  const drinks = e.fields?.drinks
-                  const urge = e.fields?.urge_0_10
-                  const strict = e.fields?.strict_0_10
-                  const moodTag = e.fields?.mood_tag
-                  const mood = e.fields?.mood_0_10
-                  const triggerTag = e.fields?.trigger_tag
-                  const contextTag = e.fields?.context_tag
-                  const copingTag = e.fields?.coping_tag
-                  const action = e.fields?.action
-                  const cravingPeak = e.fields?.craving_peak_0_10
-                  const cravingDur = e.fields?.craving_duration_min
-                  return (
-                    <div key={e.entry_id} className={styles.journalEntry}>
-                      <div className={styles.journalEntryTop}>
-                        <div className={styles.journalEntryTime}>{time}</div>
-                        <div className={styles.journalEntryChips}>
-                          {typeof drinks === "number" ? <span className={styles.journalChip}>Drinks: {drinks}</span> : null}
-                          {typeof urge === "number" ? <span className={styles.journalChip}>Urge: {urge}/10</span> : null}
-                          {typeof moodTag === "string" && moodTag.trim() ? <span className={styles.journalChip}>Sind: {moodTag}</span> : null}
-                          {typeof mood === "number" ? <span className={styles.journalChip}>Sind: {mood}/10</span> : null}
-                          {typeof triggerTag === "string" && triggerTag.trim() ? (
-                            <span className={styles.journalChip}>Trigger: {triggerTag}</span>
-                          ) : null}
-                          {typeof contextTag === "string" && contextTag.trim() ? (
-                            <span className={styles.journalChip}>Kontekst: {contextTag}</span>
-                          ) : null}
-                          {typeof copingTag === "string" && copingTag.trim() ? (
-                            <span className={styles.journalChip}>Coping: {copingTag}</span>
-                          ) : null}
-                          {typeof action === "string" && action.trim() ? (
-                            <span className={styles.journalChip}>Handling: {action}</span>
-                          ) : null}
-                          {typeof cravingPeak === "number" ? <span className={styles.journalChip}>Craving: {cravingPeak}/10</span> : null}
-                          {typeof cravingDur === "number" ? <span className={styles.journalChip}>Varighed: {cravingDur}m</span> : null}
-                          {typeof strict === "number" ? <span className={styles.journalChip}>Skala: {strict}/10</span> : null}
-                        </div>
-                      </div>
-                      {e.text ? <div className={styles.journalEntryText}>{e.text}</div> : null}
-                    </div>
-                  )
-                })}
-            </div>
-          )}
+      {props.visibleMessages.map((m, index) => (
+        <div key={m.id} className={styles.messageStack}>
+          <div className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}>{m.text}</div>
+          {m.role === "assistant" && conversationId ? (
+            (() => {
+              const revision = typeof m.revision === "number" ? m.revision : null
+              if (revision === 0) return null
+              return (
+                <FeedbackBox
+                  message={m}
+                  messageIndex={index}
+                  conversationId={conversationId}
+                  node={m.nodeId || props.state?.active_node}
+                  mode={feedbackMode}
+                  move={feedbackMove}
+                  compact={revision === 1}
+                />
+              )
+            })()
+          ) : null}
         </div>
-      )}
+      ))}
 
       {props.asyncJobStatus && (
         <div className={styles.callout}>

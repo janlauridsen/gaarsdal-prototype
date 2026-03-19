@@ -115,6 +115,16 @@ function isMemoryFact(v: unknown): v is MemoryFact {
   )
 }
 
+function threadThemeId(conversationId: string): string {
+  const safeConv = (conversationId ?? "").trim() || "unknown"
+  return `theme:thread:${safeConv}`
+}
+
+function threadEpisodeId(conversationId: string): string {
+  const safeConv = (conversationId ?? "").trim() || "unknown"
+  return `episode:thread:${safeConv}:1`
+}
+
 /**
  * Create or update a Theme (idempotent).
  */
@@ -221,6 +231,80 @@ export async function readTheme(params: {
 }
 
 /**
+ * Read an existing thread-bound Theme+Episode without writing.
+ */
+export async function readThreadThemeAndEpisode(params: {
+  userKey: string
+  conversationId: string
+}): Promise<{ theme: Theme; episode: Episode } | null> {
+  const themeId = threadThemeId(params.conversationId)
+  const episodeId = threadEpisodeId(params.conversationId)
+
+  const [theme, episode] = await Promise.all([
+    readTheme({ userKey: params.userKey, themeId }),
+    readEpisode({ userKey: params.userKey, episodeId }),
+  ])
+
+  if (!theme || !episode) return null
+  return { theme, episode }
+}
+
+/**
+ * Create a thread-bound Theme+Episode only if missing.
+ * Existing records are returned as-is to avoid write-on-read.
+ */
+export async function getOrCreateThreadThemeAndEpisode(params: {
+  userKey: string
+  conversationId: string
+  ttlSeconds: number
+}): Promise<{ theme: Theme; episode: Episode }> {
+  const existing = await readThreadThemeAndEpisode({
+    userKey: params.userKey,
+    conversationId: params.conversationId,
+  })
+  if (existing) return existing
+
+  const theme_id = threadThemeId(params.conversationId)
+  const episode_id = threadEpisodeId(params.conversationId)
+  const ts = nowMs()
+
+  const theme: Theme = {
+    theme_id,
+    label: "Tråd",
+    status: "active",
+    created_at: ts,
+    updated_at: ts,
+    origin: "system_suggested",
+  }
+
+  const episode: Episode = {
+    episode_id,
+    theme_id,
+    started_at: ts,
+    updated_at: ts,
+    summary_short: undefined,
+    open_loops: undefined,
+  }
+
+  await upsertTheme({ userKey: params.userKey, theme, ttlSeconds: params.ttlSeconds })
+  await upsertEpisode({ userKey: params.userKey, episode, ttlSeconds: params.ttlSeconds })
+
+  return { theme, episode }
+}
+
+/**
+ * Backward-compatible alias for callers not yet migrated.
+ * Semantics are create-if-missing and read-only otherwise.
+ */
+export async function ensureThreadThemeAndEpisode(params: {
+  userKey: string
+  conversationId: string
+  ttlSeconds: number
+}): Promise<{ theme: Theme; episode: Episode }> {
+  return getOrCreateThreadThemeAndEpisode(params)
+}
+
+/**
  * Create or update a MemoryFact.
  */
 export async function upsertFact(params: {
@@ -275,64 +359,27 @@ export async function ensureDefaultThemeAndEpisode(params: {
   const episode_id = "episode:general:1"
   const ts = nowMs()
 
-  const theme: Theme = {
-    theme_id,
-    label: "Generelt",
-    status: "active",
-    created_at: ts,
-    updated_at: ts,
-    origin: "system_suggested",
-  }
-
-  const episode: Episode = {
-    episode_id,
-    theme_id,
-    started_at: ts,
-    updated_at: ts,
-    summary_short: undefined,
-    open_loops: undefined,
-  }
-
-  // Upsert both (idempotent).
-  await upsertTheme({ userKey: params.userKey, theme, ttlSeconds: params.ttlSeconds })
-  await upsertEpisode({ userKey: params.userKey, episode, ttlSeconds: params.ttlSeconds })
-
-  return { theme, episode }
-}
-
-/**
- * Step-4 helper: Ensure a thread-bound Theme+Episode exist.
- *
- * Cross-thread contamination guardrail:
- * - every conversation/thread gets its own theme_id + episode_id binding
- * - theme_id/episode_id are stable by conversation_id
- */
-export async function ensureThreadThemeAndEpisode(params: {
-  userKey: string
-  conversationId: string
-  ttlSeconds: number
-}): Promise<{ theme: Theme; episode: Episode }> {
-  const safeConv = (params.conversationId ?? "").trim() || "unknown"
-  const theme_id = `theme:thread:${safeConv}`
-  const episode_id = `episode:thread:${safeConv}:1`
-  const ts = nowMs()
-
   const existingTheme = await readTheme({ userKey: params.userKey, themeId: theme_id })
+  const existingEpisode = await readEpisode({ userKey: params.userKey, episodeId: episode_id })
+
+  if (existingTheme && existingEpisode) {
+    return { theme: existingTheme, episode: existingEpisode }
+  }
+
   const theme: Theme = {
     theme_id,
-    label: existingTheme?.label ?? "Tråd",
-    status: "active",
+    label: existingTheme?.label ?? "Generelt",
+    status: existingTheme?.status ?? "active",
     created_at: existingTheme?.created_at ?? ts,
-    updated_at: ts,
+    updated_at: existingTheme?.updated_at ?? ts,
     origin: existingTheme?.origin ?? "system_suggested",
   }
 
-  const existingEpisode = await readEpisode({ userKey: params.userKey, episodeId: episode_id })
   const episode: Episode = {
     episode_id,
     theme_id,
     started_at: existingEpisode?.started_at ?? ts,
-    updated_at: ts,
+    updated_at: existingEpisode?.updated_at ?? ts,
     summary_short: existingEpisode?.summary_short,
     open_loops: existingEpisode?.open_loops,
   }

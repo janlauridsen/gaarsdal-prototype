@@ -7,15 +7,10 @@ export type ThreadItem = {
   title: string
   preview: string
   status: ThreadStatus
-  // Optional thread type metadata used by the UI.
-  // Defaults to "chat" when omitted.
-  thread_type?: "chat" | "journal"
-  // Optional journal profile (only meaningful when thread_type === "journal").
-  journal_profile?: "alcohol" | "general" | "strict"
-  // Legacy support (older stored items)
-  journal_kind?: "alcohol"
   created_at: string
   updated_at: string
+  title_confidence?: number
+  title_basis_revision?: number
 }
 
 export type ReturnLink = {
@@ -46,23 +41,13 @@ function asString(v: unknown): string {
   return typeof v === "string" ? v : ""
 }
 
-function isThreadItemLoose(
-  value: unknown
-): value is Omit<ThreadItem, "preview"> & {
-  preview?: unknown
-  thread_type?: unknown
-  journal_profile?: unknown
-  journal_kind?: unknown
-} {
+function isThreadItemLoose(value: unknown): value is Omit<ThreadItem, "preview" | "title_confidence" | "title_basis_revision"> & { preview?: unknown; title_confidence?: unknown; title_basis_revision?: unknown } {
   if (typeof value !== "object" || value === null) return false
   const v = value as any
   return (
     typeof v.conversation_id === "string" &&
     typeof v.title === "string" &&
     (v.status === "active" || v.status === "archived") &&
-    (v.thread_type === undefined || v.thread_type === "chat" || v.thread_type === "journal") &&
-    (v.journal_profile === undefined || v.journal_profile === "alcohol" || v.journal_profile === "general" || v.journal_profile === "strict") &&
-    (v.journal_kind === undefined || v.journal_kind === "alcohol") &&
     typeof v.created_at === "string" &&
     typeof v.updated_at === "string"
   )
@@ -80,23 +65,16 @@ function isThreadIndexLoose(value: unknown): value is Omit<ThreadIndex, "threads
   )
 }
 
-function normalizeThreadItem(
-  v: Omit<ThreadItem, "preview"> & { preview?: unknown; thread_type?: unknown; journal_profile?: unknown; journal_kind?: unknown }
-): ThreadItem {
-  const profileRaw = typeof (v as any).journal_profile === "string" ? String((v as any).journal_profile) : ""
-  const journal_profile = profileRaw === "alcohol" || profileRaw === "general" || profileRaw === "strict" ? (profileRaw as any) : undefined
-  const journal_kind = (v as any).journal_kind === "alcohol" ? ("alcohol" as const) : undefined
-
+function normalizeThreadItem(v: Omit<ThreadItem, "preview" | "title_confidence" | "title_basis_revision"> & { preview?: unknown; title_confidence?: unknown; title_basis_revision?: unknown }): ThreadItem {
   return {
     conversation_id: v.conversation_id,
     title: v.title,
     preview: asString((v as any).preview),
     status: v.status,
-    thread_type: (v as any).thread_type === "journal" ? "journal" : "chat",
-    journal_profile: journal_profile ?? (journal_kind ? "alcohol" : undefined),
-    journal_kind,
     created_at: v.created_at,
     updated_at: v.updated_at,
+    title_confidence: typeof (v as any).title_confidence === "number" ? (v as any).title_confidence : undefined,
+    title_basis_revision: typeof (v as any).title_basis_revision === "number" ? (v as any).title_basis_revision : undefined,
   }
 }
 
@@ -149,10 +127,6 @@ function nowIso(): string {
   return new Date().toISOString()
 }
 
-function cleanOneLine(input: string): string {
-  return input.replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim()
-}
-
 export function createEmptyThreadIndex(userKey: string): ThreadIndex {
   return {
     version: 1,
@@ -197,17 +171,15 @@ export function upsertThread(params: {
   title?: string
   preview?: string
   status?: ThreadStatus
-  thread_type?: "chat" | "journal"
-  journal_profile?: "alcohol" | "general" | "strict"
-  journal_kind?: "alcohol"
+  titleConfidence?: number
+  titleBasisRevision?: number
 }): ThreadIndex {
   const ts = nowIso()
   const title = params.title ?? ""
   const preview = params.preview ?? ""
   const status = params.status ?? "active"
-  const thread_type = params.thread_type ?? "chat"
-  const journal_profile = params.journal_profile
-  const journal_kind = params.journal_kind
+  const titleConfidence = typeof params.titleConfidence === "number" ? params.titleConfidence : undefined
+  const titleBasisRevision = typeof params.titleBasisRevision === "number" ? params.titleBasisRevision : undefined
   const existingIdx = params.index.threads.findIndex((t) => t.conversation_id === params.conversationId)
 
   const nextThreads = [...params.index.threads]
@@ -218,10 +190,9 @@ export function upsertThread(params: {
       title: title || prev.title,
       preview: preview || prev.preview,
       status,
-      thread_type: prev.thread_type ?? thread_type,
-      journal_profile: prev.journal_profile ?? journal_profile ?? (prev.journal_kind ? "alcohol" : undefined),
-      journal_kind: prev.journal_kind ?? journal_kind,
       updated_at: ts,
+      title_confidence: titleConfidence ?? prev.title_confidence,
+      title_basis_revision: titleBasisRevision ?? prev.title_basis_revision,
     }
   } else {
     nextThreads.unshift({
@@ -229,20 +200,17 @@ export function upsertThread(params: {
       title,
       preview,
       status,
-      thread_type,
-      journal_profile: journal_profile ?? (journal_kind ? "alcohol" : undefined),
-      journal_kind,
       created_at: ts,
       updated_at: ts,
+      title_confidence: titleConfidence,
+      title_basis_revision: titleBasisRevision,
     })
   }
 
-  // Keep active threads first, and cap total.
   const active = nextThreads.filter((t) => t.status === "active")
   const archived = nextThreads.filter((t) => t.status === "archived")
   const capped = [...active, ...archived].slice(0, MAX_THREADS)
 
-  // If active_conversation_id was trimmed out, unset it.
   const activeId = params.index.active_conversation_id
   const activeStillExists = activeId ? capped.some((t) => t.conversation_id === activeId) : false
 
@@ -271,7 +239,6 @@ export function archiveThread(params: { index: ThreadIndex; conversationId: stri
   const ts = nowIso()
   const conversationId = params.conversationId
 
-  // If the thread doesn't exist, no-op.
   const exists = params.index.threads.some((t) => t.conversation_id === conversationId)
   if (!exists) return params.index
 
@@ -285,18 +252,15 @@ export function archiveThread(params: { index: ThreadIndex; conversationId: stri
       : t
   )
 
-  // Remove navigation links that point to/from the archived thread.
   const return_stack = (params.index.navigation?.return_stack ?? []).filter(
     (l) => l.from !== conversationId && l.to !== conversationId
   )
 
-  // If the archived thread was active, pick the most recent remaining active thread (if any).
   const activeWasArchived = params.index.active_conversation_id === conversationId
   const nextActiveId = activeWasArchived
     ? (threads.find((t) => t.status === "active" && t.conversation_id !== conversationId)?.conversation_id ?? null)
     : params.index.active_conversation_id
 
-  // Keep active threads first, and cap total.
   const active = threads.filter((t) => t.status === "active")
   const archived = threads.filter((t) => t.status === "archived")
   const capped = [...active, ...archived].slice(0, MAX_THREADS)
@@ -311,119 +275,62 @@ export function archiveThread(params: { index: ThreadIndex; conversationId: stri
   }
 }
 
-export function applyAutoThreadLabelFromText(params: {
+export function isGenericThreadTitle(title: string | null | undefined): boolean {
+  const t = asString(title).trim().toLowerCase()
+  return !t || t === "ny samtale" || t === "parentesespor"
+}
+
+export function updateThreadPreview(params: {
   index: ThreadIndex
   conversationId: string
-  // Title is derived from the FIRST meaningful user input in the thread.
-  titleText: string
-  // Preview is derived from the LATEST meaningful user input in the thread.
   previewText: string
-  maxTitleChars?: number
   maxPreviewChars?: number
-  // If true, only set title when currently empty.
-  setTitleIfEmpty?: boolean
-  // If true, preview is always updated from previewText.
-  alwaysUpdatePreview?: boolean
 }): ThreadIndex {
-  const maxTitleChars = params.maxTitleChars ?? 60
   const maxPreviewChars = params.maxPreviewChars ?? 120
-  const setTitleIfEmpty = params.setTitleIfEmpty ?? true
-  const alwaysUpdatePreview = params.alwaysUpdatePreview ?? true
-
-  const truncate = (s: string, max: number): string => {
-    const t = String(s ?? "").trim()
-    if (!t) return ""
-    if (t.length <= max) return t
-    return t.slice(0, max) + "…"
+  const preview = asString(params.previewText).replace(/\s+/g, " ").trim()
+  if (!preview) return params.index
+  const nextPreview = preview.length <= maxPreviewChars ? preview : `${preview.slice(0, maxPreviewChars)}…`
+  return {
+    ...params.index,
+    threads: params.index.threads.map((t) =>
+      t.conversation_id === params.conversationId
+        ? { ...t, preview: nextPreview, updated_at: new Date().toISOString() }
+        : t
+    ),
   }
+}
 
-  const normalize = (s: string): string => String(s ?? "").replace(/\s+/g, " ").trim()
+export function maybePromoteThreadTitle(params: {
+  index: ThreadIndex
+  conversationId: string
+  title: string
+  confidence: number
+  basisRevision: number
+}): ThreadIndex {
+  const cleanTitle = asString(params.title).replace(/\s+/g, " ").trim()
+  if (!cleanTitle) return params.index
 
-  const STOPWORDS = new Set<string>([
-    // Danish (minimal, pragmatic list)
-    "og","i","på","af","for","til","med","det","den","de","der","som","en","et","er","var","har","have","skal","kan",
-    "jeg","du","vi","man","mig","din","mit","dine","min","mine","jer","os","sig","sin","sine","sit",
-    "ikke","så","også","mere","meget","lidt","bare","kun","når","hvis","fordi","men","eller","da",
-    // English
-    "and","or","the","a","an","to","of","in","on","for","with","is","are","was","were","be","been","being",
-    "i","you","we","they","it","this","that","these","those","my","your","our","their","me","us",
-    "not","so","also","more","most","very","just","only","when","if","because","but",
-  ])
+  const thread = params.index.threads.find((t) => t.conversation_id === params.conversationId)
+  if (!thread) return params.index
 
-  const tokenize = (s: string): string[] => {
-    const cleaned = normalize(s)
-      .toLowerCase()
-      .replace(/[^\p{L}\p{N}\s_-]+/gu, " ")
-      .replace(/[_-]+/g, " ")
-      .trim()
-    if (!cleaned) return []
-    return cleaned.split(/\s+/).filter(Boolean)
+  const currentConfidence = typeof thread.title_confidence === "number" ? thread.title_confidence : 0
+  const currentGeneric = isGenericThreadTitle(thread.title)
+  const nextConfidence = Math.max(0, Math.min(1, params.confidence))
+  const shouldReplace = currentGeneric || (currentConfidence < nextConfidence && params.basisRevision <= 3)
+  if (!shouldReplace) return params.index
+
+  return {
+    ...params.index,
+    threads: params.index.threads.map((t) =>
+      t.conversation_id === params.conversationId
+        ? {
+            ...t,
+            title: cleanTitle,
+            title_confidence: nextConfidence,
+            title_basis_revision: Math.max(0, params.basisRevision),
+            updated_at: new Date().toISOString(),
+          }
+        : t
+    ),
   }
-
-  const keywordTitle = (s: string): string => {
-    const tokens = tokenize(s).filter((t) => t.length >= 3 && !STOPWORDS.has(t))
-    if (!tokens.length) {
-      // Fallback: first 8 words from normalized text.
-      return truncate(normalize(s).split(/\s+/).slice(0, 8).join(" "), maxTitleChars)
-    }
-
-    const freq = new Map<string, number>()
-    for (const t of tokens) freq.set(t, (freq.get(t) ?? 0) + 1)
-
-    // Score: frequency desc, length desc, stable by first appearance.
-    const firstPos = new Map<string, number>()
-    tokens.forEach((t, idx) => { if (!firstPos.has(t)) firstPos.set(t, idx) })
-
-    const uniq = Array.from(freq.keys())
-    uniq.sort((a, b) => {
-      const fa = freq.get(a) ?? 0
-      const fb = freq.get(b) ?? 0
-      if (fb !== fa) return fb - fa
-      if (b.length !== a.length) return b.length - a.length
-      return (firstPos.get(a) ?? 0) - (firstPos.get(b) ?? 0)
-    })
-
-    // Keep 4–6 keywords depending on space; build until we hit maxTitleChars.
-    const picked: string[] = []
-    for (const k of uniq) {
-      const next = [...picked, k].join(" ")
-      if (picked.length >= 6) break
-      if (next.length > maxTitleChars) break
-      picked.push(k)
-      if (picked.length >= 4 && next.length >= Math.floor(maxTitleChars * 0.6)) break
-    }
-
-    const title = picked.join(" ").trim()
-    return truncate(title || normalize(s), maxTitleChars)
-  }
-
-  const titleText = normalize(params.titleText)
-  const previewText = normalize(params.previewText)
-
-  const idx = params.index
-  const thread = idx.threads.find((t) => t.conversation_id === params.conversationId)
-  if (!thread) return idx
-
-  const nextThreads = idx.threads.map((t) => {
-    if (t.conversation_id !== params.conversationId) return t
-
-    const nextTitle =
-      (!setTitleIfEmpty || !(t.title ?? "").trim()) && titleText
-        ? keywordTitle(titleText)
-        : (t.title ?? "")
-
-    const nextPreview =
-      alwaysUpdatePreview && previewText
-        ? truncate(previewText, maxPreviewChars)
-        : (t.preview ?? "")
-
-    return {
-      ...t,
-      title: nextTitle,
-      preview: nextPreview,
-      updated_at: new Date().toISOString(),
-    }
-  })
-
-  return { ...idx, threads: nextThreads }
 }

@@ -2,7 +2,7 @@
 import type { ConversationState } from "../kernel/types"
 import {
   ensureDefaultThemeAndEpisode,
-  ensureThreadThemeAndEpisode,
+  readThreadThemeAndEpisode,
   readEpisode,
   readEpisodes,
   readFacts,
@@ -128,11 +128,14 @@ export async function buildContextPackV23(params: {
 
   const ensured =
     typeof boundThemeId === "string" && typeof boundEpisodeId === "string"
-      ? await ensureThreadThemeAndEpisode({
+      ? (await readThreadThemeAndEpisode({
           userKey: params.userKey,
           conversationId: params.state.conversation_id,
+        })) ??
+        (await ensureDefaultThemeAndEpisode({
+          userKey: params.userKey,
           ttlSeconds: params.ttlSeconds,
-        })
+        }))
       : await ensureDefaultThemeAndEpisode({
           userKey: params.userKey,
           ttlSeconds: params.ttlSeconds,

@@ -45,11 +45,19 @@ function defaultProfileV2(params: { now: string; lastNode: string }) {
     last_node: params.lastNode,
     node_counts: {},
     topic_scores: {},
-    pref: { short_answers: 0.5 },
+    pref: {
+      short_answers: 0.5,
+      direct_answers_first: 0.55,
+      reflection_preference: 0.45,
+      practical_next_steps: 0.5,
+    },
     core: {
       preferences: {
         preferred_tone: "",
         short_answers: 0.5,
+        direct_answers_first: 0.55,
+        reflection_preference: 0.45,
+        practical_next_steps: 0.5,
       },
       semantic: {
         topics: [],

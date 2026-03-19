@@ -17,13 +17,6 @@ export type InputSignal =
   | {
       type: "THREAD_CREATE"
       mode: "normal"
-      thread_type?: "chat" | "journal"
-      journal_profile?: "alcohol" | "general" | "strict"
-      journal_init?: {
-        title: string
-        problem: string
-        goal: string
-      }
     }
   | { type: "THREAD_SWITCH"; conversation_id: string }
   | { type: "THREAD_ARCHIVE" }
@@ -31,7 +24,7 @@ export type InputSignal =
 export type DeferredJobSignal = {
   pending: true
   job_id: string
-  kind: "scan_threads"
+  kind: "scan_threads" | "derive_thread_title"
   mode: "shadow" | "visible"
   based_on_revision: number
 }
@@ -47,6 +40,8 @@ export type ChatMessage = {
   id: string
   role: "assistant" | "user"
   text: string
+  revision?: number
+  nodeId?: string
 }
 
 export type UiSuggestion = {
@@ -66,40 +61,13 @@ export type ThreadTab = {
   title: string
   preview: string
   status: "active" | "archived"
-  thread_type?: "chat" | "journal"
-  journal_profile?: "alcohol" | "general" | "strict"
-  // Legacy support (older stored items)
-  journal_kind?: "alcohol"
   updated_at?: string
-}
-
-export type JournalEntry = {
-  entry_id: string
-  ts_ms: number
-  schema_version: "v1" | "v2"
-  kind: "alcohol" | "general" | "strict"
-  text?: string
-  fields?: {
-    drinks?: number
-    urge_0_10?: number
-    strict_0_10?: number
-
-    // alcohol v2 (optional)
-    mood_tag?: string
-    mood_0_10?: number
-    trigger_tag?: string
-    context_tag?: string
-    coping_tag?: string
-    action?: string
-    craving_peak_0_10?: number
-    craving_duration_min?: number
-  }
 }
 
 
 export type AsyncConversationJob = {
   job_id: string
-  kind: "scan_threads"
+  kind: "scan_threads" | "derive_thread_title"
   status: "queued" | "running" | "completed" | "failed" | "canceled"
   cursor?: string
   progress?: number
