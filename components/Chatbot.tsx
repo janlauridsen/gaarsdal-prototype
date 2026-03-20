@@ -65,21 +65,26 @@ export default function Chatbot() {
   const jobLoopRef = useRef<{ conversationId: string; jobId: string; cancelled: boolean } | null>(null)
   const initInFlightRef = useRef(false)
 
-  const focusInput = () => {
-    window.requestAnimationFrame(() => {
-      textareaRef.current?.focus()
-    })
-  }
-
-  const scrollMessagesToBottom = (behavior: ScrollBehavior = "smooth") => {
+  const scrollChatToBottom = (behavior: ScrollBehavior = "smooth") => {
     endRef.current?.scrollIntoView({ behavior, block: "end" })
   }
 
-  const syncTextareaHeight = () => {
-    const el = textareaRef.current
-    if (!el) return
-    el.style.height = "auto"
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`
+  const syncViewportHeight = () => {
+    if (typeof window === "undefined") return
+    const viewport = window.visualViewport
+    const nextHeight = viewport?.height ?? window.innerHeight
+    document.documentElement.style.setProperty("--app-dvh", `${window.innerHeight}px`)
+    document.documentElement.style.setProperty("--chatbot-viewport-height", `${Math.round(nextHeight)}px`)
+  }
+
+  const focusInput = () => {
+    window.requestAnimationFrame(() => {
+      textareaRef.current?.focus()
+      window.setTimeout(() => {
+        textareaRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" })
+        scrollChatToBottom()
+      }, 250)
+    })
   }
 
   function metaValue(key: string) {
@@ -360,71 +365,52 @@ export default function Chatbot() {
 
   useEffect(() => {
     if (!open) return
-    scrollMessagesToBottom("smooth")
+    scrollChatToBottom()
   }, [visibleMessages, open, headerNavHint, expanded])
-
-  useEffect(() => {
-    if (!open) return
-    if (!draftReview || draftReview.accepted_at) return
-    scrollMessagesToBottom("smooth")
-  }, [open, draftReview?.job_id, draftReview?.accepted_at])
-
-  useEffect(() => {
-    syncTextareaHeight()
-  }, [input, open])
 
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    const root = document.documentElement
-    const setViewportHeight = (height: number) => {
-      const px = `${Math.round(height)}px`
-      root.style.setProperty("--app-dvh", px)
-      root.style.setProperty("--chatbot-viewport-height", px)
-    }
+    syncViewportHeight()
 
-    const applyFromVisualViewport = () => {
-      const vv = window.visualViewport
-      if (!vv) {
-        setViewportHeight(window.innerHeight)
-        root.style.setProperty("--chatbot-keyboard-offset", "0px")
-        return
-      }
-
-      const nextHeight = Math.min(vv.height, window.innerHeight)
-      const keyboardInset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
-      setViewportHeight(nextHeight)
-      root.style.setProperty("--chatbot-keyboard-offset", `${Math.round(keyboardInset)}px`)
-    }
-
-    applyFromVisualViewport()
-
-    const vv = window.visualViewport
-    const onResize = () => {
-      applyFromVisualViewport()
-      if (document.activeElement === textareaRef.current) {
+    const viewport = window.visualViewport
+    const handleResize = () => {
+      syncViewportHeight()
+      if (open) {
         window.requestAnimationFrame(() => {
-          syncTextareaHeight()
-          scrollMessagesToBottom("auto")
+          textareaRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" })
+          scrollChatToBottom()
         })
       }
     }
 
-    window.addEventListener("resize", onResize)
-    window.addEventListener("orientationchange", onResize)
-    vv?.addEventListener("resize", onResize)
-    vv?.addEventListener("scroll", onResize)
+    window.addEventListener("resize", handleResize)
+    window.addEventListener("orientationchange", handleResize)
+    viewport?.addEventListener("resize", handleResize)
+    viewport?.addEventListener("scroll", handleResize)
 
     return () => {
-      window.removeEventListener("resize", onResize)
-      window.removeEventListener("orientationchange", onResize)
-      vv?.removeEventListener("resize", onResize)
-      vv?.removeEventListener("scroll", onResize)
-      root.style.removeProperty("--chatbot-keyboard-offset")
-      root.style.removeProperty("--chatbot-viewport-height")
-      root.style.removeProperty("--app-dvh")
+      window.removeEventListener("resize", handleResize)
+      window.removeEventListener("orientationchange", handleResize)
+      viewport?.removeEventListener("resize", handleResize)
+      viewport?.removeEventListener("scroll", handleResize)
     }
-  }, [])
+  }, [open])
+
+  useEffect(() => {
+    if (typeof document === "undefined" || typeof window === "undefined") return
+    const mobile = window.matchMedia("(max-width: 768px)").matches
+    document.body.classList.toggle("chatbotMobileOpen", open && mobile)
+    return () => {
+      document.body.classList.remove("chatbotMobileOpen")
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    if (!draftReview || draftReview.accepted_at) return
+    scrollChatToBottom()
+  }, [open, draftReview?.job_id, draftReview?.accepted_at])
 
   useEffect(() => {
     if (!open) return
@@ -432,10 +418,6 @@ export default function Chatbot() {
     if (loading) return
     if (threadsOpen) return
     focusInput()
-    window.requestAnimationFrame(() => {
-      syncTextareaHeight()
-      scrollMessagesToBottom("auto")
-    })
   }, [open, loading, threadsOpen, state?.revision, visibleMessages.length])
 
   useEffect(() => {
@@ -447,34 +429,6 @@ export default function Chatbot() {
       if (jobLoopRef.current) jobLoopRef.current.cancelled = true
     }
   }, [])
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const mobile = window.matchMedia("(max-width: 768px)")
-
-    const syncBodyScrollLock = () => {
-      const shouldLock = open && mobile.matches
-      document.body.style.overflow = shouldLock ? "hidden" : ""
-    }
-
-    syncBodyScrollLock()
-    const onChange = () => syncBodyScrollLock()
-
-    if (typeof mobile.addEventListener === "function") {
-      mobile.addEventListener("change", onChange)
-    } else if (typeof mobile.addListener === "function") {
-      mobile.addListener(onChange)
-    }
-
-    return () => {
-      if (typeof mobile.removeEventListener === "function") {
-        mobile.removeEventListener("change", onChange)
-      } else if (typeof mobile.removeListener === "function") {
-        mobile.removeListener(onChange)
-      }
-      document.body.style.overflow = ""
-    }
-  }, [open])
 
   useEffect(() => {
     if (!open || !activeConversationId) return
@@ -907,10 +861,10 @@ export default function Chatbot() {
                 loading={loading}
                 onChange={setInput}
                 onFocus={() => {
-                  window.requestAnimationFrame(() => {
-                    syncTextareaHeight()
-                    scrollMessagesToBottom("auto")
-                  })
+                  window.setTimeout(() => {
+                    textareaRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" })
+                    scrollChatToBottom()
+                  }, 250)
                 }}
                 onSend={(text) => {
                   setInput("")
