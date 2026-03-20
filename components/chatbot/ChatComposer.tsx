@@ -12,10 +12,11 @@ type Props = {
   disabled: boolean
   loading: boolean
   onChange: (value: string) => void
+  onFocus?: () => void
   onSend: (text: string) => void
 }
 
-export default function ChatComposer({ textareaRef, value, placeholder, disabled, loading, onChange, onSend }: Props) {
+export default function ChatComposer({ textareaRef, value, placeholder, disabled, loading, onChange, onFocus, onSend }: Props) {
   return (
     <div className={styles.inputRow}>
       <textarea
@@ -26,6 +27,8 @@ export default function ChatComposer({ textareaRef, value, placeholder, disabled
         placeholder={placeholder}
         rows={2}
         disabled={disabled}
+        enterKeyHint="send"
+        onFocus={onFocus}
         onKeyDown={(e: KeyboardEvent<HTMLTextAreaElement>) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault()
