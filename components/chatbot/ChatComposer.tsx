@@ -1,6 +1,6 @@
 "use client"
 
-import type { KeyboardEvent, RefObject } from "react"
+import type { FocusEvent, KeyboardEvent, RefObject } from "react"
 import { PaperAirplaneIcon } from "@heroicons/react/24/outline"
 
 import styles from "../Chatbot.module.css"
@@ -12,11 +12,20 @@ type Props = {
   disabled: boolean
   loading: boolean
   onChange: (value: string) => void
-  onFocus?: () => void
   onSend: (text: string) => void
+  onFocus?: (event: FocusEvent<HTMLTextAreaElement>) => void
 }
 
-export default function ChatComposer({ textareaRef, value, placeholder, disabled, loading, onChange, onFocus, onSend }: Props) {
+export default function ChatComposer({
+  textareaRef,
+  value,
+  placeholder,
+  disabled,
+  loading,
+  onChange,
+  onSend,
+  onFocus,
+}: Props) {
   return (
     <div className={styles.inputRow}>
       <textarea
@@ -24,11 +33,11 @@ export default function ChatComposer({ textareaRef, value, placeholder, disabled
         className={styles.textarea}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={onFocus}
         placeholder={placeholder}
         rows={2}
         disabled={disabled}
         enterKeyHint="send"
-        onFocus={onFocus}
         onKeyDown={(e: KeyboardEvent<HTMLTextAreaElement>) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault()
