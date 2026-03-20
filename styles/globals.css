@@ -11,23 +11,16 @@
 :root {
   --app-dvh: 100dvh;
   --chatbot-viewport-height: 100dvh;
-  --chatbot-keyboard-offset: 0px;
 }
 
 html,
 body {
+  min-height: 100%;
   background: #EFEDE7;
   color: #2C2A28;
-  min-height: 100%;
 }
 
-body {
-  min-height: var(--app-dvh);
-}
-
-@supports (height: 100dvh) {
-  html,
-  body {
-    min-height: 100dvh;
-  }
+body.chatbotMobileOpen {
+  overflow: hidden;
+  touch-action: none;
 }
