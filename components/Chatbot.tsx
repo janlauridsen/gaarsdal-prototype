@@ -63,6 +63,8 @@ export default function Chatbot() {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const footerRef = useRef<HTMLDivElement | null>(null)
   const [isMobileViewport, setIsMobileViewport] = useState(false)
+  const [isInAppBrowser, setIsInAppBrowser] = useState(false)
+  const [copyLinkLabel, setCopyLinkLabel] = useState("Kopiér link")
   const didAutoStartNewThreadRef = useRef(false)
   const jobLoopRef = useRef<{ conversationId: string; jobId: string; cancelled: boolean } | null>(null)
   const initInFlightRef = useRef(false)
@@ -79,11 +81,13 @@ export default function Chatbot() {
     const viewportHeight = Math.round(viewport?.height ?? layoutHeight)
     const viewportOffsetTop = Math.max(0, Math.round(viewport?.offsetTop ?? 0))
     const viewportOffsetLeft = Math.max(0, Math.round(viewport?.offsetLeft ?? 0))
+    const keyboardInset = Math.max(0, layoutHeight - viewportHeight - viewportOffsetTop)
 
     document.documentElement.style.setProperty("--app-dvh", `${layoutHeight}px`)
     document.documentElement.style.setProperty("--chatbot-viewport-height", `${viewportHeight}px`)
     document.documentElement.style.setProperty("--chatbot-viewport-offset-top", `${viewportOffsetTop}px`)
     document.documentElement.style.setProperty("--chatbot-viewport-offset-left", `${viewportOffsetLeft}px`)
+    document.documentElement.style.setProperty("--chatbot-keyboard-inset", `${keyboardInset}px`)
   }
 
   const syncComposerMetrics = () => {
@@ -92,6 +96,44 @@ export default function Chatbot() {
     const footerHeight = Math.max(0, Math.ceil(footerRef.current?.getBoundingClientRect().height ?? 0))
     const nextHeight = footerHeight || 88
     document.documentElement.style.setProperty("--chatbot-composer-height", `${nextHeight}px`)
+  }
+
+  const isUnsupportedInAppBrowser = open && isMobileViewport && isInAppBrowser
+
+  const openCurrentPageInBrowser = () => {
+    if (typeof window === "undefined") return
+    const url = window.location.href
+
+    try {
+      const opened = window.open(url, "_blank", "noopener,noreferrer")
+      if (opened) return
+    } catch {
+      // Ignore and fall back to location assignment.
+    }
+
+    window.location.href = url
+  }
+
+  const copyCurrentPageLink = async () => {
+    if (typeof window === "undefined") return
+    const url = window.location.href
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url)
+        setCopyLinkLabel("Link kopieret")
+        window.setTimeout(() => setCopyLinkLabel("Kopiér link"), 1800)
+        return
+      }
+    } catch {
+      // Ignore and fall through to best-effort prompt fallback.
+    }
+
+    try {
+      window.prompt("Kopiér linket herfra", url)
+    } catch {
+      // Best effort only.
+    }
   }
 
   const scheduleComposerIntoView = (delay = 280) => {
@@ -405,6 +447,21 @@ export default function Chatbot() {
 
     media.addListener(updateMobileViewport)
     return () => media.removeListener(updateMobileViewport)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const ua = navigator.userAgent || ""
+    const vendor = navigator.vendor || ""
+    const referrer = document.referrer || ""
+
+    const matchesInAppBrowser = /(FBAN|FBAV|Messenger|Instagram|Line\/|MicroMessenger|wv\))/i.test(ua)
+      || /FB_IAB|FB4A/i.test(ua)
+      || /Instagram/i.test(vendor)
+      || /facebook\.com|messenger\.com/i.test(referrer)
+
+    setIsInAppBrowser(matchesInAppBrowser)
   }, [])
 
   useEffect(() => {
@@ -843,8 +900,9 @@ export default function Chatbot() {
 
 
 
-  const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal}`
-  const footerClass = styles.footer
+  const composerDetached = open && isMobileViewport
+  const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal} ${composerDetached ? styles.chatbotDetachedComposer : ""}`
+  const footerClass = `${styles.footer}${composerDetached ? ` ${styles.footerDetached}` : ""}`
 
   return (
     <>
@@ -859,64 +917,121 @@ export default function Chatbot() {
           <div className={styles.overlay} onClick={closeChat} />
 
           <div className={containerClass} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-            <ChatHeader
-              loading={loading}
-              expanded={expanded}
-              activeNodeLabel={activeNodeLabel}
-              toggleExpanded={toggleExpanded}
-              closeChat={closeChat}
-              threadsOpen={threadsOpen}
-              setThreadsOpen={setThreadsOpen}
-              threadTabs={threadTabs}
-              activeConversationId={activeConversationId}
-              state={state}
-              dispatch={dispatch}
-              focusInput={focusInput}
-              headerNavHint={headerNavHint}
-            />
+            {isUnsupportedInAppBrowser ? (
+              <div className={styles.fallbackPanel}>
+                <div className={styles.fallbackBody}>
+                  <h2 className={styles.fallbackTitle}>Åbn siden i din browser</h2>
+                  <p className={styles.fallbackText}>
+                    Chatten fungerer ikke stabilt i indbyggede browsere fra sociale apps som Facebook og Messenger på Android.
+                  </p>
+                  <p className={styles.fallbackText}>
+                    Åbn siden i Chrome eller din standardbrowser for at bruge chatten.
+                  </p>
 
-            <MessagePane
-              visibleMessages={visibleMessages}
-              state={state}
-              loading={loading}
-              freeTextEnabled={freeTextEnabled}
-              uiSuggestions={uiSuggestions}
-              dispatch={dispatch}
-              endRef={endRef}
-              asyncJobStatus={jobRunnerState}
-              draftReview={
-                draftReview && !draftReview.accepted_at
-                  ? {
-                      draft: draftReview,
-                      summary: draftSummaryInput,
-                      openQuestionsText: draftOpenQuestionsInput,
-                      saving: draftSaving,
-                      onSummaryChange: setDraftSummaryInput,
-                      onOpenQuestionsChange: setDraftOpenQuestionsInput,
-                      onAccept: acceptDraftReview,
-                      onReset: () => applyDraftToEditor(draftReview),
-                    }
-                  : null
-              }
-            />
-            <div ref={footerRef} className={footerClass}>
-                <ChatComposer
-                  textareaRef={textareaRef}
-                  value={input}
-                  placeholder={placeholder}
-                  disabled={!state || !freeTextEnabled}
+                  <div className={styles.fallbackActions}>
+                    <button type="button" className={styles.fallbackPrimaryBtn} onClick={openCurrentPageInBrowser}>
+                      Åbn i browser
+                    </button>
+                    <button type="button" className={styles.fallbackSecondaryBtn} onClick={copyCurrentPageLink}>
+                      {copyLinkLabel}
+                    </button>
+                  </div>
+
+                  <div className={styles.fallbackHelp}>
+                    <p className={styles.fallbackHelpTitle}>Hvis knappen ikke åbner eksternt:</p>
+                    <ol className={styles.fallbackSteps}>
+                      <li>Tryk på menuen øverst til højre i app-browseren.</li>
+                      <li>Vælg “Åbn i browser”.</li>
+                      <li>Fortsæt derefter i Chrome eller din standardbrowser.</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <ChatHeader
                   loading={loading}
-                  onChange={setInput}
-                  onFocus={() => {
-                    scheduleComposerIntoView()
-                  }}
-                  onSend={(text) => {
-                    setInput("")
-                    dispatch({ type: "FREE_TEXT", text })
-                  }}
+                  expanded={expanded}
+                  activeNodeLabel={activeNodeLabel}
+                  toggleExpanded={toggleExpanded}
+                  closeChat={closeChat}
+                  threadsOpen={threadsOpen}
+                  setThreadsOpen={setThreadsOpen}
+                  threadTabs={threadTabs}
+                  activeConversationId={activeConversationId}
+                  state={state}
+                  dispatch={dispatch}
+                  focusInput={focusInput}
+                  headerNavHint={headerNavHint}
                 />
-            </div>
+
+                <MessagePane
+                  visibleMessages={visibleMessages}
+                  state={state}
+                  loading={loading}
+                  freeTextEnabled={freeTextEnabled}
+                  uiSuggestions={uiSuggestions}
+                  dispatch={dispatch}
+                  endRef={endRef}
+                  asyncJobStatus={jobRunnerState}
+                  draftReview={
+                    draftReview && !draftReview.accepted_at
+                      ? {
+                          draft: draftReview,
+                          summary: draftSummaryInput,
+                          openQuestionsText: draftOpenQuestionsInput,
+                          saving: draftSaving,
+                          onSummaryChange: setDraftSummaryInput,
+                          onOpenQuestionsChange: setDraftOpenQuestionsInput,
+                          onAccept: acceptDraftReview,
+                          onReset: () => applyDraftToEditor(draftReview),
+                        }
+                      : null
+                  }
+                />
+
+                {!composerDetached && (
+                  <div ref={footerRef} className={footerClass}>
+                    <ChatComposer
+                      textareaRef={textareaRef}
+                      value={input}
+                      placeholder={placeholder}
+                      disabled={!state || !freeTextEnabled}
+                      loading={loading}
+                      onChange={setInput}
+                      onFocus={() => {
+                        scheduleComposerIntoView()
+                      }}
+                      onSend={(text) => {
+                        setInput("")
+                        dispatch({ type: "FREE_TEXT", text })
+                      }}
+                    />
+                  </div>
+                )}
+              </>
+            )}
           </div>
+
+          {composerDetached && !isUnsupportedInAppBrowser && (
+            <div ref={footerRef} className={footerClass} onClick={(e) => e.stopPropagation()}>
+              <ChatComposer
+                textareaRef={textareaRef}
+                value={input}
+                placeholder={placeholder}
+                disabled={!state || !freeTextEnabled}
+                loading={loading}
+                onChange={setInput}
+                onFocus={() => {
+                  scheduleComposerIntoView()
+                }}
+                onSend={(text) => {
+                  setInput("")
+                  dispatch({ type: "FREE_TEXT", text })
+                }}
+              />
+            </div>
+          )}
         </>
       )}
     </>
