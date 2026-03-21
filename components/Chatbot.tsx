@@ -79,13 +79,11 @@ export default function Chatbot() {
     const viewportHeight = Math.round(viewport?.height ?? layoutHeight)
     const viewportOffsetTop = Math.max(0, Math.round(viewport?.offsetTop ?? 0))
     const viewportOffsetLeft = Math.max(0, Math.round(viewport?.offsetLeft ?? 0))
-    const keyboardInset = Math.max(0, layoutHeight - viewportHeight - viewportOffsetTop)
 
     document.documentElement.style.setProperty("--app-dvh", `${layoutHeight}px`)
     document.documentElement.style.setProperty("--chatbot-viewport-height", `${viewportHeight}px`)
     document.documentElement.style.setProperty("--chatbot-viewport-offset-top", `${viewportOffsetTop}px`)
     document.documentElement.style.setProperty("--chatbot-viewport-offset-left", `${viewportOffsetLeft}px`)
-    document.documentElement.style.setProperty("--chatbot-keyboard-inset", `${keyboardInset}px`)
   }
 
   const syncComposerMetrics = () => {
@@ -845,9 +843,8 @@ export default function Chatbot() {
 
 
 
-  const composerDetached = open && isMobileViewport
-  const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal} ${composerDetached ? styles.chatbotDetachedComposer : ""}`
-  const footerClass = `${styles.footer}${composerDetached ? ` ${styles.footerDetached}` : ""}`
+  const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal}`
+  const footerClass = styles.footer
 
   return (
     <>
@@ -902,9 +899,7 @@ export default function Chatbot() {
                   : null
               }
             />
-
-            {!composerDetached && (
-              <div ref={footerRef} className={footerClass}>
+            <div ref={footerRef} className={footerClass}>
                 <ChatComposer
                   textareaRef={textareaRef}
                   value={input}
@@ -920,29 +915,8 @@ export default function Chatbot() {
                     dispatch({ type: "FREE_TEXT", text })
                   }}
                 />
-              </div>
-            )}
-          </div>
-
-          {composerDetached && (
-            <div ref={footerRef} className={footerClass} onClick={(e) => e.stopPropagation()}>
-              <ChatComposer
-                textareaRef={textareaRef}
-                value={input}
-                placeholder={placeholder}
-                disabled={!state || !freeTextEnabled}
-                loading={loading}
-                onChange={setInput}
-                onFocus={() => {
-                  scheduleComposerIntoView()
-                }}
-                onSend={(text) => {
-                  setInput("")
-                  dispatch({ type: "FREE_TEXT", text })
-                }}
-              />
             </div>
-          )}
+          </div>
         </>
       )}
     </>
