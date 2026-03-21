@@ -60,9 +60,9 @@ export default function Chatbot() {
   const headerNavHintTimerRef = useRef<number | null>(null)
 
   const endRef = useRef<HTMLDivElement | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const footerRef = useRef<HTMLDivElement | null>(null)
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const didAutoStartNewThreadRef = useRef(false)
   const jobLoopRef = useRef<{ conversationId: string; jobId: string; cancelled: boolean } | null>(null)
   const initInFlightRef = useRef(false)
@@ -91,43 +91,33 @@ export default function Chatbot() {
   const syncComposerLift = () => {
     if (typeof window === "undefined") return
 
-    const root = document.documentElement
     const container = containerRef.current
     const footer = footerRef.current
-    const textarea = textareaRef.current
+    const viewport = window.visualViewport
+    const visibleHeight = Math.round(Math.min(window.innerHeight, viewport?.height ?? window.innerHeight))
+    const visibleBottom = visibleHeight - 8
 
-    if (!container || !footer) {
-      root.style.setProperty("--chatbot-composer-lift", "0px")
-      return
+    let lift = 0
+
+    if (footer) {
+      const footerRect = footer.getBoundingClientRect()
+      lift = Math.max(lift, Math.ceil(footerRect.bottom - visibleBottom))
     }
 
-    const viewport = window.visualViewport
-    const visualTop = Math.max(0, Math.round(viewport?.offsetTop ?? 0))
-    const visualHeight = Math.round(viewport?.height ?? window.innerHeight)
-    const visualBottom = visualTop + visualHeight
+    if (container) {
+      const containerRect = container.getBoundingClientRect()
+      lift = Math.max(lift, Math.ceil(containerRect.bottom - visibleBottom))
+    }
 
-    const footerRect = footer.getBoundingClientRect()
-    const containerRect = container.getBoundingClientRect()
-    const activeIsComposer = document.activeElement === textarea
-    const minimumGap = activeIsComposer ? 16 : 0
-    const desiredBottom = visualBottom - minimumGap
-    const overlap = Math.max(0, Math.ceil(footerRect.bottom - desiredBottom))
-    const maxLift = Math.max(0, Math.floor(containerRect.top + footerRect.top - 8))
-    const lift = Math.min(overlap, maxLift)
-
-    root.style.setProperty("--chatbot-composer-lift", `${lift}px`)
+    const appliedLift = Math.max(0, lift)
+    document.documentElement.style.setProperty("--chatbot-composer-lift", `${appliedLift}px`)
   }
 
   const scheduleComposerIntoView = (delay = 280) => {
     window.setTimeout(() => {
-      syncViewportHeight()
-      syncComposerLift()
-      textareaRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" })
+      textareaRef.current?.scrollIntoView({ block: "center", inline: "nearest" })
       scrollChatToBottom()
-      window.setTimeout(() => {
-        syncViewportHeight()
-        syncComposerLift()
-      }, 120)
+      syncComposerLift()
     }, delay)
   }
 
@@ -427,12 +417,12 @@ export default function Chatbot() {
     const viewport = window.visualViewport
     const handleResize = () => {
       syncViewportHeight()
-      syncComposerLift()
-      if (open) {
-        window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        syncComposerLift()
+        if (open) {
           scheduleComposerIntoView(80)
-        })
-      }
+        }
+      })
     }
 
     window.addEventListener("resize", handleResize)
@@ -452,24 +442,14 @@ export default function Chatbot() {
     if (typeof document === "undefined" || typeof window === "undefined") return
     const mobile = window.matchMedia("(max-width: 768px)").matches
     document.body.classList.toggle("chatbotMobileOpen", open && mobile)
-    return () => {
-      document.body.classList.remove("chatbotMobileOpen")
-    }
-  }, [open])
-
-  useEffect(() => {
-    if (typeof document === "undefined") return
-    document.documentElement.style.setProperty("--chatbot-composer-lift", open ? getComputedStyle(document.documentElement).getPropertyValue("--chatbot-composer-lift") || "0px" : "0px")
     if (!open) {
       document.documentElement.style.setProperty("--chatbot-composer-lift", "0px")
-      return
     }
-
-    window.requestAnimationFrame(() => {
-      syncViewportHeight()
-      syncComposerLift()
-    })
-  }, [open, expanded, threadsOpen, visibleMessages.length])
+    return () => {
+      document.body.classList.remove("chatbotMobileOpen")
+      document.documentElement.style.setProperty("--chatbot-composer-lift", "0px")
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -484,6 +464,17 @@ export default function Chatbot() {
     if (threadsOpen) return
     focusInput()
   }, [open, loading, threadsOpen, state?.revision, visibleMessages.length])
+
+  useEffect(() => {
+    if (!open) return
+    const raf = window.requestAnimationFrame(() => {
+      syncViewportHeight()
+      syncComposerLift()
+    })
+    return () => {
+      window.cancelAnimationFrame(raf)
+    }
+  }, [open, expanded, threadsOpen, visibleMessages.length, input, loading])
 
   useEffect(() => {
     return () => {
