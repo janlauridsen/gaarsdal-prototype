@@ -14,7 +14,7 @@
   --chatbot-viewport-offset-top: 0px;
   --chatbot-viewport-offset-left: 0px;
   --chatbot-keyboard-inset: 0px;
-  --chatbot-composer-lift: 0px;
+  --chatbot-composer-height: 88px;
 }
 
 html,
@@ -26,6 +26,5 @@ body {
 
 body.chatbotMobileOpen {
   overflow: hidden;
-  touch-action: none;
   overscroll-behavior: none;
 }
