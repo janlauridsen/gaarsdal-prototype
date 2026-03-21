@@ -1092,63 +1092,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
+    // CRITICAL PATH — only what's needed before responding to the user:
+    // 1. persistState (brugeren skal opleve konsistent state ved næste turn)
+    // 2. scanThreads  (deferred_job skal med i response)
+    // 3. indexNow     (threads.tabs skal med i response)
     await persistState(kernelResultFinal)
-
-    const includeText = shouldIncludeRawText()
-    const userText = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : toUserInput(input as InputSignal)
-    const assistantText = String(
-      kernelResultFinal.transition.response_message ?? kernelResultFinal.state.active_node_message ?? ""
-    )
-
-    await emitCanonicalEvent({
-      userKey,
-      conversationId: kernelResultFinal.state.conversation_id,
-      revision: kernelResultFinal.state.revision,
-      inputId: kernelResultFinal.state.revision,
-      nodeId: kernelResultFinal.state.active_node,
-      eventType: "transition_applied",
-      payload: {
-        input_type: (input as any).type,
-        transition: {
-          type: kernelResultFinal.transition.type,
-          from: kernelResultFinal.transition.from ?? null,
-          to: kernelResultFinal.transition.to ?? kernelResultFinal.state.active_node,
-          reason: kernelResultFinal.transition.reason,
-          meta_keys_written: kernelResultFinal.transition.meta_delta ? Object.keys(kernelResultFinal.transition.meta_delta) : [],
-        },
-        status_after: kernelResultFinal.state.status,
-      },
-    })
-
-    await emitCanonicalEvent({
-      userKey,
-      conversationId: kernelResultFinal.state.conversation_id,
-      revision: kernelResultFinal.state.revision,
-      inputId: kernelResultFinal.state.revision,
-      nodeId: kernelResultFinal.state.active_node,
-      eventType: "message_exchanged",
-      payload: {
-        input_type: (input as any).type,
-        user_message: includeText ? truncateText(userText ?? "", 4000) : undefined,
-        assistant_message: includeText ? truncateText(assistantText, 4000) : undefined,
-        active_node: kernelResultFinal.state.active_node,
-      },
-    })
-
-    await emitCanonicalEvent({
-      userKey,
-      conversationId: kernelResultFinal.state.conversation_id,
-      revision: kernelResultFinal.state.revision,
-      inputId: kernelResultFinal.state.revision,
-      nodeId: kernelResultFinal.state.active_node,
-      eventType: "node_rendered",
-      payload: {
-        node_id: kernelResultFinal.state.active_node,
-        message: truncateText(kernelResultFinal.state.active_node_message ?? "", 800),
-        status: kernelResultFinal.state.status,
-        suggestions: deriveUiSuggestionsFromState(kernelResultFinal.state).map((s) => ({ id: s.id, label: s.label })),
-      },
-    })
 
     const scanThreads = await maybeTriggerScanThreadsJob({
       userKey,
@@ -1158,97 +1106,152 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       revisionAfter: kernelResultFinal.state.revision,
     })
 
-    if (kernelResultFinal.state.status === "completed" || kernelResultFinal.state.status === "rejected") {
-      await emitCanonicalEvent({
+    const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+
+    // Svar brugeren NU — ~4 sek tidligere end før
+    res.status(200).json({
+      ...kernelResultFinal,
+      state: withThreadMeta({ state: kernelResultFinal.state, index: indexNow }),
+      deferred_job: scanThreads.deferredJob ?? null,
+    })
+
+    // FIRE-AND-FORGET — alt herunder blokerede tidligere brugeren unødigt.
+    // Fejl logges men påvirker ikke response.
+    const includeText = shouldIncludeRawText()
+    const userText = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : toUserInput(input as InputSignal)
+    const assistantText = String(
+      kernelResultFinal.transition.response_message ?? kernelResultFinal.state.active_node_message ?? ""
+    )
+    const metaKeysWritten = kernelResultFinal.transition.meta_delta ? Object.keys(kernelResultFinal.transition.meta_delta) : []
+    const terminalStatus = kernelResultFinal.state.status
+
+    Promise.allSettled([
+      // Canonical events (var 3 sekventielle awaits — nu parallelle)
+      emitCanonicalEvent({
         userKey,
         conversationId: kernelResultFinal.state.conversation_id,
         revision: kernelResultFinal.state.revision,
         inputId: kernelResultFinal.state.revision,
         nodeId: kernelResultFinal.state.active_node,
-        eventType: "conversation_terminal",
+        eventType: "transition_applied",
         payload: {
-          terminal_status: kernelResultFinal.state.status,
-          terminal_revision: kernelResultFinal.state.revision,
-          terminal_node: kernelResultFinal.state.active_node,
+          input_type: (input as any).type,
+          transition: {
+            type: kernelResultFinal.transition.type,
+            from: kernelResultFinal.transition.from ?? null,
+            to: kernelResultFinal.transition.to ?? kernelResultFinal.state.active_node,
+            reason: kernelResultFinal.transition.reason,
+            meta_keys_written: metaKeysWritten,
+          },
+          status_after: terminalStatus,
         },
-      })
-
-      if (kernelResultFinal.state.status === "completed") {
-        await emitCanonicalEvent({
-          userKey,
-          conversationId: kernelResultFinal.state.conversation_id,
-          revision: kernelResultFinal.state.revision,
-          inputId: kernelResultFinal.state.revision,
-          nodeId: kernelResultFinal.state.active_node,
-          eventType: "conversation_completed",
-          payload: {
-            terminal_revision: kernelResultFinal.state.revision,
-            terminal_node: kernelResultFinal.state.active_node,
-          },
-        })
-      }
-      if (kernelResultFinal.state.status === "rejected") {
-        await emitCanonicalEvent({
-          userKey,
-          conversationId: kernelResultFinal.state.conversation_id,
-          revision: kernelResultFinal.state.revision,
-          inputId: kernelResultFinal.state.revision,
-          nodeId: kernelResultFinal.state.active_node,
-          eventType: "conversation_rejected",
-          payload: {
-            terminal_revision: kernelResultFinal.state.revision,
-            terminal_node: kernelResultFinal.state.active_node,
-          },
-        })
-      }
-    }
-
-    await maybeUpdateThreadPreview({
-      userKey,
-      conversationId: kernelResultFinal.state.conversation_id,
-      input: input as InputSignal,
-    })
-
-    const metaKeysWritten = kernelResultFinal.transition.meta_delta ? Object.keys(kernelResultFinal.transition.meta_delta) : []
-
-    await enqueueSummarizeEpisode({
-      userKey,
-      conversationId: kernelResultFinal.state.conversation_id,
-      revisionAfter: kernelResultFinal.state.revision,
-      threadThemeId: binding?.themeId ?? (kernelResultFinal.state.meta?.["thread.theme_id"] as any)?.value,
-      threadEpisodeId: binding?.episodeId ?? (kernelResultFinal.state.meta?.["thread.episode_id"] as any)?.value,
-    })
-
-    await enqueueSuggestFacts({
-      userKey,
-      conversationId: kernelResultFinal.state.conversation_id,
-      revisionAfter: kernelResultFinal.state.revision,
-      metaKeysWritten,
-      threadThemeId: binding?.themeId ?? (kernelResultFinal.state.meta?.["thread.theme_id"] as any)?.value,
-      threadEpisodeId: binding?.episodeId ?? (kernelResultFinal.state.meta?.["thread.episode_id"] as any)?.value,
-    })
-
-
-    await logAndRecord({
-      userKey,
-      input: input as InputSignal,
-      kernelResult: kernelResultFinal,
-      userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined,
-    })
-
-    await maybeTriggerDeriveThreadTitleJob({
-      userKey,
-      input: input as InputSignal,
-      conversationId: kernelResultFinal.state.conversation_id,
-      revisionAfter: kernelResultFinal.state.revision,
-    })
-
-    const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
-
-    res.status(200).json({
-      ...kernelResultFinal,
-      state: withThreadMeta({ state: kernelResultFinal.state, index: indexNow }),
-      deferred_job: scanThreads.deferredJob ?? null,
+      }),
+      emitCanonicalEvent({
+        userKey,
+        conversationId: kernelResultFinal.state.conversation_id,
+        revision: kernelResultFinal.state.revision,
+        inputId: kernelResultFinal.state.revision,
+        nodeId: kernelResultFinal.state.active_node,
+        eventType: "message_exchanged",
+        payload: {
+          input_type: (input as any).type,
+          user_message: includeText ? truncateText(userText ?? "", 4000) : undefined,
+          assistant_message: includeText ? truncateText(assistantText, 4000) : undefined,
+          active_node: kernelResultFinal.state.active_node,
+        },
+      }),
+      emitCanonicalEvent({
+        userKey,
+        conversationId: kernelResultFinal.state.conversation_id,
+        revision: kernelResultFinal.state.revision,
+        inputId: kernelResultFinal.state.revision,
+        nodeId: kernelResultFinal.state.active_node,
+        eventType: "node_rendered",
+        payload: {
+          node_id: kernelResultFinal.state.active_node,
+          message: truncateText(kernelResultFinal.state.active_node_message ?? "", 800),
+          status: terminalStatus,
+          suggestions: deriveUiSuggestionsFromState(kernelResultFinal.state).map((s) => ({ id: s.id, label: s.label })),
+        },
+      }),
+      // Terminal events hvis relevant
+      ...(terminalStatus === "completed" || terminalStatus === "rejected"
+        ? [
+            emitCanonicalEvent({
+              userKey,
+              conversationId: kernelResultFinal.state.conversation_id,
+              revision: kernelResultFinal.state.revision,
+              inputId: kernelResultFinal.state.revision,
+              nodeId: kernelResultFinal.state.active_node,
+              eventType: "conversation_terminal",
+              payload: {
+                terminal_status: terminalStatus,
+                terminal_revision: kernelResultFinal.state.revision,
+                terminal_node: kernelResultFinal.state.active_node,
+              },
+            }),
+            terminalStatus === "completed"
+              ? emitCanonicalEvent({
+                  userKey,
+                  conversationId: kernelResultFinal.state.conversation_id,
+                  revision: kernelResultFinal.state.revision,
+                  inputId: kernelResultFinal.state.revision,
+                  nodeId: kernelResultFinal.state.active_node,
+                  eventType: "conversation_completed",
+                  payload: {
+                    terminal_revision: kernelResultFinal.state.revision,
+                    terminal_node: kernelResultFinal.state.active_node,
+                  },
+                })
+              : emitCanonicalEvent({
+                  userKey,
+                  conversationId: kernelResultFinal.state.conversation_id,
+                  revision: kernelResultFinal.state.revision,
+                  inputId: kernelResultFinal.state.revision,
+                  nodeId: kernelResultFinal.state.active_node,
+                  eventType: "conversation_rejected",
+                  payload: {
+                    terminal_revision: kernelResultFinal.state.revision,
+                    terminal_node: kernelResultFinal.state.active_node,
+                  },
+                }),
+          ]
+        : []),
+      // Øvrige writes
+      maybeUpdateThreadPreview({
+        userKey,
+        conversationId: kernelResultFinal.state.conversation_id,
+        input: input as InputSignal,
+      }),
+      enqueueSummarizeEpisode({
+        userKey,
+        conversationId: kernelResultFinal.state.conversation_id,
+        revisionAfter: kernelResultFinal.state.revision,
+        threadThemeId: binding?.themeId ?? (kernelResultFinal.state.meta?.["thread.theme_id"] as any)?.value,
+        threadEpisodeId: binding?.episodeId ?? (kernelResultFinal.state.meta?.["thread.episode_id"] as any)?.value,
+      }),
+      enqueueSuggestFacts({
+        userKey,
+        conversationId: kernelResultFinal.state.conversation_id,
+        revisionAfter: kernelResultFinal.state.revision,
+        metaKeysWritten,
+        threadThemeId: binding?.themeId ?? (kernelResultFinal.state.meta?.["thread.theme_id"] as any)?.value,
+        threadEpisodeId: binding?.episodeId ?? (kernelResultFinal.state.meta?.["thread.episode_id"] as any)?.value,
+      }),
+      logAndRecord({
+        userKey,
+        input: input as InputSignal,
+        kernelResult: kernelResultFinal,
+        userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined,
+      }),
+      maybeTriggerDeriveThreadTitleJob({
+        userKey,
+        input: input as InputSignal,
+        conversationId: kernelResultFinal.state.conversation_id,
+        revisionAfter: kernelResultFinal.state.revision,
+      }),
+    ]).catch(() => {
+      // Fejl i post-writes påvirker ikke brugeren — men kan logges til en error-sink her
     })
   } catch (e: any) {
     await emitCanonicalEvent({
