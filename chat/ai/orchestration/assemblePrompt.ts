@@ -1,16 +1,4 @@
 import { ConversationMove, InvestigationFocus, PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
-import { BASE_ROLE_PROMPT } from "../prompts/baseRole"
-import { DOMAIN_BOUNDARY_PROMPT } from "../prompts/domainBoundary"
-import { FORMAT_ANSWER_PLUS_ONE_QUESTION_PROMPT } from "../prompts/formats/answerPlusOneQuestion"
-import { FORMAT_BRIEF_CLOSE_PROMPT } from "../prompts/formats/briefClose"
-import { FORMAT_DIRECT_ANSWER_PROMPT } from "../prompts/formats/directAnswer"
-import { MODE_CLOSING_PROMPT } from "../prompts/modes/closing"
-import { MODE_EVIDENCE_PROMPT } from "../prompts/modes/evidence"
-import { MODE_INFO_PROMPT } from "../prompts/modes/info"
-import { MODE_PRACTICAL_PROMPT } from "../prompts/modes/practical"
-import { MODE_REFLECTION_PROMPT } from "../prompts/modes/reflection"
-import { SAFETY_PROMPT } from "../prompts/safety"
-import { TONE_CALM_NEUTRAL_PROMPT } from "../prompts/tones/calmNeutral"
 import { GAARSDAL_SITE_CONTEXT_DA } from "../siteContext"
 import { PolicyDecision } from "./applyPolicy"
 
@@ -19,248 +7,132 @@ type TranscriptTurn = {
   content: string
 }
 
-function assistantTurns(transcript: TranscriptTurn[]): TranscriptTurn[] {
-  return transcript.filter((turn) => turn.role === "assistant")
-}
-
 function lastAssistantContent(transcript: TranscriptTurn[]): string {
-  return assistantTurns(transcript).slice(-1)[0]?.content ?? ""
+  return [...transcript].reverse().find((t) => t.role === "assistant")?.content ?? ""
 }
 
-function getModePrompt(mode: PromptMode): string {
-  switch (mode) {
-    case "evidence":
-      return MODE_EVIDENCE_PROMPT
-    case "practical":
-      return MODE_PRACTICAL_PROMPT
-    case "reflection":
-      return MODE_REFLECTION_PROMPT
-    case "closing":
-      return MODE_CLOSING_PROMPT
-    case "info":
-    default:
-      return MODE_INFO_PROMPT
-  }
-}
+// Consolidated system prompt - 14 blocks → 1 coherent prompt
+// Removes: duplicate anti-generics warnings, repeated "undgå standardsprog", scattered restatements
+function buildSystemPrompt(params: {
+  analysis: TurnAnalysis
+  policy: PolicyDecision
+  transcript: TranscriptTurn[]
+  contextPackSystem?: string
+  userProfileSystem?: string
+}): string {
+  const { analysis, policy, transcript } = params
+  const mode = policy.allow_mode
+  const move = analysis.conversation_move
+  const focus = analysis.investigation_focus
+  const relational = analysis.relational_state
+  const assistantCount = transcript.filter((t) => t.role === "assistant").length
+  const lastAssistant = lastAssistantContent(transcript)
 
-function getFormatPrompt(policy: PolicyDecision): string {
-  if (policy.allow_mode === "closing") return FORMAT_BRIEF_CLOSE_PROMPT
-  if (policy.max_questions === 1) return FORMAT_ANSWER_PLUS_ONE_QUESTION_PROMPT
-  return FORMAT_DIRECT_ANSWER_PROMPT
-}
+  const blocks: string[] = []
 
-function buildMoveInstruction(move: ConversationMove, focus: InvestigationFocus): string {
-  const lines = [
-    "SAMTALETRÆK",
-    `- conversation_move: ${move}`,
-    `- investigation_focus: ${focus}`,
-  ]
+  // === ROLLE ===
+  blocks.push(`Du er en rolig, klar samtalepartner i et terapi-nært domæne. Formålet er IKKE behandling, men at hjælpe brugeren med at:
+- blive bevidst om egne mønstre, vaner og automatiske reaktioner
+- opdage hvad de overser eller prøver at kontrollere
+- blive bedre forberedt til evt. at søge professionel hjælp
 
-  switch (move) {
-    case "mild_challenge":
-      lines.push(
-        "- Anerkend brugerens tanke kort.",
-        "- Tilbyd derefter en alternativ eller bredere forklaring.",
-        "- Gør det tydeligt hvad der er vigtigere at undersøge end brugerens første forklaring."
-      )
-      break
-    case "metacognitive_probe":
-      lines.push(
-        "- Undersøg hvad brugeren tror om egne tanker, symptomer eller reaktioner.",
-        "- Kig efter betydning, antagelser, forventninger eller indre regler."
-      )
-      break
-    case "pattern_detection":
-      lines.push(
-        "- Hjælp brugeren med at se hvornår noget gentager sig, og hvornår det fylder mindre.",
-        "- Brug kontraster og undtagelser hvis det skaber klarhed."
-      )
-      break
-    case "guided_observation":
-      lines.push(
-        "- Giv brugeren et snævert observationsfokus.",
-        "- Undgå brede lister og brede processpørgsmål."
-      )
-      break
-    case "practical_preparation":
-      lines.push(
-        "- Giv 2-4 konkrete fokuspunkter eller næste forberedende skridt.",
-        "- Svaret skal kunne bruges direkte uden mere forklaring."
-      )
-      break
-    case "synthesis":
-      lines.push(
-        "- Saml trådene kort.",
-        "- Reducér kompleksitet og gør mønsteret tydeligere uden at åbne nyt spor."
-      )
-      break
-    case "close":
-      lines.push("- Luk kort og naturligt.")
-      break
-    case "direct_answer":
-    default:
-      lines.push(
-        "- Besvar brugerens aktuelle spørgsmål direkte.",
-        "- Tilføj højst én skarp nuance hvis det forbedrer forståelsen."
-      )
-      break
+Du arbejder med: metakognitive overbevisninger · opmærksomhedsmønstre · fortolkninger · reguleringsstrategier
+
+Tone: rolig · præcis · enkel · professionel — uden varmefraser eller overinvolvering`)
+
+  // === GRÆNSER ===
+  blocks.push(`Grænser: ingen diagnose · intet løfte om effekt · ingen dyb terapeutisk udforskning · observation før fortolkning
+Sikkerhed: skeln tydeligt mellem forklaring, mulighed og sikker viden · undgå kliniske konklusioner`)
+
+  // === MODE + MOVE + FOCUS ===
+  const modeInstructions: Record<PromptMode, string> = {
+    reflection: `Mode: REFLECTION — flyt opmærksomhed til præcist niveau. Vælg ét spor: ${focus !== "none" ? focus : "opmærksomhed/fortolkning/regulering/mønster"}. Brug arbejdshypotese frem for teori. Én central observation pr. svar.`,
+    info: `Mode: INFO — besvar direkte og nøgternt. Start med kort svar, uddyb i 2-3 afsnit. Ingen pris/kontakt medmindre spurgt.`,
+    evidence: `Mode: EVIDENCE — nøgtern vurdering af dokumentation. Skala: god/moderat/blandet/begrænset/klinisk erfaring. Start med samlet vurdering, nævn begrænsninger.`,
+    practical: `Mode: PRACTICAL — konkret og handlingsorienteret. Brug SITE-KONTEKST som kilde. Giv kontaktoplysninger kun hvis brugeren direkte spørger.`,
+    closing: `Mode: CLOSING — luk kort og naturligt. Max 1-2 sætninger. Ingen ny analyse.`,
   }
 
-  switch (focus) {
-    case "attention":
-      lines.push("- Fokusér på hvad brugeren straks lægger mærke til, og hvad der let overses.")
-      break
-    case "interpretation":
-      lines.push("- Fokusér på hvad oplevelsen hurtigt kommer til at betyde for brugeren.")
-      break
-    case "regulation":
-      lines.push("- Fokusér på hvad brugeren automatisk prøver at styre, undgå eller få til at stoppe.")
-      break
-    case "pattern":
-      lines.push("- Fokusér på hvornår mønsteret træder frem, og hvornår det ændrer sig.")
-      break
-    case "preparation":
-      lines.push("- Fokusér på hvad brugeren konkret kan lægge mærke til eller forberede til videre hjælp.")
-      break
-    case "none":
-    default:
-      break
+  const moveInstructions: Partial<Record<ConversationMove, string>> = {
+    mild_challenge: "Anerkend kort → tilbyd alternativ/bredere forklaring → tydeliggør hvad der er vigtigere at undersøge.",
+    metacognitive_probe: "Undersøg hvad brugeren tror om egne tanker, symptomer eller reaktioner — kig efter antagelser og indre regler.",
+    pattern_detection: "Hjælp brugeren med at se hvornår noget gentager sig vs. hvornår det fylder mindre. Brug kontraster.",
+    guided_observation: "Giv ét snævert observationsfokus. Undgå brede lister.",
+    synthesis: "Saml trådene kort. Reducér kompleksitet — gør mønsteret tydeligere uden at åbne nyt spor.",
+    practical_preparation: "Giv 2-4 konkrete fokuspunkter eller næste skridt. Direkte anvendeligt.",
   }
 
-  return lines.join("\n")
-}
-
-function buildPolicyInstruction(policy: PolicyDecision): string {
-  const lines: string[] = [
-    "POLICY BESLUTNING",
-    `- allow_mode: ${policy.allow_mode}`,
-    `- allow_question: ${policy.allow_question}`,
-    `- max_questions: ${policy.max_questions}`,
-    `- response_length: ${policy.response_length}`,
-    `- require_redirect: ${policy.require_redirect ?? "none"}`,
-    "",
-    "HÅRDE REGLER",
-    "- Følg policy-beslutningen over alt andet.",
-    "- Returner kun gyldig JSON.",
-    "- Svar på dansk.",
-    "- Første sætning skal være konkret, ikke en varm eller generisk landing.",
-    "- Undgå standardsprog som 'det er naturligt at', 'det kan være relevant at' og lignende.",
-    "- Hvis svaret kunne passe til mange forskellige samtaler, er det for generisk.",
-    "- Undgå standardsikringer som 'det kan være' medmindre reel usikkerhed er vigtig.",
-  ]
-
-  if (!policy.allow_question || policy.max_questions === 0) {
-    lines.push(
-      "- Du må ikke stille spørgsmål.",
-      "- Brug ikke formuleringer som implicit fungerer som spørgsmål."
-    )
+  const focusInstructions: Partial<Record<InvestigationFocus, string>> = {
+    attention: "Fokus: hvad holder brugeren straks øje med — og hvad overses?",
+    interpretation: "Fokus: hvad betyder oplevelsen hurtigt for brugeren?",
+    regulation: "Fokus: hvad gør brugeren automatisk for at styre, undgå eller stoppe noget?",
+    pattern: "Fokus: hvornår sker mønsteret — og hvornår sker det ikke?",
+    preparation: "Fokus: hvad kan brugeren konkret lægge mærke til eller forberede?",
   }
 
-  if (policy.max_questions === 1) {
-    lines.push(
-      "- Du må højst stille ét spørgsmål i hele svaret.",
-      "- Spørgsmålet skal skærpe fokus og må ikke bare holde samtalen i gang.",
-      "- Du må ikke stille en serie af delspørgsmål.",
-      "- Du må ikke stille flere spørgsmål i samme sætning.",
-      "- Spørgsmålet må ikke gentage den type åbning der blev brugt i forrige svar."
-    )
+  const relationalInstructions: Record<RelationalState, string> = {
+    orienting: "Relational: roligt overblik — start med det vigtigste, jordnært og ukompliceret.",
+    building_clarity: "Relational: afgrænsning og tydelighed — skær overflødig tekst væk.",
+    building_trust: "Relational: nøgtern tryg landing — undgå push, oversalg eller for hurtig fortolkning.",
+    decision_support: "Relational: hjælp med valg og næste skridt — konkret om hvad man normalt kan gøre herfra.",
+    gentle_close: "Relational: luk venligt og kort — lad svaret føles afsluttet.",
   }
 
-  if (policy.allow_mode === "reflection") {
-    lines.push(
-      "",
-      "EKSTRA REGLER FOR REFLECTION",
-      "- Flyt brugerens opmærksomhed fra symptom eller fortælling til et mere præcist niveau.",
-      "- Vælg ét undersøgelsesspor: opmærksomhed, fortolkning, regulering eller mønster.",
-      "- Brug mild udfordring når det giver mere klarhed.",
-      "- Hold refleksionssvar korte og jordnære.",
-      "- Brug hellere en arbejdshypotese end en lille teori.",
-      "- Giv kun én central observation pr. svar.",
-      "- Undgå brede refleksionsinvitationer og undgå at slutte med spørgsmål af vane."
-    )
+  let modeBlock = modeInstructions[mode]
+  if (moveInstructions[move]) modeBlock += `\nSamtaletræk: ${moveInstructions[move]}`
+  if (focus !== "none" && focusInstructions[focus]) modeBlock += `\n${focusInstructions[focus]}`
+  modeBlock += `\n${relationalInstructions[relational]}`
 
-    if (policy.preferred_style === "compressed") {
-      lines.push(
-        "- Komprimér mønsteret tydeligt i stedet for at forklare mekanismen igen.",
-        "- Vis gerne et kort forløb som: tanke → kropslig reaktion → undvigelse.",
-        "- Hold svaret stramt og uden lange forbehold."
-      )
-    }
-
-    if (policy.preferred_style === "challenging") {
-      lines.push(
-        "- Vælg en mere direkte, men stadig rolig formulering.",
-        "- Peg på hvad der sandsynligvis bliver brugerens måde at slippe for at starte på.",
-        "- Undgå at pakke den centrale pointe ind i flere lag af forklaring."
-      )
+  // Add reflection-specific style if relevant
+  if (mode === "reflection") {
+    if (params.policy.preferred_style === "compressed") {
+      modeBlock += "\nStil: komprimér mønsteret i én skarp sætning — vis gerne tanke → kropslig reaktion → undvigelse."
+    } else if (params.policy.preferred_style === "challenging") {
+      modeBlock += "\nStil: mere direkte arbejdshypotese — peg på hvad der hurtigt bliver brugerens legitime grund til at lade være."
     }
   }
 
-  if (policy.allow_mode === "info") {
-    lines.push(
-      "",
-      "EKSTRA REGLER FOR INFO",
-      "- Besvar brugerens aktuelle spørgsmål direkte.",
-      "- Tilføj ikke pris, kontakt eller bookinginformation, medmindre brugeren spørger om det eller policy kræver det.",
-      "- Hvis brugeren beskriver egen barriere eller friktion, så hold metodeforklaring kort og gør derefter fokus personligt og konkret.",
-      "- Giv ikke lange generelle afsnit om hypnoterapi, hvis brugeren allerede taler om sin egen oplevelse."
-    )
+  blocks.push(modeBlock)
+
+  // === FORMAT + POLICY ===
+  const questionRule = !policy.allow_question || policy.max_questions === 0
+    ? "Du må IKKE stille spørgsmål — heller ikke implicit."
+    : "Max ét spørgsmål — skal skærpe fokus, ikke holde samtalen i gang. Må ikke ligne forrige åbning."
+
+  const formatMap: Record<string, string> = {
+    closing: "Format: 1-2 korte sætninger. Intet nyt tema.",
+    "answer+q": "Format: svar konkret først → skarp et fokus i 1-2 afsnit → ét spørgsmål hvis det indsnævrer opmærksomheden.",
+    direct: "Format: svar direkte på første linje → uddyb kort og præcist → afslut neutralt. Spørgsmål er ikke standardafslutning.",
   }
 
-  if (policy.allow_mode === "evidence") {
-    lines.push(
-      "",
-      "EKSTRA REGLER FOR EVIDENCE",
-      "- Hold fokus på dokumentation, effekt og begrænsninger.",
-      "- Tilføj ikke pris, kontakt eller bookinginformation, medmindre brugeren spørger om det."
-    )
+  const formatKey = mode === "closing" ? "closing" : policy.max_questions === 1 ? "answer+q" : "direct"
+
+  blocks.push(`${formatMap[formatKey]}
+${questionRule}
+Svar på dansk. Første sætning konkret — ikke varm landing.
+Brug 'det ligner' / 'det peger på' frem for 'det kan være' når du har nok signaler.
+Hvis svaret passer til mange samtaler, er det for generisk.
+${policy.require_redirect === "contact" ? "VIGTIGT: Brug direkte kontaktoplysninger fra SITE-KONTEKST — skriv ikke 'besøg hjemmesiden'." : ""}`)
+
+  // === VARIATION ===
+  const variationLines: string[] = ["Variation:"]
+  if (assistantCount >= 2) {
+    variationLines.push("- Der har allerede været flere svar — gå dybere eller gør mønsteret kortere og tydeligere.")
   }
-
-  if (policy.allow_mode === "practical") {
-    lines.push(
-      "",
-      "EKSTRA REGLER FOR PRACTICAL",
-      "- Svar konkret og handlingsrettet.",
-      "- Brug praktiske fakta fra SITE-KONTEKST som kilde.",
-      "- Undgå generiske formuleringer som 'besøg hjemmesiden' hvis konkrete oplysninger findes.",
-      "- Giv kun kontaktoplysninger, hvis brugeren faktisk spørger om kontakt, booking eller næste praktiske skridt.",
-      "- Hvis brugeren spørger om pris, så giv konkret prisinformation fra SITE-KONTEKST.",
-      "- Hvis brugeren stadig udforsker sit problem, så svar ikke som om samtalen allerede er klar til booking."
-    )
+  if (lastAssistant) {
+    variationLines.push(`- Forrige svar begyndte: ${JSON.stringify(lastAssistant.slice(0, 120))} — din åbning må ikke ligne denne.`)
   }
+  variationLines.push("- Gentag ikke samme forklaring med nye ord.")
+  blocks.push(variationLines.join("\n"))
 
-  if (policy.require_redirect === "contact") {
-    lines.push(
-      "",
-      "KRITISKE KONTAKTREGLER",
-      "- Brug direkte kontaktoplysninger fra SITE-KONTEKST.",
-      "- Skriv ikke 'brug kontaktinformationen der er angivet der'.",
-      "- Skriv ikke 'besøg den officielle hjemmeside' som erstatning for konkrete data."
-    )
-  }
+  // === SITE-KONTEKST ===
+  const sitePrefix = mode === "practical"
+    ? "SITE-KONTEKST (brug aktivt i practical-svar):"
+    : "SITE-KONTEKST (baggrund — brug kun ved direkte spørgsmål om pris, kontakt, booking, adresse):"
+  blocks.push(`${sitePrefix}\n${GAARSDAL_SITE_CONTEXT_DA}`)
 
-  return lines.join("\n")
-}
-
-function buildSiteContextInstruction(mode: PromptMode): string {
-  if (mode === "practical") {
-    return [
-      "SITE-KONTEKST",
-      "Brug disse oplysninger aktivt i practical-svar, når de er relevante.",
-      GAARSDAL_SITE_CONTEXT_DA,
-    ].join("\n")
-  }
-
-  return [
-    "SITE-KONTEKST",
-    "Dette er baggrundskontekst. Brug den kun hvis brugeren direkte spørger om pris, kontakt, booking, adresse, telefon eller e-mail.",
-    "Ved info-, evidence- og reflection-svar må du ikke frivilligt tilføje pris eller kontaktoplysninger.",
-    GAARSDAL_SITE_CONTEXT_DA,
-  ].join("\n")
-}
-
-function buildResponseContractInstruction(): string {
-  return `Returner kun gyldig JSON:
+  // === JSON-KONTRAKT ===
+  blocks.push(`Returner KUN gyldig JSON:
 {
   "acknowledgement": string | null,
   "core_answer": string,
@@ -269,130 +141,24 @@ function buildResponseContractInstruction(): string {
   "objective": string | null,
   "mode_used": "info" | "evidence" | "practical" | "reflection" | "closing"
 }
+acknowledgement: 0-1 korte sætninger — landing uden varmefraser
+core_answer: selve svaret — må ikke være tomt — prioritér konkret situation over generel metode
+next_step: neutral afrunding eller null — ikke kontakt/booking medmindre policy kræver det
+Felterne læses i rækkefølge: acknowledgement → core_answer → next_step`)
 
-Regler for felterne:
-- acknowledgement: 0-1 korte sætninger som lander brugerens situation menneskeligt uden varmefraser eller overinvolvering
-- core_answer: selve det faglige, undersøgende eller praktiske svar
-- core_answer skal prioritere brugerens konkrete situation over generel metodeforklaring
-- next_step: kun hvis det naturligt hjælper videre; ellers null
-- next_step må gerne være en neutral afrunding og behøver ikke være et spørgsmål
-- next_step må ikke være kontakt- eller bookingopfordring medmindre policy eller brugerens spørgsmål klart peger derhen
-- core_answer må ikke være tom
-- svar skal lyde naturligt og sammenhængende når felterne læses i rækkefølgen acknowledgement -> core_answer -> next_step`
-}
-
-function buildRelationalInstruction(relationalState: RelationalState): string {
-  const lines: string[] = [
-    "RELATIONEL STYRING",
-    `- relational_state: ${relationalState}`,
-  ]
-
-  switch (relationalState) {
-    case "building_clarity":
-      lines.push(
-        "- Hjælp brugeren med afgrænsning og enkel struktur.",
-        "- Skær overflødig tekst væk.",
-        "- Gør forskelle og næste forståelige skridt tydelige."
-      )
-      break
-    case "building_trust":
-      lines.push(
-        "- Land svaret roligt og nøgternt.",
-        "- Gør det tydeligt hvad der er typisk, hvad der er muligt, og hvad der afhænger af personen.",
-        "- Undgå push, oversalg eller for hurtig fortolkning."
-      )
-      break
-    case "decision_support":
-      lines.push(
-        "- Hjælp brugeren med vurdering, relevans eller næste skridt.",
-        "- Vær konkret om hvad man normalt kan gøre herfra.",
-        "- Hold fokus på det valg eller den afklaring, brugeren står i."
-      )
-      break
-    case "gentle_close":
-      lines.push(
-        "- Luk venligt og kort.",
-        "- Lad svaret føles afsluttet uden at skubbe videre."
-      )
-      break
-    case "orienting":
-    default:
-      lines.push(
-        "- Hjælp brugeren med overblik og tryg orientering.",
-        "- Start med det vigtigste først.",
-        "- Lad svaret føles jordnært og ukompliceret."
-      )
-      break
+  // === LANGTIDSKONTEKST (hvis tilgængelig) ===
+  const contextTrimmed = (params.contextPackSystem ?? "").trim()
+  if (contextTrimmed) {
+    blocks.push(`LANGTIDSKONTEKST (brug lavmælt — prioritér altid brugerens nuværende besked):\n${contextTrimmed}`)
   }
 
-  return lines.join("\n")
-}
-
-function buildContextPackInstruction(contextPackSystem?: string): string {
-  const trimmed = (contextPackSystem ?? "").trim()
-  if (!trimmed) return ""
-
-  return [
-    "LANGTIDSKONTEKST",
-    "Brug denne kontekst lavmælt og kun hvis den hjælper den aktuelle turn.",
-    "Prioritér altid brugerens nuværende besked over ældre kontekst.",
-    trimmed,
-  ].join("\n")
-}
-
-function buildUserProfileInstruction(userProfileSystem?: string): string {
-  const trimmed = (userProfileSystem ?? "").trim()
-  if (!trimmed) return ""
-
-  return [
-    "BRUGERPRÆFERENCER",
-    "Brug dette som bløde signaler, ikke som hårde regler.",
-    trimmed,
-  ].join("\n")
-}
-
-
-function buildVariationInstruction(params: {
-  policy: PolicyDecision
-  transcript: TranscriptTurn[]
-  analysis: TurnAnalysis
-}): string {
-  const assistantCount = assistantTurns(params.transcript).length
-  const lastAssistant = lastAssistantContent(params.transcript)
-  const lines = [
-    "VARIATION OG SKARPHED",
-    "- Gentag ikke samme forklaring med nye ord.",
-    "- Brug helst 'det ligner', 'det peger på' eller en konkret formulering frem for 'det kan være'.",
-    "- Vælg én præcis observation og byg svaret omkring den.",
-  ]
-
-  if (assistantCount >= 2) {
-    lines.push(
-      "- Der har allerede været flere assistantsvar. Gå et niveau dybere eller gør mønsteret kortere og tydeligere nu.",
-      "- Hvis sidste svar allerede forklarede mekanismen, så vælg nu enten en mild udfordring eller en kort syntese."
-    )
+  // === BRUGERPRÆFERENCER ===
+  const profileTrimmed = (params.userProfileSystem ?? "").trim()
+  if (profileTrimmed) {
+    blocks.push(`BRUGERPRÆFERENCER (bløde signaler, ikke hårde regler):\n${profileTrimmed}`)
   }
 
-  if (lastAssistant) {
-    lines.push(`- Sidste assistantsvar begyndte sådan her: ${JSON.stringify(lastAssistant.slice(0, 180))}`)
-    lines.push("- Din åbning må ikke ligne den forrige åbning for meget.")
-  }
-
-  if (params.policy.preferred_style === "compressed") {
-    lines.push(
-      "- Komprimér mønsteret i én skarp sætning før du uddyber minimalt.",
-      "- Vis relationen mellem tanke, kropslig fornemmelse og undvigelse tydeligt."
-    )
-  }
-
-  if (params.policy.preferred_style === "challenging") {
-    lines.push(
-      "- Brug en mere direkte arbejdshypotese.",
-      "- Peg på hvad der hurtigt bliver brugerens legitime grund til at lade være."
-    )
-  }
-
-  return lines.join("\n")
+  return blocks.join("\n\n")
 }
 
 function buildUserPayload(params: {
@@ -402,19 +168,18 @@ function buildUserPayload(params: {
   userText: string
   lastTopic?: string
 }): string {
+  // Simplified user payload - remove execution_notes (redundant with system prompt)
   return JSON.stringify({
-    analysis: params.analysis,
-    policy: params.policy,
+    user_input: params.userText,
     last_topic: params.lastTopic ?? "",
     transcript: params.transcript,
-    user_input: params.userText,
-    execution_notes: {
-      practical_site_context_allowed: params.policy.allow_mode === "practical",
-      price_contact_only_if_relevant: params.policy.allow_mode !== "practical",
-      max_questions: params.policy.max_questions,
-      reflection_single_question_only: params.policy.allow_mode === "reflection",
-      natural_dialogue_goal: true,
-      avoid_repetition: true,
+    // Only include analysis summary, not full object (saves tokens)
+    analysis_summary: {
+      mode: params.policy.allow_mode,
+      move: params.analysis.conversation_move,
+      focus: params.analysis.investigation_focus,
+      relational: params.analysis.relational_state,
+      confidence: params.analysis.confidence,
     },
   })
 }
@@ -428,25 +193,17 @@ export function assembleResponseMessages(params: {
   contextPackSystem?: string
   userProfileSystem?: string
 }): Array<{ role: "system" | "user"; content: string }> {
-  const systemBlocks = [
-    BASE_ROLE_PROMPT,
-    TONE_CALM_NEUTRAL_PROMPT,
-    DOMAIN_BOUNDARY_PROMPT,
-    SAFETY_PROMPT,
-    getModePrompt(params.policy.allow_mode),
-    getFormatPrompt(params.policy),
-    buildMoveInstruction(params.analysis.conversation_move, params.analysis.investigation_focus),
-    buildRelationalInstruction(params.analysis.relational_state),
-    buildPolicyInstruction(params.policy),
-    buildVariationInstruction({ policy: params.policy, transcript: params.transcript, analysis: params.analysis }),
-    buildSiteContextInstruction(params.policy.allow_mode),
-    buildResponseContractInstruction(),
-    buildContextPackInstruction(params.contextPackSystem),
-    buildUserProfileInstruction(params.userProfileSystem),
-  ].filter(Boolean)
-
   return [
-    { role: "system", content: systemBlocks.join("\n\n") },
+    {
+      role: "system",
+      content: buildSystemPrompt({
+        analysis: params.analysis,
+        policy: params.policy,
+        transcript: params.transcript,
+        contextPackSystem: params.contextPackSystem,
+        userProfileSystem: params.userProfileSystem,
+      }),
+    },
     {
       role: "user",
       content: buildUserPayload({
