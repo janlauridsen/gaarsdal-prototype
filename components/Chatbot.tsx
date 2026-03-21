@@ -71,19 +71,32 @@ export default function Chatbot() {
 
   const syncViewportHeight = () => {
     if (typeof window === "undefined") return
+
     const viewport = window.visualViewport
-    const nextHeight = viewport?.height ?? window.innerHeight
-    document.documentElement.style.setProperty("--app-dvh", `${window.innerHeight}px`)
-    document.documentElement.style.setProperty("--chatbot-viewport-height", `${Math.round(nextHeight)}px`)
+    const layoutHeight = window.innerHeight
+    const viewportHeight = Math.round(viewport?.height ?? layoutHeight)
+    const viewportOffsetTop = Math.max(0, Math.round(viewport?.offsetTop ?? 0))
+    const viewportOffsetLeft = Math.max(0, Math.round(viewport?.offsetLeft ?? 0))
+    const keyboardInset = Math.max(0, layoutHeight - viewportHeight - viewportOffsetTop)
+
+    document.documentElement.style.setProperty("--app-dvh", `${layoutHeight}px`)
+    document.documentElement.style.setProperty("--chatbot-viewport-height", `${viewportHeight}px`)
+    document.documentElement.style.setProperty("--chatbot-viewport-offset-top", `${viewportOffsetTop}px`)
+    document.documentElement.style.setProperty("--chatbot-viewport-offset-left", `${viewportOffsetLeft}px`)
+    document.documentElement.style.setProperty("--chatbot-keyboard-inset", `${keyboardInset}px`)
+  }
+
+  const scheduleComposerIntoView = (delay = 280) => {
+    window.setTimeout(() => {
+      textareaRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" })
+      scrollChatToBottom()
+    }, delay)
   }
 
   const focusInput = () => {
     window.requestAnimationFrame(() => {
       textareaRef.current?.focus()
-      window.setTimeout(() => {
-        textareaRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" })
-        scrollChatToBottom()
-      }, 250)
+      scheduleComposerIntoView()
     })
   }
 
@@ -378,8 +391,7 @@ export default function Chatbot() {
       syncViewportHeight()
       if (open) {
         window.requestAnimationFrame(() => {
-          textareaRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" })
-          scrollChatToBottom()
+          scheduleComposerIntoView(80)
         })
       }
     }
@@ -861,10 +873,7 @@ export default function Chatbot() {
                 loading={loading}
                 onChange={setInput}
                 onFocus={() => {
-                  window.setTimeout(() => {
-                    textareaRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" })
-                    scrollChatToBottom()
-                  }, 250)
+                  scheduleComposerIntoView()
                 }}
                 onSend={(text) => {
                   setInput("")
