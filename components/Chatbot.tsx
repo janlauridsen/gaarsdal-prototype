@@ -60,6 +60,8 @@ export default function Chatbot() {
   const headerNavHintTimerRef = useRef<number | null>(null)
 
   const endRef = useRef<HTMLDivElement | null>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const footerRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const didAutoStartNewThreadRef = useRef(false)
   const jobLoopRef = useRef<{ conversationId: string; jobId: string; cancelled: boolean } | null>(null)
@@ -86,10 +88,46 @@ export default function Chatbot() {
     document.documentElement.style.setProperty("--chatbot-keyboard-inset", `${keyboardInset}px`)
   }
 
+  const syncComposerLift = () => {
+    if (typeof window === "undefined") return
+
+    const root = document.documentElement
+    const container = containerRef.current
+    const footer = footerRef.current
+    const textarea = textareaRef.current
+
+    if (!container || !footer) {
+      root.style.setProperty("--chatbot-composer-lift", "0px")
+      return
+    }
+
+    const viewport = window.visualViewport
+    const visualTop = Math.max(0, Math.round(viewport?.offsetTop ?? 0))
+    const visualHeight = Math.round(viewport?.height ?? window.innerHeight)
+    const visualBottom = visualTop + visualHeight
+
+    const footerRect = footer.getBoundingClientRect()
+    const containerRect = container.getBoundingClientRect()
+    const activeIsComposer = document.activeElement === textarea
+    const minimumGap = activeIsComposer ? 16 : 0
+    const desiredBottom = visualBottom - minimumGap
+    const overlap = Math.max(0, Math.ceil(footerRect.bottom - desiredBottom))
+    const maxLift = Math.max(0, Math.floor(containerRect.top + footerRect.top - 8))
+    const lift = Math.min(overlap, maxLift)
+
+    root.style.setProperty("--chatbot-composer-lift", `${lift}px`)
+  }
+
   const scheduleComposerIntoView = (delay = 280) => {
     window.setTimeout(() => {
+      syncViewportHeight()
+      syncComposerLift()
       textareaRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" })
       scrollChatToBottom()
+      window.setTimeout(() => {
+        syncViewportHeight()
+        syncComposerLift()
+      }, 120)
     }, delay)
   }
 
@@ -389,6 +427,7 @@ export default function Chatbot() {
     const viewport = window.visualViewport
     const handleResize = () => {
       syncViewportHeight()
+      syncComposerLift()
       if (open) {
         window.requestAnimationFrame(() => {
           scheduleComposerIntoView(80)
@@ -417,6 +456,20 @@ export default function Chatbot() {
       document.body.classList.remove("chatbotMobileOpen")
     }
   }, [open])
+
+  useEffect(() => {
+    if (typeof document === "undefined") return
+    document.documentElement.style.setProperty("--chatbot-composer-lift", open ? getComputedStyle(document.documentElement).getPropertyValue("--chatbot-composer-lift") || "0px" : "0px")
+    if (!open) {
+      document.documentElement.style.setProperty("--chatbot-composer-lift", "0px")
+      return
+    }
+
+    window.requestAnimationFrame(() => {
+      syncViewportHeight()
+      syncComposerLift()
+    })
+  }, [open, expanded, threadsOpen, visibleMessages.length])
 
   useEffect(() => {
     if (!open) return
@@ -822,7 +875,7 @@ export default function Chatbot() {
         <>
           <div className={styles.overlay} onClick={closeChat} />
 
-          <div className={containerClass} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+          <div ref={containerRef} className={containerClass} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
             <ChatHeader
               loading={loading}
               expanded={expanded}
@@ -864,7 +917,7 @@ export default function Chatbot() {
               }
             />
 
-            <div className={styles.footer}>
+            <div ref={footerRef} className={styles.footer}>
               <ChatComposer
                 textareaRef={textareaRef}
                 value={input}
