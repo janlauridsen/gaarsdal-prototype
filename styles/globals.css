@@ -8,8 +8,23 @@
    Chatbot UI styles are isolated in components/Chatbot.module.css.
 ========================= */
 
+:root {
+  --app-dvh: 100dvh;
+  --chatbot-viewport-height: 100dvh;
+  --chatbot-viewport-offset-top: 0px;
+  --chatbot-viewport-offset-left: 0px;
+  --chatbot-keyboard-inset: 0px;
+  --chatbot-composer-height: 88px;
+}
+
 html,
 body {
+  min-height: 100%;
   background: #EFEDE7;
   color: #2C2A28;
+}
+
+body.chatbotMobileOpen {
+  overflow: hidden;
+  overscroll-behavior: none;
 }

@@ -61,13 +61,52 @@ export default function Chatbot() {
 
   const endRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const footerRef = useRef<HTMLDivElement | null>(null)
+  const [isMobileViewport, setIsMobileViewport] = useState(false)
   const didAutoStartNewThreadRef = useRef(false)
   const jobLoopRef = useRef<{ conversationId: string; jobId: string; cancelled: boolean } | null>(null)
   const initInFlightRef = useRef(false)
 
+  const scrollChatToBottom = (behavior: ScrollBehavior = "smooth") => {
+    endRef.current?.scrollIntoView({ behavior, block: "end" })
+  }
+
+  const syncViewportHeight = () => {
+    if (typeof window === "undefined") return
+
+    const viewport = window.visualViewport
+    const layoutHeight = window.innerHeight
+    const viewportHeight = Math.round(viewport?.height ?? layoutHeight)
+    const viewportOffsetTop = Math.max(0, Math.round(viewport?.offsetTop ?? 0))
+    const viewportOffsetLeft = Math.max(0, Math.round(viewport?.offsetLeft ?? 0))
+    const keyboardInset = Math.max(0, layoutHeight - viewportHeight - viewportOffsetTop)
+
+    document.documentElement.style.setProperty("--app-dvh", `${layoutHeight}px`)
+    document.documentElement.style.setProperty("--chatbot-viewport-height", `${viewportHeight}px`)
+    document.documentElement.style.setProperty("--chatbot-viewport-offset-top", `${viewportOffsetTop}px`)
+    document.documentElement.style.setProperty("--chatbot-viewport-offset-left", `${viewportOffsetLeft}px`)
+    document.documentElement.style.setProperty("--chatbot-keyboard-inset", `${keyboardInset}px`)
+  }
+
+  const syncComposerMetrics = () => {
+    if (typeof window === "undefined") return
+
+    const footerHeight = Math.max(0, Math.ceil(footerRef.current?.getBoundingClientRect().height ?? 0))
+    const nextHeight = footerHeight || 88
+    document.documentElement.style.setProperty("--chatbot-composer-height", `${nextHeight}px`)
+  }
+
+  const scheduleComposerIntoView = (delay = 280) => {
+    window.setTimeout(() => {
+      textareaRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" })
+      scrollChatToBottom()
+    }, delay)
+  }
+
   const focusInput = () => {
     window.requestAnimationFrame(() => {
       textareaRef.current?.focus()
+      scheduleComposerIntoView()
     })
   }
 
@@ -349,13 +388,69 @@ export default function Chatbot() {
 
   useEffect(() => {
     if (!open) return
-    endRef.current?.scrollIntoView({ behavior: "smooth" })
+    scrollChatToBottom()
   }, [visibleMessages, open, headerNavHint, expanded])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const media = window.matchMedia("(max-width: 768px)")
+    const updateMobileViewport = () => {
+      setIsMobileViewport(media.matches)
+    }
+
+    updateMobileViewport()
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", updateMobileViewport)
+      return () => media.removeEventListener("change", updateMobileViewport)
+    }
+
+    media.addListener(updateMobileViewport)
+    return () => media.removeListener(updateMobileViewport)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    syncViewportHeight()
+    syncComposerMetrics()
+
+    const viewport = window.visualViewport
+    const handleResize = () => {
+      syncViewportHeight()
+      window.requestAnimationFrame(() => {
+        syncComposerMetrics()
+        if (open) {
+          scheduleComposerIntoView(80)
+        }
+      })
+    }
+
+    window.addEventListener("resize", handleResize)
+    window.addEventListener("orientationchange", handleResize)
+    viewport?.addEventListener("resize", handleResize)
+    viewport?.addEventListener("scroll", handleResize)
+
+    return () => {
+      window.removeEventListener("resize", handleResize)
+      window.removeEventListener("orientationchange", handleResize)
+      viewport?.removeEventListener("resize", handleResize)
+      viewport?.removeEventListener("scroll", handleResize)
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (typeof document === "undefined") return
+    document.body.classList.toggle("chatbotMobileOpen", open && isMobileViewport)
+    return () => {
+      document.body.classList.remove("chatbotMobileOpen")
+    }
+  }, [open, isMobileViewport])
 
   useEffect(() => {
     if (!open) return
     if (!draftReview || draftReview.accepted_at) return
-    endRef.current?.scrollIntoView({ behavior: "smooth" })
+    scrollChatToBottom()
   }, [open, draftReview?.job_id, draftReview?.accepted_at])
 
   useEffect(() => {
@@ -365,6 +460,14 @@ export default function Chatbot() {
     if (threadsOpen) return
     focusInput()
   }, [open, loading, threadsOpen, state?.revision, visibleMessages.length])
+
+  useEffect(() => {
+    if (!open) return
+    const timer = window.setTimeout(() => {
+      syncComposerMetrics()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [open, isMobileViewport, expanded, input, visibleMessages.length, loading, draftReview?.job_id, draftReview?.accepted_at])
 
   useEffect(() => {
     return () => {
@@ -742,7 +845,9 @@ export default function Chatbot() {
 
 
 
-  const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal}`
+  const composerDetached = open && isMobileViewport
+  const containerClass = `${styles.chatbot} ${expanded ? styles.expanded : styles.normal} ${composerDetached ? styles.chatbotDetachedComposer : ""}`
+  const footerClass = `${styles.footer}${composerDetached ? ` ${styles.footerDetached}` : ""}`
 
   return (
     <>
@@ -798,7 +903,29 @@ export default function Chatbot() {
               }
             />
 
-            <div className={styles.footer}>
+            {!composerDetached && (
+              <div ref={footerRef} className={footerClass}>
+                <ChatComposer
+                  textareaRef={textareaRef}
+                  value={input}
+                  placeholder={placeholder}
+                  disabled={!state || !freeTextEnabled}
+                  loading={loading}
+                  onChange={setInput}
+                  onFocus={() => {
+                    scheduleComposerIntoView()
+                  }}
+                  onSend={(text) => {
+                    setInput("")
+                    dispatch({ type: "FREE_TEXT", text })
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          {composerDetached && (
+            <div ref={footerRef} className={footerClass} onClick={(e) => e.stopPropagation()}>
               <ChatComposer
                 textareaRef={textareaRef}
                 value={input}
@@ -806,13 +933,16 @@ export default function Chatbot() {
                 disabled={!state || !freeTextEnabled}
                 loading={loading}
                 onChange={setInput}
+                onFocus={() => {
+                  scheduleComposerIntoView()
+                }}
                 onSend={(text) => {
                   setInput("")
                   dispatch({ type: "FREE_TEXT", text })
                 }}
               />
             </div>
-          </div>
+          )}
         </>
       )}
     </>
