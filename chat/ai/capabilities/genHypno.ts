@@ -424,7 +424,25 @@ export async function runUnifiedHypnoCapability(
     usedFallback = true
   }
 
+  // ─── Proaktiv CTA ─────────────────────────────────────────────────────────
+  // After turn 5 with a clear topic and in a non-closing mode, gently offer
+  // to tell the user what a concrete session would involve. Only fires once.
+  const previousAssistantCount = countAssistantTurns(transcript)
+  const ctaAlreadyShown = context.state.meta["gen_hypno.cta_shown"]?.value === true
+  const ctaConditionsMet =
+    !ctaAlreadyShown &&
+    previousAssistantCount >= 4 &&
+    !!topic &&
+    modeUsed !== "closing" &&
+    modeUsed !== "practical" &&
+    !detectClosingText(userText)
+
+  if (ctaConditionsMet) {
+    assistant = assistant + "\n\nHvis du \xf8nsker at tale med Jan om hvad et konkret forl\xf8b ville indebare, er du velkommen til at skrive."
+  }
+
   const updatedTranscript = appendTranscript(transcript, userText, assistant)
+  const ctaMeta = ctaConditionsMet ? { "gen_hypno.cta_shown": true } : {}
 
   return {
     transition: {
@@ -433,12 +451,15 @@ export async function runUnifiedHypnoCapability(
       to: options.stayOnNode,
       reason: `unified-hypno:${modeUsed}`,
       response_message: assistant,
-      meta_delta: buildMetaDelta({
-        context, assistantMessage: assistant, updatedTranscript, topic,
-        sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
-        analysis, mode: modeUsed, objective: responseObjective,
-        relationalState: analysis.relational_state,
-      }),
+      meta_delta: {
+        ...buildMetaDelta({
+          context, assistantMessage: assistant, updatedTranscript, topic,
+          sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
+          analysis, mode: modeUsed, objective: responseObjective,
+          relationalState: analysis.relational_state,
+        }),
+        ...ctaMeta,
+      },
     },
     debug: { capability: "unified-hypno-v4", used_fallback: usedFallback },
   }
