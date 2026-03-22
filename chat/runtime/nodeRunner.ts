@@ -13,6 +13,7 @@ import { runTool } from "../tools/tools"
 import { runRouter } from "../router/runRouter"
 import { buildContextPackV23 } from "../ai/contextPack"
 import { buildUserProfilePromptContext, readUserProfile } from "../memory/store"
+import { MEMORY_TTL_SECONDS } from "../utils/ttl"
 
 export type NodeRunParams = {
   state: ConversationState
@@ -20,7 +21,6 @@ export type NodeRunParams = {
   userKey: string
 }
 
-const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // keep aligned with other TTLs for now
 
 function norm(s: string): string {
   return s.toLowerCase().trim()
