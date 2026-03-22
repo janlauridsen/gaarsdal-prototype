@@ -3,10 +3,8 @@ import { readThreadIndex, writeThreadIndex, maybePromoteThreadTitle, isGenericTh
 import { readRawTurns } from "../../raw/store"
 import { jobsTtlSeconds } from "../store"
 import { DeriveThreadTitlePayload, JobRecordV1 } from "../types"
+import { nowMs } from "../utils/time"
 
-function nowMs(): number {
-  return Date.now()
-}
 
 function asString(v: unknown): string {
   return typeof v === "string" ? v : ""

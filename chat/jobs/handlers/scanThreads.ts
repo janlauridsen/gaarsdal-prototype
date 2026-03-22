@@ -4,6 +4,7 @@ import { readThreadThemeAndEpisode } from "../../memory/longTermMemoryStore"
 import { readRawTurns } from "../../raw/store"
 import { jobsTtlSeconds, writeDraft, writeJob } from "../store"
 import { DraftV1, EvidenceRefV1, JobRecordV1, ScanThreadsPayload } from "../types"
+import { nowMs } from "../utils/time"
 
 type ThreadSummary = {
   conversation_id: string
@@ -14,9 +15,6 @@ type ThreadSummary = {
   lexical_score?: number
 }
 
-function nowMs(): number {
-  return Date.now()
-}
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n))
