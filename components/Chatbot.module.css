@@ -1779,3 +1779,84 @@
   font-size: 12px;
   color: rgba(27, 30, 28, 0.62);
 }
+
+/* ─── FormComposer ────────────────────────────────────────────────────────── */
+
+.formComposer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 14px;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.formLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(27, 30, 28, 0.75);
+  letter-spacing: 0.01em;
+}
+
+.formRequired {
+  color: #a85353;
+}
+
+.formInput {
+  padding: 8px 10px;
+  border: 1px solid rgba(27, 30, 28, 0.18);
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1b1e1c;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: inherit;
+}
+
+.formInput:focus {
+  border-color: rgba(27, 30, 28, 0.45);
+}
+
+.formInput:disabled {
+  opacity: 0.55;
+  background: rgba(27, 30, 28, 0.04);
+}
+
+.formInputError {
+  border-color: #c94f4f;
+}
+
+.formError {
+  font-size: 11px;
+  color: #c94f4f;
+  margin-top: 1px;
+}
+
+.formSubmitBtn {
+  margin-top: 4px;
+  padding: 10px 16px;
+  background: #3d5c41;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  align-self: flex-end;
+  min-width: 90px;
+}
+
+.formSubmitBtn:hover:not(:disabled) {
+  background: #2e4531;
+}
+
+.formSubmitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

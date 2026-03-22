@@ -15,11 +15,13 @@ import type {
   DeferredJobSignal,
   InputSignal,
   KernelResponse,
+  NodeFormSpec,
   ThreadTab,
   UiSuggestion,
 } from "./chatbot/types"
 
 import ChatComposer from "./chatbot/ChatComposer"
+import FormComposer from "./chatbot/FormComposer"
 import { ChatHeader } from "./chatbot/ChatHeader"
 import { MessagePane } from "./chatbot/MessagePane"
 
@@ -55,6 +57,7 @@ export default function Chatbot() {
   const [draftSummaryInput, setDraftSummaryInput] = useState("")
   const [draftOpenQuestionsInput, setDraftOpenQuestionsInput] = useState("")
   const [draftSaving, setDraftSaving] = useState(false)
+  const [nodeForm, setNodeForm] = useState<NodeFormSpec | null>(null)
 
   const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
   const headerNavHintTimerRef = useRef<number | null>(null)
@@ -810,6 +813,7 @@ export default function Chatbot() {
 
       const data = await callKernel(null, { type: "THREAD_CREATE", mode: "normal" } as any)
       setState(data.state)
+      setNodeForm((data as any).node_form ?? null)
       setInput("")
       setHeaderNavHint(null)
       await ensureConversationLoaded(data.state.conversation_id, data.state)
@@ -844,6 +848,7 @@ export default function Chatbot() {
       }
 
       setState(data.state)
+      setNodeForm((data as any).node_form ?? null)
 
       if (data.deferred_job && data.state?.conversation_id) {
         stageDeferredJob(data.deferred_job)
@@ -992,21 +997,32 @@ export default function Chatbot() {
 
                 {!composerDetached && (
                   <div ref={footerRef} className={footerClass}>
-                    <ChatComposer
-                      textareaRef={textareaRef}
-                      value={input}
-                      placeholder={placeholder}
-                      disabled={!state || !freeTextEnabled}
-                      loading={loading}
-                      onChange={setInput}
-                      onFocus={() => {
-                        scheduleComposerIntoView()
-                      }}
-                      onSend={(text) => {
-                        setInput("")
-                        dispatch({ type: "FREE_TEXT", text })
-                      }}
-                    />
+                    {nodeForm ? (
+                      <FormComposer
+                        fields={nodeForm.fields}
+                        loading={loading}
+                        disabled={!state || !freeTextEnabled}
+                        onSend={(text) => {
+                          dispatch({ type: "FREE_TEXT", text })
+                        }}
+                      />
+                    ) : (
+                      <ChatComposer
+                        textareaRef={textareaRef}
+                        value={input}
+                        placeholder={placeholder}
+                        disabled={!state || !freeTextEnabled}
+                        loading={loading}
+                        onChange={setInput}
+                        onFocus={() => {
+                          scheduleComposerIntoView()
+                        }}
+                        onSend={(text) => {
+                          setInput("")
+                          dispatch({ type: "FREE_TEXT", text })
+                        }}
+                      />
+                    )}
                   </div>
                 )}
               </>
@@ -1015,21 +1031,32 @@ export default function Chatbot() {
 
           {composerDetached && !isUnsupportedInAppBrowser && (
             <div ref={footerRef} className={footerClass} onClick={(e) => e.stopPropagation()}>
-              <ChatComposer
-                textareaRef={textareaRef}
-                value={input}
-                placeholder={placeholder}
-                disabled={!state || !freeTextEnabled}
-                loading={loading}
-                onChange={setInput}
-                onFocus={() => {
-                  scheduleComposerIntoView()
-                }}
-                onSend={(text) => {
-                  setInput("")
-                  dispatch({ type: "FREE_TEXT", text })
-                }}
-              />
+              {nodeForm ? (
+                <FormComposer
+                  fields={nodeForm.fields}
+                  loading={loading}
+                  disabled={!state || !freeTextEnabled}
+                  onSend={(text) => {
+                    dispatch({ type: "FREE_TEXT", text })
+                  }}
+                />
+              ) : (
+                <ChatComposer
+                  textareaRef={textareaRef}
+                  value={input}
+                  placeholder={placeholder}
+                  disabled={!state || !freeTextEnabled}
+                  loading={loading}
+                  onChange={setInput}
+                  onFocus={() => {
+                    scheduleComposerIntoView()
+                  }}
+                  onSend={(text) => {
+                    setInput("")
+                    dispatch({ type: "FREE_TEXT", text })
+                  }}
+                />
+              )}
             </div>
           )}
         </>
