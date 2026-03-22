@@ -177,12 +177,15 @@
 .messages::before {
   content: "";
   position: absolute;
-  inset: 0;
+  bottom: 12px;
+  right: 12px;
+  width: 72px;
+  height: 72px;
   background-image: url("/gaarsdal-logo-2026-02.png");
   background-repeat: no-repeat;
   background-position: center;
-  background-size: min(72%, 680px);
-  opacity: 0.5;
+  background-size: contain;
+  opacity: 0.18;
   pointer-events: none;
 }
 
@@ -530,9 +533,9 @@
 .sendBtn {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
-  background: rgba(83, 122, 112, 0.12);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 50%;
+  background: #537A70;
+  border: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -541,7 +544,7 @@
 }
 
 .sendBtn:hover {
-  background: rgba(83, 122, 112, 0.18);
+  background: #476b62;
   transform: translateY(-1px);
 }
 
@@ -550,7 +553,7 @@
 }
 
 .sendBtn:disabled {
-  opacity: 0.45;
+  opacity: 0.35;
   cursor: not-allowed;
   transform: none;
 }
@@ -558,7 +561,7 @@
 .sendBtnIcon {
   width: 18px;
   height: 18px;
-  color: rgba(27, 30, 28, 0.82);
+  color: #ffffff;
 }
 
 .fallbackPanel {
@@ -1508,6 +1511,43 @@
   word-break: break-word;
 }
 
+
+.starterChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.starterChip {
+  border: 0.5px solid rgba(83, 122, 112, 0.28);
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #3d6b62;
+  cursor: pointer;
+  transition: background 120ms ease, transform 120ms ease;
+  text-align: left;
+}
+
+.starterChip:hover {
+  background: rgba(83, 122, 112, 0.08);
+  transform: translateY(-1px);
+}
+
+.starterChip:active {
+  transform: translateY(0px);
+}
+
+.starterChip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
 
 .messageStack {
   display: flex;
