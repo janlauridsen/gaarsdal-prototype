@@ -44,6 +44,7 @@ export function runRouter(params: {
   let nextNodeId = candidates[0] ?? allowed[0] ?? node.id
   let confidence = 0
   let reason = "no policy"
+  let detected_topic: string | undefined
 
   if (routerId === "home-router-v1") {
     const decision = homeRouterV1({
@@ -53,11 +54,12 @@ export function runRouter(params: {
     nextNodeId = decision.nextNodeId
     confidence = decision.confidence
     reason = decision.reason
+    detected_topic = decision.detected_topic
   }
 
   const chosen = chooseAllowed(nextNodeId, allowed)
 
-  const meta_delta = {
+  const meta_delta: Record<string, unknown> = {
     "router.decision": {
       at: nowIso(),
       router_id: routerId,
@@ -68,6 +70,14 @@ export function runRouter(params: {
       reason,
       user_text_snippet: safeSnippet(params.userText, 180),
     },
+  }
+
+  // Propagate detected topic to gen_hypno context if this router detected one.
+  // HOME must list "gen_hypno.last_topic" and "gen_hypno.problem_path" in
+  // meta_domains_written for the kernel to allow these writes.
+  if (detected_topic) {
+    meta_delta["gen_hypno.last_topic"] = detected_topic
+    meta_delta["gen_hypno.problem_path"] = detected_topic
   }
 
   const transition: Transition = {
