@@ -123,7 +123,19 @@ ${policy.require_redirect === "contact" ? "VIGTIGT: Brug direkte kontaktoplysnin
     variationLines.push(`- Forrige svar begyndte: ${JSON.stringify(lastAssistant.slice(0, 120))} — din åbning må ikke ligne denne.`)
   }
   variationLines.push("- Gentag ikke samme forklaring med nye ord.")
+  variationLines.push(`- VIGTIGT: Undgå at starte acknowledgement med "Du spørger", "Du beskriver", "Du ønsker", "Du nævner" eller "Du fortæller". Varier åbningen — brug f.eks. en direkte observation, et spørgsmål tilbage, eller start direkte på core_answer med acknowledgement = null.`)
   blocks.push(variationLines.join("\n"))
+
+  // === BOOKING NUDGE ===
+  const isInfoAboutMethod = mode === "info" && (
+    analysis.intent === "understand_method" ||
+    (analysis.topic ?? "").toLowerCase().includes("hypno") ||
+    (analysis.topic ?? "").toLowerCase().includes("terapi")
+  )
+  const isEngaged = assistantCount >= 2
+  if (isInfoAboutMethod && isEngaged) {
+    blocks.push(`BOOKING-NUDGE: Brugeren har spurgt om hypnoterapi kan hjælpe og er engageret. Afslut next_step med en naturlig, ikke-påtrængende invitation — f.eks. "Hvis du vil undersøge om et forløb giver mening for dig, tilbyder Jan en gratis afklarende samtale." Må ikke lyde som reklame.`)
+  }
 
   // === SITE-KONTEKST ===
   const sitePrefix = mode === "practical"
