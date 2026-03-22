@@ -1,14 +1,12 @@
 import type { ConversationState, Transition, Node } from "../kernel/types"
 import { homeRouterV1 } from "./policies/homeRouterV1"
+import { nowIso } from "../utils/time"
 
 export type RouterRunResult = {
   transition: Transition
   meta_delta: Record<string, unknown>
 }
 
-function nowIso(): string {
-  return new Date().toISOString()
-}
 
 function safeSnippet(text: string, maxLen: number): string {
   const t = text.trim().replace(/\s+/g, " ")
