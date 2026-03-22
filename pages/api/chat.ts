@@ -22,6 +22,26 @@ import { SESSION_TTL_SECONDS, PROFILE_TTL_SECONDS, MEMORY_TTL_SECONDS } from "..
 import { isLobbyConversation, toLobbyConversationId, toUserInput, truncateText, withThreadMeta } from "../../chat/utils/conversation"
 import { nowMs } from "../../chat/utils/time"
 
+function serializeActiveNode(nodeId: string): { node_kind: string; node_form?: { fields: Array<{ id: string; label: string; required?: boolean; placeholder?: string }> } } {
+  try {
+    const node = getNode(nodeId)
+    const out: any = { node_kind: node.kind }
+    if (node.kind === "FORM" && node.form) {
+      out.node_form = {
+        fields: node.form.fields.map((f) => ({
+          id: f.id,
+          label: f.label,
+          required: f.required ?? false,
+          placeholder: f.placeholder ?? "",
+        })),
+      }
+    }
+    return out
+  } catch {
+    return { node_kind: "DIALOG" }
+  }
+}
+
 type ChatRequestBody = { state: any; input: ApiInputSignal }
 
 type ApiInputSignal =
@@ -97,7 +117,7 @@ async function handleInitOrRestore(params: {
   ])
 
   const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
-  res.status(200).json({ state: withThreadMeta(baseState, indexNow), transition: { type: "INIT", from: null, to: baseState.active_node, reason: isNew ? "system init" : "system init (restored)" }, log: { conversation_id: baseState.conversation_id, revision_before: isNew ? -1 : baseState.revision, revision_after: baseState.revision, active_node_before: isNew ? null : baseState.active_node, active_node_after: baseState.active_node, input_type: "SYSTEM_INIT", transition_type: "INIT", timestamp: new Date().toISOString() } })
+  res.status(200).json({ state: withThreadMeta(baseState, indexNow), ...serializeActiveNode(baseState.active_node), transition: { type: "INIT", from: null, to: baseState.active_node, reason: isNew ? "system init" : "system init (restored)" }, log: { conversation_id: baseState.conversation_id, revision_before: isNew ? -1 : baseState.revision, revision_after: baseState.revision, active_node_before: isNew ? null : baseState.active_node, active_node_after: baseState.active_node, input_type: "SYSTEM_INIT", transition_type: "INIT", timestamp: new Date().toISOString() } })
   return true
 }
 
@@ -156,6 +176,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(200).json({
       ...kernelResultFinal,
       state: withThreadMeta(kernelResultFinal.state, indexNow),
+      ...serializeActiveNode(kernelResultFinal.state.active_node),
       deferred_job: scanThreads.deferredJob ?? null,
     })
 
