@@ -1,4 +1,5 @@
 import { getRedisClient } from "../persistence/redis"
+import { nowIso } from "../utils/time"
 
 export type RawTurnEvent = {
   ts: string
@@ -17,9 +18,6 @@ function key(conversationId: string): string {
   return `${KEY_PREFIX}${conversationId}`
 }
 
-function nowIso(): string {
-  return new Date().toISOString()
-}
 
 export async function appendRawTurn(params: {
   conversationId: string
