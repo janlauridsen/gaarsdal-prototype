@@ -432,11 +432,10 @@ export async function recordTurn(params: {
     meta: Object.keys(metaSnapshot).length ? metaSnapshot : undefined,
   })
 
-  for (const e of events) {
-    await client.rpush(eventsKey(params.userKey), JSON.stringify(e))
-  }
-  await client.ltrim(eventsKey(params.userKey), -MAX_EVENTS, -1)
-  await client.expire(eventsKey(params.userKey), params.ttlSeconds)
+  const key = eventsKey(params.userKey)
+  await Promise.all(events.map((e) => client.rpush(key, JSON.stringify(e))))
+  await client.ltrim(key, -MAX_EVENTS, -1)
+  await client.expire(key, params.ttlSeconds)
 
   const rawProfile = await client.get<unknown>(profileKey(params.userKey))
   const existing = parseJson<UserProfile>(rawProfile, isUserProfile)
