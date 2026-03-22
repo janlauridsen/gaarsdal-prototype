@@ -1,4 +1,5 @@
 import { getRedisClient } from "./redis"
+import { nowIso } from "../utils/time"
 
 export type ThreadStatus = "active" | "archived"
 
@@ -123,9 +124,6 @@ function parseJson(raw: unknown): ThreadIndex | null {
   return normalizeThreadIndex(raw)
 }
 
-function nowIso(): string {
-  return new Date().toISOString()
-}
 
 export function createEmptyThreadIndex(userKey: string): ThreadIndex {
   return {
