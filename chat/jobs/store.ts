@@ -3,6 +3,7 @@ import { getRedisClient } from "../persistence/redis"
 import { newUuid } from "../utils/ids"
 import { envInt } from "../utils/env"
 import { DraftV1, JobKind, JobMode, JobRecordV1, JobStatus } from "./types"
+import { nowMs } from "../utils/time"
 
 const KEY_PREFIX = "gaarsdal:jobs:v1:"
 
@@ -15,9 +16,6 @@ const KEY_DEDUPE = (conversationId: string, kind: JobKind, hash: string) =>
 const KEY_DRAFT = (conversationId: string, jobId: string) => `${KEY_PREFIX}draft:conversation:${conversationId}:${jobId}`
 const KEY_DRAFT_LATEST = (conversationId: string) => `${KEY_PREFIX}draft:latest:conversation:${conversationId}`
 
-function nowMs(): number {
-  return Date.now()
-}
 
 export function jobsTtlSeconds(): number {
   // Keep aligned with raw turn TTL defaults unless overridden.
