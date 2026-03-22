@@ -1,5 +1,5 @@
 import type { CheckpointSpec, ConversationState, ToolSpec } from "../kernel/types"
-import crypto from "crypto"
+import { newUuid } from "../utils/ids"
 
 import { createInitialState } from "../kernel/state"
 import { readConversationState, writeConversationState } from "../persistence/conversationStateStore"
@@ -131,10 +131,6 @@ function makeThreadChoices(params: {
   return items.slice(0, 12)
 }
 
-function safeUuid(): string {
-  return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
-}
-
 function asString(v: unknown): string {
   return typeof v === "string" ? v : ""
 }
@@ -262,7 +258,7 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
     }
 
     if (mode === "new") {
-      const conversationId = `c:${safeUuid()}`
+      const conversationId = `c:${newUuid()}`
       const newState = createInitialState(conversationId)
 
       await writeConversationState(newState, DEFAULT_SESSION_TTL_SECONDS)
