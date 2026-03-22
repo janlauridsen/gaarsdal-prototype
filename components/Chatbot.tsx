@@ -176,7 +176,7 @@ export default function Chatbot() {
 
   const placeholder = useMemo(() => {
     if (!state) return "Initialiserer…"
-    return "Skriv her… (Enter = send, Shift+Enter = ny linje)"
+    return "Hvad tænker du på?"
   }, [state])
 
   const freeTextEnabled = useMemo(() => {
