@@ -30,10 +30,15 @@ export default function Header({
       }`}
     >
       <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Logo / titel */}
-        <div className="flex items-center gap-2 text-text font-sans text-lg font-medium">
-          <Link href="/" className="hover:opacity-90">
-            {siteTitle}
+        {/* Logo */}
+        <div className="flex items-center">
+          <Link href="/" className="hover:opacity-85 transition-opacity">
+            <img
+              src="/gaarsdal-logo-2026-02.png"
+              alt="Gaarsdal Hypnoterapi"
+              height={44}
+              style={{ height: '44px', width: 'auto' }}
+            />
           </Link>
         </div>
 
