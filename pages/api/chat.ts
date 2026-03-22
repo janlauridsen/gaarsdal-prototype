@@ -1,13 +1,11 @@
 // pages/api/chat.ts
 import type { NextApiRequest, NextApiResponse } from "next"
-import crypto from "crypto"
 
 import { runNode } from "../../chat/runtime/nodeRunner"
 import { createInitialState, createLobbyState } from "../../chat/kernel/state"
-import type { InputSignal, KernelResult, LogEvent } from "../../chat/kernel/types"
+import type { InputSignal, KernelResult } from "../../chat/kernel/types"
 import { getNode } from "../../chat/nodes/registry"
 
-import { appendInteraction, appendLog } from "../../chat/logging/sink"
 import { readUserProfile, recordTurn, writeUserProfile } from "../../chat/memory/store"
 import { consolidateV1 } from "../../chat/platform/consolidation"
 import { readConversationState, writeConversationState } from "../../chat/persistence/conversationStateStore"
@@ -26,9 +24,12 @@ import { getOrCreateThreadThemeAndEpisode } from "../../chat/memory/longTermMemo
 import { enqueueJob, makeJobId } from "../../chat/async/queue"
 import { jobsTtlSeconds, triggerJob } from "../../chat/jobs/store"
 import type { DeferredJobSignal, ProblemSpecV1 } from "../../chat/jobs/types"
-
-// Single raw stream
 import { appendRawTurn } from "../../chat/raw/store"
+
+import { setWidgetCors } from "./_utils/cors"
+import { ensureUserKey } from "./_utils/auth"
+import { newUuid } from "../../chat/utils/ids"
+import { envInt, envBool } from "../../chat/utils/env"
 
 type ChatRequestBody = {
   state: any
@@ -50,28 +51,11 @@ type UiSuggestion = {
   input?: any
 }
 
-const COOKIE_NAME = "gaarsdal_uid"
 const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60
 const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60
 const PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60
 
-function setCors(req: NextApiRequest, res: NextApiResponse) {
-  const origin = typeof req.headers.origin === "string" ? req.headers.origin : "*"
-  res.setHeader("Access-Control-Allow-Origin", origin)
-  res.setHeader("Vary", "Origin")
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
-  res.setHeader("Access-Control-Allow-Credentials", "true")
-}
-
 const DEFAULT_RAW_TTL_DAYS = 14
-
-function envInt(name: string, fallback: number): number {
-  const v = process.env[name]
-  if (!v) return fallback
-  const n = Number.parseInt(v.trim(), 10)
-  return Number.isFinite(n) ? n : fallback
-}
 
 function rawTtlSeconds(): number {
   return envInt("GAARSDAL_RAW_TTL_DAYS", DEFAULT_RAW_TTL_DAYS) * 24 * 60 * 60
@@ -79,50 +63,6 @@ function rawTtlSeconds(): number {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
-}
-
-function buildCookie(options: {
-  name: string
-  value: string
-  maxAgeSeconds: number
-  httpOnly?: boolean
-  secure?: boolean
-  sameSite?: "Lax" | "Strict" | "None"
-  path?: string
-}): string {
-  const parts: string[] = []
-  parts.push(`${options.name}=${encodeURIComponent(options.value)}`)
-  parts.push(`Max-Age=${options.maxAgeSeconds}`)
-  parts.push(`Path=${options.path ?? "/"}`)
-  parts.push(`SameSite=${options.sameSite ?? "Lax"}`)
-  if (options.httpOnly) parts.push("HttpOnly")
-  if (options.secure) parts.push("Secure")
-  return parts.join("; ")
-}
-
-function ensureUserKey(req: NextApiRequest, res: NextApiResponse): string {
-  const existing = req.cookies?.[COOKIE_NAME]
-  if (existing && typeof existing === "string" && existing.trim().length >= 8) {
-    return existing
-  }
-
-  const uid = crypto.randomUUID()
-  const secure = process.env.NODE_ENV === "production"
-
-  res.setHeader(
-    "Set-Cookie",
-    buildCookie({
-      name: COOKIE_NAME,
-      value: uid,
-      maxAgeSeconds: SESSION_TTL_SECONDS,
-      httpOnly: true,
-      secure,
-      sameSite: "Lax",
-      path: "/",
-    })
-  )
-
-  return uid
 }
 
 function toLobbyConversationId(userKey: string): string {
@@ -136,10 +76,6 @@ function toUserInput(input: InputSignal): string | undefined {
   if (input.type === "SYSTEM") return `SYSTEM:${(input as any).intent}`
   if (input.type === "SYSTEM_INIT") return "SYSTEM_INIT"
   return undefined
-}
-
-function safeUuid(): string {
-  return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
 }
 
 function withThreadNavMeta(state: any, returnDepth: number): any {
@@ -197,32 +133,50 @@ function isPlatformThreadInput(input: ApiInputSignal): input is Exclude<ApiInput
   )
 }
 
-function eventId(): string {
-  return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
-}
-
 function nowMs(): number {
   return Date.now()
 }
 
-function envTrue(name: string): boolean {
-  const v = process.env[name]
-  if (!v) return false
-  const t = v.trim().toLowerCase()
-  return t === "1" || t === "true" || t === "yes" || t === "on"
-}
-
-function truncateText(s: string, max: number): string {
-  if (s.length <= max) return s
-  return s.slice(0, max) + "…"
-}
-
 function shouldIncludeRawText(): boolean {
-  return envTrue("GAARSDAL_EVENTS_INCLUDE_TEXT")
+  return envBool("GAARSDAL_EVENTS_INCLUDE_TEXT")
 }
 
-function legacyRawLogsEnabled(): boolean {
-  return envTrue("GAARSDAL_LEGACY_RAW_LOGS")
+async function writeRawAndMemory(params: {
+  userKey: string
+  input: InputSignal
+  kernelResult: KernelResult
+  userText?: string
+}): Promise<void> {
+  const { kernelResult, input } = params
+  const assistantText = kernelResult.transition.response_message ?? kernelResult.state.active_node_message
+
+  await appendRawTurn({
+    conversationId: kernelResult.state.conversation_id,
+    revision: kernelResult.state.revision,
+    nodeId: kernelResult.state.active_node,
+    inputType: (input as any).type,
+    userInput: params.userText ?? toUserInput(input),
+    assistantOutput: assistantText,
+    ttlSeconds: rawTtlSeconds(),
+  })
+
+  await recordTurn({
+    userKey: params.userKey,
+    conversationId: kernelResult.state.conversation_id,
+    state: kernelResult.state,
+    userText: params.userText,
+    assistantText,
+    transitionType: kernelResult.transition.type,
+    ttlSeconds: MEMORY_TTL_SECONDS,
+  })
+
+  const profile = await readUserProfile(params.userKey)
+  if (profile) {
+    const { profile: updated, updated: didUpdate } = consolidateV1({ profile, state: kernelResult.state })
+    if (didUpdate) {
+      await writeUserProfile({ userKey: params.userKey, profile: updated, ttlSeconds: PROFILE_TTL_SECONDS })
+    }
+  }
 }
 
 async function emitCanonicalEvent(params: {
@@ -236,7 +190,7 @@ async function emitCanonicalEvent(params: {
 }): Promise<void> {
   await appendConversationEventV1({
     schema_version: "v1",
-    event_id: eventId(),
+    event_id: newUuid(),
     event_type: params.eventType as any,
     conversation_id: params.conversationId,
     user_key: params.userKey,
@@ -408,69 +362,9 @@ async function ensureThreadBindingOnState(params: {
   return { state: nextState, themeId: ensured.theme.theme_id, episodeId: ensured.episode.episode_id }
 }
 
-async function logAndRecord(params: {
-  userKey: string
-  input: InputSignal
-  kernelResult: KernelResult
-  userText?: string
-}): Promise<void> {
-  const { kernelResult, input } = params
-  const assistantText = kernelResult.transition.response_message ?? kernelResult.state.active_node_message
-
-  await appendRawTurn({
-    conversationId: kernelResult.state.conversation_id,
-    revision: kernelResult.state.revision,
-    nodeId: kernelResult.state.active_node,
-    inputType: (input as any).type,
-    userInput: params.userText ?? toUserInput(input),
-    assistantOutput: assistantText,
-    ttlSeconds: rawTtlSeconds(),
-  })
-
-  await appendLog(kernelResult.log)
-
-  const includeLegacyRaw = legacyRawLogsEnabled()
-
-  if (includeLegacyRaw) {
-    await appendInteraction({
-      conversation_id: kernelResult.state.conversation_id,
-      revision: kernelResult.state.revision,
-      active_node: kernelResult.state.active_node,
-      input_type: (input as any).type,
-      user_input: params.userText ?? toUserInput(input),
-      ai_response: assistantText,
-      outcome_node: kernelResult.transition.to,
-      timestamp: new Date().toISOString(),
-    })
-  } else {
-    await appendInteraction({
-      conversation_id: kernelResult.state.conversation_id,
-      revision: kernelResult.state.revision,
-      active_node: kernelResult.state.active_node,
-      input_type: (input as any).type,
-      outcome_node: kernelResult.transition.to,
-      timestamp: new Date().toISOString(),
-    })
-  }
-
-  await recordTurn({
-    userKey: params.userKey,
-    conversationId: kernelResult.state.conversation_id,
-    state: kernelResult.state,
-    userText: params.userText,
-    assistantText,
-    transitionType: kernelResult.transition.type,
-    includeText: includeLegacyRaw,
-    ttlSeconds: MEMORY_TTL_SECONDS,
-  })
-
-  const profile = await readUserProfile(params.userKey)
-  if (profile) {
-    const { profile: updated, updated: didUpdate } = consolidateV1({ profile, state: kernelResult.state })
-    if (didUpdate) {
-      await writeUserProfile({ userKey: params.userKey, profile: updated, ttlSeconds: PROFILE_TTL_SECONDS })
-    }
-  }
+function truncateText(s: string, max: number): string {
+  if (s.length <= max) return s
+  return s.slice(0, max) + "…"
 }
 
 function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
@@ -479,7 +373,7 @@ function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
 }
 
 function validateRequest(req: NextApiRequest, res: NextApiResponse): ChatRequestBody | null {
-  setCors(req, res)
+  setWidgetCors(req, res, "POST, OPTIONS")
 
   if (req.method === "OPTIONS") {
     res.status(200).end()
@@ -518,38 +412,24 @@ async function handleInitOrRestore(params: {
   if (clientState !== null) return false
 
   if (storedState) {
-    const log: LogEvent = {
-      conversation_id: storedState.conversation_id,
-      revision_before: storedState.revision,
-      revision_after: storedState.revision,
-      active_node_before: storedState.active_node,
-      active_node_after: storedState.active_node,
-      input_type: "SYSTEM_INIT",
-      transition_type: "INIT",
-      timestamp: new Date().toISOString(),
-    }
-
-    const payload = {
+    const result: KernelResult = {
       state: storedState,
       transition: {
         type: "INIT",
         from: null,
+        to: storedState.active_node,
         reason: "system init (restored)",
       },
-      log,
-    }
-
-    await appendLog(payload.log)
-
-    const result: KernelResult = {
-      state: payload.state,
-      transition: {
-        type: "INIT",
-        from: null,
-        to: payload.state.active_node,
-        reason: "system init (restored)",
+      log: {
+        conversation_id: storedState.conversation_id,
+        revision_before: storedState.revision,
+        revision_after: storedState.revision,
+        active_node_before: storedState.active_node,
+        active_node_after: storedState.active_node,
+        input_type: "SYSTEM_INIT",
+        transition_type: "INIT",
+        timestamp: new Date().toISOString(),
       },
-      log: payload.log,
     } as any
 
     await emitCanonicalEvent({
@@ -597,24 +477,21 @@ async function handleInitOrRestore(params: {
   const initialState =
     conversationKind === "lobby" ? createLobbyState(conversationId) : createInitialState(conversationId)
 
-  const log: LogEvent = {
-    conversation_id: initialState.conversation_id,
-    revision_before: -1,
-    revision_after: initialState.revision,
-    active_node_before: null,
-    active_node_after: initialState.active_node,
-    input_type: "SYSTEM_INIT",
-    transition_type: "INIT",
-    timestamp: new Date().toISOString(),
-  }
-
   await writeConversationState(initialState, SESSION_TTL_SECONDS)
-  await appendLog(log)
 
   const result: KernelResult = {
     state: initialState,
     transition: { type: "INIT", from: null, to: initialState.active_node, reason: "system init" },
-    log,
+    log: {
+      conversation_id: initialState.conversation_id,
+      revision_before: -1,
+      revision_after: initialState.revision,
+      active_node_before: null,
+      active_node_after: initialState.active_node,
+      input_type: "SYSTEM_INIT",
+      transition_type: "INIT",
+      timestamp: new Date().toISOString(),
+    },
   } as any
 
   await emitCanonicalEvent({
@@ -900,7 +777,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const index0 = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
 
       if (input.type === "THREAD_CREATE") {
-        const newId = safeUuid()
+        const newId = newUuid()
         const initialThreadState = createInitialState(newId)
         const mode = input.mode === "parenthesis" ? "parenthesis" : "normal"
 
@@ -1238,7 +1115,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         threadThemeId: binding?.themeId ?? (kernelResultFinal.state.meta?.["thread.theme_id"] as any)?.value,
         threadEpisodeId: binding?.episodeId ?? (kernelResultFinal.state.meta?.["thread.episode_id"] as any)?.value,
       }),
-      logAndRecord({
+      writeRawAndMemory({
         userKey,
         input: input as InputSignal,
         kernelResult: kernelResultFinal,
