@@ -14,7 +14,7 @@ import { getOrCreateThreadThemeAndEpisode } from "../memory/longTermMemoryStore"
 import { newUuid } from "../utils/ids"
 import { isLobbyConversation, toLobbyConversationId, withThreadMeta } from "../utils/conversation"
 import { SESSION_TTL_SECONDS, PROFILE_TTL_SECONDS, MEMORY_TTL_SECONDS } from "../utils/ttl"
-import { nowMs } from "../../utils/time"
+import { nowMs } from "../utils/time"
 
 export type ThreadCreateInput = { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
 export type ThreadSwitchInput = { type: "THREAD_SWITCH"; conversation_id: string }
