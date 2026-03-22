@@ -291,6 +291,21 @@ function bumpScore(map: Record<string, number>, k: string, by: number): void {
   map[k] = (map[k] ?? 0) + by
 }
 
+const TOPIC_DECAY = 0.92 // each update, all scores decay by 8%
+const TOPIC_MAX = 3.0    // cap to prevent runaway accumulation
+
+function applyTopicScoreUpdate(scores: Record<string, number>, newTags: string[]): void {
+  // Decay all existing scores slightly each turn
+  for (const key of Object.keys(scores)) {
+    scores[key] = scores[key] * TOPIC_DECAY
+    if (scores[key] < 0.05) delete scores[key] // prune near-zero topics
+  }
+  // Bump new tags (capped)
+  for (const tag of newTags) {
+    scores[tag] = Math.min((scores[tag] ?? 0) + 0.2, TOPIC_MAX)
+  }
+}
+
 function extractTopicTags(state: ConversationState): string[] {
   const triageRaw = state?.meta?.["triage.topic_tags"]?.value
   if (Array.isArray(triageRaw)) {
@@ -450,7 +465,7 @@ export async function recordTurn(params: {
   bumpCount(profile.node_counts, params.state.active_node, 1)
 
   const tags = extractTopicTags(params.state)
-  for (const t of tags) bumpScore(profile.topic_scores, t, 0.2)
+  applyTopicScoreUpdate(profile.topic_scores, tags)
 
   if (params.userText) {
     const shortObs = observeShortAnswerPreference(params.userText)
