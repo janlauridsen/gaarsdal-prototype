@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import crypto from "crypto"
+import { newUuid } from "../../chat/utils/ids"
 
 const COOKIE_NAME = "gaarsdal_uid"
 const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
@@ -29,7 +29,7 @@ export function ensureUserKey(req: NextApiRequest, res: NextApiResponse): string
     return existing
   }
 
-  const uid = crypto.randomUUID()
+  const uid = newUuid()
   const secure = process.env.NODE_ENV === "production"
   res.setHeader(
     "Set-Cookie",
