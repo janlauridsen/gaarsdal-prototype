@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import { newUuid } from "../../../chat/utils/ids"
+import { SESSION_TTL_SECONDS } from "../../../chat/utils/ttl"
 
 const COOKIE_NAME = "gaarsdal_uid"
-const SESSION_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days
 
 function buildCookie(options: {
   name: string
