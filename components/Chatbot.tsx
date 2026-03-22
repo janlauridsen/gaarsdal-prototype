@@ -58,6 +58,8 @@ export default function Chatbot() {
   const [draftOpenQuestionsInput, setDraftOpenQuestionsInput] = useState("")
   const [draftSaving, setDraftSaving] = useState(false)
   const [nodeForm, setNodeForm] = useState<NodeFormSpec | null>(null)
+  const [nodeAllowFreeText, setNodeAllowFreeText] = useState<boolean>(true)
+  const [nodeAllowedExits, setNodeAllowedExits] = useState<string[]>([])
 
   const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
   const headerNavHintTimerRef = useRef<number | null>(null)
@@ -599,9 +601,16 @@ export default function Chatbot() {
     })
   }
 
+  function isFormSubmission(text: string): boolean {
+    const lines = text.trim().split(/\n/)
+    const formLines = lines.filter((l) => /^[a-z_]+: .+/i.test(l.trim()))
+    return lines.length >= 2 && formLines.length >= Math.ceil(lines.length * 0.6)
+  }
+
   function appendUserMessage(conversationId: string, text: string) {
     const message = (text ?? "").trim()
     if (!message) return
+    if (isFormSubmission(message)) return
     setMessagesByConversationId((prev) => {
       const current = prev[conversationId] ?? []
       return { ...prev, [conversationId]: [...current, { id: `user-${safeId()}`, role: "user", text: message }] }
@@ -636,6 +645,9 @@ export default function Chatbot() {
         if (text.startsWith("EXPLICIT_TRANSITION:")) continue
         if (text.startsWith("THREAD_")) continue
         if (text.startsWith("SYSTEM")) continue
+        const fLines = text.trim().split(/\n/)
+        const fMatches = fLines.filter((l: string) => /^[a-z_]+: .+/i.test(l.trim()))
+        if (fLines.length >= 2 && fMatches.length >= Math.ceil(fLines.length * 0.6)) continue
       }
 
       out.push({
@@ -814,6 +826,10 @@ export default function Chatbot() {
       const data = await callKernel(null, { type: "THREAD_CREATE", mode: "normal" } as any)
       setState(data.state)
       setNodeForm((data as any).node_form ?? null)
+      setNodeAllowFreeText((data as any).node_allow_free_text ?? true)
+      setNodeAllowedExits((data as any).node_allowed_exits ?? [])
+      setNodeAllowFreeText((data as any).node_allow_free_text ?? true)
+      setNodeAllowedExits((data as any).node_allowed_exits ?? [])
       setInput("")
       setHeaderNavHint(null)
       await ensureConversationLoaded(data.state.conversation_id, data.state)
@@ -849,6 +865,8 @@ export default function Chatbot() {
 
       setState(data.state)
       setNodeForm((data as any).node_form ?? null)
+      setNodeAllowFreeText((data as any).node_allow_free_text ?? true)
+      setNodeAllowedExits((data as any).node_allowed_exits ?? [])
 
       if (data.deferred_job && data.state?.conversation_id) {
         stageDeferredJob(data.deferred_job)
@@ -1006,6 +1024,19 @@ export default function Chatbot() {
                           dispatch({ type: "FREE_TEXT", text })
                         }}
                       />
+                    ) : !nodeAllowFreeText && nodeAllowedExits.length > 0 ? (
+                      <div className={styles.infoActions}>
+                        {nodeAllowedExits.slice(0, 3).map((exitId) => (
+                          <button
+                            key={exitId}
+                            className={styles.infoActionBtn}
+                            onClick={() => dispatch({ type: "EXPLICIT_TRANSITION", target: exitId })}
+                            disabled={loading}
+                          >
+                            {exitId === "HOME" ? "Gå til forsiden" : exitId === "GEN_HYPNO" ? "Fortsæt samtalen" : NODE_LABELS[exitId] ?? exitId}
+                          </button>
+                        ))}
+                      </div>
                     ) : (
                       <ChatComposer
                         textareaRef={textareaRef}
@@ -1040,6 +1071,19 @@ export default function Chatbot() {
                     dispatch({ type: "FREE_TEXT", text })
                   }}
                 />
+              ) : !nodeAllowFreeText && nodeAllowedExits.length > 0 ? (
+                <div className={styles.infoActions}>
+                  {nodeAllowedExits.slice(0, 3).map((exitId) => (
+                    <button
+                      key={exitId}
+                      className={styles.infoActionBtn}
+                      onClick={() => dispatch({ type: "EXPLICIT_TRANSITION", target: exitId })}
+                      disabled={loading}
+                    >
+                      {exitId === "HOME" ? "Gå til forsiden" : exitId === "GEN_HYPNO" ? "Fortsæt samtalen" : NODE_LABELS[exitId] ?? exitId}
+                    </button>
+                  ))}
+                </div>
               ) : (
                 <ChatComposer
                   textareaRef={textareaRef}
