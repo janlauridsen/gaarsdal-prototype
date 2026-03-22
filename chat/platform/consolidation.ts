@@ -1,5 +1,6 @@
 import type { ConversationState } from "../kernel/types"
 import type { UserProfile, Track } from "../memory/store"
+import { nowIso } from "../utils/time"
 
 export type EvidenceSnippet = {
   quote: string
@@ -12,9 +13,6 @@ export type ConsolidationResult = {
   updated: boolean
 }
 
-function nowIso(): string {
-  return new Date().toISOString()
-}
 
 function ensureArrayStrings(v: unknown): string[] {
   if (!Array.isArray(v)) return []
