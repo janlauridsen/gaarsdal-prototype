@@ -18,7 +18,7 @@ import { newUuid } from "../utils/ids"
 import { envBool, envInt } from "../utils/env"
 import { MEMORY_TTL_SECONDS, PROFILE_TTL_SECONDS } from "../utils/ttl"
 import { isLobbyConversation, isControlInput, toUserInput, truncateText } from "../utils/conversation"
-import { nowMs } from "../../utils/time"
+import { nowMs } from "../utils/time"
 
 const DEFAULT_RAW_TTL_DAYS = 14
 
