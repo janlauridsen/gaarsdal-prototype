@@ -1,5 +1,6 @@
 import type { CheckpointSpec, ConversationState, ToolSpec } from "../kernel/types"
 import { newUuid } from "../utils/ids"
+import { SESSION_TTL_SECONDS, PROFILE_TTL_SECONDS } from "../utils/ttl"
 
 import { createInitialState } from "../kernel/state"
 import { readConversationState, writeConversationState } from "../persistence/conversationStateStore"
@@ -12,6 +13,7 @@ import {
 
 import { readUserProfile, writeUserProfile } from "../memory/store"
 import { consolidateV1, ensureTrack } from "../platform/consolidation"
+import { nowIso } from "../utils/time"
 
 type ToolRunParams = {
   kind: "TOOL" | "CHECKPOINT"
@@ -29,12 +31,7 @@ export type ToolRunResult = {
   state_override?: ConversationState
 }
 
-const DEFAULT_PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60
-const DEFAULT_SESSION_TTL_SECONDS = 90 * 24 * 60 * 60
 
-function nowIso(): string {
-  return new Date().toISOString()
-}
 
 function defaultProfileV2(params: { now: string; lastNode: string }) {
   return {
@@ -172,9 +169,9 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
     profile.last_seen_at = ts
     profile.last_node = params.state.active_node
 
-    await writeUserProfile({ userKey: params.userKey, profile, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
+    await writeUserProfile({ userKey: params.userKey, profile, ttlSeconds: PROFILE_TTL_SECONDS })
 
-    const index = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
+    const index = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: PROFILE_TTL_SECONDS })
 
     const activeThreads = index.threads.filter((t) => t.status === "active")
     const activeConversationId =
@@ -207,7 +204,7 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
 
   if (params.kind === "TOOL" && toolName === "thread-switch-v1") {
     const ts = nowIso()
-    const index0 = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
+    const index0 = await ensureThreadIndex({ userKey: params.userKey, ttlSeconds: PROFILE_TTL_SECONDS })
 
     const raw = (params.userText ?? "").trim()
     const text = raw.toLowerCase()
@@ -261,12 +258,12 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
       const conversationId = `c:${newUuid()}`
       const newState = createInitialState(conversationId)
 
-      await writeConversationState(newState, DEFAULT_SESSION_TTL_SECONDS)
+      await writeConversationState(newState, SESSION_TTL_SECONDS)
 
       let index1 = upsertThread({ index: index0, conversationId, title: "", preview: "" })
       index1 = { ...index1, navigation: { return_stack: [] } }
       index1 = setActiveThread({ index: index1, conversationId })
-      await writeThreadIndex({ userKey: params.userKey, index: index1, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
+      await writeThreadIndex({ userKey: params.userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
 
       newState.meta = {
         ...(newState.meta ?? {}),
@@ -284,13 +281,13 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
 
     const ensured = loaded ?? createInitialState(targetConversationId as string)
     if (!loaded) {
-      await writeConversationState(ensured, DEFAULT_SESSION_TTL_SECONDS)
+      await writeConversationState(ensured, SESSION_TTL_SECONDS)
     }
 
     let index2 = upsertThread({ index: index0, conversationId: ensured.conversation_id })
     index2 = { ...index2, navigation: { return_stack: [] } }
     index2 = setActiveThread({ index: index2, conversationId: ensured.conversation_id })
-    await writeThreadIndex({ userKey: params.userKey, index: index2, ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS })
+    await writeThreadIndex({ userKey: params.userKey, index: index2, ttlSeconds: PROFILE_TTL_SECONDS })
 
     ensured.meta = {
       ...(ensured.meta ?? {}),
@@ -347,7 +344,7 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
           await writeUserProfile({
             userKey: params.userKey,
             profile: updated,
-            ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS,
+            ttlSeconds: PROFILE_TTL_SECONDS,
           })
         }
       }
@@ -452,7 +449,7 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
         await writeUserProfile({
           userKey: params.userKey,
           profile: p2,
-          ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS,
+          ttlSeconds: PROFILE_TTL_SECONDS,
         })
 
         return {
@@ -489,7 +486,7 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
     await writeUserProfile({
       userKey: params.userKey,
       profile: updated,
-      ttlSeconds: DEFAULT_PROFILE_TTL_SECONDS,
+      ttlSeconds: PROFILE_TTL_SECONDS,
     })
   }
 
