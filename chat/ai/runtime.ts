@@ -1,9 +1,13 @@
 import { createOpenAiCompatibleClient } from "./provider"
 import { AiCapability, AiCapabilityContext, AiCapabilityResult } from "./types"
 import { genHypnoCapability } from "./capabilities/genHypno"
+import { prequalifyCapability } from "./capabilities/prequalify"
+import { clientSupportCapability } from "./capabilities/clientSupport"
 
 const CAPABILITIES: Record<string, AiCapability> = {
   [genHypnoCapability.id]: genHypnoCapability,
+  [prequalifyCapability.id]: prequalifyCapability,
+  [clientSupportCapability.id]: clientSupportCapability,
 }
 
 export async function runCapability(
