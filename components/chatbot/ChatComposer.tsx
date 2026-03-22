@@ -1,7 +1,7 @@
 "use client"
 
 import type { FocusEvent, KeyboardEvent, RefObject } from "react"
-import { PaperAirplaneIcon } from "@heroicons/react/24/outline"
+import { PaperAirplaneIcon } from "@heroicons/react/24/solid"
 
 import styles from "../Chatbot.module.css"
 

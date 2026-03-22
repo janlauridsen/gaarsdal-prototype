@@ -34,11 +34,7 @@ export function ChatHeader(props: ChatHeaderProps) {
       <div className={styles.headerRow}>
         <div className={styles.headerLeft}>
           <div className={styles.titleRow}>
-            <img
-              src="/gaarsdal-logo-2026-02.png"
-              alt="Gaarsdal Hypnoterapi"
-              className={styles.headerLogo}
-            />
+            <div className={styles.title}>Gaarsdal</div>
             <span
               className={`${styles.headerHeart} ${props.loading ? styles.headerHeartActive : ""}`}
               aria-label={props.loading ? "Arbejder" : ""}
@@ -87,7 +83,7 @@ export function ChatHeader(props: ChatHeaderProps) {
             aria-label="Ny tråd"
           >
             <PlusIcon className={styles.actionBtnIcon} />
-            <span className={styles.actionBtnLabel}>Ny</span>
+            <span className={styles.actionBtnLabel}>Ny samtale</span>
           </button>
         </div>
       </div>
