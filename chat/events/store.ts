@@ -85,22 +85,12 @@ async function rpushAndTrim(client: any, key: string, payload: string): Promise<
 }
 
 async function touchConversationIndex(client: any, conversationId: string, timestampMs: number): Promise<void> {
-  // Upstash client types have evolved; use `any` calls to keep compatibility across versions.
   try {
-    const anyClient = client as any
-    // Try common zadd signatures.
-    try {
-      await anyClient.zadd(INDEX_RECENT_CONVERSATIONS, { score: timestampMs, member: conversationId })
-    } catch {
-      try {
-        await anyClient.zadd(INDEX_RECENT_CONVERSATIONS, [{ score: timestampMs, member: conversationId }])
-      } catch {
-        await anyClient.zadd(INDEX_RECENT_CONVERSATIONS, timestampMs, conversationId)
-      }
-    }
-    // Keep most recent N
-    await anyClient.zremrangebyrank(INDEX_RECENT_CONVERSATIONS, 0, -INDEX_MAX_ITEMS - 1)
-    await anyClient.expire(INDEX_RECENT_CONVERSATIONS, INDEX_TTL_SECONDS)
+    await Promise.all([
+      client.zadd(INDEX_RECENT_CONVERSATIONS, { score: timestampMs, member: conversationId }),
+      client.zremrangebyrank(INDEX_RECENT_CONVERSATIONS, 0, -INDEX_MAX_ITEMS - 1),
+      client.expire(INDEX_RECENT_CONVERSATIONS, INDEX_TTL_SECONDS),
+    ])
   } catch {
     // Index is best-effort. Event append should not fail if index update fails.
   }
