@@ -1,14 +1,11 @@
 import crypto from "crypto"
 import { getRedisClient } from "../persistence/redis"
+import { newUuid } from "../utils/ids"
 import type { AsyncJobV23 } from "./types"
 
 const QUEUE_KEY = "gaarsdal:async:v23:queue"
 const DEDUPE_PREFIX = "gaarsdal:async:v23:dedupe:" // {job_id} => 1
 const JOB_TTL_SECONDS = 7 * 24 * 60 * 60 // 7 days
-
-function uuid(): string {
-  return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
-}
 
 export function makeJobId(params: { type: string; userKey: string; episodeId: string; revisionAfter: number }): string {
   const raw = `${params.type}|${params.userKey}|${params.episodeId}|${params.revisionAfter}`
@@ -124,5 +121,5 @@ export async function queueSize(): Promise<number> {
 }
 
 export function newEphemeralJobId(): string {
-  return uuid()
+  return newUuid()
 }

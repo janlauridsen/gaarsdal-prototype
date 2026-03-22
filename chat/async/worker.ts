@@ -1,7 +1,7 @@
 // chat/async/worker.ts
 import type { AsyncJobResult, AsyncJobV23 } from "./types"
 import { dequeueJobsWithStats } from "./queue"
-import { readInteractions } from "../logging/sink"
+import { readRawTurns } from "../raw/store"
 import { createOpenAiCompatibleClient } from "../ai/provider"
 import { readReflectionCase, writeReflectionCase } from "../persistence/reflectionCaseStore"
 import { mergeReflectionCase } from "../reflection/merge"
@@ -134,7 +134,7 @@ async function processJob(job: AsyncJobV23): Promise<AsyncJobResult> {
 
 async function processSummarizeEpisode(job: AsyncJobV23): Promise<AsyncJobResult> {
   const state = await readConversationState(job.conversation_id)
-  const interactions = await readInteractions(job.conversation_id)
+  const turns = await readRawTurns({ conversationId: job.conversation_id })
 
   // Signatures in repo: readThemes/readFacts expect an options object.
   const themes = await readThemes({ userKey: job.user_key })
@@ -158,7 +158,7 @@ async function processSummarizeEpisode(job: AsyncJobV23): Promise<AsyncJobResult
         content: JSON.stringify({
           conversation_id: job.conversation_id,
           episode_id: job.episode_id,
-          interactions,
+          turns,
           themes,
           facts,
           active_node: state.active_node,
@@ -220,9 +220,7 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
   // Signatures in repo: readTheme/readEpisode take params object.
   const theme = await readTheme({ userKey: job.user_key, themeId: job.theme_id })
   const episode = await readEpisode({ userKey: job.user_key, episodeId: job.episode_id })
-
-  // logging sink: readInteractions(conversation_id?: string)
-  const interactions = await readInteractions(job.conversation_id)
+  const turns = await readRawTurns({ conversationId: job.conversation_id })
 
   const llm = createOpenAiCompatibleClient()
   const model = getJsonModel()
@@ -243,7 +241,7 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
         content: JSON.stringify({
           theme,
           episode,
-          interactions,
+          turns,
         }),
       },
     ],
