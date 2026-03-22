@@ -1,4 +1,5 @@
 import { getRedisClient } from "../persistence/redis"
+import { nowIso } from "../utils/time"
 
 export type FeedbackRating = "positive" | "partial" | "negative"
 
@@ -37,9 +38,6 @@ function conversationKey(conversationId: string): string {
   return `${CONV_KEY_PREFIX}${conversationId}`
 }
 
-function nowIso(): string {
-  return new Date().toISOString()
-}
 
 export function feedbackTtlSeconds(): number {
   return DEFAULT_TTL_SECONDS
