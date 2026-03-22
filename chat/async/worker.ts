@@ -17,7 +17,7 @@ import {
 } from "../memory/longTermMemoryStore"
 import { readConversationState } from "../persistence/conversationStateStore"
 import { MEMORY_TTL_SECONDS } from "../utils/ttl"
-import { nowMs } from "../../utils/time"
+import { nowMs } from "../utils/time"
 
 type ProcessBatchResult = {
   processed: number
