@@ -4,7 +4,7 @@ import { readThreadThemeAndEpisode } from "../../memory/longTermMemoryStore"
 import { readRawTurns } from "../../raw/store"
 import { jobsTtlSeconds, writeDraft, writeJob } from "../store"
 import { DraftV1, EvidenceRefV1, JobRecordV1, ScanThreadsPayload } from "../types"
-import { nowMs } from "../utils/time"
+import { nowMs } from "../../utils/time"
 
 type ThreadSummary = {
   conversation_id: string

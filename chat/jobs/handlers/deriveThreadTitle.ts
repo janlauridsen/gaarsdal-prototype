@@ -3,7 +3,7 @@ import { readThreadIndex, writeThreadIndex, maybePromoteThreadTitle, isGenericTh
 import { readRawTurns } from "../../raw/store"
 import { jobsTtlSeconds } from "../store"
 import { DeriveThreadTitlePayload, JobRecordV1 } from "../types"
-import { nowMs } from "../utils/time"
+import { nowMs } from "../../utils/time"
 
 
 function asString(v: unknown): string {
