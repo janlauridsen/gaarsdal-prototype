@@ -478,14 +478,53 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
           kontakt: asString(formValues?.["kontakt"]), besked: asString(formValues?.["besked"]),
           status: "new",
         }
+
+        // 1. Persist to Redis (source of truth)
         try {
           const redis = getRedisClient()
           if (redis) await redis.lpush("gaarsdal:handoffs:v1", JSON.stringify(record))
         } catch {}
+
+        // 2. Email via Resend (primary notification)
+        const resendKey = process.env.RESEND_API_KEY
+        const notifyTo = process.env.HANDOFF_NOTIFY_EMAIL ?? "jan@gaarsdal.net"
+        const notifyFrom = process.env.HANDOFF_FROM_EMAIL ?? "noreply@gaarsdal.net"
+        if (resendKey && record.navn) {
+          try {
+            const html = [
+              "<h2>Ny henvendelse fra gaarsdal.net</h2>",
+              `<p><b>Navn:</b> ${record.navn}</p>`,
+              `<p><b>Emne:</b> ${record.emne || "—"}</p>`,
+              `<p><b>Kontakt:</b> ${record.kontakt || "—"}</p>`,
+              record.besked ? `<p><b>Besked:</b> ${record.besked}</p>` : "",
+              `<hr><p style="color:#888;font-size:12px">Henvendelse-ID: ${record.id}<br>Modtaget: ${ts}</p>`,
+            ].join("")
+
+            const replyTo = record.kontakt?.includes("@") ? record.kontakt : undefined
+
+            await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${resendKey}`,
+              },
+              body: JSON.stringify({
+                from: notifyFrom,
+                to: [notifyTo],
+                ...(replyTo ? { reply_to: replyTo } : {}),
+                subject: `Ny henvendelse: ${record.emne || record.navn}`,
+                html,
+              }),
+            })
+          } catch {}
+        }
+
+        // 3. Webhook fallback (Make / Zapier / custom)
         const webhookUrl = process.env.HANDOFF_WEBHOOK_URL
         if (webhookUrl) {
           try { await fetch(webhookUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(record) }) } catch {}
         }
+
         return {
           nextNode: spec.on_success_to ?? params.state.active_node,
           reason: "handoff-notify-v1:ok",
@@ -503,14 +542,50 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
           email: asString(formValues?.["email"]), tema: asString(formValues?.["tema"]),
           status: "new",
         }
+
+        // 1. Persist to Redis
         try {
           const redis = getRedisClient()
           if (redis) await redis.lpush("gaarsdal:leads:v1", JSON.stringify(record))
         } catch {}
+
+        // 2. Email via Resend
+        const resendKeyL = process.env.RESEND_API_KEY
+        const notifyToL = process.env.HANDOFF_NOTIFY_EMAIL ?? "jan@gaarsdal.net"
+        const notifyFromL = process.env.HANDOFF_FROM_EMAIL ?? "noreply@gaarsdal.net"
+        if (resendKeyL && record.email) {
+          try {
+            const htmlL = [
+              "<h2>Nyt lead fra gaarsdal.net</h2>",
+              `<p><b>Email:</b> ${record.email}</p>`,
+              record.tema ? `<p><b>Tema:</b> ${record.tema}</p>` : "",
+              "<p>Personen er ikke klar til booking endnu, men ønsker mere info.</p>",
+              `<hr><p style="color:#888;font-size:12px">Lead-ID: ${record.id}<br>Modtaget: ${ts}</p>`,
+            ].join("")
+
+            await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${resendKeyL}`,
+              },
+              body: JSON.stringify({
+                from: notifyFromL,
+                to: [notifyToL],
+                reply_to: record.email,
+                subject: `Nyt lead${record.tema ? ": " + record.tema : ""}`,
+                html: htmlL,
+              }),
+            })
+          } catch {}
+        }
+
+        // 3. Webhook fallback
         const leadWebhook = process.env.LEAD_WEBHOOK_URL ?? process.env.HANDOFF_WEBHOOK_URL
         if (leadWebhook) {
           try { await fetch(leadWebhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "lead", ...record }) }) } catch {}
         }
+
         return {
           nextNode: spec.on_success_to ?? params.state.active_node,
           reason: "lead-save-v1:ok",
