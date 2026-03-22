@@ -1,6 +1,7 @@
 import type { CheckpointSpec, ConversationState, ToolSpec } from "../kernel/types"
 import { newUuid } from "../utils/ids"
 import { SESSION_TTL_SECONDS, PROFILE_TTL_SECONDS } from "../utils/ttl"
+import { getRedisClient } from "../persistence/redis"
 
 import { createInitialState } from "../kernel/state"
 import { readConversationState, writeConversationState } from "../persistence/conversationStateStore"
@@ -463,6 +464,57 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
               mapped_fields: Object.keys(values),
             },
           },
+        }
+      }
+
+      // ─── handoff-notify-v1 ──────────────────────────────────────────────────
+      if (spec.name === "handoff-notify-v1") {
+        const formValues = getFormLastValues(params.state)
+        const ts = nowIso()
+        const record = {
+          id: newUuid(), received_at: ts, user_key: params.userKey,
+          conversation_id: params.state.conversation_id,
+          navn: asString(formValues?.["navn"]), emne: asString(formValues?.["emne"]),
+          kontakt: asString(formValues?.["kontakt"]), besked: asString(formValues?.["besked"]),
+          status: "new",
+        }
+        try {
+          const redis = getRedisClient()
+          if (redis) await redis.lpush("gaarsdal:handoffs:v1", JSON.stringify(record))
+        } catch {}
+        const webhookUrl = process.env.HANDOFF_WEBHOOK_URL
+        if (webhookUrl) {
+          try { await fetch(webhookUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(record) }) } catch {}
+        }
+        return {
+          nextNode: spec.on_success_to ?? params.state.active_node,
+          reason: "handoff-notify-v1:ok",
+          meta_delta: { "handoff.last": { at: ts, id: record.id, navn: record.navn, emne: record.emne, kontakt: record.kontakt } },
+        }
+      }
+
+      // ─── lead-save-v1 ───────────────────────────────────────────────────────
+      if (spec.name === "lead-save-v1") {
+        const formValues = getFormLastValues(params.state)
+        const ts = nowIso()
+        const record = {
+          id: newUuid(), received_at: ts, user_key: params.userKey,
+          conversation_id: params.state.conversation_id,
+          email: asString(formValues?.["email"]), tema: asString(formValues?.["tema"]),
+          status: "new",
+        }
+        try {
+          const redis = getRedisClient()
+          if (redis) await redis.lpush("gaarsdal:leads:v1", JSON.stringify(record))
+        } catch {}
+        const leadWebhook = process.env.LEAD_WEBHOOK_URL ?? process.env.HANDOFF_WEBHOOK_URL
+        if (leadWebhook) {
+          try { await fetch(leadWebhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "lead", ...record }) }) } catch {}
+        }
+        return {
+          nextNode: spec.on_success_to ?? params.state.active_node,
+          reason: "lead-save-v1:ok",
+          meta_delta: { "lead.last": { at: ts, id: record.id, email: record.email, tema: record.tema } },
         }
       }
 
