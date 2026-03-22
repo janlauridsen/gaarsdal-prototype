@@ -265,6 +265,20 @@ export function MessagePane(props: MessagePaneProps) {
       {props.visibleMessages.map((m, index) => (
         <div key={m.id} className={styles.messageStack}>
           <div className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}>{m.text}</div>
+          {m.role === "assistant" && typeof m.revision === "number" && m.revision === 0 && props.visibleMessages.length === 1 && !props.loading && (
+            <div className={styles.starterChips}>
+              {["Hvad koster et forløb?", "Hvad sker der under hypnose?", "Passer det til mig?"].map((q) => (
+                <button
+                  key={q}
+                  className={styles.starterChip}
+                  onClick={() => props.dispatch({ type: "FREE_TEXT", text: q })}
+                  disabled={props.loading || !props.freeTextEnabled}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
           {m.role === "assistant" && conversationId ? (
             (() => {
               const revision = typeof m.revision === "number" ? m.revision : null
