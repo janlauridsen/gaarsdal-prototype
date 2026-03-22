@@ -1,9 +1,10 @@
-type RouteNodeId = "GEN_HYPNO" | "BOOKING" | "AKUT" | "HOME"
+export type RouteNodeId = "GEN_HYPNO" | "BOOKING" | "AKUT" | "HOME" | "CLIENT_SUPPORT" | "HANDOFF_FORM" | "LEAD_CAPTURE" | "PREQUALIFY"
 
 export type RouteDecision = {
   nextNodeId: RouteNodeId
   confidence: number
   reason: string
+  detected_topic?: string
 }
 
 export type HomeRouterInput = {
@@ -35,19 +36,26 @@ function pickIfAllowed(
   if (allowed.has("BOOKING")) return "BOOKING"
   if (allowed.has("AKUT")) return "AKUT"
   if (allowed.has("HOME")) return "HOME"
-
   return fallback
 }
 
-/**
- * HOME router policy for the current narrow runtime.
- *
- * Allowed runtime targets:
- * - GEN_HYPNO
- * - BOOKING
- * - AKUT (UI utility label only; if not allowed it falls back safely)
- * - HOME
- */
+function detectTopic(text: string): string | undefined {
+  const topicMap: [string[], string][] = [
+    [["søvn", "soevn", "sove", "indsov", "vågner"], "søvn"],
+    [["stress", "pres", "uro", "overbelastet", "kørt ned"], "stress og uro"],
+    [["angst", "bekymring", "grubler", "overtænker", "overtaenker", "panik", "fobier", "fobi"], "angst og bekymringer"],
+    [["vane", "vaner", "rutine", "automatisk", "alkohol", "vin", "ryge", "rygning", "sukker", "kaffe"], "vaner og mønstre"],
+    [["præstation", "blokering", "præstationsangst", "eksamen", "sport", "scene"], "præstationsangst"],
+    [["smerte", "smerter", "kronisk", "spændinger", "kæbe", "hoved"], "smerter"],
+    [["relation", "relationer", "kone", "mand", "partner", "forhold", "skilsmisse"], "relationer"],
+    [["selvtillid", "selvværd", "usikker", "tryghed"], "selvtillid"],
+  ]
+  for (const [keywords, topic] of topicMap) {
+    if (keywords.some((k) => text.includes(k))) return topic
+  }
+  return undefined
+}
+
 export function homeRouterV1(params: HomeRouterInput): RouteDecision {
   const raw = params.userText ?? ""
   const t = normalize(raw)
@@ -61,16 +69,10 @@ export function homeRouterV1(params: HomeRouterInput): RouteDecision {
     }
   }
 
+  // Akut / krise
   if (
     hasAny(t, [
-      "akut",
-      "krise",
-      "fare",
-      "selvmord",
-      "selvskade",
-      "112",
-      "lægevagt",
-      "psykiatrisk akut",
+      "akut", "krise", "fare", "selvmord", "selvskade", "112", "lægevagt", "psykiatrisk akut",
     ])
   ) {
     return {
@@ -80,39 +82,76 @@ export function homeRouterV1(params: HomeRouterInput): RouteDecision {
     }
   }
 
+  // Eksisterende klient
   if (
     hasAny(t, [
-      "book",
-      "booking",
-      "bestil",
-      "bestille",
-      "booke",
-      "tid",
-      "kontakt",
-      "kontakt mig",
-      "kontakt jan",
-      "mail",
-      "email",
-      "e-mail",
-      "telefon",
-      "telefonnummer",
-      "ring",
-      "ringe",
-      "sms",
-      "skriv til jan",
-      "jeg vil tale med jan",
-      "jeg vil i dialog med jan",
-      "jeg vil gerne tale med jan",
-      "jeg vil gerne i dialog med jan",
-      "jeg vil gerne ringe til jan",
-      "kan jeg kontakte jan",
-      "hvordan kontakter jeg jan",
+      "eksisterende klient", "været hos jan", "var hos jan", "har haft session",
+      "min session", "vende tilbage", "forrige session", "siden sidst",
+      "øvelse", "øvelser fra", "vi arbejdede med", "jan sagde",
     ])
   ) {
     return {
-      nextNodeId: pickIfAllowed(allowed, "BOOKING", "GEN_HYPNO"),
+      nextNodeId: pickIfAllowed(allowed, "CLIENT_SUPPORT", "GEN_HYPNO"),
+      confidence: 0.88,
+      reason: "existing client returning",
+    }
+  }
+
+  // Direkte booking / kontakt
+  if (
+    hasAny(t, [
+      "book", "booking", "bestil", "bestille", "booke",
+      "kontakt", "kontakt mig", "kontakt jan", "mail", "email", "e-mail",
+      "telefon", "telefonnummer", "ring", "ringe", "sms",
+      "skriv til jan", "jeg vil tale med jan", "jeg vil gerne ringe",
+      "kan jeg kontakte jan", "hvordan kontakter jeg jan", "ledige tider",
+    ])
+  ) {
+    return {
+      nextNodeId: pickIfAllowed(allowed, "HANDOFF_FORM", "GEN_HYPNO"),
       confidence: 0.92,
-      reason: "clear contact or booking intent",
+      reason: "direct contact or booking intent",
+    }
+  }
+
+  // Ikke klar / blot info
+  if (
+    hasAny(t, [
+      "ikke klar", "tænker over det", "bare info", "blot info", "overvejer",
+      "send mig", "hør mere", "mere info", "holder mig opdateret",
+      "skriv til mig", "mail mig", "email mig",
+    ])
+  ) {
+    return {
+      nextNodeId: pickIfAllowed(allowed, "LEAD_CAPTURE", "GEN_HYPNO"),
+      confidence: 0.82,
+      reason: "not ready — lead capture",
+    }
+  }
+
+  // Passer det til mig / afklaring
+  if (
+    hasAny(t, [
+      "passer det til mig", "er jeg det rigtige", "virker det for mig",
+      "er jeg klar", "ved ikke om", "usikker på om", "kan det hjælpe mig",
+      "hvad passer", "afklare om",
+    ])
+  ) {
+    return {
+      nextNodeId: pickIfAllowed(allowed, "PREQUALIFY", "GEN_HYPNO"),
+      confidence: 0.80,
+      reason: "fit-check request",
+    }
+  }
+
+  // Topic-seeded path: detect topic and route to GEN_HYPNO with topic
+  const detectedTopic = detectTopic(t)
+  if (detectedTopic) {
+    return {
+      nextNodeId: pickIfAllowed(allowed, "GEN_HYPNO"),
+      confidence: 0.82,
+      reason: `topic detected: ${detectedTopic}`,
+      detected_topic: detectedTopic,
     }
   }
 
