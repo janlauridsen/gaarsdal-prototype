@@ -22,10 +22,14 @@ import { SESSION_TTL_SECONDS, PROFILE_TTL_SECONDS, MEMORY_TTL_SECONDS } from "..
 import { isLobbyConversation, toLobbyConversationId, toUserInput, truncateText, withThreadMeta } from "../../chat/utils/conversation"
 import { nowMs } from "../../chat/utils/time"
 
-function serializeActiveNode(nodeId: string): { node_kind: string; node_form?: { fields: Array<{ id: string; label: string; required?: boolean; placeholder?: string }> } } {
+function serializeActiveNode(nodeId: string): { node_kind: string; node_allow_free_text: boolean; node_allowed_exits: string[]; node_form?: { fields: Array<{ id: string; label: string; required?: boolean; placeholder?: string }> } } {
   try {
     const node = getNode(nodeId)
-    const out: any = { node_kind: node.kind }
+    const out: any = {
+      node_kind: node.kind,
+      node_allow_free_text: node.allow_free_text,
+      node_allowed_exits: node.allowed_exits ?? [],
+    }
     if (node.kind === "FORM" && node.form) {
       out.node_form = {
         fields: node.form.fields.map((f) => ({
@@ -38,7 +42,7 @@ function serializeActiveNode(nodeId: string): { node_kind: string; node_form?: {
     }
     return out
   } catch {
-    return { node_kind: "DIALOG" }
+    return { node_kind: "DIALOG", node_allow_free_text: true, node_allowed_exits: [] }
   }
 }
 
