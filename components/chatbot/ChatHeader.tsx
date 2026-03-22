@@ -34,7 +34,11 @@ export function ChatHeader(props: ChatHeaderProps) {
       <div className={styles.headerRow}>
         <div className={styles.headerLeft}>
           <div className={styles.titleRow}>
-            <div className={styles.title}>Gaarsdal Chat</div>
+            <img
+              src="/gaarsdal-logo-2026-02.png"
+              alt="Gaarsdal Hypnoterapi"
+              className={styles.headerLogo}
+            />
             <span
               className={`${styles.headerHeart} ${props.loading ? styles.headerHeartActive : ""}`}
               aria-label={props.loading ? "Arbejder" : ""}
