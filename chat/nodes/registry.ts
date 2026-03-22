@@ -28,7 +28,7 @@ export const nodeRegistry: Record<string, Node> = {
     goal: "Information om hypnoterapi og refleksion over vaner, adfærd og mønstre",
 
     message:
-      "Hej. Hvad bringer dig her i dag?",
+      "Hej. Her kan du stille spørgsmål om hypnoterapi eller fortælle hvad du har på hjerte.",
 
     allow_free_text: true,
 
