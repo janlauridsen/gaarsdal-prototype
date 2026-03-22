@@ -14,15 +14,13 @@ import { getOrCreateThreadThemeAndEpisode } from "../memory/longTermMemoryStore"
 import { newUuid } from "../utils/ids"
 import { isLobbyConversation, toLobbyConversationId, withThreadMeta } from "../utils/conversation"
 import { SESSION_TTL_SECONDS, PROFILE_TTL_SECONDS, MEMORY_TTL_SECONDS } from "../utils/ttl"
+import { nowMs } from "../../utils/time"
 
 export type ThreadCreateInput = { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
 export type ThreadSwitchInput = { type: "THREAD_SWITCH"; conversation_id: string }
 export type ThreadArchiveInput = { type: "THREAD_ARCHIVE" }
 export type ThreadInput = ThreadCreateInput | ThreadSwitchInput | ThreadArchiveInput
 
-function nowMs(): number {
-  return Date.now()
-}
 
 function withThreadNavMeta(state: any, returnDepth: number): any {
   return {
