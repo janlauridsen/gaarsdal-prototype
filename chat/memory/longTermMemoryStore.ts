@@ -1,5 +1,6 @@
 // chat/memory/longTermMemoryStore.ts
 import { getRedisClient } from "../persistence/redis"
+import { nowMs } from "../utils/time"
 
 /**
  * Plane C — Long-term memory (v23): Themes + Episodes + MemoryFacts.
@@ -59,9 +60,6 @@ const KEY_EPISODE = (userKey: string, episodeId: string) => `${KEY_PREFIX}u:${us
 const KEY_FACTS_INDEX = (userKey: string) => `${KEY_PREFIX}u:${userKey}:facts`
 const KEY_FACT = (userKey: string, factId: string) => `${KEY_PREFIX}u:${userKey}:fact:${factId}`
 
-function nowMs(): number {
-  return Date.now()
-}
 
 function parseJson<T>(raw: unknown): T | null {
   if (typeof raw === "string") {

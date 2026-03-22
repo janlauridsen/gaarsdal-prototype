@@ -1,5 +1,6 @@
 import { getRedisClient } from "../persistence/redis"
 import type { ConversationState } from "../kernel/types"
+import { nowIso } from "../utils/time"
 
 export type MemoryEvent = {
   ts: string
@@ -92,9 +93,6 @@ function eventsKey(userKey: string): string {
   return `${EVENTS_KEY_PREFIX}${userKey}`
 }
 
-function nowIso(): string {
-  return new Date().toISOString()
-}
 
 function clamp01(n: number): number {
   if (n < 0) return 0
