@@ -267,7 +267,7 @@ export function MessagePane(props: MessagePaneProps) {
           <div className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}>{m.text}</div>
           {m.role === "assistant" && typeof m.revision === "number" && m.revision === 0 && props.visibleMessages.length === 1 && !props.loading && (
             <div className={styles.starterChips}>
-              {["Hvad koster et forløb?", "Hvad sker der under hypnose?", "Passer det til mig?"].map((q) => (
+              {["Hvad sker der under hypnose?", "Passer det til mig?"].map((q) => (
                 <button
                   key={q}
                   className={styles.starterChip}
