@@ -1,5 +1,7 @@
 import crypto from "crypto"
 import { getRedisClient } from "../persistence/redis"
+import { newUuid } from "../utils/ids"
+import { envInt } from "../utils/env"
 import { DraftV1, JobKind, JobMode, JobRecordV1, JobStatus } from "./types"
 
 const KEY_PREFIX = "gaarsdal:jobs:v1:"
@@ -17,21 +19,10 @@ function nowMs(): number {
   return Date.now()
 }
 
-function envInt(name: string, fallback: number): number {
-  const v = process.env[name]
-  if (!v) return fallback
-  const n = Number.parseInt(v.trim(), 10)
-  return Number.isFinite(n) ? n : fallback
-}
-
 export function jobsTtlSeconds(): number {
   // Keep aligned with raw turn TTL defaults unless overridden.
   const days = envInt("GAARSDAL_JOBS_TTL_DAYS", 14)
   return Math.max(1, days) * 24 * 60 * 60
-}
-
-function safeUuid(): string {
-  return (crypto as any).randomUUID ? (crypto as any).randomUUID() : crypto.randomBytes(16).toString("hex")
 }
 
 function stableHash(input: unknown): string {
@@ -152,7 +143,7 @@ export async function triggerJob<K extends JobKind>(params: {
   if (!client) return { jobId: "", deduped: false }
 
   const ttlSeconds = Math.max(10, params.ttlSeconds)
-  const jobId = safeUuid()
+  const jobId = newUuid()
   const ts = nowMs()
 
   if (params.dedupe !== false) {
