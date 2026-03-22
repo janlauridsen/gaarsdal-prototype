@@ -351,6 +351,69 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
+  // ─── Intent routing: booking ────────────────────────────────────────────────
+  // Detect explicit booking/contact intent and route directly to HANDOFF_FORM.
+  // This fires from within GEN_HYPNO so users don't have to navigate to HOME first.
+  const bookingKeywords = [
+    "book", "booke", "booking", "bestil", "bestille",
+    "kontakt jan", "kontakt mig", "ring til mig",
+    "vil gerne booke", "vil gerne bestille", "vil gerne have en tid",
+    "lave en aftale", "aftale en tid", "have tid", "ledige tider",
+    "møde med jan", "tale med jan", "ringe til jan",
+  ]
+  const fitCheckKeywords = [
+    "er jeg den rigtige", "passer det til mig", "er det for mig",
+    "virker det for mig", "kan det hjælpe mig", "usikker på om",
+    "ved ikke om hypnoterapi", "er jeg kandidat", "egnet til",
+    "rigtig til hypno", "rigtige til hypno",
+  ]
+
+  const normalizedUser = userText.toLowerCase().trim()
+  const isBookingIntent = bookingKeywords.some((k) => normalizedUser.includes(k))
+  const isFitCheckIntent = fitCheckKeywords.some((k) => normalizedUser.includes(k))
+
+  if (isBookingIntent && options.stayOnNode === "GEN_HYPNO") {
+    const assistant = "Godt. Udfyld nedenstående — Jan kontakter dig inden for 24 timer."
+    const updatedTranscript = appendTranscript(transcript, userText, assistant)
+    return {
+      transition: {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        to: "HANDOFF_FORM",
+        reason: "gen-hypno:booking-intent",
+        response_message: assistant,
+        meta_delta: buildMetaDelta({
+          context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
+          sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
+          analysis: buildDefaultAnalysis(userText, previousTopic, "practical"),
+          mode: "practical", relationalState: "decision_support",
+        }),
+      },
+      debug: { capability: "unified-hypno-v4", used_fallback: false },
+    }
+  }
+
+  if (isFitCheckIntent && options.stayOnNode === "GEN_HYPNO") {
+    const assistant = "Lad os tage et øjeblik og afklare om hypnoterapi giver mening for dig."
+    const updatedTranscript = appendTranscript(transcript, userText, assistant)
+    return {
+      transition: {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        to: "PREQUALIFY",
+        reason: "gen-hypno:fit-check-intent",
+        response_message: assistant,
+        meta_delta: buildMetaDelta({
+          context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
+          sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
+          analysis: buildDefaultAnalysis(userText, previousTopic, "info"),
+          mode: "info", relationalState: "decision_support",
+        }),
+      },
+      debug: { capability: "unified-hypno-v4", used_fallback: false },
+    }
+  }
+
   // Analyze turn
   let analysis: TurnAnalysis | null = null
   let usedFallback = false
@@ -438,7 +501,7 @@ export async function runUnifiedHypnoCapability(
     !detectClosingText(userText)
 
   if (ctaConditionsMet) {
-    assistant = assistant + "\n\nHvis du \xf8nsker at tale med Jan om hvad et konkret forl\xf8b ville indebare, er du velkommen til at skrive."
+    assistant = assistant + "\n\nHvis du ønsker at tale med Jan om, hvad et konkret forløb ville indebære, er du velkommen til at skrive."
   }
 
   const updatedTranscript = appendTranscript(transcript, userText, assistant)
