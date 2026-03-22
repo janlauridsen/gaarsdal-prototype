@@ -29,11 +29,24 @@ export type DeferredJobSignal = {
   based_on_revision: number
 }
 
+export type FormFieldSpec = {
+  id: string
+  label: string
+  required?: boolean
+  placeholder?: string
+}
+
+export type NodeFormSpec = {
+  fields: FormFieldSpec[]
+}
+
 export type KernelResponse = {
   state: ConversationState
   transition?: any
   log?: any
   deferred_job?: DeferredJobSignal | null
+  node_kind?: string
+  node_form?: NodeFormSpec
 }
 
 export type ChatMessage = {
