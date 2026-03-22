@@ -3,10 +3,8 @@ import { ensureUserKey } from "../_utils/auth"
 import { setWidgetCors } from "../_utils/cors"
 import { listPendingJobIds, readJob } from "../../../chat/jobs/store"
 import { readThreadIndex } from "../../../chat/persistence/threadIndexStore"
+import { toLobbyConversationId } from "../../../chat/utils/conversation"
 
-function toLobbyConversationId(userKey: string): string {
-  return `lobby:u:${userKey}`
-}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   setWidgetCors(req, res, "GET, OPTIONS")

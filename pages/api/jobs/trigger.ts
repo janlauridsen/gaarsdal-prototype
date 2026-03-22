@@ -4,6 +4,7 @@ import { setWidgetCors } from "../_utils/cors"
 import { jobsTtlSeconds, triggerJob } from "../../../chat/jobs/store"
 import { JobKind, ProblemSpecV1, ScanThreadsLimits } from "../../../chat/jobs/types"
 import { readThreadIndex } from "../../../chat/persistence/threadIndexStore"
+import { toLobbyConversationId } from "../../../chat/utils/conversation"
 
 function isProblemSpecV1(v: any): v is ProblemSpecV1 {
   return (
@@ -13,10 +14,6 @@ function isProblemSpecV1(v: any): v is ProblemSpecV1 {
     typeof v.problem_title === "string" &&
     typeof v.problem_description === "string"
   )
-}
-
-function toLobbyConversationId(userKey: string): string {
-  return `lobby:u:${userKey}`
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
