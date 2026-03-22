@@ -20,6 +20,7 @@ import { newUuid } from "../../chat/utils/ids"
 import { envBool } from "../../chat/utils/env"
 import { SESSION_TTL_SECONDS, PROFILE_TTL_SECONDS, MEMORY_TTL_SECONDS } from "../../chat/utils/ttl"
 import { isLobbyConversation, toLobbyConversationId, toUserInput, truncateText, withThreadMeta } from "../../chat/utils/conversation"
+import { nowMs } from "../../chat/utils/time"
 
 type ChatRequestBody = { state: any; input: ApiInputSignal }
 
@@ -32,7 +33,6 @@ type ApiInputSignal =
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null
 }
-function nowMs() { return Date.now() }
 function isPlatformThreadInput(input: ApiInputSignal): boolean {
   const t = (input as any)?.type
   return t === "THREAD_CREATE" || t === "THREAD_SWITCH" || t === "THREAD_ARCHIVE"
