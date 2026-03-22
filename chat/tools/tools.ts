@@ -489,7 +489,14 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
         const resendKey = process.env.RESEND_API_KEY
         const notifyTo = process.env.HANDOFF_NOTIFY_EMAIL ?? "jan@gaarsdal.net"
         const notifyFrom = process.env.HANDOFF_FROM_EMAIL ?? "noreply@gaarsdal.net"
-        if (resendKey && record.navn) {
+        let emailStatus = "skipped"
+        let emailError = ""
+
+        if (!resendKey) {
+          emailStatus = "no_api_key"
+        } else if (!record.navn) {
+          emailStatus = "skipped_no_navn"
+        } else {
           try {
             const html = [
               "<h2>Ny henvendelse fra gaarsdal.net</h2>",
@@ -502,7 +509,7 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
 
             const replyTo = record.kontakt?.includes("@") ? record.kontakt : undefined
 
-            await fetch("https://api.resend.com/emails", {
+            const resendRes = await fetch("https://api.resend.com/emails", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -516,7 +523,18 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
                 html,
               }),
             })
-          } catch {}
+
+            if (resendRes.ok) {
+              emailStatus = "sent"
+            } else {
+              const body = await resendRes.text().catch(() => "")
+              emailStatus = `error_${resendRes.status}`
+              emailError = body.slice(0, 300)
+            }
+          } catch (e: any) {
+            emailStatus = "exception"
+            emailError = typeof e?.message === "string" ? e.message.slice(0, 200) : "unknown"
+          }
         }
 
         // 3. Webhook fallback (Make / Zapier / custom)
@@ -528,7 +546,7 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
         return {
           nextNode: spec.on_success_to ?? params.state.active_node,
           reason: "handoff-notify-v1:ok",
-          meta_delta: { "handoff.last": { at: ts, id: record.id, navn: record.navn, emne: record.emne, kontakt: record.kontakt } },
+          meta_delta: { "handoff.last": { at: ts, id: record.id, navn: record.navn, emne: record.emne, kontakt: record.kontakt, email_status: emailStatus, email_error: emailError || undefined } },
         }
       }
 
