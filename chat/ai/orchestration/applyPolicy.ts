@@ -32,7 +32,21 @@ export function detectDirectContactRequest(text: string): boolean {
 }
 
 export function detectClosingText(text: string): boolean {
-  return ["tak", "ok tak", "okay tak", "mange tak", "fint", "super"].includes(text.trim().toLowerCase())
+  const t = text.trim().toLowerCase()
+  const exact = [
+    "tak", "ok tak", "okay tak", "mange tak", "fint", "super",
+    "ha det godt", "hav det godt", "vi tales ved", "farvel", "hej hej",
+    "det var nyttigt", "det hjælper", "det er nok", "jeg forstår",
+    "ok", "okay", "godt", "forstået", "perfekt", "det lyder godt",
+    "tusind tak", "tak for det", "tak skal du have",
+  ]
+  if (exact.includes(t)) return true
+  const phrases = [
+    "jeg er færdig", "lad os stoppe", "det var alt",
+    "tak for hjælpen", "tak for din hjælp", "det var meget nyttigt",
+    "jeg tager det med mig", "jeg tænker over det",
+  ]
+  return phrases.some((p) => t.includes(p))
 }
 
 function detectDifficultyWithSelfImplication(text: string): boolean {
