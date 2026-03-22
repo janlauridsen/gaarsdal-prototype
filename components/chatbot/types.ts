@@ -46,6 +46,8 @@ export type KernelResponse = {
   log?: any
   deferred_job?: DeferredJobSignal | null
   node_kind?: string
+  node_allow_free_text?: boolean
+  node_allowed_exits?: string[]
   node_form?: NodeFormSpec
 }
 
