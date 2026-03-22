@@ -91,6 +91,12 @@
   align-items: center;
   gap: 8px;
 }
+.headerLogo {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+
 .title {
   font-weight: 700;
   font-size: 14px;
@@ -177,15 +183,15 @@
 .messages::before {
   content: "";
   position: absolute;
-  bottom: 12px;
-  right: 12px;
-  width: 72px;
-  height: 72px;
+  bottom: 16px;
+  right: 16px;
+  width: 100px;
+  height: 100px;
   background-image: url("/gaarsdal-logo-2026-02.png");
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
-  opacity: 0.18;
+  opacity: 0.45;
   pointer-events: none;
 }
 
