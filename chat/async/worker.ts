@@ -3,8 +3,6 @@ import type { AsyncJobResult, AsyncJobV23 } from "./types"
 import { dequeueJobsWithStats } from "./queue"
 import { readRawTurns } from "../raw/store"
 import { createOpenAiCompatibleClient } from "../ai/provider"
-import { readReflectionCase, writeReflectionCase } from "../persistence/reflectionCaseStore"
-import { mergeReflectionCase } from "../reflection/merge"
 import {
   readEpisode,
   readFacts,
@@ -18,62 +16,8 @@ import {
   type Episode,
 } from "../memory/longTermMemoryStore"
 import { readConversationState } from "../persistence/conversationStateStore"
-import { writeReflectionFocusPlan } from "../persistence/reflectionFocusPlanStore"
-import type { ReflectionFocusPlanV1 } from "../reflection/focusPlan"
-
-const MEMORY_TTL_SECONDS = 90 * 24 * 60 * 60 // keep aligned with other memory TTLs for now
-const REFLECTION_TTL_SECONDS = 90 * 24 * 60 * 60
-
-const CBA_PROMPT_V1 =
-  "Role: Case Builder Agent.\n\n" +
-  "Input:\n- current_schema\n- user_message\n- therapist_message\n\n" +
-  "Rules:\n" +
-  "- Extract only explicit or strongly implied data.\n" +
-  "- Track the user's own key words (e.g. 'resignation', 'håbløshed', 'ligeglad') as signals in dialog_dynamics when they are clearly present.\n" +
-  "- Detect and represent change talk (concern, desire, reasons, need, commitment) conservatively when explicitly present.\n" +
-  "- Detect ambivalence when both sides are expressed (wanting change AND wanting relief).\n" +
-  "- Acknowledge prior attempts (e.g. tried to cut down) as agency signals if stated.\n" +
-  "- Update confidence conservatively.\n" +
-  "- Compute maturity_model using rule-based coverage.\n" +
-  "- Compute risk_engine using explicit behavioral signals.\n" +
-  "- Compute dialog_dynamics baseline (novelty).\n" +
-  "- Estimate repetition_score and fatigue_signal (±0.15 cap).\n" +
-  "- Merge to progress_score.\n" +
-  "- Detect stall if progress_score < 0.25 for 3 turns.\n" +
-  "- Never propose exercises or interventions.\n" +
-  "- If override_active = true, signal stabilization.\n\n" +
-  "Output strictly JSON:\n" +
-  "- schema updates\n" +
-  "- updated risk_engine\n" +
-  "- maturity_model\n" +
-  "- dialog_dynamics\n" +
-  "- suggestions_for_therapist\n"
-
-const FOCUS_PLAN_PROMPT_V1 =
-  "Role: Reflection Focus Planner.\n\n" +
-  "Goal:\n" +
-  "- Select 1–3 highest-priority fields from the reflection schema to clarify next.\n" +
-  "- Provide 1–3 natural, human questions the dialogue partner can ask to reduce uncertainty.\n\n" +
-  "You receive:\n" +
-  "- current_schema (JSON)\n" +
-  "- conversation_transcript (list of {role, content})\n" +
-  "- latest_user_message (string)\n\n" +
-  "Prioritization:\n" +
-  "- Prefer fields with high uncertainty AND high downstream impact.\n" +
-  "- Prefer fields that unblock understanding of the user's goal and constraints.\n" +
-  "- Prefer safety/urgency only if explicitly signaled.\n" +
-  "- Avoid repeating recent questions (use transcript).\n\n" +
-  "Rules:\n" +
-  "- Pick at most 3 focus fields. It is OK to return fewer (including 0) if there is no meaningful gap.\n" +
-  "- Questions must be short, Danish, and non-robotic.\n" +
-  "- Do NOT mention schema field names or internal structures.\n" +
-  "- Do NOT propose exercises or structured interventions.\n\n" +
-  "Return ONLY valid JSON in this shape:\n" +
-  "{\n" +
-  '  "focus_fields": [{ "path": string, "reason": string, "priority": 1|2|3 }],\n' +
-  '  "suggested_questions": [{ "field_path": string, "question": string }],\n' +
-  '  "constraints": { "max_questions": 1|2|3, "avoid_repeat_within_turns": number }\n' +
-  "}\n"
+import { MEMORY_TTL_SECONDS } from "../utils/ttl"
+import { nowMs } from "../../utils/time"
 
 type ProcessBatchResult = {
   processed: number
@@ -83,9 +27,6 @@ type ProcessBatchResult = {
   results: AsyncJobResult[]
 }
 
-function nowMs(): number {
-  return Date.now()
-}
 
 function getJsonModel(): string {
   // Use repo convention. If not set, keep a conservative default.
@@ -116,7 +57,6 @@ async function processJob(job: AsyncJobV23): Promise<AsyncJobResult> {
   try {
     if (job.type === "SUMMARIZE_EPISODE") return await processSummarizeEpisode(job)
     if (job.type === "SUGGEST_FACTS") return await processSuggestFacts(job)
-    if (job.type === "REFLECTION_CBA_UPDATE") return await processReflectionCbaUpdate(job)
 
     return {
       job_id: job.job_id,
@@ -274,132 +214,6 @@ async function processSuggestFacts(job: AsyncJobV23): Promise<AsyncJobResult> {
     }
 
     await upsertFact({ userKey: job.user_key, fact: memoryFact, ttlSeconds: MEMORY_TTL_SECONDS })
-  }
-
-  return { job_id: job.job_id, ok: true }
-}
-
-async function processReflectionCbaUpdate(job: AsyncJobV23): Promise<AsyncJobResult> {
-  const payload = (job as any).payload
-  const user_message = typeof payload?.user_message === "string" ? payload.user_message : ""
-  const therapist_message = typeof payload?.therapist_message === "string" ? payload.therapist_message : ""
-
-  // No-op if we do not have any meaningful text.
-  if (!user_message.trim() && !therapist_message.trim()) {
-    return { job_id: job.job_id, ok: true }
-  }
-
-  const current = await readReflectionCase(job.conversation_id)
-  const llm = createOpenAiCompatibleClient()
-  const model = getJsonModel()
-
-  const out = await llm.chatJson({
-    model,
-    temperature: 0.2,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: CBA_PROMPT_V1 },
-      {
-        role: "user",
-        content: JSON.stringify({
-          current_schema: current,
-          user_message,
-          therapist_message,
-        }),
-      },
-    ],
-  })
-
-  if (!out) return { job_id: job.job_id, ok: true }
-
-  const patchCandidate =
-    (out as any)?.schema_updates ??
-    (out as any)?.schema ??
-    (out as any)?.patch ??
-    (out as any)?.updates ??
-    out
-
-  const merged = mergeReflectionCase(current, patchCandidate as any)
-
-  const suggestions = (out as any)?.suggestions_for_therapist
-  if (typeof suggestions === "string" && suggestions.trim().length > 0) {
-    ;(merged as any).suggestions_for_therapist = suggestions.trim()
-  }
-
-  await writeReflectionCase(job.conversation_id, merged as any, REFLECTION_TTL_SECONDS)
-
-  // Generate an ephemeral focus plan (1–3 fields + 1–3 questions) for the next dialogue turn.
-  // Stored separately from the schema to avoid polluting long-lived case data.
-  try {
-    const state = await readConversationState(job.conversation_id)
-    const transcript = (state?.meta?.["reflection.transcript"]?.value as any) ?? []
-    const focusOut = await llm.chatJson({
-      model,
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: FOCUS_PLAN_PROMPT_V1 },
-        {
-          role: "user",
-          content: JSON.stringify({
-            current_schema: merged,
-            conversation_transcript: transcript,
-            latest_user_message: user_message,
-          }),
-        },
-      ],
-    })
-
-    if (focusOut) {
-      const rawFields = Array.isArray((focusOut as any).focus_fields) ? (focusOut as any).focus_fields : []
-      const rawQuestions = Array.isArray((focusOut as any).suggested_questions)
-        ? (focusOut as any).suggested_questions
-        : []
-      const maxQ =
-        (focusOut as any)?.constraints?.max_questions === 1 ||
-        (focusOut as any)?.constraints?.max_questions === 2 ||
-        (focusOut as any)?.constraints?.max_questions === 3
-          ? (focusOut as any).constraints.max_questions
-          : 2
-
-      const avoidRepeat =
-        typeof (focusOut as any)?.constraints?.avoid_repeat_within_turns === "number"
-          ? (focusOut as any).constraints.avoid_repeat_within_turns
-          : 3
-
-      const plan: ReflectionFocusPlanV1 = {
-        version: "v1",
-        conversation_id: job.conversation_id,
-        episode_id: job.episode_id,
-        revision: job.revision_after,
-        focus_fields: rawFields
-          .slice(0, 3)
-          .map((f: any, i: number) => ({
-            path: typeof f?.path === "string" ? f.path : "",
-            reason: typeof f?.reason === "string" ? f.reason : "",
-            priority: (f?.priority === 1 || f?.priority === 2 || f?.priority === 3 ? f.priority : (i + 1)) as
-              | 1
-              | 2
-              | 3,
-          }))
-          .filter((f: any) => f.path && f.reason),
-        suggested_questions: rawQuestions
-          .slice(0, 3)
-          .map((q: any) => ({
-            field_path: typeof q?.field_path === "string" ? q.field_path : "",
-            question: typeof q?.question === "string" ? q.question : "",
-          }))
-          .filter((q: any) => q.field_path && q.question),
-        constraints: { max_questions: maxQ, avoid_repeat_within_turns: avoidRepeat },
-        created_at: new Date().toISOString(),
-      }
-
-      // Keep aligned with other reflection TTLs but shorter is fine; this is ephemeral guidance.
-      const FOCUS_PLAN_TTL_SECONDS = 24 * 60 * 60
-      await writeReflectionFocusPlan(job.conversation_id, job.revision_after, plan, FOCUS_PLAN_TTL_SECONDS)
-    }
-  } catch {
-    // Focus plan is best-effort; it must never fail the job.
   }
 
   return { job_id: job.job_id, ok: true }

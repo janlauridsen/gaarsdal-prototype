@@ -1,4 +1,4 @@
-export type AsyncJobType = "SUMMARIZE_EPISODE" | "SUGGEST_FACTS" | "REFLECTION_CBA_UPDATE"
+export type AsyncJobType = "SUMMARIZE_EPISODE" | "SUGGEST_FACTS"
 
 export type ReflectionCbaPayloadV1 = {
   user_message: string
