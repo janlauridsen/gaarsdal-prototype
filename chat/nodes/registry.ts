@@ -194,6 +194,7 @@ export const nodeRegistry: Record<string, Node> = {
       "prequalify.fit",
       "prequalify.reason",
       "prequalify.turn_count",
+      "prequalify.offer_shown",
     ],
   },
 
