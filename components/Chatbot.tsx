@@ -841,6 +841,11 @@ export default function Chatbot() {
 
   async function dispatch(nextInput: InputSignal, opts?: { silentUser?: boolean }): Promise<boolean> {
     if (!state) return false
+    // Optimistically clear form UI on navigation
+    if (nextInput.type === "EXPLICIT_TRANSITION") {
+      setNodeForm(null)
+      setNodeAllowFreeText(true)
+    }
     setLoading(true)
 
     try {
@@ -1022,7 +1027,7 @@ export default function Chatbot() {
                         disabled={!state || !freeTextEnabled}
                         onCancel={() => dispatch({ type: "EXPLICIT_TRANSITION", target: "GEN_HYPNO" })}
                         secondaryAction={state?.active_node === "HANDOFF_FORM" ? {
-                          label: "Ikke klar til at booke — efterlad email i stedet",
+                          label: "Ikke klar nu — efterlad kun din email",
                           onClick: () => dispatch({ type: "EXPLICIT_TRANSITION", target: "LEAD_CAPTURE" })
                         } : undefined}
                         onSend={(text) => {
@@ -1074,7 +1079,7 @@ export default function Chatbot() {
                   disabled={!state || !freeTextEnabled}
                   onCancel={() => dispatch({ type: "EXPLICIT_TRANSITION", target: "GEN_HYPNO" })}
                   secondaryAction={state?.active_node === "HANDOFF_FORM" ? {
-                    label: "Ikke klar til at booke — efterlad email i stedet",
+                    label: "Ikke klar nu — efterlad kun din email",
                     onClick: () => dispatch({ type: "EXPLICIT_TRANSITION", target: "LEAD_CAPTURE" })
                   } : undefined}
                   onSend={(text) => {
