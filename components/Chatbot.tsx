@@ -434,6 +434,9 @@ export default function Chatbot() {
   useEffect(() => {
     if (!open) return
     scrollChatToBottom()
+    // Retry after potential keyboard/layout shifts on mobile
+    const t = window.setTimeout(() => scrollChatToBottom(), 200)
+    return () => window.clearTimeout(t)
   }, [visibleMessages, open, headerNavHint, expanded])
 
   useEffect(() => {
