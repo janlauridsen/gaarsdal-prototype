@@ -167,6 +167,14 @@ export default function AdminPage() {
     }
   }, [secret, from, to])
 
+  // Auto-load on login
+  useEffect(() => {
+    if (authed && secret && !autoLoaded) {
+      setAutoLoaded(true)
+      fetchData()
+    }
+  }, [authed, secret, autoLoaded, fetchData])
+
   if (!authed) {
     return (
       <div style={{ minHeight: "100vh", background: "#EFEDE7", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
