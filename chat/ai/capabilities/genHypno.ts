@@ -531,7 +531,7 @@ export async function runUnifiedHypnoCapability(
     !detectClosingText(userText) || detectContinuationIntent(userText)
 
   if (ctaConditionsMet) {
-    assistant = assistant + "\n\nHvis du ønsker at tale med Jan om, hvad et konkret forløb ville indebære, er du velkommen til at skrive."
+    assistant = assistant + "\n\nVil du høre mere om hvad et forløb med Jan ville indebære — eller tage kontakt direkte?"
   }
 
   const updatedTranscript = appendTranscript(transcript, userText, assistant)
