@@ -54,8 +54,8 @@ Efter 2-3 svar fra brugeren: giv en ærlig vurdering af om hypnoterapi sandsynli
 
 Returnér JSON: { "assistant_message": "...", "fit": "good" | "explore" | "unknown", "reason": "kort begrundelse" }
 
-"good" = tydelig relevant problemstilling + motivation til forandring
-"explore" = relevant emne men behov for mere forståelse
+"good" = klar, relevant problemstilling + noget motivation — sæt "good" når du har nok til at anbefale en samtale med Jan
+"explore" = emnet er relevant men du mangler stadig vigtig information om situation eller motivation
 "unknown" = for tidligt at vurdere`
 
 async function runPrequalify(
@@ -123,13 +123,19 @@ async function runPrequalify(
   const forceFit = isFitSignal(userText) && turnCount >= 1
   const forceExplore = isExploreSignal(userText) && turnCount >= 2
 
-  if (turnCount >= 3 || forceFit || fit === "good") {
+  if (fit === "good" || forceFit) {
+    // Clear good fit — offer booking with a bridge message
     nextNode = "HANDOFF_FORM"
     transitionReason = "prequalify:good-fit"
-  } else if (forceExplore || (turnCount >= 2 && fit === "explore")) {
+    assistantText = assistantText
+      ? assistantText + "\n\nDet lyder som om hypnoterapi kan være relevant for dig. Udfyld formularen herunder — Jan kontakter dig inden for 24 timer."
+      : "Det lyder som om hypnoterapi kan være relevant for dig. Udfyld formularen herunder — Jan kontakter dig inden for 24 timer."
+  } else if (turnCount >= 4 || forceExplore || (turnCount >= 3 && fit === "explore")) {
+    // After enough turns without clear fit, send back to open dialog
     nextNode = "GEN_HYPNO"
     transitionReason = "prequalify:explore-more"
   }
+  // else: stay on PREQUALIFY and keep exploring
 
   const transition: Transition = {
     type: "NODE_HOP",
