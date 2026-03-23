@@ -132,16 +132,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const allConversations: Array<{ conversation_id: string; turns: RawTurn[] }> = []
 
     for (const convId of conversationIds) {
-      const rawItems = await redis.lrange(`${RAW_KEY_PREFIX}${convId}`, 0, -1) as string[]
+      const rawItems = await redis.lrange(`${RAW_KEY_PREFIX}${convId}`, 0, -1) as unknown[]
       if (!rawItems || rawItems.length === 0) continue
 
       const turns: RawTurn[] = rawItems
-        .map((item: string) => {
-          try {
-            return typeof item === "string" ? JSON.parse(item) : item
-          } catch {
-            return null
-          }
+        .map((item) => {
+          if (item && typeof item === "object") return item
+          try { return JSON.parse(item as string) } catch { return null }
         })
         .filter(Boolean) as RawTurn[]
 
@@ -164,14 +161,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let handoffs: unknown[] = []
     let leads: unknown[] = []
     if (include_handoffs === "1") {
-      const rawHandoffs = await redis.lrange(HANDOFFS_KEY, 0, 199) as string[]
-      handoffs = rawHandoffs.map((h: string) => {
-        try { return JSON.parse(h) } catch { return null }
+      const rawHandoffs = await redis.lrange(HANDOFFS_KEY, 0, 199) as unknown[]
+      handoffs = rawHandoffs.map((h) => {
+        if (h && typeof h === "object") return h
+        try { return JSON.parse(h as string) } catch { return null }
       }).filter(Boolean)
 
-      const rawLeads = await redis.lrange(LEADS_KEY, 0, 199) as string[]
-      leads = rawLeads.map((l: string) => {
-        try { return JSON.parse(l) } catch { return null }
+      const rawLeads = await redis.lrange(LEADS_KEY, 0, 199) as unknown[]
+      leads = rawLeads.map((l) => {
+        if (l && typeof l === "object") return l
+        try { return JSON.parse(l as string) } catch { return null }
       }).filter(Boolean)
     }
 
