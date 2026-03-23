@@ -44,10 +44,9 @@ export function detectContinuationIntent(text: string): boolean {
 export function detectClosingText(text: string): boolean {
   const t = text.trim().toLowerCase()
   const exact = [
-    "tak", "ok tak", "okay tak", "mange tak", "fint", "super",
+    "tak", "ok tak", "okay tak", "mange tak",
     "ha det godt", "hav det godt", "vi tales ved", "farvel", "hej hej",
-    "det var nyttigt", "det hjælper", "det er nok", "jeg forstår",
-    "ok", "okay", "godt", "forstået", "perfekt", "det lyder godt",
+    "det var nyttigt", "det hjælper", "det er nok",
     "tusind tak", "tak for det", "tak skal du have",
   ]
   if (exact.includes(t)) return true
