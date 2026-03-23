@@ -81,21 +81,21 @@ export const nodeRegistry: Record<string, Node> = {
     kind: "FORM",
     goal: "Indsaml kontaktoplysninger og emne til Jan",
     message:
-      "Udfyld nedenstående — Jan kontakter dig inden for 24 timer.\n\nSkriv et felt pr. linje:\n- navn: Dit navn\n- emne: Hvad ønsker du hjælp til?\n- kontakt: Telefonnummer eller email\n- besked: (valgfrit) Noget Jan bør vide på forhånd",
+      "Godt. Udfyld kontaktformularen — Jan vender tilbage inden for 24 timer.",
     allow_free_text: true,
     allow_parentese: false,
     form: {
       fields: [
-        { id: "navn", label: "Navn", required: true, placeholder: "Dit fulde navn" },
-        { id: "emne", label: "Emne", required: true, placeholder: "Hvad ønsker du hjælp til?" },
-        { id: "kontakt", label: "Kontakt", required: true, placeholder: "Telefon eller email" },
-        { id: "besked", label: "Besked", required: false, placeholder: "Noget Jan bør vide?" },
+        { id: "navn", label: "Dit navn", required: true, placeholder: "Fornavn og efternavn" },
+        { id: "emne", label: "Hvad handler det om?", required: true, placeholder: "Fx søvn, stress, rygestop, angst…" },
+        { id: "kontakt", label: "Telefon eller email", required: true, placeholder: "Jan kontakter dig her" },
+        { id: "besked", label: "Besked (valgfrit)", required: false, placeholder: "Noget du vil tilføje?" },
       ],
       allow_partial: false,
       on_submit_to: "HANDOFF_NOTIFY",
     },
-    allowed_exits: ["HANDOFF_NOTIFY"],
-    meta_domains_written: ["ux", "form.last"],
+    allowed_exits: ["HANDOFF_NOTIFY", "LEAD_CAPTURE", "GEN_HYPNO"],
+    meta_domains_written: ["ux", "form.last", "gen_hypno.transcript", "gen_hypno.assistant_turn_count", "dialog.mode", "dialog.move", "dialog.investigation_focus", "dialog.stage", "dialog.relational_state", "gen_hypno.analysis"],
   },
 
   HANDOFF_NOTIFY: {
