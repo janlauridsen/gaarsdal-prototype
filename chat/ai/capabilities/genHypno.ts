@@ -424,7 +424,7 @@ export async function runUnifiedHypnoCapability(
   }
 
   if (isFitCheckIntent && options.stayOnNode === "GEN_HYPNO") {
-    const assistant = "Lad os tage et øjeblik og afklare om hypnoterapi giver mening for dig."
+    const assistant = "Hvad er det primære, du ønsker at arbejde med?"
     const updatedTranscript = appendTranscript(transcript, userText, assistant)
     return {
       transition: {
