@@ -7,11 +7,14 @@ import styles from "../Chatbot.module.css"
 type Props = {
   fields: FormFieldSpec[]
   onSend: (text: string) => void
+  onCancel?: () => void
+  cancelLabel?: string
+  secondaryAction?: { label: string; onClick: () => void }
   loading: boolean
   disabled: boolean
 }
 
-export default function FormComposer({ fields, onSend, loading, disabled }: Props) {
+export default function FormComposer({ fields, onSend, onCancel, cancelLabel, secondaryAction, loading, disabled }: Props) {
   const [values, setValues] = useState<Record<string, string>>({})
   const [errors, setErrors] = useState<Record<string, boolean>>({})
 
@@ -74,13 +77,36 @@ export default function FormComposer({ fields, onSend, loading, disabled }: Prop
           )}
         </div>
       ))}
-      <button
-        className={styles.formSubmitBtn}
-        onClick={handleSubmit}
-        disabled={disabled || loading}
-      >
-        {loading ? "Sender…" : "Send"}
-      </button>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              style={{ fontSize: "13px", color: "var(--color-text-secondary, #6B675F)", background: "none", border: "none", cursor: "pointer", padding: "2px 0", fontFamily: "inherit", textAlign: "left" }}
+            >
+              {cancelLabel ?? "← Fortryd"}
+            </button>
+          )}
+          {secondaryAction && (
+            <button
+              type="button"
+              onClick={secondaryAction.onClick}
+              style={{ fontSize: "12px", color: "#627A52", background: "none", border: "none", cursor: "pointer", padding: "2px 0", fontFamily: "inherit", textAlign: "left", textDecoration: "underline" }}
+            >
+              {secondaryAction.label}
+            </button>
+          )}
+        </div>
+        <button
+          className={styles.formSubmitBtn}
+          onClick={handleSubmit}
+          disabled={disabled || loading}
+          style={{ marginTop: 0 }}
+        >
+          {loading ? "Sender…" : "Send"}
+        </button>
+      </div>
     </div>
   )
 }
