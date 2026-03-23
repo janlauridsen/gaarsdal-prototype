@@ -1021,7 +1021,6 @@ export default function Chatbot() {
                         loading={loading}
                         disabled={!state || !freeTextEnabled}
                         onCancel={() => dispatch({ type: "EXPLICIT_TRANSITION", target: "GEN_HYPNO" })}
-                        cancelLabel="← Fortryd"
                         secondaryAction={state?.active_node === "HANDOFF_FORM" ? {
                           label: "Ikke klar til at booke — efterlad email i stedet",
                           onClick: () => dispatch({ type: "EXPLICIT_TRANSITION", target: "LEAD_CAPTURE" })
@@ -1074,7 +1073,6 @@ export default function Chatbot() {
                   loading={loading}
                   disabled={!state || !freeTextEnabled}
                   onCancel={() => dispatch({ type: "EXPLICIT_TRANSITION", target: "GEN_HYPNO" })}
-                  cancelLabel="← Fortryd"
                   secondaryAction={state?.active_node === "HANDOFF_FORM" ? {
                     label: "Ikke klar til at booke — efterlad email i stedet",
                     onClick: () => dispatch({ type: "EXPLICIT_TRANSITION", target: "LEAD_CAPTURE" })
