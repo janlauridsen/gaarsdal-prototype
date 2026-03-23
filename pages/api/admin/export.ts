@@ -33,6 +33,17 @@ type RawTurn = {
   assistant_output: string
 }
 
+type Handoff = {
+  id: string
+  received_at: string
+  navn: string
+  emne: string
+  kontakt: string
+  besked?: string
+  email_status?: string
+  conversation_id: string
+}
+
 type ExportRow = {
   conversation_id: string
   started_at: string
@@ -172,6 +183,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (l && typeof l === "object") return l
         try { return JSON.parse(l as string) } catch { return null }
       }).filter(Boolean)
+    }
+
+    // 3b. Fetch any handoff-linked conversations not already in the period
+    if (include_handoffs === "1" && handoffs.length > 0) {
+      const alreadyFetched = new Set(allConversations.map((c) => c.conversation_id))
+      const extraIds = (handoffs as Handoff[])
+        .map((h) => h.conversation_id)
+        .filter((id) => id && !alreadyFetched.has(id))
+
+      for (const convId of extraIds) {
+        const rawItems = await redis.lrange(`${RAW_KEY_PREFIX}${convId}`, 0, -1) as unknown[]
+        if (!rawItems || rawItems.length === 0) continue
+        const turns: RawTurn[] = rawItems.map((item) => {
+          if (item && typeof item === "object") return item as RawTurn
+          try { return JSON.parse(item as string) as RawTurn } catch { return null }
+        }).filter(Boolean) as RawTurn[]
+        if (turns.length) allConversations.push({ conversation_id: convId, turns })
+      }
     }
 
     // 4. Returner
