@@ -1,4 +1,5 @@
 // pages/kontakt.tsx
+import Head from "next/head";
 import { useState } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -55,18 +56,39 @@ export default function Kontakt() {
 
   return (
     <div className="min-h-screen bg-bg text-text">
+      <Head>
+        <title>Kontakt – uforpligtende afklaring | Gaarsdal Hypnoterapi</title>
+        <meta
+          name="description"
+          content="Kontakt Jan Gaarsdal for en uforpligtende afklaring af, om hypnoterapi er relevant for dig. Klinik i Birkerød."
+        />
+        <link rel="canonical" href="https://gaarsdal.net/kontakt" />
+        <meta property="og:title" content="Kontakt Gaarsdal Hypnoterapi" />
+        <meta
+          property="og:description"
+          content="Kontakt Jan Gaarsdal for en uforpligtende afklaring. Hypnoterapi i Birkerød."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://gaarsdal.net/kontakt" />
+        <meta
+          property="og:image"
+          content="https://gaarsdal.net/Gaarsdal.net_logo_brand.png"
+        />
+        <meta name="robots" content="index, follow" />
+      </Head>
+
       <Header />
       <main className="max-w-3xl mx-auto px-6 py-24">
-        <h1 className="text-h1 font-light mb-6">Kontakt</h1>
+        <h1 className="text-h1 font-light mb-4">Kontakt</h1>
 
-        <p className="text-base-lg text-muted mb-6">
+        <p className="text-base-lg text-muted mb-10">
           Kontakt mig, hvis du vil afklare om hypnoterapi – og min tilgang – er
           relevant for dig.
         </p>
 
         <div className="grid md:grid-cols-2 gap-8 mb-10">
           <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="font-medium mb-2">Kontaktoplysninger</h2>
+            <h2 className="font-medium mb-4">Kontaktoplysninger</h2>
             <p className="text-muted mb-2">
               <strong>Telefon:</strong>{" "}
               <a href="tel:+4542807474" className="text-accent hover:underline">
@@ -82,102 +104,124 @@ export default function Kontakt() {
                 jan@gaarsdal.net
               </a>
             </p>
-            <p className="text-muted mb-2">
+            <p className="text-muted">
               <strong>Adresse:</strong> Bakkevej 36, 3460 Birkerød
             </p>
           </div>
 
           <aside className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="font-medium mb-2">Hvad er en “afklaring”?</h3>
+            <h3 className="font-medium mb-2">Hvad er en "afklaring"?</h3>
             <p className="text-muted mb-3">
               Formålet er at få et klart billede af, hvad der sker for dig – og
               om det giver mening at arbejde med det via hypnoterapi.
             </p>
-            <p className="text-muted">
+            <p className="text-muted mb-2">
               Hvis du skriver, kan du gerne kort nævne:
             </p>
-            <ul className="list-disc ml-6 text-muted space-y-1 mt-2">
-              <li>hvad der gentager sig (situationer, reaktioner, mønstre)</li>
-              <li>hvad du ønsker mere af / mindre af</li>
-              <li>om der er noget, der “stjæler energi” lige nu</li>
+            <ul className="list-disc ml-6 text-muted space-y-1 text-sm">
+              <li>Hvad der gentager sig (situationer, reaktioner, mønstre)</li>
+              <li>Hvad du ønsker mere af / mindre af</li>
+              <li>Om der er noget, der "stjæler energi" lige nu</li>
             </ul>
           </aside>
         </div>
 
         <section className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="font-medium mb-4">Send en besked</h2>
+          <h2 className="font-medium mb-6">Send en besked</h2>
 
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-4"
-            aria-label="Kontaktformular"
-          >
-            <div>
-              <label className="block text-sm mb-1">Navn *</label>
-              <input
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                className="w-full border border-gray-200 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent"
-                required
-              />
+          {status === "success" ? (
+            <div className="py-8 text-center">
+              <p className="text-lg font-medium mb-2">Tak – din besked er modtaget.</p>
+              <p className="text-muted">Jeg vender tilbage hurtigst muligt.</p>
             </div>
+          ) : (
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-4"
+              aria-label="Kontaktformular"
+            >
+              <div>
+                <label className="block text-sm mb-1" htmlFor="name">
+                  Navn *
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  className="w-full border border-gray-200 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent"
+                  required
+                  autoComplete="name"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm mb-1">Email *</label>
-              <input
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={handleChange}
-                className="w-full border border-gray-200 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent"
-                required
-              />
-            </div>
+              <div>
+                <label className="block text-sm mb-1" htmlFor="email">
+                  Email *
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  className="w-full border border-gray-200 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent"
+                  required
+                  autoComplete="email"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm mb-1">Telefon (valgfri)</label>
-              <input
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                className="w-full border border-gray-200 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent"
-              />
-            </div>
+              <div>
+                <label className="block text-sm mb-1" htmlFor="phone">
+                  Telefon (valgfri)
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  className="w-full border border-gray-200 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent"
+                  autoComplete="tel"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm mb-1">Besked *</label>
-              <textarea
-                name="message"
-                value={form.message}
-                onChange={handleChange}
-                rows={6}
-                className="w-full border border-gray-200 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent"
-                required
-              />
-            </div>
+              <div>
+                <label className="block text-sm mb-1" htmlFor="message">
+                  Besked *
+                </label>
+                <textarea
+                  id="message"
+                  name="message"
+                  value={form.message}
+                  onChange={handleChange}
+                  rows={6}
+                  className="w-full border border-gray-200 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent"
+                  required
+                />
+              </div>
 
-            {errorMsg && <div className="text-red-600">{errorMsg}</div>}
-
-            <div className="flex items-center gap-4">
-              <button
-                type="submit"
-                className="inline-block bg-accent text-white rounded-lg px-6 py-3 font-medium disabled:opacity-60"
-                disabled={status === "sending"}
-              >
-                {status === "sending" ? "Sender…" : "Send besked"}
-              </button>
-
-              {status === "success" && (
-                <div className="text-green-600">Tak — din besked er modtaget.</div>
+              {status === "error" && errorMsg && (
+                <div role="alert" className="text-red-600 text-sm">
+                  {errorMsg}
+                </div>
               )}
-            </div>
 
-            <p className="text-xs text-muted mt-4">
-              Ved at kontakte mig accepterer du, at dine oplysninger behandles i
-              forbindelse med din henvendelse.
-            </p>
-          </form>
+              <div className="flex items-center gap-4">
+                <button
+                  type="submit"
+                  className="inline-block bg-accent text-white rounded-lg px-6 py-3 font-medium disabled:opacity-60 hover:bg-accent/90 transition"
+                  disabled={status === "sending"}
+                >
+                  {status === "sending" ? "Sender…" : "Send besked"}
+                </button>
+              </div>
+
+              <p className="text-xs text-muted mt-4">
+                Ved at kontakte mig accepterer du, at dine oplysninger behandles i
+                forbindelse med din henvendelse.
+              </p>
+            </form>
+          )}
         </section>
       </main>
       <Footer />

@@ -8,128 +8,148 @@ export default function Om() {
   return (
     <>
       <Head>
-        <title>Om — Gaarsdal Hypnoterapi</title>
+        <title>Om Jan Gaarsdal – hypnoterapeut i Birkerød | Gaarsdal</title>
         <meta
           name="description"
-          content="Om Jan Erik Gaarsdal Lauridsen — en rolig, struktureret og nøgtern tilgang til hypnoterapi i Birkerød."
+          content="Om Jan Erik Gaarsdal Lauridsen – baggrund i ledelse og komplekse miljøer. En rolig, struktureret og nøgtern tilgang til hypnoterapi i Birkerød."
         />
+        <link rel="canonical" href="https://gaarsdal.net/om" />
+        <meta property="og:title" content="Om Jan Gaarsdal – hypnoterapeut i Birkerød" />
+        <meta
+          property="og:description"
+          content="Baggrund i ledelse og komplekse miljøer. En praktisk, nøgtern tilgang til hypnoterapi – uden store løfter og uden hastværk."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://gaarsdal.net/om" />
+        <meta
+          property="og:image"
+          content="https://gaarsdal.net/Gaarsdal.net_logo_brand.png"
+        />
+        <meta name="robots" content="index, follow" />
       </Head>
 
       <div className="min-h-screen bg-bg text-text">
         <Header />
-        <main className="max-w-4xl mx-auto py-24 px-6">
+        <main className="max-w-3xl mx-auto py-24 px-6">
           {/* HERO */}
-          <div className="mb-12 text-center">
+          <div className="mb-12">
             <h1 className="text-h1 font-medium mb-4">Om mig</h1>
-            <p className="text-base-lg text-muted max-w-2xl mx-auto">
+            <p className="text-base-lg text-muted">
               En rolig og struktureret tilgang – uden store løfter og uden
               hastværk.
             </p>
           </div>
 
-          {/* TEXT BLOCK */}
-          <div className="prose prose-lg max-w-none text-text mb-10">
-            <p>
+          {/* BAGGRUND */}
+          <section className="bg-white p-6 rounded-lg shadow-sm mb-10">
+            <h2 className="text-h2 font-light mb-4">Baggrund</h2>
+            <p className="text-muted leading-relaxed mb-4">
               Jeg har baggrund i ledelse og arbejde i komplekse miljøer, hvor
               pres, beslutninger og menneskelige reaktioner er en del af
               hverdagen. Det har formet en praktisk tilgang: mindre fokus på
               forklaringer, mere fokus på hvad der virker i praksis.
             </p>
-
-            <p>
+            <p className="text-muted leading-relaxed mb-4">
               Hypnoterapi bruger jeg som et præcist redskab til at arbejde med
-              automatiske mønstre. Målet er forandringer, der holder i hverdagen
-              – i et tempo der er realistisk og meningsfuldt.
+              automatiske mønstre. Målet er forandringer, der holder i
+              hverdagen – i et tempo der er realistisk og meningsfuldt.
             </p>
-          </div>
+            <p className="text-muted leading-relaxed">
+              Jeg er ikke psykolog eller læge. Hypnoterapi er ikke behandling i
+              sundhedsfaglig forstand, og jeg arbejder ikke med psykiatriske
+              lidelser. Hvis du er i tvivl om, hvad der er den rette tilgang,
+              er en afklaring altid det bedste udgangspunkt.
+            </p>
+          </section>
 
           {/* PRINCIPPER */}
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-              <h3 className="font-semibold mb-2">Ro og struktur</h3>
-              <p className="text-sm text-muted">
-                Tydelige rammer og en proces, der er til at være i. Vi arbejder
-                konkret med det, der gentager sig.
-              </p>
+          <section className="mb-10">
+            <h2 className="text-h2 font-light mb-6">Sådan arbejder jeg</h2>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                <h3 className="font-semibold mb-2">Ro og struktur</h3>
+                <p className="text-sm text-muted leading-relaxed">
+                  Tydelige rammer og en proces, der er til at være i. Vi arbejder
+                  konkret med det, der gentager sig – ikke det, vi tror det
+                  handler om.
+                </p>
+              </div>
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                <h3 className="font-semibold mb-2">Nøgternhed</h3>
+                <p className="text-sm text-muted leading-relaxed">
+                  Ingen peptalks og ingen forhåndsløfter. Afklaring først – så du
+                  kan vurdere relevansen, inden du forpligter dig til noget.
+                </p>
+              </div>
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                <h3 className="font-semibold mb-2">Respekt for tempo</h3>
+                <p className="text-sm text-muted leading-relaxed">
+                  Tempoet er dit. Der er ikke standardløsninger, og vi justerer
+                  undervejs ud fra, hvad der faktisk virker for dig.
+                </p>
+              </div>
             </div>
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-              <h3 className="font-semibold mb-2">Nøgternhed</h3>
-              <p className="text-sm text-muted">
-                Ingen peptalks og ingen forhåndsløfter. Afklaring først – så du
-                kan vurdere relevans.
-              </p>
-            </div>
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-              <h3 className="font-semibold mb-2">Respekt for tempo</h3>
-              <p className="text-sm text-muted">
-                Tempoet er dit. Der er ikke standardløsninger, og vi justerer
-                undervejs ud fra, hvad der faktisk virker.
-              </p>
-            </div>
-          </div>
+          </section>
 
           {/* SESSION STEPS */}
-          <div className="mb-12">
-            <h2 className="text-h2 font-light mb-4">
+          <section className="bg-white p-6 rounded-lg shadow-sm mb-10">
+            <h2 className="text-h2 font-light mb-6">
               Sådan foregår en typisk session
             </h2>
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 bg-white p-5 rounded-lg border border-gray-100">
-                <strong>1) Afklaring og målretning</strong>
-                <p className="text-sm text-muted mt-2">
-                  Hvad sker der konkret for dig – og hvad ønsker du ændret?
-                </p>
+            <div className="space-y-5">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center font-medium text-sm">
+                  1
+                </div>
+                <div>
+                  <strong className="block mb-1">Afklaring og målretning</strong>
+                  <p className="text-sm text-muted leading-relaxed">
+                    Hvad sker der konkret for dig – og hvad ønsker du ændret? Vi
+                    starter altid med det, der faktisk er i spil, ikke med
+                    antagelser.
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 bg-white p-5 rounded-lg border border-gray-100">
-                <strong>2) Hypnosearbejde</strong>
-                <p className="text-sm text-muted mt-2">
-                  Fokus og indre processer inden for en aftalt ramme. Du er
-                  vågen, bevidst og kan stoppe når som helst.
-                </p>
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center font-medium text-sm">
+                  2
+                </div>
+                <div>
+                  <strong className="block mb-1">Hypnosearbejde</strong>
+                  <p className="text-sm text-muted leading-relaxed">
+                    Fokus og indre processer inden for en aftalt ramme. Du er
+                    vågen, bevidst og kan stoppe når som helst.
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 bg-white p-5 rounded-lg border border-gray-100">
-                <strong>3) Evaluering</strong>
-                <p className="text-sm text-muted mt-2">
-                  Kort afrunding: hvad gav mening, og hvad er næste realistiske
-                  skridt.
-                </p>
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center font-medium text-sm">
+                  3
+                </div>
+                <div>
+                  <strong className="block mb-1">Evaluering</strong>
+                  <p className="text-sm text-muted leading-relaxed">
+                    Kort afrunding: hvad gav mening, og hvad er næste realistiske
+                    skridt.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* HVEM DET PASSER TIL */}
-          <div className="mb-12">
-            <h2 className="text-h2 font-light mb-4">Hvem det ofte passer til</h2>
-            <ul className="list-disc pl-5 text-muted space-y-2">
-              <li>Du er vant til at tænke selv og tage ansvar</li>
-              <li>Du har prøvet at forstå problemet uden at det ændrede noget</li>
-              <li>Du foretrækker en respektfuld, nøgtern stil</li>
-              <li>Du ønsker ro og klarhed mere end store løfter</li>
-            </ul>
-          </div>
-
-          {/* CLOSING NOTE */}
-          <div className="mb-8 max-w-2xl">
-            <p className="text-base-lg text-text">
-              Hvis du søger en akut indsats eller behandling i
-              sundhedssystemet, er det ofte bedre at starte et andet sted. Hvis
-              du vil afklare relevans, kan du kontakte mig.
-            </p>
-          </div>
+          </section>
 
           {/* CONTACT */}
-          <div className="bg-white p-6 rounded-lg border border-gray-100">
+          <section className="bg-white p-6 rounded-lg border border-gray-100">
             <h3 className="font-semibold mb-2">Kontakt</h3>
             <p className="text-sm text-muted mb-1">
               Bakkevej 36, 3460 Birkerød
             </p>
             <p className="text-sm text-muted mb-1">
               Mail:{" "}
-              <a href="mailto:jan@gaarsdal.net" className="text-accent">
+              <a href="mailto:jan@gaarsdal.net" className="text-accent hover:underline">
                 jan@gaarsdal.net
               </a>
             </p>
-            <p className="text-sm text-muted mb-4">Tlf: 42 80 74 74</p>
+            <p className="text-sm text-muted mb-5">Tlf: 42 80 74 74</p>
             <div className="flex gap-3 flex-wrap">
               <Link
                 href="/kontakt"
@@ -144,7 +164,7 @@ export default function Om() {
                 Læs om hypnoterapi
               </Link>
             </div>
-          </div>
+          </section>
         </main>
 
         <Footer />
