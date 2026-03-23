@@ -3,7 +3,7 @@ import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from
 import { normalizeFinalResponse } from "../contracts/responseContract"
 import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
 import { analyzeTurn } from "../orchestration/analyzeTurn"
-import { applyPolicy, detectClosingText, detectDirectContactRequest, detectPracticalKeywords } from "../orchestration/applyPolicy"
+import { applyPolicy, detectClosingText, detectContinuationIntent, detectDirectContactRequest, detectPracticalKeywords } from "../orchestration/applyPolicy"
 import { assembleResponseMessages } from "../orchestration/assemblePrompt"
 
 type TranscriptTurn = { role: "user" | "assistant"; content: string }
@@ -528,7 +528,7 @@ export async function runUnifiedHypnoCapability(
     !!topic &&
     modeUsed !== "closing" &&
     modeUsed !== "practical" &&
-    !detectClosingText(userText)
+    !detectClosingText(userText) || detectContinuationIntent(userText)
 
   if (ctaConditionsMet) {
     assistant = assistant + "\n\nHvis du ønsker at tale med Jan om, hvad et konkret forløb ville indebære, er du velkommen til at skrive."
