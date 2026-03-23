@@ -171,13 +171,10 @@ function FeedbackBox(props: {
         ) : (
           <>
             <button type="button" className={styles.feedbackIcon} onClick={() => openFeedback("positive")} title="Hjælpsomt" aria-label="Hjælpsomt">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5C4.41 1.5 1.5 4.41 1.5 8s2.91 6.5 6.5 6.5S14.5 11.59 14.5 8 11.59 1.5 8 1.5zM5.5 6.5a1 1 0 110 2 1 1 0 010-2zm5 0a1 1 0 110 2 1 1 0 010-2zm-5.2 3.2a.5.5 0 01.7-.7 2.8 2.8 0 004 0 .5.5 0 01.7.7 3.8 3.8 0 01-5.4 0z" fill="currentColor"/></svg>
-            </button>
-            <button type="button" className={styles.feedbackIcon} onClick={() => openFeedback("partial")} title="Delvist hjælpsomt" aria-label="Delvist hjælpsomt">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5C4.41 1.5 1.5 4.41 1.5 8s2.91 6.5 6.5 6.5S14.5 11.59 14.5 8 11.59 1.5 8 1.5zM5.5 6.5a1 1 0 110 2 1 1 0 010-2zm5 0a1 1 0 110 2 1 1 0 010-2zm-3.75 3.5h4.5a.5.5 0 010 1h-4.5a.5.5 0 010-1z" fill="currentColor"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>
             </button>
             <button type="button" className={styles.feedbackIcon} onClick={() => openFeedback("negative")} title="Ikke hjælpsomt" aria-label="Ikke hjælpsomt">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5C4.41 1.5 1.5 4.41 1.5 8s2.91 6.5 6.5 6.5S14.5 11.59 14.5 8 11.59 1.5 8 1.5zM5.5 6.5a1 1 0 110 2 1 1 0 010-2zm5 0a1 1 0 110 2 1 1 0 010-2zm-.8 4.3a.5.5 0 01-.7.7 2.8 2.8 0 00-4 0 .5.5 0 01-.7-.7 3.8 3.8 0 015.4 0z" fill="currentColor"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>
             </button>
           </>
         )}
@@ -296,7 +293,7 @@ export function MessagePane(props: MessagePaneProps) {
           {m.role === "assistant" && conversationId ? (
             (() => {
               const revision = typeof m.revision === "number" ? m.revision : null
-              if (revision === 0) return null
+              if (revision === null || revision <= 1) return null
               return (
                 <FeedbackBox
                   message={m}
@@ -305,7 +302,7 @@ export function MessagePane(props: MessagePaneProps) {
                   node={m.nodeId || props.state?.active_node}
                   mode={feedbackMode}
                   move={feedbackMove}
-                  compact={revision === 1}
+                  compact={false}
                 />
               )
             })()
