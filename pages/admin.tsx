@@ -37,6 +37,16 @@ type Lead = {
   conversation_id: string
 }
 
+type FeedbackItem = {
+  ts: string
+  conversation_id: string
+  revision?: number
+  rating: "positive" | "partial" | "negative"
+  tags?: string[]
+  note?: string
+  meta?: { node?: string; mode?: string; move?: string }
+}
+
 type ExportData = {
   from: string
   to: string
@@ -45,6 +55,7 @@ type ExportData = {
   conversations: Conversation[]
   handoffs?: Handoff[]
   leads?: Lead[]
+  feedback?: FeedbackItem[]
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -127,9 +138,9 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<ExportData | null>(null)
 
-  const [tab, setTab] = useState<"conversations" | "handoffs" | "leads">("handoffs")
+  const [tab, setTab] = useState<"conversations" | "handoffs" | "leads" | "feedback">("handoffs")
   const [openConvId, setOpenConvId] = useState<string | null>(null)
-  const [returnToTab, setReturnToTab] = useState<"conversations" | "handoffs" | "leads">("conversations")
+  const [returnToTab, setReturnToTab] = useState<"conversations" | "handoffs" | "leads" | "feedback">("conversations")
 
   const handleAuth = () => {
     if (!secretInput.trim()) return
@@ -212,6 +223,7 @@ export default function AdminPage() {
   const conversations = data?.conversations ?? []
   const handoffs = (data?.handoffs ?? []) as Handoff[]
   const leads = (data?.leads ?? []) as Lead[]
+  const feedbackItems = (data?.feedback ?? []) as FeedbackItem[]
   const openConv = conversations.find(c => c.conversation_id === openConvId) ?? null
 
   return (
@@ -287,6 +299,7 @@ export default function AdminPage() {
                 { label: "Turns i alt", value: data.total_turns },
                 { label: "Henvendelser", value: handoffs.length },
                 { label: "Leads", value: leads.length },
+                { label: "Feedback", value: feedbackItems.length },
               ].map(s => (
                 <div key={s.label} style={{ background: "#fff", borderRadius: "12px", padding: "16px 20px", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
                   <div style={{ fontSize: "28px", fontWeight: 500, color: "#2C2A28" }}>{s.value}</div>
@@ -300,6 +313,7 @@ export default function AdminPage() {
               {([
                 { id: "handoffs", label: `Henvendelser (${handoffs.length})` },
                 { id: "leads", label: `Leads (${leads.length})` },
+                { id: "feedback", label: `Feedback (${feedbackItems.length})` },
                 { id: "conversations", label: `Alle samtaler (${conversations.length})` },
               ] as const).map(t => (
                 <button
@@ -393,6 +407,60 @@ export default function AdminPage() {
                           <td style={{ padding: "12px 16px", color: "#6B675F" }}>{l.tema || "—"}</td>
                         </tr>
                       ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+
+            {/* Feedback tab */}
+            {tab === "feedback" && (
+              <div style={{ background: "#fff", borderRadius: "12px", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
+                {feedbackItems.length === 0 ? (
+                  <div style={{ padding: "40px", textAlign: "center", color: "#6B675F", fontSize: "14px" }}>Ingen feedback i perioden</div>
+                ) : (
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+                    <thead>
+                      <tr style={{ background: "#F9F8F5", borderBottom: "1px solid #D8D5CC" }}>
+                        {["Tidspunkt", "Vurdering", "Node", "Tags", "Note", ""].map(h => (
+                          <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: "12px", color: "#6B675F", fontWeight: 500 }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...feedbackItems].reverse().map((f, i) => {
+                        const linkedConv = conversations.find(c => c.conversation_id === f.conversation_id)
+                        const ratingColor = f.rating === "positive" ? { bg: "#F0FDF4", color: "#166534", label: "👍 God" }
+                          : f.rating === "negative" ? { bg: "#FEF2F2", color: "#991B1B", label: "👎 Dårlig" }
+                          : { bg: "#FFFBEB", color: "#92400E", label: "↔ Delvis" }
+                        return (
+                          <tr key={i} style={{ borderBottom: i < feedbackItems.length - 1 ? "1px solid #F0EDE7" : "none" }}>
+                            <td style={{ padding: "12px 16px", color: "#6B675F", whiteSpace: "nowrap" }}>{formatDate(f.ts)}</td>
+                            <td style={{ padding: "12px 16px" }}>
+                              <span style={{ fontSize: "12px", padding: "2px 8px", borderRadius: "12px", background: ratingColor.bg, color: ratingColor.color }}>
+                                {ratingColor.label}
+                              </span>
+                            </td>
+                            <td style={{ padding: "12px 16px", fontSize: "12px", color: "#6B675F", fontFamily: "monospace" }}>{f.meta?.node ?? "—"}</td>
+                            <td style={{ padding: "12px 16px", fontSize: "12px", color: "#6B675F" }}>
+                              {(f.tags ?? []).length > 0 ? f.tags!.join(", ") : "—"}
+                            </td>
+                            <td style={{ padding: "12px 16px", color: "#2C2A28", maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {f.note || "—"}
+                            </td>
+                            <td style={{ padding: "12px 16px" }}>
+                              {linkedConv && (
+                                <button
+                                  onClick={() => { setReturnToTab("feedback"); setTab("conversations"); setOpenConvId(f.conversation_id) }}
+                                  style={{ fontSize: "12px", color: "#627A52", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit", textDecoration: "underline" }}
+                                >
+                                  Se samtale
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 )}
