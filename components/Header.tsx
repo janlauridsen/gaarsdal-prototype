@@ -4,7 +4,6 @@ import Link from 'next/link'
 export default function Header({
   siteTitle = 'Gaarsdal Hypnoterapi',
   menu = [
-    { label: 'Forside', href: '/' },
     { label: 'Hypnoterapi', href: '/hypnoterapi' },
     { label: 'Om', href: '/om' },
     { label: 'Kontakt', href: '/kontakt' },
@@ -35,7 +34,7 @@ export default function Header({
           <Link href="/" className="hover:opacity-85 transition-opacity">
             <img
               src="/gaarsdal-logo-2026-02.png"
-              alt="Gaarsdal Hypnoterapi"
+              alt={siteTitle}
               height={44}
               style={{ height: '44px', width: 'auto' }}
             />
@@ -53,7 +52,7 @@ export default function Header({
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-muted hover:text-text"
+                className="text-muted hover:text-text transition-colors"
               >
                 {item.label}
               </Link>
@@ -71,7 +70,7 @@ export default function Header({
         {/* Mobile menu button */}
         <button
           className="md:hidden ml-3 p-2 rounded focus:outline-none focus:ring-2 focus:ring-accent"
-          aria-label="Menu"
+          aria-label={open ? 'Luk menu' : 'Åbn menu'}
           aria-expanded={open}
           onClick={() => setOpen(!open)}
         >
@@ -82,30 +81,40 @@ export default function Header({
             fill="none"
             aria-hidden
           >
-            <path
-              d="M4 7h16M4 12h16M4 17h16"
-              stroke="#2E2C29"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
+            {open ? (
+              <path
+                d="M6 6l12 12M6 18L18 6"
+                stroke="#2E2C29"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            ) : (
+              <path
+                d="M4 7h16M4 12h16M4 17h16"
+                stroke="#2E2C29"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            )}
           </svg>
         </button>
       </div>
 
       {/* Mobile navigation */}
       <div
-        className={`md:hidden transition-max-h duration-300 ease-in-out overflow-hidden ${
-          open ? 'max-h-screen' : 'max-h-0'
+        className={`md:hidden transition-all duration-300 ease-in-out overflow-hidden ${
+          open ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <div className="px-6 pb-6 flex flex-col gap-4">
+        <div className="bg-white/95 backdrop-blur-sm px-6 pb-6 flex flex-col gap-4">
           {menu
             .filter((item) => item.href !== '/kontakt')
             .map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="block py-2 text-lg"
+                className="block py-2 text-lg text-text hover:text-accent transition-colors"
+                onClick={() => setOpen(false)}
               >
                 {item.label}
               </Link>
@@ -114,7 +123,8 @@ export default function Header({
           {/* CTA mobil */}
           <Link
             href="/kontakt"
-            className="mt-4 inline-block text-center bg-accent text-white px-4 py-3 rounded-lg hover:bg-accent/90 transition"
+            className="mt-2 inline-block text-center bg-accent text-white px-4 py-3 rounded-lg hover:bg-accent/90 transition"
+            onClick={() => setOpen(false)}
           >
             Kontakt mig
           </Link>
