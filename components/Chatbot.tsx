@@ -181,7 +181,7 @@ export default function Chatbot() {
 
   const placeholder = useMemo(() => {
     if (!state) return "Initialiserer…"
-    return "Hvad tænker du på?"
+    return "Skriv her…"
   }, [state])
 
   const freeTextEnabled = useMemo(() => {
@@ -1020,6 +1020,12 @@ export default function Chatbot() {
                         fields={nodeForm.fields}
                         loading={loading}
                         disabled={!state || !freeTextEnabled}
+                        onCancel={() => dispatch({ type: "EXPLICIT_TRANSITION", target: "GEN_HYPNO" })}
+                        cancelLabel="← Fortryd"
+                        secondaryAction={state?.active_node === "HANDOFF_FORM" ? {
+                          label: "Ikke klar til at booke — efterlad email i stedet",
+                          onClick: () => dispatch({ type: "EXPLICIT_TRANSITION", target: "LEAD_CAPTURE" })
+                        } : undefined}
                         onSend={(text) => {
                           dispatch({ type: "FREE_TEXT", text })
                         }}
@@ -1067,6 +1073,12 @@ export default function Chatbot() {
                   fields={nodeForm.fields}
                   loading={loading}
                   disabled={!state || !freeTextEnabled}
+                  onCancel={() => dispatch({ type: "EXPLICIT_TRANSITION", target: "GEN_HYPNO" })}
+                  cancelLabel="← Fortryd"
+                  secondaryAction={state?.active_node === "HANDOFF_FORM" ? {
+                    label: "Ikke klar til at booke — efterlad email i stedet",
+                    onClick: () => dispatch({ type: "EXPLICIT_TRANSITION", target: "LEAD_CAPTURE" })
+                  } : undefined}
                   onSend={(text) => {
                     dispatch({ type: "FREE_TEXT", text })
                   }}

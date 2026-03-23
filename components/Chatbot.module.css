@@ -180,21 +180,21 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* Watermark moved to React component — centered, disappears after first input */
+/* Empty state logo — centered in chat area */
 .chatEmptyLogo {
   display: flex;
   justify-content: center;
   align-items: center;
-  flex: 1;
-  padding: 20px 0 40px;
+  min-height: 160px;
+  padding: 32px 0 48px;
   pointer-events: none;
 }
 
 .chatEmptyLogoImg {
-  width: 80px;
-  height: 80px;
+  width: 120px;
+  height: 120px;
   object-fit: contain;
-  opacity: 0.4;
+  opacity: 0.35;
 }
 
 .message {
