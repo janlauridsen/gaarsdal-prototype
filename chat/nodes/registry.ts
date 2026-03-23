@@ -183,7 +183,7 @@ export const nodeRegistry: Record<string, Node> = {
     kind: "DIALOG",
     goal: "Afklaring: passer hypnoterapi til denne persons situation?",
     message:
-      "Lad os tage et øjeblik og se om hypnoterapi er det rigtige næste skridt for dig.\n\nHvad er det primære, du ønsker at arbejde med?",
+      "Hvad er det primære, du ønsker at arbejde med?",
     allow_free_text: true,
     allow_parentese: false,
     capability_id: "prequalify-v1",
