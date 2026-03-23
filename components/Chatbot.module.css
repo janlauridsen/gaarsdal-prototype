@@ -180,16 +180,15 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* Empty state logo — absolute overlay, doesn't push content */
+/* Empty state logo — pinned to bottom-center of message area */
 .chatEmptyLogo {
   position: absolute;
-  top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: 24px;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-end;
   pointer-events: none;
   z-index: 0;
 }
