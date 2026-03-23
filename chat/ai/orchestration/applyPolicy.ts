@@ -31,6 +31,16 @@ export function detectDirectContactRequest(text: string): boolean {
   return ["kontakte", "kontakt", "ringe", "telefon", "mail", "e-mail", "email", "booke", "booking", "ledige tider", "adresse"].some((x) => t.includes(x))
 }
 
+export function detectContinuationIntent(text: string): boolean {
+  const t = text.trim().toLowerCase()
+  return [
+    "kan vi skrive videre", "kan vi fortsætte", "lad os fortsætte",
+    "vil gerne fortsætte", "vil gerne skrive videre",
+    "vi kan godt fortsætte", "fortsæt", "fortæl mere",
+    "hvad mere", "hvad ellers", "og hvad så",
+  ].some((p) => t.includes(p))
+}
+
 export function detectClosingText(text: string): boolean {
   const t = text.trim().toLowerCase()
   const exact = [
@@ -167,7 +177,8 @@ function chooseMode(params: { userText: string; analysis: TurnAnalysis; transcri
   if (detectReflectionRequest(userText)) { scores.reflection += 2.5; scores.info -= 0.8 }
   if (detectMethodOrEvidenceQuestion(userText)) { scores.info += 1.6; scores.evidence += 1.2 }
   if (detectDirectContactRequest(userText) || detectPracticalNextStep(userText)) scores.practical += 2.2
-  if (detectClosingText(userText)) scores.closing += 5
+  if (detectClosingText(userText) && !detectContinuationIntent(userText)) scores.closing += 5
+  if (detectContinuationIntent(userText)) { scores.closing -= 10; scores.info += 2 }
 
   // Penalize practical unless clearly warranted
   if (!detectDirectContactRequest(userText) && !detectPracticalNextStep(userText) && !detectPracticalKeywords(userText)) {
@@ -203,7 +214,7 @@ export function applyPolicy(params: {
   const directContact = detectDirectContactRequest(userText)
   const practicalStep = detectPracticalNextStep(userText)
 
-  if (detectClosingText(userText) || chosenMode === "closing") {
+  if ((detectClosingText(userText) || chosenMode === "closing") && !detectContinuationIntent(userText)) {
     return { allow_mode: "closing", allow_question: false, max_questions: 0, response_length: "short", require_redirect: "none", preferred_style: "default" }
   }
 
