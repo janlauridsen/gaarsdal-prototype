@@ -4,6 +4,7 @@ import Link from 'next/link'
 export default function Header({
   siteTitle = 'Gaarsdal Hypnoterapi',
   menu = [
+    { label: 'Forside', href: '/' },
     { label: 'Hypnoterapi', href: '/hypnoterapi' },
     { label: 'Om', href: '/om' },
     { label: 'Kontakt', href: '/kontakt' },
@@ -35,8 +36,8 @@ export default function Header({
             <img
               src="/gaarsdal-logo-2026-02.png"
               alt={siteTitle}
-              height={44}
-              style={{ height: '44px', width: 'auto' }}
+              height={64}
+              style={{ height: '64px', width: 'auto' }}
             />
           </Link>
         </div>
