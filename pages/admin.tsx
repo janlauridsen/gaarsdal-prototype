@@ -114,6 +114,7 @@ export default function AdminPage() {
   const [secretInput, setSecretInput] = useState("")
   const [authed, setAuthed] = useState(false)
   const [authError, setAuthError] = useState(false)
+  const [autoLoaded, setAutoLoaded] = useState(false)
 
   const [from, setFrom] = useState(() => {
     const d = new Date()
