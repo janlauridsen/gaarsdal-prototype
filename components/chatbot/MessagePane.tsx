@@ -170,10 +170,15 @@ function FeedbackBox(props: {
           </button>
         ) : (
           <>
-            <span className={styles.feedbackPrompt}>Hjalp dette?</span>
-            <button type="button" className={styles.feedbackChip} onClick={() => openFeedback("positive")}>Ja</button>
-            <button type="button" className={styles.feedbackChip} onClick={() => openFeedback("partial")}>Delvist</button>
-            <button type="button" className={styles.feedbackChip} onClick={() => openFeedback("negative")}>Nej</button>
+            <button type="button" className={styles.feedbackIcon} onClick={() => openFeedback("positive")} title="Hjælpsomt" aria-label="Hjælpsomt">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5C4.41 1.5 1.5 4.41 1.5 8s2.91 6.5 6.5 6.5S14.5 11.59 14.5 8 11.59 1.5 8 1.5zM5.5 6.5a1 1 0 110 2 1 1 0 010-2zm5 0a1 1 0 110 2 1 1 0 010-2zm-5.2 3.2a.5.5 0 01.7-.7 2.8 2.8 0 004 0 .5.5 0 01.7.7 3.8 3.8 0 01-5.4 0z" fill="currentColor"/></svg>
+            </button>
+            <button type="button" className={styles.feedbackIcon} onClick={() => openFeedback("partial")} title="Delvist hjælpsomt" aria-label="Delvist hjælpsomt">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5C4.41 1.5 1.5 4.41 1.5 8s2.91 6.5 6.5 6.5S14.5 11.59 14.5 8 11.59 1.5 8 1.5zM5.5 6.5a1 1 0 110 2 1 1 0 010-2zm5 0a1 1 0 110 2 1 1 0 010-2zm-3.75 3.5h4.5a.5.5 0 010 1h-4.5a.5.5 0 010-1z" fill="currentColor"/></svg>
+            </button>
+            <button type="button" className={styles.feedbackIcon} onClick={() => openFeedback("negative")} title="Ikke hjælpsomt" aria-label="Ikke hjælpsomt">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5C4.41 1.5 1.5 4.41 1.5 8s2.91 6.5 6.5 6.5S14.5 11.59 14.5 8 11.59 1.5 8 1.5zM5.5 6.5a1 1 0 110 2 1 1 0 010-2zm5 0a1 1 0 110 2 1 1 0 010-2zm-.8 4.3a.5.5 0 01-.7.7 2.8 2.8 0 00-4 0 .5.5 0 01-.7-.7 3.8 3.8 0 015.4 0z" fill="currentColor"/></svg>
+            </button>
           </>
         )}
       </div>
