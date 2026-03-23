@@ -22,6 +22,7 @@ const INDEX_KEY = "gaarsdal:index:conversations:recent"
 const RAW_KEY_PREFIX = "gaarsdal:raw:conversation:"
 const HANDOFFS_KEY = "gaarsdal:handoffs:v1"
 const LEADS_KEY = "gaarsdal:leads:v1"
+const FEEDBACK_KEY = "gaarsdal:feedback:all"
 
 type RawTurn = {
   ts: string
@@ -171,7 +172,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 3. Optionelt: medtag handoffs og leads
     let handoffs: unknown[] = []
     let leads: unknown[] = []
+    let feedbackItems: unknown[] = []
     if (include_handoffs === "1") {
+      const rawFeedback = await redis.lrange(FEEDBACK_KEY, 0, 499) as unknown[]
+      feedbackItems = rawFeedback.map((f) => {
+        if (f && typeof f === "object") return f
+        try { return JSON.parse(f as string) } catch { return null }
+      }).filter(Boolean)
+
       const rawHandoffs = await redis.lrange(HANDOFFS_KEY, 0, 199) as unknown[]
       handoffs = rawHandoffs.map((h) => {
         if (h && typeof h === "object") return h
@@ -220,7 +228,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       total_conversations: allConversations.length,
       total_turns: allRows.length,
       conversations: allConversations,
-      ...(include_handoffs === "1" ? { handoffs, leads } : {}),
+      ...(include_handoffs === "1" ? { handoffs, leads, feedback: feedbackItems } : {}),
     })
   } catch (e: any) {
     return res.status(500).json({
