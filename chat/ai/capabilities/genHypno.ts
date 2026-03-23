@@ -393,6 +393,36 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
+  // Lead capture: not ready yet but wants to stay in touch
+  const leadKeywords = [
+    "ikke klar", "ikke klar nu", "tænke over det", "overveje det",
+    "mere information", "mere info", "send mig", "vende tilbage",
+    "ikke nu", "måske senere", "på et andet tidspunkt",
+    "holder mig opdateret", "skriv til mig", "email mig",
+  ]
+  const isLeadIntent = leadKeywords.some((k) => normalizedUser.includes(k))
+
+  if (isLeadIntent && options.stayOnNode === "GEN_HYPNO") {
+    const assistant = "Ingen stress — du behøver ikke beslutte dig nu. Efterlad din email, så sender Jan en kort besked om hvad en første session typisk indebærer."
+    const updatedTranscript = appendTranscript(transcript, userText, assistant)
+    return {
+      transition: {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        to: "LEAD_CAPTURE",
+        reason: "gen-hypno:lead-intent",
+        response_message: assistant,
+        meta_delta: buildMetaDelta({
+          context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
+          sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
+          analysis: buildDefaultAnalysis(userText, previousTopic, "practical"),
+          mode: "practical", relationalState: "decision_support",
+        }),
+      },
+      debug: { capability: "unified-hypno-v4", used_fallback: false },
+    }
+  }
+
   if (isFitCheckIntent && options.stayOnNode === "GEN_HYPNO") {
     const assistant = "Lad os tage et øjeblik og afklare om hypnoterapi giver mening for dig."
     const updatedTranscript = appendTranscript(transcript, userText, assistant)
