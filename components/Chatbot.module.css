@@ -180,20 +180,21 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* Watermark (logo) inside chat window */
-.messages::before {
-  content: "";
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  width: 100px;
-  height: 100px;
-  background-image: url("/gaarsdal-logo-2026-02.png");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-  opacity: 0.45;
+/* Watermark moved to React component — centered, disappears after first input */
+.chatEmptyLogo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  padding: 20px 0 40px;
   pointer-events: none;
+}
+
+.chatEmptyLogoImg {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  opacity: 0.4;
 }
 
 .message {
