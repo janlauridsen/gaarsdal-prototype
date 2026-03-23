@@ -8,13 +8,12 @@ type Props = {
   fields: FormFieldSpec[]
   onSend: (text: string) => void
   onCancel?: () => void
-  cancelLabel?: string
   secondaryAction?: { label: string; onClick: () => void }
   loading: boolean
   disabled: boolean
 }
 
-export default function FormComposer({ fields, onSend, onCancel, cancelLabel, secondaryAction, loading, disabled }: Props) {
+export default function FormComposer({ fields, onSend, onCancel, secondaryAction, loading, disabled }: Props) {
   const [values, setValues] = useState<Record<string, string>>({})
   const [errors, setErrors] = useState<Record<string, boolean>>({})
 
@@ -26,20 +25,14 @@ export default function FormComposer({ fields, onSend, onCancel, cancelLabel, se
   const handleSubmit = () => {
     const newErrors: Record<string, boolean> = {}
     let hasError = false
-
     for (const field of fields) {
       if (field.required && !values[field.id]?.trim()) {
         newErrors[field.id] = true
         hasError = true
       }
     }
+    if (hasError) { setErrors(newErrors); return }
 
-    if (hasError) {
-      setErrors(newErrors)
-      return
-    }
-
-    // Serialize to key: value format that parseFormText expects
     const lines = fields
       .filter((f) => values[f.id]?.trim())
       .map((f) => `${f.id}: ${values[f.id].trim()}`)
@@ -52,6 +45,23 @@ export default function FormComposer({ fields, onSend, onCancel, cancelLabel, se
 
   return (
     <div className={styles.formComposer}>
+      {/* Escape row — top */}
+      {(onCancel || secondaryAction) && (
+        <div className={styles.formEscapeRow}>
+          {onCancel && (
+            <button type="button" onClick={onCancel} className={styles.formEscapeBtn}>
+              ← Tilbage
+            </button>
+          )}
+          {secondaryAction && (
+            <button type="button" onClick={secondaryAction.onClick} className={styles.formSecondaryBtn}>
+              {secondaryAction.label}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Fields */}
       {fields.map((field) => (
         <div key={field.id} className={styles.formField}>
           <label className={styles.formLabel}>
@@ -60,53 +70,27 @@ export default function FormComposer({ fields, onSend, onCancel, cancelLabel, se
           </label>
           <input
             className={`${styles.formInput}${errors[field.id] ? ` ${styles.formInputError}` : ""}`}
-            type={field.id === "email" || field.id === "kontakt" ? "text" : "text"}
+            type="text"
             value={values[field.id] ?? ""}
             placeholder={field.placeholder ?? field.label}
             disabled={disabled || loading}
             onChange={(e) => handleChange(field.id, e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault()
-                handleSubmit()
-              }
-            }}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSubmit() } }}
           />
           {errors[field.id] && (
             <span className={styles.formError}>{field.label} er påkrævet</span>
           )}
         </div>
       ))}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          {onCancel && (
-            <button
-              type="button"
-              onClick={onCancel}
-              style={{ fontSize: "13px", color: "var(--color-text-secondary, #6B675F)", background: "none", border: "none", cursor: "pointer", padding: "2px 0", fontFamily: "inherit", textAlign: "left" }}
-            >
-              {cancelLabel ?? "← Fortryd"}
-            </button>
-          )}
-          {secondaryAction && (
-            <button
-              type="button"
-              onClick={secondaryAction.onClick}
-              style={{ fontSize: "12px", color: "#627A52", background: "none", border: "none", cursor: "pointer", padding: "2px 0", fontFamily: "inherit", textAlign: "left", textDecoration: "underline" }}
-            >
-              {secondaryAction.label}
-            </button>
-          )}
-        </div>
-        <button
-          className={styles.formSubmitBtn}
-          onClick={handleSubmit}
-          disabled={disabled || loading}
-          style={{ marginTop: 0 }}
-        >
-          {loading ? "Sender…" : "Send"}
-        </button>
-      </div>
+
+      {/* Submit */}
+      <button
+        className={styles.formSubmitBtn}
+        onClick={handleSubmit}
+        disabled={disabled || loading}
+      >
+        {loading ? "Sender…" : "Send"}
+      </button>
     </div>
   )
 }

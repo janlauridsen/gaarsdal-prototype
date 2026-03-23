@@ -260,13 +260,15 @@ export function MessagePane(props: MessagePaneProps) {
     return entry && typeof entry === "object" && "value" in entry ? String((entry as any).value ?? "") : typeof entry === "string" ? entry : undefined
   })()
 
-  const hasMessages = props.visibleMessages.length > 0
+  // Show logo when only the welcome message exists (no user turns yet)
+  const userTurnCount = props.visibleMessages.filter(m => m.role === "user").length
+  const showLogo = userTurnCount === 0 && !props.loading
 
   return (
     <div className={styles.messages}>
-      {!hasMessages && !props.loading && (
+      {showLogo && (
         <div className={styles.chatEmptyLogo}>
-          <img src="/gaarsdal-logo-2026-02.png" alt="" className={styles.chatEmptyLogoImg} />
+          <img src="/gaarsdal-logo-branding-notext.png" alt="" className={styles.chatEmptyLogoImg} />
         </div>
       )}
       {props.visibleMessages.map((m, index) => (
