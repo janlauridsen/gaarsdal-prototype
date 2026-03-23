@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { redis } from "../../chat/persistence/redis";
+import { getRedisClient } from "../../chat/persistence/redis";
 
 interface ContactSubmission {
   name: string;
@@ -41,7 +41,10 @@ export default async function handler(
   };
 
   // Persist to Redis (TTL: 180 days)
-  await redis.set(id, JSON.stringify(submission), { ex: 60 * 60 * 24 * 180 });
+  const redis = getRedisClient();
+  if (redis) {
+    await redis.set(id, JSON.stringify(submission), { ex: 60 * 60 * 24 * 180 });
+  }
 
   // Optional: send email notification via Resend
   // Set RESEND_API_KEY in environment to enable
