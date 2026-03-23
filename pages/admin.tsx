@@ -117,7 +117,7 @@ export default function AdminPage() {
 
   const [from, setFrom] = useState(() => {
     const d = new Date()
-    d.setDate(1)
+    d.setDate(d.getDate() - 7)
     return d.toISOString().slice(0, 10)
   })
   const [to, setTo] = useState(() => new Date().toISOString().slice(0, 10))
