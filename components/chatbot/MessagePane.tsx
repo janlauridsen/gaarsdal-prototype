@@ -29,6 +29,110 @@ const NEGATIVE_TAG_OPTIONS: Array<{ value: FeedbackTag; label: string }> = [
   { value: "other", label: "Andet" },
 ]
 
+
+function ClosingFeedback(props: {
+  conversationId: string
+  node?: string
+  mode?: string
+}) {
+  const [rating, setRating] = useState<"positive" | "negative" | null>(null)
+  const [note, setNote] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [done, setDone] = useState(false)
+
+  const submit = async (r: "positive" | "negative") => {
+    setSaving(true)
+    try {
+      await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          conversationId: props.conversationId,
+          rating: r,
+          tags: [],
+          note: note.trim() || undefined,
+          meta: { node: props.node, mode: props.mode },
+        }),
+      })
+      setRating(r)
+      setDone(true)
+    } catch {
+      // non-fatal
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (done) {
+    return (
+      <div style={{ padding: "10px 14px 4px", fontSize: "13px", color: "rgba(27,30,28,0.45)" }}>
+        Tak for din feedback.
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ padding: "10px 14px 4px" }}>
+      <div style={{ fontSize: "13px", color: "rgba(27,30,28,0.55)", marginBottom: "8px" }}>
+        Var denne samtale nyttig for dig?
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "6px" }}>
+          <button
+            onClick={() => submit("positive")}
+            disabled={saving}
+            title="Ja, nyttig"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "5px",
+              padding: "6px 12px", border: "1px solid rgba(27,30,28,0.15)",
+              borderRadius: "20px", background: "#fff", cursor: "pointer",
+              fontSize: "13px", color: "rgba(27,30,28,0.65)", fontFamily: "inherit",
+              transition: "border-color 0.12s, color 0.12s",
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>
+            Ja
+          </button>
+          <button
+            onClick={() => submit("negative")}
+            disabled={saving}
+            title="Nej, ikke særlig nyttig"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "5px",
+              padding: "6px 12px", border: "1px solid rgba(27,30,28,0.15)",
+              borderRadius: "20px", background: "#fff", cursor: "pointer",
+              fontSize: "13px", color: "rgba(27,30,28,0.65)", fontFamily: "inherit",
+              transition: "border-color 0.12s, color 0.12s",
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>
+            Nej
+          </button>
+        </div>
+        <input
+          type="text"
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          placeholder="Tilføj gerne en kommentar…"
+          maxLength={500}
+          style={{
+            flex: 1, minWidth: "160px", padding: "6px 10px",
+            border: "1px solid rgba(27,30,28,0.15)", borderRadius: "20px",
+            fontSize: "13px", fontFamily: "inherit", outline: "none",
+            color: "#1b1e1c", background: "#fff",
+          }}
+          onKeyDown={e => {
+            if (e.key === "Enter" && note.trim() && !saving) {
+              submit("positive")
+            }
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
 export type MessagePaneProps = {
   visibleMessages: ChatMessage[]
   state: ConversationState | null
@@ -290,25 +394,17 @@ export function MessagePane(props: MessagePaneProps) {
               ))}
             </div>
           )}
-          {m.role === "assistant" && conversationId ? (
-            (() => {
-              const revision = typeof m.revision === "number" ? m.revision : null
-              if (revision === null || revision <= 1) return null
-              return (
-                <FeedbackBox
-                  message={m}
-                  messageIndex={index}
-                  conversationId={conversationId}
-                  node={m.nodeId || props.state?.active_node}
-                  mode={feedbackMode}
-                  move={feedbackMove}
-                  compact={false}
-                />
-              )
-            })()
-          ) : null}
+          {null /* per-message feedback removed — se ClosingFeedback nedenfor */}
         </div>
       ))}
+
+      {feedbackMode === "closing" && conversationId && (
+        <ClosingFeedback
+          conversationId={conversationId}
+          node={props.state?.active_node}
+          mode={feedbackMode}
+        />
+      )}
 
       {props.asyncJobStatus && (
         <div className={styles.callout}>
