@@ -114,28 +114,49 @@ async function runPrequalify(
         : "Kan du fortælle lidt mere om hvad der holder dig tilbage fra at søge hjælp?"
   }
 
+  // Check if we already showed the booking offer last turn
+  const offerShown = context.state.meta["prequalify.offer_shown"]?.value === true
+
+  // Detect if user is accepting the booking offer
+  const acceptKeywords = ["ja", "gerne", "ok", "okay", "ja tak", "bestil", "book", "udfyld", "send", "kontakt"]
+  const declineKeywords = ["nej", "ikke nu", "ikke endnu", "måske", "senere", "tænke"]
+  const normalizedUser = userText.trim().toLowerCase()
+  const isAccepting = offerShown && acceptKeywords.some(k => normalizedUser === k || normalizedUser.startsWith(k + " "))
+  const isDeclining = offerShown && declineKeywords.some(k => normalizedUser.includes(k))
+
   const updatedTranscript = append(transcript, userText, assistantText)
 
   // Determine routing
   let nextNode = "PREQUALIFY"
   let transitionReason = "prequalify:ongoing"
+  let offerShownNext = offerShown
 
   const forceFit = isFitSignal(userText) && turnCount >= 1
   const forceExplore = isExploreSignal(userText) && turnCount >= 2
 
-  if (fit === "good" || forceFit) {
-    // Clear good fit — offer booking with a bridge message
+  if (isAccepting) {
+    // User confirmed they want to book
     nextNode = "HANDOFF_FORM"
-    transitionReason = "prequalify:good-fit"
+    transitionReason = "prequalify:confirmed-booking"
+    assistantText = "Godt. Udfyld formularen — Jan kontakter dig inden for 24 timer."
+    offerShownNext = false
+  } else if (isDeclining) {
+    // User declined, go back to open dialog
+    nextNode = "GEN_HYPNO"
+    transitionReason = "prequalify:declined-booking"
+    assistantText = "Ingen stress. Du er velkommen til at stille spørgsmål eller vende tilbage når du er klar."
+    offerShownNext = false
+  } else if (!offerShown && (fit === "good" || forceFit)) {
+    // Good fit detected — show offer but stay on PREQUALIFY
     assistantText = assistantText
-      ? assistantText + "\n\nDet lyder som om hypnoterapi kan være relevant for dig. Udfyld formularen herunder — Jan kontakter dig inden for 24 timer."
-      : "Det lyder som om hypnoterapi kan være relevant for dig. Udfyld formularen herunder — Jan kontakter dig inden for 24 timer."
+      ? assistantText + "\n\nBaseret på det du fortæller, lyder det som om hypnoterapi kan være relevant for dig. Vil du tage kontakt til Jan for en afklarende samtale?"
+      : "Det lyder som om hypnoterapi kan være relevant for dig. Vil du tage kontakt til Jan for en afklarende samtale?"
+    offerShownNext = true
   } else if (turnCount >= 4 || forceExplore || (turnCount >= 3 && fit === "explore")) {
     // After enough turns without clear fit, send back to open dialog
     nextNode = "GEN_HYPNO"
     transitionReason = "prequalify:explore-more"
   }
-  // else: stay on PREQUALIFY and keep exploring
 
   const transition: Transition = {
     type: "NODE_HOP",
@@ -148,6 +169,7 @@ async function runPrequalify(
       "prequalify.fit": fit,
       "prequalify.reason": reason,
       "prequalify.turn_count": turnCount + 1,
+      "prequalify.offer_shown": offerShownNext,
     },
   }
 
