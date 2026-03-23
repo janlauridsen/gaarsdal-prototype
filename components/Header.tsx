@@ -37,7 +37,7 @@ export default function Header({
               src="/gaarsdal-logo-2026-02.png"
               alt={siteTitle}
               height={64}
-              style={{ height: '64px', width: 'auto' }}
+              style={{ height: '128px', width: 'auto' }}
             />
           </Link>
         </div>
