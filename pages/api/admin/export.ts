@@ -110,13 +110,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // 1. Find conversation IDs i perioden via sorted set
-    const conversationIds = await (redis as any).zrangebyscore(
+    // Upstash Redis SDK v1: zrange with byScore option
+    const conversationIds = await redis.zrange(
       INDEX_KEY,
       fromMs,
       toMs,
-      "LIMIT",
-      0,
-      maxLimit
+      { byScore: true, count: maxLimit, offset: 0 }
     ) as string[]
 
     if (!conversationIds || conversationIds.length === 0) {
@@ -133,7 +132,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const allConversations: Array<{ conversation_id: string; turns: RawTurn[] }> = []
 
     for (const convId of conversationIds) {
-      const rawItems = await (redis as any).lrange(`${RAW_KEY_PREFIX}${convId}`, 0, -1) as string[]
+      const rawItems = await redis.lrange(`${RAW_KEY_PREFIX}${convId}`, 0, -1) as string[]
       if (!rawItems || rawItems.length === 0) continue
 
       const turns: RawTurn[] = rawItems
@@ -165,12 +164,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let handoffs: unknown[] = []
     let leads: unknown[] = []
     if (include_handoffs === "1") {
-      const rawHandoffs = await (redis as any).lrange(HANDOFFS_KEY, 0, 199) as string[]
+      const rawHandoffs = await redis.lrange(HANDOFFS_KEY, 0, 199) as string[]
       handoffs = rawHandoffs.map((h: string) => {
         try { return JSON.parse(h) } catch { return null }
       }).filter(Boolean)
-  
-      const rawLeads = await (redis as any).lrange(LEADS_KEY, 0, 199) as string[]
+
+      const rawLeads = await redis.lrange(LEADS_KEY, 0, 199) as string[]
       leads = rawLeads.map((l: string) => {
         try { return JSON.parse(l) } catch { return null }
       }).filter(Boolean)
