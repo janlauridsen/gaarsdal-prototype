@@ -187,7 +187,7 @@ export const nodeRegistry: Record<string, Node> = {
     allow_free_text: true,
     allow_parentese: false,
     capability_id: "prequalify-v1",
-    allowed_exits: ["HANDOFF_FORM", "GEN_HYPNO", "HOME"],
+    allowed_exits: ["PREQUALIFY", "HANDOFF_FORM", "GEN_HYPNO", "HOME"],
     meta_domains_written: [
       "ux",
       "prequalify.transcript",
