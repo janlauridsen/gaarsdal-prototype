@@ -128,6 +128,7 @@ export default function AdminPage() {
 
   const [tab, setTab] = useState<"conversations" | "handoffs" | "leads">("handoffs")
   const [openConvId, setOpenConvId] = useState<string | null>(null)
+  const [returnToTab, setReturnToTab] = useState<"conversations" | "handoffs" | "leads">("conversations")
 
   const handleAuth = () => {
     if (!secretInput.trim()) return
@@ -310,7 +311,7 @@ export default function AdminPage() {
             </div>
 
             {/* Handoffs tab */}
-            {tab === "handoffs" && (
+            {tab === "handoffs" && !openConvId && (
               <div style={{ background: "#fff", borderRadius: "12px", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
                 {handoffs.length === 0 ? (
                   <div style={{ padding: "40px", textAlign: "center", color: "#6B675F", fontSize: "14px" }}>Ingen henvendelser i perioden</div>
@@ -318,30 +319,43 @@ export default function AdminPage() {
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
                     <thead>
                       <tr style={{ background: "#F9F8F5", borderBottom: "1px solid #D8D5CC" }}>
-                        {["Modtaget", "Navn", "Emne", "Kontakt", "Besked", "Email"].map(h => (
+                        {["Modtaget", "Navn", "Emne", "Kontakt", "Besked", "Email", ""].map(h => (
                           <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: "12px", color: "#6B675F", fontWeight: 500 }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {handoffs.map((h, i) => (
-                        <tr key={h.id} style={{ borderBottom: i < handoffs.length - 1 ? "1px solid #F0EDE7" : "none" }}>
-                          <td style={{ padding: "12px 16px", color: "#6B675F", whiteSpace: "nowrap" }}>{formatDate(h.received_at)}</td>
-                          <td style={{ padding: "12px 16px", fontWeight: 500 }}>{h.navn || "—"}</td>
-                          <td style={{ padding: "12px 16px" }}>{h.emne || "—"}</td>
-                          <td style={{ padding: "12px 16px" }}>{h.kontakt || "—"}</td>
-                          <td style={{ padding: "12px 16px", color: "#6B675F", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.besked || "—"}</td>
-                          <td style={{ padding: "12px 16px" }}>
-                            <span style={{
-                              fontSize: "12px", padding: "2px 8px", borderRadius: "12px",
-                              background: h.email_status === "sent" ? "#F0FDF4" : h.email_status?.startsWith("error") ? "#FEF2F2" : "#F9F8F5",
-                              color: h.email_status === "sent" ? "#166534" : h.email_status?.startsWith("error") ? "#991B1B" : "#6B675F",
-                            }}>
-                              {h.email_status ?? "ukendt"}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                      {handoffs.map((h, i) => {
+                        const linkedConv = conversations.find(c => c.conversation_id === h.conversation_id)
+                        return (
+                          <tr key={h.id} style={{ borderBottom: i < handoffs.length - 1 ? "1px solid #F0EDE7" : "none" }}>
+                            <td style={{ padding: "12px 16px", color: "#6B675F", whiteSpace: "nowrap" }}>{formatDate(h.received_at)}</td>
+                            <td style={{ padding: "12px 16px", fontWeight: 500 }}>{h.navn || "—"}</td>
+                            <td style={{ padding: "12px 16px" }}>{h.emne || "—"}</td>
+                            <td style={{ padding: "12px 16px" }}>{h.kontakt || "—"}</td>
+                            <td style={{ padding: "12px 16px", color: "#6B675F", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.besked || "—"}</td>
+                            <td style={{ padding: "12px 16px" }}>
+                              <span style={{
+                                fontSize: "12px", padding: "2px 8px", borderRadius: "12px",
+                                background: h.email_status === "sent" ? "#F0FDF4" : h.email_status?.startsWith("error") ? "#FEF2F2" : "#F9F8F5",
+                                color: h.email_status === "sent" ? "#166534" : h.email_status?.startsWith("error") ? "#991B1B" : "#6B675F",
+                              }}>
+                                {h.email_status ?? "ukendt"}
+                              </span>
+                            </td>
+                            <td style={{ padding: "12px 16px" }}>
+                              {linkedConv && (
+                                <button
+                                  onClick={() => { setReturnToTab("handoffs"); setTab("conversations"); setOpenConvId(h.conversation_id) }}
+                                  style={{ fontSize: "12px", color: "#627A52", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit", textDecoration: "underline" }}
+                                >
+                                  Se samtale
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 )}
@@ -394,7 +408,7 @@ export default function AdminPage() {
                       {conversations.map((c, i) => (
                         <tr
                           key={c.conversation_id}
-                          onClick={() => setOpenConvId(c.conversation_id)}
+                          onClick={() => { setReturnToTab("conversations"); setOpenConvId(c.conversation_id) }}
                           style={{ borderBottom: i < conversations.length - 1 ? "1px solid #F0EDE7" : "none", cursor: "pointer" }}
                           onMouseEnter={e => (e.currentTarget.style.background = "#FAFAF7")}
                           onMouseLeave={e => (e.currentTarget.style.background = "")}
@@ -420,7 +434,7 @@ export default function AdminPage() {
             {tab === "conversations" && openConv && (
               <div>
                 <button
-                  onClick={() => setOpenConvId(null)}
+                  onClick={() => { setOpenConvId(null); setTab(returnToTab) }}
                   style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "14px", color: "#627A52", background: "none", border: "none", cursor: "pointer", marginBottom: "16px", padding: 0, fontFamily: "inherit" }}
                 >
                   ← Tilbage
