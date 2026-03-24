@@ -2,7 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 
 import { runNode } from "../../chat/runtime/nodeRunner"
-import { createInitialState, createLobbyState, buildReturnGreeting } from "../../chat/kernel/state"
+import { createInitialState, createLobbyState } from "../../chat/kernel/state"
 import type { InputSignal, KernelResult } from "../../chat/kernel/types"
 import { getNode } from "../../chat/nodes/registry"
 
@@ -52,7 +52,7 @@ type ApiInputSignal =
   | InputSignal
   | { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
   | { type: "THREAD_SWITCH"; conversation_id: string }
-  | { type: "THREAD_ARCHIVE" }
+  | { type: "THREAD_ARCHIVE"; conversation_id?: string }
 
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null
@@ -111,20 +111,9 @@ async function handleInitOrRestore(params: {
   const { clientState, storedState, conversationId, conversationKind, userKey, res } = params
   if (clientState !== null) return false
 
-  const rawState = storedState ?? (conversationKind === "lobby" ? createLobbyState(conversationId) : createInitialState(conversationId))
+  const baseState = storedState ?? (conversationKind === "lobby" ? createLobbyState(conversationId) : createInitialState(conversationId))
   const isNew = !storedState
-  if (isNew) await writeConversationState(rawState, SESSION_TTL_SECONDS)
-
-  // Returnerende bruger: byg en personlig velkomstbesked baseret på hvad
-  // systemet husker fra sidste samtale. Overskriver kun active_node_message
-  // i det returnerede state — skrives ikke til Redis.
-  const returnGreeting = !isNew
-    ? buildReturnGreeting({ storedState: rawState, conversationKind })
-    : null
-
-  const baseState = returnGreeting
-    ? { ...rawState, active_node_message: returnGreeting }
-    : rawState
+  if (isNew) await writeConversationState(baseState, SESSION_TTL_SECONDS)
 
   await Promise.all([
     emitCanonicalEvent({ userKey, conversationId: baseState.conversation_id, revision: baseState.revision, nodeId: baseState.active_node, eventType: "transition_applied", payload: { input_type: "SYSTEM_INIT", transition: { type: "INIT", from: null, to: baseState.active_node, reason: isNew ? "system init" : "system init (restored)", meta_keys_written: [] }, status_after: baseState.status } }),
@@ -167,7 +156,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (isPlatformThreadInput(input)) {
       if ((input as any).type === "THREAD_CREATE") { await handleThreadCreate({ input: input as any, userKey, res }); return }
       if ((input as any).type === "THREAD_SWITCH") { await handleThreadSwitch({ input: input as any, userKey, res }); return }
-      if ((input as any).type === "THREAD_ARCHIVE") { await handleThreadArchive({ userKey, res }); return }
+      if ((input as any).type === "THREAD_ARCHIVE") { await handleThreadArchive({ userKey, res, conversationId: (input as any).conversation_id }); return }
     }
 
     const restored = await handleInitOrRestore({ clientState, storedState: stored, conversationId, conversationKind, userKey, res })
