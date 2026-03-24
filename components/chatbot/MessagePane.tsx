@@ -136,14 +136,41 @@ function ClosingFeedback(props: {
 }
 
 
+type StarterChip = {
+  label: string
+  text?: string
+  action?: InputSignal
+}
+
+/**
+ * Finder den seneste tidligere tråd med reelt indhold fra state.meta.
+ * Bruges til at lave THREAD_SWITCH frem for fritekst ved returning greeting.
+ */
+function findPreviousThreadId(state: ConversationState | null): string | null {
+  if (!state) return null
+  const entry = state.meta?.["threads.tabs"]
+  const tabs: Array<{ conversation_id: string; title: string; preview?: string }> =
+    entry && typeof entry === "object" && "value" in entry
+      ? ((entry as any).value as any[]) ?? []
+      : []
+  const currentId = state.conversation_id
+  const prev = tabs.find(
+    (t) =>
+      t.conversation_id !== currentId &&
+      (t.preview?.trim() || "") &&
+      t.title !== "Ny samtale" &&
+      t.title !== "Parentesespor"
+  )
+  return prev?.conversation_id ?? null
+}
+
 /**
  * Bestemmer starter chips baseret på velkomstbeskedens kontekst.
  *
- * Hvis det er en returning-greeting (indeholder "Sidst talte vi om"),
- * vises kontekstuelle chips der matcher situationen.
- * Ellers vises generiske introduktions-chips.
+ * Ved returning greeting: "Fortsæt"-chip gør THREAD_SWITCH til den
+ * eksisterende tråd — skaber IKKE en ny parallel tråd om samme emne.
  */
-function buildStarterChips(state: ConversationState | null): Array<{ label: string; text: string }> {
+function buildStarterChips(state: ConversationState | null): StarterChip[] {
   const message = state?.active_node_message ?? ""
   const lastTopic = (() => {
     const entry = state?.meta?.["gen_hypno.last_topic"]
@@ -151,16 +178,20 @@ function buildStarterChips(state: ConversationState | null): Array<{ label: stri
     return typeof entry === "string" ? entry : ""
   })()
 
-  // Returning greeting — vis kontekstuelle chips
-  if (message.includes("Sidst talte vi om") || message.includes("Vil du fortsætte der")) {
+  const isReturningGreeting =
+    message.includes("Sidst talte vi om") || message.includes("Vil du fortsætte der")
+
+  if (isReturningGreeting) {
     const topicLabel = lastTopic.trim() || "det vi talte om"
+    const previousThreadId = findPreviousThreadId(state)
     return [
-      { label: `Fortsæt om ${topicLabel}`, text: `Ja, lad os fortsætte med ${topicLabel}` },
+      previousThreadId
+        ? { label: `Fortsæt om ${topicLabel}`, action: { type: "THREAD_SWITCH", conversation_id: previousThreadId } }
+        : { label: `Fortsæt om ${topicLabel}`, text: `Ja, lad os fortsætte med ${topicLabel}` },
       { label: "Noget nyt i dag", text: "Jeg har noget andet på hjerte i dag" },
     ]
   }
 
-  // Standard intro-chips
   return [
     { label: "Hvad sker der under hypnose?", text: "Hvad sker der under hypnose?" },
     { label: "Passer det til mig?", text: "Passer det til mig?" },
@@ -426,7 +457,13 @@ export function MessagePane(props: MessagePaneProps) {
                 <button
                   key={chip.label}
                   className={styles.starterChip}
-                  onClick={() => props.dispatch({ type: "FREE_TEXT", text: chip.text })}
+                  onClick={() => {
+                    if (chip.action) {
+                      props.dispatch(chip.action)
+                    } else if (chip.text) {
+                      props.dispatch({ type: "FREE_TEXT", text: chip.text })
+                    }
+                  }}
                   disabled={props.loading || !props.freeTextEnabled}
                 >
                   {chip.label}

@@ -1,11 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import {
   ArrowsPointingInIcon,
   ArrowsPointingOutIcon,
   ChatBubbleOvalLeftEllipsisIcon,
-  InformationCircleIcon,
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline"
@@ -16,10 +15,6 @@ import ThreadDrawer from "./ThreadDrawer"
 import { CHATBOT_DISCLOSURE } from "./constants"
 import { deriveConversationPhase, PHASE_LABELS, type ConversationPhase } from "./utils"
 
-/**
- * Tre diskrete dots der viser samtalens fase.
- * Bevidst subtil — må aldrig dominere headeren.
- */
 function PhaseIndicator({ phase }: { phase: ConversationPhase }) {
   return (
     <div className={styles.phaseIndicator} title={PHASE_LABELS[phase]} aria-label={`Samtalefase: ${PHASE_LABELS[phase]}`}>
@@ -52,7 +47,26 @@ export type ChatHeaderProps = {
 }
 
 export function ChatHeader(props: ChatHeaderProps) {
+  const [menuOpen, setMenuOpen] = useState(false)
   const [infoOpen, setInfoOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Luk menu ved klik udenfor
+  useEffect(() => {
+    if (!menuOpen) return
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [menuOpen])
+
+  function handleStartFresh() {
+    setMenuOpen(false)
+    props.dispatch({ type: "THREAD_CREATE", mode: "normal" }, { silentUser: true })
+  }
 
   return (
     <div className={styles.header}>
@@ -69,22 +83,52 @@ export function ChatHeader(props: ChatHeaderProps) {
             </span>
           </div>
           <div className={styles.node}>{props.activeNodeLabel}</div>
-          {/* Fase-indikator: vises kun når der er en aktiv dialog-samtale */}
           {props.state?.active_node === "GEN_HYPNO" && (
             <PhaseIndicator phase={deriveConversationPhase(props.state?.meta)} />
           )}
         </div>
 
         <div className={styles.headerRight}>
-          {/* Info-knap: tydelig tekstlabel så brugeren ved hvad der gemmer sig */}
-          <button
-            className={`${styles.infoBtn} ${infoOpen ? styles.infoBtnActive : ""}`}
-            onClick={() => setInfoOpen((v) => !v)}
-            aria-label="Om denne chatbot"
-            aria-expanded={infoOpen}
-          >
-            {infoOpen ? "Luk ↑" : "Om chatbotten"}
-          </button>
+          {/* Hamburger-menu */}
+          <div className={styles.hamburgerWrap} ref={menuRef}>
+            <button
+              className={`${styles.iconBtn} ${menuOpen ? styles.iconBtnActive : ""}`}
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Menu"
+              aria-expanded={menuOpen}
+              title="Menu"
+            >
+              <span className={styles.hamburgerIcon} aria-hidden="true">
+                <span /><span /><span />
+              </span>
+            </button>
+
+            {menuOpen && (
+              <div className={styles.hamburgerPanel} role="menu">
+                {/* Om chatbotten — toggle info */}
+                <button
+                  className={styles.hamburgerItem}
+                  role="menuitem"
+                  onClick={() => { setInfoOpen((v) => !v); setMenuOpen(false) }}
+                >
+                  <span className={styles.hamburgerItemIcon}>ⓘ</span>
+                  Om chatbotten
+                </button>
+
+                <div className={styles.hamburgerDivider} />
+
+                {/* Start forfra */}
+                <button
+                  className={styles.hamburgerItem}
+                  role="menuitem"
+                  onClick={handleStartFresh}
+                >
+                  <span className={styles.hamburgerItemIcon}>↺</span>
+                  Start forfra
+                </button>
+              </div>
+            )}
+          </div>
 
           <button
             className={styles.iconBtn}
@@ -105,7 +149,7 @@ export function ChatHeader(props: ChatHeaderProps) {
         </div>
       </div>
 
-      {/* Info-panel: vises under headerRow */}
+      {/* Info-panel: vises under headerRow ved klik på "Om chatbotten" */}
       {infoOpen && (
         <div className={styles.infoPanel} role="region" aria-label="Om chatbotten">
           <p className={styles.infoPanelLine}>
