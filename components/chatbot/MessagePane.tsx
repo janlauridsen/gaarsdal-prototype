@@ -135,6 +135,38 @@ function ClosingFeedback(props: {
   )
 }
 
+
+/**
+ * Bestemmer starter chips baseret på velkomstbeskedens kontekst.
+ *
+ * Hvis det er en returning-greeting (indeholder "Sidst talte vi om"),
+ * vises kontekstuelle chips der matcher situationen.
+ * Ellers vises generiske introduktions-chips.
+ */
+function buildStarterChips(state: ConversationState | null): Array<{ label: string; text: string }> {
+  const message = state?.active_node_message ?? ""
+  const lastTopic = (() => {
+    const entry = state?.meta?.["gen_hypno.last_topic"]
+    if (entry && typeof entry === "object" && "value" in entry) return String((entry as any).value ?? "")
+    return typeof entry === "string" ? entry : ""
+  })()
+
+  // Returning greeting — vis kontekstuelle chips
+  if (message.includes("Sidst talte vi om") || message.includes("Vil du fortsætte der")) {
+    const topicLabel = lastTopic.trim() || "det vi talte om"
+    return [
+      { label: `Fortsæt om ${topicLabel}`, text: `Ja, lad os fortsætte med ${topicLabel}` },
+      { label: "Noget nyt i dag", text: "Jeg har noget andet på hjerte i dag" },
+    ]
+  }
+
+  // Standard intro-chips
+  return [
+    { label: "Hvad sker der under hypnose?", text: "Hvad sker der under hypnose?" },
+    { label: "Passer det til mig?", text: "Passer det til mig?" },
+  ]
+}
+
 export type MessagePaneProps = {
   visibleMessages: ChatMessage[]
   state: ConversationState | null
@@ -390,14 +422,14 @@ export function MessagePane(props: MessagePaneProps) {
           <div className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}>{m.text}</div>
           {m.role === "assistant" && typeof m.revision === "number" && m.revision === 0 && props.visibleMessages.length === 1 && !props.loading && (
             <div className={styles.starterChips}>
-              {["Hvad sker der under hypnose?", "Passer det til mig?"].map((q) => (
+              {buildStarterChips(props.state).map((chip) => (
                 <button
-                  key={q}
+                  key={chip.label}
                   className={styles.starterChip}
-                  onClick={() => props.dispatch({ type: "FREE_TEXT", text: q })}
+                  onClick={() => props.dispatch({ type: "FREE_TEXT", text: chip.text })}
                   disabled={props.loading || !props.freeTextEnabled}
                 >
-                  {q}
+                  {chip.label}
                 </button>
               ))}
             </div>

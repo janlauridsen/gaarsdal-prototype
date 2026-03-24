@@ -8,6 +8,14 @@ import type { ThreadTab } from "./types"
 import { formatThreadPreview } from "./threadPreview"
 import { trimDuplicateTitle } from "./utils"
 
+// En tråd har reelt indhold hvis den har en preview (brugeren har skrevet noget)
+// eller en ikke-generisk titel der er genereret af AI.
+function hasRealContent(t: ThreadTab): boolean {
+  if (t.preview && t.preview.trim().length > 0) return true
+  const title = (t.title || "").trim().toLowerCase()
+  return title.length > 0 && title !== "ny samtale" && title !== "parentesespor"
+}
+
 type Props = {
   open: boolean
   threadTabs: ThreadTab[]
@@ -43,6 +51,7 @@ export default function ThreadDrawer({
           <div className={styles.threadsList}>
             {threadTabs
               .slice()
+              .filter(hasRealContent)
               .sort((a, b) => {
                 const ta = Date.parse(a.updated_at || "") || 0
                 const tb = Date.parse(b.updated_at || "") || 0
