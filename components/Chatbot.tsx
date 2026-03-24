@@ -24,6 +24,7 @@ import ChatComposer from "./chatbot/ChatComposer"
 import FormComposer from "./chatbot/FormComposer"
 import { ChatHeader } from "./chatbot/ChatHeader"
 import { MessagePane } from "./chatbot/MessagePane"
+import { SessionClose } from "./chatbot/SessionClose"
 
 type ThreadsIndexResponse = {
   active_conversation_id?: string | null
@@ -63,6 +64,29 @@ export default function Chatbot() {
 
   const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
   const headerNavHintTimerRef = useRef<number | null>(null)
+
+  // ─── Inaktivitets-timer til session-afslutning (Sprint 3) ─────────────────
+  // Vises efter INACTIVITY_SECONDS sekunder uden bruger-input, forudsat at
+  // der er mindst MIN_TURNS AI-svar i samtalen.
+  const INACTIVITY_SECONDS = 60
+  const MIN_TURNS_FOR_CLOSE = 2
+  const [sessionCloseVisible, setSessionCloseVisible] = useState(false)
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function resetInactivityTimer(currentState: typeof state) {
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current)
+    setSessionCloseVisible(false)
+    inactivityTimerRef.current = setTimeout(() => {
+      const turnCount = currentState?.meta?.["gen_hypno.assistant_turn_count"]
+      const count = turnCount && typeof turnCount === "object" && "value" in turnCount
+        ? (turnCount as any).value
+        : typeof turnCount === "number" ? turnCount : 0
+      if (count >= MIN_TURNS_FOR_CLOSE) {
+        setSessionCloseVisible(true)
+      }
+    }, INACTIVITY_SECONDS * 1000)
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   const endRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -502,8 +526,19 @@ export default function Chatbot() {
     }
   }, [open])
 
+  // ─── Inaktivitets-timer: start/stop med chat open/closed ──────────────────
   useEffect(() => {
-    if (typeof document === "undefined") return
+    if (!open) {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current)
+      setSessionCloseVisible(false)
+      return
+    }
+    resetInactivityTimer(state)
+    return () => {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
     document.body.classList.toggle("chatbotMobileOpen", open && isMobileViewport)
     return () => {
       document.body.classList.remove("chatbotMobileOpen")
@@ -523,6 +558,13 @@ export default function Chatbot() {
     if (threadsOpen) return
     focusInput()
   }, [open, loading, threadsOpen, state?.revision, visibleMessages.length])
+
+  // Nulstil inaktivitets-timer når der ankommer nye beskeder
+  useEffect(() => {
+    if (!open || !state) return
+    resetInactivityTimer(state)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.revision])
 
   useEffect(() => {
     if (!open) return
@@ -844,6 +886,8 @@ export default function Chatbot() {
 
   async function dispatch(nextInput: InputSignal, opts?: { silentUser?: boolean }): Promise<boolean> {
     if (!state) return false
+    // Nulstil inaktivitets-timer ved enhver bruger-handling
+    resetInactivityTimer(state)
     // Optimistically clear form UI on navigation
     if (nextInput.type === "EXPLICIT_TRANSITION") {
       setNodeForm(null)
@@ -1016,6 +1060,22 @@ export default function Chatbot() {
                           onOpenQuestionsChange: setDraftOpenQuestionsInput,
                           onAccept: acceptDraftReview,
                           onReset: () => applyDraftToEditor(draftReview),
+                        }
+                      : null
+                  }
+                  sessionClose={
+                    sessionCloseVisible && state
+                      ? {
+                          trigger: "inactivity",
+                          onClose: () => {
+                            setSessionCloseVisible(false)
+                            setOpen(false)
+                          },
+                          onContinue: () => {
+                            setSessionCloseVisible(false)
+                            resetInactivityTimer(state)
+                            focusInput()
+                          },
                         }
                       : null
                   }
