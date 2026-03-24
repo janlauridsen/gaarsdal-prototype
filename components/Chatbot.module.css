@@ -212,6 +212,38 @@
   line-height: 1;
 }
 
+/* ─── Sprint 4: PhaseIndicator — samtalens tre faser ─────────────────────────
+   Indsæt i Chatbot.module.css, efter .infoPanelDot-blokken
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.phaseIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+}
+
+.phaseDot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(98, 122, 82, 0.18);
+  transition: background 400ms ease;
+}
+
+.phaseDotActive {
+  background: rgba(98, 122, 82, 0.65);
+}
+
+.phaseLabel {
+  font-size: 11px;
+  color: rgba(27, 30, 28, 0.45);
+  letter-spacing: 0.02em;
+  margin-left: 2px;
+  transition: color 400ms ease;
+}
+
 .messages {
   flex: 1;
   min-height: 0;
