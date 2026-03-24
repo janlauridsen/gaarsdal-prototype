@@ -295,12 +295,25 @@ export async function handleThreadArchive(params: {
     payload: { archived_conversation_id: activeId },
   })
 
-  // Hvis ingen aktive tråde tilbage — returner altid ren lobby uanset wasActive
   const hasActiveThreadsLeft = index1.threads.some((t) => t.status === "active")
 
   let responseState: any
-  if (!hasActiveThreadsLeft || wasActive) {
-    // Ren lobby — ingen tråde tilbage eller aktiv tråd blev slettet
+
+  if (!hasActiveThreadsLeft) {
+    // Alle tråde er slettet — opret en frisk tråd med standard velkomst.
+    // Returnerer IKKE lobby — det undgår at frontenden genopretter gamle emner.
+    const freshId = newUuid()
+    const freshState = createInitialState(freshId)
+    let bound = await ensureThreadBinding({ userKey, conversationId: freshId, state: freshState })
+    await writeConversationState(bound.state, SESSION_TTL_SECONDS)
+
+    let freshIndex = upsertThread({ index: index1, conversationId: freshId, title: "Ny samtale", preview: "" })
+    freshIndex = setActiveThread({ index: freshIndex, conversationId: freshId })
+    await writeThreadIndex({ userKey, index: freshIndex, ttlSeconds: PROFILE_TTL_SECONDS })
+
+    responseState = withThreadMeta(bound.state, freshIndex)
+  } else if (wasActive) {
+    // Den aktive tråd blev slettet — skift til lobby så frontenden kan vælge ny
     await writeConversationState(lobbyState, SESSION_TTL_SECONDS)
     responseState = withThreadMeta(lobbyState, index1)
   } else {
