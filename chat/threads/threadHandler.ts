@@ -20,7 +20,7 @@ import { nowMs } from "../utils/time"
 
 export type ThreadCreateInput = { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
 export type ThreadSwitchInput = { type: "THREAD_SWITCH"; conversation_id: string }
-export type ThreadArchiveInput = { type: "THREAD_ARCHIVE" }
+export type ThreadArchiveInput = { type: "THREAD_ARCHIVE"; conversation_id?: string }
 export type ThreadInput = ThreadCreateInput | ThreadSwitchInput | ThreadArchiveInput
 
 
@@ -262,11 +262,15 @@ export async function handleThreadSwitch(params: {
 export async function handleThreadArchive(params: {
   userKey: string
   res: NextApiResponse
+  conversationId?: string
 }): Promise<void> {
   const { userKey, res } = params
 
   const index0 = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
-  const activeId = index0.active_conversation_id
+
+  // Brug specifik conversationId hvis angivet (fra trash-knap), ellers aktiv tråd
+  const targetId = params.conversationId ?? index0.active_conversation_id
+  const activeId = targetId
   if (!activeId || isLobbyConversation(activeId)) {
     res.status(400).json({ error: "No active thread to archive" })
     return
@@ -275,8 +279,12 @@ export async function handleThreadArchive(params: {
   const index1 = archiveThread({ index: index0, conversationId: activeId })
   await writeThreadIndex({ userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
 
+  // Kun nulstil til lobby hvis den arkiverede tråd var den aktive
+  const wasActive = index0.active_conversation_id === activeId
   const lobbyState = createLobbyState(toLobbyConversationId(userKey))
-  await writeConversationState(lobbyState, SESSION_TTL_SECONDS)
+  if (wasActive) {
+    await writeConversationState(lobbyState, SESSION_TTL_SECONDS)
+  }
 
   await emitEvent({
     userKey,
@@ -287,8 +295,15 @@ export async function handleThreadArchive(params: {
     payload: { archived_conversation_id: activeId },
   })
 
+  const responseState = wasActive
+    ? withThreadMeta(lobbyState, index1)
+    : withThreadMeta(
+        { ...lobbyState, conversation_id: index1.active_conversation_id ?? lobbyState.conversation_id },
+        index1
+      )
+
   res.status(200).json({
-    state: withThreadMeta(lobbyState, index1),
+    state: responseState,
     transition: { type: "THREAD_ARCHIVE", from: activeId, to: lobbyState.active_node, reason: "thread archived" },
     log: {
       conversation_id: lobbyState.conversation_id,
