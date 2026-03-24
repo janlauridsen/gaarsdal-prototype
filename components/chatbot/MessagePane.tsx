@@ -7,6 +7,7 @@ import { useRouter } from "next/router"
 import styles from "../Chatbot.module.css"
 
 import type { AsyncDraft, ChatMessage, ConversationState, InputSignal, UiSuggestion } from "./types"
+import { SessionClose } from "./SessionClose"
 
 type FeedbackRating = "positive" | "partial" | "negative"
 type FeedbackTag =
@@ -156,6 +157,11 @@ export type MessagePaneProps = {
     onOpenQuestionsChange: (value: string) => void
     onAccept: () => void
     onReset: () => void
+  } | null
+  sessionClose?: {
+    trigger: "inactivity" | "closing_mode"
+    onClose: () => void
+    onContinue: () => void
   } | null
 }
 
@@ -357,6 +363,7 @@ function FeedbackBox(props: {
 export function MessagePane(props: MessagePaneProps) {
   const router = useRouter()
   const conversationId = props.state?.conversation_id ?? null
+  const { sessionClose } = props
   const feedbackMode = (() => {
     const entry = props.state?.meta?.["dialog.mode"]
     return entry && typeof entry === "object" && "value" in entry ? String((entry as any).value ?? "") : typeof entry === "string" ? entry : undefined
@@ -467,6 +474,16 @@ export function MessagePane(props: MessagePaneProps) {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Session-afslutning: vises ved inaktivitet eller closing mode */}
+      {sessionClose && props.state && (
+        <SessionClose
+          state={props.state}
+          trigger={sessionClose.trigger}
+          onClose={sessionClose.onClose}
+          onContinue={sessionClose.onContinue}
+        />
       )}
 
       {props.state?.status === "completed" && (
