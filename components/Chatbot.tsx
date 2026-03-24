@@ -539,6 +539,8 @@ export default function Chatbot() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
+
+  useEffect(() => {
     document.body.classList.toggle("chatbotMobileOpen", open && isMobileViewport)
     return () => {
       document.body.classList.remove("chatbotMobileOpen")
