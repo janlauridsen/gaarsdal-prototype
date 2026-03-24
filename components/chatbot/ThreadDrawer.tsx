@@ -56,7 +56,14 @@ export default function ThreadDrawer({
         { silentUser: true }
       )
       setConfirmId(null)
-      if (conversationId === activeConversationId) onClose()
+
+      // Var det den sidste reelle tråd? → luk drawer, backend returnerer ren lobby
+      const remaining = sorted.filter((t) => t.conversation_id !== conversationId)
+      if (remaining.length === 0) {
+        onClose()
+      } else if (conversationId === activeConversationId) {
+        onClose()
+      }
     } else {
       // Første klik — bed om bekræftelse
       setConfirmId(conversationId)
