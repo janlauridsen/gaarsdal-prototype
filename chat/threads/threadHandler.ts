@@ -99,7 +99,7 @@ function buildNewThreadGreeting(params: {
   index: ThreadIndex
   newConversationId: string
   mode: "normal" | "parenthesis"
-}): string | null {
+}): { greeting: string; topic: string } | null {
   if (params.mode === "parenthesis") return null
 
   // Find den seneste tråd med et reelt indhold — ikke den nye (som er øverst)
@@ -119,10 +119,16 @@ function buildNewThreadGreeting(params: {
 
   // Brug preview som kontekst hvis det er en reel brugersætning
   if (preview.length > 10 && preview.length < 120) {
-    return `Hej igen. Sidst talte vi om ${title.toLowerCase()} — du nævnte: "${preview.slice(0, 80)}". Vil du fortsætte der, eller er der noget nyt på hjerte?`
+    return {
+      greeting: `Hej igen. Sidst talte vi om ${title.toLowerCase()} — du nævnte: "${preview.slice(0, 80)}". Vil du fortsætte der, eller er der noget nyt på hjerte?`,
+      topic: title.toLowerCase(),
+    }
   }
 
-  return `Hej igen. Sidst talte vi om ${title.toLowerCase()}. Vil du fortsætte der, eller er der noget nyt på hjerte?`
+  return {
+    greeting: `Hej igen. Sidst talte vi om ${title.toLowerCase()}. Vil du fortsætte der, eller er der noget nyt på hjerte?`,
+    topic: title.toLowerCase(),
+  }
 }
 
 export async function handleThreadCreate(params: {
@@ -155,9 +161,19 @@ export async function handleThreadCreate(params: {
   // Byg ny-tråd greeting FØR vi skriver til index (så den nye tråd ikke tæller som "tidligere")
   const index0 = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
 
-  const newThreadGreeting = buildNewThreadGreeting({ index: index0, newConversationId: newId, mode })
-  if (newThreadGreeting) {
-    createdState = { ...createdState, active_node_message: newThreadGreeting }
+  const greetingResult = buildNewThreadGreeting({ index: index0, newConversationId: newId, mode })
+  if (greetingResult) {
+    // Sæt velkomstbesked og seed last_topic i meta så AI'en ved hvad "der" refererer til
+    // når brugeren skriver "jeg vil gerne fortsætte der" i den nye tråd.
+    const existingMeta = createdState.meta && typeof createdState.meta === "object" ? createdState.meta : {}
+    createdState = {
+      ...createdState,
+      active_node_message: greetingResult.greeting,
+      meta: {
+        ...existingMeta,
+        "gen_hypno.last_topic": { value: greetingResult.topic, source_node: "SYSTEM_THREAD_CREATE" },
+      },
+    }
   }
 
   await writeConversationState(createdState, SESSION_TTL_SECONDS)
