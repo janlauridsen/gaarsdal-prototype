@@ -1721,6 +1721,69 @@
   background: rgba(98, 122, 82, 0.14);
 }
 
+/* ─── Sprint 5: MirrorInsight — passiv observation ───────────────────────────
+   Indsæt i Chatbot.module.css, efter .sessionCloseContinueBtn-blokken
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.mirrorWrap {
+  margin: 8px 0;
+  animation: mirrorFadeIn 500ms ease;
+}
+
+@keyframes mirrorFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mirrorInner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 20px;
+  background: rgba(98, 122, 82, 0.07);
+  border: 1px solid rgba(98, 122, 82, 0.16);
+  max-width: 88%;
+}
+
+.mirrorIcon {
+  font-size: 11px;
+  color: rgba(98, 122, 82, 0.55);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.mirrorText {
+  font-size: 12.5px;
+  color: rgba(27, 30, 28, 0.65);
+  line-height: 1.4;
+  flex: 1;
+  font-style: italic;
+}
+
+.mirrorDismiss {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  line-height: 1;
+  color: rgba(27, 30, 28, 0.30);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: color 120ms ease, background 120ms ease;
+}
+
+.mirrorDismiss:hover {
+  color: rgba(27, 30, 28, 0.65);
+  background: rgba(27, 30, 28, 0.06);
+}
+
 
 .messageStack {
   display: flex;
