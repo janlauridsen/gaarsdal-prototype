@@ -8,6 +8,7 @@ import styles from "../Chatbot.module.css"
 
 import type { AsyncDraft, ChatMessage, ConversationState, InputSignal, UiSuggestion } from "./types"
 import { SessionClose } from "./SessionClose"
+import { MirrorInsight, shouldShowMirror } from "./MirrorInsight"
 
 type FeedbackRating = "positive" | "partial" | "negative"
 type FeedbackTag =
@@ -411,6 +412,11 @@ export function MessagePane(props: MessagePaneProps) {
           node={props.state?.active_node}
           mode={feedbackMode}
         />
+      )}
+
+      {/* Spejl: passiv observation af samtalens topics — vises hvert 4. turn */}
+      {props.state && shouldShowMirror(props.state) && (
+        <MirrorInsight state={props.state} />
       )}
 
       {props.asyncJobStatus && (
