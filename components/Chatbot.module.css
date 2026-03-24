@@ -2191,3 +2191,77 @@
   color: rgba(27, 30, 28, 0.75);
   background: rgba(27, 30, 28, 0.06);
 }
+
+
+
+/* ─── UX-fix: Info-knap som tekstknap ────────────────────────────────────────
+   Tilføj disse klasser i Chatbot.module.css.
+   InformationCircleIcon importeres stadig i koden men bruges ikke mere —
+   det er ufarligt. Beholder import så vi undgår lint-fejl.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.infoBtn {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(98, 122, 82, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(27, 30, 28, 0.78);
+  cursor: pointer;
+  transition: background 120ms ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.infoBtn:hover {
+  background: rgba(98, 122, 82, 0.14);
+}
+
+.infoBtnActive {
+  background: rgba(98, 122, 82, 0.18);
+  border-color: rgba(98, 122, 82, 0.22);
+  color: rgba(27, 30, 28, 0.92);
+}
+
+
+/* ─── UX-fix: MirrorInsight — observation i samtaleflow ─────────────────────
+   Erstat de eksisterende mirror-klasser med disse.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.mirrorWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 10px;
+  padding: 8px 12px;
+  border-left: 2px solid rgba(98, 122, 82, 0.30);
+  animation: mirrorFadeIn 500ms ease;
+}
+
+@keyframes mirrorFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.mirrorLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(98, 122, 82, 0.70);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.mirrorText {
+  font-size: 13px;
+  color: rgba(27, 30, 28, 0.62);
+  line-height: 1.45;
+}
+
+/* Fjern gamle mirror-klasser hvis de eksisterer — disse overskriver dem */
+.mirrorInner,
+.mirrorIcon,
+.mirrorDismiss {
+  display: none;
+}
