@@ -295,12 +295,22 @@ export async function handleThreadArchive(params: {
     payload: { archived_conversation_id: activeId },
   })
 
-  const responseState = wasActive
-    ? withThreadMeta(lobbyState, index1)
-    : withThreadMeta(
-        { ...lobbyState, conversation_id: index1.active_conversation_id ?? lobbyState.conversation_id },
-        index1
-      )
+  // Hvis ingen aktive tråde tilbage — returner altid ren lobby uanset wasActive
+  const hasActiveThreadsLeft = index1.threads.some((t) => t.status === "active")
+
+  let responseState: any
+  if (!hasActiveThreadsLeft || wasActive) {
+    // Ren lobby — ingen tråde tilbage eller aktiv tråd blev slettet
+    await writeConversationState(lobbyState, SESSION_TTL_SECONDS)
+    responseState = withThreadMeta(lobbyState, index1)
+  } else {
+    // En ikke-aktiv tråd blev slettet — bevar aktiv tråd i state
+    const activeId = index1.active_conversation_id
+    const activeState = activeId ? await readConversationState(activeId) : null
+    responseState = activeState
+      ? withThreadMeta(activeState, index1)
+      : withThreadMeta(lobbyState, index1)
+  }
 
   res.status(200).json({
     state: responseState,
