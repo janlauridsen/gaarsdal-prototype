@@ -1,9 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import {
   ArrowsPointingInIcon,
   ArrowsPointingOutIcon,
   ChatBubbleOvalLeftEllipsisIcon,
+  InformationCircleIcon,
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline"
@@ -11,6 +13,7 @@ import styles from "../Chatbot.module.css"
 
 import type { ConversationState, InputSignal, ThreadTab } from "./types"
 import ThreadDrawer from "./ThreadDrawer"
+import { CHATBOT_DISCLOSURE } from "./constants"
 
 export type ChatHeaderProps = {
   loading: boolean
@@ -29,6 +32,8 @@ export type ChatHeaderProps = {
 }
 
 export function ChatHeader(props: ChatHeaderProps) {
+  const [infoOpen, setInfoOpen] = useState(false)
+
   return (
     <div className={styles.header}>
       <div className={styles.headerRow}>
@@ -47,13 +52,28 @@ export function ChatHeader(props: ChatHeaderProps) {
         </div>
 
         <div className={styles.headerRight}>
+          {/* Info-knap: AI-identitet og datapolitik */}
+          <button
+            className={`${styles.iconBtn} ${infoOpen ? styles.iconBtnActive : ""}`}
+            onClick={() => setInfoOpen((v) => !v)}
+            title="Om chatbotten"
+            aria-label="Om chatbotten"
+            aria-expanded={infoOpen}
+          >
+            <InformationCircleIcon className={styles.icon} />
+          </button>
+
           <button
             className={styles.iconBtn}
             onClick={props.toggleExpanded}
             title={props.expanded ? "Minimer" : "Maksimer"}
             aria-label={props.expanded ? "Minimer" : "Maksimer"}
           >
-            {props.expanded ? <ArrowsPointingInIcon className={styles.icon} /> : <ArrowsPointingOutIcon className={styles.icon} />}
+            {props.expanded ? (
+              <ArrowsPointingInIcon className={styles.icon} />
+            ) : (
+              <ArrowsPointingOutIcon className={styles.icon} />
+            )}
           </button>
 
           <button className={styles.iconBtn} onClick={props.closeChat} title="Luk" aria-label="Luk">
@@ -61,6 +81,24 @@ export function ChatHeader(props: ChatHeaderProps) {
           </button>
         </div>
       </div>
+
+      {/* Info-panel: vises under headerRow */}
+      {infoOpen && (
+        <div className={styles.infoPanel} role="region" aria-label="Om chatbotten">
+          <p className={styles.infoPanelLine}>
+            <span className={styles.infoPanelDot} aria-hidden="true">◆</span>
+            {CHATBOT_DISCLOSURE.identity}
+          </p>
+          <p className={styles.infoPanelLine}>
+            <span className={styles.infoPanelDot} aria-hidden="true">◆</span>
+            {CHATBOT_DISCLOSURE.memory}
+          </p>
+          <p className={styles.infoPanelLine}>
+            <span className={styles.infoPanelDot} aria-hidden="true">◆</span>
+            {CHATBOT_DISCLOSURE.privacy}
+          </p>
+        </div>
+      )}
 
       <div className={styles.actionsRow} aria-label="Tråde og handlinger">
         <button
@@ -77,7 +115,9 @@ export function ChatHeader(props: ChatHeaderProps) {
         <div className={styles.actionsRight}>
           <button
             className={styles.actionBtn}
-            onClick={() => props.dispatch({ type: "THREAD_CREATE", mode: "normal" }, { silentUser: true })}
+            onClick={() =>
+              props.dispatch({ type: "THREAD_CREATE", mode: "normal" }, { silentUser: true })
+            }
             disabled={props.loading}
             title="Ny tråd"
             aria-label="Ny tråd"
@@ -98,7 +138,10 @@ export function ChatHeader(props: ChatHeaderProps) {
           props.focusInput()
         }}
         onSwitchThread={(conversationId) => {
-          props.dispatch({ type: "THREAD_SWITCH", conversation_id: conversationId }, { silentUser: true })
+          props.dispatch(
+            { type: "THREAD_SWITCH", conversation_id: conversationId },
+            { silentUser: true }
+          )
         }}
       />
 
