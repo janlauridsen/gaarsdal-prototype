@@ -51,7 +51,6 @@ export function ChatHeader(props: ChatHeaderProps) {
   const [infoOpen, setInfoOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // Luk menu ved klik udenfor
   useEffect(() => {
     if (!menuOpen) return
     function handleClick(e: MouseEvent) {
@@ -63,14 +62,12 @@ export function ChatHeader(props: ChatHeaderProps) {
     return () => document.removeEventListener("mousedown", handleClick)
   }, [menuOpen])
 
-  function handleStartFresh() {
-    setMenuOpen(false)
-    props.dispatch({ type: "THREAD_CREATE", mode: "normal" }, { silentUser: true })
-  }
+  function closeMenu() { setMenuOpen(false) }
 
   return (
     <div className={styles.header}>
       <div className={styles.headerRow}>
+        {/* Venstre: titel + fase */}
         <div className={styles.headerLeft}>
           <div className={styles.titleRow}>
             <div className={styles.title}>Gaarsdal</div>
@@ -88,8 +85,8 @@ export function ChatHeader(props: ChatHeaderProps) {
           )}
         </div>
 
+        {/* Højre: hamburger + expand + luk */}
         <div className={styles.headerRight}>
-          {/* Hamburger-menu */}
           <div className={styles.hamburgerWrap} ref={menuRef}>
             <button
               className={`${styles.iconBtn} ${menuOpen ? styles.iconBtnActive : ""}`}
@@ -105,25 +102,56 @@ export function ChatHeader(props: ChatHeaderProps) {
 
             {menuOpen && (
               <div className={styles.hamburgerPanel} role="menu">
-                {/* Om chatbotten — toggle info */}
+                {/* Tråde */}
                 <button
                   className={styles.hamburgerItem}
                   role="menuitem"
-                  onClick={() => { setInfoOpen((v) => !v); setMenuOpen(false) }}
+                  disabled={props.loading || !props.state}
+                  onClick={() => {
+                    closeMenu()
+                    props.setThreadsOpen(true)
+                  }}
                 >
-                  <span className={styles.hamburgerItemIcon}>ⓘ</span>
-                  Om chatbotten
+                  <ChatBubbleOvalLeftEllipsisIcon className={styles.hamburgerItemSvg} />
+                  Tråde
+                </button>
+
+                {/* Ny samtale */}
+                <button
+                  className={styles.hamburgerItem}
+                  role="menuitem"
+                  disabled={props.loading}
+                  onClick={() => {
+                    closeMenu()
+                    props.dispatch({ type: "THREAD_CREATE", mode: "normal" }, { silentUser: true })
+                  }}
+                >
+                  <PlusIcon className={styles.hamburgerItemSvg} />
+                  Ny samtale
                 </button>
 
                 <div className={styles.hamburgerDivider} />
+
+                {/* Om chatbotten */}
+                <button
+                  className={styles.hamburgerItem}
+                  role="menuitem"
+                  onClick={() => { setInfoOpen((v) => !v); closeMenu() }}
+                >
+                  <span className={styles.hamburgerItemIcon} aria-hidden="true">ⓘ</span>
+                  Om chatbotten
+                </button>
 
                 {/* Start forfra */}
                 <button
                   className={styles.hamburgerItem}
                   role="menuitem"
-                  onClick={handleStartFresh}
+                  onClick={() => {
+                    closeMenu()
+                    props.dispatch({ type: "THREAD_CREATE", mode: "normal" }, { silentUser: true })
+                  }}
                 >
-                  <span className={styles.hamburgerItemIcon}>↺</span>
+                  <span className={styles.hamburgerItemIcon} aria-hidden="true">↺</span>
                   Start forfra
                 </button>
               </div>
@@ -136,11 +164,9 @@ export function ChatHeader(props: ChatHeaderProps) {
             title={props.expanded ? "Minimer" : "Maksimer"}
             aria-label={props.expanded ? "Minimer" : "Maksimer"}
           >
-            {props.expanded ? (
-              <ArrowsPointingInIcon className={styles.icon} />
-            ) : (
-              <ArrowsPointingOutIcon className={styles.icon} />
-            )}
+            {props.expanded
+              ? <ArrowsPointingInIcon className={styles.icon} />
+              : <ArrowsPointingOutIcon className={styles.icon} />}
           </button>
 
           <button className={styles.iconBtn} onClick={props.closeChat} title="Luk" aria-label="Luk">
@@ -149,7 +175,7 @@ export function ChatHeader(props: ChatHeaderProps) {
         </div>
       </div>
 
-      {/* Info-panel: vises under headerRow ved klik på "Om chatbotten" */}
+      {/* Info-panel */}
       {infoOpen && (
         <div className={styles.infoPanel} role="region" aria-label="Om chatbotten">
           <p className={styles.infoPanelLine}>
@@ -167,34 +193,7 @@ export function ChatHeader(props: ChatHeaderProps) {
         </div>
       )}
 
-      <div className={styles.actionsRow} aria-label="Tråde og handlinger">
-        <button
-          className={styles.threadBtn}
-          onClick={() => props.setThreadsOpen(true)}
-          disabled={props.loading || !props.state}
-          title="Tråde"
-          aria-label="Tråde"
-        >
-          <ChatBubbleOvalLeftEllipsisIcon className={styles.threadBtnIcon} />
-          <span className={styles.threadBtnLabel}>Tråde</span>
-        </button>
-
-        <div className={styles.actionsRight}>
-          <button
-            className={styles.actionBtn}
-            onClick={() =>
-              props.dispatch({ type: "THREAD_CREATE", mode: "normal" }, { silentUser: true })
-            }
-            disabled={props.loading}
-            title="Ny tråd"
-            aria-label="Ny tråd"
-          >
-            <PlusIcon className={styles.actionBtnIcon} />
-            <span className={styles.actionBtnLabel}>Ny samtale</span>
-          </button>
-        </div>
-      </div>
-
+      {/* ThreadDrawer */}
       <ThreadDrawer
         open={props.threadsOpen}
         threadTabs={props.threadTabs}
