@@ -168,6 +168,50 @@
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
+/* ─── Sprint 1: Info-panel (AI-identitet + GDPR) ─────────────────────────────
+   Indsæt disse klasser i Chatbot.module.css — placér dem efter .navHintPulse
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.iconBtnActive {
+  background: rgba(98, 122, 82, 0.18);
+  border-color: rgba(98, 122, 82, 0.22);
+}
+
+.infoPanel {
+  margin: 8px 0 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(98, 122, 82, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  animation: infoPanelFadeIn 140ms ease;
+}
+
+@keyframes infoPanelFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.infoPanelLine {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(27, 30, 28, 0.80);
+  margin: 0;
+}
+
+.infoPanelDot {
+  flex-shrink: 0;
+  font-size: 7px;
+  margin-top: 4px;
+  color: rgba(98, 122, 82, 0.70);
+  line-height: 1;
+}
+
 .messages {
   flex: 1;
   min-height: 0;
