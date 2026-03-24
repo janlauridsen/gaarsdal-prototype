@@ -14,6 +14,26 @@ import styles from "../Chatbot.module.css"
 import type { ConversationState, InputSignal, ThreadTab } from "./types"
 import ThreadDrawer from "./ThreadDrawer"
 import { CHATBOT_DISCLOSURE } from "./constants"
+import { deriveConversationPhase, PHASE_LABELS, type ConversationPhase } from "./utils"
+
+/**
+ * Tre diskrete dots der viser samtalens fase.
+ * Bevidst subtil — må aldrig dominere headeren.
+ */
+function PhaseIndicator({ phase }: { phase: ConversationPhase }) {
+  return (
+    <div className={styles.phaseIndicator} title={PHASE_LABELS[phase]} aria-label={`Samtalefase: ${PHASE_LABELS[phase]}`}>
+      {([1, 2, 3] as ConversationPhase[]).map((p) => (
+        <span
+          key={p}
+          className={`${styles.phaseDot} ${p <= phase ? styles.phaseDotActive : ""}`}
+          aria-hidden="true"
+        />
+      ))}
+      <span className={styles.phaseLabel}>{PHASE_LABELS[phase]}</span>
+    </div>
+  )
+}
 
 export type ChatHeaderProps = {
   loading: boolean
@@ -49,6 +69,10 @@ export function ChatHeader(props: ChatHeaderProps) {
             </span>
           </div>
           <div className={styles.node}>{props.activeNodeLabel}</div>
+          {/* Fase-indikator: vises kun når der er en aktiv dialog-samtale */}
+          {props.state?.active_node === "GEN_HYPNO" && (
+            <PhaseIndicator phase={deriveConversationPhase(props.state?.meta)} />
+          )}
         </div>
 
         <div className={styles.headerRight}>
