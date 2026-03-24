@@ -1,15 +1,14 @@
 "use client"
 
-import { XMarkIcon } from "@heroicons/react/24/outline"
+import { useState } from "react"
+import { XMarkIcon, TrashIcon } from "@heroicons/react/24/outline"
 
 import styles from "../Chatbot.module.css"
 
-import type { ThreadTab } from "./types"
+import type { InputSignal, ThreadTab } from "./types"
 import { formatThreadPreview } from "./threadPreview"
 import { trimDuplicateTitle } from "./utils"
 
-// En tråd har reelt indhold hvis den har en preview (brugeren har skrevet noget)
-// eller en ikke-generisk titel der er genereret af AI.
 function hasRealContent(t: ThreadTab): boolean {
   if (t.preview && t.preview.trim().length > 0) return true
   const title = (t.title || "").trim().toLowerCase()
@@ -23,6 +22,7 @@ type Props = {
   disabled: boolean
   onClose: () => void
   onSwitchThread: (conversationId: string) => void
+  dispatch: (input: InputSignal, opts?: { silentUser?: boolean }) => Promise<boolean> | boolean
 }
 
 export default function ThreadDrawer({
@@ -32,8 +32,36 @@ export default function ThreadDrawer({
   disabled,
   onClose,
   onSwitchThread,
+  dispatch,
 }: Props) {
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+
   if (!open) return null
+
+  const sorted = threadTabs
+    .slice()
+    .filter(hasRealContent)
+    .sort((a, b) => {
+      const ta = Date.parse(a.updated_at || "") || 0
+      const tb = Date.parse(b.updated_at || "") || 0
+      return tb - ta
+    })
+
+  function handleDelete(conversationId: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    if (confirmId === conversationId) {
+      // Bekræftet — arkiver
+      dispatch(
+        { type: "THREAD_ARCHIVE", conversation_id: conversationId } as any,
+        { silentUser: true }
+      )
+      setConfirmId(null)
+      if (conversationId === activeConversationId) onClose()
+    } else {
+      // Første klik — bed om bekræftelse
+      setConfirmId(conversationId)
+    }
+  }
 
   return (
     <div className={styles.threadsOverlay} onClick={onClose} role="dialog" aria-modal="true">
@@ -45,26 +73,24 @@ export default function ThreadDrawer({
       </div>
 
       <div className={styles.threadsBody} onClick={(e) => e.stopPropagation()}>
-        {threadTabs.length === 0 ? (
+        {sorted.length === 0 ? (
           <div className={styles.threadsHint}>Ingen tråde endnu.</div>
         ) : (
           <div className={styles.threadsList}>
-            {threadTabs
-              .slice()
-              .filter(hasRealContent)
-              .sort((a, b) => {
-                const ta = Date.parse(a.updated_at || "") || 0
-                const tb = Date.parse(b.updated_at || "") || 0
-                return tb - ta
-              })
-              .map((t) => {
-                const isActive = !!activeConversationId && t.conversation_id === activeConversationId
-                const label = (t.title || "").trim() || trimDuplicateTitle(t.preview || "Samtale")
+            {sorted.map((t) => {
+              const isActive = !!activeConversationId && t.conversation_id === activeConversationId
+              const label = (t.title || "").trim() || trimDuplicateTitle(t.preview || "Samtale")
+              const isConfirming = confirmId === t.conversation_id
 
-                return (
+              return (
+                <div
+                  key={t.conversation_id}
+                  className={`${styles.threadItemWrap} ${isActive ? styles.threadItemWrapActive : ""}`}
+                  onMouseLeave={() => { if (isConfirming) setConfirmId(null) }}
+                >
+                  {/* Klikbar del */}
                   <button
-                    key={t.conversation_id}
-                    className={`${styles.threadItem} ${isActive ? styles.threadItemActive : ""}`}
+                    className={`${styles.threadItemBody} ${isActive ? styles.threadItemActive : ""}`}
                     onClick={() => {
                       if (!isActive) onSwitchThread(t.conversation_id)
                       onClose()
@@ -75,10 +101,26 @@ export default function ThreadDrawer({
                     <div className={styles.threadItemTop}>
                       <div className={styles.threadItemTitle}>{label}</div>
                     </div>
-                    {t.preview ? <div className={styles.threadItemPreview}>{formatThreadPreview(t)}</div> : null}
+                    {t.preview
+                      ? <div className={styles.threadItemPreview}>{formatThreadPreview(t)}</div>
+                      : null}
                   </button>
-                )
-              })}
+
+                  {/* Slet-knap */}
+                  <button
+                    className={`${styles.threadDeleteBtn} ${isConfirming ? styles.threadDeleteBtnConfirm : ""}`}
+                    onClick={(e) => handleDelete(t.conversation_id, e)}
+                    disabled={disabled}
+                    title={isConfirming ? "Bekræft sletning" : "Slet tråd"}
+                    aria-label={isConfirming ? "Bekræft sletning" : "Slet tråd"}
+                  >
+                    {isConfirming
+                      ? <span className={styles.threadDeleteConfirmLabel}>Slet?</span>
+                      : <TrashIcon className={styles.threadDeleteIcon} />}
+                  </button>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

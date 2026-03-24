@@ -199,6 +199,7 @@ export function ChatHeader(props: ChatHeaderProps) {
         threadTabs={props.threadTabs}
         activeConversationId={props.activeConversationId}
         disabled={props.loading || !props.state}
+        dispatch={props.dispatch}
         onClose={() => {
           props.setThreadsOpen(false)
           props.focusInput()
