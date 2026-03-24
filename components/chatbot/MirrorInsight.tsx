@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import type { ConversationState } from "./types"
 import styles from "../Chatbot.module.css"
 
@@ -22,8 +21,7 @@ function readMeta(state: ConversationState, key: string): unknown {
  * - Kræver aktiv GEN_HYPNO dialog (ikke lobby, ikke closing)
  *
  * Dagbogslogik: spejlet er ikke analyse — det er en passiv observation
- * der giver brugeren et ekko af deres eget fokus. "Du har berørt søvn"
- * er ikke en konklusion, det er et spejl.
+ * der giver brugeren et ekko af deres eget fokus.
  */
 export function shouldShowMirror(state: ConversationState): boolean {
   if (state.active_node !== "GEN_HYPNO") return false
@@ -44,7 +42,7 @@ export function shouldShowMirror(state: ConversationState): boolean {
 
 /**
  * Bygger observationsteksten.
- * Bevidst holdt i observationsform — ingen fortolkning, ingen konklusion.
+ * Holdt i første person og observationsform — ingen fortolkning, ingen konklusion.
  */
 function buildMirrorText(state: ConversationState): string | null {
   const topic = readMeta(state, "gen_hypno.last_topic")
@@ -56,7 +54,6 @@ function buildMirrorText(state: ConversationState): string | null {
 
   const t = topic.trim()
 
-  // Brug topic_tags hvis der er flere — det giver en rigere observation
   const tagList = Array.isArray(tags)
     ? tags.filter((x): x is string => typeof x === "string" && x.trim().length > 0).slice(0, 2)
     : []
@@ -76,29 +73,21 @@ export type MirrorInsightProps = {
   state: ConversationState
 }
 
+/**
+ * Vises som en kort, neutral linje fra chatbotten — ikke en chip der
+ * kan afvises. Det er en observation i samtalens flow, ikke en notifikation.
+ *
+ * UX-princip: ingen × fordi der ikke er noget at "afvise" — det er bare
+ * et ekko. Brugeren kan ignorere det og fortsætte.
+ */
 export function MirrorInsight({ state }: MirrorInsightProps) {
-  const [dismissed, setDismissed] = useState(false)
-
-  if (dismissed) return null
-
   const text = buildMirrorText(state)
   if (!text) return null
 
   return (
-    <div className={styles.mirrorWrap} role="note" aria-label="Observation fra samtalen">
-      <div className={styles.mirrorInner}>
-        <span className={styles.mirrorIcon} aria-hidden="true">◈</span>
-        <span className={styles.mirrorText}>{text}</span>
-        <button
-          className={styles.mirrorDismiss}
-          onClick={() => setDismissed(true)}
-          type="button"
-          aria-label="Afvis observation"
-          title="Afvis"
-        >
-          ×
-        </button>
-      </div>
+    <div className={styles.mirrorWrap} role="note">
+      <span className={styles.mirrorLabel}>Chatbotten bemærker:</span>
+      <span className={styles.mirrorText}>{text}</span>
     </div>
   )
 }

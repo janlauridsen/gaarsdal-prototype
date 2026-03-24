@@ -76,15 +76,14 @@ export function ChatHeader(props: ChatHeaderProps) {
         </div>
 
         <div className={styles.headerRight}>
-          {/* Info-knap: AI-identitet og datapolitik */}
+          {/* Info-knap: tydelig tekstlabel så brugeren ved hvad der gemmer sig */}
           <button
-            className={`${styles.iconBtn} ${infoOpen ? styles.iconBtnActive : ""}`}
+            className={`${styles.infoBtn} ${infoOpen ? styles.infoBtnActive : ""}`}
             onClick={() => setInfoOpen((v) => !v)}
-            title="Om chatbotten"
-            aria-label="Om chatbotten"
+            aria-label="Om denne chatbot"
             aria-expanded={infoOpen}
           >
-            <InformationCircleIcon className={styles.icon} />
+            {infoOpen ? "Luk ↑" : "Om chatbotten"}
           </button>
 
           <button
