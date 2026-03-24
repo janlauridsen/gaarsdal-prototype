@@ -2,7 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 
 import { runNode } from "../../chat/runtime/nodeRunner"
-import { createInitialState, createLobbyState } from "../../chat/kernel/state"
+import { createInitialState, createLobbyState, buildReturnGreeting } from "../../chat/kernel/state"
 import type { InputSignal, KernelResult } from "../../chat/kernel/types"
 import { getNode } from "../../chat/nodes/registry"
 
@@ -111,9 +111,20 @@ async function handleInitOrRestore(params: {
   const { clientState, storedState, conversationId, conversationKind, userKey, res } = params
   if (clientState !== null) return false
 
-  const baseState = storedState ?? (conversationKind === "lobby" ? createLobbyState(conversationId) : createInitialState(conversationId))
+  const rawState = storedState ?? (conversationKind === "lobby" ? createLobbyState(conversationId) : createInitialState(conversationId))
   const isNew = !storedState
-  if (isNew) await writeConversationState(baseState, SESSION_TTL_SECONDS)
+  if (isNew) await writeConversationState(rawState, SESSION_TTL_SECONDS)
+
+  // Returnerende bruger: byg en personlig velkomstbesked baseret på hvad
+  // systemet husker fra sidste samtale. Overskriver kun active_node_message
+  // i det returnerede state — skrives ikke til Redis.
+  const returnGreeting = !isNew
+    ? buildReturnGreeting({ storedState: rawState, conversationKind })
+    : null
+
+  const baseState = returnGreeting
+    ? { ...rawState, active_node_message: returnGreeting }
+    : rawState
 
   await Promise.all([
     emitCanonicalEvent({ userKey, conversationId: baseState.conversation_id, revision: baseState.revision, nodeId: baseState.active_node, eventType: "transition_applied", payload: { input_type: "SYSTEM_INIT", transition: { type: "INIT", from: null, to: baseState.active_node, reason: isNew ? "system init" : "system init (restored)", meta_keys_written: [] }, status_after: baseState.status } }),
