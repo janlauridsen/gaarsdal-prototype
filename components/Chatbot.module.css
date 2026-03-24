@@ -2225,7 +2225,92 @@
   color: rgba(27, 30, 28, 0.92);
 }
 
+/* ─── Hamburger-menu ─────────────────────────────────────────────────────────
+   Indsæt i Chatbot.module.css, efter .infoBtnActive-blokken
+   ──────────────────────────────────────────────────────────────────────────── */
 
+.hamburgerWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.hamburgerIcon {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+  width: 18px;
+  height: 18px;
+}
+
+.hamburgerIcon span {
+  display: block;
+  width: 14px;
+  height: 1.5px;
+  background: rgba(27, 30, 28, 0.82);
+  border-radius: 2px;
+  transition: opacity 120ms ease;
+}
+
+.hamburgerPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 178px;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(251, 251, 250, 0.98);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+  z-index: 80;
+  animation: menuFadeIn 120ms ease;
+}
+
+@keyframes menuFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hamburgerItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: rgba(27, 30, 28, 0.88);
+  transition: background 100ms ease;
+}
+
+.hamburgerItem:hover {
+  background: rgba(98, 122, 82, 0.10);
+}
+
+.hamburgerItemIcon {
+  font-size: 14px;
+  width: 18px;
+  text-align: center;
+  color: rgba(27, 30, 28, 0.55);
+  flex-shrink: 0;
+}
+
+.hamburgerDivider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.06);
+  margin: 4px 8px;
+}
+
+/* Fjern de gamle infoBtn klasser — de er nu erstattet af hamburger */
+/* (kan beholdes uden effekt hvis de stadig er i CSS-filen) */
+
+ 
 /* ─── UX-fix: MirrorInsight — observation i samtaleflow ─────────────────────
    Erstat de eksisterende mirror-klasser med disse.
    ──────────────────────────────────────────────────────────────────────────── */
