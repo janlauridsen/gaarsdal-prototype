@@ -5,10 +5,12 @@ import { readConversationState, writeConversationState } from "../persistence/co
 import {
   archiveThread,
   ensureThreadIndex,
+  isGenericThreadTitle,
   setActiveThread,
   upsertThread,
   writeThreadIndex,
 } from "../persistence/threadIndexStore"
+import type { ThreadIndex } from "../persistence/threadIndexStore"
 import { appendConversationEventV1 } from "../events/store"
 import { getOrCreateThreadThemeAndEpisode } from "../memory/longTermMemoryStore"
 import { newUuid } from "../utils/ids"
@@ -80,6 +82,49 @@ async function emitEvent(params: {
   })
 }
 
+
+/**
+ * Bygger en velkomstbesked til en ny tråd baseret på brugerens historik.
+ *
+ * Dagbogslogik: når brugeren starter en ny samtale, skal systemet
+ * signalere at det husker hvad der har optaget dem tidligere — uden
+ * at antage at de vil fortsætte samme spor.
+ *
+ * Returnerer null hvis:
+ * - Der er ingen tidligere tråde med et reelt emne
+ * - Alle tråde har generiske titler ("Ny samtale")
+ * - Det er en parenthesis-tråd
+ */
+function buildNewThreadGreeting(params: {
+  index: ThreadIndex
+  newConversationId: string
+  mode: "normal" | "parenthesis"
+}): string | null {
+  if (params.mode === "parenthesis") return null
+
+  // Find den seneste tråd med et reelt indhold — ikke den nye (som er øverst)
+  const previousThreads = params.index.threads.filter(
+    (t) =>
+      t.conversation_id !== params.newConversationId &&
+      t.status === "active" &&
+      !isGenericThreadTitle(t.title) &&
+      t.title.trim().length > 0
+  )
+
+  if (previousThreads.length === 0) return null
+
+  const latest = previousThreads[0]
+  const title = latest.title.trim()
+  const preview = typeof latest.preview === "string" ? latest.preview.trim() : ""
+
+  // Brug preview som kontekst hvis det er en reel brugersætning
+  if (preview.length > 10 && preview.length < 120) {
+    return `Hej igen. Sidst talte vi om ${title.toLowerCase()} — du nævnte: "${preview.slice(0, 80)}". Vil du fortsætte der, eller er der noget nyt på hjerte?`
+  }
+
+  return `Hej igen. Sidst talte vi om ${title.toLowerCase()}. Vil du fortsætte der, eller er der noget nyt på hjerte?`
+}
+
 export async function handleThreadCreate(params: {
   input: ThreadCreateInput
   userKey: string
@@ -107,9 +152,15 @@ export async function handleThreadCreate(params: {
   const binding = await ensureThreadBinding({ userKey, conversationId: newId, state: createdState })
   createdState = binding.state
 
-  await writeConversationState(createdState, SESSION_TTL_SECONDS)
-
+  // Byg ny-tråd greeting FØR vi skriver til index (så den nye tråd ikke tæller som "tidligere")
   const index0 = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+
+  const newThreadGreeting = buildNewThreadGreeting({ index: index0, newConversationId: newId, mode })
+  if (newThreadGreeting) {
+    createdState = { ...createdState, active_node_message: newThreadGreeting }
+  }
+
+  await writeConversationState(createdState, SESSION_TTL_SECONDS)
   let index1 = upsertThread({
     index: index0,
     conversationId: newId,
