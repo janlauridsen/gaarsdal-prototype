@@ -2350,3 +2350,22 @@
 .mirrorDismiss {
   display: none;
 }
+/* ─── Header cleanup: actionsRow fjernes, hamburger udvides ──────────────────
+   Tilføj disse klasser i Chatbot.module.css.
+   Du kan beholde de eksisterende .actionsRow, .threadBtn, .actionBtn klasser
+   — de bruges ikke længere men gør ingen skade.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* SVG-ikon i hamburger-menu (Heroicons) */
+.hamburgerItemSvg {
+  width: 15px;
+  height: 15px;
+  color: rgba(27, 30, 28, 0.55);
+  flex-shrink: 0;
+  stroke-width: 1.75;
+}
+
+/* Gør header en smule mere kompakt uden actionsRow */
+.header {
+  padding: 12px 14px 8px 14px;
+}
