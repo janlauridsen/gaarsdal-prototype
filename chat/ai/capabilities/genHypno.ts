@@ -3,7 +3,7 @@ import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from
 import { normalizeFinalResponse } from "../contracts/responseContract"
 import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
 import { analyzeTurn } from "../orchestration/analyzeTurn"
-import { applyPolicy, detectClosingText, detectContinuationIntent, detectDirectContactRequest, detectPracticalKeywords } from "../orchestration/applyPolicy"
+import { applyPolicy, detectClosingText, detectContinuationIntent, detectDirectContactRequest, detectPracticalKeywords, computeRollingArousal } from "../orchestration/applyPolicy"
 import { assembleResponseMessages } from "../orchestration/assemblePrompt"
 
 type TranscriptTurn = { role: "user" | "assistant"; content: string }
@@ -275,6 +275,8 @@ function buildMetaDelta(params: {
   mode: PromptMode
   objective?: string
   relationalState: RelationalState
+  arousalScore?: number
+  arousalLevel?: import("../orchestration/applyPolicy").ArousalLevel
 }): Record<string, unknown> {
   const previousTranscript = readTranscriptByKey(params.context, params.transcriptKey)
   const prevAssistantCount = countAssistantTurns(previousTranscript)
@@ -313,6 +315,8 @@ function buildMetaDelta(params: {
   if (derivedProblemTitle) meta["gen_hypno.problem_title"] = derivedProblemTitle
   if (derivedProblemSummary) meta["gen_hypno.problem_summary"] = derivedProblemSummary
   if (derivedTopicTags.length) meta["gen_hypno.topic_tags"] = derivedTopicTags
+  if (typeof params.arousalScore === "number") meta["wot.arousal_score"] = params.arousalScore
+  if (params.arousalLevel) meta["wot.arousal_level"] = params.arousalLevel
 
   return meta
 }
@@ -475,8 +479,14 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  const policy = applyPolicy({ userText, analysis, transcript: trimmedTranscript })
+  // ── Window of Tolerance ────────────────────────────────────────────────────
+  const previousArousalScore =
+    typeof (context.state.meta?.["wot.arousal_score"] as any)?.value === "number"
+      ? (context.state.meta["wot.arousal_score"] as any).value as number
+      : 0
+  const arousal = computeRollingArousal(trimmedTranscript, userText, previousArousalScore)
 
+  const policy = applyPolicy({ userText, analysis, transcript: trimmedTranscript, arousalLevel: arousal.level })
   let assistant = ""
   let responseTopic = analysis.topic
   let responseObjective = analysis.objective
@@ -550,6 +560,8 @@ export async function runUnifiedHypnoCapability(
           sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
           analysis, mode: modeUsed, objective: responseObjective,
           relationalState: analysis.relational_state,
+          arousalScore: arousal.score,
+          arousalLevel: arousal.level,
         }),
         ...ctaMeta,
       },
