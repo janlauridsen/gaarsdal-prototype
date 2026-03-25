@@ -4,6 +4,7 @@ import { normalizeFinalResponse } from "../contracts/responseContract"
 import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
 import { analyzeTurn } from "../orchestration/analyzeTurn"
 import { applyPolicy, detectClosingText, detectContinuationIntent, detectDirectContactRequest, detectPracticalKeywords, computeRollingArousal } from "../orchestration/applyPolicy"
+import { detectClientSignals } from "./clientDetection"
 import { assembleResponseMessages } from "../orchestration/assemblePrompt"
 
 type TranscriptTurn = { role: "user" | "assistant"; content: string }
@@ -355,25 +356,69 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
+  // ─── Klientgenkendelse ──────────────────────────────────────────────────────
+  // Detektér implicitte signaler fra eksisterende klienter og rout til
+  // CLIENT_SUPPORT — uden at brugeren skal navigere manuelt.
+  // Kun aktiv fra GEN_HYPNO (stayOnNode === "GEN_HYPNO").
+  if (options.stayOnNode === "GEN_HYPNO") {
+    const clientResult = detectClientSignals(userText, transcript)
+    if (clientResult.isClient) {
+      const assistant = "Hej igen. Hvad er der på hjerte siden sidst — eller er der noget fra sessionen du vil tale nærmere om?"
+      const updatedTranscript = appendTranscript(transcript, userText, assistant)
+      return {
+        transition: {
+          type: "NODE_HOP",
+          from: context.state.active_node,
+          to: "CLIENT_SUPPORT",
+          reason: `gen-hypno:client-detected (confidence:${clientResult.confidence}, signals:${clientResult.signals.join(",")})`,
+          response_message: assistant,
+          meta_delta: buildMetaDelta({
+            context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
+            sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
+            analysis: buildDefaultAnalysis(userText, previousTopic, "info"),
+            mode: "info", relationalState: "building_trust",
+          }),
+        },
+        debug: { capability: "unified-hypno-v4", used_fallback: false },
+      }
+    }
+  }
+
   // ─── Intent routing: booking ────────────────────────────────────────────────
   // Detect explicit booking/contact intent and route directly to HANDOFF_FORM.
   // This fires from within GEN_HYPNO so users don't have to navigate to HOME first.
+  //
+  // VIGTIGT: Vi bruger negative frasercheck inden keyword-match.
+  // "inden jeg booker", "før jeg booker", "ikke klar til at booke" etc. skal
+  // IKKE routes til booking — brugeren er i info-stadiet.
   const bookingKeywords = [
-    "book", "booke", "booking", "bestil", "bestille",
-    "kontakt jan", "kontakt mig", "ring til mig",
     "vil gerne booke", "vil gerne bestille", "vil gerne have en tid",
-    "lave en aftale", "aftale en tid", "have tid", "ledige tider",
+    "lave en aftale", "aftale en tid", "ledige tider",
     "møde med jan", "tale med jan", "ringe til jan",
+    "kontakt jan", "kontakt mig", "ring til mig",
+    "bestil", "bestille",
+    "booking",
   ]
+
+  // Negerende kontekst — brugeren nævner booking MEN er ikke klar
+  const bookingNegationPhrases = [
+    "inden jeg booker", "før jeg booker", "inden jeg bestiller",
+    "ikke klar til at booke", "ikke klar til booking",
+    "forstå mere inden", "vide mere inden", "tænke over det",
+    "ikke nu", "måske senere", "overveje det",
+    "ikke klar endnu", "mere information først",
+  ]
+
+  const normalizedUser = userText.toLowerCase().trim()
+  const hasBookingNegation = bookingNegationPhrases.some((p) => normalizedUser.includes(p))
+  const isBookingIntent = !hasBookingNegation && bookingKeywords.some((k) => normalizedUser.includes(k))
+
   const fitCheckKeywords = [
     "er jeg den rigtige", "passer det til mig", "er det for mig",
     "virker det for mig", "kan det hjælpe mig", "usikker på om",
     "ved ikke om hypnoterapi", "er jeg kandidat", "egnet til",
     "rigtig til hypno", "rigtige til hypno",
   ]
-
-  const normalizedUser = userText.toLowerCase().trim()
-  const isBookingIntent = bookingKeywords.some((k) => normalizedUser.includes(k))
   const isFitCheckIntent = fitCheckKeywords.some((k) => normalizedUser.includes(k))
 
   if (isBookingIntent && options.stayOnNode === "GEN_HYPNO") {
@@ -511,7 +556,11 @@ export async function runUnifiedHypnoCapability(
       const parsed = normalizeFinalResponse(raw)
       if (parsed?.assistant_message) {
         assistant = parsed.assistant_message
-        responseTopic = parsed.topic ?? responseTopic
+        // Filtrer parsed.topic fra hvis LLM returnerede en investigation_focus-værdi
+        // som topic (fx "regulation", "attention", "pattern") — brug i stedet userText-detektion
+        const INVESTIGATION_FOCUS_VALUES = ["attention", "interpretation", "regulation", "pattern", "preparation", "none"]
+        const parsedTopicIsValid = parsed.topic && !INVESTIGATION_FOCUS_VALUES.includes(parsed.topic.toLowerCase())
+        responseTopic = parsedTopicIsValid ? parsed.topic : responseTopic
         responseObjective = parsed.objective ?? responseObjective
         modeUsed = parsed.mode_used
       }
@@ -520,7 +569,7 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  const topic = responseTopic || extractTopic(userText, previousTopic)
+  const topic = extractTopic(userText) || responseTopic || extractTopic("", previousTopic)
 
   if (!assistant) {
     assistant = buildFallbackMessage(modeUsed, transcript, topic)
@@ -541,7 +590,7 @@ export async function runUnifiedHypnoCapability(
     !detectClosingText(userText) || detectContinuationIntent(userText)
 
   if (ctaConditionsMet) {
-    assistant = assistant + "\n\nVil du høre mere om hvad et forløb med Jan ville indebære — eller tage kontakt direkte?"
+    assistant = assistant + "\n\nHvis du vil vide mere om hvad et konkret forløb indebærer, er du velkommen til at skrive det — eller tage kontakt til Jan direkte."
   }
 
   const updatedTranscript = appendTranscript(transcript, userText, assistant)
