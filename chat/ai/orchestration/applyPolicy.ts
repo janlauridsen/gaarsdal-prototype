@@ -1,5 +1,7 @@
 import { PromptMode, TurnAnalysis } from "../contracts/turnAnalysis"
 
+export type ArousalLevel = "low" | "elevated" | "high"
+
 export type PolicyDecision = {
   allow_mode: PromptMode
   allow_question: boolean
@@ -7,6 +9,7 @@ export type PolicyDecision = {
   response_length: "short" | "medium"
   require_redirect?: "contact" | "none"
   preferred_style?: PreferredResponseStyle
+  arousal_level: ArousalLevel
 }
 
 export type PreferredResponseStyle = "default" | "compressed" | "challenging"
@@ -64,6 +67,85 @@ function detectDifficultyWithSelfImplication(text: string): boolean {
     "har svært ved", "kan ikke", "kommer ikke i gang", "holde ved", "falder tilbage",
     "går i stå", "utryg", "urolig", "tung", "træt", "modstand", "barriere", "frustreret",
   ].some((x) => t.includes(x))
+}
+
+// ─── Window of Tolerance arousal detection ───────────────────────────────────
+// Teori: Siegel / Ogden — Somatic/Polyvagal
+// Scorer sproglige markører for arousal-niveau pr. turn.
+
+export function scoreArousalTurn(text: string): number {
+  const t = text.trim()
+  if (!t) return 0
+
+  let score = 0
+  const words = t.split(/\s+/)
+  const wordCount = words.length
+
+  // Hyperarousal: katastrofesprog
+  const catastrophe = ["aldrig", "altid", "umuligt", "håbløst", "haabloest", "ingenting", "ødelægger", "oedelaegger", "komplet fiasko"]
+  if (catastrophe.some((x) => normalize(t).includes(x))) score += 0.25
+
+  // Hyperarousal: intensitetsord
+  const intensity = ["virkelig", "ekstremt", "så meget", "saa meget", "utroligt", "sindssygt", "fuldstændig", "fuldstaendig", "ufatteligt"]
+  if (intensity.some((x) => normalize(t).includes(x))) score += 0.15
+
+  // Hyperarousal: temporal pres
+  const urgency = ["jeg kan ikke mere", "det er for meget", "jeg holder ikke ud", "jeg bryder sammen"]
+  if (urgency.some((x) => normalize(t).includes(x))) score += 0.25
+
+  // Hyperarousal: udråbstegn (> 1)
+  const exclamations = (t.match(/!/g) ?? []).length
+  if (exclamations >= 2) score += 0.15
+  else if (exclamations === 1) score += 0.05
+
+  // Hyperarousal: fragmenteret (lav gennemsnitlig ordlængde)
+  if (wordCount >= 3) {
+    const avgWordLen = t.replace(/\s+/g, "").length / wordCount
+    if (avgWordLen < 3.5) score += 0.10
+  }
+
+  // Hypoarousal: meget kort svar (konservativt = samme bremse)
+  if (wordCount <= 3) score += 0.20
+
+  // Hypoarousal: passivt/lukkende sprog
+  const normalized = normalize(t)
+  const passive = ["ligemeget", "ved ikke", "måske", "maaske", "det er fint", "uanset"]
+  const passiveMatches = passive.filter((x) => normalized === x || normalized.startsWith(x + " ") || normalized.endsWith(" " + x)).length
+  if (passiveMatches >= 2) score += 0.25
+  else if (passiveMatches === 1 && wordCount <= 5) score += 0.15
+
+  // Hypoarousal: fravær af verber i sætning med 4+ ord
+  const hasVerb = ["er", "har", "kan", "vil", "gør", "tænker", "føler", "prøver", "ved", "sker"].some((v) => normalized.split(/\s+/).includes(v))
+  if (!hasVerb && wordCount >= 4) score += 0.10
+
+  return Math.min(1, score)
+}
+
+/**
+ * Beregner rolling arousal-level fra seneste bruger-turns.
+ * Nyeste turn vægter 0.6, næstnyeste 0.3, den før 0.1.
+ * previousScore (fra meta) bidrager med 20% inertia mod pludselige skift.
+ */
+export function computeRollingArousal(
+  transcript: TranscriptTurn[],
+  currentUserText: string,
+  previousScore = 0
+): { level: ArousalLevel; score: number } {
+  const userTurns = transcript.filter((t) => t.role === "user").slice(-2)
+
+  const s0 = userTurns[0] ? scoreArousalTurn(userTurns[0].content) : 0
+  const s1 = userTurns[1] ? scoreArousalTurn(userTurns[1].content) : 0
+  const s2 = scoreArousalTurn(currentUserText)
+
+  const weighted = s0 * 0.1 + s1 * 0.3 + s2 * 0.6
+  const blended = previousScore * 0.2 + weighted * 0.8
+
+  const level: ArousalLevel =
+    blended >= 0.55 ? "high" :
+    blended >= 0.30 ? "elevated" :
+    "low"
+
+  return { level, score: Math.round(blended * 1000) / 1000 }
 }
 
 function detectReflectionRequest(text: string): boolean {
@@ -204,8 +286,10 @@ export function applyPolicy(params: {
   userText: string
   analysis: TurnAnalysis
   transcript: TranscriptTurn[]
+  arousalLevel?: ArousalLevel
 }): PolicyDecision {
   const { userText, analysis, transcript } = params
+  const arousalLevel: ArousalLevel = params.arousalLevel ?? "low"
   const lastEndedWithQuestion = previousAssistantEndedWithQuestion(transcript)
   const recentQuestion = hadRecentAssistantQuestion(transcript)
   const chosenMode = chooseMode(params)
@@ -213,8 +297,23 @@ export function applyPolicy(params: {
   const directContact = detectDirectContactRequest(userText)
   const practicalStep = detectPracticalNextStep(userText)
 
+  // ── Window of Tolerance override ──────────────────────────────────────────
+  // Hvis arousal er høj: sæt farten ned uanset mode.
+  // Ingen spørgsmål, kort svar, bevar valgt mode (vi skifter ikke til et andet emne).
+  if (arousalLevel === "high") {
+    return {
+      allow_mode: chosenMode === "closing" ? "closing" : chosenMode,
+      allow_question: false,
+      max_questions: 0,
+      response_length: "short",
+      require_redirect: directContact ? "contact" : "none",
+      preferred_style: "default",
+      arousal_level: "high",
+    }
+  }
+
   if ((detectClosingText(userText) || chosenMode === "closing") && !detectContinuationIntent(userText)) {
-    return { allow_mode: "closing", allow_question: false, max_questions: 0, response_length: "short", require_redirect: "none", preferred_style: "default" }
+    return { allow_mode: "closing", allow_question: false, max_questions: 0, response_length: "short", require_redirect: "none", preferred_style: "default", arousal_level: arousalLevel }
   }
 
   if (chosenMode === "practical") {
@@ -225,11 +324,12 @@ export function applyPolicy(params: {
       response_length: analysis.relational_state === "decision_support" || practicalStep ? "medium" : "short",
       require_redirect: directContact ? "contact" : "none",
       preferred_style: "default",
+      arousal_level: arousalLevel,
     }
   }
 
   if (chosenMode === "evidence") {
-    return { allow_mode: "evidence", allow_question: false, max_questions: 0, response_length: "medium", require_redirect: "none", preferred_style: "default" }
+    return { allow_mode: "evidence", allow_question: false, max_questions: 0, response_length: "medium", require_redirect: "none", preferred_style: "default", arousal_level: arousalLevel }
   }
 
   if (chosenMode === "reflection") {
@@ -245,6 +345,7 @@ export function applyPolicy(params: {
       response_length: "medium",
       require_redirect: "none",
       preferred_style: preferredStyle,
+      arousal_level: arousalLevel,
     }
   }
 
@@ -257,5 +358,6 @@ export function applyPolicy(params: {
     response_length: analysis.response_goal === "close_briefly" ? "short" : "medium",
     require_redirect: "none",
     preferred_style: "default",
+    arousal_level: arousalLevel,
   }
 }
