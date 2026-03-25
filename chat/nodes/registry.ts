@@ -57,7 +57,8 @@ export const nodeRegistry: Record<string, Node> = {
       "focused_reflection.user_opt_in",
       "focused_reflection.stage",
       "focused_reflection.transcript",
-      "wot",
+      "wot.arousal_score",
+      "wot.arousal_level",
     ],
   },
 
