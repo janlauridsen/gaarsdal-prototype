@@ -587,7 +587,8 @@ export async function runUnifiedHypnoCapability(
     !!topic &&
     modeUsed !== "closing" &&
     modeUsed !== "practical" &&
-    !detectClosingText(userText) || detectContinuationIntent(userText)
+    !detectClosingText(userText) &&
+    !detectContinuationIntent(userText)
 
   if (ctaConditionsMet) {
     assistant = assistant + "\n\nHvis du vil vide mere om hvad et konkret forløb indebærer, er du velkommen til at skrive det — eller tage kontakt til Jan direkte."
