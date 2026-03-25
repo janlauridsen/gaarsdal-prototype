@@ -129,6 +129,14 @@ ${policy.require_redirect === "contact" ? "VIGTIGT: Brug direkte kontaktoplysnin
   variationLines.push(`- VIGTIGT: Undgå at starte acknowledgement med "Du spørger", "Du beskriver", "Du ønsker", "Du nævner" eller "Du fortæller". Varier åbningen — brug f.eks. en direkte observation, et spørgsmål tilbage, eller start direkte på core_answer med acknowledgement = null.`)
   blocks.push(variationLines.join("\n"))
 
+  // === WINDOW OF TOLERANCE ===
+  if (params.policy.arousal_level === "high" || params.policy.arousal_level === "elevated") {
+    const groundingBlock = params.policy.arousal_level === "high"
+      ? `TEMPO: Det lyder som om der er meget på én gang. Svar kort og roligt — ét punkt, ikke tre. Ingen ny analyse. Ingen spørgsmål. Lad brugeren lande.\nUndgå: lange sætninger · opstillede pointer · nye vinkler · fremadrettede råd.`
+      : `TEMPO: Brugeren er i bevægelse — hold svaret enkelt og konkret. Undgå at åbne nye spor.`
+    blocks.push(groundingBlock)
+  }
+
   // === BOOKING NUDGE ===
   const isInfoAboutMethod = mode === "info" && (
     analysis.intent === "understand_method" ||
