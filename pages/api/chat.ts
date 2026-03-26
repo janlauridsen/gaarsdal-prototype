@@ -1,6 +1,10 @@
 // pages/api/chat.ts
 import type { NextApiRequest, NextApiResponse } from "next"
-import { waitUntil } from "@vercel/functions"
+// waitUntil: keeps the serverless function alive until the promise settles.
+// Falls back to a no-op outside Vercel (local dev) so behaviour is identical.
+const waitUntil: (p: Promise<unknown>) => void =
+  (globalThis as any)[Symbol.for("vercel.waitUntil")] ??
+  ((p: Promise<unknown>) => { p.catch(() => {}) })
 
 import { runNode } from "../../chat/runtime/nodeRunner"
 import { createInitialState, createLobbyState } from "../../chat/kernel/state"
