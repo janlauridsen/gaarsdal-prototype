@@ -18,6 +18,7 @@ import { getOrCreateThreadThemeAndEpisode } from "../../chat/memory/longTermMemo
 
 import { handleThreadCreate, handleThreadSwitch, handleThreadArchive } from "../../chat/threads/threadHandler"
 import { runPostTurn, maybeTriggerScanThreadsJob } from "../../chat/kernel/postTurn"
+import { processQueueBatch } from "../../chat/async/worker"
 
 import { setWidgetCors } from "./_utils/cors"
 import { ensureUserKey } from "./_utils/auth"
@@ -199,6 +200,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       userText, assistantText, metaKeysWritten,
       terminalStatus: kernelResultFinal.state.status,
     })))
+
+    // Drain up to 3 async jobs (SUMMARIZE_EPISODE, SUGGEST_FACTS) opportunistically
+    // after each turn. Fire-and-forget — errors don't affect the user.
+    waitUntil(processQueueBatch(3).catch(() => {}))
 
   } catch (e: any) {
     await emitCanonicalEvent({
