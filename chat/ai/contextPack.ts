@@ -172,6 +172,12 @@ export async function buildContextPackV23(params: {
     limit: 200,
   })
 
+  const suggestedFacts = await readFacts({
+    userKey: params.userKey,
+    status: "suggested",
+    limit: 100,
+  })
+
   const currentConversationId = params.state.conversation_id
 
   const approvedThreadAssetLines = buildApprovedThreadAssetLines({
@@ -204,6 +210,19 @@ export async function buildContextPackV23(params: {
     })
     .filter(Boolean) as string[]
 
+  // Suggested facts: only show keys not already covered by canonical, max 6, sorted by confidence
+  const canonicalKeys = new Set(canonicalFacts.map((f) => f.key))
+  const suggestedLines = suggestedFacts
+    .filter((f) => !canonicalKeys.has(f.key) && !isCanonicalThreadAsset(f))
+    .sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))
+    .slice(0, 6)
+    .map((f) => {
+      const v = safeValue(f.value)
+      if (!v) return null
+      return `- ${f.key}: ${v} (ubekræftet)`
+    })
+    .filter(Boolean) as string[]
+
   const summary = episode.summary_short ? clamp(episode.summary_short, 520) : ""
   const openLoops = Array.isArray(episode.open_loops) ? episode.open_loops.slice(0, 5) : []
 
@@ -233,6 +252,12 @@ export async function buildContextPackV23(params: {
     parts.push("")
     parts.push("Kendte facts (canonical, redigerbare af bruger):")
     parts.push(...factLines)
+  }
+
+  if (suggestedLines.length) {
+    parts.push("")
+    parts.push("Mulige facts (ikke bekræftet — brug lavmælt):")
+    parts.push(...suggestedLines)
   }
 
   // Guardrail: keep this compact; if empty, return empty string.
