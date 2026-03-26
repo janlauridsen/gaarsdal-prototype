@@ -1,5 +1,6 @@
 // pages/api/chat.ts
 import type { NextApiRequest, NextApiResponse } from "next"
+import { waitUntil } from "@vercel/functions"
 
 import { runNode } from "../../chat/runtime/nodeRunner"
 import { createInitialState, createLobbyState } from "../../chat/kernel/state"
@@ -188,12 +189,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const assistantText = String(kernelResultFinal.transition.response_message ?? kernelResultFinal.state.active_node_message ?? "")
     const metaKeysWritten = kernelResultFinal.transition.meta_delta ? Object.keys(kernelResultFinal.transition.meta_delta) : []
 
-    runPostTurn({
+    waitUntil(runPostTurn({
       userKey, input: input as InputSignal, kernelResult: kernelResultFinal, binding,
       includeText: envBool("GAARSDAL_EVENTS_INCLUDE_TEXT"),
       userText, assistantText, metaKeysWritten,
       terminalStatus: kernelResultFinal.state.status,
-    })
+    }))
 
   } catch (e: any) {
     await emitCanonicalEvent({
