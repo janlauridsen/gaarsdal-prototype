@@ -166,17 +166,10 @@ export async function buildContextPackV23(params: {
   const theme = (await readTheme({ userKey: params.userKey, themeId })) ?? ensured.theme
   const episode = (await readEpisode({ userKey: params.userKey, episodeId })) ?? ensured.episode
 
-  const canonicalFacts = await readFacts({
-    userKey: params.userKey,
-    status: "canonical",
-    limit: 200,
-  })
-
-  const suggestedFacts = await readFacts({
-    userKey: params.userKey,
-    status: "suggested",
-    limit: 100,
-  })
+  const [canonicalFacts, suggestedFacts] = await Promise.all([
+    readFacts({ userKey: params.userKey, status: "canonical", limit: 200 }),
+    readFacts({ userKey: params.userKey, status: "suggested", limit: 100 }),
+  ])
 
   const currentConversationId = params.state.conversation_id
 
