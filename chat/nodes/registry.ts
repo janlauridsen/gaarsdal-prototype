@@ -96,7 +96,7 @@ export const nodeRegistry: Record<string, Node> = {
       allow_partial: false,
       on_submit_to: "HANDOFF_NOTIFY",
     },
-    allowed_exits: ["HANDOFF_NOTIFY", "LEAD_CAPTURE", "GEN_HYPNO"],
+    allowed_exits: ["HANDOFF_FORM", "HANDOFF_NOTIFY", "LEAD_CAPTURE", "GEN_HYPNO"],
     meta_domains_written: ["ux", "form.last", "gen_hypno.transcript", "gen_hypno.assistant_turn_count", "dialog.mode", "dialog.move", "dialog.investigation_focus", "dialog.stage", "dialog.relational_state", "gen_hypno.analysis"],
   },
 
@@ -146,7 +146,7 @@ export const nodeRegistry: Record<string, Node> = {
       allow_partial: false,
       on_submit_to: "LEAD_SAVE",
     },
-    allowed_exits: ["LEAD_SAVE"],
+    allowed_exits: ["LEAD_CAPTURE", "LEAD_SAVE"],
     meta_domains_written: ["ux", "form.last"],
   },
 
