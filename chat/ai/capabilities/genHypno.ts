@@ -158,7 +158,14 @@ function inferProblemTitle(topic: string | undefined, text: string): string | un
     "alkohol og vaner": "vane omkring alkohol",
     "metakognitive mønstre": "metakognitive mønstre",
   }
-  return titleMap[topic] ?? (text.length <= 80 ? normalize(text) : topic)
+  if (titleMap[topic]) return titleMap[topic]
+
+  // Brug ikke rå brugerinput som titel hvis det er et generisk spørgsmål
+  // (kort tekst med spørgsmålstegn) — brug topic i stedet
+  const isGenericQuestion = text.includes("?") && text.length <= 60
+  if (isGenericQuestion) return topic
+
+  return text.length <= 80 ? normalize(text) : topic
 }
 
 function inferProblemSummary(topic: string | undefined): string | undefined {
@@ -569,7 +576,16 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  const topic = extractTopic(userText) || responseTopic || extractTopic("", previousTopic)
+  // Topic-prioritering:
+  // 1. extractTopic på brugerens tekst (deterministisk dansk keyword-match)
+  // 2. responseTopic fra LLM's response-kontrakt (topic-feltet)
+  // 3. analysis.topic fra analyzeTurn (rå LLM-klassificering)
+  // 4. previousTopic fra meta (forrige turn — kun som absolut fallback)
+  // Undgå at previousTopic forurener en ny emne-spor.
+  const rawAnalysisTopic = analysis.topic && !["regulation", "attention", "pattern", "preparation", "interpretation", "none"].includes(analysis.topic.toLowerCase())
+    ? analysis.topic
+    : undefined
+  const topic = extractTopic(userText) || responseTopic || rawAnalysisTopic || extractTopic("", previousTopic)
 
   if (!assistant) {
     assistant = buildFallbackMessage(modeUsed, transcript, topic)
