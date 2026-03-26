@@ -27,6 +27,18 @@ function norm(s: string): string {
 }
 
 /**
+ * Reads the most recent conversation topic from state meta.
+ * Tries gen_hypno.last_topic first, then dialog.topic.
+ */
+function readLastTopic(state: ConversationState): string | null {
+  const fromGenHypno = (state.meta as any)?.["gen_hypno.last_topic"]?.value
+  if (typeof fromGenHypno === "string" && fromGenHypno.trim()) return fromGenHypno.trim()
+  const fromDialog = (state.meta as any)?.["dialog.topic"]?.value
+  if (typeof fromDialog === "string" && fromDialog.trim()) return fromDialog.trim()
+  return null
+}
+
+/**
  * Returns true if the user's free text in a FORM node looks like they want
  * to escape back to dialogue rather than fill in the form.
  * Heuristic: no key:value pairs found AND text reads as a natural sentence.
@@ -235,12 +247,17 @@ export async function runNode(params: NodeRunParams): Promise<KernelResult> {
     // Escape hatch: detect dialogue/cancel intent before attempting form parsing.
     // If the user clearly wants to go back to dialogue, route to GEN_HYPNO.
     if (looksLikeFormEscapeIntent(input.text) && node.allowed_exits.includes("GEN_HYPNO")) {
+      const lastTopic = readLastTopic(state)
+      const response_message = lastTopic
+        ? `Selvfølgelig — vi kan sagtens fortsætte. Vi var ved at tale om ${lastTopic}. Vil du fortsætte der, eller er der noget andet på hjerte?`
+        : "Selvfølgelig — hvad vil du gerne tale om?"
+
       const transition: Transition = {
         type: "NODE_HOP",
         from: state.active_node,
         to: "GEN_HYPNO",
         reason: "form escape: user wants to continue dialogue",
-        response_message: "Selvfølgelig — hvad vil du gerne tale om?",
+        response_message,
       }
       return runKernel(state, {
         type: "FREE_TEXT_RESOLVED",
