@@ -193,16 +193,16 @@ async function llmSelectThreads(params: {
 
   const candidateText = params.candidates
     .map((c) => {
-      const s = c.summary_short ? safeLines(c.summary_short, 8) : "(no summary yet)"
-      const p = c.preview ? safeLines(c.preview, 3) : "(no preview yet)"
+      const s = c.summary_short ? safeLines(c.summary_short, 8) : "(ingen opsummering endnu)"
+      const p = c.preview ? safeLines(c.preview, 3) : "(ingen forhåndsvisning)"
       const score = typeof c.lexical_score === "number" ? c.lexical_score : 0
       return `- conversation_id: ${c.conversation_id}\n  title: ${safeLines(c.title, 2)}\n  updated_at: ${c.updated_at}\n  lexical_score: ${score}\n  preview: ${p}\n  summary_short: ${s}`
     })
     .join("\n")
 
   const system =
-    "You are selecting which previous conversation threads are relevant to a user's current problem. " +
-    "Return strict JSON with key 'selected' as an array of conversation_id strings."
+    "Du vælger hvilke tidligere samtaler der er relevante for brugerens aktuelle problem. " +
+    "Returner strengt JSON med nøglen 'selected' som et array af conversation_id strenge."
 
   const user =
     `Problem:\n` +
@@ -211,8 +211,8 @@ async function llmSelectThreads(params: {
     `tags: ${(problem.topic_tags ?? []).join(", ")}\n` +
     `time_scope: ${problem.time_scope ?? ""}\n` +
     `intent: ${problem.search_intent ?? ""}\n\n` +
-    `Candidates:\n${candidateText}\n\n` +
-    `Select up to ${params.maxPick} conversation_id values from PREVIOUS conversations only. Exclude the active conversation and prefer threads that reduce repeated questions.`
+    `Kandidater:\n${candidateText}\n\n` +
+    `Vælg op til ${params.maxPick} conversation_id værdier fra TIDLIGERE samtaler. Undgå den aktive samtale, og foretræk tråde der reducerer gentagne spørgsmål.`
 
   const json = await llm.chatJson({
     model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
@@ -242,18 +242,19 @@ async function llmBuildDraft(params: {
     .join("\n\n")
 
   const system =
-    "You are producing a reuse summary from past conversation threads. " +
-    "Return strict JSON with keys: summary_draft (string), open_questions (array of strings), evidence (array). " +
-    "Each evidence item must include conversation_id and may include revision_from and revision_to."
+    "Du producerer en genbrug-opsummering fra tidligere samtaler til Gaarsdal Hypnoterapi's chatbot. " +
+    "Returner strengt JSON med nøglerne: summary_draft (string), open_questions (array af strings), evidence (array). " +
+    "Hvert evidence-element skal indeholde conversation_id og må indeholde revision_from og revision_to. " +
+    "Skriv summary_draft og open_questions på dansk."
 
   const user =
-    `Current problem:\n` +
+    `Aktuelt problem:\n` +
     `title: ${problem.problem_title}\n` +
     `description: ${problem.problem_description}\n\n` +
-    `Past excerpts:\n${context}\n\n` +
-    "Write a concise draft summary of reusable relevant information. " +
-    "Add open questions for the user to confirm/correct. " +
-    "Do NOT assume facts not supported by the excerpts."
+    `Uddrag fra tidligere samtaler:\n${context}\n\n` +
+    "Skriv en kort opsummering af relevant information der kan genbruges. " +
+    "Tilføj åbne spørgsmål som brugeren kan bekræfte eller korrigere. " +
+    "Antag IKKE facts der ikke fremgår tydeligt af uddragene."
 
   const json = await llm.chatJson({
     model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
