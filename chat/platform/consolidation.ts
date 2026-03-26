@@ -46,13 +46,24 @@ export function consolidateV1(params: {
   profile.last_seen_at = ts
   profile.last_node = state.active_node
 
-  // Core preferences are updated elsewhere (EWMA) in recordTurn.
-  // Promote triage tags/goals into core semantic hints.
+  // Promote triage tags/goals into core semantic hints with score-based decay.
+  // We reuse topic_scores as the source of truth and derive the sorted topic list from it.
   const tags = ensureArrayStrings(state?.meta?.["triage.topic_tags"]?.value)
   if (tags.length) {
-    const existing = new Set(profile.core.semantic.topics)
-    for (const t of tags) existing.add(t)
-    profile.core.semantic.topics = Array.from(existing).slice(0, 50)
+    // Decay all existing scores slightly
+    for (const key of Object.keys(profile.topic_scores)) {
+      profile.topic_scores[key] = (profile.topic_scores[key] ?? 0) * 0.92
+      if (profile.topic_scores[key] < 0.05) delete profile.topic_scores[key]
+    }
+    // Bump new tags
+    for (const t of tags) {
+      profile.topic_scores[t] = Math.min((profile.topic_scores[t] ?? 0) + 0.2, 3.0)
+    }
+    // Rebuild core.semantic.topics from scores (highest score first, max 20)
+    profile.core.semantic.topics = Object.entries(profile.topic_scores)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20)
+      .map(([k]) => k)
     updated = true
   }
 
