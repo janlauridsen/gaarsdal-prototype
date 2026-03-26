@@ -40,6 +40,22 @@ export type RelationalState =
   | "decision_support"
   | "gentle_close"
 
+/**
+ * Eksplicit routing-beslutning fra LLM — erstatter keyword-baseret pre-routing.
+ *
+ * contact_booking: brugeren vil booke eller kontakte Jan direkte (→ HANDOFF_FORM)
+ * lead_capture:    brugeren er interesseret men ikke klar endnu (→ LEAD_CAPTURE)
+ * fit_check:       brugeren vil vide om hypnoterapi passer til dem (→ PREQUALIFY)
+ * none:            ingen special routing — fortsæt i GEN_HYPNO
+ *
+ * LLM'en vurderer intent i kontekst og kan skelne "inden jeg booker" fra "jeg vil booke".
+ */
+export type RoutingIntent =
+  | "contact_booking"
+  | "lead_capture"
+  | "fit_check"
+  | "none"
+
 export type TurnAnalysis = {
   intent: TurnIntent
   proposed_mode: PromptMode
@@ -47,6 +63,7 @@ export type TurnAnalysis = {
   investigation_focus: InvestigationFocus
   response_goal: ResponseGoal
   relational_state: RelationalState
+  routing_intent: RoutingIntent
   topic?: string
   objective?: string
   sensitivity: "low" | "medium" | "high"
@@ -71,6 +88,8 @@ export function normalizeTurnAnalysis(raw: Record<string, unknown> | null): Turn
     : []
   const confidenceRaw = typeof raw.confidence === "number" ? raw.confidence : Number(raw.confidence)
   const confidence = Number.isFinite(confidenceRaw) ? Math.max(0, Math.min(1, confidenceRaw)) : 0.5
+  // routing_intent: default "none" hvis ikke leveret — bagudkompatibelt
+  const routing_intent = typeof raw.routing_intent === "string" ? raw.routing_intent : "none"
 
   const validMode = ["info", "evidence", "practical", "reflection", "closing"].includes(proposed_mode)
   const validMove = [
@@ -107,6 +126,7 @@ export function normalizeTurnAnalysis(raw: Record<string, unknown> | null): Turn
     "gentle_close",
   ].includes(relational_state)
   const validSensitivity = ["low", "medium", "high"].includes(sensitivity)
+  const validRoutingIntent = ["contact_booking", "lead_capture", "fit_check", "none"].includes(routing_intent)
 
   if (!validMode || !validMove || !validFocus || !validIntent || !validGoal || !validRelationalState || !validSensitivity) return null
 
@@ -117,6 +137,7 @@ export function normalizeTurnAnalysis(raw: Record<string, unknown> | null): Turn
     investigation_focus: investigation_focus as InvestigationFocus,
     response_goal: response_goal as ResponseGoal,
     relational_state: relational_state as RelationalState,
+    routing_intent: (validRoutingIntent ? routing_intent : "none") as RoutingIntent,
     topic,
     objective,
     sensitivity: sensitivity as "low" | "medium" | "high",
