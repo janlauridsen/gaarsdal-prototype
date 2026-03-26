@@ -59,11 +59,17 @@ export function consolidateV1(params: {
     for (const t of tags) {
       profile.topic_scores[t] = Math.min((profile.topic_scores[t] ?? 0) + 0.2, 3.0)
     }
-    // Rebuild core.semantic.topics from scores (highest score first, max 20)
-    profile.core.semantic.topics = Object.entries(profile.topic_scores)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 20)
-      .map(([k]) => k)
+    updated = true
+  }
+
+  // Always rebuild core.semantic.topics from topic_scores (highest score first, max 20)
+  // This ensures topics stay in sync even when scores are updated elsewhere (e.g. recordTurn)
+  const rebuiltTopics = Object.entries(profile.topic_scores)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 20)
+    .map(([k]) => k)
+  if (JSON.stringify(rebuiltTopics) !== JSON.stringify(profile.core.semantic.topics)) {
+    profile.core.semantic.topics = rebuiltTopics
     updated = true
   }
 
