@@ -189,7 +189,7 @@ function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMo
     return {
       intent: "social_closing", proposed_mode: "closing", conversation_move: "close",
       investigation_focus: "none", response_goal: "close_briefly", relational_state: "gentle_close",
-      topic: previousTopic, sensitivity: "low", signals: ["soft_closing"], confidence: 0.98,
+      routing_intent: "none", topic: previousTopic, sensitivity: "low", signals: ["soft_closing"], confidence: 0.98,
     }
   }
 
@@ -201,7 +201,7 @@ function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMo
       investigation_focus: forcedMode === "reflection" ? "attention" : forcedMode === "practical" ? "preparation" : "none",
       response_goal: forcedMode === "reflection" ? "answer_then_one_question" : "answer_directly",
       relational_state: forcedMode === "reflection" ? "building_trust" : forcedMode === "practical" ? "decision_support" : "building_clarity",
-      topic: previousTopic, sensitivity: "medium", signals: ["forced_mode"], confidence: 0.95,
+      routing_intent: "none", topic: previousTopic, sensitivity: "medium", signals: ["forced_mode"], confidence: 0.95,
     }
   }
 
@@ -209,7 +209,7 @@ function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMo
     return {
       intent: "seek_practical_help", proposed_mode: "practical", conversation_move: "practical_preparation",
       investigation_focus: "preparation", response_goal: "answer_directly", relational_state: "decision_support",
-      topic: previousTopic, sensitivity: "low", signals: ["practical_keyword"], confidence: 0.82,
+      routing_intent: "none", topic: previousTopic, sensitivity: "low", signals: ["practical_keyword"], confidence: 0.82,
     }
   }
 
@@ -217,7 +217,7 @@ function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMo
     return {
       intent: "ask_evidence", proposed_mode: "evidence", conversation_move: "direct_answer",
       investigation_focus: "none", response_goal: "answer_directly", relational_state: "decision_support",
-      topic: previousTopic, sensitivity: "low", signals: ["evidence_keyword"], confidence: 0.8,
+      routing_intent: "none", topic: previousTopic, sensitivity: "low", signals: ["evidence_keyword"], confidence: 0.8,
     }
   }
 
@@ -226,14 +226,14 @@ function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMo
       intent: "explore_pattern", proposed_mode: "reflection", conversation_move: "guided_observation",
       investigation_focus: normalize(userText).includes("trang") || normalize(userText).includes("uro") ? "regulation" : "pattern",
       response_goal: "answer_then_one_question", relational_state: "building_trust",
-      topic: previousTopic, sensitivity: "medium", signals: ["personal_difficulty"], confidence: 0.72,
+      routing_intent: "none", topic: previousTopic, sensitivity: "medium", signals: ["personal_difficulty"], confidence: 0.72,
     }
   }
 
   return {
     intent: "understand_method", proposed_mode: "info", conversation_move: "direct_answer",
     investigation_focus: "none", response_goal: "answer_directly", relational_state: "orienting",
-    topic: previousTopic, sensitivity: "low", signals: ["default_info"], confidence: 0.55,
+    routing_intent: "none", topic: previousTopic, sensitivity: "low", signals: ["default_info"], confidence: 0.55,
   }
 }
 
@@ -391,116 +391,9 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  // ─── Intent routing: booking ────────────────────────────────────────────────
-  // Detect explicit booking/contact intent and route directly to HANDOFF_FORM.
-  // This fires from within GEN_HYPNO so users don't have to navigate to HOME first.
-  //
-  // VIGTIGT: Vi bruger negative frasercheck inden keyword-match.
-  // "inden jeg booker", "før jeg booker", "ikke klar til at booke" etc. skal
-  // IKKE routes til booking — brugeren er i info-stadiet.
-  const bookingKeywords = [
-    "vil gerne booke", "vil gerne bestille", "vil gerne have en tid",
-    "lave en aftale", "aftale en tid", "ledige tider",
-    "møde med jan", "tale med jan", "ringe til jan",
-    "kontakt jan", "kontakt mig", "ring til mig",
-    "bestil", "bestille",
-    "booking",
-  ]
-
-  // Negerende kontekst — brugeren nævner booking MEN er ikke klar
-  const bookingNegationPhrases = [
-    "inden jeg booker", "før jeg booker", "inden jeg bestiller",
-    "ikke klar til at booke", "ikke klar til booking",
-    "forstå mere inden", "vide mere inden", "tænke over det",
-    "ikke nu", "måske senere", "overveje det",
-    "ikke klar endnu", "mere information først",
-  ]
-
-  const normalizedUser = userText.toLowerCase().trim()
-  const hasBookingNegation = bookingNegationPhrases.some((p) => normalizedUser.includes(p))
-  const isBookingIntent = !hasBookingNegation && bookingKeywords.some((k) => normalizedUser.includes(k))
-
-  const fitCheckKeywords = [
-    "er jeg den rigtige", "passer det til mig", "er det for mig",
-    "virker det for mig", "kan det hjælpe mig", "usikker på om",
-    "ved ikke om hypnoterapi", "er jeg kandidat", "egnet til",
-    "rigtig til hypno", "rigtige til hypno",
-  ]
-  const isFitCheckIntent = fitCheckKeywords.some((k) => normalizedUser.includes(k))
-
-  if (isBookingIntent && options.stayOnNode === "GEN_HYPNO") {
-    const assistant = "Godt. Udfyld nedenstående — Jan kontakter dig inden for 24 timer."
-    const updatedTranscript = appendTranscript(transcript, userText, assistant)
-    return {
-      transition: {
-        type: "NODE_HOP",
-        from: context.state.active_node,
-        to: "HANDOFF_FORM",
-        reason: "gen-hypno:booking-intent",
-        response_message: assistant,
-        meta_delta: buildMetaDelta({
-          context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
-          sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
-          analysis: buildDefaultAnalysis(userText, previousTopic, "practical"),
-          mode: "practical", relationalState: "decision_support",
-        }),
-      },
-      debug: { capability: "unified-hypno-v4", used_fallback: false },
-    }
-  }
-
-  // Lead capture: not ready yet but wants to stay in touch
-  const leadKeywords = [
-    "ikke klar", "ikke klar nu", "tænke over det", "overveje det",
-    "mere information", "mere info", "send mig", "vende tilbage",
-    "ikke nu", "måske senere", "på et andet tidspunkt",
-    "holder mig opdateret", "skriv til mig", "email mig",
-  ]
-  const isLeadIntent = leadKeywords.some((k) => normalizedUser.includes(k))
-
-  if (isLeadIntent && options.stayOnNode === "GEN_HYPNO") {
-    const assistant = "Ingen stress — du behøver ikke beslutte dig nu. Efterlad din email, så sender Jan en kort besked om hvad en første session typisk indebærer."
-    const updatedTranscript = appendTranscript(transcript, userText, assistant)
-    return {
-      transition: {
-        type: "NODE_HOP",
-        from: context.state.active_node,
-        to: "LEAD_CAPTURE",
-        reason: "gen-hypno:lead-intent",
-        response_message: assistant,
-        meta_delta: buildMetaDelta({
-          context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
-          sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
-          analysis: buildDefaultAnalysis(userText, previousTopic, "practical"),
-          mode: "practical", relationalState: "decision_support",
-        }),
-      },
-      debug: { capability: "unified-hypno-v4", used_fallback: false },
-    }
-  }
-
-  if (isFitCheckIntent && options.stayOnNode === "GEN_HYPNO") {
-    const assistant = "Hvad er det primære, du ønsker at arbejde med?"
-    const updatedTranscript = appendTranscript(transcript, userText, assistant)
-    return {
-      transition: {
-        type: "NODE_HOP",
-        from: context.state.active_node,
-        to: "PREQUALIFY",
-        reason: "gen-hypno:fit-check-intent",
-        response_message: assistant,
-        meta_delta: buildMetaDelta({
-          context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
-          sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
-          analysis: buildDefaultAnalysis(userText, previousTopic, "info"),
-          mode: "info", relationalState: "decision_support",
-        }),
-      },
-      debug: { capability: "unified-hypno-v4", used_fallback: false },
-    }
-  }
-
-  // Analyze turn
+  // ─── Analyse ────────────────────────────────────────────────────────────────
+  // Kør analyzeTurn FØR routing — LLM'en klassificerer routing_intent i kontekst.
+  // Det eliminerer keyword-lister og negerings-fraser.
   let analysis: TurnAnalysis | null = null
   let usedFallback = false
   const previousMove = readMoveMeta(context)
@@ -517,6 +410,70 @@ export async function runUnifiedHypnoCapability(
 
   analysis = analysis ?? buildDefaultAnalysis(userText, previousTopic, options.forcedMode)
   analysis = rebalanceAnalysis({ analysis, previousMove, transcript: trimmedTranscript, userText })
+
+  // ─── LLM-drevet routing ────────────────────────────────────────────────────
+  // routing_intent sættes af analyzeTurn. Kun aktiv fra GEN_HYPNO.
+  if (options.stayOnNode === "GEN_HYPNO" && analysis.routing_intent !== "none") {
+    if (analysis.routing_intent === "contact_booking") {
+      const assistant = "Godt. Udfyld nedenstående — Jan kontakter dig inden for 24 timer."
+      const updatedTranscript = appendTranscript(transcript, userText, assistant)
+      return {
+        transition: {
+          type: "NODE_HOP",
+          from: context.state.active_node,
+          to: "HANDOFF_FORM",
+          reason: "gen-hypno:routing_intent:contact_booking",
+          response_message: assistant,
+          meta_delta: buildMetaDelta({
+            context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
+            sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
+            analysis, mode: "practical", relationalState: "decision_support",
+          }),
+        },
+        debug: { capability: "unified-hypno-v4", used_fallback: false },
+      }
+    }
+
+    if (analysis.routing_intent === "lead_capture") {
+      const assistant = "Ingen stress — du behøver ikke beslutte dig nu. Efterlad din email, så sender Jan en kort besked om hvad en første session typisk indebærer."
+      const updatedTranscript = appendTranscript(transcript, userText, assistant)
+      return {
+        transition: {
+          type: "NODE_HOP",
+          from: context.state.active_node,
+          to: "LEAD_CAPTURE",
+          reason: "gen-hypno:routing_intent:lead_capture",
+          response_message: assistant,
+          meta_delta: buildMetaDelta({
+            context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
+            sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
+            analysis, mode: "practical", relationalState: "decision_support",
+          }),
+        },
+        debug: { capability: "unified-hypno-v4", used_fallback: false },
+      }
+    }
+
+    if (analysis.routing_intent === "fit_check") {
+      const assistant = "Hvad er det primære, du ønsker at arbejde med?"
+      const updatedTranscript = appendTranscript(transcript, userText, assistant)
+      return {
+        transition: {
+          type: "NODE_HOP",
+          from: context.state.active_node,
+          to: "PREQUALIFY",
+          reason: "gen-hypno:routing_intent:fit_check",
+          response_message: assistant,
+          meta_delta: buildMetaDelta({
+            context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
+            sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
+            analysis, mode: "info", relationalState: "decision_support",
+          }),
+        },
+        debug: { capability: "unified-hypno-v4", used_fallback: false },
+      }
+    }
+  }
 
   // Apply forced mode if set
   if (options.forcedMode && analysis.proposed_mode !== "closing") {
