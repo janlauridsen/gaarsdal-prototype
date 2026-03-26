@@ -15,11 +15,18 @@ conversation_move: "direct_answer" | "guided_observation" | "pattern_detection" 
 investigation_focus: "attention" | "interpretation" | "regulation" | "pattern" | "preparation" | "none"
 response_goal: "answer_directly" | "answer_then_one_question" | "clarify_minimally" | "close_briefly" | "route_to_contact"
 relational_state: "orienting" | "building_clarity" | "building_trust" | "decision_support" | "gentle_close"
+routing_intent: "contact_booking" | "lead_capture" | "fit_check" | "none"
 topic: string | null
 objective: string | null
 sensitivity: "low" | "medium" | "high"
 signals: string[]
 confidence: number (0-1)
+
+routing_intent-regler (vurder i kontekst — ikke kun nøgleord):
+- contact_booking: brugeren vil aktivt booke eller kontakte Jan nu. Eksempler: "jeg vil gerne booke", "kan jeg få en tid", "hvad koster det og hvordan booker jeg". IKKE hvis de siger "inden jeg booker", "før jeg beslutter mig", "vil gerne vide mere først" — det er "none".
+- lead_capture: brugeren er interesseret men eksplicit ikke klar. Eksempler: "ikke nu", "tænker over det", "vil gerne have mere info først", "send mig noget".
+- fit_check: brugeren vil vide om hypnoterapi passer til netop dem. Eksempler: "er det noget for mig", "virker det for min type problem", "passer det til min situation".
+- none: alt andet — også spørgsmål om pris/adresse/kontaktinfo uden eksplicit booking-intent.
 
 Prioriteter:
 - Personlig friktion/barriere/uro → reflection, ikke info
