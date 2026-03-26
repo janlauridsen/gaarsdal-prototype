@@ -27,6 +27,54 @@ function norm(s: string): string {
 }
 
 /**
+ * Returns true if the user's free text in a FORM node looks like they want
+ * to escape back to dialogue rather than fill in the form.
+ * Heuristic: no key:value pairs found AND text reads as a natural sentence.
+ */
+function looksLikeFormEscapeIntent(text: string): boolean {
+  const t = norm(text).replace(/\s+/g, " ")
+  if (!t || t.length < 5) return false
+
+  // If text contains a colon with a label before it, it looks like form input
+  if (/\b\w+\s*:\s*\S/.test(t)) return false
+
+  // Explicit escape signals
+  const escapePatterns = [
+    /fortsæt/,
+    /fortsat/,
+    /tilbage til/,
+    /vil gerne tale/,
+    /kan vi tale/,
+    /vil tale/,
+    /ikke udfylde/,
+    /ikke nu/,
+    /gå tilbage/,
+    /vent lidt/,
+    /faktisk/,
+    /fortryder/,
+    /hvad (med|hvis|nu|så)/,
+    /har et spørgsmål/,
+    /noget andet/,
+    /andet emne/,
+    /andre spørgsmål/,
+    /dialog/,
+    /snakke/,
+    /snak/,
+  ]
+  if (escapePatterns.some((p) => p.test(t))) return true
+
+  // If text is a full sentence (no colons, contains verb-like words) and > 15 chars
+  // it's likely dialogue, not form input
+  const sentenceWords = t.split(" ")
+  const hasVerb = sentenceWords.some((w) =>
+    /^(er|har|vil|kan|skal|må|gerne|ønsker|tænker|forstår|overvejer|lyder|mener|tror|ved|hører|ser|prøver)$/.test(w)
+  )
+  if (hasVerb && t.length > 20) return true
+
+  return false
+}
+
+/**
  * Runs a node according to its kind.
  *
  * - MENU: allow FREE_TEXT and hop to first exit (or HOME) to avoid REJECT loops from UI
@@ -184,6 +232,22 @@ export async function runNode(params: NodeRunParams): Promise<KernelResult> {
       return runKernel(state, input)
     }
 
+    // Escape hatch: detect dialogue/cancel intent before attempting form parsing.
+    // If the user clearly wants to go back to dialogue, route to GEN_HYPNO.
+    if (looksLikeFormEscapeIntent(input.text) && node.allowed_exits.includes("GEN_HYPNO")) {
+      const transition: Transition = {
+        type: "NODE_HOP",
+        from: state.active_node,
+        to: "GEN_HYPNO",
+        reason: "form escape: user wants to continue dialogue",
+        response_message: "Selvfølgelig — hvad vil du gerne tale om?",
+      }
+      return runKernel(state, {
+        type: "FREE_TEXT_RESOLVED",
+        proposed_transition: transition,
+      })
+    }
+
     const parsed = parseFormText(input.text)
     const missing: string[] = []
     const values: Record<string, unknown> = {}
@@ -208,7 +272,9 @@ export async function runNode(params: NodeRunParams): Promise<KernelResult> {
       const stay: Transition = {
         type: "NODE_HOP",
         from: state.active_node,
-        to: state.active_node,
+        // Intentionally no `to`: kernel falls back to state.active_node.
+        // Setting to: state.active_node would require the node to list itself
+        // in allowed_exits, which creates unnecessary graph noise.
         reason: "form validation failed",
         response_message: response,
       }
