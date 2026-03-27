@@ -362,7 +362,7 @@ export default function Chatbot() {
 
     const loop = { conversationId, jobId: job.job_id, cancelled: false }
     jobLoopRef.current = loop
-    const silentJob = job.kind === "derive_thread_title" || job.kind === "scan_threads"
+    const silentJob = job.kind === "derive_thread_title" || job.kind === "scan_threads" || job.kind === "scan_threads"
     if (!silentJob) {
       setJobRunnerState({
         jobId: job.job_id,
@@ -619,7 +619,7 @@ export default function Chatbot() {
       setJobRunnerState(null)
       applyDraftToEditor(null)
     }
-  }, [open, activeConversationId, draftReview?.job_id, draftReview?.accepted_at])
+  }, [open, activeConversationId])
 
   useEffect(() => {
     if (!open || !activeConversationId) return
