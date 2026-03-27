@@ -406,7 +406,7 @@ export async function runUnifiedHypnoCapability(
           messages: [
             {
               role: "system",
-              content: "Du er en empatisk hypnoterapeut-assistent. Brugeren spørger hvad du ved om dem ud fra tidligere samtaler.\n\nBrug KUN den kontekst der er givet nedenfor. Svar i max 3-4 sætninger på dansk. Vær konkret og specifik — nævn emner, mønstre og indsigter du faktisk kender til. Afslut med ét åbent spørgsmål.\n\nSvar KUN med JSON: { \"assistant_message\": \"...\" }\n\nKONTEKST FRA TIDLIGERE SAMTALER:\n" + cp.slice(0, 2000),
+              content: "Du er den digitale assistent for Jan Lauridsen, hypnoterapeut på Gaarsdal. Brugeren spørger hvad du ved om dem ud fra tidligere samtaler.\n\nBrug KUN den kontekst der er givet nedenfor. Svar specifikt på brugerens spørgsmål — hvis de spørger om et bestemt emne (fx kone, alkohol, søvn), svar kun om det. Vær konkret og ærlig — si eksplicit hvis noget IKKE er nævnt i konteksten. Max 3-4 sætninger. Afslut med ét åbent spørgsmål.\n\nSvar KUN med JSON: { \"assistant_message\": \"...\" }\n\nKONTEKST FRA TIDLIGERE SAMTALER:\n" + cp.slice(0, 2000),
             },
             { role: "user", content: userText },
           ],
