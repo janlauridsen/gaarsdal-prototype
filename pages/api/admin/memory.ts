@@ -83,7 +83,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let profile: UserMemory["profile"] = null
       if (profileRaw) {
         try {
-          const p = JSON.parse(profileRaw as string)
+          const p = typeof profileRaw === "string" ? JSON.parse(profileRaw) : profileRaw as any
           profile = {
             last_seen_at: p.last_seen_at ?? "",
             last_node: p.last_node ?? "",
@@ -99,7 +99,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const threadList: Array<{ conversation_id: string; title: string; preview: string; updated_at: string }> = []
       if (threadsRaw) {
         try {
-          const t = JSON.parse(threadsRaw as string)
+          const t = typeof threadsRaw === "string" ? JSON.parse(threadsRaw) : threadsRaw as any
           for (const th of t.threads ?? []) {
             threadList.push({
               conversation_id: th.conversation_id,
@@ -122,7 +122,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const episodeRaw = await client.get(episodeKey)
         if (episodeRaw) {
           try {
-            const e = JSON.parse(episodeRaw as string)
+            const e = typeof episodeRaw === "string" ? JSON.parse(episodeRaw) : episodeRaw as any
             episodeSummary = {
               episode_id: e.episode_id ?? "",
               summary_short: e.summary_short ?? "",
@@ -137,11 +137,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         let latestDraft: ThreadInfo["latest_draft"] = null
         const latestJobIdRaw = await client.get(`${DRAFT_LATEST_PREFIX}${convId}`)
         if (latestJobIdRaw) {
-          const draftKey = `${DRAFT_PREFIX}${convId}:${latestJobIdRaw}`
+          const jobId = typeof latestJobIdRaw === "string" ? latestJobIdRaw : String(latestJobIdRaw)
+          const draftKey = `${DRAFT_PREFIX}${convId}:${jobId}`
           const draftRaw = await client.get(draftKey)
           if (draftRaw) {
             try {
-              const d = JSON.parse(draftRaw as string)
+              const d = typeof draftRaw === "string" ? JSON.parse(draftRaw) : draftRaw as any
               latestDraft = {
                 summary_draft: d.summary_draft ?? "",
                 open_questions: d.open_questions ?? [],
