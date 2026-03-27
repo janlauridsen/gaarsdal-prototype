@@ -39,23 +39,6 @@ function pickIfAllowed(
   return fallback
 }
 
-function detectTopic(text: string): string | undefined {
-  const topicMap: [string[], string][] = [
-    [["søvn", "soevn", "sove", "indsov", "vågner"], "søvn"],
-    [["stress", "pres", "uro", "overbelastet", "kørt ned"], "stress og uro"],
-    [["angst", "bekymring", "grubler", "overtænker", "overtaenker", "panik", "fobier", "fobi"], "angst og bekymringer"],
-    [["vane", "vaner", "rutine", "automatisk", "alkohol", "vin", "ryge", "rygning", "sukker", "kaffe"], "vaner og mønstre"],
-    [["præstation", "blokering", "præstationsangst", "eksamen", "sport", "scene"], "præstationsangst"],
-    [["smerte", "smerter", "kronisk", "spændinger", "kæbe", "hoved"], "smerter"],
-    [["relation", "relationer", "kone", "mand", "partner", "forhold", "skilsmisse"], "relationer"],
-    [["selvtillid", "selvværd", "usikker", "tryghed"], "selvtillid"],
-  ]
-  for (const [keywords, topic] of topicMap) {
-    if (keywords.some((k) => text.includes(k))) return topic
-  }
-  return undefined
-}
-
 export function homeRouterV1(params: HomeRouterInput): RouteDecision {
   const raw = params.userText ?? ""
   const t = normalize(raw)
@@ -141,17 +124,6 @@ export function homeRouterV1(params: HomeRouterInput): RouteDecision {
       nextNodeId: pickIfAllowed(allowed, "PREQUALIFY", "GEN_HYPNO"),
       confidence: 0.80,
       reason: "fit-check request",
-    }
-  }
-
-  // Topic-seeded path: detect topic and route to GEN_HYPNO with topic
-  const detectedTopic = detectTopic(t)
-  if (detectedTopic) {
-    return {
-      nextNodeId: pickIfAllowed(allowed, "GEN_HYPNO"),
-      confidence: 0.82,
-      reason: `topic detected: ${detectedTopic}`,
-      detected_topic: detectedTopic,
     }
   }
 
