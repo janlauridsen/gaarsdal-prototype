@@ -484,10 +484,8 @@ export async function runUnifiedHypnoCapability(
     // Denne tråd
     const currentTurns = trimmedTranscript.filter((t) => t.role === "user")
     if (currentTurns.length > 0) {
-      const thisThread = currentTurns.slice(-6).map((t) => `– ${t.content.slice(0, 80)}`).join("
-")
-      sections.push(`I denne samtale har du bl.a. nævnt:
-${thisThread}`)
+      const thisThread = currentTurns.slice(-6).map((t) => `– ${t.content.slice(0, 80)}`).join("\n")
+      sections.push(`I denne samtale har du bl.a. nævnt:\n${thisThread}`)
     }
 
     // contextPack — udtræk topic-nævnelser og thread-summaries til et præcist svar
