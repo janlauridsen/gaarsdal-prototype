@@ -67,6 +67,7 @@ export type TurnAnalysis = {
   topic?: string
   objective?: string
   sensitivity: "low" | "medium" | "high"
+  is_history_query: boolean
   signals: string[]
   confidence: number
 }
@@ -90,6 +91,7 @@ export function normalizeTurnAnalysis(raw: Record<string, unknown> | null): Turn
   const confidence = Number.isFinite(confidenceRaw) ? Math.max(0, Math.min(1, confidenceRaw)) : 0.5
   // routing_intent: default "none" hvis ikke leveret — bagudkompatibelt
   const routing_intent = typeof raw.routing_intent === "string" ? raw.routing_intent : "none"
+  const is_history_query = typeof raw.is_history_query === "boolean" ? raw.is_history_query : false
 
   const validMode = ["info", "evidence", "practical", "reflection", "closing"].includes(proposed_mode)
   const validMove = [
@@ -138,6 +140,7 @@ export function normalizeTurnAnalysis(raw: Record<string, unknown> | null): Turn
     response_goal: response_goal as ResponseGoal,
     relational_state: relational_state as RelationalState,
     routing_intent: (validRoutingIntent ? routing_intent : "none") as RoutingIntent,
+    is_history_query,
     topic,
     objective,
     sensitivity: sensitivity as "low" | "medium" | "high",
