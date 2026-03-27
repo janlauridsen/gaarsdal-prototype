@@ -269,7 +269,7 @@ function buildMetaDelta(params: {
 
   const dialogStage = params.mode === "closing" ? "close" : params.mode === "reflection" ? "explore_patterns" : "open"
   // Topic-tags og problem-titel/-summary: brug LLM-analysens data direkte
-  const derivedTopicTags = params.topic ? [params.topic, ...(params.analysis.signals ?? []).slice(0, 2)] : []
+  const derivedTopicTags = params.topic ? [params.topic] : []
   const derivedProblemTitle = params.analysis.topic ?? params.topic
   const derivedProblemSummary = params.analysis.objective ?? (params.topic ? `Ønske om at forstå mønstre relateret til ${params.topic}.` : undefined)
 
