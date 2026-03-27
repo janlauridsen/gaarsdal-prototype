@@ -492,8 +492,7 @@ export async function runUnifiedHypnoCapability(
     const cp = context.contextPack?.system ?? ""
 
     // Udtræk topic-linjer fra contextPack (format: "- emne (score: X)")
-    const topicMatches = cp.match(/[-–]\s+([^
-(]{4,40})\s+\(score:/g)
+    const topicMatches = cp.match(/[-–]\s+([^(\n]{4,40})\s+\(score:/g)
     if (topicMatches && topicMatches.length > 0) {
       const topicNames = topicMatches
         .slice(0, 4)
