@@ -41,6 +41,10 @@ export function detectContinuationIntent(text: string): boolean {
     "vil gerne fortsætte", "vil gerne skrive videre",
     "vi kan godt fortsætte", "fortsæt", "fortæl mere",
     "hvad mere", "hvad ellers", "og hvad så",
+    // Emne-skift er IKKE afslutninger
+    "noget andet", "tale om andet", "skifte emne", "andet emne",
+    "nyt emne", "noget nyt", "andet på hjerte", "trænger til at tale",
+    "vil gerne tale om", "har noget andet",
   ].some((p) => t.includes(p))
 }
 
