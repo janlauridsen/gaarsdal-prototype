@@ -362,7 +362,7 @@ export default function Chatbot() {
 
     const loop = { conversationId, jobId: job.job_id, cancelled: false }
     jobLoopRef.current = loop
-    const silentJob = job.kind === "derive_thread_title"
+    const silentJob = job.kind === "derive_thread_title" || job.kind === "scan_threads"
     if (!silentJob) {
       setJobRunnerState({
         jobId: job.job_id,
@@ -436,7 +436,7 @@ export default function Chatbot() {
         }
 
         attempts += 1
-        const nextDelay = attempts < 10 ? 1000 : attempts < 30 ? 2000 : 5000
+        const nextDelay = attempts < 5 ? 2000 : attempts < 20 ? 3000 : 6000
         await delay(nextDelay)
       }
     } catch (e: any) {
