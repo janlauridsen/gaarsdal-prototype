@@ -16,6 +16,7 @@ investigation_focus: "attention" | "interpretation" | "regulation" | "pattern" |
 response_goal: "answer_directly" | "answer_then_one_question" | "clarify_minimally" | "close_briefly" | "route_to_contact"
 relational_state: "orienting" | "building_clarity" | "building_trust" | "decision_support" | "gentle_close"
 routing_intent: "contact_booking" | "lead_capture" | "fit_check" | "none"
+is_history_query: boolean  // true hvis brugeren spørger hvad du ved/husker om dem
 topic: string | null
 objective: string | null
 sensitivity: "low" | "medium" | "high"
