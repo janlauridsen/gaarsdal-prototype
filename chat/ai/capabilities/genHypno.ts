@@ -517,9 +517,7 @@ export async function runUnifiedHypnoCapability(
 
     sections.push("Er der noget bestemt du gerne vil have mig til at holde fast i eller uddybe?")
 
-    const assistant = sections.join("
-
-")
+    const assistant = sections.join("\n\n")
     const updatedTranscript = appendTranscript(transcript, userText, assistant)
 
     return {
