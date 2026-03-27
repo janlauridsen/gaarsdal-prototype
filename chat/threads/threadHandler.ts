@@ -120,13 +120,13 @@ function buildNewThreadGreeting(params: {
   // Brug preview som kontekst hvis det er en reel brugersætning
   if (preview.length > 10 && preview.length < 120) {
     return {
-      greeting: `Hej igen. Sidst talte vi om ${title.toLowerCase()} — du nævnte: "${preview.slice(0, 80)}". Vil du fortsætte der, eller er der noget nyt på hjerte?`,
+      greeting: `Hej igen. Sidst talte vi om ${title.toLowerCase()} — du nævnte: "${preview.slice(0, 80)}". Hvad har du på hjerte i dag?`,
       topic: title.toLowerCase(),
     }
   }
 
   return {
-    greeting: `Hej igen. Sidst talte vi om ${title.toLowerCase()}. Vil du fortsætte der, eller er der noget nyt på hjerte?`,
+    greeting: `Hej igen. Sidst talte vi om ${title.toLowerCase()}. Hvad har du på hjerte i dag?`,
     topic: title.toLowerCase(),
   }
 }
