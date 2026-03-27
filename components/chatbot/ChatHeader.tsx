@@ -13,11 +13,11 @@ import styles from "../Chatbot.module.css"
 import type { ConversationState, InputSignal, ThreadTab } from "./types"
 import ThreadDrawer from "./ThreadDrawer"
 import { CHATBOT_DISCLOSURE } from "./constants"
-import { deriveConversationPhase, PHASE_LABELS, type ConversationPhase } from "./utils"
+import { derivePhase, type ConversationPhase } from "./utils"
 
-function PhaseIndicator({ phase }: { phase: ConversationPhase }) {
+function PhaseIndicator({ phase, label }: { phase: ConversationPhase; label: string }) {
   return (
-    <div className={styles.phaseIndicator} title={PHASE_LABELS[phase]} aria-label={`Samtalefase: ${PHASE_LABELS[phase]}`}>
+    <div className={styles.phaseIndicator} title={label} aria-label={`Samtalefase: ${label}`}>
       {([1, 2, 3] as ConversationPhase[]).map((p) => (
         <span
           key={p}
@@ -25,7 +25,7 @@ function PhaseIndicator({ phase }: { phase: ConversationPhase }) {
           aria-hidden="true"
         />
       ))}
-      <span className={styles.phaseLabel}>{PHASE_LABELS[phase]}</span>
+      <span className={styles.phaseLabel}>{label}</span>
     </div>
   )
 }
@@ -81,7 +81,7 @@ export function ChatHeader(props: ChatHeaderProps) {
           </div>
           <div className={styles.node}>{props.activeNodeLabel}</div>
           {props.state?.active_node === "GEN_HYPNO" && (
-            <PhaseIndicator phase={deriveConversationPhase(props.state?.meta)} />
+            {(() => { const p = derivePhase(props.state?.meta ?? null); return <PhaseIndicator phase={p.phase} label={p.label} /> })()}
           )}
         </div>
 
