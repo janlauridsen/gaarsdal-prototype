@@ -301,12 +301,18 @@ export async function maybeTriggerScanThreadsJob(params: {
   if (!explicitReuse && !auto.shouldTrigger) return { deferredJob: null }
   if (!problem) return { deferredJob: null }
 
+  // For explicit history queries, override problem_title with userText so scan
+  // searches for the right topic (e.g. "har vi talt om min kone" → kone, not stale meta title)
+  const effectiveProblem = explicitReuse
+    ? { ...problem, problem_title: userText.slice(0, 120), problem_description: userText.slice(0, 200), topic_tags: undefined }
+    : problem
+
   const { jobId } = await triggerJob({
     userKey,
     conversationId,
     kind: "scan_threads",
     payload: {
-      problem,
+      problem: effectiveProblem,
       scan_reason: explicitReuse ? "explicit" : "auto",
       trigger_turn: auto.turnCount > 0 ? auto.turnCount : undefined,
     },
@@ -344,7 +350,10 @@ function looksLikeHistoryReuseRequest(text: string): boolean {
       /(andre).*(samtaler|dialoger|tråde|traade)/.test(s))
   const retrospectiveQuestion =
     /(har|hvad|ved du om).*(jeg|vi).*(talt om|nævnt|naevnt|været inde på|vaeret inde paa|fortalt).*(før|foer|tidligere)/.test(s) ||
-    /(har|hvad|ved du om).*(jeg|vi).*(talt om|nævnt|naevnt|været inde på|vaeret inde paa|fortalt).*(i andre samtaler|i andre tråde|i andre traade)/.test(s)
+    /(har|hvad|ved du om).*(jeg|vi).*(talt om|nævnt|naevnt|været inde på|vaeret inde paa|fortalt).*(i andre samtaler|i andre tråde|i andre traade)/.test(s) ||
+    // "har vi talt om X" uden krav om "tidligere/før" — X er emnet brugeren spørger om
+    /^har (vi|jeg|du).*(talt om|nævnt|snakket om|fortalt om|berørt)/.test(s) ||
+    /^(hvad ved du om|hvad husker du om|hvad har (vi|jeg) fortalt om)/.test(s)
   return explicitCrossThreadScan || explicitHistoryReuse || retrospectiveQuestion
 }
 
