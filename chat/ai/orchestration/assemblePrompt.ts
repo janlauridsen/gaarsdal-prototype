@@ -151,7 +151,9 @@ ${policy.require_redirect === "contact" ? "VIGTIGT: Brug direkte kontaktoplysnin
   // === SITE-KONTEKST ===
   const sitePrefix = mode === "practical"
     ? "SITE-KONTEKST (brug aktivt i practical-svar):"
-    : "SITE-KONTEKST (baggrund — brug kun ved direkte spørgsmål om pris, kontakt, booking, adresse):"
+    : mode === "info"
+    ? "SITE-KONTEKST (brug Jan-afsnittet aktivt når du omtaler terapeuten eller metoden — brug kontaktinfo kun ved direkte spørgsmål):"
+    : "SITE-KONTEKST (baggrund — Jan-afsnittet må bruges naturligt; kontaktinfo kun ved direkte spørgsmål om pris, kontakt, booking, adresse):"
   blocks.push(`${sitePrefix}\n${GAARSDAL_SITE_CONTEXT_DA}`)
 
   // === JSON-KONTRAKT ===
