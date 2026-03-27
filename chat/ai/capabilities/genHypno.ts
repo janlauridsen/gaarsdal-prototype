@@ -415,7 +415,7 @@ export async function runUnifiedHypnoCapability(
   // routing_intent sættes af analyzeTurn. Kun aktiv fra GEN_HYPNO.
   if (options.stayOnNode === "GEN_HYPNO" && analysis.routing_intent !== "none") {
     if (analysis.routing_intent === "contact_booking") {
-      const assistant = "Godt. Udfyld nedenstående — Jan kontakter dig inden for 24 timer."
+      const assistant = "Det lyder som om du er klar til at komme i gang. Udfyld nedenstående — Jan kontakter dig inden for 24 timer for at aftale en første session."
       const updatedTranscript = appendTranscript(transcript, userText, assistant)
       return {
         transition: {
