@@ -184,6 +184,24 @@ export async function handleThreadCreate(params: {
     preview: "",
   })
   index1 = setActiveThread({ index: index1, conversationId: newId })
+
+  // Prune empty ghost threads older than 30 minutes — silently, no extra Redis calls.
+  // A ghost thread is one with no preview (never got a user message) and a generic title.
+  const THIRTY_MINUTES_MS = 30 * 60 * 1000
+  const now = Date.now()
+  index1 = {
+    ...index1,
+    threads: index1.threads.filter((t) => {
+      if (t.conversation_id === newId) return true // keep the new thread
+      if (t.status !== "active") return false       // already archived
+      const hasContent = (t.preview || "").trim().length > 0
+      const hasNamedTitle = (t.title || "").trim().toLowerCase() !== "ny samtale"
+      if (hasContent || hasNamedTitle) return true  // has real content
+      const age = now - Date.parse(t.updated_at || t.created_at || "")
+      return age < THIRTY_MINUTES_MS                // keep if less than 30 min old
+    }),
+  }
+
   await writeThreadIndex({ userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
 
   await emitEvent({
