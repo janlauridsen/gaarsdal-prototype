@@ -15,6 +15,11 @@ import ThreadDrawer from "./ThreadDrawer"
 import { CHATBOT_DISCLOSURE } from "./constants"
 import { derivePhase, type ConversationPhase } from "./utils"
 
+function PhaseIndicatorFromMeta({ meta }: { meta: Record<string, any> | null }) {
+  const p = derivePhase(meta)
+  return <PhaseIndicator phase={p.phase} label={p.label} />
+}
+
 function PhaseIndicator({ phase, label }: { phase: ConversationPhase; label: string }) {
   return (
     <div className={styles.phaseIndicator} title={label} aria-label={`Samtalefase: ${label}`}>
@@ -81,7 +86,7 @@ export function ChatHeader(props: ChatHeaderProps) {
           </div>
           <div className={styles.node}>{props.activeNodeLabel}</div>
           {props.state?.active_node === "GEN_HYPNO" && (
-            {(() => { const p = derivePhase(props.state?.meta ?? null); return <PhaseIndicator phase={p.phase} label={p.label} /> })()}
+            <PhaseIndicatorFromMeta meta={props.state?.meta ?? null} />
           )}
         </div>
 
