@@ -476,48 +476,37 @@ export async function runUnifiedHypnoCapability(
   }
 
   // ─── Hukommelse-forespørgsel ───────────────────────────────────────────────
-  // Brugeren spørger ind til hvad de har delt — byg et struktureret svar
-  // direkte fra contextPack + transcript uden at kalde response-LLM.
+  // Brugeren spørger ind til hvad de har delt.
+  // Har contextPack reelt indhold, lader vi LLM formulere svaret direkte.
   if (detectHistoryQuery(userText)) {
-    const sections: string[] = []
-
-    // Denne tråd
-    const currentTurns = trimmedTranscript.filter((t) => t.role === "user")
-    if (currentTurns.length > 0) {
-      const thisThread = currentTurns.slice(-6).map((t) => `– ${t.content.slice(0, 80)}`).join("\n")
-      sections.push(`I denne samtale har du bl.a. nævnt:\n${thisThread}`)
-    }
-
-    // contextPack — udtræk topic-nævnelser og thread-summaries til et præcist svar
     const cp = context.contextPack?.system ?? ""
+    const hasContext = cp.length > 200
 
-    // Udtræk topic-linjer fra contextPack (format: "- emne (score: X)")
-    const topicMatches = cp.match(/[-–]\s+([^(\n]{4,40})\s+\(score:/g)
-    if (topicMatches && topicMatches.length > 0) {
-      const topicNames = topicMatches
-        .slice(0, 4)
-        .map((m) => m.replace(/^[-–]\s+/, "").replace(/\s+\(score:.*/, "").trim())
-        .filter(Boolean)
-      if (topicNames.length > 0) {
-        sections.push(`På tværs af vores samtaler har du primært talt om: ${topicNames.join(", ")}.`)
+    let assistant: string
+
+    if (hasContext) {
+      try {
+        const raw = await llm.chatJson({
+          model: process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
+          temperature: 0.3,
+          response_format: { type: "json_object" },
+          messages: [
+            {
+              role: "system",
+              content: "Du er en empatisk hypnoterapeut-assistent. Brugeren spørger hvad du ved om dem ud fra tidligere samtaler.\n\nBrug KUN den kontekst der er givet nedenfor. Svar i max 3-4 sætninger på dansk. Vær konkret og specifik — nævn emner, mønstre og indsigter du faktisk kender til. Afslut med ét åbent spørgsmål.\n\nSvar KUN med JSON: { \"assistant_message\": \"...\" }\n\nKONTEKST FRA TIDLIGERE SAMTALER:\n" + cp.slice(0, 2000),
+            },
+            { role: "user", content: userText },
+          ],
+        })
+        const msg = typeof raw?.assistant_message === "string" ? (raw.assistant_message as string).trim() : null
+        assistant = msg && msg.length > 10 ? msg : "Jeg kan se du har delt en del om dine vaner og mønstre. Er der noget bestemt du vil have mig til at uddybe?"
+      } catch {
+        assistant = "Jeg kan se du har delt en del om dine vaner og mønstre. Er der noget bestemt du vil have mig til at uddybe?"
       }
-    } else if (cp.includes("Kontekst fra") || cp.includes("Tidligere samtaler") || cp.includes("thread-asset")) {
-      sections.push("På tværs af vores tidligere samtaler har vi primært kredset om dine vaner og mønstre.")
+    } else {
+      assistant = "Vi er lige startet, så jeg har ikke meget at trække på endnu — men det ændrer sig hurtigt jo mere vi taler.\n\nEr der noget bestemt du gerne vil have mig til at holde fast i?"
     }
 
-    // Udtræk thread-summaries hvis de er tilgængelige
-    const summaryMatch = cp.match(/Sammenfatning[:\s]+([^\n]{20,200})/)
-    if (summaryMatch) {
-      sections.push(`Kort sagt: ${summaryMatch[1].trim()}`)
-    }
-
-    if (sections.length === 0) {
-      sections.push("Vi er lige startet, så jeg har ikke meget at trække på endnu — men det ændrer sig hurtigt jo mere vi taler.")
-    }
-
-    sections.push("Er der noget bestemt du gerne vil have mig til at holde fast i eller uddybe?")
-
-    const assistant = sections.join("\n\n")
     const updatedTranscript = appendTranscript(transcript, userText, assistant)
 
     return {
