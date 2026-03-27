@@ -38,6 +38,7 @@ export function detectHistoryQuery(text: string): boolean {
   const t = text.trim().toLowerCase()
   return [
     "hvad har jeg fortalt", "hvad har du lært", "hvad ved du om mig",
+    "vide hvad du ved", "ved du noget om", "vil gerne vide hvad du",
     "hvad husker du", "hvad kender du til", "hvad har vi talt om",
     "hvad har vi snakket om", "hvad har jeg delt", "hvad har jeg sagt",
     "hvad ved du", "fortæl mig hvad du ved", "kan du opsummere hvad",
