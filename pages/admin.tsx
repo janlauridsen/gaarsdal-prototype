@@ -138,9 +138,35 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<ExportData | null>(null)
 
-  const [tab, setTab] = useState<"conversations" | "handoffs" | "leads" | "feedback">("handoffs")
+  const [tab, setTab] = useState<"conversations" | "handoffs" | "leads" | "feedback" | "memory">("handoffs")
   const [openConvId, setOpenConvId] = useState<string | null>(null)
-  const [returnToTab, setReturnToTab] = useState<"conversations" | "handoffs" | "leads" | "feedback">("conversations")
+  const [returnToTab, setReturnToTab] = useState<"conversations" | "handoffs" | "leads" | "feedback" | "memory">("conversations")
+
+  // Memory tab state
+  const [memoryData, setMemoryData] = useState<any>(null)
+  const [memoryLoading, setMemoryLoading] = useState(false)
+  const [memoryError, setMemoryError] = useState<string | null>(null)
+  const [expandedUser, setExpandedUser] = useState<string | null>(null)
+  const [expandedThread, setExpandedThread] = useState<string | null>(null)
+
+  const fetchMemory = useCallback(async () => {
+    if (!secret) return
+    setMemoryLoading(true)
+    setMemoryError(null)
+    try {
+      const res = await fetch(`/api/admin/memory?secret=${encodeURIComponent(secret)}`)
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        setMemoryError(j.error ?? `HTTP ${res.status}`)
+        return
+      }
+      setMemoryData(await res.json())
+    } catch (e: any) {
+      setMemoryError(e.message ?? "Ukendt fejl")
+    } finally {
+      setMemoryLoading(false)
+    }
+  }, [secret])
 
   const handleAuth = () => {
     if (!secretInput.trim()) return
@@ -309,16 +335,20 @@ export default function AdminPage() {
             </div>
 
             {/* Tabs */}
-            <div style={{ display: "flex", gap: "4px", marginBottom: "16px" }}>
+            <div style={{ display: "flex", gap: "4px", marginBottom: "16px", flexWrap: "wrap" }}>
               {([
                 { id: "handoffs", label: `Henvendelser (${handoffs.length})` },
                 { id: "leads", label: `Leads (${leads.length})` },
                 { id: "feedback", label: `Feedback (${feedbackItems.length})` },
                 { id: "conversations", label: `Alle samtaler (${conversations.length})` },
+                { id: "memory", label: "Hukommelse" },
               ] as const).map(t => (
                 <button
                   key={t.id}
-                  onClick={() => { setTab(t.id); setOpenConvId(null) }}
+                  onClick={() => {
+                    setTab(t.id); setOpenConvId(null)
+                    if (t.id === "memory" && !memoryData && !memoryLoading) fetchMemory()
+                  }}
                   style={{
                     padding: "8px 16px", borderRadius: "8px", fontSize: "14px", border: "none", cursor: "pointer",
                     background: tab === t.id ? "#627A52" : "#fff",
@@ -543,6 +573,181 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+            {/* Memory tab */}
+            {tab === "memory" && !openConvId && (
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                  <div style={{ fontSize: "14px", color: "#6B675F" }}>
+                    Brugernes hukommelse, topics og tråd-genbrug via scan_threads
+                  </div>
+                  <button
+                    onClick={fetchMemory}
+                    disabled={memoryLoading}
+                    style={{ padding: "7px 16px", background: "#627A52", color: "#fff", border: "none", borderRadius: "8px", fontSize: "13px", cursor: memoryLoading ? "not-allowed" : "pointer", opacity: memoryLoading ? 0.7 : 1, fontFamily: "inherit" }}
+                  >
+                    {memoryLoading ? "Henter…" : "↻ Opdater"}
+                  </button>
+                </div>
+
+                {memoryError && (
+                  <div style={{ background: "#FEF2F2", color: "#991B1B", padding: "12px 16px", borderRadius: "8px", marginBottom: "16px", fontSize: "14px" }}>
+                    {memoryError}
+                  </div>
+                )}
+
+                {memoryLoading && !memoryData && (
+                  <div style={{ textAlign: "center", color: "#6B675F", fontSize: "14px", padding: "40px 0" }}>Henter hukommelse…</div>
+                )}
+
+                {memoryData && (memoryData.users as any[]).length === 0 && (
+                  <div style={{ textAlign: "center", color: "#6B675F", fontSize: "14px", padding: "40px 0" }}>Ingen brugere fundet</div>
+                )}
+
+                {memoryData && (memoryData.users as any[]).map((user: any) => {
+                  const shortKey = user.user_key.slice(0, 8) + "…"
+                  const isExpanded = expandedUser === user.user_key
+                  const threads: any[] = user.threads ?? []
+                  const topics: string[] = user.profile?.topics ?? []
+                  const topicScores: Record<string, number> = user.profile?.topic_scores ?? {}
+                  const topTopics = Object.entries(topicScores).sort((a, b) => b[1] - a[1]).slice(0, 6)
+                  const threadsWithDraft = threads.filter(t => t.latest_draft?.summary_draft)
+                  const threadsWithEpisode = threads.filter(t => t.episode_summary?.summary_short)
+
+                  return (
+                    <div key={user.user_key} style={{ background: "#fff", borderRadius: "12px", marginBottom: "12px", boxShadow: "0 2px 10px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+                      {/* User header */}
+                      <div
+                        onClick={() => setExpandedUser(isExpanded ? null : user.user_key)}
+                        style={{ padding: "16px 20px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "20px", flex: 1, flexWrap: "wrap" }}>
+                          <div>
+                            <div style={{ fontSize: "13px", fontFamily: "monospace", color: "#2C2A28", fontWeight: 500 }}>{shortKey}</div>
+                            <div style={{ fontSize: "12px", color: "#6B675F", marginTop: "2px" }}>
+                              {user.profile?.last_seen_at ? `Sidst set ${formatDate(user.profile.last_seen_at)}` : "Ingen profil"}
+                            </div>
+                          </div>
+                          {/* Topic pills */}
+                          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                            {topTopics.map(([topic, score]) => (
+                              <span key={topic} style={{
+                                fontSize: "12px", padding: "2px 8px", borderRadius: "12px",
+                                background: score > 0.8 ? "#F0FDF4" : score > 0.4 ? "#FEF9C3" : "#F9F8F5",
+                                color: score > 0.8 ? "#166534" : score > 0.4 ? "#713F12" : "#6B675F",
+                                border: `1px solid ${score > 0.8 ? "#BBF7D0" : score > 0.4 ? "#FDE68A" : "#E5E2DB"}`,
+                              }}>
+                                {topic} <span style={{ opacity: 0.6 }}>{score.toFixed(2)}</span>
+                              </span>
+                            ))}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#6B675F", display: "flex", gap: "12px" }}>
+                            <span>{threads.length} tråde</span>
+                            <span style={{ color: threadsWithDraft.length > 0 ? "#627A52" : "#6B675F" }}>{threadsWithDraft.length} drafts</span>
+                            <span style={{ color: threadsWithEpisode.length > 0 ? "#627A52" : "#6B675F" }}>{threadsWithEpisode.length} episode-summaries</span>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "16px", color: "#6B675F" }}>{isExpanded ? "▲" : "▼"}</div>
+                      </div>
+
+                      {/* Expanded: threads */}
+                      {isExpanded && (
+                        <div style={{ borderTop: "1px solid #F0EDE7", padding: "4px 0" }}>
+                          {threads.length === 0 && (
+                            <div style={{ padding: "16px 20px", fontSize: "14px", color: "#6B675F" }}>Ingen tråde</div>
+                          )}
+                          {threads.map((th: any) => {
+                            const threadKey = `${user.user_key}:${th.conversation_id}`
+                            const isThreadExpanded = expandedThread === threadKey
+                            const hasDraft = !!th.latest_draft?.summary_draft
+                            const hasEpisode = !!th.episode_summary?.summary_short
+
+                            return (
+                              <div key={th.conversation_id} style={{ borderBottom: "1px solid #F9F8F5" }}>
+                                <div
+                                  onClick={() => setExpandedThread(isThreadExpanded ? null : threadKey)}
+                                  style={{ padding: "12px 20px 12px 32px", cursor: "pointer", display: "flex", alignItems: "center", gap: "12px" }}
+                                >
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: "14px", fontWeight: 500, color: "#2C2A28" }}>{th.title}</div>
+                                    {th.preview && (
+                                      <div style={{ fontSize: "13px", color: "#6B675F", marginTop: "2px", maxWidth: "500px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                        {th.preview}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                                    {hasDraft && (
+                                      <span style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "8px", background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>draft</span>
+                                    )}
+                                    {hasEpisode && (
+                                      <span style={{ fontSize: "11px", padding: "1px 6px", borderRadius: "8px", background: "#F0FDF4", color: "#166534", border: "1px solid #BBF7D0" }}>episode</span>
+                                    )}
+                                    <span style={{ fontSize: "12px", color: "#9CA3AF" }}>{isThreadExpanded ? "▲" : "▼"}</span>
+                                  </div>
+                                </div>
+
+                                {isThreadExpanded && (
+                                  <div style={{ padding: "0 20px 16px 32px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                                    {/* Episode summary */}
+                                    {th.episode_summary && (
+                                      <div style={{ background: "#F9F8F5", borderRadius: "8px", padding: "12px 14px" }}>
+                                        <div style={{ fontSize: "12px", fontWeight: 600, color: "#6B675F", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Episode</div>
+                                        {th.episode_summary.summary_short
+                                          ? <div style={{ fontSize: "13px", color: "#2C2A28", lineHeight: 1.5 }}>{th.episode_summary.summary_short}</div>
+                                          : <div style={{ fontSize: "13px", color: "#9CA3AF", fontStyle: "italic" }}>Ingen summary endnu (SUMMARIZE_EPISODE ikke kørt)</div>
+                                        }
+                                        {th.episode_summary.open_loops?.length > 0 && (
+                                          <div style={{ marginTop: "8px" }}>
+                                            <div style={{ fontSize: "12px", color: "#6B675F", marginBottom: "4px" }}>Open loops:</div>
+                                            {th.episode_summary.open_loops.map((loop: string, i: number) => (
+                                              <div key={i} style={{ fontSize: "13px", color: "#6B675F", paddingLeft: "12px" }}>• {loop}</div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* Scan_threads draft */}
+                                    {th.latest_draft && (
+                                      <div style={{ background: "#EFF6FF", borderRadius: "8px", padding: "12px 14px", border: "1px solid #BFDBFE" }}>
+                                        <div style={{ fontSize: "12px", fontWeight: 600, color: "#1D4ED8", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Scan_threads draft</div>
+                                        <div style={{ fontSize: "13px", color: "#1E3A5F", lineHeight: 1.6 }}>{th.latest_draft.summary_draft}</div>
+                                        {th.latest_draft.open_questions?.length > 0 && (
+                                          <div style={{ marginTop: "8px" }}>
+                                            <div style={{ fontSize: "12px", color: "#3B82F6", marginBottom: "4px" }}>Åbne spørgsmål:</div>
+                                            {th.latest_draft.open_questions.map((q: string, i: number) => (
+                                              <div key={i} style={{ fontSize: "13px", color: "#1D4ED8", paddingLeft: "12px", marginBottom: "2px" }}>• {q}</div>
+                                            ))}
+                                          </div>
+                                        )}
+                                        <div style={{ fontSize: "11px", color: "#60A5FA", marginTop: "8px" }}>
+                                          {th.latest_draft.created_at ? `Skabt ${formatDate(new Date(th.latest_draft.created_at).toISOString())}` : ""}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {!th.episode_summary && !th.latest_draft && (
+                                      <div style={{ fontSize: "13px", color: "#9CA3AF", fontStyle: "italic", paddingLeft: "4px" }}>Ingen memory-data for denne tråd endnu</div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+
+                {memoryData && (
+                  <div style={{ fontSize: "12px", color: "#9CA3AF", textAlign: "right", marginTop: "8px" }}>
+                    Opdateret {formatDate(memoryData.fetched_at)}
+                  </div>
+                )}
+              </div>
+            )}
+
           </>
         )}
 
