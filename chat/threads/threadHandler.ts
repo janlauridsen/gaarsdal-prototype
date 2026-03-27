@@ -13,6 +13,9 @@ import {
 import type { ThreadIndex } from "../persistence/threadIndexStore"
 import { appendConversationEventV1 } from "../events/store"
 import { getOrCreateThreadThemeAndEpisode } from "../memory/longTermMemoryStore"
+import { readUserProfile } from "../memory/store"
+import { readFacts } from "../memory/longTermMemoryStore"
+import { createOpenAiCompatibleClient } from "../ai/provider"
 import { newUuid } from "../utils/ids"
 import { isLobbyConversation, toLobbyConversationId, withThreadMeta } from "../utils/conversation"
 import { SESSION_TTL_SECONDS, PROFILE_TTL_SECONDS, MEMORY_TTL_SECONDS } from "../utils/ttl"
@@ -95,14 +98,14 @@ async function emitEvent(params: {
  * - Alle tråde har generiske titler ("Ny samtale")
  * - Det er en parenthesis-tråd
  */
-function buildNewThreadGreeting(params: {
+async function buildAiGreeting(params: {
+  userKey: string
   index: ThreadIndex
   newConversationId: string
   mode: "normal" | "parenthesis"
-}): { greeting: string; topic: string } | null {
+}): Promise<{ greeting: string; topic: string } | null> {
   if (params.mode === "parenthesis") return null
 
-  // Find den seneste tråd med et reelt indhold — ikke den nye (som er øverst)
   const previousThreads = params.index.threads.filter(
     (t) =>
       t.conversation_id !== params.newConversationId &&
@@ -114,21 +117,75 @@ function buildNewThreadGreeting(params: {
   if (previousThreads.length === 0) return null
 
   const latest = previousThreads[0]
-  const title = latest.title.trim()
-  const preview = typeof latest.preview === "string" ? latest.preview.trim() : ""
+  const fallbackTopic = latest.title.trim().toLowerCase()
+  const fallbackGreeting =
+    typeof latest.preview === "string" && latest.preview.trim().length > 10
+      ? `Hej igen. Sidst talte vi om ${fallbackTopic} — du nævnte: "${latest.preview.trim().slice(0, 80)}". Hvad har du på hjerte i dag?`
+      : `Hej igen. Sidst talte vi om ${fallbackTopic}. Hvad har du på hjerte i dag?`
 
-  // Brug preview som kontekst hvis det er en reel brugersætning
-  if (preview.length > 10 && preview.length < 120) {
-    return {
-      greeting: `Hej igen. Sidst talte vi om ${title.toLowerCase()} — du nævnte: "${preview.slice(0, 80)}". Hvad har du på hjerte i dag?`,
-      topic: title.toLowerCase(),
+  try {
+    // Saml kontekst til AI-greeten
+    const profile = await readUserProfile(params.userKey)
+
+    const topTopics = Object.entries(profile?.topic_scores ?? {})
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([t]) => t)
+
+    const recentThreads = previousThreads.slice(0, 5).map((t) => {
+      const preview = typeof t.preview === "string" ? t.preview.trim().slice(0, 80) : ""
+      return preview ? `- ${t.title} ("${preview}")` : `- ${t.title}`
+    })
+
+    const canonicalFacts = await readFacts({ userKey: params.userKey, status: "canonical", limit: 30 })
+    const factLines = canonicalFacts
+      .slice(0, 8)
+      .map((f) => `- ${f.key}: ${typeof f.value === "string" ? f.value.slice(0, 120) : JSON.stringify(f.value).slice(0, 120)}`)
+
+    const contextBlock = [
+      topTopics.length ? `Brugerens primære emner: ${topTopics.join(", ")}` : null,
+      recentThreads.length ? `Seneste samtaler:
+${recentThreads.join("\n")}` : null,
+      factLines.length ? `Kendte facts om brugeren:\n${factLines.join("\n")}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n\n")
+
+    const llm = createOpenAiCompatibleClient()
+    const result = await llm.chatJson({
+      model: process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
+      temperature: 0.6,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: `Du er en empatisk hypnoterapeut-assistent. Skriv en personlig velkomstbesked til en returbruger på dansk.
+
+Regler:
+- Maks 2 sætninger
+- Vis at du husker hvad brugeren tidligere har delt — nævn konkret et emne eller mønster fra historikken
+- Slut med ét åbent spørgsmål der inviterer til hvad der fylder i dag
+- Varm og rolig tone — ikke klinisk, ikke overdrevet
+- Svar KUN med JSON: { "greeting": "...", "topic": "..." } hvor topic er det primære emne du refererer til`,
+        },
+        {
+          role: "user",
+          content: contextBlock || "Ingen historik tilgængelig.",
+        },
+      ],
+    })
+
+    const greeting = typeof result?.greeting === "string" ? result.greeting.trim() : null
+    const topic = typeof result?.topic === "string" ? result.topic.trim() : fallbackTopic
+
+    if (greeting && greeting.length > 10) {
+      return { greeting, topic }
     }
+  } catch {
+    // LLM fejlede — brug fallback
   }
 
-  return {
-    greeting: `Hej igen. Sidst talte vi om ${title.toLowerCase()}. Hvad har du på hjerte i dag?`,
-    topic: title.toLowerCase(),
-  }
+  return { greeting: fallbackGreeting, topic: fallbackTopic }
 }
 
 export async function handleThreadCreate(params: {
@@ -161,7 +218,7 @@ export async function handleThreadCreate(params: {
   // Byg ny-tråd greeting FØR vi skriver til index (så den nye tråd ikke tæller som "tidligere")
   const index0 = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
 
-  const greetingResult = buildNewThreadGreeting({ index: index0, newConversationId: newId, mode })
+  const greetingResult = await buildAiGreeting({ userKey, index: index0, newConversationId: newId, mode })
   if (greetingResult) {
     // Sæt velkomstbesked og seed last_topic i meta så AI'en ved hvad "der" refererer til
     // når brugeren skriver "jeg vil gerne fortsætte der" i den nye tråd.
