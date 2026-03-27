@@ -10,6 +10,7 @@ import {
   readTheme,
   type MemoryFact,
 } from "../memory/longTermMemoryStore"
+import { readUserProfile } from "../memory/store"
 
 export type ContextPackV23 = {
   system: string
@@ -116,6 +117,43 @@ function buildApprovedThreadAssetLines(params: {
   return lines
 }
 
+
+function topicEpisodeIdForContext(topic: string): string {
+  const normalized = topic.toLowerCase().trim().replace(/\s+/g, "-").slice(0, 60)
+  return `episode:topic:${normalized}`
+}
+
+async function buildTopicEpisodeLines(params: {
+  userKey: string
+  currentConversationId: string
+  maxTopics?: number
+}): Promise<string[]> {
+  const profile = await readUserProfile(params.userKey)
+  if (!profile) return []
+
+  const topTopics = Object.entries(profile.topic_scores ?? {})
+    .filter(([, score]) => score >= 0.4)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, params.maxTopics ?? 2)
+    .map(([topic]) => topic)
+
+  const lines: string[] = []
+  for (const topic of topTopics) {
+    const episodeId = topicEpisodeIdForContext(topic)
+    const ep = await readEpisode({ userKey: params.userKey, episodeId })
+    if (!ep?.summary_short) continue
+
+    lines.push(`Emne "${topic}":`)
+    lines.push(`  ${clamp(ep.summary_short, 400)}`)
+    if (Array.isArray(ep.open_loops) && ep.open_loops.length) {
+      for (const loop of ep.open_loops.slice(0, 4)) {
+        lines.push(`  - Åbent: ${clamp(String(loop), 120)}`)
+      }
+    }
+  }
+  return lines
+}
+
 export async function buildContextPackV23(params: {
   userKey: string
   state: ConversationState
@@ -219,13 +257,27 @@ export async function buildContextPackV23(params: {
   const summary = episode.summary_short ? clamp(episode.summary_short, 520) : ""
   const openLoops = Array.isArray(episode.open_loops) ? episode.open_loops.slice(0, 5) : []
 
+  // Topic-collapsed episodes: cross-thread knowledge about recurring topics
+  const topicEpisodeLines = await buildTopicEpisodeLines({
+    userKey: params.userKey,
+    currentConversationId: currentConversationId,
+    maxTopics: 2,
+  })
+
   const parts: string[] = []
   parts.push("LANGTIDSKONTEKST (v23, kompakt og bounded):")
+
+  if (topicEpisodeLines.length) {
+    parts.push("")
+    parts.push("Hvad vi ved om brugerens emner (akkumuleret på tværs af samtaler):")
+    parts.push(...topicEpisodeLines)
+  }
+
   parts.push(`Theme: ${theme.label} (${theme.theme_id})`)
 
   if (summary) {
     parts.push("")
-    parts.push("Seneste episode-opsummering:")
+    parts.push("Seneste samtale-opsummering:")
     parts.push(summary)
   }
 
