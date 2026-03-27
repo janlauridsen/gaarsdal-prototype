@@ -64,8 +64,15 @@ export function derivePhase(meta: Record<string, any> | null | undefined): Phase
     : "")
   const ctaShown = Boolean(readValue("gen_hypno.cta_shown"))
 
-  // Fase 1: de første 1-2 turns — forstår brugerens situation
-  if (turns <= 2) return { phase: 1, label: "Forstår dit behov" }
+  // Returbruger: hvis last_topic er sat af SYSTEM_THREAD_CREATE er det en ny tråd
+  // fra en returbruger — systemet kender dem allerede, så vi springer fase 1 over
+  const lastTopicSource = meta["gen_hypno.last_topic"]
+  const isReturningUser = lastTopicSource &&
+    typeof lastTopicSource === "object" &&
+    (lastTopicSource as any).source_node === "SYSTEM_THREAD_CREATE"
+
+  // Fase 1: de første 1-2 turns — men kun for nye brugere
+  if (turns <= 2 && !isReturningUser) return { phase: 1, label: "Forstår dit behov" }
 
   // Fase 2: afklarer om hypnoterapi er relevant (turns 3-5, ingen klar mønster-fase endnu)
   if (turns <= 5 && stage !== "explore_patterns") return { phase: 2, label: "Afklarer relevans" }
