@@ -475,7 +475,7 @@ export function MessagePane(props: MessagePaneProps) {
         </div>
       ))}
 
-      {feedbackMode === "closing" && conversationId && (
+      {feedbackMode === "closing" && feedbackMove === "close" && userTurnCount >= 4 && conversationId && (
         <ClosingFeedback
           conversationId={conversationId}
           node={props.state?.active_node}
