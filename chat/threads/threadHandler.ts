@@ -259,6 +259,26 @@ export async function handleThreadCreate(params: {
     }),
   }
 
+  // Max 20 aktive tråde — arkiver (ikke slet) ældste ud over grænsen.
+  // Arkiverede tråde vises ikke i UI men historik bevares i Redis.
+  const MAX_ACTIVE_THREADS = 20
+  const activeThreads = index1.threads.filter((t) => t.status === "active")
+  if (activeThreads.length > MAX_ACTIVE_THREADS) {
+    const toArchive = new Set(
+      activeThreads
+        .filter((t) => t.conversation_id !== newId)
+        .sort((a, b) => Date.parse(a.updated_at || a.created_at || "") - Date.parse(b.updated_at || b.created_at || ""))
+        .slice(0, activeThreads.length - MAX_ACTIVE_THREADS)
+        .map((t) => t.conversation_id)
+    )
+    index1 = {
+      ...index1,
+      threads: index1.threads.map((t) =>
+        toArchive.has(t.conversation_id) ? { ...t, status: "archived" as const } : t
+      ),
+    }
+  }
+
   await writeThreadIndex({ userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
 
   await emitEvent({
