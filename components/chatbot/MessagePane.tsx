@@ -178,20 +178,17 @@ function buildStarterChips(state: ConversationState | null): StarterChip[] {
     return typeof entry === "string" ? entry : ""
   })()
 
-  const isReturningGreeting =
-    message.includes("Sidst talte vi om") || message.includes("Vil du fortsætte der")
+  // Returning user = greeting indeholder "Velkommen tilbage" eller et last_topic er sat.
+  // Disse brugere behøver ikke chips — greeten inviterer implicit til fri tekst.
+  const isReturningUser =
+    message.includes("Velkommen tilbage") ||
+    (lastTopic.trim().length > 0 && !message.includes("Hvad er det"))
 
-  if (isReturningGreeting) {
-    const topicLabel = lastTopic.trim() || "det vi talte om"
-    const previousThreadId = findPreviousThreadId(state)
-    return [
-      previousThreadId
-        ? { label: `Fortsæt om ${topicLabel}`, action: { type: "THREAD_SWITCH", conversation_id: previousThreadId } }
-        : { label: `Fortsæt om ${topicLabel}`, text: `Ja, lad os fortsætte med ${topicLabel}` },
-      { label: "Noget nyt i dag", text: "Jeg har noget andet på hjerte i dag" },
-    ]
+  if (isReturningUser) {
+    return []
   }
 
+  // Ny bruger: vis orienterende chips
   return [
     { label: "Hvad sker der under hypnose?", text: "Hvad sker der under hypnose?" },
     { label: "Passer det til mig?", text: "Passer det til mig?" },
