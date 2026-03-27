@@ -164,7 +164,7 @@ ${recentThreads.join("\n")}` : null,
 Regler:
 - Maks 2 sætninger
 - Vis at du husker hvad brugeren tidligere har delt — nævn konkret et emne eller mønster fra historikken
-- Slut med ét åbent spørgsmål der inviterer til hvad der fylder i dag
+- Slut med ét åbent spørgsmål der inviterer til hvad der fylder i dag — spørgsmålet må gerne åbne for at det kan være noget nyt, fx "Er der noget fra sidst du vil vende tilbage til, eller er der noget nyt på hjerte?"
 - Varm og rolig tone — ikke klinisk, ikke overdrevet
 - Svar KUN med JSON: { "greeting": "...", "topic": "..." } hvor topic er det primære emne du refererer til`,
         },
