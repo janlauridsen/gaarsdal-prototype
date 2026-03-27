@@ -11,6 +11,7 @@ import {
   type MemoryFact,
 } from "../memory/longTermMemoryStore"
 import { readUserProfile } from "../memory/store"
+import { readLatestDraft } from "../jobs/store"
 
 export type ContextPackV23 = {
   system: string
@@ -291,6 +292,21 @@ export async function buildContextPackV23(params: {
     parts.push("")
     parts.push("Godkendte aktiver fra tidligere tråde:")
     parts.push(...approvedThreadAssetLines)
+  }
+
+  // Inject scan_threads draft early — don't wait for revision 8 accept.
+  // This gives AI cross-thread context from turn 2 onwards.
+  const latestDraft = await readLatestDraft(params.state.conversation_id)
+  if (latestDraft?.summary_draft && !latestDraft.accepted_at) {
+    parts.push("")
+    parts.push("Kontekst fra tidligere samtaler (foreløbig, ikke bekræftet af bruger):")
+    parts.push(clamp(latestDraft.summary_draft, 400))
+    if (Array.isArray(latestDraft.open_questions) && latestDraft.open_questions.length) {
+      parts.push("Åbne spørgsmål fra tidligere:")
+      for (const q of latestDraft.open_questions.slice(0, 3)) {
+        parts.push(`- ${clamp(String(q), 120)}`)
+      }
+    }
   }
 
   if (factLines.length) {
