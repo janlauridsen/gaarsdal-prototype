@@ -23,10 +23,10 @@ signals: string[]
 confidence: number (0-1)
 
 routing_intent-regler (vurder i kontekst — ikke kun nøgleord):
-- contact_booking: brugeren vil aktivt booke eller kontakte Jan nu. Eksempler: "jeg vil gerne booke", "kan jeg få en tid", "hvad koster det og hvordan booker jeg". IKKE hvis de siger "inden jeg booker", "før jeg beslutter mig", "vil gerne vide mere først" — det er "none".
+- contact_booking: brugeren vil aktivt booke eller kontakte Jan nu — og har ALLEREDE fået svar på praktiske spørgsmål. Kræver eksplicit handlingsord: "jeg vil gerne booke", "kan jeg få en tid", "how do I sign up". IKKE ved spørgsmål om pris, antal sessioner, varighed, hvad det indebærer — selv hvis booking nævnes i samme sætning som et spørgsmål. Eksempel der er none: "skal jeg i behandling mange gange og er det dyrt", "hvad koster det", "hvor mange gange skal man komme", "inden jeg booker — hvad sker der i en session".
 - lead_capture: brugeren er interesseret men eksplicit ikke klar. Eksempler: "ikke nu", "tænker over det", "vil gerne have mere info først", "send mig noget".
 - fit_check: brugeren vil vide om hypnoterapi passer til netop dem. Eksempler: "er det noget for mig", "virker det for min type problem", "passer det til min situation".
-- none: alt andet — også spørgsmål om pris/adresse/kontaktinfo uden eksplicit booking-intent.
+- none: alt andet — spørgsmål om pris, antal sessioner, varighed, hvad hypnoterapi indebærer, praktisk info, og alle spørgsmål der søger information frem for handling.
 
 Prioriteter:
 - Personlig friktion/barriere/uro → reflection, ikke info
