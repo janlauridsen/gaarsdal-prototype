@@ -9,8 +9,10 @@ import {
   upsertEpisode,
   upsertFact,
   type MemoryFact,
+  type Episode,
   readTheme,
 } from "../memory/longTermMemoryStore"
+import { readUserProfile } from "../memory/store"
 import { MEMORY_TTL_SECONDS } from "../utils/ttl"
 import { nowMs } from "../utils/time"
 import crypto from "crypto"
@@ -90,6 +92,42 @@ async function processJob(job: AsyncJobV23): Promise<AsyncJobResult> {
   }
 }
 
+
+// Derives a stable topic-episode-id from a topic string.
+// Multiple threads about the same topic converge to the same episode.
+function topicEpisodeId(userKey: string, topic: string): string {
+  const normalized = topic.toLowerCase().trim().replace(/\s+/g, "-").slice(0, 60)
+  return `episode:topic:${normalized}`
+}
+
+function topicThemeId(topic: string): string {
+  const normalized = topic.toLowerCase().trim().replace(/\s+/g, "-").slice(0, 60)
+  return `theme:topic:${normalized}`
+}
+
+// Returns the top topic(s) for this conversation that have score >= threshold.
+// Used to decide which topic-episode to update.
+async function resolveTopicCluster(params: {
+  userKey: string
+  conversationId: string
+  minScore?: number
+}): Promise<string[]> {
+  const profile = await readUserProfile(params.userKey)
+  if (!profile) return []
+
+  const threshold = params.minScore ?? 0.4
+  const scores = profile.topic_scores ?? {}
+
+  // Find topics above threshold, sorted by score
+  const eligible = Object.entries(scores)
+    .filter(([, score]) => score >= threshold)
+    .sort((a, b) => b[1] - a[1])
+    .map(([topic]) => topic)
+    .slice(0, 2) // max 2 topic clusters
+
+  return eligible
+}
+
 async function processSummarizeEpisode(job: AsyncJobV23): Promise<AsyncJobResult> {
   const turns = await readRawTurns({ conversationId: job.conversation_id })
   if (!turns.length) return { job_id: job.job_id, ok: true }
@@ -154,7 +192,9 @@ Regler:
   if (!summary_short && !openLoopsRaw.length) return { job_id: job.job_id, ok: true }
 
   const ts = nowMs()
-  const episode = {
+
+  // 1. Write to the thread-specific episode (existing behaviour)
+  const threadEpisode: Episode = {
     episode_id: job.episode_id,
     theme_id: job.theme_id,
     started_at: existing?.started_at ?? ts,
@@ -163,8 +203,42 @@ Regler:
     open_loops: openLoopsRaw.length ? openLoopsRaw : existing?.open_loops,
     updated_at: ts,
   }
+  await upsertEpisode({ userKey: job.user_key, episode: threadEpisode, ttlSeconds: MEMORY_TTL_SECONDS })
 
-  await upsertEpisode({ userKey: job.user_key, episode, ttlSeconds: MEMORY_TTL_SECONDS })
+  // 2. Also write to topic-collapsed episode(s) — the cross-thread accumulator.
+  // This is what gives AI context about the topic regardless of which thread the user is in.
+  const topicClusters = await resolveTopicCluster({ userKey: job.user_key, conversationId: job.conversation_id })
+
+  for (const topic of topicClusters) {
+    const tEpisodeId = topicEpisodeId(job.user_key, topic)
+    const tThemeId = topicThemeId(topic)
+    const existingTopicEp = await readEpisode({ userKey: job.user_key, episodeId: tEpisodeId })
+
+    // Merge open_loops: combine existing + new, deduplicate, keep max 6
+    const existingLoops = Array.isArray(existingTopicEp?.open_loops) ? existingTopicEp.open_loops : []
+    const newLoops = openLoopsRaw.length ? openLoopsRaw : []
+    const mergedLoops = Array.from(new Set([...existingLoops, ...newLoops])).slice(0, 6)
+
+    // Build cumulative summary: if existing, ask LLM to merge; otherwise just use new summary
+    let cumulativeSummary = summary_short ?? existingTopicEp?.summary_short ?? ""
+    if (existingTopicEp?.summary_short && summary_short && existingTopicEp.summary_short !== summary_short) {
+      // Simple merge: prepend existing context, append new insight
+      const merged = `${existingTopicEp.summary_short} ${summary_short}`
+      cumulativeSummary = clampStr(merged, 500)
+    }
+
+    const topicEp: Episode = {
+      episode_id: tEpisodeId,
+      theme_id: tThemeId,
+      started_at: existingTopicEp?.started_at ?? ts,
+      summary_short: cumulativeSummary || undefined,
+      open_loops: mergedLoops.length ? mergedLoops : undefined,
+      updated_at: ts,
+    }
+
+    await upsertEpisode({ userKey: job.user_key, episode: topicEp, ttlSeconds: MEMORY_TTL_SECONDS })
+  }
+
   return { job_id: job.job_id, ok: true }
 }
 
