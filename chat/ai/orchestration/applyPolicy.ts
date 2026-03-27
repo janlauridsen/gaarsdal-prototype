@@ -34,6 +34,18 @@ export function detectDirectContactRequest(text: string): boolean {
   return ["kontakte", "kontakt", "ringe", "telefon", "mail", "e-mail", "email", "booke", "booking", "ledige tider", "adresse"].some((x) => t.includes(x))
 }
 
+export function detectHistoryQuery(text: string): boolean {
+  const t = text.trim().toLowerCase()
+  return [
+    "hvad har jeg fortalt", "hvad har du lært", "hvad ved du om mig",
+    "hvad husker du", "hvad kender du til", "hvad har vi talt om",
+    "hvad har vi snakket om", "hvad har jeg delt", "hvad har jeg sagt",
+    "hvad ved du", "fortæl mig hvad du ved", "kan du opsummere hvad",
+    "hvad har du noteret", "hvad har du gemt", "hvad har du opfanget",
+    "kan du huske hvad", "husker du hvad", "ved du noget om mig",
+  ].some((p) => t.includes(p))
+}
+
 export function detectContinuationIntent(text: string): boolean {
   const t = text.trim().toLowerCase()
   return [
