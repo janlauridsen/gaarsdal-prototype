@@ -159,7 +159,7 @@ ${recentThreads.join("\n")}` : null,
       messages: [
         {
           role: "system",
-          content: `Du er en empatisk hypnoterapeut-assistent. Skriv en personlig velkomstbesked til en returbruger på dansk.
+          content: `Du er den digitale assistent for Jan Lauridsen, hypnoterapeut på Gaarsdal (Birkerød). Skriv en personlig velkomstbesked til en returbruger på dansk.
 
 Regler:
 - Maks 2 sætninger
