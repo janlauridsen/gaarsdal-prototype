@@ -3,7 +3,7 @@ import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from
 import { normalizeFinalResponse } from "../contracts/responseContract"
 import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
 import { analyzeTurn } from "../orchestration/analyzeTurn"
-import { applyPolicy, detectClosingText, detectContinuationIntent, detectDirectContactRequest, detectPracticalKeywords, computeRollingArousal } from "../orchestration/applyPolicy"
+import { applyPolicy, detectClosingText, detectContinuationIntent, detectDirectContactRequest, detectHistoryQuery, detectPracticalKeywords, computeRollingArousal } from "../orchestration/applyPolicy"
 import { detectClientSignals } from "./clientDetection"
 import { assembleResponseMessages } from "../orchestration/assemblePrompt"
 
@@ -472,6 +472,76 @@ export async function runUnifiedHypnoCapability(
         },
         debug: { capability: "unified-hypno-v4", used_fallback: false },
       }
+    }
+  }
+
+  // ─── Hukommelse-forespørgsel ───────────────────────────────────────────────
+  // Brugeren spørger ind til hvad de har delt — byg et struktureret svar
+  // direkte fra contextPack + transcript uden at kalde response-LLM.
+  if (detectHistoryQuery(userText)) {
+    const sections: string[] = []
+
+    // Denne tråd
+    const currentTurns = trimmedTranscript.filter((t) => t.role === "user")
+    if (currentTurns.length > 0) {
+      const thisThread = currentTurns.slice(-6).map((t) => `– ${t.content.slice(0, 80)}`).join("
+")
+      sections.push(`I denne samtale har du bl.a. nævnt:
+${thisThread}`)
+    }
+
+    // contextPack — udtræk topic-nævnelser og thread-summaries til et præcist svar
+    const cp = context.contextPack?.system ?? ""
+
+    // Udtræk topic-linjer fra contextPack (format: "- emne (score: X)")
+    const topicMatches = cp.match(/[-–]\s+([^
+(]{4,40})\s+\(score:/g)
+    if (topicMatches && topicMatches.length > 0) {
+      const topicNames = topicMatches
+        .slice(0, 4)
+        .map((m) => m.replace(/^[-–]\s+/, "").replace(/\s+\(score:.*/, "").trim())
+        .filter(Boolean)
+      if (topicNames.length > 0) {
+        sections.push(`På tværs af vores samtaler har du primært talt om: ${topicNames.join(", ")}.`)
+      }
+    } else if (cp.includes("Kontekst fra") || cp.includes("Tidligere samtaler") || cp.includes("thread-asset")) {
+      sections.push("På tværs af vores tidligere samtaler har vi primært kredset om dine vaner og mønstre.")
+    }
+
+    // Udtræk thread-summaries hvis de er tilgængelige
+    const summaryMatch = cp.match(/Sammenfatning[:\s]+([^
+]{20,200})/)
+    if (summaryMatch) {
+      sections.push(`Kort sagt: ${summaryMatch[1].trim()}`)
+    }
+
+    if (sections.length === 0) {
+      sections.push("Vi er lige startet, så jeg har ikke meget at trække på endnu — men det ændrer sig hurtigt jo mere vi taler.")
+    }
+
+    sections.push("Er der noget bestemt du gerne vil have mig til at holde fast i eller uddybe?")
+
+    const assistant = sections.join("
+
+")
+    const updatedTranscript = appendTranscript(transcript, userText, assistant)
+
+    return {
+      transition: {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        to: context.state.active_node,
+        reason: "gen-hypno:history_query",
+        response_message: assistant,
+        meta_delta: buildMetaDelta({
+          context, assistantMessage: assistant, updatedTranscript,
+          topic: previousTopic, sourceNode: options.sourceNode,
+          transcriptKey: options.transcriptKey, userText,
+          analysis: { ...analysis, proposed_mode: "info", conversation_move: "direct_answer" },
+          mode: "info", relationalState: "building_clarity",
+        }),
+      },
+      debug: { capability: "unified-hypno-v4", used_fallback: false },
     }
   }
 
