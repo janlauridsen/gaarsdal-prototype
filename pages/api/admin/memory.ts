@@ -65,13 +65,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (filterUserKey) {
       userKeys = [filterUserKey]
     } else {
-      let cursor = 0
+      let cursor: string | number = "0"
       do {
         const result = await (client as any).scan(cursor, { match: `${THREADS_PREFIX}*`, count: 100 })
-        cursor = result[0]
+        cursor = String(result[0])
         const keys: string[] = result[1]
         userKeys.push(...keys.map((k: string) => k.replace(THREADS_PREFIX, "")))
-      } while (cursor !== 0)
+      } while (cursor !== "0")
       userKeys = userKeys.slice(0, 20) // max 20 brugere ad gangen
     }
 
