@@ -3,7 +3,7 @@ import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from
 import { normalizeFinalResponse } from "../contracts/responseContract"
 import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
 import { analyzeTurn } from "../orchestration/analyzeTurn"
-import { applyPolicy, detectClosingText, detectContinuationIntent, detectDirectContactRequest, detectHistoryQuery, detectPracticalKeywords, computeRollingArousal } from "../orchestration/applyPolicy"
+import { applyPolicy, detectClosingText, detectDirectContactRequest, detectPracticalKeywords, computeRollingArousal } from "../orchestration/applyPolicy"
 import { detectClientSignals } from "./clientDetection"
 import { assembleResponseMessages } from "../orchestration/assemblePrompt"
 
@@ -189,7 +189,7 @@ function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMo
     return {
       intent: "social_closing", proposed_mode: "closing", conversation_move: "close",
       investigation_focus: "none", response_goal: "close_briefly", relational_state: "gentle_close",
-      routing_intent: "none", topic: previousTopic, sensitivity: "low", signals: ["soft_closing"], confidence: 0.98,
+      routing_intent: "none", is_history_query: false, topic: previousTopic, sensitivity: "low", signals: ["soft_closing"], confidence: 0.98,
     }
   }
 
@@ -201,39 +201,16 @@ function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMo
       investigation_focus: forcedMode === "reflection" ? "attention" : forcedMode === "practical" ? "preparation" : "none",
       response_goal: forcedMode === "reflection" ? "answer_then_one_question" : "answer_directly",
       relational_state: forcedMode === "reflection" ? "building_trust" : forcedMode === "practical" ? "decision_support" : "building_clarity",
-      routing_intent: "none", topic: previousTopic, sensitivity: "medium", signals: ["forced_mode"], confidence: 0.95,
+      routing_intent: "none", is_history_query: false, topic: previousTopic, sensitivity: "medium", signals: ["forced_mode"], confidence: 0.95,
     }
   }
 
-  if (detectPracticalKeywords(userText)) {
-    return {
-      intent: "seek_practical_help", proposed_mode: "practical", conversation_move: "practical_preparation",
-      investigation_focus: "preparation", response_goal: "answer_directly", relational_state: "decision_support",
-      routing_intent: "none", topic: previousTopic, sensitivity: "low", signals: ["practical_keyword"], confidence: 0.82,
-    }
-  }
-
-  if (["evidens", "virker", "forskning", "studier", "dokumentation"].some((x) => normalize(userText).includes(x))) {
-    return {
-      intent: "ask_evidence", proposed_mode: "evidence", conversation_move: "direct_answer",
-      investigation_focus: "none", response_goal: "answer_directly", relational_state: "decision_support",
-      routing_intent: "none", topic: previousTopic, sensitivity: "low", signals: ["evidence_keyword"], confidence: 0.8,
-    }
-  }
-
-  if (["har svært ved", "kan ikke", "kommer ikke i gang", "holde ved", "utryg", "urolig", "træt", "tung", "modstand", "barriere"].some((x) => normalize(userText).includes(x))) {
-    return {
-      intent: "explore_pattern", proposed_mode: "reflection", conversation_move: "guided_observation",
-      investigation_focus: normalize(userText).includes("trang") || normalize(userText).includes("uro") ? "regulation" : "pattern",
-      response_goal: "answer_then_one_question", relational_state: "building_trust",
-      routing_intent: "none", topic: previousTopic, sensitivity: "medium", signals: ["personal_difficulty"], confidence: 0.72,
-    }
-  }
-
+  // Neutral fallback — LLM fejlede, vis info-svar uden at gætte på intent
   return {
     intent: "understand_method", proposed_mode: "info", conversation_move: "direct_answer",
     investigation_focus: "none", response_goal: "answer_directly", relational_state: "orienting",
-    routing_intent: "none", topic: previousTopic, sensitivity: "low", signals: ["default_info"], confidence: 0.55,
+    routing_intent: "none", is_history_query: false, topic: previousTopic, sensitivity: "low",
+    signals: ["llm_fallback"], confidence: 0.3,
   }
 }
 
@@ -291,9 +268,10 @@ function buildMetaDelta(params: {
   const nextAssistantCount = params.assistantMessage ? prevAssistantCount + 1 : prevAssistantCount
 
   const dialogStage = params.mode === "closing" ? "close" : params.mode === "reflection" ? "explore_patterns" : "open"
-  const derivedTopicTags = inferTopicTags(params.userText, params.topic)
-  const derivedProblemTitle = inferProblemTitle(params.topic, params.userText)
-  const derivedProblemSummary = inferProblemSummary(params.topic)
+  // Topic-tags og problem-titel/-summary: brug LLM-analysens data direkte
+  const derivedTopicTags = params.topic ? [params.topic, ...(params.analysis.signals ?? []).slice(0, 2)] : []
+  const derivedProblemTitle = params.analysis.topic ?? params.topic
+  const derivedProblemSummary = params.analysis.objective ?? (params.topic ? `Ønske om at forstå mønstre relateret til ${params.topic}.` : undefined)
 
   const meta: Record<string, unknown> = {
     [params.transcriptKey]: params.updatedTranscript,
@@ -478,7 +456,7 @@ export async function runUnifiedHypnoCapability(
   // ─── Hukommelse-forespørgsel ───────────────────────────────────────────────
   // Brugeren spørger ind til hvad de har delt.
   // Har contextPack reelt indhold, lader vi LLM formulere svaret direkte.
-  if (detectHistoryQuery(userText)) {
+  if (analysis.is_history_query) {
     const cp = context.contextPack?.system ?? ""
     const hasContext = cp.length > 200
 
@@ -586,16 +564,14 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  // Topic-prioritering:
-  // 1. extractTopic på brugerens tekst (deterministisk dansk keyword-match)
-  // 2. responseTopic fra LLM's response-kontrakt (topic-feltet)
-  // 3. analysis.topic fra analyzeTurn (rå LLM-klassificering)
-  // 4. previousTopic fra meta (forrige turn — kun som absolut fallback)
-  // Undgå at previousTopic forurener en ny emne-spor.
+  // Topic-prioritering (kun LLM-kilder — ingen keyword-regex):
+  // 1. responseTopic fra LLM's response-kontrakt
+  // 2. analysis.topic fra analyzeTurn
+  // 3. previousTopic som absolut fallback
   const rawAnalysisTopic = analysis.topic && !["regulation", "attention", "pattern", "preparation", "interpretation", "none"].includes(analysis.topic.toLowerCase())
     ? analysis.topic
     : undefined
-  const topic = extractTopic(userText) || responseTopic || rawAnalysisTopic || extractTopic("", previousTopic)
+  const topic = responseTopic || rawAnalysisTopic || previousTopic
 
   if (!assistant) {
     assistant = buildFallbackMessage(modeUsed, transcript, topic)
@@ -613,8 +589,7 @@ export async function runUnifiedHypnoCapability(
     !!topic &&
     modeUsed !== "closing" &&
     modeUsed !== "practical" &&
-    !detectClosingText(userText) &&
-    !detectContinuationIntent(userText)
+    analysis.intent !== "social_closing"
 
   if (ctaConditionsMet) {
     assistant = assistant + "\n\nHvis du vil vide mere om hvad et konkret forløb indebærer, er du velkommen til at skrive det — eller tage kontakt til Jan direkte."
