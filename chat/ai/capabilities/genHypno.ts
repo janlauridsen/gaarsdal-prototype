@@ -506,8 +506,7 @@ export async function runUnifiedHypnoCapability(
     }
 
     // Udtræk thread-summaries hvis de er tilgængelige
-    const summaryMatch = cp.match(/Sammenfatning[:\s]+([^
-]{20,200})/)
+    const summaryMatch = cp.match(/Sammenfatning[:\s]+([^\n]{20,200})/)
     if (summaryMatch) {
       sections.push(`Kort sagt: ${summaryMatch[1].trim()}`)
     }
