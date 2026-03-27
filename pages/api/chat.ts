@@ -183,27 +183,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS }),
     ])
 
+    const userText = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : toUserInput(input as InputSignal) ?? ""
+    const assistantText = String(kernelResultFinal.transition.response_message ?? kernelResultFinal.state.active_node_message ?? "")
+    const metaKeysWritten = kernelResultFinal.transition.meta_delta ? Object.keys(kernelResultFinal.transition.meta_delta) : []
+
+    // Run postTurn to enqueue SUMMARIZE_EPISODE / SUGGEST_FACTS jobs + write raw/memory/events.
+    // Must settle before we drain the queue below.
+    await Promise.allSettled([Promise.resolve(runPostTurn({
+      userKey, input: input as InputSignal, kernelResult: kernelResultFinal, binding,
+      includeText: envBool("GAARSDAL_EVENTS_INCLUDE_TEXT"),
+      userText, assistantText, metaKeysWritten,
+      terminalStatus: kernelResultFinal.state.status,
+    }))])
+
+    // Drain up to 2 async jobs (SUMMARIZE_EPISODE, SUGGEST_FACTS) synchronously
+    // BEFORE sending the response — guarantees execution without a cron.
+    // Capped at 4 seconds so the user is not kept waiting too long.
+    try {
+      await Promise.race([
+        processQueueBatch(2),
+        new Promise<void>((resolve) => setTimeout(resolve, 4000)),
+      ])
+    } catch { /* never fail the request */ }
+
     res.status(200).json({
       ...kernelResultFinal,
       state: withThreadMeta(kernelResultFinal.state, indexNow),
       ...serializeActiveNode(kernelResultFinal.state.active_node),
       deferred_job: scanThreads.deferredJob ?? null,
     })
-
-    const userText = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : toUserInput(input as InputSignal) ?? ""
-    const assistantText = String(kernelResultFinal.transition.response_message ?? kernelResultFinal.state.active_node_message ?? "")
-    const metaKeysWritten = kernelResultFinal.transition.meta_delta ? Object.keys(kernelResultFinal.transition.meta_delta) : []
-
-    waitUntil(Promise.resolve(runPostTurn({
-      userKey, input: input as InputSignal, kernelResult: kernelResultFinal, binding,
-      includeText: envBool("GAARSDAL_EVENTS_INCLUDE_TEXT"),
-      userText, assistantText, metaKeysWritten,
-      terminalStatus: kernelResultFinal.state.status,
-    })))
-
-    // Drain up to 3 async jobs (SUMMARIZE_EPISODE, SUGGEST_FACTS) opportunistically
-    // after each turn. Fire-and-forget — errors don't affect the user.
-    waitUntil(processQueueBatch(3).catch(() => {}))
 
   } catch (e: any) {
     await emitCanonicalEvent({
