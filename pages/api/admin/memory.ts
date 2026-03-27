@@ -1,169 +1,224 @@
-// pages/api/admin/memory.ts
-//
-// Viser hukommelse og tråd-genbrug for alle brugere i systemet.
-// Returnerer profil, episoder, og scan_threads drafts.
-//
-// GET /api/admin/memory?secret=<ADMIN_SECRET>&user_key=<optional>
-
+// pages/api/chat.ts
 import type { NextApiRequest, NextApiResponse } from "next"
-import { getRedisClient } from "../../../chat/persistence/redis"
+// waitUntil: keeps the serverless function alive until the promise settles.
+// Falls back to a no-op outside Vercel (local dev) so behaviour is identical.
+const waitUntil: (p: Promise<unknown>) => void =
+  (globalThis as any)[Symbol.for("vercel.waitUntil")] ??
+  ((p: Promise<unknown>) => { p.catch(() => {}) })
 
-const THREADS_PREFIX = "gaarsdal:threads:u:"
-const PROFILE_PREFIX = "gaarsdal:profile:"
-const MEM_PREFIX = "gaarsdal:mem:v23:u:"
-const DRAFT_LATEST_PREFIX = "gaarsdal:jobs:v1:draft:latest:conversation:"
-const DRAFT_PREFIX = "gaarsdal:jobs:v1:draft:conversation:"
+import { runNode } from "../../chat/runtime/nodeRunner"
+import { createInitialState, createLobbyState } from "../../chat/kernel/state"
+import type { InputSignal, KernelResult } from "../../chat/kernel/types"
+import { getNode } from "../../chat/nodes/registry"
 
-function checkAuth(req: NextApiRequest): boolean {
-  const secret = process.env.ADMIN_SECRET
-  const provided = typeof req.query.secret === "string" ? req.query.secret : ""
-  return !secret || provided === secret
+import { readConversationState, writeConversationState } from "../../chat/persistence/conversationStateStore"
+import { ensureThreadIndex } from "../../chat/persistence/threadIndexStore"
+import { appendConversationEventV1 } from "../../chat/events/store"
+import { getOrCreateThreadThemeAndEpisode } from "../../chat/memory/longTermMemoryStore"
+
+import { handleThreadCreate, handleThreadSwitch, handleThreadArchive } from "../../chat/threads/threadHandler"
+import { runPostTurn, maybeTriggerScanThreadsJob } from "../../chat/kernel/postTurn"
+import { processQueueBatch } from "../../chat/async/worker"
+
+import { setWidgetCors } from "./_utils/cors"
+import { ensureUserKey } from "./_utils/auth"
+import { newUuid } from "../../chat/utils/ids"
+import { envBool } from "../../chat/utils/env"
+import { SESSION_TTL_SECONDS, PROFILE_TTL_SECONDS, MEMORY_TTL_SECONDS } from "../../chat/utils/ttl"
+import { isLobbyConversation, toLobbyConversationId, toUserInput, truncateText, withThreadMeta } from "../../chat/utils/conversation"
+import { nowMs } from "../../chat/utils/time"
+
+function serializeActiveNode(nodeId: string): { node_kind: string; node_allow_free_text: boolean; node_allowed_exits: string[]; node_form?: { fields: Array<{ id: string; label: string; required?: boolean; placeholder?: string }> } } {
+  try {
+    const node = getNode(nodeId)
+    const out: any = {
+      node_kind: node.kind,
+      node_allow_free_text: node.allow_free_text,
+      node_allowed_exits: node.allowed_exits ?? [],
+    }
+    if (node.kind === "FORM" && node.form) {
+      out.node_form = {
+        fields: node.form.fields.map((f) => ({
+          id: f.id,
+          label: f.label,
+          required: f.required ?? false,
+          placeholder: f.placeholder ?? "",
+        })),
+      }
+    }
+    return out
+  } catch {
+    return { node_kind: "DIALOG", node_allow_free_text: true, node_allowed_exits: [] }
+  }
 }
 
-type EpisodeSummary = {
-  episode_id: string
-  summary_short: string
-  open_loops: string[]
-  started_at: number
-  updated_at: number
+type ChatRequestBody = { state: any; input: ApiInputSignal }
+
+type ApiInputSignal =
+  | InputSignal
+  | { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
+  | { type: "THREAD_SWITCH"; conversation_id: string }
+  | { type: "THREAD_ARCHIVE"; conversation_id?: string }
+
+function isObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null
+}
+function isPlatformThreadInput(input: ApiInputSignal): boolean {
+  const t = (input as any)?.type
+  return t === "THREAD_CREATE" || t === "THREAD_SWITCH" || t === "THREAD_ARCHIVE"
+}
+function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
+  if (node.kind === "ROUTER" && node.id === "HOME") return false
+  return node.kind === "ROUTER" || node.kind === "TOOL" || node.kind === "CHECKPOINT"
 }
 
-type ThreadInfo = {
-  conversation_id: string
-  title: string
-  preview: string
-  updated_at: string
-  episode_summary: EpisodeSummary | null
-  latest_draft: {
-    summary_draft: string
-    open_questions: string[]
-    created_at: number
-  } | null
+function validateRequest(req: NextApiRequest, res: NextApiResponse): ChatRequestBody | null {
+  setWidgetCors(req, res, "POST, OPTIONS")
+  if (req.method === "OPTIONS") { res.status(200).end(); return null }
+  if (req.method !== "POST") { res.status(405).json({ error: "Method Not Allowed" }); return null }
+  if (!isObject(req.body)) { res.status(400).json({ error: "Invalid JSON body" }); return null }
+  const body = req.body as ChatRequestBody
+  const input = (body as any).input
+  if (!input || !isObject(input) || typeof (input as any).type !== "string") {
+    res.status(400).json({ error: "Missing or invalid input" }); return null
+  }
+  return body
 }
 
-type UserMemory = {
-  user_key: string
-  profile: {
-    last_seen_at: string
-    last_node: string
-    node_counts: Record<string, number>
-    topics: string[]
-    topic_scores: Record<string, number>
-  } | null
-  threads: ThreadInfo[]
+async function emitCanonicalEvent(params: {
+  userKey: string; conversationId: string; revision: number
+  nodeId?: string | null; eventType: string; payload: unknown
+}): Promise<void> {
+  await appendConversationEventV1({
+    schema_version: "v1", event_id: newUuid(), event_type: params.eventType as any,
+    conversation_id: params.conversationId, user_key: params.userKey,
+    revision: params.revision, input_id: params.revision,
+    node_id: params.nodeId ?? undefined, timestamp_ms: nowMs(), payload: params.payload,
+  })
+}
+
+async function ensureThreadBindingOnState(params: { userKey: string; conversationId: string; state: any }):
+  Promise<{ state: any; themeId: string; episodeId: string } | null> {
+  const meta = params.state?.meta && typeof params.state.meta === "object" ? params.state.meta : {}
+  const existingThemeId = (meta?.["thread.theme_id"] as any)?.value
+  const existingEpisodeId = (meta?.["thread.episode_id"] as any)?.value
+  if (typeof existingThemeId === "string" && typeof existingEpisodeId === "string") {
+    return { state: params.state, themeId: existingThemeId, episodeId: existingEpisodeId }
+  }
+  const ensured = await getOrCreateThreadThemeAndEpisode({ userKey: params.userKey, conversationId: params.conversationId, ttlSeconds: MEMORY_TTL_SECONDS })
+  const nextMeta = { ...meta, "thread.theme_id": { value: ensured.theme.theme_id, source_node: "SYSTEM_THREAD_BINDING" }, "thread.episode_id": { value: ensured.episode.episode_id, source_node: "SYSTEM_THREAD_BINDING" } }
+  return { state: { ...params.state, meta: nextMeta }, themeId: ensured.theme.theme_id, episodeId: ensured.episode.episode_id }
+}
+
+async function handleInitOrRestore(params: {
+  clientState: any; storedState: any | null; conversationId: string
+  conversationKind: "lobby" | "thread"; userKey: string; res: NextApiResponse
+}): Promise<boolean> {
+  const { clientState, storedState, conversationId, conversationKind, userKey, res } = params
+  if (clientState !== null) return false
+
+  const baseState = storedState ?? (conversationKind === "lobby" ? createLobbyState(conversationId) : createInitialState(conversationId))
+  const isNew = !storedState
+  if (isNew) await writeConversationState(baseState, SESSION_TTL_SECONDS)
+
+  await Promise.all([
+    emitCanonicalEvent({ userKey, conversationId: baseState.conversation_id, revision: baseState.revision, nodeId: baseState.active_node, eventType: "transition_applied", payload: { input_type: "SYSTEM_INIT", transition: { type: "INIT", from: null, to: baseState.active_node, reason: isNew ? "system init" : "system init (restored)", meta_keys_written: [] }, status_after: baseState.status } }),
+    emitCanonicalEvent({ userKey, conversationId: baseState.conversation_id, revision: baseState.revision, nodeId: baseState.active_node, eventType: "node_rendered", payload: { node_id: baseState.active_node, message: truncateText(baseState.active_node_message ?? "", 800), status: baseState.status } }),
+  ])
+
+  const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+  res.status(200).json({ state: withThreadMeta(baseState, indexNow), ...serializeActiveNode(baseState.active_node), transition: { type: "INIT", from: null, to: baseState.active_node, reason: isNew ? "system init" : "system init (restored)" }, log: { conversation_id: baseState.conversation_id, revision_before: isNew ? -1 : baseState.revision, revision_after: baseState.revision, active_node_before: isNew ? null : baseState.active_node, active_node_after: baseState.active_node, input_type: "SYSTEM_INIT", transition_type: "INIT", timestamp: new Date().toISOString() } })
+  return true
+}
+
+async function runTurnWithAutoAdvance(params: { baseState: any; input: InputSignal; userKey: string }): Promise<KernelResult> {
+  let kernelResult = await runNode({ state: params.baseState, input: params.input, userKey: params.userKey })
+  for (let i = 0; i < 5; i++) {
+    const activeNode = getNode(kernelResult.state.active_node)
+    if (!isAutoAdvanceNode(activeNode)) break
+    const before = kernelResult.state.active_node
+    kernelResult = await runNode({ state: kernelResult.state, input: { type: "SYSTEM", intent: "AUTO_TICK" } as any, userKey: params.userKey })
+    if (kernelResult.state.active_node === before) break
+  }
+  return kernelResult
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (!checkAuth(req)) return res.status(401).json({ error: "Unauthorized" })
+  const body = validateRequest(req, res)
+  if (!body) return
 
-  const client = getRedisClient()
-  const filterUserKey = typeof req.query.user_key === "string" ? req.query.user_key : null
+  const userKey = ensureUserKey(req, res)
+  const clientState = body.state ?? null
+  const input = body.input
+  const requestedConversationId =
+    (isPlatformThreadInput(input) && (input as any).type === "THREAD_SWITCH" && (input as any).conversation_id) ||
+    (clientState && typeof clientState.conversation_id === "string" ? clientState.conversation_id : undefined)
+
+  const conversationId = requestedConversationId || toLobbyConversationId(userKey)
+  const conversationKind: "lobby" | "thread" = isLobbyConversation(conversationId) ? "lobby" : "thread"
+  const stored = await readConversationState(conversationId)
 
   try {
-    // Find alle bruger-nøgler via SCAN på threads-keys
-    let userKeys: string[] = []
-    if (filterUserKey) {
-      userKeys = [filterUserKey]
-    } else {
-      let cursor: string | number = "0"
-      do {
-        const result = await (client as any).scan(cursor, { match: `${THREADS_PREFIX}*`, count: 100 })
-        cursor = String(result[0])
-        const keys: string[] = result[1]
-        userKeys.push(...keys.map((k: string) => k.replace(THREADS_PREFIX, "")))
-      } while (cursor !== "0")
-      userKeys = userKeys.slice(0, 20) // max 20 brugere ad gangen
+    if (isPlatformThreadInput(input)) {
+      if ((input as any).type === "THREAD_CREATE") { await handleThreadCreate({ input: input as any, userKey, res }); return }
+      if ((input as any).type === "THREAD_SWITCH") { await handleThreadSwitch({ input: input as any, userKey, res }); return }
+      if ((input as any).type === "THREAD_ARCHIVE") { await handleThreadArchive({ userKey, res, conversationId: (input as any).conversation_id }); return }
     }
 
-    const users: UserMemory[] = []
+    const restored = await handleInitOrRestore({ clientState, storedState: stored, conversationId, conversationKind, userKey, res })
+    if (restored) return
 
-    for (const userKey of userKeys) {
-      // Profil
-      const profileRaw = await client.get(`${PROFILE_PREFIX}${userKey}`)
-      let profile: UserMemory["profile"] = null
-      if (profileRaw) {
-        try {
-          const p = typeof profileRaw === "string" ? JSON.parse(profileRaw) : profileRaw as any
-          profile = {
-            last_seen_at: p.last_seen_at ?? "",
-            last_node: p.last_node ?? "",
-            node_counts: p.node_counts ?? {},
-            topics: p.core?.semantic?.topics ?? [],
-            topic_scores: p.topic_scores ?? {},
-          }
-        } catch {}
-      }
+    const baseState = stored ?? clientState
+    if (!baseState) return res.status(400).json({ error: "Missing state" })
 
-      // Tråde
-      const threadsRaw = await client.get(`${THREADS_PREFIX}${userKey}`)
-      const threadList: Array<{ conversation_id: string; title: string; preview: string; updated_at: string }> = []
-      if (threadsRaw) {
-        try {
-          const t = typeof threadsRaw === "string" ? JSON.parse(threadsRaw) : threadsRaw as any
-          for (const th of t.threads ?? []) {
-            threadList.push({
-              conversation_id: th.conversation_id,
-              title: th.title ?? "Ny samtale",
-              preview: th.preview ?? "",
-              updated_at: th.updated_at ?? "",
-            })
-          }
-        } catch {}
-      }
+    let kernelResultFinal = await runTurnWithAutoAdvance({ baseState, input: input as InputSignal, userKey })
 
-      // Byg thread info med episode summaries og drafts
-      const threads: ThreadInfo[] = []
-      for (const th of threadList.slice(0, 10)) {
-        const convId = th.conversation_id
+    const binding = await ensureThreadBindingOnState({ userKey, conversationId: kernelResultFinal.state.conversation_id, state: kernelResultFinal.state })
+    if (binding) kernelResultFinal = { ...kernelResultFinal, state: binding.state }
 
-        // Episode summary
-        let episodeSummary: EpisodeSummary | null = null
-        const episodeKey = `${MEM_PREFIX}${userKey}:episode:episode:thread:${convId}:1`
-        const episodeRaw = await client.get(episodeKey)
-        if (episodeRaw) {
-          try {
-            const e = typeof episodeRaw === "string" ? JSON.parse(episodeRaw) : episodeRaw as any
-            episodeSummary = {
-              episode_id: e.episode_id ?? "",
-              summary_short: e.summary_short ?? "",
-              open_loops: e.open_loops ?? [],
-              started_at: e.started_at ?? 0,
-              updated_at: e.updated_at ?? 0,
-            }
-          } catch {}
-        }
+    await writeConversationState(kernelResultFinal.state, SESSION_TTL_SECONDS)
 
-        // Latest scan_threads draft
-        let latestDraft: ThreadInfo["latest_draft"] = null
-        const latestJobIdRaw = await client.get(`${DRAFT_LATEST_PREFIX}${convId}`)
-        if (latestJobIdRaw) {
-          const jobId = typeof latestJobIdRaw === "string" ? latestJobIdRaw : String(latestJobIdRaw)
-          const draftKey = `${DRAFT_PREFIX}${convId}:${jobId}`
-          const draftRaw = await client.get(draftKey)
-          if (draftRaw) {
-            try {
-              const d = typeof draftRaw === "string" ? JSON.parse(draftRaw) : draftRaw as any
-              latestDraft = {
-                summary_draft: d.summary_draft ?? "",
-                open_questions: d.open_questions ?? [],
-                created_at: d.created_at ?? 0,
-              }
-            } catch {}
-          }
-        }
+    const [scanThreads, indexNow] = await Promise.all([
+      maybeTriggerScanThreadsJob({ userKey, input: input as InputSignal, conversationId: kernelResultFinal.state.conversation_id, state: kernelResultFinal.state, revisionAfter: kernelResultFinal.state.revision }),
+      ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS }),
+    ])
 
-        threads.push({
-          ...th,
-          episode_summary: episodeSummary,
-          latest_draft: latestDraft,
-        })
-      }
+    const userText = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : toUserInput(input as InputSignal) ?? ""
+    const assistantText = String(kernelResultFinal.transition.response_message ?? kernelResultFinal.state.active_node_message ?? "")
+    const metaKeysWritten = kernelResultFinal.transition.meta_delta ? Object.keys(kernelResultFinal.transition.meta_delta) : []
 
-      users.push({ user_key: userKey, profile, threads })
-    }
+    // Run postTurn to enqueue SUMMARIZE_EPISODE / SUGGEST_FACTS jobs + write raw/memory/events.
+    // Must settle before we drain the queue below.
+    await Promise.allSettled([Promise.resolve(runPostTurn({
+      userKey, input: input as InputSignal, kernelResult: kernelResultFinal, binding,
+      includeText: envBool("GAARSDAL_EVENTS_INCLUDE_TEXT"),
+      userText, assistantText, metaKeysWritten,
+      terminalStatus: kernelResultFinal.state.status,
+    }))])
 
-    return res.status(200).json({ users, fetched_at: new Date().toISOString() })
+    // Drain up to 2 async jobs (SUMMARIZE_EPISODE, SUGGEST_FACTS) synchronously
+    // BEFORE sending the response — guarantees execution without a cron.
+    // Capped at 4 seconds so the user is not kept waiting too long.
+    try {
+      await Promise.race([
+        processQueueBatch(2),
+        new Promise<void>((resolve) => setTimeout(resolve, 4000)),
+      ])
+    } catch { /* never fail the request */ }
+
+    res.status(200).json({
+      ...kernelResultFinal,
+      state: withThreadMeta(kernelResultFinal.state, indexNow),
+      ...serializeActiveNode(kernelResultFinal.state.active_node),
+      deferred_job: scanThreads.deferredJob ?? null,
+    })
+
   } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) })
+    await emitCanonicalEvent({
+      userKey, conversationId, revision: stored?.revision ?? -1, nodeId: stored?.active_node ?? null,
+      eventType: "error_raised",
+      payload: { code: "UNHANDLED", message: typeof e?.message === "string" ? e.message : "Unknown error", stage: "runtime", input_type: (input as any).type },
+    })
+    return res.status(500).json({ error: "Internal Server Error", detail: process.env.NODE_ENV === "development" ? String(e?.message || e) : undefined })
   }
 }
