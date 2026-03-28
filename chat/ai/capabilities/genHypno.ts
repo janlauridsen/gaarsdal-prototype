@@ -347,6 +347,26 @@ export async function runUnifiedHypnoCapability(
       }
     }
 
+    if (analysis.routing_intent === "booking_info") {
+      const assistant = "Du finder kontaktinfo og praktiske detaljer herunder."
+      const updatedTranscript = appendTranscript(transcript, userText, assistant)
+      return {
+        transition: {
+          type: "NODE_HOP",
+          from: context.state.active_node,
+          to: "BOOKING",
+          reason: "gen-hypno:routing_intent:booking_info",
+          response_message: assistant,
+          meta_delta: buildMetaDelta({
+            context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
+            sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
+            analysis, mode: "practical", relationalState: "decision_support",
+          }),
+        },
+        debug: { capability: "unified-hypno-v4", used_fallback: false },
+      }
+    }
+
     if (analysis.routing_intent === "lead_capture") {
       const assistant = "Ingen stress — du behøver ikke beslutte dig nu. Efterlad din email, så sender Jan en kort besked om hvad en første session typisk indebærer."
       const updatedTranscript = appendTranscript(transcript, userText, assistant)
