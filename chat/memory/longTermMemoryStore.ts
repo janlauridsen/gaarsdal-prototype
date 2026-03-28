@@ -268,7 +268,7 @@ export async function getOrCreateThreadThemeAndEpisode(params: {
 
   const theme: Theme = {
     theme_id,
-    label: "Tråd",
+    label: "Samtale",
     status: "active",
     created_at: ts,
     updated_at: ts,
