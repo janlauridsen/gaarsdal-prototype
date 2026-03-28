@@ -222,6 +222,7 @@ export async function runNode(params: NodeRunParams): Promise<KernelResult> {
       userKey: params.userKey,
       state,
       ttlSeconds: MEMORY_TTL_SECONDS,
+      userText: input.text,
     })
     const profile = await readUserProfile(params.userKey)
     const capabilityResult = await runCapability(capabilityId, {
