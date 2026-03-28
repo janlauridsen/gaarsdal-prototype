@@ -99,7 +99,7 @@ export function buildReturnGreeting(params: {
 
   // Bruger lastFraming som kontekst hvis tilgængeligt — giver mere menneskelig hilsen
   if (typeof lastFraming === "string" && lastFraming.trim().length > 8) {
-    return `Hej igen. Sidst var vi inde på ${topic} — du nævnte noget om "${lastFraming.trim().slice(0, 60)}". Vil du tage tråden op, eller er der noget nyt?`
+    return `Hej igen. Sidst var vi inde på ${topic} — du nævnte noget om "${lastFraming.trim().slice(0, 60)}". Vil du tage det op igen, eller er der noget nyt?`
   }
 
   return `Hej igen. Sidst var vi inde på ${topic}. Vil du fortsætte der, eller er der noget nyt på hjerte?`
