@@ -195,8 +195,19 @@ export default function Chatbot() {
   const activeNodeLabel = useMemo(() => {
     if (!state) return "Initialiserer…"
     const key = String(state.active_node ?? "").trim()
-    return NODE_LABELS[key] ?? key
-  }, [state])
+    const nodeLabel = NODE_LABELS[key] ?? key
+
+    // Brug tråd-titel som undertitel når den er genereret (async job)
+    if (activeConversationId && key === "GEN_HYPNO") {
+      const activeTab = threadTabs.find((t) => t.conversation_id === activeConversationId)
+      const title = activeTab?.title?.trim()
+      if (title && title !== "Ny samtale" && title !== "parentesespor") {
+        return title
+      }
+    }
+
+    return nodeLabel
+  }, [state, activeConversationId, threadTabs])
 
   const visibleMessages = useMemo(() => {
     if (!activeConversationId) return []
@@ -246,8 +257,8 @@ export default function Chatbot() {
   function statusLabelForJob(job: { kind: string; cursor?: string; status?: string }) {
     if (job.kind === "scan_threads") {
       const cursor = String(job.cursor ?? "").toUpperCase()
-      if (cursor === "SHORTLIST") return "Finder relevante tråde…"
-      if (cursor === "SELECT") return "Vælger relevante tråde…"
+      if (cursor === "SHORTLIST") return "Finder relevante samtaler…"
+      if (cursor === "SELECT") return "Vælger relevante samtaler…"
       if (cursor === "DEEP_DIVE") return "Læser tidligere samtaler…"
       if (cursor === "BUILD_DRAFT") return "Skriver opsummering…"
       if (job.status === "queued") return "Afventer kørsel…"
@@ -825,13 +836,13 @@ export default function Chatbot() {
 
   function normalizeAssistantMessage(s: ConversationState) {
     if (s.status === "completed") {
-      return "Samtalen er afsluttet. Start en ny tråd eller vælg en anden."
+      return "Samtalen er afsluttet. Start en ny samtale eller vælg en anden."
     }
 
     if (s.active_node === "THREAD_CHOOSER") {
       const count = threadCountFromState(s)
-      if (count <= 0) return "Starter en ny tråd…"
-      return "Vælg en tråd, eller start en ny."
+      if (count <= 0) return "Starter en ny samtale…"
+      return "Vælg en samtale, eller start en ny."
     }
 
     return s.active_node_message
