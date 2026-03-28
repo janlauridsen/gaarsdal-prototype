@@ -1,4 +1,4 @@
-export type JobKind = "scan_threads" | "derive_thread_title"
+export type JobKind = "scan_threads" | "derive_thread_title" | "anticipate_turn"
 
 export type JobStatus = "queued" | "running" | "completed" | "failed" | "canceled"
 
@@ -32,9 +32,17 @@ export type DeriveThreadTitlePayload = {
   trigger_turn?: number
 }
 
+export type AnticipatePayload = {
+  trigger_turn: number
+  topic: string
+  transcript_excerpt: string
+  active_node: string
+}
+
 export type JobPayloadByKind = {
   scan_threads: ScanThreadsPayload
   derive_thread_title: DeriveThreadTitlePayload
+  anticipate_turn: AnticipatePayload
 }
 
 export type JobRecordV1<K extends JobKind = JobKind> = {

@@ -1,10 +1,10 @@
 import { JobKind, JobRecordV1 } from "./types"
 import { tickScanThreads } from "./handlers/scanThreads"
 import { tickDeriveThreadTitle } from "./handlers/deriveThreadTitle"
+import { tickAnticipate } from "./handlers/anticipateTurn"
 
 export type JobTickResult = {
   job: JobRecordV1
-  // If set, caller should remove from pending index.
   completed: boolean
 }
 
@@ -14,6 +14,8 @@ export async function tickJob(job: JobRecordV1): Promise<JobTickResult> {
       return tickScanThreads(job)
     case "derive_thread_title":
       return tickDeriveThreadTitle(job)
+    case "anticipate_turn":
+      return tickAnticipate(job)
     default:
       return {
         job: {
