@@ -1,11 +1,8 @@
-import { Transition } from "../../kernel/types"
 import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
-import { normalizeFinalResponse } from "../contracts/responseContract"
 import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
-import { analyzeTurn } from "../orchestration/analyzeTurn"
-import { applyPolicy, detectClosingText, detectDirectContactRequest, detectPracticalKeywords, computeRollingArousal } from "../orchestration/applyPolicy"
+import { computeRollingArousal } from "../orchestration/applyPolicy"
 import { detectClientSignals } from "./clientDetection"
-import { assembleResponseMessages } from "../orchestration/assemblePrompt"
+import { singleTurnCall, buildSingleTurnFallback, SingleTurnOutput } from "../orchestration/singleTurnCall"
 
 type TranscriptTurn = { role: "user" | "assistant"; content: string }
 
@@ -120,65 +117,35 @@ function buildFallbackMessage(mode: PromptMode, transcript: TranscriptTurn[], to
 // --- Analysis fallback ---
 
 function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMode?: Exclude<PromptMode, "closing">): TurnAnalysis {
-  if (detectClosingText(userText)) {
-    return {
-      intent: "social_closing", proposed_mode: "closing", conversation_move: "close",
-      investigation_focus: "none", response_goal: "close_briefly", relational_state: "gentle_close",
-      routing_intent: "none", is_history_query: false, topic: previousTopic, sensitivity: "low", signals: ["soft_closing"], confidence: 0.98,
-    }
-  }
-
-  if (forcedMode) {
-    return {
-      intent: forcedMode === "reflection" ? "explore_pattern" : forcedMode === "evidence" ? "ask_evidence" : "understand_method",
-      proposed_mode: forcedMode,
-      conversation_move: forcedMode === "reflection" ? "guided_observation" : forcedMode === "practical" ? "practical_preparation" : "direct_answer",
-      investigation_focus: forcedMode === "reflection" ? "attention" : forcedMode === "practical" ? "preparation" : "none",
-      response_goal: forcedMode === "reflection" ? "answer_then_one_question" : "answer_directly",
-      relational_state: forcedMode === "reflection" ? "building_trust" : forcedMode === "practical" ? "decision_support" : "building_clarity",
-      routing_intent: "none", is_history_query: false, topic: previousTopic, sensitivity: "medium", signals: ["forced_mode"], confidence: 0.95,
-    }
-  }
-
-  // Neutral fallback — LLM fejlede, vis info-svar uden at gætte på intent
   return {
-    intent: "understand_method", proposed_mode: "info", conversation_move: "direct_answer",
-    investigation_focus: "none", response_goal: "answer_directly", relational_state: "orienting",
+    intent: forcedMode === "reflection" ? "explore_pattern" : forcedMode === "evidence" ? "ask_evidence" : "understand_method",
+    proposed_mode: forcedMode ?? "info",
+    conversation_move: forcedMode === "reflection" ? "guided_observation" : forcedMode === "practical" ? "practical_preparation" : "direct_answer",
+    investigation_focus: forcedMode === "reflection" ? "attention" : forcedMode === "practical" ? "preparation" : "none",
+    response_goal: forcedMode ? "answer_then_one_question" : "answer_directly",
+    relational_state: forcedMode === "reflection" ? "building_trust" : forcedMode === "practical" ? "decision_support" : "orienting",
     routing_intent: "none", is_history_query: false, topic: previousTopic, sensitivity: "low",
-    signals: ["llm_fallback"], confidence: 0.3,
+    signals: ["fallback"], confidence: 0.3,
   }
 }
 
-// --- Analysis rebalancing (unchanged logic) ---
-
-function rebalanceAnalysis(params: {
-  analysis: TurnAnalysis
-  previousMove?: string
-  transcript: TranscriptTurn[]
-  userText: string
-}): TurnAnalysis {
-  const { analysis, previousMove, transcript, userText } = params
-  if (analysis.proposed_mode !== "reflection") return analysis
-
-  const assistantCount = countAssistantTurns(transcript)
-  const explicitAvoidance = ["undskyld", "undskyldninger", "leder efter", "venter på", "udsætter", "finder en grund", "lader være", "slippe for"].some(
-    (x) => normalize(userText).includes(x)
-  )
-
-  if (previousMove && previousMove === analysis.conversation_move) {
-    if (explicitAvoidance) {
-      return { ...analysis, conversation_move: "mild_challenge", investigation_focus: analysis.investigation_focus === "none" ? "interpretation" : analysis.investigation_focus, response_goal: "answer_directly" }
-    }
-    if (assistantCount >= 2) {
-      return { ...analysis, conversation_move: "synthesis", investigation_focus: "pattern", response_goal: "answer_directly" }
-    }
+// Konverterer SingleTurnOutput til TurnAnalysis for buildMetaDelta-kompatibilitet
+function outputToAnalysis(out: SingleTurnOutput, previousTopic?: string): TurnAnalysis {
+  return {
+    intent: "understand_method",
+    proposed_mode: out.mode_used,
+    conversation_move: out.conversation_move,
+    investigation_focus: out.investigation_focus,
+    response_goal: "answer_then_one_question",
+    relational_state: out.relational_state,
+    routing_intent: out.routing_intent,
+    is_history_query: out.is_history_query,
+    topic: out.topic ?? previousTopic,
+    objective: out.objective,
+    sensitivity: "low",
+    signals: out.signals,
+    confidence: out.confidence,
   }
-
-  if (assistantCount >= 3 && explicitAvoidance && analysis.conversation_move !== "synthesis") {
-    return { ...analysis, conversation_move: "synthesis", investigation_focus: "pattern", response_goal: "answer_directly" }
-  }
-
-  return analysis
 }
 
 // --- Meta delta builder ---
@@ -304,75 +271,39 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  // ─── Analyse ────────────────────────────────────────────────────────────────
-  // Kør analyzeTurn FØR routing — LLM'en klassificerer routing_intent i kontekst.
-  // Det eliminerer keyword-lister og negerings-fraser.
-  let analysis: TurnAnalysis | null = null
-  let usedFallback = false
-  const previousMove = readMoveMeta(context)
+  // ─── Window of Tolerance (kører FØR LLM-kald så arousal sendes med) ─────────
+  const previousArousalScore =
+    typeof (context.state.meta?.["wot.arousal_score"] as any)?.value === "number"
+      ? (context.state.meta["wot.arousal_score"] as any).value as number
+      : 0
+  const arousal = computeRollingArousal(trimmedTranscript, userText, previousArousalScore)
 
-  try {
-    analysis = await analyzeTurn({
-      llm, transcript: trimmedTranscript, userText,
-      lastTopic: previousTopic, lastMove: previousMove,
-      lastAssistantExcerpt: lastAssistantExcerpt(trimmedTranscript),
-    })
-  } catch {
-    usedFallback = true
+  // ─── Kombineret enkelt LLM-kald ───────────────────────────────────────────
+  // Erstatter det gamle to-kaldede system (analyzeTurn + response).
+  // LLM'en bestemmer routing, mode og skriver svaret i ét JSON-output.
+  const assistantCountBefore = countAssistantTurns(transcript)
+  let turnOutput = await singleTurnCall({
+    llm,
+    transcript: trimmedTranscript,
+    userText,
+    lastTopic: previousTopic,
+    arousalLevel: arousal.level,
+    assistantCount: assistantCountBefore,
+    contextPackSystem: context.contextPack?.system,
+    userProfileSystem: context.contextPack?.user_profile,
+  })
+
+  const usedFallback = !turnOutput
+  if (!turnOutput) {
+    turnOutput = buildSingleTurnFallback(userText, previousTopic)
   }
 
-  analysis = analysis ?? buildDefaultAnalysis(userText, previousTopic, options.forcedMode)
-  analysis = rebalanceAnalysis({ analysis, previousMove, transcript: trimmedTranscript, userText })
-
-  // ─── Deterministisk routing-guard ─────────────────────────────────────────
-  // Kører uanset om analyzeTurn lykkedes. Overskriver routing_intent KUN ved
-  // entydige handlings-signaler — ikke ved informationssøgning.
-  // Nødvendig fordi buildDefaultAnalysis altid sætter routing_intent: "none".
-  if (analysis.routing_intent === "none" && options.stayOnNode === "GEN_HYPNO") {
-    const u = normalize(userText).toLowerCase().trim()
-
-    // Entydige booking-handlings-fraser
-    const bookingPhrases = [
-      "vil gerne booke", "gerne booke", "vil booke",
-      "kan jeg booke", "booke her", "bestille tid",
-      "book en tid", "få en tid", "aftale en tid",
-      "tilmelde mig", "tilmeld mig", "starte et forløb",
-      "kontakte jan", "ringe til jan", "skrive til jan",
-      "kom i gang", "oprette mig",
-    ]
-
-    // Kontekst-aware ja-fraser: kun handling hvis forrige assistent-besked indeholdt booking-tilbud
-    const simpleAcceptPhrases = ["ja", "ja tak", "ja det vil jeg", "ja det vil jeg gerne",
-      "det vil jeg gerne", "gerne", "ok", "okay", "selvfølgelig", "ja selvfølgelig"]
-
-    const infoKeywords = [
-      "hvad koster", "pris", "prisen", "hvad er prisen",
-      "antal sess", "hvor mange gang", "hvad sker der", "hvad foregår",
-      "hvad indebærer", "mere info", "fortæl mere", "åbningstid",
-      "adresse", "hvor ligger", "hvor er", "hvad er en session",
-    ]
-
-    const lastAssistant = trimmedTranscript.filter(t => t.role === "assistant").slice(-1)[0]?.content ?? ""
-    const lastHadBookingOffer = /kontakt|booke|telefon|e-mail|jan@|aftal|tid/i.test(lastAssistant)
-
-    // Handoff allerede gennemført denne session — undgå falsk positiv booking-routing
-    const handoffAlreadyDone = !!(context.state.meta?.["handoff.last"] as any)?.value
-
-    const isBookingAction = bookingPhrases.some((k) => u.includes(k))
-    const isContextualAccept = !handoffAlreadyDone && lastHadBookingOffer && simpleAcceptPhrases.some((k) => u === k || u.startsWith(k + " ") || u.endsWith(" " + k))
-    const isInfoRequest = infoKeywords.some((k) => u.includes(k))
-
-    if ((isBookingAction || isContextualAccept) && !isInfoRequest) {
-      analysis = { ...analysis, routing_intent: "contact_booking" }
-    } else if (isInfoRequest) {
-      analysis = { ...analysis, routing_intent: "booking_info" }
-    }
-  }
+  // Konvertér til TurnAnalysis for buildMetaDelta-kompatibilitet
+  let analysis = outputToAnalysis(turnOutput, previousTopic)
 
   // ─── LLM-drevet routing ────────────────────────────────────────────────────
-  // routing_intent sættes af analyzeTurn. Kun aktiv fra GEN_HYPNO.
-  if (options.stayOnNode === "GEN_HYPNO" && analysis.routing_intent !== "none") {
-    if (analysis.routing_intent === "contact_booking") {
+  if (options.stayOnNode === "GEN_HYPNO" && turnOutput.routing_intent !== "none") {
+    if (turnOutput.routing_intent === "contact_booking") {
       const assistant = "Det lyder som om du er klar til at komme i gang. Udfyld nedenstående — Jan kontakter dig inden for 24 timer for at aftale en første session."
       const updatedTranscript = appendTranscript(transcript, userText, assistant)
       return {
@@ -388,11 +319,11 @@ export async function runUnifiedHypnoCapability(
             analysis, mode: "practical", relationalState: "decision_support",
           }),
         },
-        debug: { capability: "unified-hypno-v4", used_fallback: false },
+        debug: { capability: "unified-hypno-v5-single", used_fallback: usedFallback },
       }
     }
 
-    if (analysis.routing_intent === "booking_info") {
+    if (turnOutput.routing_intent === "booking_info") {
       const assistant = "Du finder kontaktinfo og praktiske detaljer herunder."
       const updatedTranscript = appendTranscript(transcript, userText, assistant)
       return {
@@ -408,11 +339,11 @@ export async function runUnifiedHypnoCapability(
             analysis, mode: "practical", relationalState: "decision_support",
           }),
         },
-        debug: { capability: "unified-hypno-v4", used_fallback: false },
+        debug: { capability: "unified-hypno-v5-single", used_fallback: usedFallback },
       }
     }
 
-    if (analysis.routing_intent === "lead_capture") {
+    if (turnOutput.routing_intent === "lead_capture") {
       const assistant = "Ingen stress — du behøver ikke beslutte dig nu. Efterlad din email, så sender Jan en kort besked om hvad en første session typisk indebærer."
       const updatedTranscript = appendTranscript(transcript, userText, assistant)
       return {
@@ -428,11 +359,11 @@ export async function runUnifiedHypnoCapability(
             analysis, mode: "practical", relationalState: "decision_support",
           }),
         },
-        debug: { capability: "unified-hypno-v4", used_fallback: false },
+        debug: { capability: "unified-hypno-v5-single", used_fallback: usedFallback },
       }
     }
 
-    if (analysis.routing_intent === "fit_check") {
+    if (turnOutput.routing_intent === "fit_check") {
       const assistant = "Hvad er det primære, du ønsker at arbejde med?"
       const updatedTranscript = appendTranscript(transcript, userText, assistant)
       return {
@@ -448,23 +379,17 @@ export async function runUnifiedHypnoCapability(
             analysis, mode: "info", relationalState: "decision_support",
           }),
         },
-        debug: { capability: "unified-hypno-v4", used_fallback: false },
+        debug: { capability: "unified-hypno-v5-single", used_fallback: usedFallback },
       }
     }
   }
 
   // ─── Hukommelse-forespørgsel ───────────────────────────────────────────────
-  // Brugeren spørger ind til hvad de har delt.
-  // Prioritér: 1) LTM contextPack, 2) current session transcript, 3) fallback.
-  if (analysis.is_history_query) {
+  if (turnOutput.is_history_query) {
     const cp = context.contextPack?.system ?? ""
     const hasLtmContext = cp.length > 200
-
-    // Byg current-session opsummering fra transcript hvis LTM er tom
     const sessionTurns = trimmedTranscript.filter(t => t.role === "assistant").length
     const hasSessionContext = sessionTurns >= 2
-
-    // Er der allerede sendt en handoff denne session?
     const handoffDone = !!(context.state.meta?.["handoff.last"] as any)?.value
 
     let assistant: string
@@ -478,7 +403,7 @@ export async function runUnifiedHypnoCapability(
           messages: [
             {
               role: "system",
-              content: "Du er den digitale assistent for Jan Lauridsen, hypnoterapeut på Gaarsdal. Brugeren spørger hvad du ved om dem ud fra tidligere samtaler.\n\nBrug KUN den kontekst der er givet nedenfor. Svar specifikt på brugerens spørgsmål — hvis de spørger om et bestemt emne (fx kone, alkohol, søvn), svar kun om det. Vær konkret og ærlig — si eksplicit hvis noget IKKE er nævnt i konteksten. Max 3-4 sætninger. Afslut med ét åbent spørgsmål.\n\nSvar KUN med JSON: { \"assistant_message\": \"...\" }\n\nKONTEKST FRA TIDLIGERE SAMTALER:\n" + cp.slice(0, 2000),
+              content: "Du er den digitale assistent for Jan Lauridsen, hypnoterapeut på Gaarsdal. Brugeren spørger hvad du ved om dem ud fra tidligere samtaler.\n\nBrug KUN den kontekst der er givet nedenfor. Svar specifikt på brugerens spørgsmål. Vær konkret og ærlig — si eksplicit hvis noget IKKE er nævnt. Max 3-4 sætninger. Afslut med ét åbent spørgsmål.\n\nSvar KUN med JSON: { \"assistant_message\": \"...\" }\n\nKONTEKST:\n" + cp.slice(0, 2000),
             },
             { role: "user", content: userText },
           ],
@@ -489,19 +414,14 @@ export async function runUnifiedHypnoCapability(
         assistant = "Jeg kan se du har delt en del om dine vaner og mønstre. Er der noget bestemt du vil have mig til at uddybe?"
       }
     } else if (hasSessionContext) {
-      // Ingen LTM endnu, men vi har en aktiv samtale — opsummér hvad der er sket
-      const topic = previousTopic ?? analysis.topic ?? ""
-      const topicStr = topic ? ` om ${topic}` : ""
-      const handoffStr = handoffDone
-        ? " Du har også sendt en henvendelse til Jan."
-        : ""
+      const topicStr = previousTopic ? ` om ${previousTopic}` : ""
+      const handoffStr = handoffDone ? " Du har også sendt en henvendelse til Jan." : ""
       assistant = `I denne samtale har vi talt${topicStr}.${handoffStr} Jeg husker hvad vi er kommet igennem her, men har endnu ikke adgang til evt. tidligere samtaler.\n\nEr der noget bestemt du vil vende tilbage til?`
     } else {
-      assistant = "Vi er lige startet, så jeg har ikke meget at trække på endnu — men det ændrer sig hurtigt jo mere vi taler.\n\nEr der noget bestemt du gerne vil have mig til at holde fast i?"
+      assistant = "Vi er lige startet, så jeg har ikke meget at trække på endnu.\n\nEr der noget bestemt du gerne vil have mig til at holde fast i?"
     }
 
     const updatedTranscript = appendTranscript(transcript, userText, assistant)
-
     return {
       transition: {
         type: "NODE_HOP",
@@ -517,94 +437,23 @@ export async function runUnifiedHypnoCapability(
           mode: "info", relationalState: "building_clarity",
         }),
       },
-      debug: { capability: "unified-hypno-v4", used_fallback: false },
+      debug: { capability: "unified-hypno-v5-single", used_fallback: false },
     }
   }
 
-  // Apply forced mode if set
-  if (options.forcedMode && analysis.proposed_mode !== "closing") {
-    analysis = {
-      ...analysis,
-      proposed_mode: options.forcedMode,
-      intent: options.forcedMode === "reflection" ? "explore_pattern" : analysis.intent,
-      conversation_move: options.forcedMode === "reflection" ? "guided_observation" : options.forcedMode === "practical" ? "practical_preparation" : analysis.conversation_move,
-      investigation_focus: options.forcedMode === "reflection" ? "attention" : options.forcedMode === "practical" ? "preparation" : analysis.investigation_focus,
-      response_goal: options.forcedMode === "reflection" ? "answer_then_one_question" : analysis.response_goal,
-      relational_state: options.forcedMode === "reflection" ? "building_trust" : options.forcedMode === "practical" ? "decision_support" : "building_clarity",
-    }
-  }
+  // ─── Normal svar-sti ──────────────────────────────────────────────────────
+  const modeUsed = turnOutput.mode_used
+  const topic = turnOutput.topic || previousTopic
+  let assistant = turnOutput.assistant_message
 
-  // ── Window of Tolerance ────────────────────────────────────────────────────
-  const previousArousalScore =
-    typeof (context.state.meta?.["wot.arousal_score"] as any)?.value === "number"
-      ? (context.state.meta["wot.arousal_score"] as any).value as number
-      : 0
-  const arousal = computeRollingArousal(trimmedTranscript, userText, previousArousalScore)
-
-  const policy = applyPolicy({ userText, analysis, transcript: trimmedTranscript, arousalLevel: arousal.level })
-  let assistant = ""
-  let responseTopic = analysis.topic
-  let responseObjective = analysis.objective
-  let modeUsed: PromptMode = policy.allow_mode
-
-  if (policy.allow_mode === "closing") {
-    assistant = buildClosingMessage(transcript)
-  } else {
-    try {
-      const raw = await llm.chatJson({
-        model: process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
-        temperature: policy.allow_mode === "reflection" ? 0.45 : 0.25,
-        response_format: { type: "json_object" },
-        messages: assembleResponseMessages({
-          analysis, policy, transcript: trimmedTranscript, userText,
-          lastTopic: previousTopic,
-          contextPackSystem: context.contextPack?.system,
-          userProfileSystem: context.contextPack?.user_profile,
-        }),
-      })
-
-      const parsed = normalizeFinalResponse(raw)
-      if (parsed?.assistant_message) {
-        assistant = parsed.assistant_message
-        // Filtrer parsed.topic fra hvis LLM returnerede en investigation_focus-værdi
-        // som topic (fx "regulation", "attention", "pattern") — brug i stedet userText-detektion
-        const INVESTIGATION_FOCUS_VALUES = ["attention", "interpretation", "regulation", "pattern", "preparation", "none"]
-        const parsedTopicIsValid = parsed.topic && !INVESTIGATION_FOCUS_VALUES.includes(parsed.topic.toLowerCase())
-        responseTopic = parsedTopicIsValid ? parsed.topic : responseTopic
-        responseObjective = parsed.objective ?? responseObjective
-        modeUsed = parsed.mode_used
-      }
-    } catch {
-      usedFallback = true
-    }
-  }
-
-  // Topic-prioritering (kun LLM-kilder — ingen keyword-regex):
-  // 1. responseTopic fra LLM's response-kontrakt
-  // 2. analysis.topic fra analyzeTurn
-  // 3. previousTopic som absolut fallback
-  const rawAnalysisTopic = analysis.topic && !["regulation", "attention", "pattern", "preparation", "interpretation", "none"].includes(analysis.topic.toLowerCase())
-    ? analysis.topic
-    : undefined
-  const topic = responseTopic || rawAnalysisTopic || previousTopic
-
-  if (!assistant) {
-    assistant = buildFallbackMessage(modeUsed, transcript, topic)
-    usedFallback = true
-  }
-
-  // ─── Proaktiv CTA ─────────────────────────────────────────────────────────
-  // After turn 5 with a clear topic and in a non-closing mode, gently offer
-  // to tell the user what a concrete session would involve. Only fires once.
-  const previousAssistantCount = countAssistantTurns(transcript)
+  // Proaktiv CTA efter turn 5
   const ctaAlreadyShown = context.state.meta["gen_hypno.cta_shown"]?.value === true
   const ctaConditionsMet =
     !ctaAlreadyShown &&
-    previousAssistantCount >= 4 &&
+    assistantCountBefore >= 4 &&
     !!topic &&
     modeUsed !== "closing" &&
-    modeUsed !== "practical" &&
-    analysis.intent !== "social_closing"
+    modeUsed !== "practical"
 
   if (ctaConditionsMet) {
     assistant = assistant + "\n\nHvis du vil vide mere om hvad et konkret forløb indebærer, er du velkommen til at skrive det — eller tage kontakt til Jan direkte."
@@ -624,7 +473,7 @@ export async function runUnifiedHypnoCapability(
         ...buildMetaDelta({
           context, assistantMessage: assistant, updatedTranscript, topic,
           sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
-          analysis, mode: modeUsed, objective: responseObjective,
+          analysis, mode: modeUsed, objective: turnOutput.objective,
           relationalState: analysis.relational_state,
           arousalScore: arousal.score,
           arousalLevel: arousal.level,
@@ -632,7 +481,7 @@ export async function runUnifiedHypnoCapability(
         ...ctaMeta,
       },
     },
-    debug: { capability: "unified-hypno-v4", used_fallback: usedFallback },
+    debug: { capability: "unified-hypno-v5-single", used_fallback: usedFallback },
   }
 }
 
