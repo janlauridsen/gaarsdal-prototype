@@ -27,6 +27,37 @@ function clamp(s: string, max: number): string {
   return t.slice(0, max - 1) + "…"
 }
 
+// Henter separat anticipate_turn draft (gemt under nøgle med job_id prefixet "anticipate:")
+async function readAnticipateLatestDraft(conversationId: string): Promise<import("../jobs/types").DraftV1 | null> {
+  try {
+    const { getRedisClient } = await import("../persistence/redis")
+    const client = getRedisClient()
+    if (!client) return null
+    const KEY_PREFIX = "gaarsdal:"
+    const latestKey = `${KEY_PREFIX}anticipate:draft:latest:conversation:${conversationId}`
+    const jobId = await client.get<string>(latestKey)
+    if (typeof jobId !== "string" || !jobId.trim()) return null
+    const draftKey = `${KEY_PREFIX}anticipate:draft:conversation:${conversationId}:${jobId.trim()}`
+    const raw = await client.get<unknown>(draftKey)
+    if (!raw) return null
+    return typeof raw === "string" ? JSON.parse(raw) : (raw as any)
+  } catch {
+    return null
+  }
+}
+
+// Topic-overlap: check om mindst ét meningsfuldt token fra anticipated tekst
+// optræder i brugerens faktiske tekst. Ignorerer stopord.
+const STOPWORDS_DK = new Set(["og", "i", "på", "for", "til", "af", "at", "om", "er", "det", "du", "jeg", "vi", "en", "et", "de", "har", "med", "kan", "ikke", "hvad", "som", "der"])
+
+function topicOverlap(anticipated: string, actual: string): boolean {
+  const tokens = (s: string) =>
+    s.toLowerCase().replace(/[^a-zæøå\s]/g, " ").split(/\s+/).filter(t => t.length >= 4 && !STOPWORDS_DK.has(t))
+  const anticipatedTokens = new Set(tokens(anticipated))
+  const actualTokens = tokens(actual)
+  return actualTokens.some(t => anticipatedTokens.has(t))
+}
+
 function safeValue(value: any): string {
   if (value == null) return ""
   if (typeof value === "string") return clamp(value, 140)
@@ -160,6 +191,7 @@ export async function buildContextPackV23(params: {
   userKey: string
   state: ConversationState
   ttlSeconds: number
+  userText?: string
 }): Promise<ContextPackV23> {
   // Cross-thread contamination guardrail:
   // If the conversation has an explicit thread binding, always use it.
@@ -339,6 +371,23 @@ export async function buildContextPackV23(params: {
     parts.push("")
     parts.push("Mulige facts (ikke bekræftet — brug lavmælt):")
     parts.push(...suggestedLines)
+  }
+
+  // Inject anticipate_turn retorisk instruktion — kun hvis brugerens input er on-track.
+  // Hent anticipate-draft separat (har kind="anticipate_turn", gemt under samme draft-nøgler).
+  // Relevance-check: sammenlign topic-tokens fra anticipated_user_text med faktisk userText.
+  if (params.userText) {
+    const anticipateDraft = await readAnticipateLatestDraft(params.state.conversation_id)
+    if (anticipateDraft?.summary_draft && anticipateDraft.open_questions?.[0]) {
+      const anticipatedText = anticipateDraft.open_questions[0].toLowerCase()
+      const actualText = params.userText.toLowerCase()
+      const isOnTrack = topicOverlap(anticipatedText, actualText)
+      if (isOnTrack) {
+        parts.push("")
+        parts.push("Retorisk retning (brug subtilt — ikke eksplicit):")
+        parts.push(clamp(anticipateDraft.summary_draft, 200))
+      }
+    }
   }
 
   // Guardrail: keep this compact; if empty, return empty string.
