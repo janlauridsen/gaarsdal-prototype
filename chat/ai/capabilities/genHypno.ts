@@ -324,6 +324,33 @@ export async function runUnifiedHypnoCapability(
   analysis = analysis ?? buildDefaultAnalysis(userText, previousTopic, options.forcedMode)
   analysis = rebalanceAnalysis({ analysis, previousMove, transcript: trimmedTranscript, userText })
 
+  // ─── Deterministisk routing-guard ─────────────────────────────────────────
+  // Kører uanset om analyzeTurn lykkedes. Overskriver routing_intent KUN ved
+  // entydige handlings-signaler — ikke ved informationssøgning.
+  // Nødvendig fordi buildDefaultAnalysis altid sætter routing_intent: "none".
+  if (analysis.routing_intent === "none" && options.stayOnNode === "GEN_HYPNO") {
+    const u = normalize(userText).toLowerCase()
+    const bookingKeywords = [
+      "vil gerne booke", "gerne booke", "vil booke", "bestille tid",
+      "book en tid", "få en tid", "aftale en tid", "tilmelde mig",
+      "tilmeld mig", "kom i gang", "starte et forløb", "oprette mig",
+      "kontakte jan", "ringe til jan", "skrive til jan",
+    ]
+    const infoKeywords = [
+      "hvad koster", "pris", "prisen", "hvad er prisen",
+      "antal sess", "hvor mange gang", "hvad sker der", "hvad foregår",
+      "hvad indebærer", "mere info", "fortæl mere", "åbningstid",
+      "adresse", "hvor ligger", "hvor er",
+    ]
+    const isBookingAction = bookingKeywords.some((k) => u.includes(k))
+    const isInfoRequest = infoKeywords.some((k) => u.includes(k))
+    if (isBookingAction && !isInfoRequest) {
+      analysis = { ...analysis, routing_intent: "contact_booking" }
+    } else if (isInfoRequest) {
+      analysis = { ...analysis, routing_intent: "booking_info" }
+    }
+  }
+
   // ─── LLM-drevet routing ────────────────────────────────────────────────────
   // routing_intent sættes af analyzeTurn. Kun aktiv fra GEN_HYPNO.
   if (options.stayOnNode === "GEN_HYPNO" && analysis.routing_intent !== "none") {
