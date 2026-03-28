@@ -67,5 +67,6 @@ export async function analyzeTurn(params: {
     ],
   })
 
+  if (!result) return null
   return normalizeTurnAnalysis(result)
 }
