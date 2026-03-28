@@ -15,7 +15,7 @@ conversation_move: "direct_answer" | "guided_observation" | "pattern_detection" 
 investigation_focus: "attention" | "interpretation" | "regulation" | "pattern" | "preparation" | "none"
 response_goal: "answer_directly" | "answer_then_one_question" | "clarify_minimally" | "close_briefly" | "route_to_contact"
 relational_state: "orienting" | "building_clarity" | "building_trust" | "decision_support" | "gentle_close"
-routing_intent: "contact_booking" | "lead_capture" | "fit_check" | "none"
+routing_intent: "contact_booking" | "booking_info" | "lead_capture" | "fit_check" | "none"
 is_history_query: boolean  // true hvis brugeren spørger hvad du ved/husker om dem
 topic: string | null
 objective: string | null
@@ -25,9 +25,10 @@ confidence: number (0-1)
 
 routing_intent-regler (vurder i kontekst — ikke kun nøgleord):
 - contact_booking: brugeren vil aktivt booke eller kontakte Jan nu — og har ALLEREDE fået svar på praktiske spørgsmål. Kræver eksplicit handlingsord: "jeg vil gerne booke", "kan jeg få en tid", "how do I sign up". IKKE ved spørgsmål om pris, antal sessioner, varighed, hvad det indebærer — selv hvis booking nævnes i samme sætning som et spørgsmål. Eksempel der er none: "skal jeg i behandling mange gange og er det dyrt", "hvad koster det", "hvor mange gange skal man komme", "inden jeg booker — hvad sker der i en session".
+- booking_info: brugeren søger praktisk information om pris, antal sessioner, varighed, hvad der sker i en session, adresse, åbningstider, eller hvordan man kontakter Jan — men er ikke klar til at handle endnu. Eksempler: "hvad koster det", "hvor mange gange skal jeg komme", "hvad sker der i en session", "hvor ligger klinikken", "kan man ringe til Jan", "hvad indebærer det".
 - lead_capture: brugeren er interesseret men eksplicit ikke klar. Eksempler: "ikke nu", "tænker over det", "vil gerne have mere info først", "send mig noget".
 - fit_check: brugeren vil vide om hypnoterapi passer til netop dem. Eksempler: "er det noget for mig", "virker det for min type problem", "passer det til min situation".
-- none: alt andet — spørgsmål om pris, antal sessioner, varighed, hvad hypnoterapi indebærer, praktisk info, og alle spørgsmål der søger information frem for handling.
+- none: alt andet — spørgsmål om hypnoterapi som metode, refleksion, mønstre, adfærd, og alle spørgsmål der søger forståelse frem for praktisk info eller handling.
 
 Prioriteter:
 - Personlig friktion/barriere/uro → reflection, ikke info
