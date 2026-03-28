@@ -17,13 +17,11 @@ import {
   InvestigationFocus,
   PromptMode,
   RelationalState,
-  RoutingIntent,
 } from "../contracts/turnAnalysis"
 
 type TranscriptTurn = { role: "user" | "assistant"; content: string }
 
 export type SingleTurnOutput = {
-  routing_intent: RoutingIntent
   is_history_query: boolean
   mode_used: PromptMode
   conversation_move: ConversationMove
@@ -63,22 +61,8 @@ Tone: varm · klar · jordforbundet · menneskelig
 
 Grænser: ingen diagnose · intet løfte om effekt · ingen dyb terapeutisk udforskning · observation før fortolkning`)
 
-  // ROUTING — bestem dette FØRST
-  blocks.push(`ROUTING — bestem routing_intent i kontekst, ikke kun ud fra nøgleord:
-
-contact_booking: brugeren vil aktivt booke eller kontakte Jan NU og har ALLEREDE fået svar på praktiske spørgsmål. Kræver eksplicit handlingsord: "jeg vil gerne booke", "kan jeg få en tid", "vil gerne starte". IKKE ved spørgsmål om pris eller forløb — selv hvis booking nævnes i samme sætning.
-Eksempler på contact_booking: "ja jeg vil gerne booke", "kan jeg booke her?", "vil gerne starte et forløb", "hvordan kontakter jeg Jan"
-Eksempler der IKKE er contact_booking: "ja tak" som svar på et refleksionsspørgsmål, "hvad koster det", "ja det lyder godt" som generel positiv reaktion
-
-booking_info: brugeren søger praktisk info — pris, antal sessioner, varighed, hvad der sker, adresse, kontaktoplysninger — men er ikke klar til at handle endnu.
-
-lead_capture: interesseret men eksplicit ikke klar: "ikke nu", "tænker over det", "vil have mere info først".
-
-fit_check: BRUG NÆSTEN ALDRIG. Kun hvis brugeren stiller et eksplicit evaluerende ja/nej-spørgsmål om sig selv som behandlingsobjekt: "er jeg egnet til hypnoterapi?", "er det noget for mig?". Symptombeskrivelser ("jeg har X", "jeg oplever Y"), svar på refleksionsspørgsmål, og alle spørgsmål om hvad hypnoterapi kan gøre — er ALDRIG fit_check. Brug none i stedet.
-
-none: alt andet — symptombeskrivelser, spørgsmål om metode, refleksion, mønstre, forståelse, svar på åbne spørgsmål. Sæt ALTID none ved tvivl — fejl i retning af none er langt bedre end fejl i retning af en rute.
-
-is_history_query: sæt true hvis brugeren spørger hvad du ved om dem / hvad I har talt om / hvad du husker.`)
+  // HISTORY QUERY
+  blocks.push(`is_history_query: sæt true hvis brugeren spørger hvad du ved om dem / hvad I har talt om / hvad du husker. Ellers false.`)
 
   // MODE — vælges kun ved routing_intent === "none"
   blocks.push(`MODE (bruges kun når routing_intent er "none"):
@@ -155,7 +139,6 @@ Undgå: lange sætninger · opstillede pointer · nye vinkler · fremadrettede r
   // JSON-KONTRAKT
   blocks.push(`Returner KUN gyldig JSON — ingen tekst uden for JSON:
 {
-  "routing_intent": "contact_booking" | "booking_info" | "lead_capture" | "fit_check" | "none",
   "is_history_query": boolean,
   "mode_used": "info" | "evidence" | "practical" | "reflection" | "closing",
   "conversation_move": "direct_answer" | "guided_observation" | "pattern_detection" | "metacognitive_probe" | "mild_challenge" | "practical_preparation" | "synthesis" | "close",
@@ -171,10 +154,9 @@ Undgå: lange sætninger · opstillede pointer · nye vinkler · fremadrettede r
 }
 
 Regler for indhold:
-- routing_intent: vurder i kontekst — sæt "none" ved tvivl
 - acknowledgement: 0-1 korte sætninger, landing uden varmefraser. null hvis unødvendig.
 - core_answer: selve svaret — ALDRIG tomt — konkret om brugerens situation frem for generel metode
-- next_step: neutral afrunding eller null. Inkluder IKKE kontakt/booking i next_step medmindre routing_intent er "booking_info" eller "practical"
+- next_step: neutral afrunding eller null. Nævn IKKE kontaktinfo eller booking medmindre brugeren eksplicit spørger om det.
 - topic: emnet brugeren taler om (fx "søvnproblemer", "neglebidning") — null hvis uklart
 - signals: 2-4 korte signaler der forklarer dit valg`)
 
@@ -183,17 +165,12 @@ Regler for indhold:
 
 // ─── Normalisering ────────────────────────────────────────────────────────────
 
-const VALID_ROUTING_INTENTS: RoutingIntent[] = ["contact_booking", "booking_info", "lead_capture", "fit_check", "none"]
 const VALID_MODES: PromptMode[] = ["info", "evidence", "practical", "reflection", "closing"]
 const VALID_MOVES: ConversationMove[] = ["direct_answer", "guided_observation", "pattern_detection", "metacognitive_probe", "mild_challenge", "practical_preparation", "synthesis", "close"]
 const VALID_FOCUSES: InvestigationFocus[] = ["attention", "interpretation", "regulation", "pattern", "preparation", "none"]
 const VALID_RELATIONAL: RelationalState[] = ["orienting", "building_clarity", "building_trust", "decision_support", "gentle_close"]
 
 function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTopic?: string): SingleTurnOutput | null {
-  const routing_intent = VALID_ROUTING_INTENTS.includes(raw.routing_intent as RoutingIntent)
-    ? (raw.routing_intent as RoutingIntent)
-    : "none"
-
   const is_history_query = typeof raw.is_history_query === "boolean" ? raw.is_history_query : false
 
   const mode_used = VALID_MODES.includes(raw.mode_used as PromptMode)
@@ -243,7 +220,6 @@ function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTop
   if (!assistant_message) return null
 
   return {
-    routing_intent,
     is_history_query,
     mode_used,
     conversation_move,
@@ -268,7 +244,7 @@ export function buildSingleTurnFallback(userText: string, lastTopic?: string): S
 
   if (isClosing) {
     return {
-      routing_intent: "none", is_history_query: false, mode_used: "closing",
+      is_history_query: false, mode_used: "closing",
       conversation_move: "close", investigation_focus: "none", relational_state: "gentle_close",
       topic: lastTopic, objective: undefined, acknowledgement: null,
       core_answer: "Selv tak.", next_step: null, signals: ["closing_fallback"],
@@ -277,7 +253,7 @@ export function buildSingleTurnFallback(userText: string, lastTopic?: string): S
   }
 
   return {
-    routing_intent: "none", is_history_query: false, mode_used: "info",
+    is_history_query: false, mode_used: "info",
     conversation_move: "direct_answer", investigation_focus: "none", relational_state: "orienting",
     topic: lastTopic, objective: undefined, acknowledgement: null,
     core_answer: "Jeg kan godt hjælpe med det. Fortæl gerne mere om hvad der er på hjerte.",
