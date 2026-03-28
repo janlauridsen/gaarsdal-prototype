@@ -16,7 +16,7 @@ import { nowMs } from "../../utils/time"
 export type AnticipatePayload = {
   trigger_turn: number
   topic: string
-  transcript_excerpt: string  // Seneste 4-6 turns som tekst
+  transcript_excerpt: string  // Seneste 6 turns som tekst
   active_node: string
 }
 
@@ -43,16 +43,28 @@ async function llmSimulateAndInstruct(params: {
   const model = process.env.HYPNO_MODEL ?? "gpt-4.1-mini"
 
   const system =
-    "Du er en ekspert i terapeutisk samtaledesign og retorisk framing. " +
-    "Du får et samtaleforløb og skal:\n" +
-    "1. Forudsige hvad brugeren sandsynligvis vil skrive som næste besked (anticipated_user_text)\n" +
-    "2. Forudsige det ideelle assistentsvar på det\n" +
-    "3. Forudsige brugerens svar på DET svar\n" +
-    "4. Identificere hvilken retning der er mest frugtbar for brugerens fremgang\n" +
-    "5. Formulere en kort retorisk instruktion (rhetorical_instruction) til assistenten om HVORDAN " +
-    "den skal formulere sit NÆSTE svar — ikke hvad den skal sige, men hvilken sproglig og retorisk " +
-    "tilgang der leder naturligt mod det frugtbare spor. Max 2 sætninger.\n\n" +
-    "Instruksen må IKKE gentage hvad der allerede er sagt. Den skal være subtil og handlingsorienteret.\n" +
+    "Du er ekspert i terapeutisk samtaledesign. Du simulerer 2 fremtidige samtale-træk.\n\n" +
+    "TRIN 1 — Forudsig brugerens næste besked (anticipated_user_text): " +
+    "Hvad vil brugeren sandsynligvis skrive? Vær konkret og specifik — brug brugerens eget sproglige register.\n\n" +
+    "TRIN 2 — Forudsig det ideelle assistentsvar på den besked.\n\n" +
+    "TRIN 3 — Forudsig brugerens reaktion på DET svar. Hvad åbner det op for?\n\n" +
+    "TRIN 4 — Identificer: Hvilken SPECIFIK ÅBNING i brugerens seneste formulering " +
+    "kan assistenten udnytte NU for at lede naturligt mod det frugtbare spor? " +
+    "Hvad er den præcise retoriske manøvre? " +
+    "(fx: spejl brugerens eget ord X tilbage, introducer distinktion mellem Y og Z, " +
+    "hold pause ved den modsætning brugeren selv har antydet, navngiv det mønster brugeren beskriver, etc.)\n\n" +
+    "TRIN 5 — Skriv rhetorical_instruction som EN konkret handlingsanvisning: " +
+    "Hvad skal assistenten GØRE — ikke hvilken tone den skal have. " +
+    "Instruksen skal referere til noget specifikt fra samtalen. " +
+    "Den må ikke være generisk.\n\n" +
+    "EKSEMPEL på DÅRLIG instruktion:\n" +
+    "  'Brug en empatisk og udforskende tone.'\n\n" +
+    "EKSEMPEL på GOD instruktion:\n" +
+    "  'Spejl brugerens eget ord \"frirum\" og introducer distinktionen mellem " +
+    "frirum-fra-noget og frirum-til-noget — det åbner for hvad brugeren egentlig ønsker sig.'\n\n" +
+    "EKSEMPEL på GOD instruktion:\n" +
+    "  'Navngiv det mønster brugeren beskriver (planlægger dagen efter alkohol) som " +
+    "\"alkoholen som organiserende princip\" — og spørg hvad der ellers kunne organisere dagen.'\n\n" +
     "Returner KUN JSON: { \"anticipated_user_text\": string, \"rhetorical_instruction\": string }"
 
   const user = `Emne: ${params.topic}\n\nSamtaleforløb:\n${params.transcript}`
@@ -60,7 +72,7 @@ async function llmSimulateAndInstruct(params: {
   try {
     const raw = await llm.chatJson({
       model,
-      temperature: 0.4,
+      temperature: 0.6,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: system },
@@ -150,9 +162,6 @@ export async function tickAnticipate(job: JobRecordV1): Promise<{ job: JobRecord
       }
     }
 
-    // Gem som anticipate-draft under separat nøgle-namespace.
-    // Bruger ikke standard writeDraft() da vi ikke vil overskrive scan_threads draft.
-    const ttl = jobsTtlSeconds()
     try {
       const { getRedisClient } = await import("../../persistence/redis")
       const client = getRedisClient()
