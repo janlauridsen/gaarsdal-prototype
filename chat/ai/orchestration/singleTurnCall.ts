@@ -1,0 +1,348 @@
+/**
+ * singleTurnCall.ts
+ *
+ * Erstatter to separate LLM-kald (analyzeTurn + response) med ét kombineret kald.
+ * LLM'en bestemmer routing, dialog-metadata OG skriver svaret i samme JSON-output.
+ *
+ * Fordele vs. det gamle to-kaldede system:
+ * - Ingen koordineringsfejl mellem analyse og svar
+ * - Halvt så mange API-kald per turn
+ * - LLM'en har fuld kontekst når den vælger routing og mode
+ */
+
+import { GAARSDAL_SITE_CONTEXT_DA } from "../siteContext"
+import { LlmClient } from "../types"
+import {
+  ConversationMove,
+  InvestigationFocus,
+  PromptMode,
+  RelationalState,
+  RoutingIntent,
+} from "../contracts/turnAnalysis"
+
+type TranscriptTurn = { role: "user" | "assistant"; content: string }
+
+export type SingleTurnOutput = {
+  routing_intent: RoutingIntent
+  is_history_query: boolean
+  mode_used: PromptMode
+  conversation_move: ConversationMove
+  investigation_focus: InvestigationFocus
+  relational_state: RelationalState
+  topic: string | undefined
+  objective: string | undefined
+  acknowledgement: string | null
+  core_answer: string
+  next_step: string | null
+  signals: string[]
+  confidence: number
+  assistant_message: string
+}
+
+// ─── System-prompt ───────────────────────────────────────────────────────────
+
+function buildSystemPrompt(params: {
+  assistantCount: number
+  arousalLevel: "low" | "elevated" | "high"
+  lastAssistantExcerpt: string | undefined
+  contextPackSystem: string | undefined
+  userProfileSystem: string | undefined
+}): string {
+  const blocks: string[] = []
+
+  // ROLLE
+  blocks.push(`Du er en varm, jordnær samtalepartner fra Gaarsdal Hypnoterapi i Birkerød. Jan Gaarsdal er hypnoterapeut og tilbyder individuelle forløb.
+
+Formålet er at hjælpe brugeren med at:
+- forstå hvad hypnoterapi er og hvad det kan bruges til
+- afklare om det kan være relevant for dem
+- tage kontakt til Jan hvis det giver mening
+
+Skriv som et menneske der kender sit fag — ikke som en lærebog. Brug hverdagsord. Vær konkret og direkte uden at være kold.
+Tone: varm · klar · jordforbundet · menneskelig
+
+Grænser: ingen diagnose · intet løfte om effekt · ingen dyb terapeutisk udforskning · observation før fortolkning`)
+
+  // ROUTING — bestem dette FØRST
+  blocks.push(`ROUTING — bestem routing_intent i kontekst, ikke kun ud fra nøgleord:
+
+contact_booking: brugeren vil aktivt booke eller kontakte Jan NU og har ALLEREDE fået svar på praktiske spørgsmål. Kræver eksplicit handlingsord: "jeg vil gerne booke", "kan jeg få en tid", "vil gerne starte". IKKE ved spørgsmål om pris eller forløb — selv hvis booking nævnes i samme sætning.
+Eksempler på contact_booking: "ja jeg vil gerne booke", "kan jeg booke her?", "vil gerne starte et forløb", "hvordan kontakter jeg Jan"
+Eksempler der IKKE er contact_booking: "ja tak" som svar på et refleksionsspørgsmål, "hvad koster det", "ja det lyder godt" som generel positiv reaktion
+
+booking_info: brugeren søger praktisk info — pris, antal sessioner, varighed, hvad der sker, adresse, kontaktoplysninger — men er ikke klar til at handle endnu.
+
+lead_capture: interesseret men eksplicit ikke klar: "ikke nu", "tænker over det", "vil have mere info først".
+
+fit_check: brugeren vil vide om hypnoterapi passer til netop dem: "er det noget for mig?", "virker det for min situation?".
+
+none: alt andet — spørgsmål om hypnoterapi som metode, refleksion, mønstre, forståelse, information. Sæt none ved tvivl.
+
+is_history_query: sæt true hvis brugeren spørger hvad du ved om dem / hvad I har talt om / hvad du husker.`)
+
+  // MODE — vælges kun ved routing_intent === "none"
+  blocks.push(`MODE (bruges kun når routing_intent er "none"):
+
+info: direkte faktuel besvarelse. Start med kernepunktet, uddyb i 2-3 afsnit.
+reflection: flyt opmærksomheden til brugerens eget mønster. Ét præcist observationsfokus. Undgå brede lister.
+practical: konkret og handlingsorienteret. Brug kontaktoplysninger fra SITE-KONTEKST kun hvis brugeren direkte spørger.
+evidence: nøgtern vurdering af dokumentation for hypnoterapi. Angiv niveau: god/moderat/blandet/begrænset.
+closing: luk kort og naturligt. Max 1-2 sætninger.
+
+Valg-guide:
+- Brugeren beskriver eget mønster/oplevelse → reflection
+- Brugeren spørger om metode/virkning → info eller evidence
+- Brugeren vil have konkret hjælp til næste skridt → practical
+- Brugeren siger farvel/tak → closing`)
+
+  // CONVERSATION_MOVE
+  blocks.push(`CONVERSATION_MOVE (vælg den der passer til dit svar):
+direct_answer: besvarer direkte
+guided_observation: giver ét snævert observationsfokus
+pattern_detection: hjælper brugeren se hvornår noget gentager sig
+metacognitive_probe: undersøger brugerens antagelser om egne reaktioner
+mild_challenge: anerkender og tilbyder en bredere forklaring
+practical_preparation: giver konkrete fokuspunkter til næste skridt
+synthesis: samler trådene — reducér kompleksitet
+close: afslutter`)
+
+  // FORMAT
+  const questionRule = params.assistantCount >= 1
+    ? "Max ét spørgsmål — skal skærpe fokus, ikke holde samtalen i gang. Spørgsmål er ikke standardafslutning."
+    : "Ét åbent spørgsmål der skærper brugerens opmærksomhed."
+
+  blocks.push(`FORMAT:
+${questionRule}
+Svar på dansk. Første sætning konkret og menneskelig — ikke akademisk.
+Brug 'det lyder som' / 'det kan hænge sammen med' frem for kliniske termer.
+Undgå fagtermer som 'reguleringsstrategier', 'metakognition', 'opmærksomhedsmønstre' — omformuler til hverdagssprog.
+Hvis svaret passer til mange samtaler, er det for generisk.
+
+Felterne core_answer og next_step sammensættes til assistant_message: acknowledgement → core_answer → next_step.`)
+
+  // VARIATION
+  if (params.lastAssistantExcerpt) {
+    blocks.push(`VARIATION: Forrige svar begyndte: ${JSON.stringify(params.lastAssistantExcerpt.slice(0, 120))} — din åbning må ikke ligne denne.
+Undgå at starte med "Du spørger", "Du beskriver", "Du ønsker", "Du nævner". Start direkte på sagen.`)
+  }
+  if (params.assistantCount >= 2) {
+    blocks.push(`Der har allerede været ${params.assistantCount} svar — gå dybere eller gør mønsteret kortere og tydeligere. Gentag ikke samme forklaring med nye ord.`)
+  }
+
+  // WINDOW OF TOLERANCE
+  if (params.arousalLevel === "high") {
+    blocks.push(`TEMPO: Det lyder som om der er meget på én gang. Svar kort og roligt — ét punkt, ikke tre. Ingen ny analyse. Ingen spørgsmål. Lad brugeren lande.
+Undgå: lange sætninger · opstillede pointer · nye vinkler · fremadrettede råd.`)
+  } else if (params.arousalLevel === "elevated") {
+    blocks.push(`TEMPO: Brugeren er i bevægelse — hold svaret enkelt og konkret. Undgå at åbne nye spor.`)
+  }
+
+  // SITE-KONTEKST
+  blocks.push(`SITE-KONTEKST (brug Jan-afsnittet aktivt; kontaktinfo kun ved direkte spørgsmål om pris, kontakt, booking, adresse):\n${GAARSDAL_SITE_CONTEXT_DA}`)
+
+  // LANGTIDSKONTEKST
+  const ctx = (params.contextPackSystem ?? "").trim()
+  if (ctx) {
+    blocks.push(`LANGTIDSKONTEKST (brug lavmælt — prioritér altid brugerens nuværende besked):\n${ctx}`)
+  }
+
+  // BRUGERPRÆFERENCER
+  const profile = (params.userProfileSystem ?? "").trim()
+  if (profile) {
+    blocks.push(`BRUGERPRÆFERENCER (bløde signaler):\n${profile}`)
+  }
+
+  // JSON-KONTRAKT
+  blocks.push(`Returner KUN gyldig JSON — ingen tekst uden for JSON:
+{
+  "routing_intent": "contact_booking" | "booking_info" | "lead_capture" | "fit_check" | "none",
+  "is_history_query": boolean,
+  "mode_used": "info" | "evidence" | "practical" | "reflection" | "closing",
+  "conversation_move": "direct_answer" | "guided_observation" | "pattern_detection" | "metacognitive_probe" | "mild_challenge" | "practical_preparation" | "synthesis" | "close",
+  "investigation_focus": "attention" | "interpretation" | "regulation" | "pattern" | "preparation" | "none",
+  "relational_state": "orienting" | "building_clarity" | "building_trust" | "decision_support" | "gentle_close",
+  "topic": string | null,
+  "objective": string | null,
+  "acknowledgement": string | null,
+  "core_answer": string,
+  "next_step": string | null,
+  "signals": string[],
+  "confidence": number
+}
+
+Regler for indhold:
+- routing_intent: vurder i kontekst — sæt "none" ved tvivl
+- acknowledgement: 0-1 korte sætninger, landing uden varmefraser. null hvis unødvendig.
+- core_answer: selve svaret — ALDRIG tomt — konkret om brugerens situation frem for generel metode
+- next_step: neutral afrunding eller null. Inkluder IKKE kontakt/booking i next_step medmindre routing_intent er "booking_info" eller "practical"
+- topic: emnet brugeren taler om (fx "søvnproblemer", "neglebidning") — null hvis uklart
+- signals: 2-4 korte signaler der forklarer dit valg`)
+
+  return blocks.join("\n\n")
+}
+
+// ─── Normalisering ────────────────────────────────────────────────────────────
+
+const VALID_ROUTING_INTENTS: RoutingIntent[] = ["contact_booking", "booking_info", "lead_capture", "fit_check", "none"]
+const VALID_MODES: PromptMode[] = ["info", "evidence", "practical", "reflection", "closing"]
+const VALID_MOVES: ConversationMove[] = ["direct_answer", "guided_observation", "pattern_detection", "metacognitive_probe", "mild_challenge", "practical_preparation", "synthesis", "close"]
+const VALID_FOCUSES: InvestigationFocus[] = ["attention", "interpretation", "regulation", "pattern", "preparation", "none"]
+const VALID_RELATIONAL: RelationalState[] = ["orienting", "building_clarity", "building_trust", "decision_support", "gentle_close"]
+
+function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTopic?: string): SingleTurnOutput | null {
+  const routing_intent = VALID_ROUTING_INTENTS.includes(raw.routing_intent as RoutingIntent)
+    ? (raw.routing_intent as RoutingIntent)
+    : "none"
+
+  const is_history_query = typeof raw.is_history_query === "boolean" ? raw.is_history_query : false
+
+  const mode_used = VALID_MODES.includes(raw.mode_used as PromptMode)
+    ? (raw.mode_used as PromptMode)
+    : "info"
+
+  const conversation_move = VALID_MOVES.includes(raw.conversation_move as ConversationMove)
+    ? (raw.conversation_move as ConversationMove)
+    : "direct_answer"
+
+  const investigation_focus = VALID_FOCUSES.includes(raw.investigation_focus as InvestigationFocus)
+    ? (raw.investigation_focus as InvestigationFocus)
+    : "none"
+
+  const relational_state = VALID_RELATIONAL.includes(raw.relational_state as RelationalState)
+    ? (raw.relational_state as RelationalState)
+    : "building_clarity"
+
+  const topic = typeof raw.topic === "string" && raw.topic.trim() ? raw.topic.trim() : lastTopic
+  const objective = typeof raw.objective === "string" && raw.objective.trim() ? raw.objective.trim() : undefined
+
+  const acknowledgement = typeof raw.acknowledgement === "string" && raw.acknowledgement.trim()
+    ? raw.acknowledgement.trim()
+    : null
+
+  const core_answer = typeof raw.core_answer === "string" && raw.core_answer.trim()
+    ? raw.core_answer.trim()
+    : ""
+
+  if (!core_answer) return null
+
+  const next_step = typeof raw.next_step === "string" && raw.next_step.trim()
+    ? raw.next_step.trim()
+    : null
+
+  const signals = Array.isArray(raw.signals)
+    ? raw.signals.filter((x): x is string => typeof x === "string").slice(0, 6)
+    : []
+
+  const confidenceRaw = typeof raw.confidence === "number" ? raw.confidence : Number(raw.confidence ?? 0.5)
+  const confidence = Number.isFinite(confidenceRaw) ? Math.max(0, Math.min(1, confidenceRaw)) : 0.5
+
+  // Assemble final message
+  const parts = [acknowledgement, core_answer, next_step].filter(Boolean)
+  const assistant_message = parts.join("\n\n").trim()
+
+  if (!assistant_message) return null
+
+  return {
+    routing_intent,
+    is_history_query,
+    mode_used,
+    conversation_move,
+    investigation_focus,
+    relational_state,
+    topic,
+    objective,
+    acknowledgement,
+    core_answer,
+    next_step,
+    signals,
+    confidence,
+    assistant_message,
+  }
+}
+
+// ─── Fallback ─────────────────────────────────────────────────────────────────
+
+export function buildSingleTurnFallback(userText: string, lastTopic?: string): SingleTurnOutput {
+  const CLOSING_WORDS = ["tak", "farvel", "bye", "hej hej", "det var alt", "vi ses"]
+  const isClosing = CLOSING_WORDS.some((w) => userText.toLowerCase().trim().includes(w))
+
+  if (isClosing) {
+    return {
+      routing_intent: "none", is_history_query: false, mode_used: "closing",
+      conversation_move: "close", investigation_focus: "none", relational_state: "gentle_close",
+      topic: lastTopic, objective: undefined, acknowledgement: null,
+      core_answer: "Selv tak.", next_step: null, signals: ["closing_fallback"],
+      confidence: 0.9, assistant_message: "Selv tak.",
+    }
+  }
+
+  return {
+    routing_intent: "none", is_history_query: false, mode_used: "info",
+    conversation_move: "direct_answer", investigation_focus: "none", relational_state: "orienting",
+    topic: lastTopic, objective: undefined, acknowledgement: null,
+    core_answer: "Jeg kan godt hjælpe med det. Fortæl gerne mere om hvad der er på hjerte.",
+    next_step: null, signals: ["llm_fallback"], confidence: 0.3,
+    assistant_message: "Jeg kan godt hjælpe med det. Fortæl gerne mere om hvad der er på hjerte.",
+  }
+}
+
+// ─── Hoved-funktion ───────────────────────────────────────────────────────────
+
+export async function singleTurnCall(params: {
+  llm: LlmClient
+  transcript: TranscriptTurn[]
+  userText: string
+  lastTopic?: string
+  arousalLevel: "low" | "elevated" | "high"
+  assistantCount: number
+  contextPackSystem?: string
+  userProfileSystem?: string
+}): Promise<SingleTurnOutput | null> {
+  const lastAssistantExcerpt = [...params.transcript]
+    .reverse()
+    .find((t) => t.role === "assistant")?.content
+
+  const systemPrompt = buildSystemPrompt({
+    assistantCount: params.assistantCount,
+    arousalLevel: params.arousalLevel,
+    lastAssistantExcerpt,
+    contextPackSystem: params.contextPackSystem,
+    userProfileSystem: params.userProfileSystem,
+  })
+
+  let raw: Record<string, unknown> | null = null
+  try {
+    raw = await params.llm.chatJson({
+      model: process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
+      temperature: 0.25,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: JSON.stringify({
+            user_input: params.userText,
+            last_topic: params.lastTopic ?? "",
+            transcript: params.transcript.slice(-8),
+          }),
+        },
+      ],
+    })
+  } catch (err) {
+    console.error("[singleTurnCall] LLM-kald fejlede:", String(err))
+    return null
+  }
+
+  if (!raw) {
+    console.error("[singleTurnCall] LLM returnerede null")
+    return null
+  }
+
+  const result = normalizeOutput(raw, params.userText, params.lastTopic)
+  if (!result) {
+    console.error("[singleTurnCall] Normalisering fejlede", JSON.stringify(raw).slice(0, 200))
+    return null
+  }
+
+  return result
+}
