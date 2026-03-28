@@ -74,9 +74,9 @@ booking_info: brugeren søger praktisk info — pris, antal sessioner, varighed,
 
 lead_capture: interesseret men eksplicit ikke klar: "ikke nu", "tænker over det", "vil have mere info først".
 
-fit_check: brugeren vil vide om hypnoterapi passer til netop dem: "er det noget for mig?", "virker det for min situation?".
+fit_check: brugeren spørger eksplicit om hypnoterapi passer til NETOP DEM personligt — med "mig" eller "min situation" som kerne: "er det noget for mig?", "virker det for min situation?", "passer det til mig?". IKKE ved generelle spørgsmål om om et problem kan afhjælpes — "kan X afhjælpes med hypno?" eller "hjælper hypno mod X?" er info, ikke fit_check.
 
-none: alt andet — spørgsmål om hypnoterapi som metode, refleksion, mønstre, forståelse, information. Sæt none ved tvivl.
+none: alt andet — herunder alle spørgsmål om hvad hypnoterapi kan, om specifikke problemer kan afhjælpes, refleksion, mønstre, forståelse. Sæt ALTID none ved tvivl. Fejl i retning af none er langt bedre end fejl i retning af en rute.
 
 is_history_query: sæt true hvis brugeren spørger hvad du ved om dem / hvad I har talt om / hvad du husker.`)
 
