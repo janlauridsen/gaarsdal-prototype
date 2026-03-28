@@ -138,7 +138,7 @@ function outputToAnalysis(out: SingleTurnOutput, previousTopic?: string): TurnAn
     investigation_focus: out.investigation_focus,
     response_goal: "answer_then_one_question",
     relational_state: out.relational_state,
-    routing_intent: out.routing_intent,
+    routing_intent: "none",
     is_history_query: out.is_history_query,
     topic: out.topic ?? previousTopic,
     objective: out.objective,
@@ -300,89 +300,6 @@ export async function runUnifiedHypnoCapability(
 
   // Konvertér til TurnAnalysis for buildMetaDelta-kompatibilitet
   let analysis = outputToAnalysis(turnOutput, previousTopic)
-
-  // ─── LLM-drevet routing ────────────────────────────────────────────────────
-  if (options.stayOnNode === "GEN_HYPNO" && turnOutput.routing_intent !== "none") {
-    if (turnOutput.routing_intent === "contact_booking") {
-      const assistant = "Det lyder som om du er klar til at komme i gang. Udfyld nedenstående — Jan kontakter dig inden for 24 timer for at aftale en første session."
-      const updatedTranscript = appendTranscript(transcript, userText, assistant)
-      return {
-        transition: {
-          type: "NODE_HOP",
-          from: context.state.active_node,
-          to: "HANDOFF_FORM",
-          reason: "gen-hypno:routing_intent:contact_booking",
-          response_message: assistant,
-          meta_delta: buildMetaDelta({
-            context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
-            sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
-            analysis, mode: "practical", relationalState: "decision_support",
-          }),
-        },
-        debug: { capability: "unified-hypno-v5-single", used_fallback: usedFallback },
-      }
-    }
-
-    if (turnOutput.routing_intent === "booking_info") {
-      const assistant = "Du finder kontaktinfo og praktiske detaljer herunder."
-      const updatedTranscript = appendTranscript(transcript, userText, assistant)
-      return {
-        transition: {
-          type: "NODE_HOP",
-          from: context.state.active_node,
-          to: "BOOKING",
-          reason: "gen-hypno:routing_intent:booking_info",
-          response_message: assistant,
-          meta_delta: buildMetaDelta({
-            context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
-            sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
-            analysis, mode: "practical", relationalState: "decision_support",
-          }),
-        },
-        debug: { capability: "unified-hypno-v5-single", used_fallback: usedFallback },
-      }
-    }
-
-    if (turnOutput.routing_intent === "lead_capture") {
-      const assistant = "Ingen stress — du behøver ikke beslutte dig nu. Efterlad din email, så sender Jan en kort besked om hvad en første session typisk indebærer."
-      const updatedTranscript = appendTranscript(transcript, userText, assistant)
-      return {
-        transition: {
-          type: "NODE_HOP",
-          from: context.state.active_node,
-          to: "LEAD_CAPTURE",
-          reason: "gen-hypno:routing_intent:lead_capture",
-          response_message: assistant,
-          meta_delta: buildMetaDelta({
-            context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
-            sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
-            analysis, mode: "practical", relationalState: "decision_support",
-          }),
-        },
-        debug: { capability: "unified-hypno-v5-single", used_fallback: usedFallback },
-      }
-    }
-
-    if (turnOutput.routing_intent === "fit_check") {
-      const assistant = "Hvad er det primære, du ønsker at arbejde med?"
-      const updatedTranscript = appendTranscript(transcript, userText, assistant)
-      return {
-        transition: {
-          type: "NODE_HOP",
-          from: context.state.active_node,
-          to: "PREQUALIFY",
-          reason: "gen-hypno:routing_intent:fit_check",
-          response_message: assistant,
-          meta_delta: buildMetaDelta({
-            context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
-            sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
-            analysis, mode: "info", relationalState: "decision_support",
-          }),
-        },
-        debug: { capability: "unified-hypno-v5-single", used_fallback: usedFallback },
-      }
-    }
-  }
 
   // ─── Hukommelse-forespørgsel ───────────────────────────────────────────────
   if (turnOutput.is_history_query) {
