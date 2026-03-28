@@ -355,8 +355,11 @@ export async function runUnifiedHypnoCapability(
     const lastAssistant = trimmedTranscript.filter(t => t.role === "assistant").slice(-1)[0]?.content ?? ""
     const lastHadBookingOffer = /kontakt|booke|telefon|e-mail|jan@|aftal|tid/i.test(lastAssistant)
 
+    // Handoff allerede gennemført denne session — undgå falsk positiv booking-routing
+    const handoffAlreadyDone = !!(context.state.meta?.["handoff.last"] as any)?.value
+
     const isBookingAction = bookingPhrases.some((k) => u.includes(k))
-    const isContextualAccept = lastHadBookingOffer && simpleAcceptPhrases.some((k) => u === k || u.startsWith(k + " ") || u.endsWith(" " + k))
+    const isContextualAccept = !handoffAlreadyDone && lastHadBookingOffer && simpleAcceptPhrases.some((k) => u === k || u.startsWith(k + " ") || u.endsWith(" " + k))
     const isInfoRequest = infoKeywords.some((k) => u.includes(k))
 
     if ((isBookingAction || isContextualAccept) && !isInfoRequest) {
@@ -452,14 +455,21 @@ export async function runUnifiedHypnoCapability(
 
   // ─── Hukommelse-forespørgsel ───────────────────────────────────────────────
   // Brugeren spørger ind til hvad de har delt.
-  // Har contextPack reelt indhold, lader vi LLM formulere svaret direkte.
+  // Prioritér: 1) LTM contextPack, 2) current session transcript, 3) fallback.
   if (analysis.is_history_query) {
     const cp = context.contextPack?.system ?? ""
-    const hasContext = cp.length > 200
+    const hasLtmContext = cp.length > 200
+
+    // Byg current-session opsummering fra transcript hvis LTM er tom
+    const sessionTurns = trimmedTranscript.filter(t => t.role === "assistant").length
+    const hasSessionContext = sessionTurns >= 2
+
+    // Er der allerede sendt en handoff denne session?
+    const handoffDone = !!(context.state.meta?.["handoff.last"] as any)?.value
 
     let assistant: string
 
-    if (hasContext) {
+    if (hasLtmContext) {
       try {
         const raw = await llm.chatJson({
           model: process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
@@ -478,6 +488,14 @@ export async function runUnifiedHypnoCapability(
       } catch {
         assistant = "Jeg kan se du har delt en del om dine vaner og mønstre. Er der noget bestemt du vil have mig til at uddybe?"
       }
+    } else if (hasSessionContext) {
+      // Ingen LTM endnu, men vi har en aktiv samtale — opsummér hvad der er sket
+      const topic = previousTopic ?? analysis.topic ?? ""
+      const topicStr = topic ? ` om ${topic}` : ""
+      const handoffStr = handoffDone
+        ? " Du har også sendt en henvendelse til Jan."
+        : ""
+      assistant = `I denne samtale har vi talt${topicStr}.${handoffStr} Jeg husker hvad vi er kommet igennem her, men har endnu ikke adgang til evt. tidligere samtaler.\n\nEr der noget bestemt du vil vende tilbage til?`
     } else {
       assistant = "Vi er lige startet, så jeg har ikke meget at trække på endnu — men det ændrer sig hurtigt jo mere vi taler.\n\nEr der noget bestemt du gerne vil have mig til at holde fast i?"
     }
