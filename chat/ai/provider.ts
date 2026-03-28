@@ -23,60 +23,90 @@ function isAnthropicModel(model: string): boolean {
 
 async function callOpenAiCompatible(input: LlmChatInput): Promise<Record<string, unknown> | null> {
   const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) return null
+  if (!apiKey) {
+    console.error("[LLM] callOpenAiCompatible: OPENAI_API_KEY mangler")
+    return null
+  }
 
   const baseUrl = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1"
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(input),
-  })
+  let response: Response
+  try {
+    response = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(input),
+    })
+  } catch (err) {
+    console.error("[LLM] callOpenAiCompatible: fetch fejlede", String(err))
+    return null
+  }
 
-  if (!response.ok) return null
+  if (!response.ok) {
+    const body = await response.text().catch(() => "")
+    console.error(`[LLM] callOpenAiCompatible: HTTP ${response.status} model=${input.model} body=${body.slice(0, 300)}`)
+    return null
+  }
 
   const data = await response.json()
   const content = data?.choices?.[0]?.message?.content
-  if (typeof content !== "string") return null
+  if (typeof content !== "string") {
+    console.error("[LLM] callOpenAiCompatible: uventet response struktur", JSON.stringify(data).slice(0, 200))
+    return null
+  }
   return safeJsonParse(content)
 }
 
 async function callAnthropicNative(input: LlmChatInput): Promise<Record<string, unknown> | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return null
+  if (!apiKey) {
+    console.error("[LLM] callAnthropicNative: ANTHROPIC_API_KEY mangler")
+    return null
+  }
 
-  // Separate system messages from user/assistant turns
   const systemMessages = input.messages.filter((m) => m.role === "system")
   const conversationMessages = input.messages.filter((m) => m.role !== "system")
-
   const systemContent = systemMessages.map((m) => m.content).join("\n\n")
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: input.model,
-      max_tokens: 1024,
-      temperature: input.temperature,
-      system: systemContent || undefined,
-      messages: conversationMessages.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })),
-    }),
-  })
+  let response: Response
+  try {
+    response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: input.model,
+        max_tokens: 1024,
+        temperature: input.temperature,
+        system: systemContent || undefined,
+        messages: conversationMessages.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })),
+      }),
+    })
+  } catch (err) {
+    console.error("[LLM] callAnthropicNative: fetch fejlede", String(err))
+    return null
+  }
 
-  if (!response.ok) return null
+  if (!response.ok) {
+    const body = await response.text().catch(() => "")
+    console.error(`[LLM] callAnthropicNative: HTTP ${response.status} model=${input.model} body=${body.slice(0, 300)}`)
+    return null
+  }
 
   const data = await response.json()
   const content = data?.content?.[0]?.text
-  if (typeof content !== "string") return null
+  if (typeof content !== "string") {
+    console.error("[LLM] callAnthropicNative: uventet response struktur", JSON.stringify(data).slice(0, 200))
+    return null
+  }
   return safeJsonParse(content)
 }
 
