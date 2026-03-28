@@ -276,6 +276,7 @@ export function runPostTurn(params: {
     enqueueSuggestFacts({ userKey, conversationId, revisionAfter: revision, metaKeysWritten, threadThemeId: themeId, threadEpisodeId: episodeId }),
     writeRawAndMemory({ userKey, input, kernelResult, userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined }),
     maybeTriggerDeriveThreadTitleJob({ userKey, input, conversationId, revisionAfter: revision }),
+    maybeTriggerAnticipateJob({ userKey, input, conversationId, state: kernelResult.state, revisionAfter: revision }),
   ]).catch(() => {
     // Fejl i post-writes påvirker ikke brugeren
   })
@@ -419,4 +420,53 @@ function shouldAutoTriggerHistoryScan(params: { state: any; problem: ProblemSpec
   if (!onCadence) return { shouldTrigger: false, turnCount }
   if (!seemsHistoryRelevant(params.problem, params.userText)) return { shouldTrigger: false, turnCount }
   return { shouldTrigger: true, turnCount }
+}
+
+// ─── Anticipate Turn Job ───────────────────────────────────────────────────────
+
+async function maybeTriggerAnticipateJob(params: {
+  userKey: string
+  input: InputSignal
+  conversationId: string
+  state: any
+  revisionAfter: number
+}): Promise<void> {
+  // Toggle: kræver ANTICIPATE_TURNS_ENABLED=true i env
+  if (!envBool("ANTICIPATE_TURNS_ENABLED")) return
+  if (params.input.type !== "FREE_TEXT") return
+
+  const state = params.state
+  if (state.active_node !== "GEN_HYPNO") return
+
+  const turnCount = currentUserTurnCount(state)
+  if (turnCount < 1) return  // Kræver mindst 1 gennemført turn
+
+  const topic = (readMetaValue(state, "gen_hypno.last_topic") as string | undefined)?.trim() ?? ""
+  if (!topic) return
+
+  // Byg transcript excerpt (seneste 6 turns max)
+  const transcriptRaw = readMetaValue(state, "gen_hypno.transcript")
+  const transcript: Array<{ role: string; content: string }> = Array.isArray(transcriptRaw) ? transcriptRaw : []
+  const recent = transcript.slice(-6)
+  const transcriptExcerpt = recent
+    .map((t) => `${t.role === "user" ? "U" : "A"}: ${String(t.content ?? "").slice(0, 300)}`)
+    .join("\n\n")
+
+  if (!transcriptExcerpt) return
+
+  await triggerJob({
+    userKey: params.userKey,
+    conversationId: params.conversationId,
+    kind: "anticipate_turn",
+    payload: {
+      trigger_turn: turnCount,
+      topic,
+      transcript_excerpt: transcriptExcerpt,
+      active_node: state.active_node,
+    },
+    ttlSeconds: jobsTtlSeconds(),
+    dedupe: true,
+    basedOnRevision: Math.max(0, params.revisionAfter),
+    mode: "shadow",
+  })
 }
