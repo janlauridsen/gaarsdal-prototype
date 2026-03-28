@@ -12,6 +12,7 @@ import {
 } from "../memory/longTermMemoryStore"
 import { readUserProfile } from "../memory/store"
 import { readLatestDraft } from "../jobs/store"
+import { readThreadIndex } from "../persistence/threadIndexStore"
 
 export type ContextPackV23 = {
   system: string
@@ -305,6 +306,25 @@ export async function buildContextPackV23(params: {
       parts.push("Åbne spørgsmål fra tidligere:")
       for (const q of latestDraft.open_questions.slice(0, 3)) {
         parts.push(`- ${clamp(String(q), 120)}`)
+      }
+    }
+  } else {
+    // Ingen draft for denne tråd — check andre trådes nyeste drafts.
+    // Dette sikrer cross-thread kontekst fra første is_history_query, inden
+    // baggrundsjobbet er færdigt for den aktuelle tråd.
+    const threadIdx = await readThreadIndex(params.userKey)
+    if (threadIdx?.threads) {
+      const otherIds = threadIdx.threads
+        .map((t: { conversation_id: string }) => t.conversation_id)
+        .filter((id: string) => id !== params.state.conversation_id)
+      for (const otherId of otherIds.slice(0, 3)) {
+        const otherDraft = await readLatestDraft(otherId)
+        if (otherDraft?.summary_draft) {
+          parts.push("")
+          parts.push("Kontekst fra tidligere samtaler:")
+          parts.push(clamp(otherDraft.summary_draft, 400))
+          break
+        }
       }
     }
   }
