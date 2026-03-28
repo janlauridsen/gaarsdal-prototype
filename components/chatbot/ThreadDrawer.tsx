@@ -73,7 +73,7 @@ export default function ThreadDrawer({
   return (
     <div className={styles.threadsOverlay} onClick={onClose} role="dialog" aria-modal="true">
       <div className={styles.threadsHeader} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.threadsTitle}>Tråde</div>
+        <div className={styles.threadsTitle}>Samtaler</div>
         <button className={styles.iconBtn} onClick={onClose} title="Luk" aria-label="Luk">
           <XMarkIcon className={styles.icon} />
         </button>
@@ -81,7 +81,7 @@ export default function ThreadDrawer({
 
       <div className={styles.threadsBody} onClick={(e) => e.stopPropagation()}>
         {sorted.length === 0 ? (
-          <div className={styles.threadsHint}>Ingen tråde endnu.</div>
+          <div className={styles.threadsHint}>Ingen samtaler endnu.</div>
         ) : (
           <div className={styles.threadsList}>
             {sorted.map((t) => {
@@ -118,8 +118,8 @@ export default function ThreadDrawer({
                     className={`${styles.threadDeleteBtn} ${isConfirming ? styles.threadDeleteBtnConfirm : ""}`}
                     onClick={(e) => handleDelete(t.conversation_id, e)}
                     disabled={disabled}
-                    title={isConfirming ? "Bekræft sletning" : "Slet tråd"}
-                    aria-label={isConfirming ? "Bekræft sletning" : "Slet tråd"}
+                    title={isConfirming ? "Bekræft sletning" : "Slet samtale"}
+                    aria-label={isConfirming ? "Bekræft sletning" : "Slet samtale"}
                   >
                     {isConfirming
                       ? <span className={styles.threadDeleteConfirmLabel}>Slet?</span>

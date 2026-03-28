@@ -107,7 +107,7 @@ export function ChatHeader(props: ChatHeaderProps) {
 
             {menuOpen && (
               <div className={styles.hamburgerPanel} role="menu">
-                {/* Tråde */}
+                {/* Samtaler */}
                 <button
                   className={styles.hamburgerItem}
                   role="menuitem"
@@ -118,7 +118,7 @@ export function ChatHeader(props: ChatHeaderProps) {
                   }}
                 >
                   <ChatBubbleOvalLeftEllipsisIcon className={styles.hamburgerItemSvg} />
-                  Tråde
+                  Samtaler
                 </button>
 
                 {/* Ny samtale */}

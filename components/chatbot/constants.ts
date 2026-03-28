@@ -1,5 +1,5 @@
 export const NODE_LABELS: Record<string, string> = {
-  THREAD_CHOOSER: "Tråde",
+  THREAD_CHOOSER: "Samtaler",
   HOME: "Forside",
   GEN_HYPNO: "Spørg om hypnoterapi…",
   BOOKING: "Book tid",
@@ -33,7 +33,7 @@ export const CHATBOT_DISCLOSURE = {
    * en ulempe — men det skal siges eksplicit.
    */
   memory:
-    "Chatbotten husker dine tidligere samtaler, så den kan møde dig der, hvor du er — samtale for samtale. Dine tråde gemmes i op til 90 dage.",
+    "Chatbotten husker dine tidligere samtaler, så den kan møde dig der, hvor du er — samtale for samtale. Dine samtaler gemmes i op til 90 dage.",
 
   /**
    * Privacy: Jan kan ikke passivt overvåge. Kun ved eksplicit samtykke.

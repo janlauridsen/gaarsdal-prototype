@@ -505,7 +505,7 @@ export function MessagePane(props: MessagePaneProps) {
 
       {props.draftReview && (
         <div className={styles.callout}>
-          <div className={styles.calloutTitle}>Forslag fra tidligere tråde</div>
+          <div className={styles.calloutTitle}>Forslag fra tidligere samtaler</div>
           <div className={styles.draftReviewText}>Gennemgå opsummeringen, ret den hvis nødvendigt, og acceptér først når den passer.</div>
           <label className={styles.draftLabel}>
             <span>Opsummering</span>
@@ -567,7 +567,7 @@ export function MessagePane(props: MessagePaneProps) {
               onClick={() => props.dispatch({ type: "FREE_TEXT", text: "new" }, { silentUser: true })}
               disabled={props.loading || !props.state}
             >
-              Ny tråd
+              Ny samtale
             </button>
           </div>
         </div>
