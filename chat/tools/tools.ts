@@ -92,7 +92,7 @@ function makeThreadChoices(params: {
       .replace(/…+$/g, "…")
 
   const buildLabel = (t: { conversation_id: string; title: string; preview: string }): string => {
-    const base = t.title?.trim() ? t.title.trim() : `Tråd ${shortId(t.conversation_id)}`
+    const base = t.title?.trim() ? t.title.trim() : `Samtale ${shortId(t.conversation_id)}`
     const preview = t.preview?.trim() ? t.preview.trim() : ""
     if (!preview) return base
 
@@ -111,12 +111,12 @@ function makeThreadChoices(params: {
     const active = params.threads.find((t) => t.conversation_id === params.activeConversationId)
     items.push({
       id: "continue",
-      label: active ? `Fortsæt: ${buildLabel(active)}` : "Fortsæt seneste tråd",
+      label: active ? `Fortsæt: ${buildLabel(active)}` : "Fortsæt seneste samtale",
       kind: "continue",
     })
   }
 
-  items.push({ id: "new", label: "Start ny tråd", kind: "new" })
+  items.push({ id: "new", label: "Start ny samtale", kind: "new" })
 
   for (const t of params.threads) {
     items.push({
@@ -246,7 +246,7 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
       return {
         nextNode: params.state.active_node,
         reason: "thread switch missing selection",
-        response_message: "Vælg en tråd: skriv 'continue', 'new' eller vælg en af knapperne.",
+        response_message: "Vælg en samtale: skriv 'continue', 'new' eller vælg en af knapperne.",
         meta_delta: {
           "threads.choices": choices,
           "threads.count": activeThreads.length,
