@@ -329,22 +329,37 @@ export async function runUnifiedHypnoCapability(
   // entydige handlings-signaler — ikke ved informationssøgning.
   // Nødvendig fordi buildDefaultAnalysis altid sætter routing_intent: "none".
   if (analysis.routing_intent === "none" && options.stayOnNode === "GEN_HYPNO") {
-    const u = normalize(userText).toLowerCase()
-    const bookingKeywords = [
-      "vil gerne booke", "gerne booke", "vil booke", "bestille tid",
-      "book en tid", "få en tid", "aftale en tid", "tilmelde mig",
-      "tilmeld mig", "kom i gang", "starte et forløb", "oprette mig",
+    const u = normalize(userText).toLowerCase().trim()
+
+    // Entydige booking-handlings-fraser
+    const bookingPhrases = [
+      "vil gerne booke", "gerne booke", "vil booke",
+      "kan jeg booke", "booke her", "bestille tid",
+      "book en tid", "få en tid", "aftale en tid",
+      "tilmelde mig", "tilmeld mig", "starte et forløb",
       "kontakte jan", "ringe til jan", "skrive til jan",
+      "kom i gang", "oprette mig",
     ]
+
+    // Kontekst-aware ja-fraser: kun handling hvis forrige assistent-besked indeholdt booking-tilbud
+    const simpleAcceptPhrases = ["ja", "ja tak", "ja det vil jeg", "ja det vil jeg gerne",
+      "det vil jeg gerne", "gerne", "ok", "okay", "selvfølgelig", "ja selvfølgelig"]
+
     const infoKeywords = [
       "hvad koster", "pris", "prisen", "hvad er prisen",
       "antal sess", "hvor mange gang", "hvad sker der", "hvad foregår",
       "hvad indebærer", "mere info", "fortæl mere", "åbningstid",
-      "adresse", "hvor ligger", "hvor er",
+      "adresse", "hvor ligger", "hvor er", "hvad er en session",
     ]
-    const isBookingAction = bookingKeywords.some((k) => u.includes(k))
+
+    const lastAssistant = trimmedTranscript.filter(t => t.role === "assistant").slice(-1)[0]?.content ?? ""
+    const lastHadBookingOffer = /kontakt|booke|telefon|e-mail|jan@|aftal|tid/i.test(lastAssistant)
+
+    const isBookingAction = bookingPhrases.some((k) => u.includes(k))
+    const isContextualAccept = lastHadBookingOffer && simpleAcceptPhrases.some((k) => u === k || u.startsWith(k + " ") || u.endsWith(" " + k))
     const isInfoRequest = infoKeywords.some((k) => u.includes(k))
-    if (isBookingAction && !isInfoRequest) {
+
+    if ((isBookingAction || isContextualAccept) && !isInfoRequest) {
       analysis = { ...analysis, routing_intent: "contact_booking" }
     } else if (isInfoRequest) {
       analysis = { ...analysis, routing_intent: "booking_info" }
