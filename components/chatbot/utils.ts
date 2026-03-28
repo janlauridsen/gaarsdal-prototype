@@ -65,13 +65,17 @@ export function derivePhase(meta: Record<string, any> | null | undefined): Phase
   const ctaShown = Boolean(readValue("gen_hypno.cta_shown"))
   const objective = String(readValue("dialog.objective") ?? "")
 
-  // Fase 3-genvej: booking-intent eller decision_support uanset turn count
+  // Fase 3-genvej: booking-intent, decision_support eller cta uanset turn count
   if (
     routingIntent === "contact_booking" ||
     objective === "booking" ||
-    ctaShown
+    ctaShown ||
+    relationalState === "decision_support"
   ) {
-    return { phase: 3, label: "Klar til næste skridt?" }
+    if (routingIntent === "contact_booking" || objective === "booking" || ctaShown) {
+      return { phase: 3, label: "Klar til næste skridt?" }
+    }
+    return { phase: 3, label: "Overvejer muligheder" }
   }
 
   // Returbruger: hvis last_topic er sat af SYSTEM_THREAD_CREATE er det en ny tråd
@@ -88,7 +92,6 @@ export function derivePhase(meta: Record<string, any> | null | undefined): Phase
   if (turns <= 5 && stage !== "explore_patterns") return { phase: 2, label: "Afklarer relevans" }
 
   // Fase 3: mønsterfasen er i gang — dynamisk label baseret på samtalens retning
-  if (relationalState === "decision_support") return { phase: 3, label: "Overvejer muligheder" }
   if (relationalState === "building_clarity" || relationalState === "building_trust") {
     return { phase: 3, label: "Udforsker mønstre" }
   }
