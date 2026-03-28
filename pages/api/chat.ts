@@ -7,7 +7,7 @@ const waitUntil: (p: Promise<unknown>) => void =
   ((p: Promise<unknown>) => { p.catch(() => {}) })
 
 import { runNode } from "../../chat/runtime/nodeRunner"
-import { createInitialState, createLobbyState } from "../../chat/kernel/state"
+import { createInitialState, createLobbyState, buildReturnGreeting } from "../../chat/kernel/state"
 import type { InputSignal, KernelResult } from "../../chat/kernel/types"
 import { getNode } from "../../chat/nodes/registry"
 
@@ -127,7 +127,29 @@ async function handleInitOrRestore(params: {
   ])
 
   const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
-  res.status(200).json({ state: withThreadMeta(baseState, indexNow), ...serializeActiveNode(baseState.active_node), transition: { type: "INIT", from: null, to: baseState.active_node, reason: isNew ? "system init" : "system init (restored)" }, log: { conversation_id: baseState.conversation_id, revision_before: isNew ? -1 : baseState.revision, revision_after: baseState.revision, active_node_before: isNew ? null : baseState.active_node, active_node_after: baseState.active_node, input_type: "SYSTEM_INIT", transition_type: "INIT", timestamp: new Date().toISOString() } })
+
+  // Bestem velkomstbesked baseret på om det er første gang eller en returbruger
+  const isFirstEverVisit = isNew && indexNow.threads.length === 0
+  let welcomeMessage = baseState.active_node_message
+
+  if (conversationKind === "thread") {
+    if (isFirstEverVisit) {
+      welcomeMessage =
+        "Hej. Jeg er en AI-assistent hos Gaarsdal Hypnoterapi — ikke Jan selv.\n\n" +
+        "Her kan du stille spørgsmål om hypnoterapi, reflektere over vaner eller mønstre, " +
+        "eller finde ud af om en samtale med Jan kunne give mening for dig.\n\n" +
+        "Hvad har du på hjerte?"
+    } else if (!isNew) {
+      const returnGreeting = buildReturnGreeting({ storedState: baseState, conversationKind })
+      if (returnGreeting) welcomeMessage = returnGreeting
+    }
+  }
+
+  const stateForResponse = welcomeMessage !== baseState.active_node_message
+    ? { ...baseState, active_node_message: welcomeMessage }
+    : baseState
+
+  res.status(200).json({ state: withThreadMeta(stateForResponse, indexNow), ...serializeActiveNode(baseState.active_node), transition: { type: "INIT", from: null, to: baseState.active_node, reason: isNew ? "system init" : "system init (restored)" }, log: { conversation_id: baseState.conversation_id, revision_before: isNew ? -1 : baseState.revision, revision_after: baseState.revision, active_node_before: isNew ? null : baseState.active_node, active_node_after: baseState.active_node, input_type: "SYSTEM_INIT", transition_type: "INIT", timestamp: new Date().toISOString() } })
   return true
 }
 
