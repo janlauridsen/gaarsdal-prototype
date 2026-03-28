@@ -44,6 +44,7 @@ export type RelationalState =
  * Eksplicit routing-beslutning fra LLM — erstatter keyword-baseret pre-routing.
  *
  * contact_booking: brugeren vil booke eller kontakte Jan direkte (→ HANDOFF_FORM)
+ * booking_info:    brugeren spørger om pris, sessioner, adresse, hvad der sker (→ BOOKING)
  * lead_capture:    brugeren er interesseret men ikke klar endnu (→ LEAD_CAPTURE)
  * fit_check:       brugeren vil vide om hypnoterapi passer til dem (→ PREQUALIFY)
  * none:            ingen special routing — fortsæt i GEN_HYPNO
@@ -52,10 +53,10 @@ export type RelationalState =
  */
 export type RoutingIntent =
   | "contact_booking"
+  | "booking_info"
   | "lead_capture"
   | "fit_check"
   | "none"
-
 export type TurnAnalysis = {
   intent: TurnIntent
   proposed_mode: PromptMode
@@ -128,7 +129,7 @@ export function normalizeTurnAnalysis(raw: Record<string, unknown> | null): Turn
     "gentle_close",
   ].includes(relational_state)
   const validSensitivity = ["low", "medium", "high"].includes(sensitivity)
-  const validRoutingIntent = ["contact_booking", "lead_capture", "fit_check", "none"].includes(routing_intent)
+  const validRoutingIntent = ["contact_booking", "booking_info", "lead_capture", "fit_check", "none"].includes(routing_intent)
 
   if (!validMode || !validMove || !validFocus || !validIntent || !validGoal || !validRelationalState || !validSensitivity) return null
 
