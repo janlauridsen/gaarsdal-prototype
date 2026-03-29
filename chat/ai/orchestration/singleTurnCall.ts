@@ -23,6 +23,7 @@ type TranscriptTurn = { role: "user" | "assistant"; content: string }
 
 export type SingleTurnOutput = {
   is_history_query: boolean
+  routing_intent: "contact_booking" | "none"
   mode_used: PromptMode
   conversation_move: ConversationMove
   investigation_focus: InvestigationFocus
@@ -136,10 +137,18 @@ Undgå: lange sætninger · opstillede pointer · nye vinkler · fremadrettede r
     blocks.push(`BRUGERPRÆFERENCER (bløde signaler):\n${profile}`)
   }
 
+  // ROUTING
+  blocks.push(`ROUTING:
+routing_intent sættes KUN til "contact_booking" når brugeren eksplicit beder om at booke, kontakte Jan, få en tid eller spørge om priser/adresse MED henblik på at tage kontakt nu.
+Ellers: "none".
+Eksempler → "contact_booking": "jeg vil gerne booke", "hvornår kan jeg komme", "vil gerne have en tid", "kan jeg ringe nu".
+Eksempler → "none": "hvad koster det?", "hvad sker der under hypnose?", "jeg overvejer det"`)
+
   // JSON-KONTRAKT
   blocks.push(`Returner KUN gyldig JSON — ingen tekst uden for JSON:
 {
   "is_history_query": boolean,
+  "routing_intent": "contact_booking" | "none",
   "mode_used": "info" | "evidence" | "practical" | "reflection" | "closing",
   "conversation_move": "direct_answer" | "guided_observation" | "pattern_detection" | "metacognitive_probe" | "mild_challenge" | "practical_preparation" | "synthesis" | "close",
   "investigation_focus": "attention" | "interpretation" | "regulation" | "pattern" | "preparation" | "none",
@@ -189,6 +198,8 @@ function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTop
     ? (raw.relational_state as RelationalState)
     : "building_clarity"
 
+  const routing_intent = raw.routing_intent === "contact_booking" ? "contact_booking" : "none"
+
   const topic = typeof raw.topic === "string" && raw.topic.trim() ? raw.topic.trim() : lastTopic
   const objective = typeof raw.objective === "string" && raw.objective.trim() ? raw.objective.trim() : undefined
 
@@ -221,6 +232,7 @@ function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTop
 
   return {
     is_history_query,
+    routing_intent,
     mode_used,
     conversation_move,
     investigation_focus,
@@ -244,7 +256,7 @@ export function buildSingleTurnFallback(userText: string, lastTopic?: string): S
 
   if (isClosing) {
     return {
-      is_history_query: false, mode_used: "closing",
+      is_history_query: false, routing_intent: "none", mode_used: "closing",
       conversation_move: "close", investigation_focus: "none", relational_state: "gentle_close",
       topic: lastTopic, objective: undefined, acknowledgement: null,
       core_answer: "Selv tak.", next_step: null, signals: ["closing_fallback"],
@@ -253,7 +265,7 @@ export function buildSingleTurnFallback(userText: string, lastTopic?: string): S
   }
 
   return {
-    is_history_query: false, mode_used: "info",
+    is_history_query: false, routing_intent: "none", mode_used: "info",
     conversation_move: "direct_answer", investigation_focus: "none", relational_state: "orienting",
     topic: lastTopic, objective: undefined, acknowledgement: null,
     core_answer: "Jeg kan godt hjælpe med det. Fortæl gerne mere om hvad der er på hjerte.",
