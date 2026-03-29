@@ -52,6 +52,7 @@ type AnticipateDraft = {
   based_on_revision: number
   anticipated_user_text: string
   rhetorical_instruction: string
+  conversation_goal_hypothesis: string | null
   created_at: number
 }
 
@@ -633,6 +634,12 @@ export default function AdminPage() {
                                     <div style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "3px" }}>Forventet næste besked</div>
                                     <div style={{ color: "#374151", lineHeight: 1.5, fontStyle: "italic" }}>"{draft.anticipated_user_text}"</div>
                                   </div>
+                                  {draft.conversation_goal_hypothesis && (
+                                    <div style={{ marginBottom: "8px" }}>
+                                      <div style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "3px" }}>Samtalemål-hypotese</div>
+                                      <div style={{ color: "#6B21A8", lineHeight: 1.5, fontStyle: "italic" }}>{draft.conversation_goal_hypothesis}</div>
+                                    </div>
+                                  )}
                                   <div>
                                     <div style={{ fontSize: "11px", color: "#9CA3AF", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "3px" }}>Retorisk instruktion til GEN_HYPNO</div>
                                     <div style={{ color: "#1D4ED8", lineHeight: 1.5 }}>{draft.rhetorical_instruction}</div>
