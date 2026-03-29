@@ -35,16 +35,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!client) return res.status(500).json({ error: "Redis ikke tilgængelig" })
 
   try {
-    // Scan alle anticipate-draft keys for denne samtale
+    // Hent alle anticipate-draft keys — keys() bruges fremfor scan (Upstash REST)
     const pattern = `${KEY_PREFIX}anticipate:draft:conversation:${conversation_id}:*`
-    let cursor: string | number = "0"
-    const draftKeys: string[] = []
-
-    do {
-      const result = await (client as any).scan(cursor, { match: pattern, count: 100 })
-      cursor = String(result[0])
-      draftKeys.push(...result[1])
-    } while (cursor !== "0")
+    const draftKeys: string[] = await (client as any).keys(pattern)
 
     if (draftKeys.length === 0) {
       return res.status(200).json({ drafts: [] })
