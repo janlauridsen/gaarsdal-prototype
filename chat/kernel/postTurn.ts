@@ -19,6 +19,7 @@ import { envBool, envInt } from "../utils/env"
 import { MEMORY_TTL_SECONDS, PROFILE_TTL_SECONDS } from "../utils/ttl"
 import { isLobbyConversation, isControlInput, toUserInput, truncateText } from "../utils/conversation"
 import { nowMs } from "../utils/time"
+import { getRedisClient } from "../persistence/redis"
 
 const DEFAULT_RAW_TTL_DAYS = 14
 
@@ -143,18 +144,57 @@ async function maybeTriggerDeriveThreadTitleJob(params: {
   })
 }
 
+const LAST_TURN_AT_TTL = 86400 // 24 timer
+
+function lastTurnAtKey(conversationId: string): string {
+  return `gaarsdal:conv:last_turn_at:${conversationId}`
+}
+
+async function readLastTurnAt(conversationId: string): Promise<number | undefined> {
+  try {
+    const client = getRedisClient()
+    if (!client) return undefined
+    const raw = await client.get(lastTurnAtKey(conversationId))
+    if (typeof raw === "number") return raw
+    if (typeof raw === "string") return parseInt(raw, 10)
+    return undefined
+  } catch {
+    return undefined
+  }
+}
+
+async function writeLastTurnAt(conversationId: string): Promise<void> {
+  try {
+    const client = getRedisClient()
+    if (!client) return
+    await client.set(lastTurnAtKey(conversationId), Date.now(), { ex: LAST_TURN_AT_TTL })
+  } catch {
+    // non-critical
+  }
+}
+
 async function enqueueSummarizeEpisode(params: {
   userKey: string
   conversationId: string
   revisionAfter: number
   threadThemeId?: string
   threadEpisodeId?: string
+  topicKnown?: boolean
+  secondsSinceLastTurn?: number
 }): Promise<void> {
-  const N = 8
-  if (params.revisionAfter <= 0 || params.revisionAfter % N !== 0) return
   const themeId = params.threadThemeId
   const episodeId = params.threadEpisodeId
   if (typeof themeId !== "string" || typeof episodeId !== "string") return
+  if (params.revisionAfter <= 0) return
+
+  const N = 8
+  const rhythmTrigger = params.revisionAfter % N === 0
+  // Emne er afklaret (LLM har sat problem_title) og vi er nået turn 3+
+  const earlyTopicTrigger = params.topicKnown === true && params.revisionAfter >= 3 && params.revisionAfter < N
+  // Bruger har idlet > 60 sek — detekteret ved næste turn
+  const idleTrigger = typeof params.secondsSinceLastTurn === "number" && params.secondsSinceLastTurn > 60
+
+  if (!rhythmTrigger && !earlyTopicTrigger && !idleTrigger) return
 
   const job_id = makeJobId({
     type: "SUMMARIZE_EPISODE",
@@ -235,6 +275,12 @@ export function runPostTurn(params: {
         ]
       : []
 
+  // Læs last_turn_at asynkront og kør resten af postTurn efterfølgende
+  readLastTurnAt(conversationId).then((lastTurnAt) => {
+  const secondsSinceLastTurn = typeof lastTurnAt === "number"
+    ? Math.floor((Date.now() - lastTurnAt) / 1000)
+    : undefined
+
   Promise.allSettled([
     emitCanonicalEvent({
       userKey, conversationId, revision, nodeId,
@@ -272,7 +318,13 @@ export function runPostTurn(params: {
     }),
     ...terminalEvents,
     maybeUpdateThreadPreview({ userKey, conversationId, input }),
-    enqueueSummarizeEpisode({ userKey, conversationId, revisionAfter: revision, threadThemeId: themeId, threadEpisodeId: episodeId }),
+    enqueueSummarizeEpisode({
+      userKey, conversationId, revisionAfter: revision,
+      threadThemeId: themeId, threadEpisodeId: episodeId,
+      topicKnown: !!(kernelResult.state.meta?.["gen_hypno.problem_title"] as any)?.value,
+      secondsSinceLastTurn: secondsSinceLastTurn,
+    }),
+    writeLastTurnAt(conversationId),
     enqueueSuggestFacts({ userKey, conversationId, revisionAfter: revision, metaKeysWritten, threadThemeId: themeId, threadEpisodeId: episodeId }),
     writeRawAndMemory({ userKey, input, kernelResult, userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined }),
     maybeTriggerDeriveThreadTitleJob({ userKey, input, conversationId, revisionAfter: revision }),
@@ -280,6 +332,7 @@ export function runPostTurn(params: {
   ]).catch(() => {
     // Fejl i post-writes påvirker ikke brugeren
   })
+  }).catch(() => {}) // readLastTurnAt fejl ignoreres
 }
 
 export async function maybeTriggerScanThreadsJob(params: {
