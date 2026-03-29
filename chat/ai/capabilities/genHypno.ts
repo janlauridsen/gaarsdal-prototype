@@ -282,6 +282,15 @@ export async function runUnifiedHypnoCapability(
   // Erstatter det gamle to-kaldede system (analyzeTurn + response).
   // LLM'en bestemmer routing, mode og skriver svaret i ét JSON-output.
   const assistantCountBefore = countAssistantTurns(transcript)
+
+  // Hvis topic er sat af greeting-systemet (SYSTEM_THREAD_CREATE) og brugeren spørger om historik,
+  // injicér greeting-kontekst så LLM'en ikke modsiger velkomstbeskeden.
+  const lastTopicSourceNode = (context.state.meta?.["gen_hypno.last_topic"] as any)?.source_node
+  const greetingHint =
+    lastTopicSourceNode === "SYSTEM_THREAD_CREATE" && previousTopic
+      ? `\n\nNOTE: Brugeren blev budt velkommen med en hilsen der refererede til emnet "${previousTopic}" fra en tidligere samtale. Bekræft dette emne hvis brugeren spørger om historik — svar IKKE at der ingen historik er.`
+      : undefined
+
   let turnOutput = await singleTurnCall({
     llm,
     transcript: trimmedTranscript,
@@ -289,7 +298,9 @@ export async function runUnifiedHypnoCapability(
     lastTopic: previousTopic,
     arousalLevel: arousal.level,
     assistantCount: assistantCountBefore,
-    contextPackSystem: context.contextPack?.system,
+    contextPackSystem: greetingHint
+      ? (context.contextPack?.system ?? "") + greetingHint
+      : context.contextPack?.system,
     userProfileSystem: context.contextPack?.user_profile,
   })
 
