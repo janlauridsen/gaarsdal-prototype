@@ -1,0 +1,76 @@
+// pages/api/admin/anticipate.ts
+//
+// Returnerer alle anticipate_turn drafts for en given samtale.
+// Bruges i admin til at vise hvad lookahead-systemet forventede og instruerede.
+//
+// GET /api/admin/anticipate?secret=<ADMIN_SECRET>&conversation_id=<id>
+
+import type { NextApiRequest, NextApiResponse } from "next"
+import { getRedisClient } from "../../../chat/persistence/redis"
+
+const KEY_PREFIX = "gaarsdal:"
+
+function checkAuth(req: NextApiRequest): boolean {
+  const secret = process.env.ADMIN_SECRET
+  const provided = typeof req.query.secret === "string" ? req.query.secret : ""
+  return !secret || provided === secret
+}
+
+export type AnticipateDraftRecord = {
+  job_id: string
+  based_on_revision: number
+  anticipated_user_text: string
+  rhetorical_instruction: string
+  created_at: number
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (!checkAuth(req)) return res.status(401).json({ error: "Unauthorized" })
+
+  const conversation_id = typeof req.query.conversation_id === "string" ? req.query.conversation_id : null
+  if (!conversation_id) return res.status(400).json({ error: "conversation_id påkrævet" })
+
+  const client = getRedisClient()
+  if (!client) return res.status(500).json({ error: "Redis ikke tilgængelig" })
+
+  try {
+    // Scan alle anticipate-draft keys for denne samtale
+    const pattern = `${KEY_PREFIX}anticipate:draft:conversation:${conversation_id}:*`
+    let cursor: string | number = "0"
+    const draftKeys: string[] = []
+
+    do {
+      const result = await (client as any).scan(cursor, { match: pattern, count: 100 })
+      cursor = String(result[0])
+      draftKeys.push(...result[1])
+    } while (cursor !== "0")
+
+    if (draftKeys.length === 0) {
+      return res.status(200).json({ drafts: [] })
+    }
+
+    // Hent alle drafts
+    const rawDrafts = await Promise.all(
+      draftKeys.map(async (key: string) => {
+        const raw = await client.get(key)
+        if (!raw) return null
+        try { return JSON.parse(raw as string) } catch { return null }
+      })
+    )
+
+    const drafts: AnticipateDraftRecord[] = rawDrafts
+      .filter(Boolean)
+      .map((d: any) => ({
+        job_id: d.job_id,
+        based_on_revision: d.based_on_revision ?? 0,
+        anticipated_user_text: d.open_questions?.[0] ?? "",
+        rhetorical_instruction: d.summary_draft ?? "",
+        created_at: d.created_at ?? 0,
+      }))
+      .sort((a, b) => a.based_on_revision - b.based_on_revision)
+
+    return res.status(200).json({ drafts })
+  } catch (e: any) {
+    return res.status(500).json({ error: e.message ?? "Ukendt fejl" })
+  }
+}
