@@ -358,6 +358,28 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
+  // ─── Routing til HANDOFF_FORM ────────────────────────────────────────────
+  if (turnOutput.routing_intent === "contact_booking") {
+    const updatedTranscript = appendTranscript(transcript, userText, "")
+    return {
+      transition: {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        to: "HANDOFF_FORM",
+        reason: "gen-hypno:contact_booking",
+        response_message: undefined,
+        meta_delta: buildMetaDelta({
+          context, assistantMessage: "", updatedTranscript, topic: turnOutput.topic || previousTopic,
+          sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
+          analysis, mode: turnOutput.mode_used, objective: turnOutput.objective,
+          relationalState: analysis.relational_state,
+          arousalScore: arousal.score, arousalLevel: arousal.level,
+        }),
+      },
+      debug: { capability: "unified-hypno-v5-single", used_fallback: false },
+    }
+  }
+
   // ─── Normal svar-sti ──────────────────────────────────────────────────────
   const modeUsed = turnOutput.mode_used
   const topic = turnOutput.topic || previousTopic
