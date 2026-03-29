@@ -327,6 +327,26 @@ export async function buildContextPackV23(params: {
     parts.push(...approvedThreadAssetLines)
   }
 
+  // Injicér thread-oversigt synkront — altid tilgængeligt uanset scan-status.
+  // Giver LLM'en direkte kendskab til alle trådes emner ved is_history_query.
+  const threadIdxForList = await readThreadIndex(params.userKey)
+  if (threadIdxForList?.threads) {
+    const otherThreads = threadIdxForList.threads.filter(
+      (t: { conversation_id: string; status?: string }) =>
+        t.conversation_id !== params.state.conversation_id && t.status !== "archived"
+    )
+    if (otherThreads.length) {
+      parts.push("")
+      parts.push("Brugerens øvrige samtaler (titler og seneste besked):")
+      for (const t of otherThreads.slice(0, 6)) {
+        const preview = typeof (t as any).preview === "string" && (t as any).preview.trim()
+          ? ` — "${clamp((t as any).preview.trim(), 80)}"`
+          : ""
+        parts.push(`- ${(t as any).title ?? "Samtale"}${preview}`)
+      }
+    }
+  }
+
   // Inject scan_threads draft early — don't wait for revision 8 accept.
   // This gives AI cross-thread context from turn 2 onwards.
   const latestDraft = await readLatestDraft(params.state.conversation_id)
@@ -342,18 +362,16 @@ export async function buildContextPackV23(params: {
     }
   } else {
     // Ingen draft for denne tråd — check andre trådes nyeste drafts.
-    // Dette sikrer cross-thread kontekst fra første is_history_query, inden
-    // baggrundsjobbet er færdigt for den aktuelle tråd.
-    const threadIdx = await readThreadIndex(params.userKey)
-    if (threadIdx?.threads) {
-      const otherIds = threadIdx.threads
+    const threadIdx2 = threadIdxForList
+    if (threadIdx2?.threads) {
+      const otherIds = threadIdx2.threads
         .map((t: { conversation_id: string }) => t.conversation_id)
         .filter((id: string) => id !== params.state.conversation_id)
       for (const otherId of otherIds.slice(0, 3)) {
         const otherDraft = await readLatestDraft(otherId)
         if (otherDraft?.summary_draft) {
           parts.push("")
-          parts.push("Kontekst fra tidligere samtaler:")
+          parts.push("Detaljeret kontekst fra tidligere samtale:")
           parts.push(clamp(otherDraft.summary_draft, 400))
           break
         }
