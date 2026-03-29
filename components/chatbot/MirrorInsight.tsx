@@ -47,26 +47,39 @@ export function shouldShowMirror(state: ConversationState): boolean {
 function buildMirrorText(state: ConversationState): string | null {
   const topic = readMeta(state, "gen_hypno.last_topic")
   const tags = readMeta(state, "gen_hypno.topic_tags")
+  const summary = readMeta(state, "gen_hypno.problem_summary")
   const turnCount = readMeta(state, "gen_hypno.assistant_turn_count")
   const turns = typeof turnCount === "number" ? turnCount : 0
 
   if (typeof topic !== "string" || !topic.trim()) return null
 
   const t = topic.trim()
+  const s = typeof summary === "string" && summary.trim() && summary.trim() !== t
+    ? summary.trim()
+    : null
 
   const tagList = Array.isArray(tags)
     ? tags.filter((x): x is string => typeof x === "string" && x.trim().length > 0).slice(0, 2)
     : []
 
+  // Turn 8+: to tags → kredser om X og Y + summary
   if (tagList.length >= 2 && turns >= 8) {
-    return `Du har i denne samtale kredset om ${tagList[0]} og ${tagList[1]}.`
+    return s
+      ? `Du har i denne samtale kredset om ${tagList[0]} og ${tagList[1]} — særligt ${s}.`
+      : `Du har i denne samtale kredset om ${tagList[0]} og ${tagList[1]}.`
   }
 
+  // Turn 8+: ét tag + summary
   if (turns >= 8) {
-    return `Du har vendt tilbage til ${t} flere gange i denne samtale.`
+    return s
+      ? `Du har vendt tilbage til ${t} flere gange i denne samtale — med fokus på ${s}.`
+      : `Du har vendt tilbage til ${t} flere gange i denne samtale.`
   }
 
-  return `Du har berørt ${t} i denne samtale.`
+  // Turn 4-7: basistekst + summary hvis tilgængelig
+  return s
+    ? `Du har berørt ${t} i denne samtale — nærmere bestemt ${s}.`
+    : `Du har berørt ${t} i denne samtale.`
 }
 
 export type MirrorInsightProps = {
