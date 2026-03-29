@@ -48,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       draftKeys.map(async (key: string) => {
         const raw = await client.get(key)
         if (!raw) return null
-        try { return JSON.parse(raw as string) } catch { return null }
+        return typeof raw === "string" ? JSON.parse(raw) : raw
       })
     )
 
