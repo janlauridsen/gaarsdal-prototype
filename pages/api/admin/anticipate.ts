@@ -21,6 +21,7 @@ export type AnticipateDraftRecord = {
   based_on_revision: number
   anticipated_user_text: string
   rhetorical_instruction: string
+  conversation_goal_hypothesis: string | null
   created_at: number
 }
 
@@ -65,6 +66,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         based_on_revision: d.based_on_revision ?? 0,
         anticipated_user_text: d.open_questions?.[0] ?? "",
         rhetorical_instruction: d.summary_draft ?? "",
+        conversation_goal_hypothesis: typeof d.conversation_goal_hypothesis === "string"
+          ? d.conversation_goal_hypothesis
+          : null,
         created_at: d.created_at ?? 0,
       }))
       .sort((a, b) => a.based_on_revision - b.based_on_revision)
