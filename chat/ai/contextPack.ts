@@ -375,13 +375,23 @@ export async function buildContextPackV23(params: {
 
   // Inject anticipate_turn retorisk instruktion — kun hvis brugerens input er on-track.
   // Hent anticipate-draft separat (har kind="anticipate_turn", gemt under samme draft-nøgler).
-  // Relevance-check: sammenlign topic-tokens fra anticipated_user_text med faktisk userText.
+  //
+  // Relevance-strategi (to niveauer):
+  // 1. Token-overlap: eksakt match mellem forudset og faktisk brugertekst.
+  // 2. Fresh-draft fallback: hvis draftet er lavet til netop dette turn
+  //    (based_on_revision === current revision - 1), er det per definition
+  //    relevant — LLM-simulationen byggede på den forrige assistent-respons
+  //    og er i sync med emnet. Inject uden token-check.
   if (params.userText) {
     const anticipateDraft = await readAnticipateLatestDraft(params.state.conversation_id)
     if (anticipateDraft?.summary_draft && anticipateDraft.open_questions?.[0]) {
       const anticipatedText = anticipateDraft.open_questions[0].toLowerCase()
       const actualText = params.userText.toLowerCase()
-      const isOnTrack = topicOverlap(anticipatedText, actualText)
+      const currentRevision = (params.state.revision ?? 1)
+      const draftRevision = (anticipateDraft as any).based_on_revision ?? 0
+      // Fresh-draft: draftet blev bygget på forrige revision (lavet til dette turn)
+      const isFreshDraft = draftRevision >= currentRevision - 1
+      const isOnTrack = isFreshDraft || topicOverlap(anticipatedText, actualText)
       if (isOnTrack) {
         parts.push("")
         parts.push("Retorisk retning (brug subtilt — ikke eksplicit):")
