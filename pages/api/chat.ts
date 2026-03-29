@@ -1,5 +1,9 @@
 // pages/api/chat.ts
 import type { NextApiRequest, NextApiResponse } from "next"
+
+// Sæt maxDuration højt nok til at drain kan køre EFTER response er sendt.
+// Vercel Hobby understøtter op til 60 sek.
+export const config = { maxDuration: 30 }
 // waitUntil: keeps the serverless function alive until the promise settles.
 // Falls back to a no-op outside Vercel (local dev) so behaviour is identical.
 const waitUntil: (p: Promise<unknown>) => void =
@@ -218,22 +222,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       terminalStatus: kernelResultFinal.state.status,
     }))])
 
-    // Drain up to 2 async jobs (SUMMARIZE_EPISODE, SUGGEST_FACTS) synchronously
-    // BEFORE sending the response — guarantees execution without a cron.
-    // Capped at 4 seconds so the user is not kept waiting too long.
-    try {
-      await Promise.race([
-        processQueueBatch(2),
-        new Promise<void>((resolve) => setTimeout(resolve, 4000)),
-      ])
-    } catch { /* never fail the request */ }
-
+    // Send response immediately — bruger ser svar med det samme.
+    // Drain kører bagefter via waitUntil, som holder funktionen i live
+    // indtil jobsene er færdige (eller maxDuration rammes).
     res.status(200).json({
       ...kernelResultFinal,
       state: withThreadMeta(kernelResultFinal.state, indexNow),
       ...serializeActiveNode(kernelResultFinal.state.active_node),
       deferred_job: scanThreads.deferredJob ?? null,
     })
+
+    // Post-response drain: kør op til 2 async jobs i baggrunden.
+    waitUntil(
+      Promise.race([
+        processQueueBatch(2),
+        new Promise<void>((resolve) => setTimeout(resolve, 8000)),
+      ]).catch(() => {})
+    )
 
   } catch (e: any) {
     await emitCanonicalEvent({
