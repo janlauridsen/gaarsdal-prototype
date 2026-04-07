@@ -1,5 +1,6 @@
 // chat/kernel/postTurn.ts
 import type { InputSignal, KernelResult } from "./types"
+import { consentAllowsPersistence, type ConsentRecord } from "../consent/store"
 import { appendConversationEventV1 } from "../events/store"
 import { appendRawTurn } from "../raw/store"
 import { readUserProfile, recordTurn, writeUserProfile } from "../memory/store"
@@ -258,7 +259,14 @@ export function runPostTurn(params: {
   assistantText: string
   metaKeysWritten: string[]
   terminalStatus: string
+  /** Samtykke-record: hvis null eller retentionDays === 0 springes alle Redis-skrivninger over */
+  consentRecord?: ConsentRecord | null
 }): void {
+  // ── Consent-gate ────────────────────────────────────────────────────────────
+  // Ingen samtykke eller session-only → spring al persistens over.
+  // Samtalen fungerer stadig fuldt ud i RAM.
+  if (!consentAllowsPersistence(params.consentRecord ?? null)) return
+
   const { userKey, input, kernelResult, binding, includeText, userText, assistantText, metaKeysWritten, terminalStatus } = params
   const conversationId = kernelResult.state.conversation_id
   const revision = kernelResult.state.revision
