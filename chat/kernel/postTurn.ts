@@ -337,6 +337,13 @@ export function runPostTurn(params: {
     writeRawAndMemory({ userKey, input, kernelResult, userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined }),
     maybeTriggerDeriveThreadTitleJob({ userKey, input, conversationId, revisionAfter: revision }),
     maybeTriggerAnticipateJob({ userKey, input, conversationId, state: kernelResult.state, revisionAfter: revision }),
+    // Option A: scan ved session-afslutning — sikrer at alle afsluttede samtaler efterlader
+    // et draft til næste besøg, uanset om turn-cadence-betingelserne var opfyldt.
+    ...(
+      (terminalStatus === "completed" || terminalStatus === "rejected")
+        ? [maybeTriggerScanThreadsJob({ userKey, input, conversationId, state: kernelResult.state, revisionAfter: revision })]
+        : []
+    ),
   ]).catch(() => {
     // Fejl i post-writes påvirker ikke brugeren
   })
