@@ -1120,7 +1120,7 @@ export default function Chatbot() {
                   dispatch={dispatch}
                   focusInput={focusInput}
                   headerNavHint={headerNavHint}
-                  retentionDays={consentRetentionDays}
+                  onPrivacyClick={() => setShowPrivacyPanel(true)}
                 />
 
                 <MessagePane
