@@ -1120,6 +1120,7 @@ export default function Chatbot() {
                   dispatch={dispatch}
                   focusInput={focusInput}
                   headerNavHint={headerNavHint}
+                  retentionDays={consentRetentionDays}
                 />
 
                 <MessagePane
@@ -1182,17 +1183,6 @@ export default function Chatbot() {
                         manageMode
                         currentRetentionDays={consentRetentionDays}
                       />
-                    )}
-                    {/* ── Privatliv-link — synlig når chat er normal ── */}
-                    {!consentRequired && !showPrivacyPanel && (
-                      <div style={{ textAlign: "right", padding: "2px 12px 0" }}>
-                        <button
-                          style={{ background: "none", border: "none", fontSize: "10px", color: "#bbb", cursor: "pointer", padding: "2px 0" }}
-                          onClick={() => setShowPrivacyPanel(true)}
-                        >
-                          Privatliv & data
-                        </button>
-                      </div>
                     )}
                     {!consentRequired && nodeForm ? (
                       <FormComposer
@@ -1261,16 +1251,6 @@ export default function Chatbot() {
                   manageMode
                   currentRetentionDays={consentRetentionDays}
                 />
-              )}
-              {!consentRequired && !showPrivacyPanel && (
-                <div style={{ textAlign: "right", padding: "2px 12px 0" }}>
-                  <button
-                    style={{ background: "none", border: "none", fontSize: "10px", color: "#bbb", cursor: "pointer", padding: "2px 0" }}
-                    onClick={() => setShowPrivacyPanel(true)}
-                  >
-                    Privatliv & data
-                  </button>
-                </div>
               )}
               {!consentRequired && nodeForm ? (
                 <FormComposer
