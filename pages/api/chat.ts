@@ -247,7 +247,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const binding = await ensureThreadBindingOnState({ userKey, conversationId: kernelResultFinal.state.conversation_id, state: kernelResultFinal.state })
     if (binding) kernelResultFinal = { ...kernelResultFinal, state: binding.state }
 
-    await writeConversationState(kernelResultFinal.state, consentTtlSeconds(consentRecord ?? null))
+    // Session-only (retentionDays === 0): skriv ikke til Redis — state lever kun i RAM.
+    // Klienten sender state med i hvert request, så dette er tilstrækkeligt.
+    if (consentAllowsPersistence(consentRecord ?? null)) {
+      await writeConversationState(kernelResultFinal.state, consentTtlSeconds(consentRecord ?? null))
+    }
 
     const [scanThreads, indexNow] = await Promise.all([
       maybeTriggerScanThreadsJob({ userKey, input: input as InputSignal, conversationId: kernelResultFinal.state.conversation_id, state: kernelResultFinal.state, revisionAfter: kernelResultFinal.state.revision }),
