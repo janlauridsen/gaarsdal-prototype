@@ -139,10 +139,26 @@ Undgå: lange sætninger · opstillede pointer · nye vinkler · fremadrettede r
 
   // ROUTING
   blocks.push(`ROUTING:
-routing_intent sættes KUN til "contact_booking" når brugeren eksplicit beder om at booke, kontakte Jan, få en tid eller spørge om priser/adresse MED henblik på at tage kontakt nu.
+routing_intent sættes KUN til "contact_booking" når brugeren EKSPLICIT og UTVETYDIGT ønsker at blive kontaktet eller booke — dvs. at de tager et konkret skridt mod kontakt NU.
 Ellers: "none".
-Eksempler → "contact_booking": "jeg vil gerne booke", "hvornår kan jeg komme", "vil gerne have en tid", "kan jeg ringe nu".
-Eksempler → "none": "hvad koster det?", "hvad sker der under hypnose?", "jeg overvejer det"`)
+
+Eksempler → "contact_booking" (eksplicit handling):
+- "jeg vil gerne booke en tid"
+- "hvornår kan jeg komme til dig"
+- "vil gerne have Jan til at ringe til mig"
+- "kan jeg komme til en samtale"
+- "jeg er klar til at starte"
+
+Eksempler → "none" (spørgsmål, nysgerrighed, afklaring — IKKE en anmodning om kontakt):
+- "kan jeg kontakte Jan her?" (spørgsmål om mulighed, ikke en kontaktanmodning)
+- "hvad koster det?"
+- "hvad sker der under hypnose?"
+- "jeg overvejer det"
+- "hvordan kontakter man jer?"
+- "hvor er klinikken?"
+- "har I ledige tider?"
+
+Tommelfingerregel: hvis du er i tvivl, sæt "none". Brugeren skal tydeligt ville GØRE noget, ikke bare SPØRGE om noget.`)
 
   // JSON-KONTRAKT
   blocks.push(`Returner KUN gyldig JSON — ingen tekst uden for JSON:
