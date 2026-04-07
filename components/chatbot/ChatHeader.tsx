@@ -49,6 +49,8 @@ export type ChatHeaderProps = {
   dispatch: (input: InputSignal, opts?: { silentUser?: boolean }) => Promise<boolean> | boolean
   focusInput: () => void
   headerNavHint: string | null
+  /** Brugerens valgte opbevaringsperiode — bruges til dynamisk disclosure-tekst */
+  retentionDays?: number | null
 }
 
 export function ChatHeader(props: ChatHeaderProps) {
@@ -189,7 +191,7 @@ export function ChatHeader(props: ChatHeaderProps) {
           </p>
           <p className={styles.infoPanelLine}>
             <span className={styles.infoPanelDot} aria-hidden="true">◆</span>
-            {CHATBOT_DISCLOSURE.memory}
+            {CHATBOT_DISCLOSURE.memoryText(props.retentionDays)}
           </p>
           <p className={styles.infoPanelLine}>
             <span className={styles.infoPanelDot} aria-hidden="true">◆</span>
