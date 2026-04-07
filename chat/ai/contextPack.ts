@@ -408,19 +408,30 @@ export async function buildContextPackV23(params: {
   //    relevant — LLM-simulationen byggede på den forrige assistent-respons
   //    og er i sync med emnet. Inject uden token-check.
   if (params.userText) {
-    const anticipateDraft = await readAnticipateLatestDraft(params.state.conversation_id)
-    if (anticipateDraft?.summary_draft && anticipateDraft.open_questions?.[0]) {
-      const anticipatedText = anticipateDraft.open_questions[0].toLowerCase()
-      const actualText = params.userText.toLowerCase()
-      const currentRevision = (params.state.revision ?? 1)
-      const draftRevision = (anticipateDraft as any).based_on_revision ?? 0
-      // Fresh-draft: draftet blev bygget på forrige revision (lavet til dette turn)
-      const isFreshDraft = draftRevision >= currentRevision - 1
-      const isOnTrack = isFreshDraft || topicOverlap(anticipatedText, actualText)
-      if (isOnTrack) {
-        parts.push("")
-        parts.push("Retorisk retning (brug subtilt — ikke eksplicit):")
-        parts.push(clamp(anticipateDraft.summary_draft, 200))
+    // Closing-signal: spring retorisk instruktion over — brugeren er ved at afslutte
+    // og anticipate-draft må aldrig presse mod fortsat refleksion når brugeren lukker.
+    const closingExact = ["tak", "ok tak", "okay tak", "mange tak", "farvel", "hej hej",
+      "det var nyttigt", "tusind tak", "tak for det", "tak skal du have", "det er nok"]
+    const closingPhrases = ["tak for", "jeg tager det med", "lad os stoppe", "det var alt",
+      "det vil jeg gøre", "godt, det prøver jeg", "ja det lyder godt"]
+    const userLower = params.userText.trim().toLowerCase()
+    const isClosing = closingExact.includes(userLower)
+      || closingPhrases.some(p => userLower.includes(p))
+
+    if (!isClosing) {
+      const anticipateDraft = await readAnticipateLatestDraft(params.state.conversation_id)
+      if (anticipateDraft?.summary_draft && anticipateDraft.open_questions?.[0]) {
+        const anticipatedText = anticipateDraft.open_questions[0].toLowerCase()
+        const actualText = params.userText.toLowerCase()
+        const currentRevision = (params.state.revision ?? 1)
+        const draftRevision = (anticipateDraft as any).based_on_revision ?? 0
+        const isFreshDraft = draftRevision >= currentRevision - 1
+        const isOnTrack = isFreshDraft || topicOverlap(anticipatedText, actualText)
+        if (isOnTrack) {
+          parts.push("")
+          parts.push("Retorisk retning (brug subtilt — ikke eksplicit):")
+          parts.push(clamp(anticipateDraft.summary_draft, 200))
+        }
       }
     }
   }
