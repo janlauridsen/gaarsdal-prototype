@@ -23,7 +23,7 @@ export default function ConsentBanner({
   const [screen, setScreen] = useState<Screen>("main")
 
   const retentionLabel = (days: ConsentRetentionDays | null | undefined): string => {
-    if (!days) return "kun denne session"
+    if (!days) return "kun denne samtale"
     if (days === 30) return "30 dage"
     if (days === 90) return "90 dage"
     if (days === 365) return "1 år"
@@ -95,7 +95,7 @@ export default function ConsentBanner({
         <p style={styles.body}>
           {currentRetentionDays && currentRetentionDays > 0
             ? `Samtaler gemmes i ${retentionLabel(currentRetentionDays)}.`
-            : "Samtaler gemmes kun i denne session — intet gemmes mellem besøg."}
+            : "Samtalen er væk når du lukker fanen — intet gemmes mellem besøg."}
         </p>
         <div style={styles.chipRow}>
           <button
@@ -138,7 +138,7 @@ export default function ConsentBanner({
           onClick={() => onConsent(0)}
           disabled={loading}
         >
-          Kun denne session
+          Kun denne samtale
         </button>
         <button
           style={{ ...styles.chip, ...styles.chipGhost }}
