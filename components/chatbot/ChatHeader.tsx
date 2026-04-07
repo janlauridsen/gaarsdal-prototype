@@ -49,8 +49,8 @@ export type ChatHeaderProps = {
   dispatch: (input: InputSignal, opts?: { silentUser?: boolean }) => Promise<boolean> | boolean
   focusInput: () => void
   headerNavHint: string | null
-  /** Brugerens valgte opbevaringsperiode — bruges til dynamisk disclosure-tekst */
-  retentionDays?: number | null
+  /** Åbner Privatliv & data panelet */
+  onPrivacyClick?: () => void
 }
 
 export function ChatHeader(props: ChatHeaderProps) {
@@ -149,6 +149,18 @@ export function ChatHeader(props: ChatHeaderProps) {
                   Om chatbotten
                 </button>
 
+                {/* Privatliv & data */}
+                {props.onPrivacyClick && (
+                  <button
+                    className={styles.hamburgerItem}
+                    role="menuitem"
+                    onClick={() => { closeMenu(); props.onPrivacyClick?.() }}
+                  >
+                    <span className={styles.hamburgerItemIcon} aria-hidden="true">🔒</span>
+                    Privatliv & data
+                  </button>
+                )}
+
                 {/* Start forfra */}
                 <button
                   className={styles.hamburgerItem}
@@ -191,7 +203,7 @@ export function ChatHeader(props: ChatHeaderProps) {
           </p>
           <p className={styles.infoPanelLine}>
             <span className={styles.infoPanelDot} aria-hidden="true">◆</span>
-            {CHATBOT_DISCLOSURE.memoryText(props.retentionDays)}
+            {CHATBOT_DISCLOSURE.memory}
           </p>
           <p className={styles.infoPanelLine}>
             <span className={styles.infoPanelDot} aria-hidden="true">◆</span>

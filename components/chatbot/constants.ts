@@ -27,24 +27,12 @@ export const CHATBOT_DISCLOSURE = {
     "Dette er en AI-assistent hos Gaarsdal Hypnoterapi — ikke Jan selv. Den er designet til at hjælpe dig tænke klarere om egne mønstre og vaner, og til at afklare om hypnoterapi kan være relevant for dig.",
 
   /**
-   * Dynamisk memory-tekst baseret på brugerens samtykke-valg.
-   * retentionDays === 0: session-only, ingen persistens
-   * retentionDays > 0: gemmes i X dage
-   * undefined/null: standard (bruges som fallback)
+   * Hvad der huskes på tværs af samtaler.
+   * Generisk formulering — op til 90 dage er default-maks.
+   * Brugerens faktiske periode styres via Privatliv & data i menuen.
    */
-  memoryText(retentionDays: number | null | undefined): string {
-    if (retentionDays === 0) {
-      return "Samtalen gemmes ikke — den forsvinder når du lukker fanen. Ingen data gemmes mellem besøg."
-    }
-    if (retentionDays === 30) {
-      return "Chatbotten husker dine samtaler i 30 dage, så den kan møde dig der, hvor du er — samtale for samtale."
-    }
-    if (retentionDays === 365) {
-      return "Chatbotten husker dine samtaler i 1 år, så den kan møde dig der, hvor du er — samtale for samtale."
-    }
-    // Default: 90 dage
-    return "Chatbotten husker dine samtaler i 90 dage, så den kan møde dig der, hvor du er — samtale for samtale."
-  },
+  memory:
+    "Chatbotten kan huske dine samtaler på tværs af besøg — op til 90 dage som standard. Du styrer selv hvor længe via Privatliv & data i menuen.",
 
   /**
    * Privacy: Jan ser ikke samtaler passivt.
