@@ -396,7 +396,7 @@ export default function Chatbot() {
 
     const loop = { conversationId, jobId: job.job_id, cancelled: false }
     jobLoopRef.current = loop
-    const silentJob = job.kind === "derive_thread_title" || job.kind === "scan_threads" || job.kind === "scan_threads"
+    const silentJob = job.kind === "derive_thread_title" || job.kind === "scan_threads" || job.kind === "anticipate_turn"
     if (!silentJob) {
       setJobRunnerState({
         jobId: job.job_id,
