@@ -29,7 +29,7 @@ import { ensureUserKey } from "./_utils/auth"
 import { newUuid } from "../../chat/utils/ids"
 import { envBool } from "../../chat/utils/env"
 import { SESSION_TTL_SECONDS, PROFILE_TTL_SECONDS, MEMORY_TTL_SECONDS } from "../../chat/utils/ttl"
-import { readConsent, writeConsent, consentTtlSeconds, type ConsentRecord, type ConsentRetentionDays } from "../../chat/consent/store"
+import { readConsent, writeConsent, consentTtlSeconds, consentAllowsPersistence, type ConsentRecord, type ConsentRetentionDays } from "../../chat/consent/store"
 import { isLobbyConversation, toLobbyConversationId, toUserInput, truncateText, withThreadMeta } from "../../chat/utils/conversation"
 import { nowMs } from "../../chat/utils/time"
 
