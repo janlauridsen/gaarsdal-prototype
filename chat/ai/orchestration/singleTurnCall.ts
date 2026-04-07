@@ -48,6 +48,7 @@ function buildSystemPrompt(params: {
   userProfileSystem: string | undefined
   previousMode?: PromptMode
   previousRelationalState?: RelationalState
+  policySignals?: { is_practical_request: boolean; is_closing: boolean }
 }): string {
   const blocks: string[] = []
 
@@ -146,6 +147,14 @@ Vurder om du skal fortsætte same spor, skifte gear eller afrunde — afhængigt
   const profile = (params.userProfileSystem ?? "").trim()
   if (profile) {
     blocks.push(`BRUGERPRÆFERENCER (bløde signaler):\n${profile}`)
+  }
+
+  // A: Policy signals — stærke kontekstuelle hints fra heuristisk analyse af brugerens tekst
+  // Sendes som input til LLM så de påvirker mode-valget upstream (ikke som post-hoc override)
+  if (params.policySignals?.is_closing) {
+    blocks.push(`POLICY: Brugerens besked indeholder afslutningstegn (tak, farvel e.l.) — sæt mode_used til "closing" medmindre konteksten klart modsiger det.`)
+  } else if (params.policySignals?.is_practical_request) {
+    blocks.push(`POLICY: Brugerens besked indeholder praktiske nøgleord (kontaktinfo, pris, booking, adresse e.l.) — sæt mode_used til "practical" medmindre brugerens besked i øvrigt er klart refleksiv eller følelsesladet.`)
   }
 
   // ROUTING
@@ -314,6 +323,7 @@ export async function singleTurnCall(params: {
   userProfileSystem?: string
   previousMode?: PromptMode
   previousRelationalState?: RelationalState
+  policySignals?: { is_practical_request: boolean; is_closing: boolean }
 }): Promise<SingleTurnOutput | null> {
   const lastAssistantExcerpt = [...params.transcript]
     .reverse()
@@ -327,6 +337,7 @@ export async function singleTurnCall(params: {
     userProfileSystem: params.userProfileSystem,
     previousMode: params.previousMode,
     previousRelationalState: params.previousRelationalState,
+    policySignals: params.policySignals,
   })
 
   // C: Dynamisk temperatur — reflection er mere kreativ, evidence/info mere præcis
@@ -351,6 +362,7 @@ export async function singleTurnCall(params: {
             user_input: params.userText,
             last_topic: params.lastTopic ?? "",
             transcript: params.transcript.slice(-8),
+            policy_signals: params.policySignals ?? { is_practical_request: false, is_closing: false },
           }),
         },
       ],
