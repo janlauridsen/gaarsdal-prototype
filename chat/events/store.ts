@@ -98,8 +98,9 @@ async function touchConversationIndex(client: any, conversationId: string, times
 
 /**
  * Backwards-compatible signature (pages/api/chat.ts expects 1 argument).
+ * ttlSeconds: hvis angivet, sættes TTL på den kanoniske event-liste (GDPR-compliance).
  */
-export async function appendConversationEventV1(event: ConversationEventV1): Promise<void> {
+export async function appendConversationEventV1(event: ConversationEventV1, ttlSeconds?: number): Promise<void> {
   const client = getRedisClient()
   if (!client) return
 
@@ -119,6 +120,15 @@ export async function appendConversationEventV1(event: ConversationEventV1): Pro
   // Canonical per-conversation (the only one we want going forward)
   const keyCanonical = convoKeyCanonical(event.conversation_id)
   await rpushAndTrim(client, keyCanonical, payload)
+
+  // Sæt TTL på canonical event-liste hvis consent-periode er specificeret
+  if (ttlSeconds && ttlSeconds > 0) {
+    try {
+      await client.expire(keyCanonical, ttlSeconds)
+    } catch {
+      // Non-fatal
+    }
+  }
 
   // Optional dual-write to legacy (OFF by default)
   if (DUAL_WRITE_LEGACY) {
