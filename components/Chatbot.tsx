@@ -25,6 +25,8 @@ import FormComposer from "./chatbot/FormComposer"
 import { ChatHeader } from "./chatbot/ChatHeader"
 import { MessagePane } from "./chatbot/MessagePane"
 import { SessionClose } from "./chatbot/SessionClose"
+import ConsentBanner from "./chatbot/ConsentBanner"
+import type { ConsentRetentionDays } from "./chatbot/types"
 
 type ThreadsIndexResponse = {
   active_conversation_id?: string | null
@@ -61,6 +63,11 @@ export default function Chatbot() {
   const [nodeForm, setNodeForm] = useState<NodeFormSpec | null>(null)
   const [nodeAllowFreeText, setNodeAllowFreeText] = useState<boolean>(true)
   const [nodeAllowedExits, setNodeAllowedExits] = useState<string[]>([])
+
+  // ─── Consent-state ─────────────────────────────────────────────────────────
+  const [consentRequired, setConsentRequired] = useState(false)
+  const [showPrivacyPanel, setShowPrivacyPanel] = useState(false)
+  const [consentRetentionDays, setConsentRetentionDays] = useState<ConsentRetentionDays | null>(null)
 
   const [headerNavHint, setHeaderNavHint] = useState<string | null>(null)
   const headerNavHintTimerRef = useRef<number | null>(null)
@@ -856,6 +863,26 @@ export default function Chatbot() {
     didAutoStartNewThreadRef.current = false
 
     try {
+      // ── Consent-check: før vi henter/opretter noget ──────────────────────
+      try {
+        const consentRes = await fetch("/api/consent", {
+          credentials: "include",
+          cache: "no-store",
+        })
+        if (consentRes.ok) {
+          const consentData = await consentRes.json().catch(() => null)
+          if (!consentData?.consent) {
+            setConsentRequired(true)
+            setConsentRetentionDays(null)
+            return
+          }
+          setConsentRetentionDays(consentData.consent.retentionDays ?? null)
+          setConsentRequired(false)
+        }
+      } catch {
+        // Netværksfejl: fortsæt med normal init (fail-open for UX)
+      }
+
       const restored = await tryRestoreActiveConversation()
 
       if (restored) {
@@ -953,6 +980,48 @@ export default function Chatbot() {
         }
       }
       return true
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ─── Consent-handlers ──────────────────────────────────────────────────────
+
+  async function handleConsent(retentionDays: ConsentRetentionDays) {
+    setLoading(true)
+    try {
+      await fetch("/api/consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ retentionDays }),
+      })
+      setConsentRetentionDays(retentionDays)
+      setConsentRequired(false)
+      setShowPrivacyPanel(false)
+      // Re-init nu med samtykke
+      initInFlightRef.current = false
+      void init()
+    } catch {
+      // Fejl: lad brugeren prøve igen
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleDeleteData() {
+    setLoading(true)
+    try {
+      await fetch("/api/consent", { method: "DELETE", credentials: "include" })
+      // Nulstil al lokal state
+      setState(null)
+      setMessagesByConversationId({})
+      loadedConversationsRef.current = new Set()
+      setConsentRequired(true)
+      setConsentRetentionDays(null)
+      setShowPrivacyPanel(false)
+    } catch {
+      // Fejl: lad brugeren prøve igen
     } finally {
       setLoading(false)
     }
@@ -1096,7 +1165,36 @@ export default function Chatbot() {
 
                 {!composerDetached && (
                   <div ref={footerRef} className={footerClass}>
-                    {nodeForm ? (
+                    {/* ── Consent banner (første besøg) ── */}
+                    {consentRequired && (
+                      <ConsentBanner
+                        onConsent={handleConsent}
+                        onDelete={handleDeleteData}
+                        loading={loading}
+                      />
+                    )}
+                    {/* ── Privacy panel (returbruger) ── */}
+                    {!consentRequired && showPrivacyPanel && (
+                      <ConsentBanner
+                        onConsent={handleConsent}
+                        onDelete={handleDeleteData}
+                        loading={loading}
+                        manageMode
+                        currentRetentionDays={consentRetentionDays}
+                      />
+                    )}
+                    {/* ── Privatliv-link — synlig når chat er normal ── */}
+                    {!consentRequired && !showPrivacyPanel && (
+                      <div style={{ textAlign: "right", padding: "2px 12px 0" }}>
+                        <button
+                          style={{ background: "none", border: "none", fontSize: "10px", color: "#bbb", cursor: "pointer", padding: "2px 0" }}
+                          onClick={() => setShowPrivacyPanel(true)}
+                        >
+                          Privatliv & data
+                        </button>
+                      </div>
+                    )}
+                    {!consentRequired && nodeForm ? (
                       <FormComposer
                         fields={nodeForm.fields}
                         loading={loading}
@@ -1148,7 +1246,33 @@ export default function Chatbot() {
 
           {composerDetached && !isUnsupportedInAppBrowser && (
             <div ref={footerRef} className={footerClass} onClick={(e) => e.stopPropagation()}>
-              {nodeForm ? (
+              {consentRequired && (
+                <ConsentBanner
+                  onConsent={handleConsent}
+                  onDelete={handleDeleteData}
+                  loading={loading}
+                />
+              )}
+              {!consentRequired && showPrivacyPanel && (
+                <ConsentBanner
+                  onConsent={handleConsent}
+                  onDelete={handleDeleteData}
+                  loading={loading}
+                  manageMode
+                  currentRetentionDays={consentRetentionDays}
+                />
+              )}
+              {!consentRequired && !showPrivacyPanel && (
+                <div style={{ textAlign: "right", padding: "2px 12px 0" }}>
+                  <button
+                    style={{ background: "none", border: "none", fontSize: "10px", color: "#bbb", cursor: "pointer", padding: "2px 0" }}
+                    onClick={() => setShowPrivacyPanel(true)}
+                  >
+                    Privatliv & data
+                  </button>
+                </div>
+              )}
+              {!consentRequired && nodeForm ? (
                 <FormComposer
                   fields={nodeForm.fields}
                   loading={loading}
