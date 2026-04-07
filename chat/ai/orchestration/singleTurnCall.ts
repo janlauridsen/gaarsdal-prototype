@@ -46,6 +46,8 @@ function buildSystemPrompt(params: {
   lastAssistantExcerpt: string | undefined
   contextPackSystem: string | undefined
   userProfileSystem: string | undefined
+  previousMode?: PromptMode
+  previousRelationalState?: RelationalState
 }): string {
   const blocks: string[] = []
 
@@ -120,6 +122,15 @@ Undgå at starte med "Du spørger", "Du beskriver", "Du ønsker", "Du nævner". 
 Undgå: lange sætninger · opstillede pointer · nye vinkler · fremadrettede råd.`)
   } else if (params.arousalLevel === "elevated") {
     blocks.push(`TEMPO: Brugeren er i bevægelse — hold svaret enkelt og konkret. Undgå at åbne nye spor.`)
+  }
+
+  // DIALOG-SEKVENS (B: sekvens-state)
+  if (params.previousMode || params.previousRelationalState) {
+    const modeLabel = params.previousMode ?? "ukendt"
+    const stateLabel = params.previousRelationalState ?? "ukendt"
+    blocks.push(`DIALOG-SEKVENS (brug som kontekst, ikke som regel):
+Forrige turn: mode=${modeLabel} · relational_state=${stateLabel}
+Vurder om du skal fortsætte same spor, skifte gear eller afrunde — afhængigt af brugerens nye besked.`)
   }
 
   // SITE-KONTEKST
@@ -301,6 +312,8 @@ export async function singleTurnCall(params: {
   assistantCount: number
   contextPackSystem?: string
   userProfileSystem?: string
+  previousMode?: PromptMode
+  previousRelationalState?: RelationalState
 }): Promise<SingleTurnOutput | null> {
   const lastAssistantExcerpt = [...params.transcript]
     .reverse()
@@ -312,13 +325,23 @@ export async function singleTurnCall(params: {
     lastAssistantExcerpt,
     contextPackSystem: params.contextPackSystem,
     userProfileSystem: params.userProfileSystem,
+    previousMode: params.previousMode,
+    previousRelationalState: params.previousRelationalState,
   })
+
+  // C: Dynamisk temperatur — reflection er mere kreativ, evidence/info mere præcis
+  const temperature =
+    params.arousalLevel === "high" ? 0.1 :
+    params.previousMode === "reflection" ? 0.38 :
+    params.previousMode === "evidence" ? 0.18 :
+    params.previousMode === "info" ? 0.20 :
+    0.25
 
   let raw: Record<string, unknown> | null = null
   try {
     raw = await params.llm.chatJson({
       model: process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
-      temperature: 0.25,
+      temperature,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
