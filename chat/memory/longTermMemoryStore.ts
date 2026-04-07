@@ -135,6 +135,7 @@ export async function upsertTheme(params: {
   if (!client) return
 
   await client.sadd(KEY_THEMES_INDEX(params.userKey), params.theme.theme_id)
+  await client.expire(KEY_THEMES_INDEX(params.userKey), params.ttlSeconds)
   await client.set(KEY_THEME(params.userKey, params.theme.theme_id), JSON.stringify(params.theme), {
     ex: params.ttlSeconds,
   })
@@ -176,6 +177,7 @@ export async function upsertEpisode(params: {
   if (!client) return
 
   await client.sadd(KEY_EPISODES_INDEX(params.userKey, params.episode.theme_id), params.episode.episode_id)
+  await client.expire(KEY_EPISODES_INDEX(params.userKey, params.episode.theme_id), params.ttlSeconds)
   await client.set(KEY_EPISODE(params.userKey, params.episode.episode_id), JSON.stringify(params.episode), {
     ex: params.ttlSeconds,
   })
@@ -314,6 +316,7 @@ export async function upsertFact(params: {
   if (!client) return
 
   await client.sadd(KEY_FACTS_INDEX(params.userKey), params.fact.fact_id)
+  await client.expire(KEY_FACTS_INDEX(params.userKey), params.ttlSeconds)
   await client.set(KEY_FACT(params.userKey, params.fact.fact_id), JSON.stringify(params.fact), {
     ex: params.ttlSeconds,
   })
