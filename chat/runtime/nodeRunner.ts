@@ -12,6 +12,7 @@ import { parseFormText } from "../tools/formParsing"
 import { runTool } from "../tools/tools"
 import { runRouter } from "../router/runRouter"
 import { buildContextPackV23 } from "../ai/contextPack"
+import { readConsent, consentAllowsPersistence } from "../consent/store"
 import { buildUserProfilePromptContext, readUserProfile } from "../memory/store"
 import { MEMORY_TTL_SECONDS } from "../utils/ttl"
 
@@ -218,11 +219,13 @@ export async function runNode(params: NodeRunParams): Promise<KernelResult> {
       })
     }
 
+    const consentRecord = await readConsent(params.userKey)
     const contextPack = await buildContextPackV23({
       userKey: params.userKey,
       state,
       ttlSeconds: MEMORY_TTL_SECONDS,
       userText: input.text,
+      sessionOnly: !consentAllowsPersistence(consentRecord),
     })
     const profile = await readUserProfile(params.userKey)
     const capabilityResult = await runCapability(capabilityId, {
