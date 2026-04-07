@@ -192,7 +192,14 @@ export async function buildContextPackV23(params: {
   state: ConversationState
   ttlSeconds: number
   userText?: string
+  /** Session-only: spring alle Redis-skrivninger over og returner tom kontekst */
+  sessionOnly?: boolean
 }): Promise<ContextPackV23> {
+  // Session-only: ingen historisk kontekst og ingen Redis-writes
+  if (params.sessionOnly) {
+    return { system: "", theme_id: undefined, episode_id: undefined }
+  }
+
   // Cross-thread contamination guardrail:
   // If the conversation has an explicit thread binding, always use it.
   const boundThemeId = (params.state.meta?.["thread.theme_id"] as any)?.value
