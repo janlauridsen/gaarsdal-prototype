@@ -139,14 +139,30 @@ export default function Chatbot() {
   const openCurrentPageInBrowser = () => {
     if (typeof window === "undefined") return
     const url = window.location.href
+    const ua = navigator.userAgent || ""
+    const isAndroid = /Android/i.test(ua)
+    const isIOS = /iPhone|iPad|iPod/i.test(ua)
 
+    // Android: intent:// URL åbner direkte i Chrome uden at passere in-app browseren
+    if (isAndroid) {
+      const encoded = encodeURIComponent(url)
+      window.location.href = `intent://${url.replace(/^https?:\/\//, "")}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encoded};end`
+      return
+    }
+
+    // iOS: prøv at åbne i Safari via x-safari URL scheme
+    if (isIOS) {
+      window.location.href = url.replace(/^https/, "x-safari-https").replace(/^http/, "x-safari-http")
+      return
+    }
+
+    // Fallback
     try {
       const opened = window.open(url, "_blank", "noopener,noreferrer")
       if (opened) return
     } catch {
-      // Ignore and fall back to location assignment.
+      // ignore
     }
-
     window.location.href = url
   }
 
@@ -1079,10 +1095,7 @@ export default function Chatbot() {
                 <div className={styles.fallbackBody}>
                   <h2 className={styles.fallbackTitle}>Åbn siden i din browser</h2>
                   <p className={styles.fallbackText}>
-                    Chatten fungerer ikke stabilt i indbyggede browsere fra sociale apps som Facebook og Messenger på Android.
-                  </p>
-                  <p className={styles.fallbackText}>
-                    Åbn siden i Chrome eller din standardbrowser for at bruge chatten.
+                    Tryk på knappen nedenfor for at åbne siden i din browser — chatten fungerer bedst der.
                   </p>
 
                   <div className={styles.fallbackActions}>
@@ -1095,11 +1108,10 @@ export default function Chatbot() {
                   </div>
 
                   <div className={styles.fallbackHelp}>
-                    <p className={styles.fallbackHelpTitle}>Hvis knappen ikke åbner eksternt:</p>
+                    <p className={styles.fallbackHelpTitle}>Virker knappen ikke?</p>
                     <ol className={styles.fallbackSteps}>
-                      <li>Tryk på menuen øverst til højre i app-browseren.</li>
-                      <li>Vælg “Åbn i browser”.</li>
-                      <li>Fortsæt derefter i Chrome eller din standardbrowser.</li>
+                      <li>Tryk på menuen øverst i app-browseren.</li>
+                      <li>Vælg “Åbn i browser” eller “Åbn i Safari/Chrome”.</li>
                     </ol>
                   </div>
                 </div>
