@@ -40,6 +40,8 @@ export type NodeFormSpec = {
   fields: FormFieldSpec[]
 }
 
+export type ConsentRetentionDays = 0 | 30 | 90 | 365
+
 export type KernelResponse = {
   state: ConversationState
   transition?: any
@@ -49,6 +51,8 @@ export type KernelResponse = {
   node_allow_free_text?: boolean
   node_allowed_exits?: string[]
   node_form?: NodeFormSpec
+  /** Sat til true når ingen samtykke-record findes — klienten viser ConsentBanner */
+  consent_required?: boolean
 }
 
 export type ChatMessage = {
