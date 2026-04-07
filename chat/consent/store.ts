@@ -101,7 +101,7 @@ export async function deleteAllUserData(
     // Fortsæt uden thread-index — vi sletter stadig alt vi kan
   }
 
-  const lobbyId = `lobby:${userKey}`
+  const lobbyId = `lobby:u:${userKey}`
   const allConvIds = [lobbyId, ...conversationIds]
 
   const knownKeys: string[] = [
@@ -127,7 +127,21 @@ export async function deleteAllUserData(
     // Non-fatal — de kendte keys slettes stadig
   }
 
-  const allKeys = [...new Set([...knownKeys, ...memoryKeys])].filter(Boolean)
+  // Scan efter job-nøgler (indeholder transcript-uddrag i payload)
+  let jobKeys: string[] = []
+  try {
+    jobKeys = await client.keys(`gaarsdal:jobs:v1:job:*`)
+    // Filtrer til kun denne brugers jobs — ingen bruger-prefix i nøglen,
+    // så vi scanner og filtrerer på user_key i værdien er ikke muligt effektivt.
+    // Brug i stedet dedupe-nøgler som har conversation-id i sig:
+    const dedupeKeys = await client.keys(`gaarsdal:jobs:v1:dedupe:conversation:*`)
+    const pendingKeys = allConvIds.map(id => `gaarsdal:jobs:v1:pending:conversation:${id}`)
+    jobKeys = [...dedupeKeys, ...pendingKeys]
+  } catch {
+    // Non-fatal
+  }
+
+  const allKeys = [...new Set([...knownKeys, ...memoryKeys, ...jobKeys])].filter(Boolean)
   if (allKeys.length === 0) return { deletedCount: 0 }
 
   try {
