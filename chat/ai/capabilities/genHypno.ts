@@ -1,6 +1,6 @@
 import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
 import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
-import { computeRollingArousal } from "../orchestration/applyPolicy"
+import { computeRollingArousal, detectPracticalKeywords, detectClosingText } from "../orchestration/applyPolicy"
 import { detectClientSignals } from "./clientDetection"
 import { singleTurnCall, buildSingleTurnFallback, SingleTurnOutput } from "../orchestration/singleTurnCall"
 
@@ -278,6 +278,10 @@ export async function runUnifiedHypnoCapability(
       : 0
   const arousal = computeRollingArousal(trimmedTranscript, userText, previousArousalScore)
 
+  // B: læs forrige turns mode og relational_state til sekvens-kontekst
+  const previousMode = readStringMeta(context, "dialog.mode") as PromptMode | undefined
+  const previousRelationalState = readStringMeta(context, "dialog.relational_state") as import("../contracts/turnAnalysis").RelationalState | undefined
+
   // ─── Kombineret enkelt LLM-kald ───────────────────────────────────────────
   // Erstatter det gamle to-kaldede system (analyzeTurn + response).
   // LLM'en bestemmer routing, mode og skriver svaret i ét JSON-output.
@@ -302,6 +306,8 @@ export async function runUnifiedHypnoCapability(
       ? (context.contextPack?.system ?? "") + greetingHint
       : context.contextPack?.system,
     userProfileSystem: context.contextPack?.user_profile,
+    previousMode,
+    previousRelationalState,
   })
 
   const usedFallback = !turnOutput
@@ -396,14 +402,26 @@ export async function runUnifiedHypnoCapability(
   const topic = turnOutput.topic || previousTopic
   let assistant = turnOutput.assistant_message
 
-  // Proaktiv CTA efter turn 5
+  // A: Policy override — heuristic-drevne korrektioner af LLM's mode-valg
+  // Kører EFTER LLM-kald for at bevare assistant_message men rette routing.
+  if (turnOutput.routing_intent === "none") {
+    if (detectClosingText(userText) && modeUsed !== "closing") {
+      turnOutput = { ...turnOutput, mode_used: "closing" }
+    } else if (detectPracticalKeywords(userText) && modeUsed === "reflection") {
+      // Bruger spørger om noget praktisk (kontakt/pris/booking) men LLM valgte reflection — override
+      turnOutput = { ...turnOutput, mode_used: "practical" }
+    }
+  }
+  const finalMode = turnOutput.mode_used
+
+  // D: Kontekstuel CTA — kun når brugeren er i beslutnings-mode (decision_support), ikke midt i refleksion
   const ctaAlreadyShown = context.state.meta["gen_hypno.cta_shown"]?.value === true
   const ctaConditionsMet =
     !ctaAlreadyShown &&
-    assistantCountBefore >= 4 &&
     !!topic &&
-    modeUsed !== "closing" &&
-    modeUsed !== "practical"
+    turnOutput.relational_state === "decision_support" &&
+    finalMode !== "closing" &&
+    finalMode !== "reflection"
 
   if (ctaConditionsMet) {
     assistant = assistant + "\n\nHvis du vil vide mere om hvad et konkret forløb indebærer, er du velkommen til at skrive det — eller tage kontakt til Jan direkte."
@@ -417,13 +435,13 @@ export async function runUnifiedHypnoCapability(
       type: "NODE_HOP",
       from: context.state.active_node,
       to: options.stayOnNode,
-      reason: `unified-hypno:${modeUsed}`,
+      reason: `unified-hypno:${finalMode}`,
       response_message: assistant,
       meta_delta: {
         ...buildMetaDelta({
           context, assistantMessage: assistant, updatedTranscript, topic,
           sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
-          analysis, mode: modeUsed, objective: turnOutput.objective,
+          analysis, mode: finalMode, objective: turnOutput.objective,
           relationalState: analysis.relational_state,
           arousalScore: arousal.score,
           arousalLevel: arousal.level,
