@@ -29,6 +29,7 @@ import { ensureUserKey } from "./_utils/auth"
 import { newUuid } from "../../chat/utils/ids"
 import { envBool } from "../../chat/utils/env"
 import { SESSION_TTL_SECONDS, PROFILE_TTL_SECONDS, MEMORY_TTL_SECONDS } from "../../chat/utils/ttl"
+import { readConsent, writeConsent, consentTtlSeconds, type ConsentRecord, type ConsentRetentionDays } from "../../chat/consent/store"
 import { isLobbyConversation, toLobbyConversationId, toUserInput, truncateText, withThreadMeta } from "../../chat/utils/conversation"
 import { nowMs } from "../../chat/utils/time"
 
@@ -63,6 +64,7 @@ type ApiInputSignal =
   | { type: "THREAD_CREATE"; mode: "normal" | "parenthesis" }
   | { type: "THREAD_SWITCH"; conversation_id: string }
   | { type: "THREAD_ARCHIVE"; conversation_id?: string }
+  | { type: "CONSENT_RESPONSE"; retentionDays: ConsentRetentionDays }
 
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null
@@ -117,9 +119,26 @@ async function ensureThreadBindingOnState(params: { userKey: string; conversatio
 async function handleInitOrRestore(params: {
   clientState: any; storedState: any | null; conversationId: string
   conversationKind: "lobby" | "thread"; userKey: string; res: NextApiResponse
+  consentRecord: ConsentRecord | null
 }): Promise<boolean> {
   const { clientState, storedState, conversationId, conversationKind, userKey, res } = params
   if (clientState !== null) return false
+
+  // Consent-gate: ingen samtykke → svar med consent_required flag
+  // Klienten viser ConsentBanner og sender CONSENT_RESPONSE når brugeren vælger
+  if (!params.consentRecord) {
+    const tempState = storedState ??
+      (conversationKind === "lobby"
+        ? createLobbyState(conversationId)
+        : createInitialState(conversationId))
+    res.status(200).json({
+      state: tempState,
+      ...serializeActiveNode(tempState.active_node),
+      transition: { type: "INIT", from: null, to: tempState.active_node, reason: "consent_required" },
+      consent_required: true,
+    })
+    return true
+  }
 
   const baseState = storedState ?? (conversationKind === "lobby" ? createLobbyState(conversationId) : createInitialState(conversationId))
   const isNew = !storedState
@@ -183,15 +202,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const conversationId = requestedConversationId || toLobbyConversationId(userKey)
   const conversationKind: "lobby" | "thread" = isLobbyConversation(conversationId) ? "lobby" : "thread"
   const stored = await readConversationState(conversationId)
+  const consentRecord = await readConsent(userKey)
 
   try {
+    // ── CONSENT_RESPONSE: gem samtykke og kør init ──────────────────────────
+    if ((input as any).type === "CONSENT_RESPONSE") {
+      const rd = (input as any).retentionDays
+      const validDays: ConsentRetentionDays[] = [0, 30, 90, 365]
+      const retentionDays: ConsentRetentionDays = validDays.includes(rd) ? rd : 90
+      const newRecord: ConsentRecord = {
+        version: 1,
+        allowed: retentionDays > 0,
+        retentionDays,
+        consentedAt: new Date().toISOString(),
+      }
+      await writeConsent(userKey, newRecord)
+      // Kør init-flow med det nye samtykke
+      const stored2 = await readConversationState(conversationId)
+      await handleInitOrRestore({
+        clientState: null,
+        storedState: stored2,
+        conversationId,
+        conversationKind,
+        userKey,
+        res,
+        consentRecord: newRecord,
+      })
+      return
+    }
     if (isPlatformThreadInput(input)) {
       if ((input as any).type === "THREAD_CREATE") { await handleThreadCreate({ input: input as any, userKey, res }); return }
       if ((input as any).type === "THREAD_SWITCH") { await handleThreadSwitch({ input: input as any, userKey, res }); return }
       if ((input as any).type === "THREAD_ARCHIVE") { await handleThreadArchive({ userKey, res, conversationId: (input as any).conversation_id }); return }
     }
 
-    const restored = await handleInitOrRestore({ clientState, storedState: stored, conversationId, conversationKind, userKey, res })
+    const restored = await handleInitOrRestore({ clientState, storedState: stored, conversationId, conversationKind, userKey, res, consentRecord: consentRecord ?? null })
     if (restored) return
 
     const baseState = stored ?? clientState
@@ -202,7 +247,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const binding = await ensureThreadBindingOnState({ userKey, conversationId: kernelResultFinal.state.conversation_id, state: kernelResultFinal.state })
     if (binding) kernelResultFinal = { ...kernelResultFinal, state: binding.state }
 
-    await writeConversationState(kernelResultFinal.state, SESSION_TTL_SECONDS)
+    await writeConversationState(kernelResultFinal.state, consentTtlSeconds(consentRecord ?? null))
 
     const [scanThreads, indexNow] = await Promise.all([
       maybeTriggerScanThreadsJob({ userKey, input: input as InputSignal, conversationId: kernelResultFinal.state.conversation_id, state: kernelResultFinal.state, revisionAfter: kernelResultFinal.state.revision }),
@@ -220,6 +265,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       includeText: envBool("GAARSDAL_EVENTS_INCLUDE_TEXT"),
       userText, assistantText, metaKeysWritten,
       terminalStatus: kernelResultFinal.state.status,
+      consentRecord: consentRecord ?? null,
     }))])
 
     // Send response immediately — bruger ser svar med det samme.
