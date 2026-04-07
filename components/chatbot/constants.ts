@@ -52,7 +52,7 @@ export const CHATBOT_DISCLOSURE = {
    */
   privacy:
     "Dine samtaler bruges ikke til træning og deles ikke med tredjeparter. Jan ser ikke dine refleksioner — de er dine egne.",
-} as const
+}
 
 /**
  * Nøgler brugt til at spore topic-historik på tværs af samtaler.
