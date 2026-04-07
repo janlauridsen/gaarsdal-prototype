@@ -23,7 +23,7 @@ export default function ConsentBanner({
   const [screen, setScreen] = useState<Screen>("main")
 
   const retentionLabel = (days: ConsentRetentionDays | null | undefined): string => {
-    if (!days || days === 0) return "kun denne session"
+    if (!days) return "kun denne session"
     if (days === 30) return "30 dage"
     if (days === 90) return "90 dage"
     if (days === 365) return "1 år"
