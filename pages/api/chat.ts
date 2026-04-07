@@ -16,7 +16,7 @@ import type { InputSignal, KernelResult } from "../../chat/kernel/types"
 import { getNode } from "../../chat/nodes/registry"
 
 import { readConversationState, writeConversationState } from "../../chat/persistence/conversationStateStore"
-import { ensureThreadIndex } from "../../chat/persistence/threadIndexStore"
+import { ensureThreadIndex, createEmptyThreadIndex } from "../../chat/persistence/threadIndexStore"
 import { appendConversationEventV1 } from "../../chat/events/store"
 import { getOrCreateThreadThemeAndEpisode } from "../../chat/memory/longTermMemoryStore"
 
@@ -142,14 +142,21 @@ async function handleInitOrRestore(params: {
 
   const baseState = storedState ?? (conversationKind === "lobby" ? createLobbyState(conversationId) : createInitialState(conversationId))
   const isNew = !storedState
-  if (isNew) await writeConversationState(baseState, SESSION_TTL_SECONDS)
+  if (isNew && params.consentRecord && params.consentRecord.retentionDays > 0) {
+    await writeConversationState(baseState, SESSION_TTL_SECONDS)
+  }
 
-  await Promise.all([
-    emitCanonicalEvent({ userKey, conversationId: baseState.conversation_id, revision: baseState.revision, nodeId: baseState.active_node, eventType: "transition_applied", payload: { input_type: "SYSTEM_INIT", transition: { type: "INIT", from: null, to: baseState.active_node, reason: isNew ? "system init" : "system init (restored)", meta_keys_written: [] }, status_after: baseState.status } }),
-    emitCanonicalEvent({ userKey, conversationId: baseState.conversation_id, revision: baseState.revision, nodeId: baseState.active_node, eventType: "node_rendered", payload: { node_id: baseState.active_node, message: truncateText(baseState.active_node_message ?? "", 800), status: baseState.status } }),
-  ])
+  // Session-only: spring canonical events over
+  if (params.consentRecord && params.consentRecord.retentionDays > 0) {
+    await Promise.all([
+      emitCanonicalEvent({ userKey, conversationId: baseState.conversation_id, revision: baseState.revision, nodeId: baseState.active_node, eventType: "transition_applied", payload: { input_type: "SYSTEM_INIT", transition: { type: "INIT", from: null, to: baseState.active_node, reason: isNew ? "system init" : "system init (restored)", meta_keys_written: [] }, status_after: baseState.status } }),
+      emitCanonicalEvent({ userKey, conversationId: baseState.conversation_id, revision: baseState.revision, nodeId: baseState.active_node, eventType: "node_rendered", payload: { node_id: baseState.active_node, message: truncateText(baseState.active_node_message ?? "", 800), status: baseState.status } }),
+    ])
+  }
 
-  const indexNow = await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+  const indexNow = params.consentRecord && params.consentRecord.retentionDays > 0
+    ? await ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+    : createEmptyThreadIndex(userKey)
 
   // Bestem velkomstbesked baseret på om det er første gang eller en returbruger
   const isFirstEverVisit = isNew && indexNow.threads.length === 0
@@ -231,6 +238,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return
     }
     if (isPlatformThreadInput(input)) {
+      // Session-only: THREAD_CREATE må ikke skrive til Redis.
+      // Returner en ny in-memory state direkte — ingen persistence.
+      if ((input as any).type === "THREAD_CREATE" && !consentAllowsPersistence(consentRecord ?? null)) {
+        const newConvId = newUuid()
+        const newState = createInitialState(newConvId)
+        const emptyIndex = createEmptyThreadIndex(userKey)
+        res.status(200).json({
+          state: withThreadMeta(newState, emptyIndex),
+          ...serializeActiveNode(newState.active_node),
+          transition: { type: "INIT", from: null, to: newState.active_node, reason: "system init" },
+          log: { conversation_id: newConvId, revision_before: -1, revision_after: 0,
+                 active_node_before: null, active_node_after: newState.active_node,
+                 input_type: "THREAD_CREATE", transition_type: "INIT",
+                 timestamp: new Date().toISOString() },
+        })
+        return
+      }
+
       if ((input as any).type === "THREAD_CREATE") { await handleThreadCreate({ input: input as any, userKey, res }); return }
       if ((input as any).type === "THREAD_SWITCH") { await handleThreadSwitch({ input: input as any, userKey, res }); return }
       if ((input as any).type === "THREAD_ARCHIVE") { await handleThreadArchive({ userKey, res, conversationId: (input as any).conversation_id }); return }
@@ -244,7 +269,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     let kernelResultFinal = await runTurnWithAutoAdvance({ baseState, input: input as InputSignal, userKey })
 
-    const binding = await ensureThreadBindingOnState({ userKey, conversationId: kernelResultFinal.state.conversation_id, state: kernelResultFinal.state })
+    // Session-only: spring theme/episode-binding over — ingen Redis-writes
+    const binding = consentAllowsPersistence(consentRecord ?? null)
+      ? await ensureThreadBindingOnState({ userKey, conversationId: kernelResultFinal.state.conversation_id, state: kernelResultFinal.state })
+      : null
     if (binding) kernelResultFinal = { ...kernelResultFinal, state: binding.state }
 
     // Session-only (retentionDays === 0): skriv ikke til Redis — state lever kun i RAM.
@@ -254,8 +282,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const [scanThreads, indexNow] = await Promise.all([
-      maybeTriggerScanThreadsJob({ userKey, input: input as InputSignal, conversationId: kernelResultFinal.state.conversation_id, state: kernelResultFinal.state, revisionAfter: kernelResultFinal.state.revision }),
-      ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS }),
+      // Session-only: spring scan-job over (intet at scanne, ingen Redis-state)
+      consentAllowsPersistence(consentRecord ?? null)
+        ? maybeTriggerScanThreadsJob({ userKey, input: input as InputSignal, conversationId: kernelResultFinal.state.conversation_id, state: kernelResultFinal.state, revisionAfter: kernelResultFinal.state.revision })
+        : Promise.resolve({ deferredJob: null }),
+      // Session-only: brug et tomt in-memory index frem for at skrive til Redis
+      consentAllowsPersistence(consentRecord ?? null)
+        ? ensureThreadIndex({ userKey, ttlSeconds: PROFILE_TTL_SECONDS })
+        : Promise.resolve(createEmptyThreadIndex(userKey)),
     ])
 
     const userText = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : toUserInput(input as InputSignal) ?? ""
