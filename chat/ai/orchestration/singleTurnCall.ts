@@ -81,7 +81,9 @@ Valg-guide:
 - Brugeren beskriver eget mønster/oplevelse → reflection
 - Brugeren spørger om metode/virkning → info eller evidence
 - Brugeren vil have konkret hjælp til næste skridt → practical
-- Brugeren siger farvel/tak → closing`)
+- Brugeren siger farvel/tak → closing
+- Brugeren accepterer en opgave og afslutter ("det vil jeg gøre, tak", "godt, det prøver jeg", "ja det lyder godt") → closing
+- Brugeren signalerer tilfredshed eller at de har fået nok ("det er nok for nu", "det giver mening") → closing`)
 
   // CONVERSATION_MOVE
   blocks.push(`CONVERSATION_MOVE (vælg den der passer til dit svar):
