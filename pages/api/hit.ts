@@ -49,6 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // By via IPInfo
   let city = "Ukendt"
+  let postal = ""
   const ipinfoToken = process.env.IPINFO_TOKEN
   if (clientIp && ipinfoToken) {
     try {
@@ -56,6 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (ipRes.ok) {
         const ipJson = await ipRes.json()
         city = ipJson?.city ?? "Ukendt"
+        postal = ipJson?.postal ?? ""
       }
     } catch { /* non-fatal */ }
   }
@@ -65,6 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     ts: new Date().toISOString(),
     path,
     city,
+    postal,
     region,
     day,
   }
