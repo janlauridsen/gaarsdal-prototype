@@ -106,10 +106,15 @@ async function buildAiGreeting(params: {
 }): Promise<{ greeting: string; topic: string } | null> {
   if (params.mode === "parenthesis") return null
 
+  const excludeIds = new Set([
+    params.newConversationId,
+    params.index.active_conversation_id,
+  ].filter(Boolean))
+
   const previousThreads = params.index.threads
     .filter(
       (t) =>
-        t.conversation_id !== params.newConversationId &&
+        !excludeIds.has(t.conversation_id) &&
         t.status === "active" &&
         !isGenericThreadTitle(t.title) &&
         t.title.trim().length > 0
