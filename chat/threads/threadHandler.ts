@@ -106,13 +106,19 @@ async function buildAiGreeting(params: {
 }): Promise<{ greeting: string; topic: string } | null> {
   if (params.mode === "parenthesis") return null
 
-  const previousThreads = params.index.threads.filter(
-    (t) =>
-      t.conversation_id !== params.newConversationId &&
-      t.status === "active" &&
-      !isGenericThreadTitle(t.title) &&
-      t.title.trim().length > 0
-  )
+  const previousThreads = params.index.threads
+    .filter(
+      (t) =>
+        t.conversation_id !== params.newConversationId &&
+        t.status === "active" &&
+        !isGenericThreadTitle(t.title) &&
+        t.title.trim().length > 0
+    )
+    .sort((a, b) => {
+      const aTime = a.updated_at ? new Date(a.updated_at).getTime() : 0
+      const bTime = b.updated_at ? new Date(b.updated_at).getTime() : 0
+      return bTime - aTime
+    })
 
   if (previousThreads.length === 0) return null
 
