@@ -1224,6 +1224,14 @@ export default function Chatbot() {
                           label: "Ikke klar nu — efterlad kun din email",
                           onClick: () => dispatch({ type: "EXPLICIT_TRANSITION", target: "LEAD_CAPTURE" })
                         } : undefined}
+                        initialValues={state?.active_node === "HANDOFF_FORM" ? {
+                          emne: (state.meta["gen_hypno.problem_title"] as any)?.value as string ?? (state.meta["gen_hypno.topic_tags"] as any)?.value?.[0] ?? "",
+                        } : undefined}
+                        summary={state?.active_node === "HANDOFF_FORM" ? (
+                          (state.meta["prequalify.reason"] as any)?.value as string ||
+                          (state.meta["gen_hypno.problem_summary"] as any)?.value as string ||
+                          undefined
+                        ) : undefined}
                         onSend={(text) => {
                           dispatch({ type: "FREE_TEXT", text })
                         }}
@@ -1292,6 +1300,14 @@ export default function Chatbot() {
                     label: "Ikke klar nu — efterlad kun din email",
                     onClick: () => dispatch({ type: "EXPLICIT_TRANSITION", target: "LEAD_CAPTURE" })
                   } : undefined}
+                  initialValues={state?.active_node === "HANDOFF_FORM" ? {
+                    emne: (state.meta["gen_hypno.problem_title"] as any)?.value as string ?? (state.meta["gen_hypno.topic_tags"] as any)?.value?.[0] ?? "",
+                  } : undefined}
+                  summary={state?.active_node === "HANDOFF_FORM" ? (
+                    (state.meta["prequalify.reason"] as any)?.value as string ||
+                    (state.meta["gen_hypno.problem_summary"] as any)?.value as string ||
+                    undefined
+                  ) : undefined}
                   onSend={(text) => {
                     dispatch({ type: "FREE_TEXT", text })
                   }}
