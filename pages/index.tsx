@@ -96,12 +96,12 @@ export default function Home() {
             >
               Læs mere om metoden
             </Link>
-            <a
-              href="#afklaring"
+            <button
+              onClick={() => window.dispatchEvent(new Event("open-chatbot"))}
               className="border border-gray-300 text-muted px-6 py-3 rounded-lg hover:bg-gray-50 transition"
             >
               Er det noget for mig? →
-            </a>
+            </button>
           </div>
         </section>
 
@@ -251,9 +251,7 @@ export default function Home() {
         </section>
 
         {/* CHATBOT */}
-        <div id="afklaring">
-          <Chatbot />
-        </div>
+        <Chatbot />
       </main>
 
       <Footer />

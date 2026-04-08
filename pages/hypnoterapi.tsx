@@ -226,7 +226,7 @@ export default function Hypnoterapi() {
             Ikke sikker på om det er relevant for dig?
           </p>
           <Link
-            href="/#afklaring"
+            href="/?open=chat"
             className="inline-block border border-gray-300 text-muted px-6 py-3 rounded-lg hover:bg-gray-50 transition"
           >
             Svar på et par spørgsmål først →
