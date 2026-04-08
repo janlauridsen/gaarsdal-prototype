@@ -82,6 +82,7 @@ export default function AdminPage() {
   const [hits, setHits] = useState<Hit[]>([])
   const [hitsLoading, setHitsLoading] = useState(false)
   const [hitsError, setHitsError] = useState<string|null>(null)
+  const [hitsDays, setHitsDays] = useState(30)
 
   const fetchMemory = useCallback(async () => {
     if (!secret) return; setMemoryLoading(true); setMemoryError(null)
@@ -92,14 +93,14 @@ export default function AdminPage() {
     } catch (e:any) { setMemoryError(e.message ?? "Ukendt fejl") } finally { setMemoryLoading(false) }
   }, [secret])
 
-  const fetchHits = useCallback(async () => {
+  const fetchHits = useCallback(async (days = hitsDays) => {
     if (!secret) return; setHitsLoading(true); setHitsError(null)
     try {
-      const res = await fetch(`/api/admin/hits?secret=${encodeURIComponent(secret)}&days=30`)
+      const res = await fetch(`/api/admin/hits?secret=${encodeURIComponent(secret)}&days=${days}`)
       if (!res.ok) { const j = await res.json().catch(()=>({})); setHitsError(j.error ?? `HTTP ${res.status}`); return }
       const j = await res.json(); setHits(j.hits ?? [])
     } catch (e:any) { setHitsError(e.message ?? "Ukendt fejl") } finally { setHitsLoading(false) }
-  }, [secret])
+  }, [secret, hitsDays])
 
   const fetchStates = useCallback(async (ids: string[]) => {
     if (!secret || ids.length === 0) return; setStatesLoading(true)
@@ -432,8 +433,20 @@ export default function AdminPage() {
             return (
               <div>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"16px" }}>
-                  <div style={{ fontSize:"14px", color:"#6B675F" }}>Danske besøgende · seneste 30 dage · {hits.length} hits</div>
-                  <button onClick={fetchHits} disabled={hitsLoading} style={{ padding:"7px 16px", background:"#627A52", color:"#fff", border:"none", borderRadius:"8px", fontSize:"13px", cursor:hitsLoading?"not-allowed":"pointer", opacity:hitsLoading?0.7:1, fontFamily:"inherit" }}>{hitsLoading?"Henter…":"↻ Opdater"}</button>
+                  <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
+                    <div style={{ fontSize:"14px", color:"#6B675F" }}>Danske besøgende · {hits.length} hits</div>
+                    <select
+                      value={hitsDays}
+                      onChange={e => { const d = Number(e.target.value); setHitsDays(d); fetchHits(d) }}
+                      style={{ padding:"4px 8px", border:"1px solid #D8D5CC", borderRadius:"6px", fontSize:"13px", fontFamily:"inherit", color:"#2C2A28", outline:"none" }}
+                    >
+                      <option value={7}>7 dage</option>
+                      <option value={30}>30 dage</option>
+                      <option value={90}>90 dage</option>
+                      <option value={365}>365 dage</option>
+                    </select>
+                  </div>
+                  <button onClick={()=>fetchHits()} disabled={hitsLoading} style={{ padding:"7px 16px", background:"#627A52", color:"#fff", border:"none", borderRadius:"8px", fontSize:"13px", cursor:hitsLoading?"not-allowed":"pointer", opacity:hitsLoading?0.7:1, fontFamily:"inherit" }}>{hitsLoading?"Henter…":"↻ Opdater"}</button>
                 </div>
                 {hitsError && <div style={{ background:"#FEF2F2", color:"#991B1B", padding:"12px 16px", borderRadius:"8px", marginBottom:"16px", fontSize:"14px" }}>{hitsError}</div>}
                 {hitsLoading && hits.length===0 && <div style={{ textAlign:"center", color:"#6B675F", fontSize:"14px", padding:"40px 0" }}>Henter trafik…</div>}
