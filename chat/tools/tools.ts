@@ -498,12 +498,34 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
           emailStatus = "skipped_no_navn"
         } else {
           try {
+            const getMeta = (key: string) => (params.state.meta[key] as any)?.value
+            const problemTitle   = getMeta("gen_hypno.problem_title") as string | undefined
+            const problemSummary = getMeta("gen_hypno.problem_summary") as string | undefined
+            const topicTags      = getMeta("gen_hypno.topic_tags") as string[] | undefined
+            const fit            = getMeta("prequalify.fit") as string | undefined
+            const fitReason      = getMeta("prequalify.reason") as string | undefined
+            const arousalLevel   = getMeta("wot.arousal_level") as string | undefined
+
+            const fitLabel: Record<string, string> = { good: "✓ Klar til session", explore: "~ Ønsker mere afklaring", unknown: "Uafklaret" }
+
+            const briefingSection = [
+              "<hr>",
+              "<h3 style=\"color:#627A52;margin-bottom:8px\">Pre-session briefing</h3>",
+              problemTitle ? `<p><b>Emne (AI-afledt):</b> ${problemTitle}</p>` : "",
+              problemSummary ? `<p><b>Sammenfatning:</b> ${problemSummary}</p>` : "",
+              topicTags?.length ? `<p><b>Temaer:</b> ${topicTags.join(", ")}</p>` : "",
+              fit ? `<p><b>Fit-vurdering:</b> ${fitLabel[fit] ?? fit}</p>` : "",
+              fitReason ? `<p><b>Begrundelse:</b> ${fitReason}</p>` : "",
+              arousalLevel ? `<p><b>Arousal-niveau:</b> ${arousalLevel}</p>` : "",
+            ].filter(Boolean).join("")
+
             const html = [
               "<h2>Ny henvendelse fra gaarsdal.net</h2>",
               `<p><b>Navn:</b> ${record.navn}</p>`,
               `<p><b>Emne:</b> ${record.emne || "—"}</p>`,
               `<p><b>Kontakt:</b> ${record.kontakt || "—"}</p>`,
               record.besked ? `<p><b>Besked:</b> ${record.besked}</p>` : "",
+              briefingSection,
               `<hr><p style="color:#888;font-size:12px">Henvendelse-ID: ${record.id}<br>Modtaget: ${ts}</p>`,
             ].join("")
 
