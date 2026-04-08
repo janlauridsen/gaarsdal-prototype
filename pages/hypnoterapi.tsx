@@ -222,6 +222,15 @@ export default function Hypnoterapi() {
               Facebook-gruppen
             </a>
           </div>
+          <p className="text-muted text-sm mt-6 mb-3">
+            Ikke sikker på om det er relevant for dig?
+          </p>
+          <Link
+            href="/#afklaring"
+            className="inline-block border border-gray-300 text-muted px-6 py-3 rounded-lg hover:bg-gray-50 transition"
+          >
+            Svar på et par spørgsmål først →
+          </Link>
         </section>
       </main>
 

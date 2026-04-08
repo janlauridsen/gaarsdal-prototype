@@ -83,7 +83,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-4 flex-wrap">
             <Link
               href="/kontakt"
               className="bg-accent text-white px-6 py-3 rounded-lg shadow hover:bg-accent/90 transition"
@@ -96,6 +96,12 @@ export default function Home() {
             >
               Læs mere om metoden
             </Link>
+            <a
+              href="#afklaring"
+              className="border border-gray-300 text-muted px-6 py-3 rounded-lg hover:bg-gray-50 transition"
+            >
+              Er det noget for mig? →
+            </a>
           </div>
         </section>
 
@@ -245,7 +251,9 @@ export default function Home() {
         </section>
 
         {/* CHATBOT */}
-        <Chatbot />
+        <div id="afklaring">
+          <Chatbot />
+        </div>
       </main>
 
       <Footer />
