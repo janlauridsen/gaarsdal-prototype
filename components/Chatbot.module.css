@@ -1861,6 +1861,46 @@
   background: rgba(98, 122, 82, 0.14);
 }
 
+.sessionCloseFeedbackRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.sessionCloseFeedbackLabel {
+  font-size: 12px;
+  color: rgba(27, 30, 28, 0.52);
+  flex: 1;
+}
+
+.sessionCloseFeedbackBtn {
+  background: none;
+  border: 1px solid rgba(27, 30, 28, 0.12);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 100ms ease, border-color 100ms ease;
+}
+
+.sessionCloseFeedbackBtn:hover {
+  background: rgba(27, 30, 28, 0.05);
+  border-color: rgba(27, 30, 28, 0.22);
+}
+
+.sessionCloseFeedbackBtnActive {
+  background: rgba(98, 122, 82, 0.12);
+  border-color: rgba(98, 122, 82, 0.35);
+}
+
+.sessionCloseFeedbackThanks {
+  font-size: 12px;
+  color: rgba(27, 30, 28, 0.50);
+  font-style: italic;
+}
+
 /* ─── Sprint 5: MirrorInsight — passiv observation ───────────────────────────
    Indsæt i Chatbot.module.css, efter .sessionCloseContinueBtn-blokken
    ──────────────────────────────────────────────────────────────────────────── */

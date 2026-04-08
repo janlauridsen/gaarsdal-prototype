@@ -78,11 +78,13 @@ export default function Chatbot() {
   const INACTIVITY_SECONDS = 60
   const MIN_TURNS_FOR_CLOSE = 2
   const [sessionCloseVisible, setSessionCloseVisible] = useState(false)
+  const [sessionCloseTrigger, setSessionCloseTrigger] = useState<"inactivity" | "closing_mode">("inactivity")
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function resetInactivityTimer(currentState: typeof state) {
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current)
     setSessionCloseVisible(false)
+    setSessionCloseTrigger("inactivity")
     inactivityTimerRef.current = setTimeout(() => {
       const turnCount = currentState?.meta?.["gen_hypno.assistant_turn_count"]
       const count = turnCount && typeof turnCount === "object" && "value" in turnCount
@@ -1088,6 +1090,30 @@ export default function Chatbot() {
   }
 
   function closeChat() {
+    // Hvis SessionClose allerede er synlig: luk direkte (undgå loop)
+    if (sessionCloseVisible) {
+      setSessionCloseVisible(false)
+      setOpen(false)
+      setExpanded(false)
+      return
+    }
+
+    // Vis SessionClose (med feedback) når der er nok tur i samtalen
+    if (state) {
+      const raw = state.meta?.["gen_hypno.assistant_turn_count"]
+      const count =
+        raw && typeof raw === "object" && "value" in raw
+          ? (raw as any).value
+          : typeof raw === "number"
+          ? raw
+          : 0
+      if (count >= MIN_TURNS_FOR_CLOSE) {
+        setSessionCloseTrigger("closing_mode")
+        setSessionCloseVisible(true)
+        return
+      }
+    }
+
     setOpen(false)
     setExpanded(false)
   }
@@ -1205,7 +1231,7 @@ export default function Chatbot() {
                   sessionClose={
                     sessionCloseVisible && state
                       ? {
-                          trigger: "inactivity",
+                          trigger: sessionCloseTrigger,
                           onClose: () => {
                             setSessionCloseVisible(false)
                             setOpen(false)
