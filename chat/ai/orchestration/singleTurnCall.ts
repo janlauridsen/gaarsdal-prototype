@@ -52,6 +52,12 @@ function buildSystemPrompt(params: {
 }): string {
   const blocks: string[] = []
 
+  // PRIMÆR SIGNAL — sættes først så det ikke overskrives af kontekst-blokke
+  blocks.push(`PRIMÆR SIGNAL:
+user_input er brugerens SENESTE besked og er det absolutte primære signal for intent, topic og objective.
+Lad aldrig transcript-historik eller det forrige emne overskrive det literale indhold af user_input.
+Eksempel: hvis user_input handler om pris, skal objective og mode afspejle det — uanset hvad de foregående tur handlede om.`)
+
   // ROLLE
   blocks.push(`Du er en varm, jordnær samtalepartner fra Gaarsdal Hypnoterapi i Birkerød. Jan Gaarsdal er hypnoterapeut og tilbyder individuelle forløb.
 

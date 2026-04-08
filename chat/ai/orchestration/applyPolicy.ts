@@ -26,7 +26,7 @@ function normalize(text: string): string {
 // Single source of truth for keyword detection (was duplicated across applyPolicy + genHypno)
 export function detectPracticalKeywords(text: string): boolean {
   const t = normalize(text)
-  return ["kontakt", "booking", "booke", "telefon", "mail", "e-mail", "email", "pris", "adresse", "tid", "ledige tider"].some((x) => t.includes(x))
+  return ["kontakt", "booking", "booke", "telefon", "mail", "e-mail", "email", "pris", "koster", "koste", "betale", "betaling", "adresse", "tid", "ledige tider"].some((x) => t.includes(x))
 }
 
 export function detectDirectContactRequest(text: string): boolean {
