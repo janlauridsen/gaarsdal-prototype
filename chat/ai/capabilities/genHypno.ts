@@ -1,7 +1,6 @@
 import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
 import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
-import { computeRollingArousal, detectPracticalKeywords, detectClosingText, detectSaturationSignal, isSubstantiveNewQuestion } from "../orchestration/applyPolicy"
-// detectPracticalKeywords + detectClosingText used as upstream policy signals (not post-hoc overrides)
+import { computeRollingArousal, detectPracticalKeywords, detectClosingText } from "../orchestration/applyPolicy"
 import { detectClientSignals } from "./clientDetection"
 import { singleTurnCall, buildSingleTurnFallback, SingleTurnOutput } from "../orchestration/singleTurnCall"
 
@@ -165,13 +164,12 @@ function buildMetaDelta(params: {
   relationalState: RelationalState
   arousalScore?: number
   arousalLevel?: import("../orchestration/applyPolicy").ArousalLevel
-  saturated?: boolean
 }): Record<string, unknown> {
   const previousTranscript = readTranscriptByKey(params.context, params.transcriptKey)
   const prevAssistantCount = countAssistantTurns(previousTranscript)
   const nextAssistantCount = params.assistantMessage ? prevAssistantCount + 1 : prevAssistantCount
 
-  const dialogStage = params.mode === "closing" ? "close" : params.mode === "reflection" ? "explore_patterns" : params.saturated ? "saturated" : "open"
+  const dialogStage = params.mode === "closing" ? "close" : params.mode === "reflection" ? "explore_patterns" : "open"
   // Topic-tags og problem-titel/-summary: brug LLM-analysens data direkte
   const derivedTopicTags = params.topic ? [params.topic] : []
   const derivedProblemTitle = params.analysis.topic ?? params.topic
@@ -273,21 +271,12 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  // ─── Saturation-gate: bypass LLM når brugeren er færdig ─────────────────────
-  // Hvis samtalen har nok tur OG brugeren sender et tilfredshedssignal,
-  // eller stage allerede er "saturated", returneres en kort closing-besked
-  // direkte uden LLM-kald. Nulstilles hvis brugeren stiller et reelt spørgsmål.
-  const SATURATION_TURN_THRESHOLD = 4
+  // ─── Closing-gate: LLM satte stage="close" i forrige tur ────────────────────
+  // Når dialog.stage er "close" er samtalen afsluttet fra LLM'ens perspektiv.
+  // Returnér en kort besked direkte uden nyt LLM-kald — uanset hvad brugeren skriver.
+  // Eneste undtagelse: eksplicitte spørgsmål (indeholder ?) genåbner dialogen.
   const currentStage = readStringMeta(context, "dialog.stage")
-  const assistantCountForSaturation = countAssistantTurns(transcript)
-  const isSaturationSignal = detectSaturationSignal(userText)
-  const isNewQuestion = isSubstantiveNewQuestion(userText)
-
-  const enterSaturation =
-    !isNewQuestion &&
-    (currentStage === "saturated" || currentStage === "close" || (assistantCountForSaturation >= SATURATION_TURN_THRESHOLD && isSaturationSignal))
-
-  if (enterSaturation) {
+  if (currentStage === "close" && !userText.includes("?")) {
     const assistant = "Godt. Du kan altid vende tilbage hvis der er mere på hjerte — eller kontakte Jan direkte hvis du er klar til næste skridt."
     const updatedTranscript = appendTranscript(transcript, userText, assistant)
     return {
@@ -295,14 +284,14 @@ export async function runUnifiedHypnoCapability(
         type: "NODE_HOP",
         from: context.state.active_node,
         to: options.stayOnNode,
-        reason: "gen-hypno:saturated",
+        reason: "gen-hypno:stage-closed",
         response_message: assistant,
         meta_delta: buildMetaDelta({
           context, assistantMessage: assistant, updatedTranscript,
           topic: previousTopic, sourceNode: options.sourceNode,
           transcriptKey: options.transcriptKey, userText,
           analysis: buildDefaultAnalysis(userText, previousTopic, "info"),
-          mode: "closing", relationalState: "gentle_close", saturated: true,
+          mode: "closing", relationalState: "gentle_close",
         }),
       },
       debug: { capability: "unified-hypno-v5-single", used_fallback: false },
