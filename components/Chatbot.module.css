@@ -38,6 +38,38 @@
   color: white;
 }
 
+.fabNudge {
+  position: fixed;
+  right: 88px;
+  bottom: 32px;
+  z-index: 50;
+  background: #fff;
+  color: #2C2A28;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: nudgeFadeIn 300ms ease forwards;
+}
+
+.fabNudge::after {
+  content: "";
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right: none;
+  border-left-color: #fff;
+}
+
+@keyframes nudgeFadeIn {
+  from { opacity: 0; transform: translateX(6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
 .chatbot {
   position: fixed;
   right: 24px;

@@ -101,6 +101,7 @@ export default function Chatbot() {
   const [isMobileViewport, setIsMobileViewport] = useState(false)
   const [isInAppBrowser, setIsInAppBrowser] = useState(false)
   const [copyLinkLabel, setCopyLinkLabel] = useState("Kopiér link")
+  const [showNudge, setShowNudge] = useState(false)
   const didAutoStartNewThreadRef = useRef(false)
   const jobLoopRef = useRef<{ conversationId: string; jobId: string; cancelled: boolean } | null>(null)
   const initInFlightRef = useRef(false)
@@ -512,6 +513,24 @@ export default function Chatbot() {
     }
 
     return () => window.removeEventListener("open-chatbot", handleOpenChat)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Nudge: vis tooltip efter 50 sek hvis chatbot ikke er åbnet og ikke vist før
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (sessionStorage.getItem("nudge_shown")) return
+
+    const show = window.setTimeout(() => {
+      if (!open) {
+        setShowNudge(true)
+        sessionStorage.setItem("nudge_shown", "1")
+        // Skjul igen efter 8 sek
+        window.setTimeout(() => setShowNudge(false), 8000)
+      }
+    }, 50000)
+
+    return () => window.clearTimeout(show)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -1098,9 +1117,16 @@ export default function Chatbot() {
   return (
     <>
       {!open && (
-        <button className={styles.fab} onClick={openChat} aria-label="Åbn chat" title="Åbn chat">
-          <ChatBubbleOvalLeftEllipsisIcon className={styles.fabIcon} />
-        </button>
+        <>
+          {showNudge && (
+            <div className={styles.fabNudge}>
+              Usikker på om det er noget for dig? →
+            </div>
+          )}
+          <button className={styles.fab} onClick={() => { openChat(); setShowNudge(false) }} aria-label="Åbn chat" title="Åbn chat">
+            <ChatBubbleOvalLeftEllipsisIcon className={styles.fabIcon} />
+          </button>
+        </>
       )}
 
       {open && (
