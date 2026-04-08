@@ -497,6 +497,24 @@ export default function Chatbot() {
     return () => window.clearTimeout(t)
   }, [visibleMessages, open, headerNavHint, expanded])
 
+  // Åbn chatbot via custom event eller ?open=chat query param
+  useEffect(() => {
+    const handleOpenChat = () => openChat()
+    window.addEventListener("open-chatbot", handleOpenChat)
+
+    // Check query param ved load (fx fra hypnoterapi-siden)
+    if (typeof window !== "undefined" && window.location.search.includes("open=chat")) {
+      openChat()
+      // Ryd query param uden reload
+      const url = new URL(window.location.href)
+      url.searchParams.delete("open")
+      window.history.replaceState({}, "", url.toString())
+    }
+
+    return () => window.removeEventListener("open-chatbot", handleOpenChat)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     if (typeof window === "undefined") return
 
