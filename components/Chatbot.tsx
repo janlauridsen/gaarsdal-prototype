@@ -528,7 +528,7 @@ export default function Chatbot() {
         // Skjul igen efter 8 sek
         window.setTimeout(() => setShowNudge(false), 8000)
       }
-    }, 50000)
+    }, 3000)
 
     return () => window.clearTimeout(show)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1123,7 +1123,7 @@ export default function Chatbot() {
               Usikker på om det er noget for dig? →
             </div>
           )}
-          <button className={styles.fab} onClick={() => { openChat(); setShowNudge(false) }} aria-label="Åbn chat" title="Åbn chat">
+          <button className={`${styles.fab}${showNudge ? ` ${styles.fabPulse}` : ""}`} onClick={() => { openChat(); setShowNudge(false) }} aria-label="Åbn chat" title="Åbn chat">
             <ChatBubbleOvalLeftEllipsisIcon className={styles.fabIcon} />
           </button>
         </>

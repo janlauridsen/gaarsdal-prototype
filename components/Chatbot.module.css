@@ -41,33 +41,44 @@
 .fabNudge {
   position: fixed;
   right: 88px;
-  bottom: 32px;
+  bottom: 28px;
   z-index: 50;
   background: #fff;
   color: #2C2A28;
-  font-size: 13px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 11px 16px;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.15);
   white-space: nowrap;
   pointer-events: none;
-  animation: nudgeFadeIn 300ms ease forwards;
+  animation: nudgeFadeIn 350ms ease forwards;
 }
 
 .fabNudge::after {
   content: "";
   position: absolute;
-  right: -6px;
+  right: -7px;
   top: 50%;
   transform: translateY(-50%);
-  border: 6px solid transparent;
+  border: 7px solid transparent;
   border-right: none;
   border-left-color: #fff;
 }
 
+.fabPulse {
+  animation: fabPulse 1.2s ease-in-out infinite;
+}
+
 @keyframes nudgeFadeIn {
-  from { opacity: 0; transform: translateX(6px); }
+  from { opacity: 0; transform: translateX(8px); }
   to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fabPulse {
+  0%   { box-shadow: 0 10px 22px rgba(0,0,0,0.14), 0 0 0 0 rgba(98,122,82,0.5); }
+  60%  { box-shadow: 0 10px 22px rgba(0,0,0,0.14), 0 0 0 10px rgba(98,122,82,0); }
+  100% { box-shadow: 0 10px 22px rgba(0,0,0,0.14), 0 0 0 0 rgba(98,122,82,0); }
 }
 
 .chatbot {
