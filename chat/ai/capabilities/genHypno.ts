@@ -285,7 +285,7 @@ export async function runUnifiedHypnoCapability(
 
   const enterSaturation =
     !isNewQuestion &&
-    (currentStage === "saturated" || (assistantCountForSaturation >= SATURATION_TURN_THRESHOLD && isSaturationSignal))
+    (currentStage === "saturated" || currentStage === "close" || (assistantCountForSaturation >= SATURATION_TURN_THRESHOLD && isSaturationSignal))
 
   if (enterSaturation) {
     const assistant = "Godt. Du kan altid vende tilbage hvis der er mere på hjerte — eller kontakte Jan direkte hvis du er klar til næste skridt."
