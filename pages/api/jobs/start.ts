@@ -27,7 +27,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const currentState = await readConversationState(job.conversation_id)
   const currentRevision = typeof currentState?.revision === "number" ? currentState.revision : 0
-  const isStale = currentRevision > job.based_on_revision || (requestedRevision !== null && requestedRevision !== job.based_on_revision)
+  const staleGrace = job.kind === "anticipate_turn" ? 1
+  : job.kind === "derive_thread_title" ? 2
+  : 0
+  const isStale = currentRevision > job.based_on_revision + staleGrace || 
+  (requestedRevision !== null && requestedRevision !== job.based_on_revision)
   if (isStale) {
     const ttlSeconds = jobsTtlSeconds()
     const staleJob = {
