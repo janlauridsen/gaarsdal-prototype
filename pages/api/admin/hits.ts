@@ -23,10 +23,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!redis) return res.status(503).json({ error: "Redis ikke tilgængelig" })
 
   // Hent hits inden for tidsvinduet fra sorted set
-  const raw = await redis.zrange(HITS_KEY, fromScore, now, { byScore: true }) as string[]
+  const raw = await redis.zrange(HITS_KEY, fromScore, now, { byScore: true, count: 5000, offset: 0 }) as unknown[]
 
   const hits = raw
-    .map(h => { try { return JSON.parse(h) } catch { return null } })
+    .map(h => {
+      if (h && typeof h === "object") return h
+      try { return JSON.parse(h as string) } catch { return null }
+    })
     .filter(Boolean)
 
   return res.status(200).json({ hits, total: hits.length, days })
