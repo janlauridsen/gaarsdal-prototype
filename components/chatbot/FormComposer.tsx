@@ -11,10 +11,12 @@ type Props = {
   secondaryAction?: { label: string; onClick: () => void }
   loading: boolean
   disabled: boolean
+  initialValues?: Record<string, string>
+  summary?: string
 }
 
-export default function FormComposer({ fields, onSend, onCancel, secondaryAction, loading, disabled }: Props) {
-  const [values, setValues] = useState<Record<string, string>>({})
+export default function FormComposer({ fields, onSend, onCancel, secondaryAction, loading, disabled, initialValues, summary }: Props) {
+  const [values, setValues] = useState<Record<string, string>>(initialValues ?? {})
   const [errors, setErrors] = useState<Record<string, boolean>>({})
 
   const handleChange = (id: string, value: string) => {
@@ -58,6 +60,14 @@ export default function FormComposer({ fields, onSend, onCancel, secondaryAction
               {secondaryAction.label}
             </button>
           )}
+        </div>
+      )}
+
+      {/* Summary panel */}
+      {summary && (
+        <div style={{ fontSize: "13px", color: "#6B675F", background: "#F9F8F5", borderRadius: "8px", padding: "10px 12px", marginBottom: "8px", lineHeight: 1.5 }}>
+          <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", color: "#9CA3AF", display: "block", marginBottom: "3px" }}>Baseret på vores samtale</span>
+          {summary}
         </div>
       )}
 
