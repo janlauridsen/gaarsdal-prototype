@@ -528,7 +528,7 @@ export default function Chatbot() {
         // Skjul igen efter 8 sek
         window.setTimeout(() => setShowNudge(false), 8000)
       }
-    }, 3000)
+    }, 50000)
 
     return () => window.clearTimeout(show)
   // eslint-disable-next-line react-hooks/exhaustive-deps
