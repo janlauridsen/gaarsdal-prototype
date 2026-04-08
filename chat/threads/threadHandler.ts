@@ -165,11 +165,17 @@ async function buildAiGreeting(params: {
       } catch { /* ingen episode endnu */ }
     }
 
+    // Seneste tråd eksplicit fremhævet til LLM'en
+    const latestThread = previousThreads[0]
+    const latestThreadLine = latestThread
+      ? `SENESTE SAMTALE (brug denne som udgangspunkt): ${latestThread.title}${latestThread.preview ? ` — "${latestThread.preview.slice(0, 80)}"` : ""}`
+      : null
+
     const contextBlock = [
+      latestThreadLine,
+      openLoopLines.length ? `Uafklarede emner fra seneste samtale:\n${openLoopLines.join("\n")}` : null,
+      recentThreads.length > 1 ? `Øvrige samtaler:\n${recentThreads.slice(1).join("\n")}` : null,
       topTopics.length ? `Brugerens primære emner: ${topTopics.join(", ")}` : null,
-      recentThreads.length ? `Seneste samtaler:\n${recentThreads.join("\n")}` : null,
-      openLoopLines.length ? `Uafklarede emner fra sidst:\n${openLoopLines.join("\n")}` : null,
-      factLines.length ? `Kendte facts om brugeren:\n${factLines.join("\n")}` : null,
     ]
       .filter(Boolean)
       .join("\n\n")
@@ -186,9 +192,9 @@ async function buildAiGreeting(params: {
 
 Regler:
 - Maks 2 sætninger
-- Vis at du husker hvad brugeren tidligere har delt — nævn konkret et emne eller mønster fra historikken
-- Hvis der er uafklarede emner fra sidst (open_loops), brug ét af dem som naturligt afsæt — fx "Sidst nævnte du X uden at vi nåede at gå dybere — er det stadig noget der fylder?"
-- Hvis ingen open_loops: slut med ét åbent spørgsmål der inviterer til hvad der fylder i dag
+- Brug ALTID "SENESTE SAMTALE" som udgangspunkt — referér konkret til det emne og den kontekst
+- Hvis der er uafklarede emner fra seneste samtale, brug ét af dem som naturligt afsæt
+- Slut med ét åbent spørgsmål om det stadig fylder
 - Varm og rolig tone — ikke klinisk, ikke overdrevet
 - Svar KUN med JSON: { "greeting": "...", "topic": "..." } hvor topic er det primære emne du refererer til`,
         },
