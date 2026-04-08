@@ -12,6 +12,7 @@ type FeedbackItem = { ts: string; conversation_id: string; revision?: number; ra
 type AnticipateDraft = { job_id: string; based_on_revision: number; anticipated_user_text: string; rhetorical_instruction: string; conversation_goal_hypothesis: string | null; created_at: number }
 type StateSummary = { conversation_id: string; fit?: "good" | "explore" | "unknown"; fit_reason?: string; arousal_level?: string; arousal_score?: number; problem_title?: string; topic_tags?: string[] }
 type ExportData = { from: string; to: string; total_conversations: number; total_turns: number; conversations: Conversation[]; handoffs?: Handoff[]; leads?: Lead[]; feedback?: FeedbackItem[] }
+type Hit = { ts: string; path: string; city: string; region: string; day: string }
 
 function formatDate(iso: string): string {
   try { return new Date(iso).toLocaleString("da-DK", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) }
@@ -67,9 +68,9 @@ export default function AdminPage() {
   const [data, setData] = useState<ExportData|null>(null)
   const [stateMap, setStateMap] = useState<Record<string,StateSummary>>({})
   const [statesLoading, setStatesLoading] = useState(false)
-  const [tab, setTab] = useState<"conversations"|"handoffs"|"leads"|"feedback"|"memory">("handoffs")
+  const [tab, setTab] = useState<"conversations"|"handoffs"|"leads"|"feedback"|"traffic"|"memory">("handoffs")
   const [openConvId, setOpenConvId] = useState<string|null>(null)
-  const [returnToTab, setReturnToTab] = useState<"conversations"|"handoffs"|"leads"|"feedback"|"memory">("conversations")
+  const [returnToTab, setReturnToTab] = useState<"conversations"|"handoffs"|"leads"|"feedback"|"traffic"|"memory">("conversations")
   const [anticipateDrafts, setAnticipateDrafts] = useState<AnticipateDraft[]>([])
   const [anticipateLoading, setAnticipateLoading] = useState(false)
   const [expandedAnticipate, setExpandedAnticipate] = useState<string|null>(null)
@@ -78,6 +79,9 @@ export default function AdminPage() {
   const [memoryError, setMemoryError] = useState<string|null>(null)
   const [expandedUser, setExpandedUser] = useState<string|null>(null)
   const [expandedThread, setExpandedThread] = useState<string|null>(null)
+  const [hits, setHits] = useState<Hit[]>([])
+  const [hitsLoading, setHitsLoading] = useState(false)
+  const [hitsError, setHitsError] = useState<string|null>(null)
 
   const fetchMemory = useCallback(async () => {
     if (!secret) return; setMemoryLoading(true); setMemoryError(null)
@@ -86,6 +90,15 @@ export default function AdminPage() {
       if (!res.ok) { const j = await res.json().catch(()=>({})); setMemoryError(j.error ?? `HTTP ${res.status}`); return }
       setMemoryData(await res.json())
     } catch (e:any) { setMemoryError(e.message ?? "Ukendt fejl") } finally { setMemoryLoading(false) }
+  }, [secret])
+
+  const fetchHits = useCallback(async () => {
+    if (!secret) return; setHitsLoading(true); setHitsError(null)
+    try {
+      const res = await fetch(`/api/admin/hits?secret=${encodeURIComponent(secret)}&days=30`)
+      if (!res.ok) { const j = await res.json().catch(()=>({})); setHitsError(j.error ?? `HTTP ${res.status}`); return }
+      const j = await res.json(); setHits(j.hits ?? [])
+    } catch (e:any) { setHitsError(e.message ?? "Ukendt fejl") } finally { setHitsLoading(false) }
   }, [secret])
 
   const fetchStates = useCallback(async (ids: string[]) => {
@@ -206,9 +219,10 @@ export default function AdminPage() {
               { id:"leads", label:`Leads (${leads.length})` },
               { id:"feedback", label:`Feedback (${feedbackItems.length})` },
               { id:"conversations", label:`Alle samtaler (${conversations.length})` },
+              { id:"traffic", label:"Trafik" },
               { id:"memory", label:"Hukommelse" },
             ] as const).map(t => (
-              <button key={t.id} onClick={()=>{ setTab(t.id); setOpenConvId(null); if(t.id==="memory"&&!memoryData&&!memoryLoading) fetchMemory() }}
+              <button key={t.id} onClick={()=>{ setTab(t.id); setOpenConvId(null); if(t.id==="memory"&&!memoryData&&!memoryLoading) fetchMemory(); if(t.id==="traffic"&&hits.length===0&&!hitsLoading) fetchHits() }}
                 style={{ padding:"8px 16px", borderRadius:"8px", fontSize:"14px", border:"none", cursor:"pointer", background:tab===t.id?"#627A52":"#fff", color:tab===t.id?"#fff":"#6B675F", fontWeight:tab===t.id?500:400, fontFamily:"inherit", boxShadow:"0 2px 10px rgba(0,0,0,0.05)" }}>
                 {t.label}
               </button>
@@ -400,6 +414,78 @@ export default function AdminPage() {
           )}
 
           {/* Memory */}
+          {tab==="traffic" && !openConvId && (() => {
+            // Aggregate hits
+            const byDay: Record<string, number> = {}
+            const byPath: Record<string, number> = {}
+            const byCity: Record<string, number> = {}
+            for (const h of hits) {
+              byDay[h.day] = (byDay[h.day] ?? 0) + 1
+              byPath[h.path] = (byPath[h.path] ?? 0) + 1
+              byCity[h.city] = (byCity[h.city] ?? 0) + 1
+            }
+            const days = Object.entries(byDay).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,30)
+            const paths = Object.entries(byPath).sort((a,b)=>b[1]-a[1])
+            const cities = Object.entries(byCity).sort((a,b)=>b[1]-a[1]).slice(0,10)
+            const maxDay = Math.max(...days.map(d=>d[1]), 1)
+            return (
+              <div>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"16px" }}>
+                  <div style={{ fontSize:"14px", color:"#6B675F" }}>Danske besøgende · seneste 30 dage · {hits.length} hits</div>
+                  <button onClick={fetchHits} disabled={hitsLoading} style={{ padding:"7px 16px", background:"#627A52", color:"#fff", border:"none", borderRadius:"8px", fontSize:"13px", cursor:hitsLoading?"not-allowed":"pointer", opacity:hitsLoading?0.7:1, fontFamily:"inherit" }}>{hitsLoading?"Henter…":"↻ Opdater"}</button>
+                </div>
+                {hitsError && <div style={{ background:"#FEF2F2", color:"#991B1B", padding:"12px 16px", borderRadius:"8px", marginBottom:"16px", fontSize:"14px" }}>{hitsError}</div>}
+                {hitsLoading && hits.length===0 && <div style={{ textAlign:"center", color:"#6B675F", fontSize:"14px", padding:"40px 0" }}>Henter trafik…</div>}
+                {!hitsLoading && hits.length===0 && !hitsError && <div style={{ textAlign:"center", color:"#6B675F", fontSize:"14px", padding:"40px 0" }}>Ingen hits endnu – data akkumuleres løbende</div>}
+                {hits.length > 0 && (
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px" }}>
+                    {/* Hits per day */}
+                    <div style={{ ...S.card, padding:"20px", gridColumn:"1/-1" }}>
+                      <div style={{ fontSize:"13px", fontWeight:500, color:"#6B675F", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Hits pr. dag</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
+                        {days.map(([day, count]) => (
+                          <div key={day} style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                            <div style={{ fontSize:"12px", color:"#6B675F", width:"80px", flexShrink:0 }}>{day.slice(5)}</div>
+                            <div style={{ flex:1, background:"#F9F8F5", borderRadius:"4px", height:"20px", overflow:"hidden" }}>
+                              <div style={{ height:"100%", background:"#627A52", borderRadius:"4px", width:`${(count/maxDay)*100}%`, transition:"width 0.3s" }} />
+                            </div>
+                            <div style={{ fontSize:"13px", fontWeight:500, color:"#2C2A28", width:"28px", textAlign:"right" }}>{count}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* By path */}
+                    <div style={{ ...S.card, padding:"20px" }}>
+                      <div style={{ fontSize:"13px", fontWeight:500, color:"#6B675F", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Side</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                        {paths.map(([path, count]) => (
+                          <div key={path} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                            <span style={{ fontSize:"13px", color:"#2C2A28", fontFamily:"monospace" }}>{path || "/"}</span>
+                            <span style={{ fontSize:"13px", fontWeight:500, color:"#627A52" }}>{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* By city */}
+                    <div style={{ ...S.card, padding:"20px" }}>
+                      <div style={{ fontSize:"13px", fontWeight:500, color:"#6B675F", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>By</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                        {cities.map(([city, count]) => (
+                          <div key={city} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                            <span style={{ fontSize:"13px", color:"#2C2A28" }}>{city}</span>
+                            <span style={{ fontSize:"13px", fontWeight:500, color:"#627A52" }}>{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
           {tab==="memory" && !openConvId && (
             <div>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"16px" }}>
