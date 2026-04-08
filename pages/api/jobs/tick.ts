@@ -25,7 +25,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const currentRevision = typeof currentState?.revision === "number" ? currentState.revision : 0
   // anticipate_turn drafts remain useful 1 revision later — contextPack handles this
   // via isFreshDraft (draftRevision >= currentRevision - 1). All other kinds cancel immediately.
-  const staleGrace = (job.kind === "anticipate_turn" || job.kind === "derive_thread_title") ? 1 : 0
+  const staleGrace = job.kind === "anticipate_turn" ? 1
+    : job.kind === "derive_thread_title" ? 2
+    : 0
   if (currentRevision > job.based_on_revision + staleGrace && job.status !== "completed") {
     const canceled = {
       ...job,
