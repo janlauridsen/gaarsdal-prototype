@@ -1,11 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import type { ConversationState } from "./types"
 import styles from "../Chatbot.module.css"
 
-/**
- * Læser en meta-værdi sikkert fra ConversationState.meta.
- */
 function readMeta(state: ConversationState, key: string): unknown {
   const entry = state.meta?.[key]
   if (entry && typeof entry === "object" && "value" in entry) {
@@ -14,14 +12,6 @@ function readMeta(state: ConversationState, key: string): unknown {
   return entry
 }
 
-/**
- * Bygger en kort, menneskelig opsummering af samtalen baseret på
- * hvad systemet allerede ved fra meta-laget.
- *
- * Dagbogslogik: formuleringen er bevidst holdt i første person og
- * fremadskuende — den skal føles som en afslutning i en dagbog,
- * ikke som en systembesked.
- */
 function buildClosingSummary(state: ConversationState): string | null {
   const topic = readMeta(state, "gen_hypno.last_topic")
   const problemSummary = readMeta(state, "gen_hypno.problem_summary")
@@ -33,7 +23,6 @@ function buildClosingSummary(state: ConversationState): string | null {
 
   const t = topic.trim()
 
-  // Brug problem_summary hvis tilgængeligt — det er mere specifikt
   if (typeof problemSummary === "string" && problemSummary.trim().length > 12) {
     return `Du var inde på ${t} i denne samtale. ${problemSummary.trim()}`
   }
@@ -56,19 +45,65 @@ export function SessionClose({ state, onClose, onContinue, trigger }: SessionClo
   const summary = buildClosingSummary(state)
   const isClosingMode = trigger === "closing_mode"
 
+  const [feedbackGiven, setFeedbackGiven] = useState<"positive" | "negative" | null>(null)
+
+  function submitFeedback(rating: "positive" | "negative") {
+    if (feedbackGiven) return
+    setFeedbackGiven(rating)
+    fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        conversationId: state.conversation_id,
+        rating,
+        tags: [],
+      }),
+    }).catch(() => {})
+  }
+
   return (
     <div className={styles.sessionCloseWrap} role="region" aria-label="Samtalens afslutning">
       <div className={styles.sessionCloseInner}>
-        {/* Lille prik der signalerer afsluttet session */}
         <div className={styles.sessionCloseDot} aria-hidden="true" />
 
         <p className={styles.sessionCloseTitle}>
-          {isClosingMode ? "Samtalen er ved at slutte" : "Stille et øjeblik…"}
+          {isClosingMode ? "Var samtalen nyttig?" : "Stille et øjeblik…"}
         </p>
 
         {summary && (
           <p className={styles.sessionCloseSummary}>{summary}</p>
         )}
+
+        {/* ── Feedback-række ─────────────────────────────────────── */}
+        <div className={styles.sessionCloseFeedbackRow}>
+          {feedbackGiven ? (
+            <span className={styles.sessionCloseFeedbackThanks}>Tak for din tilbagemelding.</span>
+          ) : (
+            <>
+              <span className={styles.sessionCloseFeedbackLabel}>Var samtalen nyttig?</span>
+              <button
+                type="button"
+                className={`${styles.sessionCloseFeedbackBtn} ${feedbackGiven === "positive" ? styles.sessionCloseFeedbackBtnActive : ""}`}
+                onClick={() => submitFeedback("positive")}
+                aria-label="Ja, nyttig"
+                title="Ja"
+              >
+                👍
+              </button>
+              <button
+                type="button"
+                className={`${styles.sessionCloseFeedbackBtn} ${feedbackGiven === "negative" ? styles.sessionCloseFeedbackBtnActive : ""}`}
+                onClick={() => submitFeedback("negative")}
+                aria-label="Nej, ikke nyttig"
+                title="Nej"
+              >
+                👎
+              </button>
+            </>
+          )}
+        </div>
+        {/* ──────────────────────────────────────────────────────── */}
 
         <div className={styles.sessionCloseActions}>
           <button
