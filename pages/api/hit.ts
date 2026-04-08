@@ -42,27 +42,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!path || typeof path !== "string") return res.status(400).end()
   if (EXCLUDED_PATHS.some(p => path.startsWith(p))) return res.status(204).end()
 
-  const lat = req.headers["x-vercel-ip-latitude"] as string | undefined
-  const lon = req.headers["x-vercel-ip-longitude"] as string | undefined
+  const clientIp = (req.headers["x-vercel-forwarded-for"] as string | undefined)?.split(",")[0]?.trim()
+    ?? (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim()
+    ?? ""
   const region = (req.headers["x-vercel-ip-country-region"] as string | undefined) ?? ""
 
-  // Reverse geocode koordinater til by via Nominatim
+  // By via IPInfo
   let city = "Ukendt"
-  if (lat && lon) {
+  const ipinfoToken = process.env.IPINFO_TOKEN
+  if (clientIp && ipinfoToken) {
     try {
-      const geoRes = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&addressdetails=1`,
-        { headers: { "User-Agent": "Gaarsdal/1.0 (jan@gaarsdal.net)" } }
-      )
-      if (geoRes.ok) {
-        const geoJson = await geoRes.json()
-        city = geoJson?.address?.city
-          ?? geoJson?.address?.town
-          ?? geoJson?.address?.municipality
-          ?? geoJson?.address?.county
-          ?? "Ukendt"
+      const ipRes = await fetch(`https://ipinfo.io/${clientIp}?token=${ipinfoToken}`)
+      if (ipRes.ok) {
+        const ipJson = await ipRes.json()
+        city = ipJson?.city ?? "Ukendt"
       }
-    } catch { /* non-fatal – city forbliver Ukendt */ }
+    } catch { /* non-fatal */ }
   }
   const day = new Date().toISOString().slice(0, 10)
 
