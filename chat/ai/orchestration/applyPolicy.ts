@@ -78,6 +78,43 @@ export function detectClosingText(text: string): boolean {
   return phrases.some((p) => t.includes(p))
 }
 
+/**
+ * Detekterer at brugeren signalerer meta-tilfredshed med samtalen —
+ * dvs. de har fået det de kom for og er ikke aktivt ude efter mere.
+ * Strengere end detectClosingText: bruges til at bypasse LLM-kaldet.
+ */
+export function detectSaturationSignal(text: string): boolean {
+  const t = text.trim().toLowerCase()
+  const exact = [
+    "ok", "okay", "fint", "godt", "det er fint", "det er ok", "det er okay",
+    "det er godt", "fint nok", "godt nok", "ok nok",
+    "jeg er ok", "jeg er tilfreds", "det er nok for mig",
+  ]
+  if (exact.includes(t)) return true
+  const phrases = [
+    "tilfreds med svar", "ok med svar", "tilfreds med det",
+    "jeg er tilfreds", "jeg er ok med",
+    "det er godt nok", "det er fint nok",
+    "jeg har fået svar", "jeg har det jeg skal bruge",
+    "det giver mening", "det forstår jeg", "det er nok",
+  ]
+  return phrases.some((p) => t.includes(p))
+}
+
+/**
+ * Detekterer om brugeren stiller et reelt nyt spørgsmål der skal
+ * nulstille saturation-tilstanden og genoptage normal dialog.
+ */
+export function isSubstantiveNewQuestion(text: string): boolean {
+  const t = text.trim().toLowerCase()
+  if (t.includes("?")) return true
+  const questionWords = ["hvad", "hvordan", "hvornår", "hvorfor", "hvem", "hvilken", "kan du", "er det", "vil du", "fortæl mig", "ved du"]
+  if (questionWords.some((w) => t.startsWith(w))) return true
+  // Lang besked uden saturation-signal = sandsynligvis nyt indhold
+  if (t.length > 30 && !detectSaturationSignal(text)) return true
+  return false
+}
+
 function detectDifficultyWithSelfImplication(text: string): boolean {
   const t = normalize(text)
   return [
