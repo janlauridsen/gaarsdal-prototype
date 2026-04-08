@@ -52,12 +52,6 @@ function buildSystemPrompt(params: {
 }): string {
   const blocks: string[] = []
 
-  // PRIMÆR SIGNAL — sættes først så det ikke overskrives af kontekst-blokke
-  blocks.push(`PRIMÆR SIGNAL:
-user_input er brugerens SENESTE besked og er det absolutte primære signal for intent, topic og objective.
-Lad aldrig transcript-historik eller det forrige emne overskrive det literale indhold af user_input.
-Eksempel: hvis user_input handler om pris, skal objective og mode afspejle det — uanset hvad de foregående tur handlede om.`)
-
   // ROLLE
   blocks.push(`Du er en varm, jordnær samtalepartner fra Gaarsdal Hypnoterapi i Birkerød. Jan Gaarsdal er hypnoterapeut og tilbyder individuelle forløb.
 
@@ -233,7 +227,7 @@ Eksempler → "contact_booking" (eksplicit handling):
 - "kan jeg komme til en samtale"
 - "jeg er klar til at starte"
 
-Eksempler → "none" (spørgsmål, nysgerrighed, afklaring — IKKE en anmodning om kontakt):
+Eksempler → "none" (spørgsmål, nysgerrighed, afklaring, mål — IKKE en anmodning om kontakt):
 - "kan jeg kontakte Jan her?" (spørgsmål om mulighed, ikke en kontaktanmodning)
 - "hvad koster det?"
 - "hvad sker der under hypnose?"
@@ -241,6 +235,10 @@ Eksempler → "none" (spørgsmål, nysgerrighed, afklaring — IKKE en anmodning
 - "hvordan kontakter man jer?"
 - "hvor er klinikken?"
 - "har I ledige tider?"
+- "jeg vil gerne stoppe med at ryge" (mål/ønske om forandring — ikke en booking)
+- "jeg vil gerne lave et rygestop" (mål/ønske — ikke en booking)
+- "jeg har angst" (beskrivelse af problem — ikke en booking)
+- "jeg sover dårligt" (beskrivelse af problem — ikke en booking)
 
 Tommelfingerregel: hvis du er i tvivl, sæt "none". Brugeren skal tydeligt ville GØRE noget, ikke bare SPØRGE om noget.`)
 
