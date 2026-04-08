@@ -12,7 +12,7 @@ type FeedbackItem = { ts: string; conversation_id: string; revision?: number; ra
 type AnticipateDraft = { job_id: string; based_on_revision: number; anticipated_user_text: string; rhetorical_instruction: string; conversation_goal_hypothesis: string | null; created_at: number }
 type StateSummary = { conversation_id: string; fit?: "good" | "explore" | "unknown"; fit_reason?: string; arousal_level?: string; arousal_score?: number; problem_title?: string; topic_tags?: string[] }
 type ExportData = { from: string; to: string; total_conversations: number; total_turns: number; conversations: Conversation[]; handoffs?: Handoff[]; leads?: Lead[]; feedback?: FeedbackItem[] }
-type Hit = { ts: string; path: string; city: string; region: string; day: string }
+type Hit = { ts: string; path: string; city: string; postal?: string; region: string; day: string }
 
 function formatDate(iso: string): string {
   try { return new Date(iso).toLocaleString("da-DK", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) }
@@ -422,7 +422,8 @@ export default function AdminPage() {
             for (const h of hits) {
               byDay[h.day] = (byDay[h.day] ?? 0) + 1
               byPath[h.path] = (byPath[h.path] ?? 0) + 1
-              byCity[h.city] = (byCity[h.city] ?? 0) + 1
+              const cityKey = h.postal ? `${h.city} (${h.postal})` : h.city
+              byCity[cityKey] = (byCity[cityKey] ?? 0) + 1
             }
             const days = Object.entries(byDay).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,30)
             const paths = Object.entries(byPath).sort((a,b)=>b[1]-a[1])
