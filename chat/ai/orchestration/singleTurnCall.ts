@@ -139,9 +139,10 @@ synthesis: samler trådene — reducér kompleksitet
 close: afslutter`)
 
   // FORMAT
-  const questionRule = params.assistantCount >= 1
-    ? "Max ét spørgsmål — skal skærpe fokus, ikke holde samtalen i gang. Spørgsmål er ikke standardafslutning."
-    : "Ét åbent spørgsmål der skærper brugerens opmærksomhed."
+  // FORMAT - ét spørgsmål regel
+  const questionRule = params.assistantCount >= 0
+    ? "Max ét spørgsmål per svar — uanset turn-nummer. Dette gælder også første svar."
+    : "Max ét spørgsmål per svar — uanset turn-nummer. Dette gælder også første svar."
 
   blocks.push(`FORMAT:
 ${questionRule}
@@ -258,7 +259,7 @@ Tommelfingerregel: hvis du er i tvivl, sæt "none". Brugeren skal tydeligt ville
 Regler for indhold:
 - acknowledgement: 0-1 korte sætninger, landing uden varmefraser. null hvis unødvendig.
 - core_answer: selve svaret — ALDRIG tomt — konkret om brugerens situation frem for generel metode
-- next_step: neutral afrunding eller null. Nævn IKKE kontaktinfo eller booking medmindre brugeren eksplicit spørger om det.
+- next_step: neutral afrunding eller null. Nævn ALDRIG kontaktinfo, Jans navn, pris eller booking som afslutning — medmindre brugeren i DENNE tur eksplicit har spurgt om kontakt, pris, adresse eller booking. Progression mod kontakt må kun ske på brugerinitiativ.
 - topic: emnet brugeren taler om (fx "søvnproblemer", "neglebidning") — null hvis uklart
 - signals: 2-4 korte signaler der forklarer dit valg`)
 
