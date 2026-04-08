@@ -309,7 +309,8 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  // ─── Window of Tolerance (kører FØR LLM-kald så arousal sendes med) ─────────  const previousArousalScore =
+  // ─── Window of Tolerance (kører FØR LLM-kald så arousal sendes med) ─────────
+  const previousArousalScore =
     typeof (context.state.meta?.["wot.arousal_score"] as any)?.value === "number"
       ? (context.state.meta["wot.arousal_score"] as any).value as number
       : 0
