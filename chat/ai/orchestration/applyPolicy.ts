@@ -110,8 +110,7 @@ export function isSubstantiveNewQuestion(text: string): boolean {
   if (t.includes("?")) return true
   const questionWords = ["hvad", "hvordan", "hvornår", "hvorfor", "hvem", "hvilken", "kan du", "er det", "vil du", "fortæl mig", "ved du"]
   if (questionWords.some((w) => t.startsWith(w))) return true
-  // Lang besked uden saturation-signal = sandsynligvis nyt indhold
-  if (t.length > 30 && !detectSaturationSignal(text)) return true
+  // Lang besked uden saturation-signal er IKKE tilstrækkeligt — kræver eksplicit spørgsmålsord eller ?
   return false
 }
 
