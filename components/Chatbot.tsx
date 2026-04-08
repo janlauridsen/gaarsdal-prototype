@@ -1227,9 +1227,13 @@ export default function Chatbot() {
                         initialValues={state?.active_node === "HANDOFF_FORM" ? {
                           emne: (state.meta["gen_hypno.problem_title"] as any)?.value as string ?? (state.meta["gen_hypno.topic_tags"] as any)?.value?.[0] ?? "",
                         } : undefined}
-                        summary={state?.active_node === "HANDOFF_FORM" ? (
-                          (state.meta["gen_hypno.problem_summary"] as any)?.value as string || undefined
-                        ) : undefined}
+                        summary={state?.active_node === "HANDOFF_FORM" ? (() => {
+                          const s = (state.meta["gen_hypno.problem_summary"] as any)?.value as string | undefined
+                          if (!s || s.length < 40) return undefined
+                          const skip = ["booking", "bestil", "tid", "kontakt", "jan"]
+                          if (skip.some(w => s.toLowerCase().includes(w))) return undefined
+                          return s
+                        })() : undefined}
                         onSend={(text) => {
                           dispatch({ type: "FREE_TEXT", text })
                         }}
@@ -1301,9 +1305,13 @@ export default function Chatbot() {
                   initialValues={state?.active_node === "HANDOFF_FORM" ? {
                     emne: (state.meta["gen_hypno.problem_title"] as any)?.value as string ?? (state.meta["gen_hypno.topic_tags"] as any)?.value?.[0] ?? "",
                   } : undefined}
-                  summary={state?.active_node === "HANDOFF_FORM" ? (
-                    (state.meta["gen_hypno.problem_summary"] as any)?.value as string || undefined
-                  ) : undefined}
+                  summary={state?.active_node === "HANDOFF_FORM" ? (() => {
+                    const s = (state.meta["gen_hypno.problem_summary"] as any)?.value as string | undefined
+                    if (!s || s.length < 40) return undefined
+                    const skip = ["booking", "bestil", "tid", "kontakt", "jan"]
+                    if (skip.some(w => s.toLowerCase().includes(w))) return undefined
+                    return s
+                  })() : undefined}
                   onSend={(text) => {
                     dispatch({ type: "FREE_TEXT", text })
                   }}
