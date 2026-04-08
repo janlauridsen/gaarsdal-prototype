@@ -14,7 +14,7 @@ import type { ThreadIndex } from "../persistence/threadIndexStore"
 import { appendConversationEventV1 } from "../events/store"
 import { getOrCreateThreadThemeAndEpisode } from "../memory/longTermMemoryStore"
 import { readUserProfile } from "../memory/store"
-import { readFacts } from "../memory/longTermMemoryStore"
+import { readFacts, readEpisode } from "../memory/longTermMemoryStore"
 import { createOpenAiCompatibleClient } from "../ai/provider"
 import { newUuid } from "../utils/ids"
 import { isLobbyConversation, toLobbyConversationId, withThreadMeta } from "../utils/conversation"
@@ -142,10 +142,22 @@ async function buildAiGreeting(params: {
       .slice(0, 8)
       .map((f) => `- ${f.key}: ${typeof f.value === "string" ? f.value.slice(0, 120) : JSON.stringify(f.value).slice(0, 120)}`)
 
+    // Hent open_loops fra seneste tråd
+    let openLoopLines: string[] = []
+    if (previousThreads.length > 0) {
+      try {
+        const episodeId = `episode:thread:${previousThreads[0].conversation_id}:1`
+        const latestEpisode = await readEpisode({ userKey: params.userKey, episodeId })
+        if (Array.isArray(latestEpisode?.open_loops) && latestEpisode.open_loops.length > 0) {
+          openLoopLines = latestEpisode.open_loops.slice(0, 3).map((l: string) => `- ${l}`)
+        }
+      } catch { /* ingen episode endnu */ }
+    }
+
     const contextBlock = [
       topTopics.length ? `Brugerens primære emner: ${topTopics.join(", ")}` : null,
-      recentThreads.length ? `Seneste samtaler:
-${recentThreads.join("\n")}` : null,
+      recentThreads.length ? `Seneste samtaler:\n${recentThreads.join("\n")}` : null,
+      openLoopLines.length ? `Uafklarede emner fra sidst:\n${openLoopLines.join("\n")}` : null,
       factLines.length ? `Kendte facts om brugeren:\n${factLines.join("\n")}` : null,
     ]
       .filter(Boolean)
@@ -164,7 +176,8 @@ ${recentThreads.join("\n")}` : null,
 Regler:
 - Maks 2 sætninger
 - Vis at du husker hvad brugeren tidligere har delt — nævn konkret et emne eller mønster fra historikken
-- Slut med ét åbent spørgsmål der inviterer til hvad der fylder i dag — spørgsmålet må gerne åbne for at det kan være noget nyt, fx "Er der noget fra sidst du vil vende tilbage til, eller er der noget nyt på hjerte?"
+- Hvis der er uafklarede emner fra sidst (open_loops), brug ét af dem som naturligt afsæt — fx "Sidst nævnte du X uden at vi nåede at gå dybere — er det stadig noget der fylder?"
+- Hvis ingen open_loops: slut med ét åbent spørgsmål der inviterer til hvad der fylder i dag
 - Varm og rolig tone — ikke klinisk, ikke overdrevet
 - Svar KUN med JSON: { "greeting": "...", "topic": "..." } hvor topic er det primære emne du refererer til`,
         },
