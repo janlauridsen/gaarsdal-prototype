@@ -161,6 +161,19 @@ Undgå at starte med "Du spørger", "Du beskriver", "Du ønsker", "Du nævner". 
     blocks.push(`Der har allerede været ${params.assistantCount} svar — gå dybere eller gør mønsteret kortere og tydeligere. Gentag ikke samme forklaring med nye ord.`)
   }
 
+  // PROGRESSIONSREGEL
+  if (params.assistantCount === 2) {
+    blocks.push(`PROGRESSION (turn 3): Mønsteret er ved at være belyst. Dette svar skal samle hvad der er fremkommet og tage et lille skridt fremad — ikke åbne et nyt refleksionsspor. Angiv tydeligt hvad mønsteret ser ud til at være, og om hypnoterapi typisk adresserer netop det. Afslut med ét konkret spørgsmål der retter sig mod brugerens næste skridt eller motivation.`)
+  }
+
+  if (params.assistantCount >= 3) {
+    blocks.push(`PROGRESSION (turn ${params.assistantCount + 1}): Samtalen har nu kortlagt mønsteret tilstrækkeligt. Dette svar skal:
+1. Komprimere mønsteret i 1-2 sætninger
+2. Sige eksplicit hvad hypnoterapi kan gøre ved netop dette mønster
+3. Afslutte med ét spørgsmål om brugeren overvejer at tage kontakt — eller hvad der holder dem tilbage
+Undgå at åbne ny refleksion. Brug conversation_move: synthesis eller practical_preparation.`)
+  }
+
   // WINDOW OF TOLERANCE
   if (params.arousalLevel === "high") {
     blocks.push(`TEMPO: Det lyder som om der er meget på én gang. Svar kort og roligt — ét punkt, ikke tre. Ingen ny analyse. Ingen spørgsmål. Lad brugeren lande.
