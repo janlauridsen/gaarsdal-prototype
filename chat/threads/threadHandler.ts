@@ -16,7 +16,7 @@ import { getOrCreateThreadThemeAndEpisode } from "../memory/longTermMemoryStore"
 import { readUserProfile } from "../memory/store"
 import { readFacts, readEpisode } from "../memory/longTermMemoryStore"
 import { createOpenAiCompatibleClient } from "../ai/provider"
-import { newUuid } from "../utils/ids"
+import { getRedisClient } from "../persistence/redis"
 import { isLobbyConversation, toLobbyConversationId, withThreadMeta } from "../utils/conversation"
 import { SESSION_TTL_SECONDS, PROFILE_TTL_SECONDS, MEMORY_TTL_SECONDS } from "../utils/ttl"
 import { nowMs } from "../utils/time"
@@ -403,6 +403,22 @@ export async function handleThreadArchive(params: {
 
   const index1 = archiveThread({ index: index0, conversationId: activeId })
   await writeThreadIndex({ userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
+
+  // Slet samtaledata fra Redis — arkivering = sletning
+  const redis = getRedisClient()
+  if (redis) {
+    const keysToDelete = [
+      `gaarsdal:state:${activeId}`,
+      `gaarsdal:raw:conversation:${activeId}`,
+      `gaarsdal:events:v1:conv:${activeId}`,
+      `gaarsdal:conv:last_turn_at:${activeId}`,
+      `gaarsdal:jobs:v1:pending:conversation:${activeId}`,
+      `gaarsdal:jobs:v1:runnerlock:conversation:${activeId}`,
+      `gaarsdal:anticipate:draft:latest:conversation:${activeId}`,
+      `gaarsdal:jobs:v1:draft:latest:conversation:${activeId}`,
+    ]
+    await Promise.all(keysToDelete.map((k) => redis.del(k)))
+  }
 
   // Kun nulstil til lobby hvis den arkiverede tråd var den aktive
   const wasActive = index0.active_conversation_id === activeId
