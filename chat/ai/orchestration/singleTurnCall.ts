@@ -23,6 +23,7 @@ type TranscriptTurn = { role: "user" | "assistant"; content: string }
 
 export type SingleTurnOutput = {
   is_history_query: boolean
+  routing_intent: "contact_booking" | "none"
   mode_used: PromptMode
   conversation_move: ConversationMove
   investigation_focus: InvestigationFocus
@@ -48,6 +49,7 @@ function buildSystemPrompt(params: {
   previousMode?: PromptMode
   previousRelationalState?: RelationalState
   policySignals?: { is_practical_request: boolean; is_closing: boolean }
+  goalHypothesis?: string | null
 }): string {
   const blocks: string[] = []
 
@@ -109,8 +111,8 @@ Spørgsmålstyper — variér mellem disse, brug ikke kun introspektive spørgsm
   // HISTORY QUERY
   blocks.push(`is_history_query: sæt true hvis brugeren spørger hvad du ved om dem / hvad I har talt om / hvad du husker. Ellers false.`)
 
-  // MODE
-  blocks.push(`MODE:
+  // MODE — vælges kun ved routing_intent === "none"
+  blocks.push(`MODE (bruges kun når routing_intent er "none"):
 
 info: direkte faktuel besvarelse. Start med kernepunktet, uddyb i 2-3 afsnit.
 reflection: flyt opmærksomheden til brugerens eget mønster. Ét præcist observationsfokus. Undgå brede lister.
@@ -150,13 +152,6 @@ Brug 'det lyder som' / 'det kan hænge sammen med' frem for kliniske termer.
 Undgå fagtermer som 'reguleringsstrategier', 'metakognition', 'opmærksomhedsmønstre' — omformuler til hverdagssprog.
 Hvis svaret passer til mange samtaler, er det for generisk.
 
-SVARKORTERINGSPRINCIP:
-Svaret skal være kortere end du instinktivt tror. Formålet er at holde brugeren i refleksion — ikke at fylde dem med information.
-- Max 2 korte afsnit i alt
-- Anerkendelse er valgfri og må max fylde én sætning — udelad den hvis den er tom høflighed
-- Forklaring bruges kun hvis den direkte åbner brugerens forståelse af sig selv
-- Spørgsmålet er det vigtigste element — det må gerne stå alene til sidst uden begrundelse
-
 Felterne core_answer og next_step sammensættes til assistant_message: acknowledgement → core_answer → next_step.`)
 
   // VARIATION
@@ -168,17 +163,21 @@ Undgå at starte med "Du spørger", "Du beskriver", "Du ønsker", "Du nævner". 
     blocks.push(`Der har allerede været ${params.assistantCount} svar — gå dybere eller gør mønsteret kortere og tydeligere. Gentag ikke samme forklaring med nye ord.`)
   }
 
-  // PROGRESSIONSREGEL
-  if (params.assistantCount === 2) {
-    blocks.push(`PROGRESSION (turn 3): Mønsteret er ved at være belyst. Dette svar skal samle hvad der er fremkommet og tage et lille skridt fremad — ikke åbne et nyt refleksionsspor. Angiv tydeligt hvad mønsteret ser ud til at være, og om hypnoterapi typisk adresserer netop det. Afslut med ét konkret spørgsmål der retter sig mod brugerens næste skridt eller motivation.`)
-  }
-
-  if (params.assistantCount >= 3) {
-    blocks.push(`PROGRESSION (turn ${params.assistantCount + 1}): Samtalen har nu kortlagt mønsteret tilstrækkeligt. Dette svar skal:
-1. Komprimere mønsteret i 1-2 sætninger
-2. Sige eksplicit hvad hypnoterapi kan gøre ved netop dette mønster
-3. Afslutte med ét spørgsmål om brugeren overvejer at tage kontakt — eller hvad der holder dem tilbage
-Undgå at åbne ny refleksion. Brug conversation_move: synthesis eller practical_preparation.`)
+  // ARC-SIGNAL: indholds-baseret, ikke turn-nummer-baseret
+  if (params.goalHypothesis) {
+    blocks.push(
+      `ARC-STATUS (baseret på samtalens forløb):\n` +
+      `Observeringslaget vurderer at brugerens mål er: "${params.goalHypothesis}"\n\n` +
+      `Vurder selv — baseret på brugerens seneste besked — om de er klar til at bevæge sig fra refleksion mod handling:\n` +
+      `- Hvis brugeren stadig udforsker eller er usikker: fortsæt reflection-sporet\n` +
+      `- Hvis brugeren signalerer forståelse, accept eller nysgerrighed på næste skridt: skift til synthesis eller practical_preparation\n` +
+      `- Afslut aldrig med ny refleksion hvis brugeren viser readiness-signaler (fx "hvad gør jeg så", "lyder godt", "det giver mening")\n\n` +
+      `Du behøver ikke vente på et bestemt turn-nummer. Brug brugerens faktiske signal.`
+    )
+  } else if (params.assistantCount === 2) {
+    blocks.push(`PROGRESSION (turn 3): Mønsteret er ved at være belyst. Saml hvad der er fremkommet og tag et lille skridt fremad. Angiv hvad mønsteret ser ud til at være, og om hypnoterapi typisk adresserer netop det. Afslut med ét konkret spørgsmål mod brugerens næste skridt eller motivation.`)
+  } else if (params.assistantCount >= 3) {
+    blocks.push(`PROGRESSION (turn ${params.assistantCount + 1}): Samtalen har kortlagt mønsteret tilstrækkeligt. Komprimér mønsteret i 1-2 sætninger, sig hvad hypnoterapi kan gøre ved det, og afslut med ét spørgsmål om brugeren overvejer at tage kontakt. Brug conversation_move: synthesis eller practical_preparation.`)
   }
 
   // WINDOW OF TOLERANCE
@@ -221,10 +220,34 @@ Vurder om du skal fortsætte same spor, skifte gear eller afrunde — afhængigt
     blocks.push(`POLICY: Brugerens besked indeholder praktiske nøgleord (kontaktinfo, pris, booking, adresse e.l.) — sæt mode_used til "practical" medmindre brugerens besked i øvrigt er klart refleksiv eller følelsesladet.`)
   }
 
+  // ROUTING
+  blocks.push(`ROUTING:
+routing_intent sættes KUN til "contact_booking" når brugeren EKSPLICIT og UTVETYDIGT ønsker at blive kontaktet eller booke — dvs. at de tager et konkret skridt mod kontakt NU.
+Ellers: "none".
+
+Eksempler → "contact_booking" (eksplicit handling):
+- "jeg vil gerne booke en tid"
+- "hvornår kan jeg komme til dig"
+- "vil gerne have Jan til at ringe til mig"
+- "kan jeg komme til en samtale"
+- "jeg er klar til at starte"
+
+Eksempler → "none" (spørgsmål, nysgerrighed, afklaring — IKKE en anmodning om kontakt):
+- "kan jeg kontakte Jan her?" (spørgsmål om mulighed, ikke en kontaktanmodning)
+- "hvad koster det?"
+- "hvad sker der under hypnose?"
+- "jeg overvejer det"
+- "hvordan kontakter man jer?"
+- "hvor er klinikken?"
+- "har I ledige tider?"
+
+Tommelfingerregel: hvis du er i tvivl, sæt "none". Brugeren skal tydeligt ville GØRE noget, ikke bare SPØRGE om noget.`)
+
   // JSON-KONTRAKT
   blocks.push(`Returner KUN gyldig JSON — ingen tekst uden for JSON:
 {
   "is_history_query": boolean,
+  "routing_intent": "contact_booking" | "none",
   "mode_used": "info" | "evidence" | "practical" | "reflection" | "closing",
   "conversation_move": "direct_answer" | "guided_observation" | "pattern_detection" | "metacognitive_probe" | "mild_challenge" | "practical_preparation" | "synthesis" | "close",
   "investigation_focus": "attention" | "interpretation" | "regulation" | "pattern" | "preparation" | "none",
@@ -274,6 +297,7 @@ function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTop
     ? (raw.relational_state as RelationalState)
     : "building_clarity"
 
+  const routing_intent = raw.routing_intent === "contact_booking" ? "contact_booking" : "none"
 
   const topic = typeof raw.topic === "string" && raw.topic.trim() ? raw.topic.trim() : lastTopic
   const objective = typeof raw.objective === "string" && raw.objective.trim() ? raw.objective.trim() : undefined
@@ -307,6 +331,7 @@ function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTop
 
   return {
     is_history_query,
+    routing_intent,
     mode_used,
     conversation_move,
     investigation_focus,
@@ -330,7 +355,7 @@ export function buildSingleTurnFallback(userText: string, lastTopic?: string): S
 
   if (isClosing) {
     return {
-      is_history_query: false, mode_used: "closing",
+      is_history_query: false, routing_intent: "none", mode_used: "closing",
       conversation_move: "close", investigation_focus: "none", relational_state: "gentle_close",
       topic: lastTopic, objective: undefined, acknowledgement: null,
       core_answer: "Selv tak.", next_step: null, signals: ["closing_fallback"],
@@ -339,7 +364,7 @@ export function buildSingleTurnFallback(userText: string, lastTopic?: string): S
   }
 
   return {
-    is_history_query: false, mode_used: "info",
+    is_history_query: false, routing_intent: "none", mode_used: "info",
     conversation_move: "direct_answer", investigation_focus: "none", relational_state: "orienting",
     topic: lastTopic, objective: undefined, acknowledgement: null,
     core_answer: "Jeg kan godt hjælpe med det. Fortæl gerne mere om hvad der er på hjerte.",
@@ -362,6 +387,7 @@ export async function singleTurnCall(params: {
   previousMode?: PromptMode
   previousRelationalState?: RelationalState
   policySignals?: { is_practical_request: boolean; is_closing: boolean }
+  goalHypothesis?: string | null
 }): Promise<SingleTurnOutput | null> {
   const lastAssistantExcerpt = [...params.transcript]
     .reverse()
@@ -376,6 +402,7 @@ export async function singleTurnCall(params: {
     previousMode: params.previousMode,
     previousRelationalState: params.previousRelationalState,
     policySignals: params.policySignals,
+    goalHypothesis: params.goalHypothesis,
   })
 
   // C: Dynamisk temperatur — reflection er mere kreativ, evidence/info mere præcis
