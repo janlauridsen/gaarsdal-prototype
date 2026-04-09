@@ -22,6 +22,7 @@ export type AiCapabilityContext = {
   contextPack?: {
     system: string
     user_profile?: string
+    goal_hypothesis?: string | null
   }
 }
 
