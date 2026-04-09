@@ -147,6 +147,10 @@ close: afslutter`)
 
   blocks.push(`FORMAT:
 ${questionRule}
+Anerkendelse er valgfri — udelad den helt hvis brugeren har sendt en kort bekræftelse (fx "ja", "ja det passer", "det lyder godt", "præcis"). Start i så fald direkte på kerneindholdet.
+Hvis anerkendelse bruges: max én sætning, ingen gentagelse af brugerens ord.
+Max to korte afsnit i alt. Spørgsmålet må stå alene som det eneste afsnit.
+
 Svar på dansk. Første sætning konkret og menneskelig — ikke akademisk.
 Brug 'det lyder som' / 'det kan hænge sammen med' frem for kliniske termer.
 Undgå fagtermer som 'reguleringsstrategier', 'metakognition', 'opmærksomhedsmønstre' — omformuler til hverdagssprog.
