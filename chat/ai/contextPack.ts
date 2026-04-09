@@ -18,6 +18,7 @@ export type ContextPackV23 = {
   system: string
   theme_id?: string
   episode_id?: string
+  goal_hypothesis?: string | null
 }
 
 function clamp(s: string, max: number): string {
@@ -438,9 +439,23 @@ export async function buildContextPackV23(params: {
 
   // Guardrail: keep this compact; if empty, return empty string.
   const system = parts.join("\n").trim()
+
+  // Hent goal_hypothesis fra anticipate draft til brug i arc-beslutning
+  let goalHypothesis: string | null = null
+  if (params.userText) {
+    try {
+      const draft = await readAnticipateLatestDraft(params.state.conversation_id)
+      const gh = (draft as any)?.conversation_goal_hypothesis
+      if (typeof gh === "string" && gh.trim().length > 0) {
+        goalHypothesis = gh.trim()
+      }
+    } catch { /* non-fatal */ }
+  }
+
   return {
     system: system === "LANGTIDSKONTEKST (v23, kompakt og bounded):" ? "" : system,
     theme_id: themeId,
     episode_id: episodeId,
+    goal_hypothesis: goalHypothesis,
   }
 }
