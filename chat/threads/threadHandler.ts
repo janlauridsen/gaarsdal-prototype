@@ -16,7 +16,6 @@ import { getOrCreateThreadThemeAndEpisode } from "../memory/longTermMemoryStore"
 import { readUserProfile } from "../memory/store"
 import { readFacts, readEpisode } from "../memory/longTermMemoryStore"
 import { createOpenAiCompatibleClient } from "../ai/provider"
-import { getRedisClient } from "../persistence/redis"
 import { newUuid } from "../utils/ids"
 import { isLobbyConversation, toLobbyConversationId, withThreadMeta } from "../utils/conversation"
 import { SESSION_TTL_SECONDS, PROFILE_TTL_SECONDS, MEMORY_TTL_SECONDS } from "../utils/ttl"
@@ -193,11 +192,11 @@ async function buildAiGreeting(params: {
 
 Regler:
 - Maks 2 sætninger
-- Brug ALTID "SENESTE SAMTALE" som udgangspunkt — referér konkret til det emne og den kontekst
-- Hvis der er uafklarede emner fra seneste samtale, brug ét af dem som naturligt afsæt
-- Slut med ét åbent spørgsmål om det stadig fylder
+- Anerkend at brugeren er tilbage — referér kort til seneste emne HVIS det giver mening, men tving det ikke
+- Slut med ét åbent spørgsmål der lader brugeren sætte dagsordenen — fx "Hvad har du på hjerte i dag?" eller "Hvad vil du tale om nu?"
+- Antag IKKE hvad brugeren vil tale om — de åbner selv en ny tråd og kan have et helt andet emne
 - Varm og rolig tone — ikke klinisk, ikke overdrevet
-- Svar KUN med JSON: { "greeting": "...", "topic": "..." } hvor topic er det primære emne du refererer til`,
+- Svar KUN med JSON: { "greeting": "...", "topic": "..." } hvor topic er det primære emne fra seneste samtale`,
         },
         {
           role: "user",
@@ -404,22 +403,6 @@ export async function handleThreadArchive(params: {
 
   const index1 = archiveThread({ index: index0, conversationId: activeId })
   await writeThreadIndex({ userKey, index: index1, ttlSeconds: PROFILE_TTL_SECONDS })
-
-  // Slet samtaledata fra Redis — arkivering = sletning
-  const redis = getRedisClient()
-  if (redis) {
-    const keysToDelete = [
-      `gaarsdal:state:${activeId}`,
-      `gaarsdal:raw:conversation:${activeId}`,
-      `gaarsdal:events:v1:conv:${activeId}`,
-      `gaarsdal:conv:last_turn_at:${activeId}`,
-      `gaarsdal:jobs:v1:pending:conversation:${activeId}`,
-      `gaarsdal:jobs:v1:runnerlock:conversation:${activeId}`,
-      `gaarsdal:anticipate:draft:latest:conversation:${activeId}`,
-      `gaarsdal:jobs:v1:draft:latest:conversation:${activeId}`,
-    ]
-    await Promise.all(keysToDelete.map((k) => redis.del(k)))
-  }
 
   // Kun nulstil til lobby hvis den arkiverede tråd var den aktive
   const wasActive = index0.active_conversation_id === activeId
