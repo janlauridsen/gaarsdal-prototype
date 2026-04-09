@@ -125,7 +125,7 @@ function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMo
     investigation_focus: forcedMode === "reflection" ? "attention" : forcedMode === "practical" ? "preparation" : "none",
     response_goal: forcedMode ? "answer_then_one_question" : "answer_directly",
     relational_state: forcedMode === "reflection" ? "building_trust" : forcedMode === "practical" ? "decision_support" : "orienting",
-    is_history_query: false, topic: previousTopic, sensitivity: "low",
+    is_history_query: false, routing_intent: "none", topic: previousTopic, sensitivity: "low",
     signals: ["fallback"], confidence: 0.3,
   }
 }
