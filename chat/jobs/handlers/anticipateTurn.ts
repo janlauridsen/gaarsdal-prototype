@@ -4,7 +4,7 @@
 // og producerer en retorisk instruktion til GEN_HYPNO om hvordan nuværende svar
 // kan formuleres for at lede mod det mest frugtbare samtalespor.
 //
-// Fra turn 3+: tilføjes en conversation_goal_hypothesis — en hypotese om hvor
+// Fra turn 2+: tilføjes en conversation_goal_hypothesis — en hypotese om hvor
 // samtalen naturligt ender (hvad har brugeren fået afklaret/besluttet?).
 // Den bruges som nordstjerne for den retoriske instruktion.
 //
@@ -51,7 +51,7 @@ async function llmSimulateAndInstruct(params: {
   const llm = createOpenAiCompatibleClient()
   const model = process.env.HYPNO_MODEL ?? "gpt-4.1-mini"
 
-  const withGoal = params.trigger_turn >= 3
+  const withGoal = params.trigger_turn >= 2
 
   const goalSection = withGoal
     ? "\nMÅL-HYPOTESE — Inden du formulerer den retoriske instruktion:\n" +
