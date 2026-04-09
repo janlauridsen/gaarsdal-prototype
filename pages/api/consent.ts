@@ -37,15 +37,27 @@ export default async function handler(
       })
     }
 
+    const newRetention = retentionDays as ConsentRetentionDays
+
+    // ── Retention-nedgradering: slet eksisterende data ───────────────────────
+    // Hvis brugeren reducerer retention (f.eks. 90 → 0 eller 90 → 30),
+    // skal eksisterende data slettes — ellers forbliver de i Redis med den gamle TTL.
+    const existing = await readConsent(userKey)
+    const oldRetention = existing?.retentionDays ?? 0
+    const isDowngrade = existing?.allowed && newRetention < oldRetention
+    if (isDowngrade) {
+      await deleteAllUserData(userKey)
+    }
+
     const record: ConsentRecord = {
       version: 1,
-      allowed: (retentionDays as number) > 0,
-      retentionDays: retentionDays as ConsentRetentionDays,
+      allowed: newRetention > 0,
+      retentionDays: newRetention,
       consentedAt: new Date().toISOString(),
     }
 
     await writeConsent(userKey, record)
-    return res.status(200).json({ ok: true, consent: record })
+    return res.status(200).json({ ok: true, consent: record, purged: isDowngrade })
   }
 
   // ── DELETE: slet alle brugerdata ─────────────────────────────────────────────
