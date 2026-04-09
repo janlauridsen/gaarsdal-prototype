@@ -234,6 +234,7 @@ export async function runNode(params: NodeRunParams): Promise<KernelResult> {
       contextPack: {
         system: contextPack.system,
         user_profile: buildUserProfilePromptContext(profile),
+        goal_hypothesis: contextPack.goal_hypothesis,
       },
     })
 
