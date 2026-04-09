@@ -9,6 +9,7 @@ type Props = {
   /** Hvis true: brugeren har allerede samtykket — vis "administrer data"-tilstand */
   manageMode?: boolean
   currentRetentionDays?: ConsentRetentionDays | null
+  onClose?: () => void
 }
 
 type Screen = "main" | "custom" | "delete_confirm"
@@ -19,6 +20,7 @@ export default function ConsentBanner({
   loading,
   manageMode = false,
   currentRetentionDays,
+  onClose,
 }: Props) {
   const [screen, setScreen] = useState<Screen>("main")
 
@@ -91,7 +93,17 @@ export default function ConsentBanner({
   if (manageMode) {
     return (
       <div style={styles.banner}>
-        <p style={styles.title}>Dine data</p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <p style={{ ...styles.title, margin: 0 }}>Dine data</p>
+          {onClose && (
+            <button
+              onClick={onClose}
+              disabled={loading}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "0 4px", color: "inherit", opacity: 0.6 }}
+              aria-label="Luk"
+            >✕</button>
+          )}
+        </div>
         <p style={styles.body}>
           {currentRetentionDays && currentRetentionDays > 0
             ? `Samtaler gemmes i ${retentionLabel(currentRetentionDays)}.`
