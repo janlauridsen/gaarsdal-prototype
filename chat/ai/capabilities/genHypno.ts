@@ -1,6 +1,7 @@
 import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
 import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
-import { computeRollingArousal, detectPracticalKeywords, detectClosingText } from "../orchestration/applyPolicy"
+import { computeRollingArousal, detectPracticalKeywords, detectClosingText, detectContactBookingIntent } from "../orchestration/applyPolicy"
+// detectPracticalKeywords + detectClosingText used as upstream policy signals (not post-hoc overrides)
 import { detectClientSignals } from "./clientDetection"
 import { singleTurnCall, buildSingleTurnFallback, SingleTurnOutput } from "../orchestration/singleTurnCall"
 
@@ -124,7 +125,7 @@ function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMo
     investigation_focus: forcedMode === "reflection" ? "attention" : forcedMode === "practical" ? "preparation" : "none",
     response_goal: forcedMode ? "answer_then_one_question" : "answer_directly",
     relational_state: forcedMode === "reflection" ? "building_trust" : forcedMode === "practical" ? "decision_support" : "orienting",
-    routing_intent: "none", is_history_query: false, topic: previousTopic, sensitivity: "low",
+    is_history_query: false, topic: previousTopic, sensitivity: "low",
     signals: ["fallback"], confidence: 0.3,
   }
 }
@@ -271,27 +272,20 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  // ─── Closing-gate: LLM satte stage="close" i forrige tur ────────────────────
-  // Når dialog.stage er "close" er samtalen afsluttet fra LLM'ens perspektiv.
-  // Returnér en kort besked direkte uden nyt LLM-kald — uanset hvad brugeren skriver.
-  // Eneste undtagelse: eksplicitte spørgsmål (indeholder ?) genåbner dialogen.
-  const currentStage = readStringMeta(context, "dialog.stage")
-  if (currentStage === "close" && !userText.includes("?")) {
-    const assistant = "Godt. Du kan altid vende tilbage hvis der er mere på hjerte — eller kontakte Jan direkte hvis du er klar til næste skridt."
-    const updatedTranscript = appendTranscript(transcript, userText, assistant)
+  // ─── Deterministisk routing til HANDOFF_FORM (ingen LLM-kald) ───────────────
+  if (detectContactBookingIntent(userText)) {
     return {
       transition: {
         type: "NODE_HOP",
         from: context.state.active_node,
-        to: options.stayOnNode,
-        reason: "gen-hypno:stage-closed",
-        response_message: assistant,
+        to: "HANDOFF_FORM",
+        reason: "gen-hypno:contact_booking",
+        response_message: undefined,
         meta_delta: buildMetaDelta({
-          context, assistantMessage: assistant, updatedTranscript,
-          topic: previousTopic, sourceNode: options.sourceNode,
-          transcriptKey: options.transcriptKey, userText,
-          analysis: buildDefaultAnalysis(userText, previousTopic, "info"),
-          mode: "closing", relationalState: "gentle_close",
+          context, assistantMessage: "", updatedTranscript: appendTranscript(transcript, userText, ""),
+          topic: previousTopic, sourceNode: options.sourceNode, transcriptKey: options.transcriptKey,
+          userText, analysis: buildDefaultAnalysis(userText, previousTopic, "practical"),
+          mode: "practical", relationalState: "decision_support",
         }),
       },
       debug: { capability: "unified-hypno-v5-single", used_fallback: false },
@@ -403,28 +397,6 @@ export async function runUnifiedHypnoCapability(
           transcriptKey: options.transcriptKey, userText,
           analysis: { ...analysis, proposed_mode: "info", conversation_move: "direct_answer" },
           mode: "info", relationalState: "building_clarity",
-        }),
-      },
-      debug: { capability: "unified-hypno-v5-single", used_fallback: false },
-    }
-  }
-
-  // ─── Routing til HANDOFF_FORM ────────────────────────────────────────────
-  if (turnOutput.routing_intent === "contact_booking") {
-    const updatedTranscript = appendTranscript(transcript, userText, "")
-    return {
-      transition: {
-        type: "NODE_HOP",
-        from: context.state.active_node,
-        to: "HANDOFF_FORM",
-        reason: "gen-hypno:contact_booking",
-        response_message: undefined,
-        meta_delta: buildMetaDelta({
-          context, assistantMessage: "", updatedTranscript, topic: turnOutput.topic || previousTopic,
-          sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
-          analysis, mode: turnOutput.mode_used, objective: turnOutput.objective,
-          relationalState: analysis.relational_state,
-          arousalScore: arousal.score, arousalLevel: arousal.level,
         }),
       },
       debug: { capability: "unified-hypno-v5-single", used_fallback: false },
