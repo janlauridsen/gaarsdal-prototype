@@ -1,6 +1,6 @@
 import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
 import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
-import { computeRollingArousal, detectPracticalKeywords, detectClosingText, detectContactBookingIntent } from "../orchestration/applyPolicy"
+import { computeRollingArousal, detectPracticalKeywords, detectClosingText } from "../orchestration/applyPolicy"
 // detectPracticalKeywords + detectClosingText used as upstream policy signals (not post-hoc overrides)
 import { detectClientSignals } from "./clientDetection"
 import { singleTurnCall, buildSingleTurnFallback, SingleTurnOutput } from "../orchestration/singleTurnCall"
@@ -125,7 +125,7 @@ function buildDefaultAnalysis(userText: string, previousTopic?: string, forcedMo
     investigation_focus: forcedMode === "reflection" ? "attention" : forcedMode === "practical" ? "preparation" : "none",
     response_goal: forcedMode ? "answer_then_one_question" : "answer_directly",
     relational_state: forcedMode === "reflection" ? "building_trust" : forcedMode === "practical" ? "decision_support" : "orienting",
-    is_history_query: false, routing_intent: "none", topic: previousTopic, sensitivity: "low",
+    routing_intent: "none", is_history_query: false, topic: previousTopic, sensitivity: "low",
     signals: ["fallback"], confidence: 0.3,
   }
 }
@@ -272,26 +272,6 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  // ─── Deterministisk routing til HANDOFF_FORM (ingen LLM-kald) ───────────────
-  if (detectContactBookingIntent(userText)) {
-    return {
-      transition: {
-        type: "NODE_HOP",
-        from: context.state.active_node,
-        to: "HANDOFF_FORM",
-        reason: "gen-hypno:contact_booking",
-        response_message: undefined,
-        meta_delta: buildMetaDelta({
-          context, assistantMessage: "", updatedTranscript: appendTranscript(transcript, userText, ""),
-          topic: previousTopic, sourceNode: options.sourceNode, transcriptKey: options.transcriptKey,
-          userText, analysis: buildDefaultAnalysis(userText, previousTopic, "practical"),
-          mode: "practical", relationalState: "decision_support",
-        }),
-      },
-      debug: { capability: "unified-hypno-v5-single", used_fallback: false },
-    }
-  }
-
   // ─── Window of Tolerance (kører FØR LLM-kald så arousal sendes med) ─────────
   const previousArousalScore =
     typeof (context.state.meta?.["wot.arousal_score"] as any)?.value === "number"
@@ -336,6 +316,7 @@ export async function runUnifiedHypnoCapability(
     previousMode,
     previousRelationalState,
     policySignals,
+    goalHypothesis: context.contextPack?.goal_hypothesis,
   })
 
   const usedFallback = !turnOutput
@@ -397,6 +378,28 @@ export async function runUnifiedHypnoCapability(
           transcriptKey: options.transcriptKey, userText,
           analysis: { ...analysis, proposed_mode: "info", conversation_move: "direct_answer" },
           mode: "info", relationalState: "building_clarity",
+        }),
+      },
+      debug: { capability: "unified-hypno-v5-single", used_fallback: false },
+    }
+  }
+
+  // ─── Routing til HANDOFF_FORM ────────────────────────────────────────────
+  if (turnOutput.routing_intent === "contact_booking") {
+    const updatedTranscript = appendTranscript(transcript, userText, "")
+    return {
+      transition: {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        to: "HANDOFF_FORM",
+        reason: "gen-hypno:contact_booking",
+        response_message: undefined,
+        meta_delta: buildMetaDelta({
+          context, assistantMessage: "", updatedTranscript, topic: turnOutput.topic || previousTopic,
+          sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
+          analysis, mode: turnOutput.mode_used, objective: turnOutput.objective,
+          relationalState: analysis.relational_state,
+          arousalScore: arousal.score, arousalLevel: arousal.level,
         }),
       },
       debug: { capability: "unified-hypno-v5-single", used_fallback: false },
