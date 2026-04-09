@@ -225,11 +225,16 @@ Vurder om du skal fortsætte same spor, skifte gear eller afrunde — afhængigt
   }
 
   // ROUTING
+  const lastAssistantForRouting = params.lastAssistantExcerpt
+    ? `\n\nAssistentens forrige svar begyndte: ${JSON.stringify(params.lastAssistantExcerpt.slice(0, 150))}`
+    : ""
+
   blocks.push(`ROUTING:
 routing_intent sættes KUN til "contact_booking" når brugeren EKSPLICIT og UTVETYDIGT ønsker at blive kontaktet eller booke — dvs. at de tager et konkret skridt mod kontakt NU.
-Ellers: "none".
+Brug assistentens forrige svar som kontekst: hvis assistenten tilbød en session eller spurgte om brugeren vil prøve, og brugeren svarer bekræftende, er det "contact_booking".
+Ellers: "none".${lastAssistantForRouting}
 
-Eksempler → "contact_booking" (eksplicit handling):
+Eksempler → "contact_booking" (eksplicit handling, evt. i kontekst af sessionstilbud):
 - "jeg vil gerne booke en tid"
 - "hvornår kan jeg komme til dig"
 - "vil gerne have Jan til at ringe til mig"
@@ -239,6 +244,8 @@ Eksempler → "contact_booking" (eksplicit handling):
 - "jeg ringer" (brugeren handler)
 - "det gør jeg" (når det refererer til at tage kontakt)
 - "jeg tager kontakt"
+- "det er en god idé" / "det lyder godt" / "ja, det vil jeg gerne" — KUN hvis assistenten netop har tilbudt eller foreslået en session eller kontakt
+- "ja" / "det prøver jeg" — KUN hvis assistenten i forrige svar direkte spurgte om brugeren vil prøve en session
 
 Eksempler → "none" (spørgsmål, nysgerrighed, afklaring — IKKE en anmodning om kontakt):
 - "kan jeg kontakte Jan her?" (spørgsmål om mulighed, ikke en kontaktanmodning)
@@ -248,8 +255,9 @@ Eksempler → "none" (spørgsmål, nysgerrighed, afklaring — IKKE en anmodning
 - "hvordan kontakter man jer?"
 - "hvor er klinikken?"
 - "har I ledige tider?"
+- "det er en god idé" når assistenten IKKE har tilbudt en session i forrige svar
 
-Tommelfingerregel: hvis du er i tvivl, sæt "none". Brugeren skal tydeligt ville GØRE noget, ikke bare SPØRGE om noget.`)
+Tommelfingerregel: Var assistentens forrige spørgsmål et konkret tilbud om session? Og siger brugeren ja? → "contact_booking". Ellers → "none".`)
 
   // JSON-KONTRAKT
   blocks.push(`Returner KUN gyldig JSON — ingen tekst uden for JSON:
