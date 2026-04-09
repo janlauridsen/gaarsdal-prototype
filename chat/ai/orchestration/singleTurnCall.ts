@@ -235,6 +235,10 @@ Eksempler → "contact_booking" (eksplicit handling):
 - "vil gerne have Jan til at ringe til mig"
 - "kan jeg komme til en samtale"
 - "jeg er klar til at starte"
+- "jeg skriver" (når konteksten er booking/kontakt — brugeren handler)
+- "jeg ringer" (brugeren handler)
+- "det gør jeg" (når det refererer til at tage kontakt)
+- "jeg tager kontakt"
 
 Eksempler → "none" (spørgsmål, nysgerrighed, afklaring — IKKE en anmodning om kontakt):
 - "kan jeg kontakte Jan her?" (spørgsmål om mulighed, ikke en kontaktanmodning)
@@ -266,9 +270,9 @@ Tommelfingerregel: hvis du er i tvivl, sæt "none". Brugeren skal tydeligt ville
 }
 
 Regler for indhold:
-- acknowledgement: 0-1 korte sætninger, landing uden varmefraser. null hvis unødvendig.
-- core_answer: selve svaret — ALDRIG tomt — konkret om brugerens situation frem for generel metode
-- next_step: neutral afrunding eller null. Nævn ALDRIG kontaktinfo, Jans navn, pris eller booking som afslutning — medmindre brugeren i DENNE tur eksplicit har spurgt om kontakt, pris, adresse eller booking. Progression mod kontakt må kun ske på brugerinitiativ.
+- acknowledgement: 0-1 korte sætninger, landing uden varmefraser. null hvis unødvendig. MÅ ALDRIG indeholde spørgsmål.
+- core_answer: selve svaret — ALDRIG tomt — konkret om brugerens situation frem for generel metode. MÅ ALDRIG indeholde spørgsmål.
+- next_step: ét og kun ét spørgsmål, ELLER null. Aldrig to spørgsmål. Aldrig "... eller er det anderledes?" kombineret med et nyt spørgsmål. Nævn ALDRIG kontaktinfo, Jans navn, pris eller booking som afslutning — medmindre brugeren i DENNE tur eksplicit har spurgt om kontakt, pris, adresse eller booking. Progression mod kontakt må kun ske på brugerinitiativ.
 - topic: emnet brugeren taler om (fx "søvnproblemer", "neglebidning") — null hvis uklart
 - signals: 2-4 korte signaler der forklarer dit valg`)
 
