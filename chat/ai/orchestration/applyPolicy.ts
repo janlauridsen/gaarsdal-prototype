@@ -117,31 +117,58 @@ export function computeRollingArousal(
 export function detectContactBookingIntent(text: string): boolean {
   const t = normalize(text)
 
-  // Eksplicitte booking-handlinger
+  // Eksplicitte booking/kontakt-handlinger
   const bookingPhrases = [
+    // Booking
     "vil gerne booke",
     "vil booke",
     "book en tid",
     "booke en tid",
     "bestille en tid",
     "bestil en tid",
+    "vil aftale",
+    "aftale en tid",
+    "aftale tid",
+    "aftale et møde",
+    // Kontakt-handlinger (ikke spørgsmål)
+    "vil gerne i kontakt",
+    "gerne i kontakt",
+    "vil kontaktes",
+    "vil kontakte",
+    "vil gerne kontakte",
+    "vil have kontakt",
+    "tag kontakt",
+    "vil kontakte jan",
+    "vil kontakte jer",
+    "kontakt mig",
+    "vil kontakte nu",
+    // Tidspunkt
     "hvornår kan jeg komme",
     "hvornår har du tid",
     "hvornår har i tid",
+    // Møde/samtale
     "kan jeg komme til en samtale",
     "komme til en samtale",
+    "til en session",
+    // Direkte kommunikation
     "ring til mig",
     "ringe til mig",
     "vil gerne ringes op",
     "vil have jan til at ringe",
-    "vil kontakte jan nu",
     "send mig en besked",
   ]
 
   if (bookingPhrases.some((p) => t.includes(p))) return true
 
-  // "kontakt" + direkte objekt (ikke spørgsmål)
-  if (t.includes("kontakt") && !t.includes("?") && !t.includes("hvordan") && !t.includes("kan jeg") && !t.includes("hvad")) {
+  // "kontakt" som imperativ/handlingsord — ikke spørgsmål eller problem-beskrivelse
+  if (
+    t.includes("kontakt") &&
+    !t.includes("?") &&
+    !t.includes("hvordan") &&
+    !t.includes("kan jeg") &&
+    !t.includes("hvad") &&
+    !t.includes("hvis")
+  ) {
     if (t.includes("jan") || t.includes("jer") || t.includes("dig") || t.includes("klinikken")) return true
   }
 
