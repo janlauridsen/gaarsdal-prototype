@@ -106,3 +106,44 @@ export function computeRollingArousal(
 
   return { level, score: Math.round(blended * 1000) / 1000 }
 }
+
+/**
+ * Deterministisk routing-detektion.
+ * Returnerer true KUN når brugeren eksplicit tager et konkret skridt mod kontakt/booking.
+ * Problem-beskrivelser, mål og spørgsmål returnerer ALTID false.
+ *
+ * Princip: imperativ handling ("vil gerne booke", "ring til mig") — ikke beskrivelse eller ønske.
+ */
+export function detectContactBookingIntent(text: string): boolean {
+  const t = normalize(text)
+
+  // Eksplicitte booking-handlinger
+  const bookingPhrases = [
+    "vil gerne booke",
+    "vil booke",
+    "book en tid",
+    "booke en tid",
+    "bestille en tid",
+    "bestil en tid",
+    "hvornår kan jeg komme",
+    "hvornår har du tid",
+    "hvornår har i tid",
+    "kan jeg komme til en samtale",
+    "komme til en samtale",
+    "ring til mig",
+    "ringe til mig",
+    "vil gerne ringes op",
+    "vil have jan til at ringe",
+    "vil kontakte jan nu",
+    "send mig en besked",
+  ]
+
+  if (bookingPhrases.some((p) => t.includes(p))) return true
+
+  // "kontakt" + direkte objekt (ikke spørgsmål)
+  if (t.includes("kontakt") && !t.includes("?") && !t.includes("hvordan") && !t.includes("kan jeg") && !t.includes("hvad")) {
+    if (t.includes("jan") || t.includes("jer") || t.includes("dig") || t.includes("klinikken")) return true
+  }
+
+  return false
+}
