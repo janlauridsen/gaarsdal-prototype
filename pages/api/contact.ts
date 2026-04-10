@@ -79,6 +79,41 @@ export default async function handler(
       // Non-fatal — submission is already saved to Redis
       console.error("[contact] Resend notification failed:", err);
     }
+
+    // Bekræftigelsesmail til brugeren
+    try {
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "jan@gaarsdal.net",
+          to: submission.email,
+          reply_to: "jan@gaarsdal.net",
+          subject: "Vi har modtaget din henvendelse",
+          text: [
+            `Hej ${submission.name},`,
+            ``,
+            `Tak for din henvendelse. Jeg vender tilbage inden for 24 timer.`,
+            ``,
+            `Med venlig hilsen`,
+            `Jan Gaarsdal`,
+            `Gaarsdal Hypnoterapi`,
+            `Tlf: +45 42 80 74 74`,
+            `jan@gaarsdal.net`,
+            ``,
+            `---`,
+            `Din besked:`,
+            submission.message,
+          ].join("\n"),
+        }),
+      });
+    } catch (err) {
+      // Non-fatal
+      console.error("[contact] Resend confirmation failed:", err);
+    }
   }
 
   return res.status(200).json({ ok: true });
