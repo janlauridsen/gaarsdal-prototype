@@ -559,7 +559,33 @@ export async function runTool(params: ToolRunParams): Promise<ToolRunResult> {
           }
         }
 
-        // 3. Webhook fallback (Make / Zapier / custom)
+        // 3. Bekræftigelsesmail til brugeren (kun hvis kontakt er en email)
+        if (resendKey && record.kontakt?.includes("@")) {
+          try {
+            await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${resendKey}`,
+              },
+              body: JSON.stringify({
+                from: notifyFrom,
+                to: [record.kontakt],
+                reply_to: "jan@gaarsdal.net",
+                subject: "Vi har modtaget din henvendelse",
+                html: [
+                  `<p>Hej ${record.navn},</p>`,
+                  `<p>Tak for din henvendelse. Jan vender tilbage inden for 24 timer.</p>`,
+                  record.besked ? `<p><b>Din besked:</b><br>${record.besked}</p>` : "",
+                  `<p>Du er altid velkommen til at ringe på <b>+45 42 80 74 74</b> eller skrive til jan@gaarsdal.net.</p>`,
+                  `<p>Med venlig hilsen<br>Jan Gaarsdal<br>Gaarsdal Hypnoterapi</p>`,
+                ].filter(Boolean).join(""),
+              }),
+            })
+          } catch { /* non-fatal */ }
+        }
+
+        // 4. Webhook fallback (Make / Zapier / custom)
         const webhookUrl = process.env.HANDOFF_WEBHOOK_URL
         if (webhookUrl) {
           try { await fetch(webhookUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(record) }) } catch {}
