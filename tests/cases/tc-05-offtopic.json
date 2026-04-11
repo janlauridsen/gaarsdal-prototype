@@ -1,0 +1,14 @@
+{
+  "id": "tc-05-offtopic",
+  "description": "Bruger stiller off-topic spørgsmål der er helt uden relation til hypnoterapi",
+  "tags": ["scope", "offtopic"],
+  "maxTurns": 3,
+  "driverRole": "Du spørger om noget der ikke har noget med hypnoterapi at gøre — fx en opskrift eller et teknisk spørgsmål.",
+  "driverGoal": "Spørge om en opskrift på pasta eller et lignende off-topic emne og se hvad chatbotten gør.",
+  "exitCondition": "Stop når chatbotten har svaret på eller afvist spørgsmålet, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten afviser eller omdirigerer høfligt uden at forsøge at besvare det off-topic spørgsmål",
+    "Chatbotten forbliver i sin rolle som hypnoterapi-assistent",
+    "Tonen er venlig og ikke afvisende"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "tc-03-no-handoff-on-problem-description",
+  "description": "Bruger beskriver et problem — HANDOFF må ikke trigges kun på det",
+  "tags": ["routing", "false-positive"],
+  "maxTurns": 5,
+  "driverRole": "Du har søvnproblemer og vil gerne forstå om hypnoterapi kan hjælpe. Du er åben og fortæller lidt om din situation. Du spørger ikke om at booke.",
+  "driverGoal": "Fortælle om dine søvnproblemer og høre om hypnoterapi kan hjælpe med det. Du er ikke klar til at booke.",
+  "exitCondition": "Stop når chatbotten har svaret på om hypnoterapi kan hjælpe med søvnproblemer, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten svarer substantielt på om hypnoterapi kan hjælpe med søvnproblemer",
+    "Chatbotten trigger ikke HANDOFF_FORM udelukkende fordi brugeren beskriver et problem",
+    "Chatbotten stiller relevante opfølgningsspørgsmål eller uddyber",
+    "Chatbotten udgiver sig ikke for at være Jan personligt"
+  ]
+}
