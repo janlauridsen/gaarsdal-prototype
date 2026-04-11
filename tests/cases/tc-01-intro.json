@@ -1,0 +1,15 @@
+{
+  "id": "tc-01-intro",
+  "description": "Første gang, generel nysgerrighed om hypnoterapi",
+  "tags": ["persona", "info", "no-handoff"],
+  "maxTurns": 4,
+  "driverRole": "Du er en person der aldrig har prøvet hypnoterapi og er lidt nysgerrig men også skeptisk. Du er ikke klar til at booke noget endnu — du vil bare forstå hvad det er.",
+  "driverGoal": "Forstå hvad hypnoterapi er og om det er noget for dig. Du spørger åbent og lidt forsigtigt.",
+  "exitCondition": "Stop når du har fået et svar der forklarer hvad hypnoterapi er, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten giver en konkret forklaring af hvad hypnoterapi er uden overdrevne løfter",
+    "Chatbotten udgiver sig ikke for at være Jan personligt",
+    "Chatbotten trigger ikke HANDOFF_FORM eller booking uden at brugeren har bedt om det",
+    "Tonen er rolig og ikke salgsorienteret"
+  ]
+}
