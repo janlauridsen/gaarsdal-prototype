@@ -42,7 +42,7 @@ interface TestResult {
 
 function validateToken(req: NextApiRequest, res: NextApiResponse): boolean {
   const token = req.query.token
-  const expected = process.env.ADMIN_TOKEN
+  const expected = process.env.GAARSDAL_ADMIN_TOKEN
   if (!expected || token !== expected) {
     res.status(401).json({ error: "Unauthorized" })
     return false
@@ -89,6 +89,9 @@ function buildDriverSystem(tc: TestCase): string {
     "- Skriv på naturlig dansk som en rigtig bruger ville skrive.",
     "- Hvis stop-betingelsen er opfyldt, svar med præcis: STOP",
     "- Vær kortfattet. 1-2 sætninger per tur er nok.",
+    "- Hvis assistenten præsenterer en formular med felter (navn, emne, kontakt osv.), udfyld den med",
+    "  fiktive men realistiske data — fx 'navn: Anders Nielsen\\nemne: søvnproblemer\\nkontakt: anders@example.com'.",
+    "- Stil aldrig det samme spørgsmål to gange. Skift strategi hvis du ikke får svar.",
   ].join("\n")
 }
 
