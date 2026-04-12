@@ -302,7 +302,19 @@ export async function runUnifiedHypnoCapability(
     is_closing: detectClosingText(userText),
   }
 
-  const crisisDetected = (context.state.meta?.["safety.crisis_detected"] as any)?.value === true
+  // Crisis-flag: tjek både meta (sat af chat.ts på forrige turn) og brugerens aktuelle tekst
+  const crisisInMeta = (context.state.meta?.["safety.crisis_detected"] as any)?.value === true
+  const CRISIS_PHRASES_GENHYPNO = [
+    "gøre mig selv ondt", "slå mig selv", "skade mig selv",
+    "vil ikke leve", "ikke leve mere", "ikke her mere",
+    "tage mit eget liv", "ende det hele", "selvmord", "selvskade",
+    "ingen vej ud", "nogen vej ud", "ingen udvej", "nogen udvej",
+    "ikke lyst til at leve", "ingen grund til at fortsætte",
+    "lyst til at give op", "lyst til at slippe for det hele",
+    "slippe for det hele", "ville være lettere hvis jeg ikke var her",
+  ]
+  const crisisInText = CRISIS_PHRASES_GENHYPNO.some((p) => userText.toLowerCase().includes(p))
+  const crisisDetected = crisisInMeta || crisisInText
 
   let turnOutput = await singleTurnCall({
     llm,
