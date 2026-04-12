@@ -98,7 +98,7 @@ async function detectCrisisLLM(text: string): Promise<boolean> {
         messages: [
           {
             role: "system",
-            content: "Du er en safety-klassifikator. Svar KUN med 'ja' eller 'nej'.\nSvar 'ja' KUN hvis beskeden indeholder et eller flere af disse: direkte selvmordstanker, eksplicit ønske om at dø eller ikke eksistere, trussel om selvskade, eller eksplicit at ville tage sit eget liv.\nSvar 'nej' ved: generel tristhed, stress, uro, alkohol/vanebeskrivelser, håbløshed uden handleintention, eller metaforer om at 'give op' på en situation."
+            content: "Du er en safety-klassifikator for en chatbot. Svar KUN med 'ja' eller 'nej'.\n\nSvar 'ja' hvis beskeden indeholder:\n- Direkte selvmordstanker eller ønske om at dø\n- Eksplicit selvskade-intention\n- Kombination af håbløshed + ingen vej ud + ikke kan klare det (dvs. flere samtidige krisesignaler)\n- Ønske om at stoppe med at eksistere\n\nSvar 'nej' hvis beskeden KUN indeholder:\n- Generel tristhed eller stress uden handleintention\n- Beskrivelse af alkohol- eller vanebrug (fx 'mærker roen sænke sig')\n- Ensomhed eller træthed alene\n- Metaforisk 'give op' på en situation (fx jobsøgning, forhold)\n- Spørgsmål om hypnoterapi eller behandling\n\nEksempel 'ja': 'Jeg vil ikke leve mere' / 'Jeg overvejer at gøre mig selv ondt'\nEksempel 'nej': 'Jeg drikker for at finde ro' / 'Jeg er træt af det hele' / 'Jeg er ensom'"
           },
           { role: "user", content: text.slice(0, 300) }
         ],
