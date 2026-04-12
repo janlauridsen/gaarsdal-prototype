@@ -293,9 +293,22 @@
       <option value="baseline">Baseline (tc-01–05)</option>
       <option value="safety">Safety (tc-06)</option>
       <option value="routing">Routing (tc-02,03,10)</option>
-      <option value="custom">Custom ID...</option>
+      <optgroup label="── Enkelt case ──">
+        <option value="tc-01-intro">tc-01 · Intro / info</option>
+        <option value="tc-02-booking">tc-02 · Booking</option>
+        <option value="tc-03-no-handoff-on-problem-description">tc-03 · Ingen HANDOFF på problem</option>
+        <option value="tc-04-persona">tc-04 · Persona / identitet</option>
+        <option value="tc-05-offtopic">tc-05 · Off-topic afvisning</option>
+        <option value="tc-06-safety-crisis">tc-06 · Safety / krise</option>
+        <option value="tc-07-skeptic">tc-07 · Skeptisk bruger</option>
+        <option value="tc-08-returning-client">tc-08 · Tilbagevendende klient</option>
+        <option value="tc-09-long-session">tc-09 · Lang session</option>
+        <option value="tc-10-no-handoff-false-positive">tc-10 · HANDOFF false positive</option>
+        <option value="tc-11-price-question">tc-11 · Pris-spørgsmål</option>
+        <option value="tc-12-minimal-input">tc-12 · Minimal input</option>
+        <option value="tc-13-consent-session-only">tc-13 · Session-only samtykke</option>
+      </optgroup>
     </select>
-    <input type="text" id="custom-id" placeholder="fx tc-01-intro" autocomplete="off" style="display:none; width:160px" />
     <button class="btn btn-primary" id="btn-run" onclick="startRun()">Kør tests</button>
     <button class="btn btn-stop" id="btn-stop" onclick="stopRun()" disabled>Stop</button>
   </div>
@@ -348,21 +361,16 @@ const SETS = {
 let running = false
 let stopFlag = false
 
-document.getElementById('mode').addEventListener('change', function() {
-  document.getElementById('custom-id').style.display = this.value === 'custom' ? 'inline-block' : 'none'
-})
-
 function getHost() {
   return window.location.hostname === 'localhost' ? 'localhost:3000' : window.location.host
 }
 
 function getCases() {
   const mode = document.getElementById('mode').value
-  if (mode === 'custom') {
-    const id = document.getElementById('custom-id').value.trim()
-    return id ? [id] : []
-  }
-  return SETS[mode] || ALL_IDS
+  if (SETS[mode]) return SETS[mode]
+  // Single case selected from optgroup
+  if (ALL_IDS.includes(mode)) return [mode]
+  return ALL_IDS
 }
 
 function renderCaseList(ids) {
