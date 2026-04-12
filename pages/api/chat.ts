@@ -283,6 +283,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const baseState = stored ?? clientState
     if (!baseState) return res.status(400).json({ error: "Missing state" })
 
+    let kernelResultFinal = await runTurnWithAutoAdvance({ baseState, input: input as InputSignal, userKey })
 
     // Session-only: spring theme/episode-binding over — ingen Redis-writes
     const binding = consentAllowsPersistence(consentRecord ?? null)
