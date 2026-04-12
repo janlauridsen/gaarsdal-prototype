@@ -56,6 +56,9 @@ export function homeRouterV1(params: HomeRouterInput): RouteDecision {
   if (
     hasAny(t, [
       "akut", "krise", "fare", "selvmord", "selvskade", "112", "lægevagt", "psykiatrisk akut",
+      "gøre mig selv ondt", "slå mig selv", "skade mig selv", "vil ikke leve",
+      "ingen udvej", "ingen vej ud", "ikke leve mere", "ikke her mere",
+      "tage mit eget liv", "ende det hele", "give op på livet",
     ])
   ) {
     return {
