@@ -54,8 +54,10 @@ export async function writeConsent(
   const client = getRedisClient()
   if (!client) return
 
+  const ttl = record.retentionDays === 0 ? SESSION_ONLY_TTL_SECONDS : CONSENT_RECORD_TTL
+
   await client.set(consentKey(userKey), JSON.stringify(record), {
-    ex: CONSENT_RECORD_TTL,
+    ex: ttl,
   })
 }
 
