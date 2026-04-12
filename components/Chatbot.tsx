@@ -1241,7 +1241,30 @@ export default function Chatbot() {
                         onClose={() => setShowPrivacyPanel(false)}
                       />
                     )}
-                    {!consentRequired && nodeForm ? (
+                    {!consentRequired && state?.active_node === "HANDOFF_FORM" ? (
+                      <div className={styles.infoActions}>
+                        <a
+                          href="tel:+4542807474"
+                          className={styles.infoActionBtn}
+                          onClick={() => {}}
+                        >
+                          Ring: +45 42 80 74 74
+                        </a>
+                        <a
+                          href={`mailto:jan@gaarsdal.net?subject=${encodeURIComponent("Henvendelse fra gaarsdal.net")}`}
+                          className={styles.infoActionBtn}
+                        >
+                          Send en mail
+                        </a>
+                        <button
+                          className={styles.infoActionBtn}
+                          disabled={loading}
+                          onClick={() => dispatch({ type: "EXPLICIT_TRANSITION", target: "GEN_HYPNO" })}
+                        >
+                          Tilbage til samtalen
+                        </button>
+                      </div>
+                    ) : !consentRequired && nodeForm ? (
                       <FormComposer
                         fields={nodeForm.fields}
                         loading={loading}
@@ -1320,7 +1343,30 @@ export default function Chatbot() {
                   onClose={() => setShowPrivacyPanel(false)}
                 />
               )}
-              {!consentRequired && nodeForm ? (
+              {!consentRequired && state?.active_node === "HANDOFF_FORM" ? (
+                <div className={styles.infoActions}>
+                  <a
+                    href="tel:+4542807474"
+                    className={styles.infoActionBtn}
+                    onClick={() => {}}
+                  >
+                    Ring: +45 42 80 74 74
+                  </a>
+                  <a
+                    href={`mailto:jan@gaarsdal.net?subject=${encodeURIComponent("Henvendelse fra gaarsdal.net")}`}
+                    className={styles.infoActionBtn}
+                  >
+                    Send en mail
+                  </a>
+                  <button
+                    className={styles.infoActionBtn}
+                    disabled={loading}
+                    onClick={() => dispatch({ type: "EXPLICIT_TRANSITION", target: "GEN_HYPNO" })}
+                  >
+                    Tilbage til samtalen
+                  </button>
+                </div>
+              ) : !consentRequired && nodeForm ? (
                 <FormComposer
                   fields={nodeForm.fields}
                   loading={loading}
