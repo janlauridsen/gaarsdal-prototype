@@ -302,6 +302,8 @@ export async function runUnifiedHypnoCapability(
     is_closing: detectClosingText(userText),
   }
 
+  const crisisDetected = (context.state.meta?.["safety.crisis_detected"] as any)?.value === true
+
   let turnOutput = await singleTurnCall({
     llm,
     transcript: trimmedTranscript,
@@ -317,6 +319,7 @@ export async function runUnifiedHypnoCapability(
     previousRelationalState,
     policySignals,
     goalHypothesis: context.contextPack?.goal_hypothesis,
+    crisisDetected,
   })
 
   const usedFallback = !turnOutput
