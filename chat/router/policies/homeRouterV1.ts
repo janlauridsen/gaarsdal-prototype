@@ -84,8 +84,8 @@ export function homeRouterV1(params: HomeRouterInput): RouteDecision {
   if (
     hasAny(t, [
       "book", "booking", "bestil", "bestille", "booke",
-      "kontakt", "kontakt mig", "kontakt jan", "mail", "email", "e-mail",
-      "telefon", "telefonnummer", "ring", "ringe", "sms",
+      "kontakt jan", "kontakt mig", "mail", "email", "e-mail",
+      "telefon", "telefonnummer", "ring til jan", "ringe til jan", "sms",
       "skriv til jan", "jeg vil tale med jan", "jeg vil gerne ringe",
       "kan jeg kontakte jan", "hvordan kontakter jeg jan", "ledige tider",
     ])
