@@ -78,6 +78,33 @@ function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
   return node.kind === "ROUTER" || node.kind === "TOOL" || node.kind === "CHECKPOINT"
 }
 
+// Krise-detektion — bruges til at sætte safety.crisis_detected i meta
+const CRISIS_PHRASES = [
+  "gøre mig selv ondt", "slå mig selv", "skade mig selv",
+  "vil ikke leve", "ikke leve mere", "ikke her mere",
+  "tage mit eget liv", "ende det hele", "give op på livet",
+  "ingen vej ud", "ingen udvej", "ikke lyst til at leve",
+  "ville være lettere hvis jeg ikke var her", "ikke være her mere",
+  "selvmord", "selvskade",
+]
+
+function detectCrisis(text: string): boolean {
+  const t = text.toLowerCase()
+  return CRISIS_PHRASES.some((phrase) => t.includes(phrase))
+}
+
+function injectCrisisMeta(state: any): any {
+  const alreadySet = (state.meta?.["safety.crisis_detected"] as any)?.value === true
+  if (alreadySet) return state
+  return {
+    ...state,
+    meta: {
+      ...state.meta,
+      "safety.crisis_detected": { value: true, source_node: "SYSTEM_SAFETY" },
+    },
+  }
+}
+
 function validateRequest(req: NextApiRequest, res: NextApiResponse): ChatRequestBody | null {
   setWidgetCors(req, res, "POST, OPTIONS")
   if (req.method === "OPTIONS") { res.status(200).end(); return null }
@@ -184,7 +211,23 @@ async function handleInitOrRestore(params: {
 }
 
 async function runTurnWithAutoAdvance(params: { baseState: any; input: InputSignal; userKey: string }): Promise<KernelResult> {
+  const fromNode = params.baseState.active_node
   let kernelResult = await runNode({ state: params.baseState, input: params.input, userKey: params.userKey })
+
+  // Special case: HOME routed to a DIALOG node via FREE_TEXT.
+  // Run the DIALOG node immediately with the original input so the user's
+  // first message gets an AI response instead of the static welcome message.
+  if (
+    fromNode === "HOME" &&
+    params.input.type === "FREE_TEXT" &&
+    kernelResult.state.active_node !== "HOME"
+  ) {
+    const landedNode = getNode(kernelResult.state.active_node)
+    if (landedNode.kind === "DIALOG" && landedNode.allow_free_text) {
+      kernelResult = await runNode({ state: kernelResult.state, input: params.input, userKey: params.userKey })
+    }
+  }
+
   for (let i = 0; i < 5; i++) {
     const activeNode = getNode(kernelResult.state.active_node)
     if (!isAutoAdvanceNode(activeNode)) break
@@ -267,7 +310,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const baseState = stored ?? clientState
     if (!baseState) return res.status(400).json({ error: "Missing state" })
 
-    let kernelResultFinal = await runTurnWithAutoAdvance({ baseState, input: input as InputSignal, userKey })
+    // Krise-detektion: hvis brugeren skriver krisesignaler, sæt permanent flag i meta.
+    // Flagget læses i singleTurnCall.ts og låser botten i krisemodus for resten af sessionen.
+    const userText = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : ""
+    const crisisAlreadyDetected = (baseState.meta?.["safety.crisis_detected"] as any)?.value === true
+    const stateForRun = (detectCrisis(userText) || crisisAlreadyDetected)
+      ? injectCrisisMeta(baseState)
+      : baseState
+
+    let kernelResultFinal = await runTurnWithAutoAdvance({ baseState: stateForRun, input: input as InputSignal, userKey })
 
     // Session-only: spring theme/episode-binding over — ingen Redis-writes
     const binding = consentAllowsPersistence(consentRecord ?? null)
