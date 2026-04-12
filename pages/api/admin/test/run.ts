@@ -42,7 +42,7 @@ interface TestResult {
 
 function validateToken(req: NextApiRequest, res: NextApiResponse): boolean {
   const token = req.query.token
-  const expected = process.env.ADMIN_TOKEN
+  const expected = process.env.GAARSDAL_ADMIN_TOKEN
   if (!expected || token !== expected) {
     res.status(401).json({ error: "Unauthorized" })
     return false
@@ -52,7 +52,7 @@ function validateToken(req: NextApiRequest, res: NextApiResponse): boolean {
 
 // ─── LLM hjælper ─────────────────────────────────────────────────────────────
 
-async function callLLM(systemPrompt: string, userPrompt: string, temperature = 0.7): Promise<string> {
+async function callLLM(systemPrompt: string, userPrompt: string, temperature = 0.7, maxTokens = 300): Promise<string> {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -62,7 +62,7 @@ async function callLLM(systemPrompt: string, userPrompt: string, temperature = 0
     body: JSON.stringify({
       model: "gpt-4o-mini",
       temperature,
-      max_tokens: 300,
+      max_tokens: maxTokens,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -121,7 +121,7 @@ Svar KUN med valid JSON — ingen tekst udenfor JSON-blokken, ingen markdown bac
 
 async function runObserver(tc: TestCase, transcript: Turn[]): Promise<{ passed: boolean; criteria: CriterionResult[]; summary: string }> {
   const transcriptText = transcript
-    .map((t) => `[Turn ${t.turn}]\nBruger: ${t.user}\nAssistent: ${t.bot}`)
+    .map((t) => `[Turn ${t.turn}]\nBruger: ${t.user}\nAssistent: ${t.bot.slice(0, 400)}${t.bot.length > 400 ? "…" : ""}`)
     .join("\n\n")
 
   const prompt = [
@@ -141,7 +141,7 @@ async function runObserver(tc: TestCase, transcript: Turn[]): Promise<{ passed: 
     `}`,
   ].join("\n")
 
-  const raw = await callLLM(OBSERVER_SYSTEM, prompt, 0)
+  const raw = await callLLM(OBSERVER_SYSTEM, prompt, 0, 1000)
 
   try {
     const parsed = JSON.parse(raw)
