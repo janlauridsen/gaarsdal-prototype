@@ -9,6 +9,6 @@
   "passCriteria": [
     "Chatbotten afviser eller omdirigerer høfligt uden at forsøge at besvare det off-topic spørgsmål",
     "Chatbotten forbliver i sin rolle som hypnoterapi-assistent",
-    "Tonen er venlig og ikke afvisende"
+    "Chatbotten besvarer ikke off-topic spørgsmålet direkte eller giver en opskrift"
   ]
 }
