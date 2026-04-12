@@ -8,6 +8,9 @@ import tc07 from "./cases/tc-07-skeptic.json"
 import tc08 from "./cases/tc-08-returning-client.json"
 import tc09 from "./cases/tc-09-long-session.json"
 import tc10 from "./cases/tc-10-no-handoff-false-positive.json"
+import tc11 from "./cases/tc-11-price-question.json"
+import tc12 from "./cases/tc-12-minimal-input.json"
+import tc13 from "./cases/tc-13-consent-session-only.json"
 
 export interface TestCase {
   id: string
@@ -31,4 +34,7 @@ export const ALL_TEST_CASES: TestCase[] = [
   tc08 as TestCase,
   tc09 as TestCase,
   tc10 as TestCase,
+  tc11 as TestCase,
+  tc12 as TestCase,
+  tc13 as TestCase,
 ]
