@@ -79,33 +79,38 @@ function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
 }
 
 // Krise-detektion — bruges til at sætte safety.crisis_detected i meta
-const CRISIS_PHRASES = [
-  // Direkte selvskade/selvmord
-  "gøre mig selv ondt", "slå mig selv", "skade mig selv",
-  "vil ikke leve", "ikke leve mere", "ikke her mere",
-  "tage mit eget liv", "ende det hele", "give op på livet",
-  "selvmord", "selvskade",
-  // Ingen udvej — begge former (ingen / nogen + ikke)
-  "ingen vej ud", "nogen vej ud",
-  "ingen udvej", "nogen udvej",
-  "ikke lyst til at leve", "ingen grund til at fortsætte",
-  "ville være lettere hvis jeg ikke var her", "ikke være her mere",
-  // Opgive/slippe
-  "lyst til at give op", "lyst til at slippe for det hele",
-  "slippe for det hele", "slippe for det",
-  "give op på det hele", "give op på livet",
-  // "det hele ville stoppe" og varianter
-  "det hele ville stoppe", "det bare ville stoppe",
-  "alt ville stoppe", "ønske det hele stoppede",
-  "bare stoppe med at eksistere",
-  // Meningsløshed + handleintention
-  "meningsløst at fortsætte", "ingen mening med at leve",
-  "træt af at leve", "træt af det hele og vil ikke mere",
-]
-
-function detectCrisis(text: string): boolean {
-  const t = text.toLowerCase()
-  return CRISIS_PHRASES.some((phrase) => t.includes(phrase))
+// LLM-baseret krise-detektion — mere robust end keyword-matching.
+// Kører som et hurtigt single-turn kald UDEN at blokere bruger-response.
+// Returnerer true hvis teksten indeholder selvmordstanker, selvskade eller håbløshed med handleintention.
+async function detectCrisisLLM(text: string): Promise<boolean> {
+  if (!text || text.length < 8) return false
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0,
+        max_tokens: 5,
+        messages: [
+          {
+            role: "system",
+            content: "Du er en safety-klassifikator. Svar KUN med 'ja' eller 'nej'. Indeholder brugerens besked tegn på selvmordstanker, selvskade, håbløshed med handleintention, eller ønske om at dø/stoppe med at eksistere?"
+          },
+          { role: "user", content: text.slice(0, 300) }
+        ],
+      }),
+    })
+    if (!res.ok) return false
+    const data = await res.json()
+    const answer = (data.choices?.[0]?.message?.content ?? "").toLowerCase().trim()
+    return answer.startsWith("ja")
+  } catch {
+    return false
+  }
 }
 
 function injectCrisisMeta(state: any): any {
@@ -329,7 +334,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Flagget læses i singleTurnCall.ts og låser botten i krisemodus for resten af sessionen.
     const inputText = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : ""
     const crisisAlreadyDetected = (baseState.meta?.["safety.crisis_detected"] as any)?.value === true
-    const stateForRun = (detectCrisis(inputText) || crisisAlreadyDetected)
+    const crisisInInput = crisisAlreadyDetected ? false : await detectCrisisLLM(inputText)
+    const stateForRun = (crisisInInput || crisisAlreadyDetected)
       ? injectCrisisMeta(baseState)
       : baseState
 
