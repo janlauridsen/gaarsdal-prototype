@@ -302,10 +302,6 @@ export async function runUnifiedHypnoCapability(
     is_closing: detectClosingText(userText),
   }
 
-  // Crisis-flag sættes af chat.ts via LLM-detektion og persisteres i meta.
-  // genHypno læser kun meta-flaget — ingen redundant keyword-matching her.
-  const crisisDetected = (context.state.meta?.["safety.crisis_detected"] as any)?.value === true
-
   let turnOutput = await singleTurnCall({
     llm,
     transcript: trimmedTranscript,
@@ -321,7 +317,6 @@ export async function runUnifiedHypnoCapability(
     previousRelationalState,
     policySignals,
     goalHypothesis: context.contextPack?.goal_hypothesis,
-    crisisDetected,
   })
 
   const usedFallback = !turnOutput
@@ -384,6 +379,20 @@ export async function runUnifiedHypnoCapability(
           analysis: { ...analysis, proposed_mode: "info", conversation_move: "direct_answer" },
           mode: "info", relationalState: "building_clarity",
         }),
+      },
+      debug: { capability: "unified-hypno-v5-single", used_fallback: false },
+    }
+  }
+
+  // ─── Routing til CRISIS_INFO ──────────────────────────────────────────────
+  if (turnOutput.routing_intent === "crisis") {
+    return {
+      transition: {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        to: "CRISIS_INFO",
+        reason: "gen-hypno:crisis",
+        response_message: undefined,
       },
       debug: { capability: "unified-hypno-v5-single", used_fallback: false },
     }
