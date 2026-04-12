@@ -80,12 +80,22 @@ function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
 
 // Krise-detektion — bruges til at sætte safety.crisis_detected i meta
 const CRISIS_PHRASES = [
+  // Direkte selvskade/selvmord
   "gøre mig selv ondt", "slå mig selv", "skade mig selv",
   "vil ikke leve", "ikke leve mere", "ikke her mere",
   "tage mit eget liv", "ende det hele", "give op på livet",
-  "ingen vej ud", "ingen udvej", "ikke lyst til at leve",
-  "ville være lettere hvis jeg ikke var her", "ikke være her mere",
   "selvmord", "selvskade",
+  // Ingen udvej — begge former (ingen / nogen + ikke)
+  "ingen vej ud", "nogen vej ud",
+  "ingen udvej", "nogen udvej",
+  "ikke lyst til at leve", "ingen grund til at fortsætte",
+  "ville være lettere hvis jeg ikke var her", "ikke være her mere",
+  // Opgive/slippe
+  "lyst til at give op", "lyst til at slippe for det hele",
+  "slippe for det hele", "slippe for det",
+  "give op på det hele", "give op på livet",
+  // Meningsløshed + handleintention
+  "meningsløst at fortsætte", "ingen mening med at leve",
 ]
 
 function detectCrisis(text: string): boolean {
