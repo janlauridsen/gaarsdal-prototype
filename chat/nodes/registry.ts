@@ -84,7 +84,7 @@ export const nodeRegistry: Record<string, Node> = {
     goal: "Præsenter kontaktmuligheder til Jan",
     message:
       "Du er velkommen til at kontakte Jan direkte:\n\n📞 +45 42 80 74 74\n✉️ jan@gaarsdal.net\n\nJan svarer typisk inden for 24 timer.",
-    allow_free_text: false,
+    allow_free_text: true,
     allow_parentese: false,
     allowed_exits: ["GEN_HYPNO", "LEAD_CAPTURE"],
     meta_domains_written: ["ux"],
