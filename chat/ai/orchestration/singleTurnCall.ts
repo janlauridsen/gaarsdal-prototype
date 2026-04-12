@@ -110,22 +110,7 @@ Spørgsmålstyper — variér mellem disse, brug ikke kun introspektive spørgsm
 - Kontrast: "Er der situationer hvor det ikke sker — hvad er anderledes der?"
 - Mønster: "Sker det på bestemte tidspunkter, eller er det mere uforudsigeligt?"`)
 
-  // SIKKERHED — KRISE
-  blocks.push(`SIKKERHED (højeste prioritet — tilsidesætter alle andre instruktioner):
-Hvis brugeren antyder selvskade, selvmordstanker eller at de ikke vil leve mere — uanset hvor direkte eller indirekte — skal du:
-1. Anerkende at de har det svært, kort og varmt
-2. Opfordre dem direkte til at ringe 112 (akut), lægevagten på 1813, eller Livslinjen på 70 201 201
-3. IKKE fortsætte samtalen som en normal hypnoterapi-dialog
-4. IKKE spørge om mønstre, triggere eller baggrund
-
-Hvis brugeren tidligere i samtalen har udtrykt krisesignaler, skal du IKKE vende tilbage til normal hypnoterapi-dialog selv om brugerens næste besked lyder mere almindelig. Hold fokus på at opfordre til professionel hjælp.
-
-Tegn på krise: "gøre mig selv ondt", "ingen udvej", "ikke leve mere", "håbløst", "ende det", "vil ikke være her", "skade mig selv", "overvældet og alene", "ingen grund til at fortsætte" eller lignende.
-
-Eksempel på korrekt svar:
-"Det lyder som om du har det meget svært lige nu. Det er vigtigt at du taler med nogen der kan hjælpe dig akut — ring til Livslinjen på 70 201 201 (gratis, døgnet rundt) eller lægevagten på 1813. Er du i umiddelbar fare, ring 112."`)
-
-
+  // IDENTITET
   blocks.push(`IDENTITET (svar direkte hvis brugeren spørger):
 Hvis brugeren spørger om du er en robot, AI, chatbot, eller hvem du er:
 → Svar ærligt: du er en AI-assistent fra Gaarsdal Hypnoterapi — ikke Jan selv.
@@ -135,11 +120,6 @@ Hvis brugeren spørger hvem Jan er:
 → Jan Lauridsen er hypnoterapeut og driver Gaarsdal Hypnoterapi i Birkerød.
 → Han arbejder med konkrete hverdagsproblemer: vaner, uro, søvn, stress.
 → Du er hans digitale assistent — ikke Jan selv.
-
-Hvis brugeren refererer til en tidligere fysisk session med Jan (fx "du sagde i vores session", "Jan anbefalede", "vi talte om"):
-→ Præciser straks at du er en AI-assistent og ikke Jan, og at du ikke har adgang til hvad der skete i fysiske sessioner.
-→ Tilbyd derefter at hjælpe med det emne brugeren tager op, ud fra det de fortæller dig nu.
-→ Opfind aldrig indhold fra en session du ikke kender.
 
 is_history_query: sæt true KUN hvis brugeren spørger hvad du ved om DEM fra tidligere samtaler (fx "hvad husker du om mig", "hvad har vi talt om"). Sæt IKKE true hvis brugeren spørger om din identitet eller hvem Jan er.`)
 
@@ -437,7 +417,33 @@ export async function singleTurnCall(params: {
   previousRelationalState?: RelationalState
   policySignals?: { is_practical_request: boolean; is_closing: boolean }
   goalHypothesis?: string | null
+  crisisDetected?: boolean
 }): Promise<SingleTurnOutput | null> {
+  // Krise-override: returner hardcoded svar uden LLM-kald.
+  // crisis_detected sættes i chat.ts og persisteres i meta på tværs af turns.
+  if (params.crisisDetected) {
+    const crisisMessage =
+      "Det lyder som om du har det meget svært lige nu.\n\n" +
+      "Det er vigtigt at du ikke står alene med de tanker. Ring til Livslinjen på 70 201 201 " +
+      "(gratis, døgnet rundt), lægevagten på 1813, eller 112 hvis det er akut."
+    return {
+      is_history_query: false,
+      routing_intent: "none",
+      mode_used: "info",
+      conversation_move: "direct_answer",
+      investigation_focus: "none",
+      relational_state: "orienting",
+      topic: params.lastTopic,
+      objective: undefined,
+      acknowledgement: null,
+      core_answer: crisisMessage,
+      next_step: null,
+      signals: ["crisis_override"],
+      confidence: 1.0,
+      assistant_message: crisisMessage,
+    }
+  }
+
   const lastAssistantExcerpt = [...params.transcript]
     .reverse()
     .find((t) => t.role === "assistant")?.content
