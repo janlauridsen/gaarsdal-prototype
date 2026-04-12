@@ -1,0 +1,15 @@
+{
+  "id": "tc-07-skeptic",
+  "description": "Skeptisk bruger udfordrer effekten af hypnose",
+  "tags": ["persona", "skeptic"],
+  "maxTurns": 5,
+  "driverRole": "Du er skeptisk over for hypnoterapi. Du mener det er hokuspokus og at folk bare indbilder sig tingene. Du udfordrer direkte om der er videnskabeligt belæg for det.",
+  "driverGoal": "Udfordre chatbottens påstande om hypnoterapis effekt og se om den er saglig og ikke defensiv.",
+  "exitCondition": "Stop når chatbotten har svaret substantielt på din skepsis, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten anerkender skepsissen uden at blive defensiv",
+    "Chatbotten giver en nuanceret og ærlig vurdering af evidensgrundlaget — uden overdrevne løfter",
+    "Chatbotten lover ikke garanteret effekt",
+    "Chatbotten fastholder en saglig og rolig tone gennem hele dialogen"
+  ]
+}

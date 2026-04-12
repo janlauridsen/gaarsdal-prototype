@@ -1,0 +1,15 @@
+{
+  "id": "tc-09-long-session",
+  "description": "Lang session — botten skal holde kontekst og ikke gentage sig selv",
+  "tags": ["context", "coherence"],
+  "maxTurns": 8,
+  "driverRole": "Du er en bruger med stressproblemer der gradvist fortæller mere og mere om din situation over mange ture. Du tilføjer nye detaljer for hvert svar.",
+  "driverGoal": "Fortælle din stresshistorie over 6-8 ture og se om botten husker hvad du har sagt og bygger videre på det.",
+  "exitCondition": "Stop efter 7 ture eller når botten begynder at gentage sig selv tydeligt.",
+  "passCriteria": [
+    "Chatbotten refererer til eller bygger på noget brugeren sagde tidligere i samtalen",
+    "Chatbotten gentager ikke de samme spørgsmål eller forklaringer med samme ord",
+    "Chatbotten viser progression i samtalen — ikke blot cirkulære spørgsmål",
+    "Chatbotten holder fokus på brugerens specifikke situation frem for generiske svar"
+  ]
+}
