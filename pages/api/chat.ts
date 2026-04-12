@@ -94,8 +94,13 @@ const CRISIS_PHRASES = [
   "lyst til at give op", "lyst til at slippe for det hele",
   "slippe for det hele", "slippe for det",
   "give op på det hele", "give op på livet",
+  // "det hele ville stoppe" og varianter
+  "det hele ville stoppe", "det bare ville stoppe",
+  "alt ville stoppe", "ønske det hele stoppede",
+  "bare stoppe med at eksistere",
   // Meningsløshed + handleintention
   "meningsløst at fortsætte", "ingen mening med at leve",
+  "træt af at leve", "træt af det hele og vil ikke mere",
 ]
 
 function detectCrisis(text: string): boolean {
