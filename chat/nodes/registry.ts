@@ -33,6 +33,7 @@ export const nodeRegistry: Record<string, Node> = {
       "LEAD_CAPTURE",
       "PREQUALIFY",
       "CLIENT_SUPPORT",
+      "CRISIS_INFO",
     ],
     meta_domains_written: [
       "ux",
@@ -115,6 +116,20 @@ export const nodeRegistry: Record<string, Node> = {
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: ["HOME", "GEN_HYPNO"],
+    meta_domains_written: ["ux"],
+  },
+
+  // ─── Krise / safety ────────────────────────────────────────────────────────
+
+  CRISIS_INFO: {
+    id: "CRISIS_INFO",
+    kind: "INFO",
+    goal: "Vis kriseressourcer og afbryd normal samtale",
+    message:
+      "Det lyder som om du har det meget svært lige nu.\n\nDet er vigtigt at du ikke står alene med de tanker. Ring til Livslinjen på 70 201 201 (gratis, døgnet rundt), lægevagten på 1813, eller 112 hvis det er akut.",
+    allow_free_text: true,
+    allow_parentese: false,
+    allowed_exits: ["GEN_HYPNO"],
     meta_domains_written: ["ux"],
   },
 
