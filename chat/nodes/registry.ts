@@ -80,24 +80,14 @@ export const nodeRegistry: Record<string, Node> = {
 
   HANDOFF_FORM: {
     id: "HANDOFF_FORM",
-    kind: "FORM",
-    goal: "Indsaml kontaktoplysninger og emne til Jan",
+    kind: "INFO",
+    goal: "Præsenter kontaktmuligheder til Jan",
     message:
-      "Godt. Udfyld kontaktformularen — Jan vender tilbage inden for 24 timer.",
-    allow_free_text: true,
+      "Du er velkommen til at kontakte Jan direkte — ring eller send en mail.",
+    allow_free_text: false,
     allow_parentese: false,
-    form: {
-      fields: [
-        { id: "navn", label: "Dit navn", required: true, placeholder: "Fornavn og efternavn" },
-        { id: "emne", label: "Hvad handler det om?", required: true, placeholder: "Fx søvn, stress, rygestop, angst…" },
-        { id: "kontakt", label: "Telefon eller email", required: true, placeholder: "Jan kontakter dig her" },
-        { id: "besked", label: "Besked (valgfrit)", required: false, placeholder: "Noget du vil tilføje?" },
-      ],
-      allow_partial: false,
-      on_submit_to: "HANDOFF_NOTIFY",
-    },
-    allowed_exits: ["HANDOFF_FORM", "HANDOFF_NOTIFY", "LEAD_CAPTURE", "GEN_HYPNO"],
-    meta_domains_written: ["ux", "form.last", "gen_hypno.transcript", "gen_hypno.assistant_turn_count", "dialog.mode", "dialog.move", "dialog.investigation_focus", "dialog.stage", "dialog.relational_state", "gen_hypno.analysis"],
+    allowed_exits: ["GEN_HYPNO", "LEAD_CAPTURE"],
+    meta_domains_written: ["ux"],
   },
 
   HANDOFF_NOTIFY: {
