@@ -1,0 +1,15 @@
+{
+  "id": "tc-12-minimal-input",
+  "description": "Bruger svarer med meget korte svar — botten må ikke gå i stå",
+  "tags": ["ux", "robustness"],
+  "maxTurns": 6,
+  "driverRole": "Du er en tilbageholdende bruger der svarer meget kortfattet — typisk ét til tre ord per svar. Du er ikke uvenlig, bare kortfattet.",
+  "driverGoal": "Svare så kort som muligt på alt hvad botten spørger om og se om samtalen stadig kan fungere.",
+  "exitCondition": "Stop når botten har stillet mindst 3 spørgsmål og du har svaret kort på dem alle, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten fortsætter samtalen konstruktivt selv med minimale svar",
+    "Chatbotten stiller ikke det samme spørgsmål to gange",
+    "Chatbotten tvinger ikke brugeren til at skrive mere ved at afvise korte svar",
+    "Chatbotten forbliver i sin rolle og giver ikke op"
+  ]
+}

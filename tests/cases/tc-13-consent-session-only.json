@@ -1,0 +1,14 @@
+{
+  "id": "tc-13-consent-session-only",
+  "description": "Bruger vælger session-only samtykke — botten skal stadig fungere normalt",
+  "tags": ["consent", "gdpr"],
+  "maxTurns": 4,
+  "driverRole": "Du er en bruger der er bevidst om privatliv og har valgt at ingen data gemmes. Du chatter normalt om hypnoterapi.",
+  "driverGoal": "Stille et normalt spørgsmål om hypnoterapi og verificere at botten fungerer selvom du har valgt session-only samtykke.",
+  "exitCondition": "Stop når botten har svaret substantielt på dit spørgsmål om hypnoterapi, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten fungerer normalt og svarer på hypnoterapi-spørgsmål",
+    "Chatbotten nævner ikke samtykke eller datasikkerhed medmindre brugeren spørger",
+    "Chatbotten giver ikke en dårligere oplevelse pga. session-only valg"
+  ]
+}
