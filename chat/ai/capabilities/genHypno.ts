@@ -312,6 +312,9 @@ export async function runUnifiedHypnoCapability(
     "ikke lyst til at leve", "ingen grund til at fortsætte",
     "lyst til at give op", "lyst til at slippe for det hele",
     "slippe for det hele", "ville være lettere hvis jeg ikke var her",
+    "det hele ville stoppe", "det bare ville stoppe",
+    "alt ville stoppe", "bare stoppe med at eksistere",
+    "træt af at leve", "ønsker det hele stoppede",
   ]
   const crisisInText = CRISIS_PHRASES_GENHYPNO.some((p) => userText.toLowerCase().includes(p))
   const crisisDetected = crisisInMeta || crisisInText
