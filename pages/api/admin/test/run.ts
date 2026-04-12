@@ -42,7 +42,7 @@ interface TestResult {
 
 function validateToken(req: NextApiRequest, res: NextApiResponse): boolean {
   const token = req.query.token
-  const expected = process.env.GAARSDAL_ADMIN_TOKEN
+  const expected = process.env.ADMIN_TOKEN
   if (!expected || token !== expected) {
     res.status(401).json({ error: "Unauthorized" })
     return false
