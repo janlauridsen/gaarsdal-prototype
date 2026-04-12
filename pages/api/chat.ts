@@ -312,9 +312,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Krise-detektion: hvis brugeren skriver krisesignaler, sæt permanent flag i meta.
     // Flagget læses i singleTurnCall.ts og låser botten i krisemodus for resten af sessionen.
-    const userText = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : ""
+    const inputText = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : ""
     const crisisAlreadyDetected = (baseState.meta?.["safety.crisis_detected"] as any)?.value === true
-    const stateForRun = (detectCrisis(userText) || crisisAlreadyDetected)
+    const stateForRun = (detectCrisis(inputText) || crisisAlreadyDetected)
       ? injectCrisisMeta(baseState)
       : baseState
 
