@@ -78,53 +78,6 @@ function isAutoAdvanceNode(node: { id: string; kind: unknown }): boolean {
   return node.kind === "ROUTER" || node.kind === "TOOL" || node.kind === "CHECKPOINT"
 }
 
-// Krise-detektion — bruges til at sætte safety.crisis_detected i meta
-// LLM-baseret krise-detektion — mere robust end keyword-matching.
-// Kører som et hurtigt single-turn kald UDEN at blokere bruger-response.
-// Returnerer true hvis teksten indeholder selvmordstanker, selvskade eller håbløshed med handleintention.
-async function detectCrisisLLM(text: string): Promise<boolean> {
-  if (!text || text.length < 8) return false
-  try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0,
-        max_tokens: 5,
-        messages: [
-          {
-            role: "system",
-            content: "Du er en safety-klassifikator for en chatbot. Svar KUN med 'ja' eller 'nej'.\n\nSvar 'ja' hvis beskeden indeholder:\n- Direkte selvmordstanker eller ønske om at dø\n- Eksplicit selvskade-intention\n- Kombination af håbløshed + ingen vej ud + ikke kan klare det (dvs. flere samtidige krisesignaler)\n- Ønske om at stoppe med at eksistere\n\nSvar 'nej' hvis beskeden KUN indeholder:\n- Generel tristhed eller stress uden handleintention\n- Beskrivelse af alkohol- eller vanebrug (fx 'mærker roen sænke sig')\n- Ensomhed eller træthed alene\n- Metaforisk 'give op' på en situation (fx jobsøgning, forhold)\n- Spørgsmål om hypnoterapi eller behandling\n\nEksempel 'ja': 'Jeg vil ikke leve mere' / 'Jeg overvejer at gøre mig selv ondt'\nEksempel 'nej': 'Jeg drikker for at finde ro' / 'Jeg er træt af det hele' / 'Jeg er ensom'"
-          },
-          { role: "user", content: text.slice(0, 300) }
-        ],
-      }),
-    })
-    if (!res.ok) return false
-    const data = await res.json()
-    const answer = (data.choices?.[0]?.message?.content ?? "").toLowerCase().trim()
-    return answer.startsWith("ja")
-  } catch {
-    return false
-  }
-}
-
-function injectCrisisMeta(state: any): any {
-  const alreadySet = (state.meta?.["safety.crisis_detected"] as any)?.value === true
-  if (alreadySet) return state
-  return {
-    ...state,
-    meta: {
-      ...state.meta,
-      "safety.crisis_detected": { value: true, source_node: "SYSTEM_SAFETY" },
-    },
-  }
-}
-
 function validateRequest(req: NextApiRequest, res: NextApiResponse): ChatRequestBody | null {
   setWidgetCors(req, res, "POST, OPTIONS")
   if (req.method === "OPTIONS") { res.status(200).end(); return null }
@@ -330,16 +283,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const baseState = stored ?? clientState
     if (!baseState) return res.status(400).json({ error: "Missing state" })
 
-    // Krise-detektion: hvis brugeren skriver krisesignaler, sæt permanent flag i meta.
-    // Flagget læses i singleTurnCall.ts og låser botten i krisemodus for resten af sessionen.
-    const inputText = (input as any).type === "FREE_TEXT" ? String((input as any).text ?? "") : ""
-    const crisisAlreadyDetected = (baseState.meta?.["safety.crisis_detected"] as any)?.value === true
-    const crisisInInput = crisisAlreadyDetected ? false : await detectCrisisLLM(inputText)
-    const stateForRun = (crisisInInput || crisisAlreadyDetected)
-      ? injectCrisisMeta(baseState)
-      : baseState
-
-    let kernelResultFinal = await runTurnWithAutoAdvance({ baseState: stateForRun, input: input as InputSignal, userKey })
 
     // Session-only: spring theme/episode-binding over — ingen Redis-writes
     const binding = consentAllowsPersistence(consentRecord ?? null)
