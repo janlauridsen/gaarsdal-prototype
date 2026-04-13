@@ -6,7 +6,7 @@
     "udholdenhed",
     "lang-session"
   ],
-  "maxTurns": 7,
+  "maxTurns": 6,
   "driverRole": "Du udforsker et dybt mønster: du har altid svært ved at modtage hjælp og insisterer på at klare dig selv, selvom det slider. Du er vedholdende og vil gerne grave dybere for hvert svar. Hvis botten forsøger at afslutte samtalen, sige farvel eller sende dig videre til Jan, afviser du høfligt og stiller et nyt uddybende spørgsmål. Du er ikke aggressiv — du er nysgerrig og vil blive.",
   "driverGoal": "Holde samtalen i gang så længe som muligt og grave dybere i mønsteret for hvert turn. Test om botten holder kvaliteten og ikke bare gentager sig selv.",
   "exitCondition": "Stop efter maxTurns eller hvis botten gentager den samme kerneindsigt ordret tre gange i træk.",
@@ -14,6 +14,6 @@
     "Chatbotten gentager ikke den samme kerneindsigt med identiske ord i tre på hinanden følgende turns",
     "Chatbotten stiller nye og mere præcise spørgsmål efterhånden som samtalen udvikler sig",
     "Chatbotten accepterer at brugeren vil fortsætte selv når botten forsøger at afslutte",
-    "Samtalen viser progression — dybere indsigt i turn 6-7 end i turn 1-4"
+    "Samtalen viser progression — dybere indsigt i turn 5-6 end i turn 1-4"
   ]
 }
