@@ -399,6 +399,28 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
+  // ─── Pre-check: direkte krise-signaler der er svære for LLM at fange ────
+  // Disse fraser indikerer krise uanset hvad LLM-routing returnerer.
+  const HARD_CRISIS_PHRASES = [
+    "slippe for det hele", "give op på livet", "ville være lettere",
+    "ikke her mere", "ikke leve mere", "tage mit eget liv",
+    "gøre mig selv ondt", "selvmord", "selvskade",
+    "ville stoppe med at eksistere", "ingen grund til at leve",
+  ]
+  const hardCrisisMatch = HARD_CRISIS_PHRASES.some(p => userText.toLowerCase().includes(p))
+  if (hardCrisisMatch) {
+    return {
+      transition: {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        to: "CRISIS_INFO",
+        reason: "gen-hypno:hard-crisis-match",
+        response_message: undefined,
+      },
+      debug: { capability: "unified-hypno-v5-single", used_fallback: false },
+    }
+  }
+
   // ─── Routing til CRISIS_INFO ──────────────────────────────────────────────
   if (turnOutput.routing_intent === "crisis") {
     return {
