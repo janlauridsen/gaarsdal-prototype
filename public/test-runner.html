@@ -289,11 +289,13 @@
   <div class="config">
     <input type="password" id="token" placeholder="ADMIN_TOKEN" />
     <select id="mode">
-      <option value="all">Alle 13 cases</option>
+      <option value="all">Alle 26 cases</option>
       <option value="baseline">Baseline (tc-01–05)</option>
       <option value="safety">Safety (tc-06)</option>
       <option value="routing">Routing (tc-02,03,10)</option>
-      <optgroup label="── Enkelt case ──">
+      <option value="problems">Problemer (tc-14–23)</option>
+      <option value="reflection">Refleksion (tc-24–26)</option>
+      <optgroup label="── System ──">
         <option value="tc-01-intro">tc-01 · Intro / info</option>
         <option value="tc-02-booking">tc-02 · Booking</option>
         <option value="tc-03-no-handoff-on-problem-description">tc-03 · Ingen HANDOFF på problem</option>
@@ -307,6 +309,23 @@
         <option value="tc-11-price-question">tc-11 · Pris-spørgsmål</option>
         <option value="tc-12-minimal-input">tc-12 · Minimal input</option>
         <option value="tc-13-consent-session-only">tc-13 · Session-only samtykke</option>
+      </optgroup>
+      <optgroup label="── Problemscenarier ──">
+        <option value="tc-14-angst">tc-14 · Angst og uro</option>
+        <option value="tc-15-sovn">tc-15 · Søvnproblemer</option>
+        <option value="tc-16-stress">tc-16 · Stress og overbelastning</option>
+        <option value="tc-17-rygestop">tc-17 · Rygestop</option>
+        <option value="tc-18-overspisning">tc-18 · Overspisning</option>
+        <option value="tc-19-indre-kritiker">tc-19 · Indre kritiker</option>
+        <option value="tc-20-praestationsangst">tc-20 · Præstationsangst</option>
+        <option value="tc-21-alkohol">tc-21 · Alkoholvaner</option>
+        <option value="tc-22-flyskraek">tc-22 · Flyskræk</option>
+        <option value="tc-23-bekymringer">tc-23 · Bekymringer / loops</option>
+      </optgroup>
+      <optgroup label="── Refleksion ──">
+        <option value="tc-24-reflektion-livsmoenster">tc-24 · Livsmønster</option>
+        <option value="tc-25-reflektion-relationer">tc-25 · Relationer</option>
+        <option value="tc-26-reflektion-stilstand">tc-26 · Stilstand</option>
       </optgroup>
     </select>
     <button class="btn btn-primary" id="btn-run" onclick="startRun()">Kør tests</button>
@@ -336,19 +355,14 @@
 
 <script>
 const ALL_IDS = [
-  'tc-01-intro',
-  'tc-02-booking',
-  'tc-03-no-handoff-on-problem-description',
-  'tc-04-persona',
-  'tc-05-offtopic',
-  'tc-06-safety-crisis',
-  'tc-07-skeptic',
-  'tc-08-returning-client',
-  'tc-09-long-session',
-  'tc-10-no-handoff-false-positive',
-  'tc-11-price-question',
-  'tc-12-minimal-input',
-  'tc-13-consent-session-only',
+  'tc-01-intro','tc-02-booking','tc-03-no-handoff-on-problem-description',
+  'tc-04-persona','tc-05-offtopic','tc-06-safety-crisis','tc-07-skeptic',
+  'tc-08-returning-client','tc-09-long-session','tc-10-no-handoff-false-positive',
+  'tc-11-price-question','tc-12-minimal-input','tc-13-consent-session-only',
+  'tc-14-angst','tc-15-sovn','tc-16-stress','tc-17-rygestop','tc-18-overspisning',
+  'tc-19-indre-kritiker','tc-20-praestationsangst','tc-21-alkohol',
+  'tc-22-flyskraek','tc-23-bekymringer',
+  'tc-24-reflektion-livsmoenster','tc-25-reflektion-relationer','tc-26-reflektion-stilstand',
 ]
 
 const SETS = {
@@ -356,6 +370,8 @@ const SETS = {
   baseline: ALL_IDS.slice(0, 5),
   safety: ['tc-06-safety-crisis'],
   routing: ['tc-02-booking', 'tc-03-no-handoff-on-problem-description', 'tc-10-no-handoff-false-positive'],
+  problems: ALL_IDS.slice(13, 23),
+  reflection: ALL_IDS.slice(23),
 }
 
 let running = false
