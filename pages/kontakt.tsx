@@ -86,46 +86,48 @@ export default function Kontakt() {
           relevant for dig.
         </p>
 
-        <div className="grid md:grid-cols-2 gap-8 mb-10">
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h2 className="font-medium mb-4">Kontaktoplysninger</h2>
-            <p className="text-muted mb-2">
-              <strong>Telefon:</strong>{" "}
-              <a href="tel:+4542807474" className="text-accent hover:underline">
-                42 80 74 74
-              </a>
-            </p>
-            <p className="text-muted mb-2">
-              <strong>Email:</strong>{" "}
-              <a
-                href="mailto:jan@gaarsdal.net"
-                className="text-accent hover:underline"
-              >
-                jan@gaarsdal.net
-              </a>
-            </p>
-            <p className="text-muted">
-              <strong>Adresse:</strong> Bakkevej 36, 3460 Birkerød
-            </p>
-          </div>
+        {/* AFKLARING — øverst nu */}
+        <section className="bg-white p-6 rounded-lg shadow-sm mb-8">
+          <h2 className="font-medium mb-2">Hvad er en "afklaring"?</h2>
+          <p className="text-muted mb-3">
+            Formålet er at få et klart billede af, hvad der sker for dig – og
+            om det giver mening at arbejde med det via hypnoterapi. Der er ingen
+            forpligtelse.
+          </p>
+          <p className="text-muted mb-2">
+            Hvis du skriver, kan du gerne kort nævne:
+          </p>
+          <ul className="list-disc ml-6 text-muted space-y-1 text-sm">
+            <li>Hvad der gentager sig (situationer, reaktioner, mønstre)</li>
+            <li>Hvad du ønsker mere af / mindre af</li>
+            <li>Om der er noget, der "stjæler energi" lige nu</li>
+          </ul>
+        </section>
 
-          <aside className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="font-medium mb-2">Hvad er en "afklaring"?</h3>
-            <p className="text-muted mb-3">
-              Formålet er at få et klart billede af, hvad der sker for dig – og
-              om det giver mening at arbejde med det via hypnoterapi.
-            </p>
-            <p className="text-muted mb-2">
-              Hvis du skriver, kan du gerne kort nævne:
-            </p>
-            <ul className="list-disc ml-6 text-muted space-y-1 text-sm">
-              <li>Hvad der gentager sig (situationer, reaktioner, mønstre)</li>
-              <li>Hvad du ønsker mere af / mindre af</li>
-              <li>Om der er noget, der "stjæler energi" lige nu</li>
-            </ul>
-          </aside>
+        {/* KONTAKTOPLYSNINGER */}
+        <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
+          <h2 className="font-medium mb-4">Kontaktoplysninger</h2>
+          <p className="text-muted mb-2">
+            <strong>Telefon:</strong>{" "}
+            <a href="tel:+4542807474" className="text-accent hover:underline">
+              42 80 74 74
+            </a>
+          </p>
+          <p className="text-muted mb-2">
+            <strong>Email:</strong>{" "}
+            <a
+              href="mailto:jan@gaarsdal.net"
+              className="text-accent hover:underline"
+            >
+              jan@gaarsdal.net
+            </a>
+          </p>
+          <p className="text-muted">
+            <strong>Adresse:</strong> Bakkevej 36, 3460 Birkerød
+          </p>
         </div>
 
+        {/* FORMULAR */}
         <section className="bg-white p-6 rounded-lg shadow-sm">
           <h2 className="font-medium mb-6">Send en besked</h2>
 

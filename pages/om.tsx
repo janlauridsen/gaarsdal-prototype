@@ -40,6 +40,22 @@ export default function Om() {
             </p>
           </div>
 
+          {/* ANERKENDELSE AF KLIENTENS REJSE */}
+          <section className="bg-white p-6 rounded-lg shadow-sm mb-10">
+            <p className="text-muted leading-relaxed mb-4">
+              De fleste der kontakter mig har allerede arbejdet med deres
+              udfordring i nogen tid — måske via psykolog, coaching, mindfulness
+              eller ved at forsøge at tænke sig ud af det. De har indsigten.
+              De mangler bevægelsen.
+            </p>
+            <p className="text-muted leading-relaxed">
+              Hypnoterapi er en metode der arbejder der, hvor analysen ikke
+              når ind — med de automatiske reaktioner og mønstre der gentager
+              sig, selvom man rationelt ved bedre. Det er ikke magi. Men det
+              kan føles meget mere direkte end det, man har prøvet før.
+            </p>
+          </section>
+
           {/* BAGGRUND */}
           <section className="bg-white p-6 rounded-lg shadow-sm mb-10">
             <h2 className="text-h2 font-light mb-4">Baggrund</h2>

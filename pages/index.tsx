@@ -65,48 +65,70 @@ export default function Home() {
             Hypnoterapi i Birkerød
           </h1>
 
-          <p className="text-base-lg text-muted max-w-xl mx-auto mb-10">
-            Ro, klarhed og ændringer der holder.
+          <p className="text-base-lg text-muted max-w-2xl mx-auto mb-6 leading-relaxed">
+            Du har sandsynligvis allerede brugt tid på at forstå det.
+            Hypnoterapi arbejder der, hvor analysen ikke når ind — med de
+            reaktioner og mønstre, der bliver ved, selvom du rationelt godt ved
+            bedre.
           </p>
 
-          <div className="max-w-2xl mx-auto text-left space-y-4 mb-12">
-            <p className="text-base-lg text-muted leading-relaxed">
-              Der er situationer, hvor man forstår sit problem rationelt, men
-              alligevel oplever, at de samme reaktioner bliver ved. Hypnoterapi
-              kan være et praktisk værktøj til at arbejde med mønstre, der ellers
-              kører automatisk.
-            </p>
-            <p className="text-base-lg text-muted leading-relaxed">
-              Jeg tilbyder forløb i Birkerød. Vi starter altid med en afklaring,
-              så du kan vurdere, om metoden og min måde at arbejde på passer til
-              dig og din situation.
-            </p>
-          </div>
+          <p className="text-base-lg text-muted max-w-xl mx-auto mb-12 leading-relaxed">
+            Jeg tilbyder forløb i Birkerød. Vi starter altid med en afklaring,
+            så du kan vurdere, om metoden og min måde at arbejde på passer til
+            dig.
+          </p>
 
           <div className="flex justify-center gap-4 flex-wrap">
-            <Link
-              href="/kontakt"
-              className="bg-accent text-white px-6 py-3 rounded-lg shadow hover:bg-accent/90 transition"
-            >
-              Kontakt for afklaring
-            </Link>
-            <Link
-              href="/hypnoterapi"
-              className="border border-accent text-accent px-6 py-3 rounded-lg hover:bg-accent/10 transition"
-            >
-              Læs mere om metoden
-            </Link>
             <button
               onClick={() => window.dispatchEvent(new Event("open-chatbot"))}
-              className="border border-gray-300 text-muted px-6 py-3 rounded-lg hover:bg-gray-50 transition"
+              className="bg-accent text-white px-6 py-3 rounded-lg shadow hover:bg-accent/90 transition"
             >
               Er det noget for mig? →
             </button>
+            <Link
+              href="/kontakt"
+              className="border border-accent text-accent px-6 py-3 rounded-lg hover:bg-accent/10 transition"
+            >
+              Kontakt for afklaring
+            </Link>
+          </div>
+        </section>
+
+        {/* HVEM DET PASSER TIL — flyttet op */}
+        <section className="py-24 px-6 bg-white">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-h2 font-light text-center mb-4">
+              Hvem det passer bedst til
+            </h2>
+            <p className="text-muted mb-8 text-center">
+              De fleste der kontakter mig har allerede prøvet at arbejde med
+              deres udfordring — via psykolog, coaching, mindfulness eller
+              viljestyrke. De har indsigten, men savner bevægelsen.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4 mb-8">
+              {[
+                "Du forstår problemet, men kan ikke mærke forandringen",
+                "De samme reaktioner gentager sig, selvom du er bevidst om dem",
+                "Du foretrækker en nøgtern, respektfuld stil frem for store løfter",
+                "Du ønsker ro og klarhed mere end motiverende peptalks",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="bg-bg rounded-xl px-5 py-4 border border-gray-100 shadow-sm text-muted text-sm leading-relaxed"
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+            <p className="text-muted leading-relaxed text-center text-sm">
+              Hvis du søger en akut indsats eller behandling i sundhedssystemet,
+              er det ofte bedre at starte et andet sted.
+            </p>
           </div>
         </section>
 
         {/* HVAD DET ER */}
-        <section className="py-24 px-6 bg-white">
+        <section className="py-24 px-6">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-h2 font-light text-center mb-8">
               Hvad hypnoterapi er (og ikke er)
@@ -125,7 +147,7 @@ export default function Home() {
         </section>
 
         {/* HVAD JEG TYPISK ARBEJDER MED */}
-        <section className="py-24 px-6">
+        <section className="py-24 px-6 bg-white">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-h2 font-light text-center mb-8">
               Hvad jeg typisk arbejder med
@@ -143,7 +165,7 @@ export default function Home() {
               ].map((item) => (
                 <div
                   key={item}
-                  className="bg-white rounded-xl px-5 py-4 border border-gray-100 shadow-sm text-muted text-sm leading-relaxed"
+                  className="bg-bg rounded-xl px-5 py-4 border border-gray-100 shadow-sm text-muted text-sm leading-relaxed"
                 >
                   {item}
                 </div>
@@ -158,41 +180,54 @@ export default function Home() {
           </div>
         </section>
 
-        {/* HVEM DET PASSER TIL */}
-        <section className="py-24 px-6 bg-white">
+        {/* CITATER */}
+        <section className="py-24 px-6">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-h2 font-light text-center mb-8">
-              Hvem det passer bedst til
+            <h2 className="text-h2 font-light text-center mb-12">
+              Hvad andre siger
             </h2>
-            <p className="text-muted mb-6 text-center">
-              Min tilgang giver især mening for dig, hvis du:
-            </p>
-            <div className="grid sm:grid-cols-2 gap-4 mb-8">
-              {[
-                "Er vant til at tænke selv og tage ansvar",
-                "Har prøvet at forstå problemet uden at det ændrede noget",
-                "Foretrækker en nøgtern, respektfuld stil frem for store løfter",
-                "Ønsker ro og klarhed mere end motiverende peptalks",
-              ].map((item) => (
-                <div
-                  key={item}
-                  className="bg-bg rounded-xl px-5 py-4 border border-gray-100 shadow-sm text-muted text-sm leading-relaxed"
-                >
-                  {item}
-                </div>
-              ))}
+            <div className="grid sm:grid-cols-2 gap-6">
+              <blockquote className="bg-white rounded-xl px-6 py-5 border border-gray-100 shadow-sm">
+                <p className="text-muted text-sm leading-relaxed mb-3">
+                  "Jeg var lidt skeptisk. Men Jan hjalp mig med at finde
+                  årsagen til min angst ved at køre i bjerge — og nu er jeg SÅ
+                  klar. Jeg var helt høj efter min oplevelse hos ham. Jeg har
+                  allerede booket en tid til et andet problem."
+                </p>
+                <footer className="text-xs text-muted/60">— Klient, 2019</footer>
+              </blockquote>
+
+              <blockquote className="bg-white rounded-xl px-6 py-5 border border-gray-100 shadow-sm">
+                <p className="text-muted text-sm leading-relaxed mb-3">
+                  "Man får en varm velkomst. Jan er varm og super dygtig til sit
+                  job. Man får klar besked på hvad der skal ske. Du er i sikre
+                  og kompetente hænder."
+                </p>
+                <footer className="text-xs text-muted/60">— Klient, 2018</footer>
+              </blockquote>
+
+              <blockquote className="bg-white rounded-xl px-6 py-5 border border-gray-100 shadow-sm">
+                <p className="text-muted text-sm leading-relaxed mb-3">
+                  "Jan er en som går mere op i sit arbejde end pengene. Sidst
+                  jeg var så afslappet var jeg dybt påvirket af stoffer."
+                </p>
+                <footer className="text-xs text-muted/60">— Klient, 2019</footer>
+              </blockquote>
+
+              <blockquote className="bg-white rounded-xl px-6 py-5 border border-gray-100 shadow-sm">
+                <p className="text-muted text-sm leading-relaxed mb-3">
+                  "Aldrig været hos en der er så dygtig."
+                </p>
+                <footer className="text-xs text-muted/60">— Klient, 2019</footer>
+              </blockquote>
             </div>
-            <p className="text-muted leading-relaxed text-center text-sm">
-              Hvis du søger en akut indsats eller behandling i sundhedssystemet,
-              er det ofte bedre at starte et andet sted.
-            </p>
           </div>
         </section>
 
         {/* KLINIK + KONTAKT */}
-        <section className="py-24 px-6">
+        <section className="py-24 px-6 bg-white">
           <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-bg rounded-xl p-6 shadow-sm border border-gray-200">
               <h3 className="text-xl font-medium mb-3">Klinik</h3>
               <p className="text-muted leading-relaxed mb-2">
                 Adresse: Bakkevej 36, 3460 Birkerød.
@@ -203,7 +238,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-bg rounded-xl p-6 shadow-sm border border-gray-200">
               <h3 className="text-xl font-medium mb-3">Kontakt</h3>
               <p className="text-muted leading-relaxed mb-4">
                 Kontakt mig, hvis du vil afklare om hypnoterapi – og min tilgang
