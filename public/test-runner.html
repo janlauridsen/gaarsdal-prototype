@@ -80,6 +80,9 @@
   .turn-bot { color:var(--text);font-size:12px;line-height:1.5;white-space:pre-wrap; }
   .error-msg { font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red);margin-top:6px; }
   footer { margin-top:40px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:16px; }
+  .retention-toggle { font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;padding:4px 0; }
+  .retention-toggle input { accent-color:var(--amber);cursor:pointer; }
+  .retention-toggle:has(input:checked) { color:var(--amber); }
 </style>
 </head>
 <body>
@@ -94,6 +97,9 @@
     <button class="btn btn-primary" id="btn-run" onclick="startRun()">Kør valgte</button>
     <button class="btn btn-stop" id="btn-stop" onclick="stopRun()" disabled>Stop</button>
     <span class="sel-count">Valgt: <span id="sel-count">0</span></span>
+    <label class="retention-toggle" title="Gem test-sessioner i Redis i 7 dage så de kan inspiceres">
+      <input type="checkbox" id="retain-data"> Gem i Redis (7 dage)
+    </label>
   </div>
 
   <div class="presets">
@@ -221,8 +227,9 @@ function renderCaseList(ids){
   })
 }
 
-async function runCase(id,token,host){
-  const res=await fetch(`https://${host}/api/admin/test/run?token=${encodeURIComponent(token)}&id=${encodeURIComponent(id)}`)
+async function runCase(id,token,host,retain){
+  const url=`https://${host}/api/admin/test/run?token=${encodeURIComponent(token)}&id=${encodeURIComponent(id)}${retain?'&retain=1':''}`
+  const res=await fetch(url)
   if(!res.ok)throw new Error(`HTTP ${res.status}`)
   return res.json()
 }
@@ -284,7 +291,8 @@ async function startRun(){
     document.getElementById(`badge-${id}`).className='badge badge-running'
     document.getElementById(`badge-${id}`).textContent='kører...'
     try{
-      const data=await runCase(id,token,host)
+      const retain=document.getElementById('retain-data')?.checked
+      const data=await runCase(id,token,host,retain)
       const result=data.results?.[0],ok=result?.passed===true
       if(ok)passed++;else failed++
       document.getElementById(`row-${id}`).className=`case-row ${ok?'passed':'failed'}`
