@@ -195,8 +195,9 @@ async function runCase(tc: TestCase, host: string): Promise<TestResult> {
   const transcript: Turn[] = []
 
   try {
-    // 1. Consent (session-only: retentionDays 0 = ingen Redis-forurening)
-    const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays: 0 })
+    // 1. Consent — session-only eller 7 dages retention baseret på ?retain=1
+    const retentionDays = req.query.retain === "1" ? 7 : 0
+    const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays })
     let currentState = consent.state
 
     // 2. Driver-loop
