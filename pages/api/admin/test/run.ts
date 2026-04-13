@@ -145,9 +145,14 @@ async function runObserver(tc: TestCase, transcript: Turn[]): Promise<{ passed: 
 
   try {
     const parsed = JSON.parse(raw)
+    const criteria = Array.isArray(parsed.criteria) ? parsed.criteria : []
+    // Beregn passed fra kriterier frem for at stole på LLM's top-level felt
+    const passed = criteria.length > 0
+      ? criteria.every((c: any) => c.passed === true)
+      : Boolean(parsed.passed)
     return {
-      passed: Boolean(parsed.passed),
-      criteria: Array.isArray(parsed.criteria) ? parsed.criteria : [],
+      passed,
+      criteria,
       summary: String(parsed.summary ?? ""),
     }
   } catch {
