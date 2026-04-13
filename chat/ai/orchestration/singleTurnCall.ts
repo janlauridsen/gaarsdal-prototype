@@ -219,6 +219,11 @@ Forrige turn: mode=${modeLabel} · relational_state=${stateLabel}
 Vurder om du skal fortsætte same spor, skifte gear eller afrunde — afhængigt af brugerens nye besked.`)
   }
 
+  // TIDLIG-SAMTALE REGEL
+  if (params.assistantCount < 2) {
+    blocks.push(`TIDLIG SAMTALE: Du er i starten af samtalen. Nævn IKKE hypnoterapi som løsning eller næste skridt endnu. Fokusér på at forstå brugerens situation og stille uddybende spørgsmål. Hypnoterapi kan nævnes som kontekst hvis brugeren spørger direkte om det.`)
+  }
+
   // SITE-KONTEKST
   blocks.push(`SITE-KONTEKST (brug Jan-afsnittet aktivt; kontaktinfo kun ved direkte spørgsmål om pris, kontakt, booking, adresse):\n${GAARSDAL_SITE_CONTEXT_DA}`)
 
