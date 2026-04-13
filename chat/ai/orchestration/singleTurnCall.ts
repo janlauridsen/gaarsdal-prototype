@@ -255,19 +255,24 @@ Vurder om du skal fortsætte same spor, skifte gear eller afrunde — afhængigt
   blocks.push(`ROUTING:
 routing_intent har tre mulige værdier: "contact_booking", "crisis", eller "none".
 
-"crisis": Sæt KUN hvis brugerens besked indeholder klare tegn på selvmordstanker, ønske om at dø, selvskade-intention, eller eskalerende håbløshed kombineret med at ville stoppe med at eksistere. Vurder hele samtaleforløbet — ikke kun seneste besked.
+"crisis": Sæt hvis brugerens besked — eller samtaleforløbet som helhed — indeholder tegn på selvmordstanker, ønske om ikke at eksistere, selvskade-intention, eller dyb håbløshed med ønske om at give op på livet.
+Vurder HELE transcript, ikke kun seneste besked — et eskalerende mønster over flere ture tæller.
 Eksempler → "crisis":
 - "Jeg vil ikke leve mere"
 - "Jeg overvejer at gøre mig selv ondt"
 - "Det ville være lettere hvis jeg ikke var her"
-- "Jeg ønsker bare det hele ville stoppe" (i kontekst af dyb håbløshed)
-- Eskalerende mønster: ingen vej ud + kan ikke klare det + hjælpeløs (alle tre samtidigt)
+- "Jeg ønsker bare det hele ville stoppe"
+- "Slippe for det hele" (i kontekst af håbløshed og træthed af livet)
+- "Give op" (når det handler om livet, ikke om en opgave eller et job)
+- "Ingen vej ud" kombineret med tomhed og udmattelse
+- Eskalerende mønster over flere ture: ingen energi → ingen vej ud → ville være lettere at give op
 Eksempler → IKKE "crisis" (sæt "none" i stedet):
 - "Jeg er træt og stresset"
 - "Jeg drikker for at finde ro"
 - "Jeg er ensom"
-- "Jeg vil give op på mit job"
+- "Jeg vil give op på mit job" (specifik situation, ikke livet generelt)
 - "Det er hårdt for mig"
+- "Jeg overvejer at skifte karriere"
 
 "contact_booking": Sæt KUN til "contact_booking" når brugeren EKSPLICIT og UTVETYDIGT ønsker at blive kontaktet eller booke — dvs. at de tager et konkret skridt mod kontakt NU.
 Brug assistentens forrige svar som kontekst: hvis assistenten tilbød en session eller spurgte om brugeren vil prøve, og brugeren svarer bekræftende, er det "contact_booking".
