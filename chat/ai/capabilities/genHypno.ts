@@ -308,6 +308,9 @@ export async function runUnifiedHypnoCapability(
     "ikke interesseret i behandling", "ikke klar til", "ikke interesseret i en session",
     "ikke klar til at overveje", "vil ikke have en session", "ikke nu",
     "hellere ikke", "ikke endnu", "ikke behandling", "ikke til hypnoterapi",
+    "ikke sikker på om jeg er klar", "ikke sikker på om jeg vil", "ikke klar til at prøve",
+    "stadig lidt nervøs", "ikke klar endnu", "ikke til det endnu",
+    "vil hellere ikke", "er ikke klar", "ikke parat",
   ]
   const offerDeclinedInText = OFFER_DECLINE_PHRASES.some(p => userText.toLowerCase().includes(p))
   const offerDeclinedInMeta = (context.state.meta?.["gen_hypno.offer_declined"] as any)?.value === true
