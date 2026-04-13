@@ -103,7 +103,7 @@ export function homeRouterV1(params: HomeRouterInput): RouteDecision {
   // Ikke klar / blot info
   if (
     hasAny(t, [
-      "ikke klar", "tænker over det", "bare info", "blot info", "overvejer",
+      "ikke klar", "tænker over det", "bare info", "blot info",
       "send mig", "hør mere", "mere info", "holder mig opdateret",
       "skriv til mig", "mail mig", "email mig",
     ])
