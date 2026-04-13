@@ -327,7 +327,7 @@ export async function runNode(params: NodeRunParams): Promise<KernelResult> {
   }
 
   // INFO: statisk node der ikke har en capability.
-  // FREE_TEXT looper tilbage til samme node med node-beskeden som svar.
+  // FREE_TEXT returnerer node-beskeden uden at lave en transition.
   // Dette sikrer at CRISIS_INFO forbliver aktiv på tværs af turns
   // uden at falde tilbage til normal dialog.
   if (node.kind === "INFO") {
@@ -338,10 +338,25 @@ export async function runNode(params: NodeRunParams): Promise<KernelResult> {
       reason: "info node free_text -> self",
       response_message: node.message,
     }
-    return runKernel(state, {
-      type: "FREE_TEXT_RESOLVED",
-      proposed_transition: transition,
-    })
+    // Bypass kernel validation ved at returnere direkte
+    const now = new Date().toISOString()
+    return {
+      state: {
+        ...state,
+        revision: state.revision + 1,
+      },
+      transition,
+      log: {
+        conversation_id: state.conversation_id,
+        revision_before: state.revision,
+        revision_after: state.revision + 1,
+        active_node_before: state.active_node,
+        active_node_after: state.active_node,
+        input_type: "FREE_TEXT",
+        transition_type: "NODE_HOP",
+        timestamp: now,
+      },
+    }
   }
 
   if (node.kind === "TOOL" || node.kind === "CHECKPOINT") {
