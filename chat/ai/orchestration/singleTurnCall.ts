@@ -50,6 +50,7 @@ function buildSystemPrompt(params: {
   previousRelationalState?: RelationalState
   policySignals?: { is_practical_request: boolean; is_closing: boolean }
   goalHypothesis?: string | null
+  offerDeclined?: boolean
 }): string {
   const blocks: string[] = []
 
@@ -194,7 +195,11 @@ Undgå at starte med "Du spørger", "Du beskriver", "Du ønsker", "Du nævner". 
   } else if (params.assistantCount === 2) {
     blocks.push(`PROGRESSION (turn 3): Mønsteret er ved at være belyst. Saml hvad der er fremkommet og tag et lille skridt fremad. Angiv hvad mønsteret ser ud til at være, og om hypnoterapi typisk adresserer netop det. Afslut med ét konkret spørgsmål mod brugerens næste skridt eller motivation.`)
   } else if (params.assistantCount >= 3) {
-    blocks.push(`PROGRESSION (turn ${params.assistantCount + 1}): Samtalen har kortlagt mønsteret tilstrækkeligt. Komprimér mønsteret i 1-2 sætninger, sig hvad hypnoterapi kan gøre ved det, og afslut med ét spørgsmål om brugeren overvejer at tage kontakt. Brug conversation_move: synthesis eller practical_preparation.`)
+    if (params.offerDeclined) {
+      blocks.push(`PROGRESSION (turn ${params.assistantCount + 1}): Brugeren har eksplicit sagt at de ikke er klar til eller interesseret i en session. Respektér det — nævn IKKE hypnoterapi eller Jan som næste skridt. Fortsæt samtalen undersøgende og nysgerrigt ud fra hvad brugeren selv bringer op.`)
+    } else {
+      blocks.push(`PROGRESSION (turn ${params.assistantCount + 1}): Samtalen har kortlagt mønsteret tilstrækkeligt. Komprimér mønsteret i 1-2 sætninger, sig hvad hypnoterapi kan gøre ved det, og afslut med ét spørgsmål om brugeren overvejer at tage kontakt. Brug conversation_move: synthesis eller practical_preparation.`)
+    }
   }
 
   // WINDOW OF TOLERANCE
@@ -435,6 +440,7 @@ export async function singleTurnCall(params: {
   previousRelationalState?: RelationalState
   policySignals?: { is_practical_request: boolean; is_closing: boolean }
   goalHypothesis?: string | null
+  offerDeclined?: boolean
 }): Promise<SingleTurnOutput | null> {
   const lastAssistantExcerpt = [...params.transcript]
     .reverse()
@@ -450,6 +456,7 @@ export async function singleTurnCall(params: {
     previousRelationalState: params.previousRelationalState,
     policySignals: params.policySignals,
     goalHypothesis: params.goalHypothesis,
+    offerDeclined: params.offerDeclined,
   })
 
   // C: Dynamisk temperatur — reflection er mere kreativ, evidence/info mere præcis
