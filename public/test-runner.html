@@ -6,331 +6,107 @@
 <title>Gaarsdal · Test Runner</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0f110e;
-    --surface: #161a14;
-    --border: #242820;
-    --text: #d4d8d0;
-    --muted: #5a6054;
-    --green: #4a9c5d;
-    --green-dim: #2a5c35;
-    --red: #c05040;
-    --red-dim: #5c2820;
-    --amber: #c09040;
-    --amber-dim: #5c4020;
-    --accent: #7ab88a;
-  }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 14px;
-    min-height: 100vh;
-    padding: 40px 24px;
-  }
-
-  .shell {
-    max-width: 860px;
-    margin: 0 auto;
-  }
-
-  header {
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
-    margin-bottom: 32px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 20px;
-  }
-
-  h1 {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 18px;
-    font-weight: 500;
-    color: var(--accent);
-    letter-spacing: -0.02em;
-  }
-
-  .subtitle {
-    font-size: 12px;
-    color: var(--muted);
-    font-family: 'IBM Plex Mono', monospace;
-  }
-
-  /* Config bar */
-  .config {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-  }
-
-  .config input {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    padding: 8px 12px;
-    border-radius: 4px;
-    width: 200px;
-    outline: none;
-  }
-
-  .config input:focus { border-color: var(--accent); }
-
-  .config select {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    padding: 8px 12px;
-    border-radius: 4px;
-    outline: none;
-    cursor: pointer;
-  }
-
-  .btn {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 8px 20px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    transition: opacity 0.15s;
-  }
-
-  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-primary { background: var(--green); color: #fff; }
-  .btn-primary:not(:disabled):hover { opacity: 0.85; }
-  .btn-stop { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-dim); }
-  .btn-stop:not(:disabled):hover { background: var(--red); color: #fff; }
-
-  /* Progress bar */
-  .progress-wrap {
-    margin-bottom: 20px;
-    display: none;
-  }
-
-  .progress-wrap.visible { display: block; }
-
-  .progress-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    margin-bottom: 6px;
-    display: flex;
-    justify-content: space-between;
-  }
-
-  .progress-bar {
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: var(--accent);
-    transition: width 0.4s ease;
-    border-radius: 2px;
-  }
-
-  /* Summary */
-  .summary {
-    display: none;
-    gap: 16px;
-    margin-bottom: 24px;
-    padding: 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-  }
-
-  .summary.visible { display: flex; }
-
-  .stat { display: flex; flex-direction: column; gap: 2px; }
-  .stat-value { font-size: 22px; font-weight: 500; }
-  .stat-label { color: var(--muted); font-size: 11px; }
-  .stat-pass .stat-value { color: var(--green); }
-  .stat-fail .stat-value { color: var(--red); }
-  .stat-total .stat-value { color: var(--accent); }
-
-  /* Case list */
-  .case-list { display: flex; flex-direction: column; gap: 4px; }
-
-  .case-row {
-    display: grid;
-    grid-template-columns: 140px 1fr 80px;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    transition: border-color 0.2s;
-    cursor: default;
-  }
-
-  .case-row.running { border-color: var(--amber); }
-  .case-row.passed { border-color: var(--green-dim); }
-  .case-row.failed { border-color: var(--red-dim); }
-
-  .case-id { color: var(--muted); }
-  .case-row.running .case-id { color: var(--amber); }
-  .case-row.passed .case-id { color: var(--green); }
-  .case-row.failed .case-id { color: var(--red); }
-
-  .case-desc { color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; }
-
-  .badge {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    font-weight: 500;
-    padding: 3px 8px;
-    border-radius: 3px;
-    text-align: center;
-  }
-
-  .badge-pending { background: var(--border); color: var(--muted); }
-  .badge-running { background: var(--amber-dim); color: var(--amber); }
-  .badge-pass { background: var(--green-dim); color: var(--green); }
-  .badge-fail { background: var(--red-dim); color: var(--red); }
-
-  /* Detail panel */
-  .detail {
-    margin-top: 4px;
-    padding: 12px 14px;
-    background: #0a0c09;
-    border: 1px solid var(--border);
-    border-top: none;
-    border-radius: 0 0 4px 4px;
-    display: none;
-    font-size: 12px;
-  }
-
-  .detail.visible { display: block; }
-
-  .criterion {
-    display: flex;
-    gap: 10px;
-    padding: 6px 0;
-    border-bottom: 1px solid var(--border);
-    align-items: flex-start;
-  }
-
-  .criterion:last-child { border-bottom: none; }
-
-  .criterion-icon { flex-shrink: 0; margin-top: 1px; }
-  .criterion-text { color: var(--text); line-height: 1.5; }
-  .criterion-reason { color: var(--muted); font-size: 11px; margin-top: 2px; }
-
-  .transcript-toggle {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    cursor: pointer;
-    margin-top: 10px;
-    display: inline-block;
-    border-bottom: 1px dashed var(--border);
-  }
-
-  .transcript-toggle:hover { color: var(--accent); }
-
-  .transcript {
-    display: none;
-    margin-top: 10px;
-  }
-
-  .transcript.visible { display: block; }
-
-  .turn { margin-bottom: 10px; }
-  .turn-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 3px; }
-  .turn-user { color: var(--accent); font-size: 12px; line-height: 1.5; margin-bottom: 3px; }
-  .turn-bot { color: var(--text); font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
-
-  .error-msg {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--red);
-    margin-top: 6px;
-  }
-
-  footer {
-    margin-top: 40px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    border-top: 1px solid var(--border);
-    padding-top: 16px;
-  }
+  :root { --bg:#0f110e;--surface:#161a14;--border:#242820;--text:#d4d8d0;--muted:#5a6054;--green:#4a9c5d;--green-dim:#2a5c35;--red:#c05040;--red-dim:#5c2820;--amber:#c09040;--amber-dim:#5c4020;--accent:#7ab88a; }
+  body { background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;min-height:100vh;padding:40px 24px; }
+  .shell { max-width:920px;margin:0 auto; }
+  header { display:flex;align-items:baseline;gap:16px;margin-bottom:28px;border-bottom:1px solid var(--border);padding-bottom:20px; }
+  h1 { font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:500;color:var(--accent);letter-spacing:-0.02em; }
+  .subtitle { font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace; }
+  .topbar { display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap; }
+  .topbar input { background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 12px;border-radius:4px;width:180px;outline:none; }
+  .topbar input:focus { border-color:var(--accent); }
+  .btn { font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;padding:8px 18px;border-radius:4px;border:none;cursor:pointer;transition:opacity 0.15s; }
+  .btn:disabled { opacity:0.4;cursor:not-allowed; }
+  .btn-primary { background:var(--green);color:#fff; }
+  .btn-primary:not(:disabled):hover { opacity:0.85; }
+  .btn-stop { background:var(--red-dim);color:var(--red);border:1px solid var(--red-dim); }
+  .btn-stop:not(:disabled):hover { background:var(--red);color:#fff; }
+  .sel-count { font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);padding:8px 0; }
+  .sel-count span { color:var(--accent); }
+  .presets { display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap; }
+  .preset-btn { font-family:'IBM Plex Mono',monospace;font-size:11px;padding:4px 10px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.12s; }
+  .preset-btn:hover { border-color:var(--accent);color:var(--accent); }
+  .selector { display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;margin-bottom:24px; }
+  .group-header { grid-column:1/-1;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);padding:12px 0 4px;letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid var(--border);margin-bottom:2px; }
+  .cb-row { display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:4px;cursor:pointer;transition:background 0.1s;user-select:none; }
+  .cb-row:hover { background:var(--surface); }
+  .cb-row input { accent-color:var(--accent);width:13px;height:13px;cursor:pointer;flex-shrink:0; }
+  .cb-label { font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);cursor:pointer;line-height:1.4; }
+  .cb-label strong { display:block;color:var(--text);font-weight:400;font-size:12px; }
+  .cb-row.checked .cb-label,.cb-row.checked .cb-label strong { color:var(--accent); }
+  .progress-wrap { margin-bottom:20px;display:none; }
+  .progress-wrap.visible { display:block; }
+  .progress-label { font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between; }
+  .progress-bar { height:3px;background:var(--border);border-radius:2px;overflow:hidden; }
+  .progress-fill { height:100%;background:var(--accent);transition:width 0.4s ease;border-radius:2px; }
+  .summary { display:none;gap:16px;margin-bottom:24px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:6px;font-family:'IBM Plex Mono',monospace; }
+  .summary.visible { display:flex; }
+  .stat { display:flex;flex-direction:column;gap:2px; }
+  .stat-value { font-size:22px;font-weight:500; }
+  .stat-label { color:var(--muted);font-size:11px; }
+  .stat-pass .stat-value { color:var(--green); }
+  .stat-fail .stat-value { color:var(--red); }
+  .stat-total .stat-value { color:var(--accent); }
+  .case-list { display:flex;flex-direction:column;gap:4px; }
+  .case-row { display:grid;grid-template-columns:120px 1fr 80px;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;transition:border-color 0.2s; }
+  .case-row.running { border-color:var(--amber); }
+  .case-row.passed { border-color:var(--green-dim); }
+  .case-row.failed { border-color:var(--red-dim); }
+  .case-id { color:var(--muted); }
+  .case-row.running .case-id { color:var(--amber); }
+  .case-row.passed .case-id { color:var(--green); }
+  .case-row.failed .case-id { color:var(--red); }
+  .case-desc { color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:13px; }
+  .badge { font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;padding:3px 8px;border-radius:3px;text-align:center; }
+  .badge-pending { background:var(--border);color:var(--muted); }
+  .badge-running { background:var(--amber-dim);color:var(--amber); }
+  .badge-pass { background:var(--green-dim);color:var(--green); }
+  .badge-fail { background:var(--red-dim);color:var(--red); }
+  .detail { margin-top:4px;padding:12px 14px;background:#0a0c09;border:1px solid var(--border);border-top:none;border-radius:0 0 4px 4px;display:none;font-size:12px; }
+  .detail.visible { display:block; }
+  .criterion { display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);align-items:flex-start; }
+  .criterion:last-child { border-bottom:none; }
+  .criterion-icon { flex-shrink:0;margin-top:1px; }
+  .criterion-text { color:var(--text);line-height:1.5; }
+  .criterion-reason { color:var(--muted);font-size:11px;margin-top:2px; }
+  .transcript-toggle { font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);cursor:pointer;margin-top:10px;display:inline-block;border-bottom:1px dashed var(--border); }
+  .transcript-toggle:hover { color:var(--accent); }
+  .transcript { display:none;margin-top:10px; }
+  .transcript.visible { display:block; }
+  .turn { margin-bottom:10px; }
+  .turn-label { font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:3px; }
+  .turn-user { color:var(--accent);font-size:12px;line-height:1.5;margin-bottom:3px; }
+  .turn-bot { color:var(--text);font-size:12px;line-height:1.5;white-space:pre-wrap; }
+  .error-msg { font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red);margin-top:6px; }
+  footer { margin-top:40px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:16px; }
 </style>
 </head>
 <body>
 <div class="shell">
-
   <header>
     <h1>gaarsdal / test-runner</h1>
     <span class="subtitle">AI-drevet chatbot test</span>
   </header>
 
-  <div class="config">
+  <div class="topbar">
     <input type="password" id="token" placeholder="ADMIN_TOKEN" />
-    <select id="mode">
-      <option value="all">Alle 26 cases</option>
-      <option value="baseline">Baseline (tc-01–05)</option>
-      <option value="safety">Safety (tc-06)</option>
-      <option value="routing">Routing (tc-02,03,10)</option>
-      <option value="problems">Problemer (tc-14–23)</option>
-      <option value="reflection">Refleksion (tc-24–26)</option>
-      <optgroup label="── System ──">
-        <option value="tc-01-intro">tc-01 · Intro / info</option>
-        <option value="tc-02-booking">tc-02 · Booking</option>
-        <option value="tc-03-no-handoff-on-problem-description">tc-03 · Ingen HANDOFF på problem</option>
-        <option value="tc-04-persona">tc-04 · Persona / identitet</option>
-        <option value="tc-05-offtopic">tc-05 · Off-topic afvisning</option>
-        <option value="tc-06-safety-crisis">tc-06 · Safety / krise</option>
-        <option value="tc-07-skeptic">tc-07 · Skeptisk bruger</option>
-        <option value="tc-08-returning-client">tc-08 · Tilbagevendende klient</option>
-        <option value="tc-09-long-session">tc-09 · Lang session</option>
-        <option value="tc-10-no-handoff-false-positive">tc-10 · HANDOFF false positive</option>
-        <option value="tc-11-price-question">tc-11 · Pris-spørgsmål</option>
-        <option value="tc-12-minimal-input">tc-12 · Minimal input</option>
-        <option value="tc-13-consent-session-only">tc-13 · Session-only samtykke</option>
-      </optgroup>
-      <optgroup label="── Problemscenarier ──">
-        <option value="tc-14-angst">tc-14 · Angst og uro</option>
-        <option value="tc-15-sovn">tc-15 · Søvnproblemer</option>
-        <option value="tc-16-stress">tc-16 · Stress og overbelastning</option>
-        <option value="tc-17-rygestop">tc-17 · Rygestop</option>
-        <option value="tc-18-overspisning">tc-18 · Overspisning</option>
-        <option value="tc-19-indre-kritiker">tc-19 · Indre kritiker</option>
-        <option value="tc-20-praestationsangst">tc-20 · Præstationsangst</option>
-        <option value="tc-21-alkohol">tc-21 · Alkoholvaner</option>
-        <option value="tc-22-flyskraek">tc-22 · Flyskræk</option>
-        <option value="tc-23-bekymringer">tc-23 · Bekymringer / loops</option>
-      </optgroup>
-      <optgroup label="── Refleksion ──">
-        <option value="tc-24-reflektion-livsmoenster">tc-24 · Livsmønster</option>
-        <option value="tc-25-reflektion-relationer">tc-25 · Relationer</option>
-        <option value="tc-26-reflektion-stilstand">tc-26 · Stilstand</option>
-      </optgroup>
-    </select>
-    <button class="btn btn-primary" id="btn-run" onclick="startRun()">Kør tests</button>
+    <button class="btn btn-primary" id="btn-run" onclick="startRun()">Kør valgte</button>
     <button class="btn btn-stop" id="btn-stop" onclick="stopRun()" disabled>Stop</button>
+    <span class="sel-count">Valgt: <span id="sel-count">0</span></span>
   </div>
+
+  <div class="presets">
+    <button class="preset-btn" onclick="selectPreset('all')">Alle 26</button>
+    <button class="preset-btn" onclick="selectPreset('baseline')">Baseline</button>
+    <button class="preset-btn" onclick="selectPreset('safety')">Safety</button>
+    <button class="preset-btn" onclick="selectPreset('routing')">Routing</button>
+    <button class="preset-btn" onclick="selectPreset('problems')">Problemer</button>
+    <button class="preset-btn" onclick="selectPreset('reflection')">Refleksion</button>
+    <button class="preset-btn" onclick="selectPreset('none')" style="margin-left:8px;opacity:0.6">Ryd alle</button>
+  </div>
+
+  <div class="selector" id="selector"></div>
 
   <div class="progress-wrap" id="progress-wrap">
     <div class="progress-label">
@@ -348,211 +124,199 @@
   </div>
 
   <div class="case-list" id="case-list"></div>
-
-  <footer id="footer">Kør cases én ad gangen. Session-only samtykke. Test-sessioner har prefix <code>test-</code> i Redis.</footer>
-
+  <footer>Session-only samtykke. Test-sessioner har prefix <code>test-</code> i Redis.</footer>
 </div>
 
 <script>
-const ALL_IDS = [
-  'tc-01-intro','tc-02-booking','tc-03-no-handoff-on-problem-description',
-  'tc-04-persona','tc-05-offtopic','tc-06-safety-crisis','tc-07-skeptic',
-  'tc-08-returning-client','tc-09-long-session','tc-10-no-handoff-false-positive',
-  'tc-11-price-question','tc-12-minimal-input','tc-13-consent-session-only',
-  'tc-14-angst','tc-15-sovn','tc-16-stress','tc-17-rygestop','tc-18-overspisning',
-  'tc-19-indre-kritiker','tc-20-praestationsangst','tc-21-alkohol',
-  'tc-22-flyskraek','tc-23-bekymringer',
-  'tc-24-reflektion-livsmoenster','tc-25-reflektion-relationer','tc-26-reflektion-stilstand',
+const CASES=[
+  {group:'System',id:'tc-01-intro',label:'Intro / info'},
+  {group:'System',id:'tc-02-booking',label:'Booking'},
+  {group:'System',id:'tc-03-no-handoff-on-problem-description',label:'Ingen HANDOFF'},
+  {group:'System',id:'tc-04-persona',label:'Persona / identitet'},
+  {group:'System',id:'tc-05-offtopic',label:'Off-topic'},
+  {group:'System',id:'tc-06-safety-crisis',label:'Safety / krise'},
+  {group:'System',id:'tc-07-skeptic',label:'Skeptisk bruger'},
+  {group:'System',id:'tc-08-returning-client',label:'Tilbagevendende klient'},
+  {group:'System',id:'tc-09-long-session',label:'Lang session'},
+  {group:'System',id:'tc-10-no-handoff-false-positive',label:'HANDOFF false positive'},
+  {group:'System',id:'tc-11-price-question',label:'Pris-spørgsmål'},
+  {group:'System',id:'tc-12-minimal-input',label:'Minimal input'},
+  {group:'System',id:'tc-13-consent-session-only',label:'Session-only samtykke'},
+  {group:'Problemer',id:'tc-14-angst',label:'Angst og uro'},
+  {group:'Problemer',id:'tc-15-sovn',label:'Søvnproblemer'},
+  {group:'Problemer',id:'tc-16-stress',label:'Stress'},
+  {group:'Problemer',id:'tc-17-rygestop',label:'Rygestop'},
+  {group:'Problemer',id:'tc-18-overspisning',label:'Overspisning'},
+  {group:'Problemer',id:'tc-19-indre-kritiker',label:'Indre kritiker'},
+  {group:'Problemer',id:'tc-20-praestationsangst',label:'Præstationsangst'},
+  {group:'Problemer',id:'tc-21-alkohol',label:'Alkoholvaner'},
+  {group:'Problemer',id:'tc-22-flyskraek',label:'Flyskræk'},
+  {group:'Problemer',id:'tc-23-bekymringer',label:'Bekymringer / loops'},
+  {group:'Refleksion',id:'tc-24-reflektion-livsmoenster',label:'Livsmønster'},
+  {group:'Refleksion',id:'tc-25-reflektion-relationer',label:'Relationer'},
+  {group:'Refleksion',id:'tc-26-reflektion-stilstand',label:'Stilstand'},
 ]
 
-const SETS = {
-  all: ALL_IDS,
-  baseline: ALL_IDS.slice(0, 5),
-  safety: ['tc-06-safety-crisis'],
-  routing: ['tc-02-booking', 'tc-03-no-handoff-on-problem-description', 'tc-10-no-handoff-false-positive'],
-  problems: ALL_IDS.slice(13, 23),
-  reflection: ALL_IDS.slice(23),
+const PRESETS={
+  all:CASES.map(c=>c.id),
+  baseline:CASES.slice(0,5).map(c=>c.id),
+  safety:['tc-06-safety-crisis'],
+  routing:['tc-02-booking','tc-03-no-handoff-on-problem-description','tc-10-no-handoff-false-positive'],
+  problems:CASES.filter(c=>c.group==='Problemer').map(c=>c.id),
+  reflection:CASES.filter(c=>c.group==='Refleksion').map(c=>c.id),
+  none:[],
 }
 
-let running = false
-let stopFlag = false
+let running=false,stopFlag=false
 
-function getHost() {
-  return window.location.hostname === 'localhost' ? 'localhost:3000' : window.location.host
+function buildSelector(){
+  const el=document.getElementById('selector')
+  let lastGroup=null
+  CASES.forEach(c=>{
+    if(c.group!==lastGroup){el.innerHTML+=`<div class="group-header">${c.group}</div>`;lastGroup=c.group}
+    const num=c.id.split('-').slice(0,2).join('-')
+    el.innerHTML+=`<label class="cb-row" id="cbrow-${c.id}">
+      <input type="checkbox" id="cb-${c.id}" onchange="updateCount()">
+      <span class="cb-label"><small>${num}</small><strong>${c.label}</strong></span>
+    </label>`
+  })
+  updateCount()
 }
 
-function getCases() {
-  const mode = document.getElementById('mode').value
-  if (SETS[mode]) return SETS[mode]
-  // Single case selected from optgroup
-  if (ALL_IDS.includes(mode)) return [mode]
-  return ALL_IDS
+function updateCount(){
+  let n=0
+  CASES.forEach(c=>{
+    const cb=document.getElementById(`cb-${c.id}`)
+    const row=document.getElementById(`cbrow-${c.id}`)
+    if(cb&&cb.checked){n++;row&&row.classList.add('checked')}
+    else{row&&row.classList.remove('checked')}
+  })
+  document.getElementById('sel-count').textContent=n
 }
 
-function renderCaseList(ids) {
-  const list = document.getElementById('case-list')
-  list.innerHTML = ''
-  ids.forEach(id => {
-    const short = id.replace(/^tc-\d+-/, '')
-    list.innerHTML += `
-      <div class="case-row" id="row-${id}">
-        <span class="case-id">${id.split('-').slice(0,2).join('-')}</span>
-        <span class="case-desc">${short.replace(/-/g,' ')}</span>
-        <span class="badge badge-pending" id="badge-${id}">pending</span>
-      </div>
-      <div class="detail" id="detail-${id}"></div>
-    `
+function selectPreset(name){
+  const ids=new Set(PRESETS[name]||[])
+  CASES.forEach(c=>{
+    const cb=document.getElementById(`cb-${c.id}`)
+    if(cb)cb.checked=ids.has(c.id)
+  })
+  updateCount()
+}
+
+function getSelected(){return CASES.filter(c=>document.getElementById(`cb-${c.id}`)?.checked).map(c=>c.id)}
+function getHost(){return window.location.hostname==='localhost'?'localhost:3000':window.location.host}
+
+function renderCaseList(ids){
+  const list=document.getElementById('case-list')
+  list.innerHTML=''
+  ids.forEach(id=>{
+    const c=CASES.find(x=>x.id===id)
+    const num=id.split('-').slice(0,2).join('-')
+    list.innerHTML+=`<div class="case-row" id="row-${id}">
+      <span class="case-id">${num}</span>
+      <span class="case-desc">${c?.label||id}</span>
+      <span class="badge badge-pending" id="badge-${id}">pending</span>
+    </div><div class="detail" id="detail-${id}"></div>`
   })
 }
 
-async function runCase(id, token, host) {
-  const url = `https://${host}/api/admin/test/run?token=${encodeURIComponent(token)}&id=${encodeURIComponent(id)}`
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return await res.json()
+async function runCase(id,token,host){
+  const res=await fetch(`https://${host}/api/admin/test/run?token=${encodeURIComponent(token)}&id=${encodeURIComponent(id)}`)
+  if(!res.ok)throw new Error(`HTTP ${res.status}`)
+  return res.json()
 }
 
-function renderDetail(id, result) {
-  const detail = document.getElementById(`detail-${id}`)
-  if (!result) return
-
-  let html = ''
-
-  if (result.error) {
-    html += `<div class="error-msg">Fejl: ${result.error}</div>`
-  }
-
-  if (result.criteria?.length) {
-    result.criteria.forEach(c => {
-      const icon = c.passed ? '✓' : '✗'
-      const color = c.passed ? 'var(--green)' : 'var(--red)'
-      html += `
-        <div class="criterion">
-          <span class="criterion-icon" style="color:${color}">${icon}</span>
-          <div>
-            <div class="criterion-text">${c.criterion}</div>
-            <div class="criterion-reason">${c.reasoning || ''}</div>
-          </div>
-        </div>`
+function renderDetail(id,result){
+  const detail=document.getElementById(`detail-${id}`)
+  if(!result)return
+  let html=''
+  if(result.error)html+=`<div class="error-msg">Fejl: ${result.error}</div>`
+  if(result.criteria?.length){
+    result.criteria.forEach(c=>{
+      const icon=c.passed?'✓':'✗',color=c.passed?'var(--green)':'var(--red)'
+      html+=`<div class="criterion"><span class="criterion-icon" style="color:${color}">${icon}</span>
+        <div><div class="criterion-text">${c.criterion}</div>
+        <div class="criterion-reason">${c.reasoning||''}</div></div></div>`
     })
   }
-
-  if (result.transcript?.length) {
-    html += `<span class="transcript-toggle" onclick="toggleTranscript('${id}')">▸ vis transcript (${result.transcript.length} turns)</span>`
-    html += `<div class="transcript" id="transcript-${id}">`
-    result.transcript.forEach(t => {
-      html += `
-        <div class="turn">
-          <div class="turn-label">Turn ${t.turn}</div>
-          <div class="turn-user">▸ ${escHtml(t.user)}</div>
-          <div class="turn-bot">${escHtml(t.bot)}</div>
-        </div>`
+  if(result.transcript?.length){
+    html+=`<span class="transcript-toggle" onclick="toggleTranscript('${id}')">▸ vis transcript (${result.transcript.length} turns)</span>`
+    html+=`<div class="transcript" id="transcript-${id}">`
+    result.transcript.forEach(t=>{
+      html+=`<div class="turn"><div class="turn-label">Turn ${t.turn}</div>
+        <div class="turn-user">▸ ${escHtml(t.user)}</div>
+        <div class="turn-bot">${escHtml(t.bot)}</div></div>`
     })
-    html += '</div>'
+    html+='</div>'
   }
-
-  detail.innerHTML = html
-  detail.classList.add('visible')
+  detail.innerHTML=html;detail.classList.add('visible')
 }
 
-function toggleTranscript(id) {
-  const t = document.getElementById(`transcript-${id}`)
-  const toggle = t.previousElementSibling
-  if (t.classList.toggle('visible')) {
-    toggle.textContent = toggle.textContent.replace('▸', '▾')
-  } else {
-    toggle.textContent = toggle.textContent.replace('▾', '▸')
-  }
+function toggleTranscript(id){
+  const t=document.getElementById(`transcript-${id}`),tog=t.previousElementSibling
+  t.classList.toggle('visible')
+  tog.textContent=tog.textContent.replace(t.classList.contains('visible')?'▸':'▾',t.classList.contains('visible')?'▾':'▸')
 }
 
-function escHtml(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-}
+function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
-async function startRun() {
-  const token = document.getElementById('token').value.trim()
-  if (!token) { alert('Indtast ADMIN_TOKEN'); return }
-
-  const ids = getCases()
-  if (!ids.length) { alert('Ingen cases valgt'); return }
-
-  running = true
-  stopFlag = false
-  document.getElementById('btn-run').disabled = true
-  document.getElementById('btn-stop').disabled = false
+async function startRun(){
+  const token=document.getElementById('token').value.trim()
+  if(!token){alert('Indtast ADMIN_TOKEN');return}
+  const ids=getSelected()
+  if(!ids.length){alert('Vælg mindst én test case');return}
+  running=true;stopFlag=false
+  document.getElementById('btn-run').disabled=true
+  document.getElementById('btn-stop').disabled=false
   document.getElementById('summary').classList.remove('visible')
   document.getElementById('progress-wrap').classList.add('visible')
-
   renderCaseList(ids)
-
-  const host = getHost()
-  const startTime = Date.now()
-  let passed = 0, failed = 0
-
-  for (let i = 0; i < ids.length; i++) {
-    if (stopFlag) break
-    const id = ids[i]
-
-    // Update progress
-    const pct = Math.round((i / ids.length) * 100)
-    document.getElementById('progress-fill').style.width = pct + '%'
-    document.getElementById('progress-text').textContent = `Kører ${id}...`
-    document.getElementById('progress-count').textContent = `${i+1} / ${ids.length}`
-
-    // Mark running
-    document.getElementById(`row-${id}`).className = 'case-row running'
-    document.getElementById(`badge-${id}`).className = 'badge badge-running'
-    document.getElementById(`badge-${id}`).textContent = 'kører...'
-
-    try {
-      const data = await runCase(id, token, host)
-      const result = data.results?.[0]
-      const ok = result?.passed === true
-
-      if (ok) passed++; else failed++
-
-      document.getElementById(`row-${id}`).className = `case-row ${ok ? 'passed' : 'failed'}`
-      document.getElementById(`badge-${id}`).className = `badge ${ok ? 'badge-pass' : 'badge-fail'}`
-      document.getElementById(`badge-${id}`).textContent = ok ? 'PASS' : 'FAIL'
-
-      renderDetail(id, result)
-    } catch (e) {
+  const host=getHost(),startTime=Date.now()
+  let passed=0,failed=0
+  for(let i=0;i<ids.length;i++){
+    if(stopFlag)break
+    const id=ids[i]
+    document.getElementById('progress-fill').style.width=Math.round(i/ids.length*100)+'%'
+    document.getElementById('progress-text').textContent=`Kører ${id}...`
+    document.getElementById('progress-count').textContent=`${i+1} / ${ids.length}`
+    document.getElementById(`row-${id}`).className='case-row running'
+    document.getElementById(`badge-${id}`).className='badge badge-running'
+    document.getElementById(`badge-${id}`).textContent='kører...'
+    try{
+      const data=await runCase(id,token,host)
+      const result=data.results?.[0],ok=result?.passed===true
+      if(ok)passed++;else failed++
+      document.getElementById(`row-${id}`).className=`case-row ${ok?'passed':'failed'}`
+      document.getElementById(`badge-${id}`).className=`badge ${ok?'badge-pass':'badge-fail'}`
+      document.getElementById(`badge-${id}`).textContent=ok?'PASS':'FAIL'
+      renderDetail(id,result)
+    }catch(e){
       failed++
-      document.getElementById(`row-${id}`).className = 'case-row failed'
-      document.getElementById(`badge-${id}`).className = 'badge badge-fail'
-      document.getElementById(`badge-${id}`).textContent = 'ERROR'
-      document.getElementById(`detail-${id}`).innerHTML = `<div class="error-msg">${e.message}</div>`
+      document.getElementById(`row-${id}`).className='case-row failed'
+      document.getElementById(`badge-${id}`).className='badge badge-fail'
+      document.getElementById(`badge-${id}`).textContent='ERROR'
+      document.getElementById(`detail-${id}`).innerHTML=`<div class="error-msg">${e.message}</div>`
       document.getElementById(`detail-${id}`).classList.add('visible')
     }
-
-    // Small pause between cases
-    if (i < ids.length - 1 && !stopFlag) {
-      await new Promise(r => setTimeout(r, 1500))
-    }
+    if(i<ids.length-1&&!stopFlag)await new Promise(r=>setTimeout(r,1500))
   }
-
-  // Final state
-  const elapsed = Math.round((Date.now() - startTime) / 1000)
-  const ran = passed + failed
-  document.getElementById('progress-fill').style.width = '100%'
-  document.getElementById('progress-text').textContent = stopFlag ? 'Stoppet.' : 'Færdig.'
-  document.getElementById('progress-count').textContent = `${ran} / ${ids.length}`
-
-  document.getElementById('s-total').textContent = ran
-  document.getElementById('s-pass').textContent = passed
-  document.getElementById('s-fail').textContent = failed
-  document.getElementById('s-time').textContent = elapsed
+  const elapsed=Math.round((Date.now()-startTime)/1000),ran=passed+failed
+  document.getElementById('progress-fill').style.width='100%'
+  document.getElementById('progress-text').textContent=stopFlag?'Stoppet.':'Færdig.'
+  document.getElementById('progress-count').textContent=`${ran} / ${ids.length}`
+  document.getElementById('s-total').textContent=ran
+  document.getElementById('s-pass').textContent=passed
+  document.getElementById('s-fail').textContent=failed
+  document.getElementById('s-time').textContent=elapsed
   document.getElementById('summary').classList.add('visible')
-
-  running = false
-  document.getElementById('btn-run').disabled = false
-  document.getElementById('btn-stop').disabled = true
+  running=false
+  document.getElementById('btn-run').disabled=false
+  document.getElementById('btn-stop').disabled=true
 }
 
-function stopRun() {
-  stopFlag = true
-  document.getElementById('btn-stop').disabled = true
-}
+function stopRun(){stopFlag=true;document.getElementById('btn-stop').disabled=true}
+
+buildSelector()
 </script>
 </body>
 </html>
