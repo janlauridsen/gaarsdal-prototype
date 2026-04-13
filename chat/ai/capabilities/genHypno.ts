@@ -302,6 +302,17 @@ export async function runUnifiedHypnoCapability(
     is_closing: detectClosingText(userText),
   }
 
+  // Detektér om brugeren har afvist et session-tilbud.
+  // Når flagget er sat, stopper botten med at pushe mod booking.
+  const OFFER_DECLINE_PHRASES = [
+    "ikke interesseret i behandling", "ikke klar til", "ikke interesseret i en session",
+    "ikke klar til at overveje", "vil ikke have en session", "ikke nu",
+    "hellere ikke", "ikke endnu", "ikke behandling", "ikke til hypnoterapi",
+  ]
+  const offerDeclinedInText = OFFER_DECLINE_PHRASES.some(p => userText.toLowerCase().includes(p))
+  const offerDeclinedInMeta = (context.state.meta?.["gen_hypno.offer_declined"] as any)?.value === true
+  const offerDeclined = offerDeclinedInMeta || offerDeclinedInText
+
   let turnOutput = await singleTurnCall({
     llm,
     transcript: trimmedTranscript,
@@ -317,6 +328,7 @@ export async function runUnifiedHypnoCapability(
     previousRelationalState,
     policySignals,
     goalHypothesis: context.contextPack?.goal_hypothesis,
+    offerDeclined,
   })
 
   const usedFallback = !turnOutput
@@ -439,6 +451,7 @@ export async function runUnifiedHypnoCapability(
   }
 
   const updatedTranscript = appendTranscript(transcript, userText, assistant)
+  const declineMeta = offerDeclinedInText && !offerDeclinedInMeta ? { "gen_hypno.offer_declined": true } : {}
   const ctaMeta = ctaConditionsMet ? { "gen_hypno.cta_shown": true } : {}
 
   return {
@@ -458,6 +471,7 @@ export async function runUnifiedHypnoCapability(
           arousalLevel: arousal.level,
         }),
         ...ctaMeta,
+        ...declineMeta,
       },
     },
     debug: { capability: "unified-hypno-v5-single", used_fallback: usedFallback },
