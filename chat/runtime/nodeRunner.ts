@@ -326,6 +326,24 @@ export async function runNode(params: NodeRunParams): Promise<KernelResult> {
     })
   }
 
+  // INFO: statisk node der ikke har en capability.
+  // FREE_TEXT looper tilbage til samme node med node-beskeden som svar.
+  // Dette sikrer at CRISIS_INFO forbliver aktiv på tværs af turns
+  // uden at falde tilbage til normal dialog.
+  if (node.kind === "INFO") {
+    const transition: Transition = {
+      type: "NODE_HOP",
+      from: state.active_node,
+      to: state.active_node,
+      reason: "info node free_text -> self",
+      response_message: node.message,
+    }
+    return runKernel(state, {
+      type: "FREE_TEXT_RESOLVED",
+      proposed_transition: transition,
+    })
+  }
+
   if (node.kind === "TOOL" || node.kind === "CHECKPOINT") {
     const spec = node.kind === "TOOL" ? node.tool : node.checkpoint
     if (!spec) {
