@@ -34,8 +34,8 @@ export default function App({ Component, pageProps }: AppProps) {
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
         />
-        <link rel="icon" type="image/png" href="/gaarsdal-logo-branding-notext.png" />
-        <link rel="apple-touch-icon" href="/gaarsdal-logo-branding-notext.png" />
+        <link rel="icon" type="image/png" href="/android-chrome-512x512.png" />
+        <link rel="apple-touch-icon" href="/android-chrome-512x512.png" />
       </Head>
       <Component {...pageProps} />
     </>
