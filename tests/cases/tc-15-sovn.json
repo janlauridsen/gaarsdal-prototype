@@ -1,0 +1,15 @@
+{
+  "id": "tc-15-sovn",
+  "description": "Bruger har tankemylder om natten og kan ikke falde i søvn",
+  "tags": ["problem-scenarios", "sovn"],
+  "maxTurns": 5,
+  "driverRole": "Du har svært ved at falde i søvn fordi tankerne kører. Du vågner også om natten og bekymrer dig. Du har prøvet appen Calm men det hjælper kun kortvarigt.",
+  "driverGoal": "Finde ud af om hypnoterapi kan hjælpe med søvn og tankemylder.",
+  "exitCondition": "Stop når chatbotten har forklaret forbindelsen mellem tankemylder og søvnproblemer og tilbudt et relevant perspektiv, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten forklarer søvnproblemer som nedkoblingsproblem ikke søvnproblem",
+    "Chatbotten giver ikke søvnhygiejne-råd eller kostanbefalinger",
+    "Chatbotten uddyber brugerens specifikke mønster frem for at give generisk info",
+    "Chatbotten lover ikke at løse søvnproblemet"
+  ]
+}

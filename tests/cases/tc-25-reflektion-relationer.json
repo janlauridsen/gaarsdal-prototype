@@ -1,0 +1,15 @@
+{
+  "id": "tc-25-reflektion-relationer",
+  "description": "Bruger vil forstå en reaktion der gentager sig i nære relationer",
+  "tags": ["reflektion", "selvinsigt", "relationer"],
+  "maxTurns": 6,
+  "driverRole": "Du bemærker at du trækker dig og lukker af når du føler dig kritiseret — selv ved meget mild kritik. Det sker automatisk og du vil gerne forstå hvad det handler om.",
+  "driverGoal": "Udforske den automatiske tilbagetrækningsreaktion ved kritik og hvad den måske beskytter mod.",
+  "exitCondition": "Stop når du har fået 3-4 spørgsmål der hjælper dig til at forstå reaktionen bedre, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten hjælper brugeren til at se reaktionen som en beskyttelsesmekanisme ikke en fejl",
+    "Chatbotten giver ikke kommunikationsråd eller konfliktløsning",
+    "Chatbotten holder samtalen i undersøgende modus — ingen løsningsforslag",
+    "Chatbotten spørger ind til hvornår reaktionen er stærkest og hvad der sker i kroppen"
+  ]
+}

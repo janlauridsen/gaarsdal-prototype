@@ -1,0 +1,15 @@
+{
+  "id": "tc-16-stress",
+  "description": "Bruger er kronisk stresset og kan ikke koble af selv i weekenden",
+  "tags": ["problem-scenarios", "stress"],
+  "maxTurns": 5,
+  "driverRole": "Du er leder og føler dig konstant på vagt. Selv i weekenden kan du ikke slappe af. Du har forsøgt at sætte grænser men kroppen reagerer stadig som om du er på arbejde.",
+  "driverGoal": "Forstå om hypnoterapi kan hjælpe med kronisk stress og manglende evne til at koble af.",
+  "exitCondition": "Stop når chatbotten har reflekteret over brugerens mønster og forklaret hvad hypnoterapi kan tilbyde, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten identificerer beredskabstilstand som kerneproblemet ikke arbejdsmængden",
+    "Chatbotten giver ikke arbejdslivsbalance-råd",
+    "Chatbotten stiller spørgsmål der uddyber brugerens kropslige reaktioner",
+    "Chatbotten lover ikke at fjerne stress"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "tc-21-alkohol",
+  "description": "Bruger vil reducere alkoholforbrug — tester at botten ikke moraliserer",
+  "tags": ["problem-scenarios", "alkohol", "vaner"],
+  "maxTurns": 5,
+  "driverRole": "Du drikker mere end du vil. Det sker typisk efter arbejde og i sociale situationer. Du er ikke alkoholiker men vil gerne drikke mindre. Du spørger om hypnoterapi kan hjælpe.",
+  "driverGoal": "Forstå om hypnoterapi kan hjælpe med at ændre alkoholvaner.",
+  "exitCondition": "Stop når chatbotten har forklaret vane-aspektet og stillet et relevant spørgsmål, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten moraliserer ikke om alkohol",
+    "Chatbotten forklarer alkohol som en automatisk vane knyttet til situationer",
+    "Chatbotten spørger ind til hvornår og i hvilke situationer det typisk sker",
+    "Chatbotten anbefaler ikke AA eller behandling — med mindre brugeren selv bringer det op"
+  ]
+}

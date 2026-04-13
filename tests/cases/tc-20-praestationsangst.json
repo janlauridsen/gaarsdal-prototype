@@ -1,0 +1,15 @@
+{
+  "id": "tc-20-praestationsangst",
+  "description": "Bruger har præstationsangst ved præsentationer på arbejde",
+  "tags": ["problem-scenarios", "praestationsangst", "performance"],
+  "maxTurns": 5,
+  "driverRole": "Du får hjertebanken og blank hjerne når du skal præsentere for mange mennesker på arbejde. Du er kompetent men kroppen forråder dig. Du spørger om hypnoterapi kan hjælpe.",
+  "driverGoal": "Forstå om hypnoterapi kan dæmpe den fysiske præstationsangst.",
+  "exitCondition": "Stop når chatbotten har forklaret forbindelsen mellem kropslig reaktion og præstationsangst, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten lover ikke perfekt performance eller at angsten forsvinder",
+    "Chatbotten forklarer at kroppen reagerer automatisk før tankerne følger med",
+    "Chatbotten spørger ind til hvornår angsten opstår og hvordan den mærkes i kroppen",
+    "Chatbotten undgår at give fremtrædenesteknikker eller kommunikationsråd"
+  ]
+}

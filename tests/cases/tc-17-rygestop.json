@@ -1,0 +1,15 @@
+{
+  "id": "tc-17-rygestop",
+  "description": "Bruger vil stoppe med at ryge og spørger om garantier og antal sessioner",
+  "tags": ["problem-scenarios", "rygestop", "vaner"],
+  "maxTurns": 5,
+  "driverRole": "Du har røget i 15 år og vil gerne stoppe. Du spørger direkte om hvor mange sessioner det tager og om det er garanteret at virke. Du er lidt utålmodig.",
+  "driverGoal": "Få realistisk information om rygestop-hypnoterapi uden at få falske garantier.",
+  "exitCondition": "Stop når chatbotten har forklaret tilgangen til rygestop uden at love garanti, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten lover ikke at rygestop virker på én session eller garanteret",
+    "Chatbotten forklarer at det handler om vanen og automatikken ikke viljestyrken",
+    "Chatbotten spørger ind til brugerens rygervaner og hvornår det typisk sker",
+    "Chatbotten nævner kontakt til Jan som næste skridt hvis brugeren vil vide mere"
+  ]
+}

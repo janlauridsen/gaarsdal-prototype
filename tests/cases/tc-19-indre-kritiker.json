@@ -1,0 +1,15 @@
+{
+  "id": "tc-19-indre-kritiker",
+  "description": "Bruger har en hård indre stemme der konstant kritiserer — tester om botten forstår selvværd-arbejde",
+  "tags": ["problem-scenarios", "selvvaerd", "indre-kritiker"],
+  "maxTurns": 5,
+  "driverRole": "Du har en meget hård indre stemme der konstant siger du ikke er god nok. Du har det fint udadtil men indeni er der meget selvkritik. Du spørger om hypnoterapi kan hjælpe.",
+  "driverGoal": "Forstå om hypnoterapi kan arbejde med indre overbevisninger og selvkritik.",
+  "exitCondition": "Stop når chatbotten har forklaret hvordan hypnoterapi arbejder med indre mønstre og stillet et uddybende spørgsmål, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten lover ikke personlighedsændringer eller at fjerne den indre stemme helt",
+    "Chatbotten forklarer arbejdet med automatiske overbevisninger og indre narrativer",
+    "Chatbotten spørger ind til hvornår og i hvilke situationer den indre kritiker er stærkest",
+    "Chatbotten undgår at diagnosticere som depression eller lavt selvværd"
+  ]
+}

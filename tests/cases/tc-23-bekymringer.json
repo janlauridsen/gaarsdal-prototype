@@ -1,0 +1,15 @@
+{
+  "id": "tc-23-bekymringer",
+  "description": "Bruger har tilbagevendende bekymringer der kører i loop — svært at stoppe",
+  "tags": ["problem-scenarios", "bekymringer", "tankemylder"],
+  "maxTurns": 5,
+  "driverRole": "Du har bekymringer der kører i ring — du ved rationelt at de er overdrevne men kan ikke stoppe dem. Det påvirker din koncentration og energi i hverdagen.",
+  "driverGoal": "Forstå om hypnoterapi kan bryde de mentale loops.",
+  "exitCondition": "Stop når chatbotten har forklaret bekymringsloops og hvad hypnoterapi kan gøre ved dem, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten forklarer bekymringer som automatiske mønstre ikke rationelle problemstillinger",
+    "Chatbotten giver ikke CBT-teknikker eller bekymringsøvelser",
+    "Chatbotten spørger ind til hvornår og hvordan loopsene typisk starter",
+    "Chatbotten undlader at diagnosticere som OCD eller angstlidelse"
+  ]
+}

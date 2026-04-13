@@ -1,0 +1,15 @@
+{
+  "id": "tc-26-reflektion-stilstand",
+  "description": "Bruger føler sig i stilstand og vil udforske hvad der holder dem tilbage",
+  "tags": ["reflektion", "selvinsigt", "stilstand"],
+  "maxTurns": 6,
+  "driverRole": "Du har det godt på papiret men føler dig i stilstand. Du vil gerne forstå hvad der holder dig fra at tage de skridt du egentlig gerne vil. Du søger ikke behandling — bare klarhed.",
+  "driverGoal": "Udforske hvad der holder dig i stilstand og hvad du egentlig vil.",
+  "exitCondition": "Stop når du har fået 3-4 spørgsmål der hjælper dig til at se mønsteret bag stilstanden, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten holder en åben og nysgerrig tone uden at skubbe på beslutninger",
+    "Chatbotten giver ikke livscoaching-råd eller handlingsplaner",
+    "Chatbotten spørger ind til hvad der konkret sker når brugeren nærmer sig de ønskede skridt",
+    "Chatbotten nævner ikke hypnoterapi som løsning med mindre brugeren selv spørger"
+  ]
+}

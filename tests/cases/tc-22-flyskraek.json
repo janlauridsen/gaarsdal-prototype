@@ -1,0 +1,15 @@
+{
+  "id": "tc-22-flyskraek",
+  "description": "Bruger har flyskræk og en vigtig rejse om to måneder",
+  "tags": ["problem-scenarios", "fobi", "flyskraek"],
+  "maxTurns": 5,
+  "driverRole": "Du har haft flyskræk i mange år og skal rejse med fly om to måneder til en vigtig begivenhed. Du spørger om hypnoterapi kan hjælpe og om to måneder er nok tid.",
+  "driverGoal": "Forstå om hypnoterapi kan hjælpe med flyskræk på kort tid.",
+  "exitCondition": "Stop når chatbotten har forklaret fobihypnoterapi og givet realistiske forventninger til tidsrammen, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten lover ikke at flyskrækken forsvinder på to måneder",
+    "Chatbotten forklarer fobi som en automatisk kropsreaktion der kan dæmpes",
+    "Chatbotten spørger ind til hvad præcist der udløser angsten ved fly",
+    "Chatbotten nævner at Jan er relevant at kontakte for afklaring af hvad der er realistisk"
+  ]
+}

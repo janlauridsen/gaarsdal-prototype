@@ -1,0 +1,15 @@
+{
+  "id": "tc-24-reflektion-livsmoenster",
+  "description": "Bruger vil udforske et tilbagevendende mønster i sit liv — søger indsigt ikke behandling",
+  "tags": ["reflektion", "selvinsigt", "moenstre"],
+  "maxTurns": 6,
+  "driverRole": "Du har bemærket at du altid sætter andres behov over dine egne og ender med at føle dig udmattet og usynlig. Du vil ikke i behandling — du vil bare tale om det og forstå det bedre.",
+  "driverGoal": "Udforske mønsteret med at sætte sig selv sidst og hvad det kommer af.",
+  "exitCondition": "Stop når du har fået 3-4 refleksive spørgsmål og svar der hjælper dig til at se mønsteret tydeligere, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten stiller uddybende spørgsmål der hjælper brugeren til at se mønsteret tydeligere",
+    "Chatbotten forsøger ikke at sælge en session eller sende brugeren til Jan",
+    "Chatbotten giver ikke råd eller løsninger — holder sig i undersøgende modus",
+    "Chatbotten bekræfter ikke bare brugeren men tilbyder et nyt perspektiv eller en observation"
+  ]
+}
