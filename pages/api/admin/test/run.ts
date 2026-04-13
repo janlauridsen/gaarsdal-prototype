@@ -190,13 +190,12 @@ function generateUserKey(): string {
   return "test-" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
 }
 
-async function runCase(tc: TestCase, host: string): Promise<TestResult> {
+async function runCase(tc: TestCase, host: string, retentionDays: number = 0): Promise<TestResult> {
   const userKey = generateUserKey()
   const transcript: Turn[] = []
 
   try {
     // 1. Consent — session-only eller 7 dages retention baseret på ?retain=1
-    const retentionDays = req.query.retain === "1" ? 7 : 0
     const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays })
     let currentState = consent.state
 
@@ -265,7 +264,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Kør cases sekventielt (undgår rate limits og timeout-problemer)
   const results: TestResult[] = []
   for (const tc of cases) {
-    const result = await runCase(tc, host)
+    const retentionDays = req.query.retain === "1" ? 7 : 0
+    const result = await runCase(tc, host, retentionDays)
     results.push(result)
   }
 
