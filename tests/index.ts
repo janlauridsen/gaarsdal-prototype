@@ -24,6 +24,7 @@ import tc23 from "./cases/tc-23-bekymringer.json"
 import tc24 from "./cases/tc-24-reflektion-livsmoenster.json"
 import tc25 from "./cases/tc-25-reflektion-relationer.json"
 import tc26 from "./cases/tc-26-reflektion-stilstand.json"
+import tc27 from "./cases/tc-27-reflektion-udholdenhed.json"
 
 export interface TestCase {
   id: string
@@ -43,5 +44,5 @@ export const ALL_TEST_CASES: TestCase[] = [
   tc13 as TestCase, tc14 as TestCase, tc15 as TestCase, tc16 as TestCase,
   tc17 as TestCase, tc18 as TestCase, tc19 as TestCase, tc20 as TestCase,
   tc21 as TestCase, tc22 as TestCase, tc23 as TestCase, tc24 as TestCase,
-  tc25 as TestCase, tc26 as TestCase,
+  tc25 as TestCase, tc26 as TestCase, tc27 as TestCase,
 ]
