@@ -10,6 +10,7 @@ export default function Kontakt() {
     email: "",
     phone: "",
     message: "",
+    website: "", // honeypot — må ikke udfyldes
   });
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">(
     "idle"
@@ -199,6 +200,20 @@ export default function Kontakt() {
                   rows={6}
                   className="w-full border border-gray-200 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent"
                   required
+                />
+              </div>
+
+              {/* Honeypot — skjult for brugere, bots udfylder det */}
+              <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }} aria-hidden="true">
+                <label htmlFor="website">Udfyld ikke dette felt</label>
+                <input
+                  id="website"
+                  name="website"
+                  type="text"
+                  value={form.website}
+                  onChange={handleChange}
+                  tabIndex={-1}
+                  autoComplete="off"
                 />
               </div>
 
