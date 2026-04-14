@@ -99,6 +99,14 @@
     <span class="sel-count">Valgt: <span id="sel-count">0</span></span>
     <label class="retention-toggle" title="Gem test-sessioner i Redis i 7 dage så de kan inspiceres">
       <input type="checkbox" id="retain-data"> Gem i Redis (7 dage)
+      &nbsp;&nbsp;
+      Look-ahead delay:
+      <select id="turnDelay" style="background:#1a1a1a;color:#ccc;border:1px solid #333;border-radius:3px;padding:2px 6px;font-size:12px">
+        <option value="0">Ingen</option>
+        <option value="5000">5 sek</option>
+        <option value="8000" selected>8 sek</option>
+        <option value="12000">12 sek</option>
+      </select>
     </label>
   </div>
 
@@ -236,6 +244,7 @@ async function runCase(id,token,host,retain){
   let transcript = []
 
   while(true){
+    const turnDelay = document.getElementById('turnDelay')?.value || '0'
     const params = new URLSearchParams({
       token, id,
       chunk: '1',
@@ -243,6 +252,7 @@ async function runCase(id,token,host,retain){
       chunkSize: String(chunkSize),
       transcript: JSON.stringify(transcript),
       retain: '7', // chunk-mode kræver Redis til state
+      turnDelay,
     })
     if(userKey) params.set('userKey', userKey)
 
