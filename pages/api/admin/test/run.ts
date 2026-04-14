@@ -44,6 +44,7 @@ interface ChunkResult {
   fromTurn: number
   nextFromTurn: number
   transcript: Turn[]
+  currentState: any
   done: boolean
   result?: TestResult
 }
@@ -213,13 +214,14 @@ async function runChunk(
   prevTranscript: Turn[],
   userKey: string,
   chunkSize: number,
-  retentionDays: number
+  retentionDays: number,
+  prevState: any
 ): Promise<ChunkResult> {
   const transcript = [...prevTranscript]
 
   try {
-    // Hent eller opret state via consent hvis første chunk
-    let currentState: any = null
+    // Hent eller opret state — første chunk via consent, efterfølgende via prevState
+    let currentState: any = prevState ?? null
     if (fromTurn === 0) {
       const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays })
       currentState = consent.state
@@ -239,6 +241,7 @@ async function runChunk(
           fromTurn,
           nextFromTurn: i,
           transcript,
+          currentState,
           result: {
             id: tc.id,
             description: tc.description,
@@ -274,6 +277,7 @@ async function runChunk(
         fromTurn,
         nextFromTurn: toTurn,
         transcript,
+        currentState,
         result: {
           id: tc.id,
           description: tc.description,
@@ -287,7 +291,7 @@ async function runChunk(
       }
     }
 
-    // Flere turns tilbage — returner delresultat
+    // Flere turns tilbage — returner delresultat inkl. state til næste chunk
     return {
       partial: true,
       done: false,
@@ -295,6 +299,7 @@ async function runChunk(
       fromTurn,
       nextFromTurn: toTurn,
       transcript,
+      currentState,
     }
   } catch (e: any) {
     return {
@@ -304,6 +309,7 @@ async function runChunk(
       fromTurn,
       nextFromTurn: fromTurn,
       transcript,
+      currentState: null,
       result: {
         id: tc.id,
         description: tc.description,
@@ -393,7 +399,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       prevTranscript = JSON.parse(String(req.query.transcript ?? "[]"))
     } catch {}
 
-    const chunkResult = await runChunk(tc, host, fromTurn, prevTranscript, userKey, chunkSize, retentionDays)
+    let prevState: any = null
+    try { prevState = JSON.parse(String(req.query.state ?? "null")) } catch {}
+    const chunkResult = await runChunk(tc, host, fromTurn, prevTranscript, userKey, chunkSize, retentionDays, prevState)
     return res.status(200).json(chunkResult)
   }
 
