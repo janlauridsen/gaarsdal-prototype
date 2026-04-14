@@ -52,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       try {
         const tickResult = await tickJob(job)
-        await writeJob(tickResult.job, jobsTtlSeconds)
+        await writeJob(tickResult.job, jobsTtlSeconds())
 
         if (isTerminal(tickResult.job.status)) {
           await removePending(conversationId, jobId)
