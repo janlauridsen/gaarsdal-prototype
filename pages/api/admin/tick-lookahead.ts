@@ -1,20 +1,23 @@
 // pages/api/admin/tick-lookahead.ts
 //
-// Ticker alle pending anticipate_turn jobs for en given conversationId.
-// Bruges af test-runneren for at sikre look-ahead kører synkront inden næste turn.
+// Ticker alle pending anticipate_turn jobs for en given conversationId synkront.
+// Bruges af test-runneren for at sikre look-ahead kører på samme instans inden næste turn.
 //
 // GET /api/admin/tick-lookahead?token=ADMIN_TOKEN&conversationId=lobby:u:test-xxx
 
 import type { NextApiRequest, NextApiResponse } from "next"
 import { tickJob } from "../../../chat/jobs/registry"
 import {
-  acquireTickLock, isTerminal, jobsTtlSeconds,
-  readJob, releaseRunnerLock, releaseTickLock,
-  removePending, writeJob
+  acquireTickLock,
+  isTerminal,
+  jobsTtlSeconds,
+  listPendingJobIds,
+  readJob,
+  releaseRunnerLock,
+  releaseTickLock,
+  removePending,
+  writeJob,
 } from "../../../chat/jobs/store"
-import { getRedisClient } from "../../../chat/persistence/redis"
-
-const KEY_PREFIX = "gaarsdal:"
 
 function validateToken(req: NextApiRequest, res: NextApiResponse): boolean {
   const token = req.query.token
@@ -32,13 +35,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const conversationId = typeof req.query.conversationId === "string" ? req.query.conversationId : null
   if (!conversationId) return res.status(400).json({ error: "conversationId påkrævet" })
 
-  const client = getRedisClient()
-  if (!client) return res.status(500).json({ error: "Redis ikke tilgængelig" })
-
   try {
-    const pendingKey = `${KEY_PREFIX}jobs:v1:pending:conversation:${conversationId}`
-    const jobIds: string[] = await (client as any).zrange(pendingKey, 0, 19)
-
+    const jobIds = await listPendingJobIds(conversationId)
     const ticked: string[] = []
     const skipped: string[] = []
 
@@ -56,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         if (isTerminal(tickResult.job.status)) {
           await removePending(conversationId, jobId)
-          await releaseRunnerLock(conversationId, jobId)
+          await releaseRunnerLock(conversationId)
         }
         ticked.push(jobId)
       } finally {
