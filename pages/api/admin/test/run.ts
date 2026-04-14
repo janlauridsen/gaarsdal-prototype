@@ -383,7 +383,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!validateToken(req, res)) return
 
   const host = req.headers.host ?? "gaarsdal.net"
-  const retentionDays = req.query.retain === "1" ? 7 : 0
+  const retainParam = String(req.query.retain ?? "0")
+  const retentionDays = retainParam === "0" ? 0 : (parseInt(retainParam, 10) || 7)
 
   // ── Chunked mode: ?id=tc-xx&chunk=1&fromTurn=0&userKey=xxx&transcript=[] ──
   if (req.query.chunk === "1" && typeof req.query.id === "string") {
