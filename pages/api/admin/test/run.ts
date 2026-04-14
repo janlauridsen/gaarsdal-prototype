@@ -267,8 +267,15 @@ async function runChunk(
         bot: chatResult.botMessage,
       })
 
-      // Vent på look-ahead at fuldføre inden næste turn (kun i test-mode)
+      // Trigger look-ahead synkront hvis turnDelayMs > 0 (test-mode)
       if (turnDelayMs > 0 && i < toTurn - 1) {
+        // Giv waitUntil/chat-routen et øjeblik til at queue jobbet
+        await new Promise(r => setTimeout(r, 500))
+        // Kald tick-lookahead direkte så look-ahead kører på denne instans
+        try {
+          await fetch(`https://${host}/api/admin/tick-lookahead?token=${process.env.ADMIN_TOKEN}&conversationId=lobby:u:${userKey}`)
+        } catch {}
+        // Vent på at look-ahead LLM-kaldet fuldføres
         await new Promise(r => setTimeout(r, turnDelayMs))
       }
     }
