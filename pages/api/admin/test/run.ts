@@ -38,17 +38,6 @@ interface TestResult {
   transcript: Turn[]
 }
 
-interface ChunkResult {
-  partial: boolean
-  userKey: string
-  fromTurn: number
-  nextFromTurn: number
-  transcript: Turn[]
-  currentState: any
-  done: boolean
-  result?: TestResult
-}
-
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 function validateToken(req: NextApiRequest, res: NextApiResponse): boolean {
@@ -121,7 +110,7 @@ async function driverNextMessage(tc: TestCase, transcript: Turn[]): Promise<stri
   )
 
   if (response.trim().toUpperCase() === "STOP") return null
-  return response.trim()
+  return response.trim().replace(/^Bruger:\s*/i, "").trim()
 }
 
 // ─── Observer ─────────────────────────────────────────────────────────────────
@@ -156,14 +145,9 @@ async function runObserver(tc: TestCase, transcript: Turn[]): Promise<{ passed: 
 
   try {
     const parsed = JSON.parse(raw)
-    const criteria = Array.isArray(parsed.criteria) ? parsed.criteria : []
-    // Beregn passed fra kriterier frem for at stole på LLM's top-level felt
-    const passed = criteria.length > 0
-      ? criteria.every((c: any) => c.passed === true)
-      : Boolean(parsed.passed)
     return {
-      passed,
-      criteria,
+      passed: Boolean(parsed.passed),
+      criteria: Array.isArray(parsed.criteria) ? parsed.criteria : [],
       summary: String(parsed.summary ?? ""),
     }
   } catch {
@@ -201,153 +185,16 @@ function generateUserKey(): string {
   return "test-" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
 }
 
-// ─── Chunked kørsel ───────────────────────────────────────────────────────────
-// Kører maxTurnsPerChunk turns ad gangen.
-// Første kald: fromTurn=0, userKey genereres automatisk.
-// Efterfølgende kald: fromTurn=N, userKey fra forrige svar.
-// Når alle turns er kørt eller exitCondition er nået: kør observer og returner resultat.
-
-async function runChunk(
-  tc: TestCase,
-  host: string,
-  fromTurn: number,
-  prevTranscript: Turn[],
-  userKey: string,
-  chunkSize: number,
-  retentionDays: number,
-  prevState: any,
-  turnDelayMs: number = 0
-): Promise<ChunkResult> {
-  const transcript = [...prevTranscript]
-
-  try {
-    // Første chunk: opret session via consent.
-    // Efterfølgende chunks: state loades fra Redis via chatPost med null state.
-    let currentState: any = null
-    if (fromTurn === 0) {
-      const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays })
-      currentState = consent.state
-    }
-    // Ved fromTurn > 0 sender vi null som state — serveren loader fra Redis automatisk.
-
-    const toTurn = Math.min(fromTurn + chunkSize, tc.maxTurns)
-
-    for (let i = fromTurn; i < toTurn; i++) {
-      const userMsg = await driverNextMessage(tc, transcript)
-      if (userMsg === null || userMsg === "STOP") {
-        // Kør observer og returner
-        const verdict = await runObserver(tc, transcript)
-        return {
-          partial: false,
-          done: true,
-          userKey,
-          fromTurn,
-          nextFromTurn: i,
-          transcript,
-          currentState,
-          result: {
-            id: tc.id,
-            description: tc.description,
-            passed: verdict.passed,
-            turns: transcript.length,
-            userKey,
-            criteria: verdict.criteria,
-            summary: verdict.summary,
-            transcript,
-          },
-        }
-      }
-
-      const chatResult = await chatPost(host, userKey, currentState, { type: "FREE_TEXT", text: userMsg })
-      currentState = chatResult.state
-
-      transcript.push({
-        turn: i + 1,
-        user: userMsg,
-        bot: chatResult.botMessage,
-      })
-
-      // Trigger look-ahead synkront hvis turnDelayMs > 0 (test-mode)
-      if (turnDelayMs > 0 && i < toTurn - 1) {
-        // Giv waitUntil/chat-routen et øjeblik til at queue jobbet
-        await new Promise(r => setTimeout(r, 500))
-        // Kald tick-lookahead direkte så look-ahead kører på denne instans
-        try {
-          await fetch(`https://${host}/api/admin/tick-lookahead?token=${process.env.ADMIN_TOKEN}&conversationId=lobby:u:${userKey}`)
-        } catch {}
-        // Vent på at look-ahead LLM-kaldet fuldføres
-        await new Promise(r => setTimeout(r, turnDelayMs))
-      }
-    }
-
-    const allTurnsDone = toTurn >= tc.maxTurns
-
-    if (allTurnsDone) {
-      // Alle turns kørt — kør observer
-      const verdict = await runObserver(tc, transcript)
-      return {
-        partial: false,
-        done: true,
-        userKey,
-        fromTurn,
-        nextFromTurn: toTurn,
-        transcript,
-        currentState,
-        result: {
-          id: tc.id,
-          description: tc.description,
-          passed: verdict.passed,
-          turns: transcript.length,
-          userKey,
-          criteria: verdict.criteria,
-          summary: verdict.summary,
-          transcript,
-        },
-      }
-    }
-
-    // Flere turns tilbage — returner delresultat inkl. state til næste chunk
-    return {
-      partial: true,
-      done: false,
-      userKey,
-      fromTurn,
-      nextFromTurn: toTurn,
-      transcript,
-      currentState,
-    }
-  } catch (e: any) {
-    return {
-      partial: false,
-      done: true,
-      userKey,
-      fromTurn,
-      nextFromTurn: fromTurn,
-      transcript,
-      currentState: null,
-      result: {
-        id: tc.id,
-        description: tc.description,
-        passed: false,
-        turns: transcript.length,
-        userKey,
-        error: String(e?.message ?? e),
-        criteria: [],
-        summary: "Test afbrudt pga. fejl",
-        transcript,
-      },
-    }
-  }
-}
-
-async function runCase(tc: TestCase, host: string, retentionDays: number = 0): Promise<TestResult> {
+async function runCase(tc: TestCase, host: string): Promise<TestResult> {
   const userKey = generateUserKey()
   const transcript: Turn[] = []
 
   try {
-    const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays })
+    // 1. Consent (session-only: retentionDays 0 = ingen Redis-forurening)
+    const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays: 0 })
     let currentState = consent.state
 
+    // 2. Driver-loop
     for (let i = 0; i < tc.maxTurns; i++) {
       const userMsg = await driverNextMessage(tc, transcript)
       if (userMsg === null) break
@@ -362,6 +209,7 @@ async function runCase(tc: TestCase, host: string, retentionDays: number = 0): P
       })
     }
 
+    // 3. Observer
     const verdict = await runObserver(tc, transcript)
 
     return {
@@ -396,31 +244,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!validateToken(req, res)) return
 
   const host = req.headers.host ?? "gaarsdal.net"
-  const retainParam = String(req.query.retain ?? "0")
-  const retentionDays = retainParam === "0" ? 0 : (parseInt(retainParam, 10) || 7)
-  const turnDelayMs = parseInt(String(req.query.turnDelay ?? "0"), 10) || 0
 
-  // ── Chunked mode: ?id=tc-xx&chunk=1&fromTurn=0&userKey=xxx&transcript=[] ──
-  if (req.query.chunk === "1" && typeof req.query.id === "string") {
-    const tc = ALL_TEST_CASES.find((c) => c.id === req.query.id)
-    if (!tc) return res.status(404).json({ error: `Test case '${req.query.id}' ikke fundet` })
-
-    const fromTurn = parseInt(String(req.query.fromTurn ?? "0"), 10)
-    const chunkSize = parseInt(String(req.query.chunkSize ?? "4"), 10)
-    const userKey = typeof req.query.userKey === "string" && req.query.userKey
-      ? req.query.userKey
-      : generateUserKey()
-
-    let prevTranscript: Turn[] = []
-    try {
-      prevTranscript = JSON.parse(String(req.query.transcript ?? "[]"))
-    } catch {}
-
-    const chunkResult = await runChunk(tc, host, fromTurn, prevTranscript, userKey, chunkSize, retentionDays, null, turnDelayMs)
-    return res.status(200).json(chunkResult)
-  }
-
-  // ── Normal mode ────────────────────────────────────────────────────────────
+  // Filtrer cases
   let cases = ALL_TEST_CASES
   if (typeof req.query.id === "string") {
     cases = cases.filter((c) => c.id === req.query.id)
@@ -431,9 +256,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (cases.length === 0) return res.status(404).json({ error: `Ingen test cases med tag '${tag}'` })
   }
 
+  // Kør cases sekventielt (undgår rate limits og timeout-problemer)
   const results: TestResult[] = []
   for (const tc of cases) {
-    const result = await runCase(tc, host, retentionDays)
+    const result = await runCase(tc, host)
     results.push(result)
   }
 
