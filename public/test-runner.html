@@ -229,10 +229,12 @@ function renderCaseList(ids){
 
 async function runCase(id,token,host,retain){
   // Chunked mode: kald i bidder af 4 turns for at undgå 60s timeout
+  // State sendes med mellem chunks så session-only virker uden Redis
   const chunkSize = 4
   let fromTurn = 0
   let userKey = ''
   let transcript = []
+  let currentState = null
 
   while(true){
     const params = new URLSearchParams({
@@ -242,6 +244,7 @@ async function runCase(id,token,host,retain){
       fromTurn: String(fromTurn),
       chunkSize: String(chunkSize),
       transcript: JSON.stringify(transcript),
+      state: JSON.stringify(currentState),
     })
     if(userKey) params.set('userKey', userKey)
     if(retain) params.set('retain', '1')
@@ -252,17 +255,13 @@ async function runCase(id,token,host,retain){
     const data = await res.json()
 
     if(data.partial){
-      // Flere turns tilbage — fortsæt
       userKey = data.userKey
       fromTurn = data.nextFromTurn
       transcript = data.transcript
-      // Lille pause mellem chunks
-      await new Promise(r => setTimeout(r, 500))
+      currentState = data.currentState
+      await new Promise(r => setTimeout(r, 300))
     } else {
-      // Færdig — returner i samme format som før
-      if(data.result){
-        return { results: [data.result] }
-      }
+      if(data.result) return { results: [data.result] }
       throw new Error(data.error || 'Ukendt fejl')
     }
   }
