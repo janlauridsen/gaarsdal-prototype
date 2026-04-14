@@ -18,7 +18,13 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { name, email, phone, message } = req.body as Partial<ContactSubmission>;
+  const { name, email, phone, message, website } = req.body as Partial<ContactSubmission & { website: string }>;
+
+  // ── Honeypot: bots udfylder skjulte felter, rigtige brugere gør ikke ──
+  if (website && website.trim().length > 0) {
+    // Afvis stille — lad bot tro det lykkedes
+    return res.status(200).json({ ok: true });
+  }
 
   if (!name?.trim() || !email?.trim() || !message?.trim()) {
     return res.status(400).send("Udfyld venligst navn, email og besked.");
@@ -26,6 +32,23 @@ export default async function handler(
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).send("Ugyldig emailadresse.");
+  }
+
+  // ── Rate limiting: max 3 indsendelser per IP per time ──
+  const ip = req.headers["x-forwarded-for"]?.toString().split(",")[0].trim()
+    || req.socket.remoteAddress
+    || "unknown";
+
+  const redis = getRedisClient();
+  if (redis) {
+    const rateKey = `contact:rate:${ip}`;
+    const count = await redis.incr(rateKey);
+    if (count === 1) {
+      await redis.expire(rateKey, 60 * 60); // 1 time TTL
+    }
+    if (count > 3) {
+      return res.status(429).send("For mange henvendelser. Prøv igen senere.");
+    }
   }
 
   const submittedAt = new Date().toISOString();
@@ -37,17 +60,14 @@ export default async function handler(
     phone: phone?.trim() || undefined,
     message: message.trim(),
     submittedAt,
-    ip: req.headers["x-forwarded-for"]?.toString() || req.socket.remoteAddress,
+    ip,
   };
 
   // Persist to Redis (TTL: 180 days)
-  const redis = getRedisClient();
   if (redis) {
     await redis.set(id, JSON.stringify(submission), { ex: 60 * 60 * 24 * 180 });
   }
 
-  // Optional: send email notification via Resend
-  // Set RESEND_API_KEY in environment to enable
   const resendKey = process.env.RESEND_API_KEY;
   if (resendKey) {
     try {
@@ -76,11 +96,9 @@ export default async function handler(
         }),
       });
     } catch (err) {
-      // Non-fatal — submission is already saved to Redis
       console.error("[contact] Resend notification failed:", err);
     }
 
-    // Bekræftigelsesmail til brugeren
     try {
       await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -111,7 +129,6 @@ export default async function handler(
         }),
       });
     } catch (err) {
-      // Non-fatal
       console.error("[contact] Resend confirmation failed:", err);
     }
   }
