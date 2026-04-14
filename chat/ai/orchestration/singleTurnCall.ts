@@ -180,6 +180,9 @@ Undgå at starte med "Du spørger", "Du beskriver", "Du ønsker", "Du nævner". 
   if (params.assistantCount >= 2) {
     blocks.push(`Der har allerede været ${params.assistantCount} svar — gå dybere eller gør mønsteret kortere og tydeligere. Gentag ikke samme forklaring med nye ord.`)
   }
+  if (params.assistantCount >= 3) {
+    blocks.push(`ANTI-GENTAGELSE: Stil IKKE det samme spørgsmål som i forrige svar. Hvis brugeren ikke svarede på dit spørgsmål, skift vinkel helt — spørg ind til et nyt aspekt (fx kroppen, en konkret situation, en undtagelse, hvad der sker lige inden reaktionen). Progression kræver nyt indhold, ikke samme indsigt omformuleret.`)
+  }
 
   // ARC-SIGNAL: indholds-baseret, ikke turn-nummer-baseret
   if (params.goalHypothesis) {
