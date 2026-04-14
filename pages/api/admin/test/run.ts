@@ -215,7 +215,8 @@ async function runChunk(
   userKey: string,
   chunkSize: number,
   retentionDays: number,
-  prevState: any
+  prevState: any,
+  turnDelayMs: number = 0
 ): Promise<ChunkResult> {
   const transcript = [...prevTranscript]
 
@@ -265,6 +266,11 @@ async function runChunk(
         user: userMsg,
         bot: chatResult.botMessage,
       })
+
+      // Vent på look-ahead at fuldføre inden næste turn (kun i test-mode)
+      if (turnDelayMs > 0 && i < toTurn - 1) {
+        await new Promise(r => setTimeout(r, turnDelayMs))
+      }
     }
 
     const allTurnsDone = toTurn >= tc.maxTurns
@@ -385,6 +391,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const host = req.headers.host ?? "gaarsdal.net"
   const retainParam = String(req.query.retain ?? "0")
   const retentionDays = retainParam === "0" ? 0 : (parseInt(retainParam, 10) || 7)
+  const turnDelayMs = parseInt(String(req.query.turnDelay ?? "0"), 10) || 0
 
   // ── Chunked mode: ?id=tc-xx&chunk=1&fromTurn=0&userKey=xxx&transcript=[] ──
   if (req.query.chunk === "1" && typeof req.query.id === "string") {
@@ -402,7 +409,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       prevTranscript = JSON.parse(String(req.query.transcript ?? "[]"))
     } catch {}
 
-    const chunkResult = await runChunk(tc, host, fromTurn, prevTranscript, userKey, chunkSize, retentionDays, null)
+    const chunkResult = await runChunk(tc, host, fromTurn, prevTranscript, userKey, chunkSize, retentionDays, null, turnDelayMs)
     return res.status(200).json(chunkResult)
   }
 
