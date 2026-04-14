@@ -6,7 +6,6 @@
 // GET /api/admin/tick-lookahead?token=ADMIN_TOKEN&conversationId=lobby:u:test-xxx
 
 import type { NextApiRequest, NextApiResponse } from "next"
-import { readConversationState } from "../../../chat/persistence/conversationStateStore"
 import { tickJob } from "../../../chat/jobs/registry"
 import {
   acquireTickLock, isTerminal, jobsTtlSeconds,
@@ -52,10 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!lockAcquired) { skipped.push(jobId); continue }
 
       try {
-        const currentState = await readConversationState(conversationId)
-        const currentRevision = typeof currentState?.revision === "number" ? currentState.revision : 0
-
-        const updatedJob = await tickJob(job, currentRevision)
+        const updatedJob = await tickJob(job)
         await writeJob(updatedJob, jobsTtlSeconds)
 
         if (isTerminal(updatedJob.status)) {
