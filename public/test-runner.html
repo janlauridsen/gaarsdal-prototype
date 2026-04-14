@@ -228,10 +228,44 @@ function renderCaseList(ids){
 }
 
 async function runCase(id,token,host,retain){
-  const url=`https://${host}/api/admin/test/run?token=${encodeURIComponent(token)}&id=${encodeURIComponent(id)}${retain?'&retain=1':''}`
-  const res=await fetch(url)
-  if(!res.ok)throw new Error(`HTTP ${res.status}`)
-  return res.json()
+  // Chunked mode: kald i bidder af 4 turns for at undgå 60s timeout
+  const chunkSize = 4
+  let fromTurn = 0
+  let userKey = ''
+  let transcript = []
+
+  while(true){
+    const params = new URLSearchParams({
+      token,
+      id,
+      chunk: '1',
+      fromTurn: String(fromTurn),
+      chunkSize: String(chunkSize),
+      transcript: JSON.stringify(transcript),
+    })
+    if(userKey) params.set('userKey', userKey)
+    if(retain) params.set('retain', '1')
+
+    const url = `https://${host}/api/admin/test/run?${params.toString()}`
+    const res = await fetch(url)
+    if(!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+
+    if(data.partial){
+      // Flere turns tilbage — fortsæt
+      userKey = data.userKey
+      fromTurn = data.nextFromTurn
+      transcript = data.transcript
+      // Lille pause mellem chunks
+      await new Promise(r => setTimeout(r, 500))
+    } else {
+      // Færdig — returner i samme format som før
+      if(data.result){
+        return { results: [data.result] }
+      }
+      throw new Error(data.error || 'Ukendt fejl')
+    }
+  }
 }
 
 function renderDetail(id,result){
