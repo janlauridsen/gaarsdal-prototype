@@ -220,12 +220,14 @@ async function runChunk(
   const transcript = [...prevTranscript]
 
   try {
-    // Hent eller opret state — første chunk via consent, efterfølgende via prevState
-    let currentState: any = prevState ?? null
+    // Første chunk: opret session via consent.
+    // Efterfølgende chunks: state loades fra Redis via chatPost med null state.
+    let currentState: any = null
     if (fromTurn === 0) {
       const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays })
       currentState = consent.state
     }
+    // Ved fromTurn > 0 sender vi null som state — serveren loader fra Redis automatisk.
 
     const toTurn = Math.min(fromTurn + chunkSize, tc.maxTurns)
 
@@ -399,9 +401,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       prevTranscript = JSON.parse(String(req.query.transcript ?? "[]"))
     } catch {}
 
-    let prevState: any = null
-    try { prevState = JSON.parse(String(req.query.state ?? "null")) } catch {}
-    const chunkResult = await runChunk(tc, host, fromTurn, prevTranscript, userKey, chunkSize, retentionDays, prevState)
+    const chunkResult = await runChunk(tc, host, fromTurn, prevTranscript, userKey, chunkSize, retentionDays, null)
     return res.status(200).json(chunkResult)
   }
 
