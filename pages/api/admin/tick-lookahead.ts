@@ -51,10 +51,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!lockAcquired) { skipped.push(jobId); continue }
 
       try {
-        const updatedJob = await tickJob(job)
-        await writeJob(updatedJob, jobsTtlSeconds)
+        const tickResult = await tickJob(job)
+        await writeJob(tickResult.job, jobsTtlSeconds)
 
-        if (isTerminal(updatedJob.status)) {
+        if (isTerminal(tickResult.job.status)) {
           await removePending(conversationId, jobId)
           await releaseRunnerLock(conversationId, jobId)
         }
