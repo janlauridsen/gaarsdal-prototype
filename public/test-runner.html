@@ -104,7 +104,7 @@
       <select id="turnDelay" style="background:#1a1a1a;color:#ccc;border:1px solid #333;border-radius:3px;padding:2px 6px;font-size:12px">
         <option value="0">Ingen</option>
         <option value="5000">5 sek</option>
-        <option value="8000" selected>8 sek</option>
+        <option value="5000" selected>5 sek</option>
         <option value="12000">12 sek</option>
       </select>
     </label>
@@ -238,7 +238,7 @@ function renderCaseList(ids){
 async function runCase(id,token,host,retain){
   // Chunked mode: kald i bidder af 4 turns for at undgå 60s timeout.
   // Chunk-mode kræver Redis (retain=7) da state ligger i Redis mellem kald.
-  const chunkSize = 4
+  const chunkSize = 3
   let fromTurn = 0
   let userKey = ''
   let transcript = []
