@@ -43,7 +43,7 @@ export default function Kontakt() {
 
       if (res.ok) {
         setStatus("success");
-        setForm({ name: "", email: "", phone: "", message: "" });
+        setForm({ name: "", email: "", phone: "", message: "", website: "" });
       } else {
         const txt = await res.text();
         setErrorMsg(txt || "Der opstod en fejl. Prøv igen senere.");
