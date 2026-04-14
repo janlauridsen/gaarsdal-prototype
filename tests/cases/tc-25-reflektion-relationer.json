@@ -2,7 +2,7 @@
   "id": "tc-25-reflektion-relationer",
   "description": "Bruger vil forstå en reaktion der gentager sig i nære relationer",
   "tags": ["reflektion", "selvinsigt", "relationer"],
-  "maxTurns": 5,
+  "maxTurns": 8,
   "driverRole": "Du bemærker at du trækker dig og lukker af når du føler dig kritiseret — selv ved meget mild kritik. Det sker automatisk og du vil gerne forstå hvad det handler om.",
   "driverGoal": "Udforske den automatiske tilbagetrækningsreaktion ved kritik og hvad den måske beskytter mod.",
   "exitCondition": "Stop når du har fået 3-4 spørgsmål der hjælper dig til at forstå reaktionen bedre, eller efter maxTurns.",
