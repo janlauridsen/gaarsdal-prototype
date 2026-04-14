@@ -38,6 +38,16 @@ interface TestResult {
   transcript: Turn[]
 }
 
+interface ChunkResult {
+  partial: boolean
+  userKey: string
+  fromTurn: number
+  nextFromTurn: number
+  transcript: Turn[]
+  done: boolean
+  result?: TestResult
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 function validateToken(req: NextApiRequest, res: NextApiResponse): boolean {
@@ -190,16 +200,133 @@ function generateUserKey(): string {
   return "test-" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
 }
 
+// ─── Chunked kørsel ───────────────────────────────────────────────────────────
+// Kører maxTurnsPerChunk turns ad gangen.
+// Første kald: fromTurn=0, userKey genereres automatisk.
+// Efterfølgende kald: fromTurn=N, userKey fra forrige svar.
+// Når alle turns er kørt eller exitCondition er nået: kør observer og returner resultat.
+
+async function runChunk(
+  tc: TestCase,
+  host: string,
+  fromTurn: number,
+  prevTranscript: Turn[],
+  userKey: string,
+  chunkSize: number,
+  retentionDays: number
+): Promise<ChunkResult> {
+  const transcript = [...prevTranscript]
+
+  try {
+    // Hent eller opret state via consent hvis første chunk
+    let currentState: any = null
+    if (fromTurn === 0) {
+      const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays })
+      currentState = consent.state
+    }
+
+    const toTurn = Math.min(fromTurn + chunkSize, tc.maxTurns)
+
+    for (let i = fromTurn; i < toTurn; i++) {
+      const userMsg = await driverNextMessage(tc, transcript)
+      if (userMsg === null || userMsg === "STOP") {
+        // Kør observer og returner
+        const verdict = await runObserver(tc, transcript)
+        return {
+          partial: false,
+          done: true,
+          userKey,
+          fromTurn,
+          nextFromTurn: i,
+          transcript,
+          result: {
+            id: tc.id,
+            description: tc.description,
+            passed: verdict.passed,
+            turns: transcript.length,
+            userKey,
+            criteria: verdict.criteria,
+            summary: verdict.summary,
+            transcript,
+          },
+        }
+      }
+
+      const chatResult = await chatPost(host, userKey, currentState, { type: "FREE_TEXT", text: userMsg })
+      currentState = chatResult.state
+
+      transcript.push({
+        turn: i + 1,
+        user: userMsg,
+        bot: chatResult.botMessage,
+      })
+    }
+
+    const allTurnsDone = toTurn >= tc.maxTurns
+
+    if (allTurnsDone) {
+      // Alle turns kørt — kør observer
+      const verdict = await runObserver(tc, transcript)
+      return {
+        partial: false,
+        done: true,
+        userKey,
+        fromTurn,
+        nextFromTurn: toTurn,
+        transcript,
+        result: {
+          id: tc.id,
+          description: tc.description,
+          passed: verdict.passed,
+          turns: transcript.length,
+          userKey,
+          criteria: verdict.criteria,
+          summary: verdict.summary,
+          transcript,
+        },
+      }
+    }
+
+    // Flere turns tilbage — returner delresultat
+    return {
+      partial: true,
+      done: false,
+      userKey,
+      fromTurn,
+      nextFromTurn: toTurn,
+      transcript,
+    }
+  } catch (e: any) {
+    return {
+      partial: false,
+      done: true,
+      userKey,
+      fromTurn,
+      nextFromTurn: fromTurn,
+      transcript,
+      result: {
+        id: tc.id,
+        description: tc.description,
+        passed: false,
+        turns: transcript.length,
+        userKey,
+        error: String(e?.message ?? e),
+        criteria: [],
+        summary: "Test afbrudt pga. fejl",
+        transcript,
+      },
+    }
+  }
+}
+
 async function runCase(tc: TestCase, host: string, retentionDays: number = 0): Promise<TestResult> {
   const userKey = generateUserKey()
   const transcript: Turn[] = []
 
   try {
-    // 1. Consent — session-only eller 7 dages retention baseret på ?retain=1
     const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays })
     let currentState = consent.state
 
-    // 2. Driver-loop
     for (let i = 0; i < tc.maxTurns; i++) {
       const userMsg = await driverNextMessage(tc, transcript)
       if (userMsg === null) break
@@ -214,7 +341,6 @@ async function runCase(tc: TestCase, host: string, retentionDays: number = 0): P
       })
     }
 
-    // 3. Observer
     const verdict = await runObserver(tc, transcript)
 
     return {
@@ -249,8 +375,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!validateToken(req, res)) return
 
   const host = req.headers.host ?? "gaarsdal.net"
+  const retentionDays = req.query.retain === "1" ? 7 : 0
 
-  // Filtrer cases
+  // ── Chunked mode: ?id=tc-xx&chunk=1&fromTurn=0&userKey=xxx&transcript=[] ──
+  if (req.query.chunk === "1" && typeof req.query.id === "string") {
+    const tc = ALL_TEST_CASES.find((c) => c.id === req.query.id)
+    if (!tc) return res.status(404).json({ error: `Test case '${req.query.id}' ikke fundet` })
+
+    const fromTurn = parseInt(String(req.query.fromTurn ?? "0"), 10)
+    const chunkSize = parseInt(String(req.query.chunkSize ?? "4"), 10)
+    const userKey = typeof req.query.userKey === "string" && req.query.userKey
+      ? req.query.userKey
+      : generateUserKey()
+
+    let prevTranscript: Turn[] = []
+    try {
+      prevTranscript = JSON.parse(String(req.query.transcript ?? "[]"))
+    } catch {}
+
+    const chunkResult = await runChunk(tc, host, fromTurn, prevTranscript, userKey, chunkSize, retentionDays)
+    return res.status(200).json(chunkResult)
+  }
+
+  // ── Normal mode ────────────────────────────────────────────────────────────
   let cases = ALL_TEST_CASES
   if (typeof req.query.id === "string") {
     cases = cases.filter((c) => c.id === req.query.id)
@@ -261,10 +408,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (cases.length === 0) return res.status(404).json({ error: `Ingen test cases med tag '${tag}'` })
   }
 
-  // Kør cases sekventielt (undgår rate limits og timeout-problemer)
   const results: TestResult[] = []
   for (const tc of cases) {
-    const retentionDays = req.query.retain === "1" ? 7 : 0
     const result = await runCase(tc, host, retentionDays)
     results.push(result)
   }
