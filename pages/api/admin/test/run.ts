@@ -1,11 +1,15 @@
 // pages/api/admin/test/run.ts
 //
-// AI-drevet test runner til Gaarsdal chatbot.
+// AI-drevet test runner til Gaarsdal chatbot — chunked mode.
 //
-// Kør via browser:
-//   https://gaarsdal.net/api/admin/test/run?token=ADMIN_TOKEN           (alle cases)
-//   https://gaarsdal.net/api/admin/test/run?token=ADMIN_TOKEN&id=tc-02  (én case)
-//   https://gaarsdal.net/api/admin/test/run?token=ADMIN_TOKEN&tags=handoff (cases med tag)
+// chunk=1 mode (fra test-runner.html):
+//   Køres i bidder af chunkSize turns for at undgå 60s timeout.
+//   Fra turn 2+: state hentes fra Redis (kræver retain > 0).
+//   Returnerer { partial: true, userKey, nextFromTurn, transcript } eller
+//               { partial: false, result: TestResult }
+//
+// Direkte mode (ingen chunk=1):
+//   https://gaarsdal.net/api/admin/test/run?token=TOKEN&id=tc-02
 
 import type { NextApiRequest, NextApiResponse } from "next"
 import { ALL_TEST_CASES, type TestCase } from "../../../../tests"
@@ -179,40 +183,115 @@ async function chatPost(host: string, userKey: string, state: unknown, input: un
   return { state: (data as any).state, botMessage }
 }
 
-// ─── Kør én test case ─────────────────────────────────────────────────────────
+// ─── Tick look-ahead ─────────────────────────────────────────────────────────
+
+async function tickLookahead(host: string, token: string, userKey: string): Promise<void> {
+  const conversationId = `lobby:u:${userKey}`
+  try {
+    await fetch(
+      `https://${host}/api/admin/tick-lookahead?token=${encodeURIComponent(token)}&conversationId=${encodeURIComponent(conversationId)}`,
+      { method: "GET" }
+    )
+  } catch {
+    // Non-fatal — look-ahead er best-effort
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms))
+}
+
+// ─── Hjælpere ─────────────────────────────────────────────────────────────────
 
 function generateUserKey(): string {
   return "test-" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
 }
 
-async function runCase(tc: TestCase, host: string): Promise<TestResult> {
-  const userKey = generateUserKey()
-  const transcript: Turn[] = []
+function parseRetain(raw: unknown): number {
+  const n = parseInt(String(raw), 10)
+  if (isNaN(n) || n <= 0) return 0
+  if ([1, 7, 30, 90, 365].includes(n)) return n
+  return 7
+}
+
+// ─── Chunk-handler ────────────────────────────────────────────────────────────
+
+async function handleChunk(req: NextApiRequest, res: NextApiResponse): Promise<void> {
+  const token = String(req.query.token ?? "")
+  const host = req.headers.host ?? "gaarsdal.net"
+  const id = String(req.query.id ?? "")
+  const fromTurn = parseInt(String(req.query.fromTurn ?? "0"), 10) || 0
+  const chunkSize = Math.min(parseInt(String(req.query.chunkSize ?? "3"), 10) || 3, 6)
+  const retentionDays = parseRetain(req.query.retain)
+  const turnDelayMs = parseInt(String(req.query.turnDelay ?? "0"), 10) || 0
+  let userKey = String(req.query.userKey ?? "")
+  let transcript: Turn[] = []
+
+  // Parse transcript from previous chunk
+  try {
+    const raw = req.query.transcript
+    if (typeof raw === "string" && raw.length > 2) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) transcript = parsed
+    }
+  } catch { /* ignore */ }
+
+  const tc = ALL_TEST_CASES.find((c) => c.id === id)
+  if (!tc) {
+    res.status(404).json({ error: `Test case '${id}' ikke fundet` })
+    return
+  }
 
   try {
-    // 1. Consent (session-only: retentionDays 0 = ingen Redis-forurening)
-    const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays: 0 })
-    let currentState = consent.state
+    let currentState: unknown = null
 
-    // 2. Driver-loop
-    for (let i = 0; i < tc.maxTurns; i++) {
+    if (fromTurn === 0) {
+      // Ny session: opret userKey og sæt consent
+      userKey = generateUserKey()
+      const rd = retentionDays > 0 ? retentionDays : 7
+      const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays: rd })
+      currentState = consent.state
+    }
+    // fromTurn > 0: state læses fra Redis — send null, chat-API loader fra Redis via userKey-cookie
+
+    const turnEnd = Math.min(fromTurn + chunkSize, tc.maxTurns)
+    let stopped = false
+
+    for (let i = fromTurn; i < turnEnd; i++) {
       const userMsg = await driverNextMessage(tc, transcript)
-      if (userMsg === null) break
+      if (userMsg === null) { stopped = true; break }
 
       const chatResult = await chatPost(host, userKey, currentState, { type: "FREE_TEXT", text: userMsg })
       currentState = chatResult.state
 
-      transcript.push({
-        turn: i + 1,
-        user: userMsg,
-        bot: chatResult.botMessage,
-      })
+      transcript.push({ turn: i + 1, user: userMsg, bot: chatResult.botMessage })
+
+      // Look-ahead: trigger async job processing på samme instans
+      if (turnDelayMs > 0) {
+        await sleep(500)
+        await tickLookahead(host, token, userKey)
+        await sleep(turnDelayMs)
+      }
+
+      currentState = null // Næste kald loader fra Redis
     }
 
-    // 3. Observer
-    const verdict = await runObserver(tc, transcript)
+    const allDone = stopped || transcript.length >= tc.maxTurns || transcript.length >= turnEnd && turnEnd >= tc.maxTurns
 
-    return {
+    if (!allDone && !stopped && transcript.length < tc.maxTurns) {
+      // Flere chunks tilbage
+      res.status(200).json({
+        partial: true,
+        userKey,
+        nextFromTurn: transcript.length,
+        transcript,
+      })
+      return
+    }
+
+    // Alle turns kørt — kør observer
+    const verdict = await runObserver(tc, transcript)
+    const result: TestResult = {
       id: tc.id,
       description: tc.description,
       passed: verdict.passed,
@@ -222,8 +301,9 @@ async function runCase(tc: TestCase, host: string): Promise<TestResult> {
       summary: verdict.summary,
       transcript,
     }
+    res.status(200).json({ partial: false, result })
   } catch (e: any) {
-    return {
+    const result: TestResult = {
       id: tc.id,
       description: tc.description,
       passed: false,
@@ -234,6 +314,42 @@ async function runCase(tc: TestCase, host: string): Promise<TestResult> {
       summary: "Test afbrudt pga. fejl",
       transcript,
     }
+    res.status(200).json({ partial: false, result })
+  }
+}
+
+// ─── Sekventiel handler (direkte URL-kald uden chunk=1) ───────────────────────
+
+async function runCase(tc: TestCase, host: string): Promise<TestResult> {
+  const userKey = generateUserKey()
+  const transcript: Turn[] = []
+
+  try {
+    const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays: 7 })
+    let currentState = consent.state
+
+    for (let i = 0; i < tc.maxTurns; i++) {
+      const userMsg = await driverNextMessage(tc, transcript)
+      if (userMsg === null) break
+
+      const chatResult = await chatPost(host, userKey, currentState, { type: "FREE_TEXT", text: userMsg })
+      currentState = chatResult.state
+
+      transcript.push({ turn: i + 1, user: userMsg, bot: chatResult.botMessage })
+    }
+
+    const verdict = await runObserver(tc, transcript)
+    return {
+      id: tc.id, description: tc.description, passed: verdict.passed,
+      turns: transcript.length, userKey, criteria: verdict.criteria,
+      summary: verdict.summary, transcript,
+    }
+  } catch (e: any) {
+    return {
+      id: tc.id, description: tc.description, passed: false,
+      turns: transcript.length, userKey, error: String(e?.message ?? e),
+      criteria: [], summary: "Test afbrudt pga. fejl", transcript,
+    }
   }
 }
 
@@ -243,9 +359,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== "GET") return res.status(405).json({ error: "Method Not Allowed" })
   if (!validateToken(req, res)) return
 
+  // Chunk mode — kaldt fra test-runner.html
+  if (req.query.chunk === "1") {
+    return handleChunk(req, res)
+  }
+
   const host = req.headers.host ?? "gaarsdal.net"
 
-  // Filtrer cases
   let cases = ALL_TEST_CASES
   if (typeof req.query.id === "string") {
     cases = cases.filter((c) => c.id === req.query.id)
@@ -256,7 +376,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (cases.length === 0) return res.status(404).json({ error: `Ingen test cases med tag '${tag}'` })
   }
 
-  // Kør cases sekventielt (undgår rate limits og timeout-problemer)
   const results: TestResult[] = []
   for (const tc of cases) {
     const result = await runCase(tc, host)
@@ -264,12 +383,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const passCount = results.filter((r) => r.passed).length
-  const summary = {
-    total: results.length,
-    passed: passCount,
-    failed: results.length - passCount,
-    runAt: new Date().toISOString(),
-  }
-
-  res.status(200).json({ summary, results })
+  res.status(200).json({
+    summary: { total: results.length, passed: passCount, failed: results.length - passCount, runAt: new Date().toISOString() },
+    results,
+  })
 }
