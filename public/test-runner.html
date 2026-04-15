@@ -78,6 +78,9 @@
   .turn-label { font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:3px; }
   .turn-user { color:var(--accent);font-size:12px;line-height:1.5;margin-bottom:3px; }
   .turn-bot { color:var(--text);font-size:12px;line-height:1.5;white-space:pre-wrap; }
+  .turn-lookahead { margin-top:6px;padding:6px 8px;background:#1a1a1a;border-left:2px solid #333;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6B675F;line-height:1.5; }
+  .turn-lookahead-label { color:#4a4a4a;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:2px; }
+  .turn-lookahead-text { color:#888; }
   .error-msg { font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red);margin-top:6px; }
   footer { margin-top:40px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:16px; }
   .retention-toggle { font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;padding:4px 0; }
@@ -287,12 +290,21 @@ function renderDetail(id,result){
     })
   }
   if(result.transcript?.length){
-    html+=`<span class="transcript-toggle" onclick="toggleTranscript('${id}')">▸ vis transcript (${result.transcript.length} turns)</span>`
+    const userTurns = result.transcript.filter(t=>t.user && !t.user.startsWith('EXPLICIT_TRANSITION')).length
+    html+=`<span class="transcript-toggle" onclick="toggleTranscript('${id}')">▸ vis transcript (${userTurns} turns)</span>`
     html+=`<div class="transcript" id="transcript-${id}">`
-    result.transcript.forEach(t=>{
+    result.transcript.filter(t=>!t.user?.startsWith('EXPLICIT_TRANSITION')).forEach(t=>{
+      let lookaheadHtml=''
+      if(t.lookahead?.rhetorical_instruction){
+        lookaheadHtml=`<div class="turn-lookahead">
+          <div class="turn-lookahead-label">look-ahead instruktion</div>
+          <div class="turn-lookahead-text">${escHtml(t.lookahead.rhetorical_instruction)}</div>
+          ${t.lookahead.conversation_goal_hypothesis?`<div class="turn-lookahead-label" style="margin-top:4px">samtalemål-hypotese</div><div class="turn-lookahead-text">${escHtml(t.lookahead.conversation_goal_hypothesis)}</div>`:''}
+        </div>`
+      }
       html+=`<div class="turn"><div class="turn-label">Turn ${t.turn}</div>
         <div class="turn-user">▸ ${escHtml(t.user)}</div>
-        <div class="turn-bot">${escHtml(t.bot)}</div></div>`
+        <div class="turn-bot">${escHtml(t.bot)}</div>${lookaheadHtml}</div>`
     })
     html+='</div>'
   }
