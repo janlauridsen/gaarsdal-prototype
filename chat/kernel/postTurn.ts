@@ -249,7 +249,7 @@ async function enqueueSuggestFacts(params: {
   })
 }
 
-export function runPostTurn(params: {
+export async function runPostTurn(params: {
   userKey: string
   input: InputSignal
   kernelResult: KernelResult
@@ -261,7 +261,7 @@ export function runPostTurn(params: {
   terminalStatus: string
   /** Samtykke-record: hvis null eller retentionDays === 0 springes alle Redis-skrivninger over */
   consentRecord?: ConsentRecord | null
-}): void {
+}): Promise<void> {
   // ── Consent-gate ────────────────────────────────────────────────────────────
   // Ingen samtykke eller session-only → spring al persistens over.
   // Samtalen fungerer stadig fuldt ud i RAM.
@@ -283,8 +283,12 @@ export function runPostTurn(params: {
         ]
       : []
 
-  // Læs last_turn_at asynkront og kør resten af postTurn efterfølgende
-  readLastTurnAt(conversationId).then((lastTurnAt) => {
+  // Skriv raw:conversation SYNKRONT inden response sendes.
+  // Dette sikrer turn 1 (HOME→GEN_HYPNO two-step) altid skrives uanset Vercel function-lifetime.
+  await writeRawAndMemory({ userKey, input, kernelResult, userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined })
+
+  // Resten kan køre asynkront — læs last_turn_at og kør job-enqueueing
+  const lastTurnAt = await readLastTurnAt(conversationId).catch(() => undefined)
   const secondsSinceLastTurn = typeof lastTurnAt === "number"
     ? Math.floor((Date.now() - lastTurnAt) / 1000)
     : undefined
@@ -334,7 +338,6 @@ export function runPostTurn(params: {
     }),
     writeLastTurnAt(conversationId),
     enqueueSuggestFacts({ userKey, conversationId, revisionAfter: revision, metaKeysWritten, threadThemeId: themeId, threadEpisodeId: episodeId }),
-    writeRawAndMemory({ userKey, input, kernelResult, userText: (input as any).type === "FREE_TEXT" ? (input as any).text : undefined }),
     maybeTriggerDeriveThreadTitleJob({ userKey, input, conversationId, revisionAfter: revision }),
     maybeTriggerAnticipateJob({ userKey, input, conversationId, state: kernelResult.state, revisionAfter: revision }),
     // Option A: scan ved session-afslutning — sikrer at alle afsluttede samtaler efterlader
@@ -347,7 +350,6 @@ export function runPostTurn(params: {
   ]).catch(() => {
     // Fejl i post-writes påvirker ikke brugeren
   })
-  }).catch(() => {}) // readLastTurnAt fejl ignoreres
 }
 
 export async function maybeTriggerScanThreadsJob(params: {
