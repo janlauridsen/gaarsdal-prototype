@@ -441,6 +441,11 @@ export default function AdminPage() {
                               <button onClick={()=>setExpandedAnticipate(expandedAnticipate===draftKey?null:draftKey)}
                                 style={{ fontSize:"11px", padding:"2px 10px", borderRadius:"10px", border:"none", cursor:"pointer", background:hasOverlap?"#0f2b15":"#1f1f1f", color:hasOverlap?"#5aad72":"#888888", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:"4px" }}>
                                 {hasOverlap?"✓":"○"} lookahead {expandedAnticipate===draftKey?"▲":"▼"}
+                                {draft.created_at && (() => {
+                                  const d = new Date(draft.created_at)
+                                  const hms = d.toLocaleTimeString("da-DK", {hour:"2-digit",minute:"2-digit",second:"2-digit"})
+                                  return <span style={{opacity:0.5, fontSize:"10px", marginLeft:"4px"}}>turn {draft.based_on_revision} · {hms}</span>
+                                })()}
                               </button>
                               {expandedAnticipate===draftKey && (
                                 <div style={{ marginTop:"6px", background:"#1a1a1a", border:"1px solid #2d2d2d", borderRadius:"10px", padding:"12px 14px", fontSize:"13px", maxWidth:"80%" }}>
