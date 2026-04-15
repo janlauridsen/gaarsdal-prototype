@@ -199,9 +199,10 @@ async function tickLookahead(host: string, token: string, userKey: string): Prom
   const conversationId = `lobby:u:${userKey}`
   try {
     await fetch(
-      `https://${host}/api/admin/tick-lookahead?token=${encodeURIComponent(token)}&conversationId=${encodeURIComponent(conversationId)}`,
+      `https://${host}/api/jobs/drain?token=${encodeURIComponent(token)}&conversationId=${encodeURIComponent(conversationId)}`,
       { method: "GET" }
     )
+  } catch { /* non-fatal */ }
   } catch {
     // Non-fatal — look-ahead er best-effort
   }
