@@ -13,15 +13,23 @@
 
 import type { NextApiRequest, NextApiResponse } from "next"
 import { ALL_TEST_CASES, type TestCase } from "../../../../tests"
+import { getRedisClient } from "../../../../chat/persistence/redis"
 
 export const config = { maxDuration: 60 }
 
 // ─── Typer ───────────────────────────────────────────────────────────────────
 
+interface Lookahead {
+  rhetorical_instruction: string
+  anticipated_user_text: string
+  conversation_goal_hypothesis: string | null
+}
+
 interface Turn {
   turn: number
   user: string
   bot: string
+  lookahead?: Lookahead
 }
 
 interface CriterionResult {
@@ -201,6 +209,32 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))
 }
 
+// ─── Look-ahead fetch ─────────────────────────────────────────────────────────
+
+async function fetchAnticipateDrafts(conversationId: string): Promise<Map<number, Lookahead>> {
+  const result = new Map<number, Lookahead>()
+  try {
+    const client = getRedisClient()
+    if (!client) return result
+    const pattern = `gaarsdal:anticipate:draft:conversation:${conversationId}:*`
+    const keys: string[] = await (client as any).keys(pattern)
+    if (!keys.length) return result
+    const raws = await Promise.all(keys.map((k) => client.get(k)))
+    for (const raw of raws) {
+      if (!raw) continue
+      const d = typeof raw === "string" ? JSON.parse(raw) : raw
+      const revision: number = d.based_on_revision ?? 0
+      result.set(revision, {
+        rhetorical_instruction: d.summary_draft ?? "",
+        anticipated_user_text: d.open_questions?.[0] ?? "",
+        conversation_goal_hypothesis: typeof d.conversation_goal_hypothesis === "string"
+          ? d.conversation_goal_hypothesis : null,
+      })
+    }
+  } catch { /* non-fatal */ }
+  return result
+}
+
 // ─── Hjælpere ─────────────────────────────────────────────────────────────────
 
 function generateUserKey(): string {
@@ -287,7 +321,15 @@ async function handleChunk(req: NextApiRequest, res: NextApiResponse): Promise<v
       return
     }
 
-    // Alle turns kørt — kør observer
+    // Alle turns kørt — hent look-ahead drafts og annoteér transcript
+    const conversationId = `lobby:u:${userKey}`
+    const drafts = await fetchAnticipateDrafts(conversationId)
+    // revision = turn-index (1-baseret) → draft triggered after that turn
+    for (const t of transcript) {
+      const draft = drafts.get(t.turn)
+      if (draft) t.lookahead = draft
+    }
+
     const verdict = await runObserver(tc, transcript)
     const result: TestResult = {
       id: tc.id,
