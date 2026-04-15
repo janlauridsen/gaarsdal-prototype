@@ -23,7 +23,7 @@ type TranscriptTurn = { role: "user" | "assistant"; content: string }
 
 export type SingleTurnOutput = {
   is_history_query: boolean
-  routing_intent: "contact_booking" | "none"
+  routing_intent: "contact_booking" | "crisis" | "none"
   mode_used: PromptMode
   conversation_move: ConversationMove
   investigation_focus: InvestigationFocus
@@ -50,6 +50,7 @@ function buildSystemPrompt(params: {
   previousRelationalState?: RelationalState
   policySignals?: { is_practical_request: boolean; is_closing: boolean }
   goalHypothesis?: string | null
+  offerDeclined?: boolean
 }): string {
   const blocks: string[] = []
 
@@ -192,24 +193,13 @@ Undgå at starte med "Du spørger", "Du beskriver", "Du ønsker", "Du nævner". 
       `Du behøver ikke vente på et bestemt turn-nummer. Brug brugerens faktiske signal.`
     )
   } else if (params.assistantCount === 2) {
-    blocks.push(`PROGRESSION (turn 3): Mønsteret er ved at være belyst. Saml hvad der er fremkommet og tag et lille skridt fremad. Angiv hvad mønsteret ser ud til at være, og om hypnoterapi typisk adresserer netop det. Afslut med ét konkret spørgsmål mod brugerens næste skridt eller motivation.`)
-  } else if (params.assistantCount >= 3 && params.assistantCount <= 4) {
-    blocks.push(`PROGRESSION (turn ${params.assistantCount + 1}): Samtalen har kortlagt mønsteret tilstrækkeligt. Komprimér mønsteret i 1-2 sætninger, sig hvad hypnoterapi kan gøre ved det, og afslut med ét spørgsmål om brugeren overvejer at tage kontakt. Brug conversation_move: synthesis eller practical_preparation.`)
-  } else if (params.assistantCount >= 5) {
-    blocks.push(
-      `DYBDE-SKIFT PÅKRÆVET (turn ${params.assistantCount + 1}): Brugeren holder samtalen i gang og ønsker at grave dybere — respektér det.\n` +
-      `Du MÅ IKKE:\n` +
-      `- gentage mønsterforklaringen med andre ord\n` +
-      `- bruge guided_observation to gange i træk\n` +
-      `- stille det samme type spørgsmål som sidst\n\n` +
-      `Du SKAL vælge ét af disse dybde-skift:\n` +
-      `(A) Hvad sker der UMIDDELBART EFTER reaktionen — hvad gør brugeren for at slippe væk fra følelsen?\n` +
-      `(B) Hvad ville se konkret anderledes ud i brugerens hverdag, hvis mønsteret var brudt?\n` +
-      `(C) Er der en bestemt situation eller relation, hvor mønsteret IKKE aktiveres — hvad er anderledes der?\n` +
-      `(D) Hvornår begyndte mønsteret — var der en periode hvor det ikke var der?\n\n` +
-      `Brug conversation_move: metacognitive_probe eller mild_challenge. Skift investigation_focus til noget nyt.\n` +
-      `Maksimalt ét afsnit + ét meget konkret spørgsmål.`
-    )
+    blocks.push(`PROGRESSION (turn 3): Mønsteret er ved at være belyst. Saml hvad der er fremkommet og beskriv mønsteret kort. Afslut med ét konkret uddybende spørgsmål. Nævn KUN hypnoterapi som næste skridt hvis brugeren selv har vist interesse eller spurgt om det.`)
+  } else if (params.assistantCount >= 3) {
+    if (params.offerDeclined) {
+      blocks.push(`PROGRESSION (turn ${params.assistantCount + 1}): Brugeren har eksplicit sagt at de ikke er klar til eller interesseret i en session. Respektér det — nævn IKKE hypnoterapi eller Jan som næste skridt. Fortsæt samtalen undersøgende og nysgerrigt ud fra hvad brugeren selv bringer op.`)
+    } else {
+      blocks.push(`PROGRESSION (turn ${params.assistantCount + 1}): Vurder om brugeren har vist readiness-signaler (fx "hvad kan jeg gøre", "lyder godt", "er det noget for mig"). Hvis ja: komprimér mønsteret og spørg om brugeren overvejer kontakt. Hvis nej: fortsæt undersøgende uden at nævne hypnoterapi som næste skridt.`)
+    }
   }
 
   // WINDOW OF TOLERANCE
@@ -258,7 +248,23 @@ Vurder om du skal fortsætte same spor, skifte gear eller afrunde — afhængigt
     : ""
 
   blocks.push(`ROUTING:
-routing_intent sættes KUN til "contact_booking" når brugeren EKSPLICIT og UTVETYDIGT ønsker at blive kontaktet eller booke — dvs. at de tager et konkret skridt mod kontakt NU.
+routing_intent har tre mulige værdier: "contact_booking", "crisis", eller "none".
+
+"crisis": Sæt KUN hvis brugerens besked indeholder klare tegn på selvmordstanker, ønske om at dø, selvskade-intention, eller eskalerende håbløshed kombineret med at ville stoppe med at eksistere. Vurder hele samtaleforløbet — ikke kun seneste besked.
+Eksempler → "crisis":
+- "Jeg vil ikke leve mere"
+- "Jeg overvejer at gøre mig selv ondt"
+- "Det ville være lettere hvis jeg ikke var her"
+- "Jeg ønsker bare det hele ville stoppe" (i kontekst af dyb håbløshed)
+- Eskalerende mønster: ingen vej ud + kan ikke klare det + hjælpeløs (alle tre samtidigt)
+Eksempler → IKKE "crisis" (sæt "none" i stedet):
+- "Jeg er træt og stresset"
+- "Jeg drikker for at finde ro"
+- "Jeg er ensom"
+- "Jeg vil give op på mit job"
+- "Det er hårdt for mig"
+
+"contact_booking": Sæt KUN til "contact_booking" når brugeren EKSPLICIT og UTVETYDIGT ønsker at blive kontaktet eller booke — dvs. at de tager et konkret skridt mod kontakt NU.
 Brug assistentens forrige svar som kontekst: hvis assistenten tilbød en session eller spurgte om brugeren vil prøve, og brugeren svarer bekræftende, er det "contact_booking".
 Ellers: "none".${lastAssistantForRouting}
 
@@ -291,7 +297,7 @@ Tommelfingerregel: Var assistentens forrige spørgsmål et konkret tilbud om ses
   blocks.push(`Returner KUN gyldig JSON — ingen tekst uden for JSON:
 {
   "is_history_query": boolean,
-  "routing_intent": "contact_booking" | "none",
+  "routing_intent": "contact_booking" | "crisis" | "none",
   "mode_used": "info" | "evidence" | "practical" | "reflection" | "closing",
   "conversation_move": "direct_answer" | "guided_observation" | "pattern_detection" | "metacognitive_probe" | "mild_challenge" | "practical_preparation" | "synthesis" | "close",
   "investigation_focus": "attention" | "interpretation" | "regulation" | "pattern" | "preparation" | "none",
@@ -341,7 +347,9 @@ function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTop
     ? (raw.relational_state as RelationalState)
     : "building_clarity"
 
-  const routing_intent = raw.routing_intent === "contact_booking" ? "contact_booking" : "none"
+  const routing_intent = raw.routing_intent === "contact_booking" ? "contact_booking"
+    : raw.routing_intent === "crisis" ? "crisis"
+    : "none"
 
   const topic = typeof raw.topic === "string" && raw.topic.trim() ? raw.topic.trim() : lastTopic
   const objective = typeof raw.objective === "string" && raw.objective.trim() ? raw.objective.trim() : undefined
@@ -432,33 +440,8 @@ export async function singleTurnCall(params: {
   previousRelationalState?: RelationalState
   policySignals?: { is_practical_request: boolean; is_closing: boolean }
   goalHypothesis?: string | null
-  crisisDetected?: boolean
+  offerDeclined?: boolean
 }): Promise<SingleTurnOutput | null> {
-  // Krise-override: returner hardcoded svar uden LLM-kald.
-  // crisis_detected sættes i chat.ts og persisteres i meta på tværs af turns.
-  if (params.crisisDetected) {
-    const crisisMessage =
-      "Det lyder som om du har det meget svært lige nu.\n\n" +
-      "Det er vigtigt at du ikke står alene med de tanker. Ring til Livslinjen på 70 201 201 " +
-      "(gratis, døgnet rundt), lægevagten på 1813, eller 112 hvis det er akut."
-    return {
-      is_history_query: false,
-      routing_intent: "none",
-      mode_used: "info",
-      conversation_move: "direct_answer",
-      investigation_focus: "none",
-      relational_state: "orienting",
-      topic: params.lastTopic,
-      objective: undefined,
-      acknowledgement: null,
-      core_answer: crisisMessage,
-      next_step: null,
-      signals: ["crisis_override"],
-      confidence: 1.0,
-      assistant_message: crisisMessage,
-    }
-  }
-
   const lastAssistantExcerpt = [...params.transcript]
     .reverse()
     .find((t) => t.role === "assistant")?.content
@@ -473,6 +456,7 @@ export async function singleTurnCall(params: {
     previousRelationalState: params.previousRelationalState,
     policySignals: params.policySignals,
     goalHypothesis: params.goalHypothesis,
+    offerDeclined: params.offerDeclined,
   })
 
   // C: Dynamisk temperatur — reflection er mere kreativ, evidence/info mere præcis
