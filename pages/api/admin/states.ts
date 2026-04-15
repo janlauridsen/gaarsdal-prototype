@@ -21,13 +21,14 @@ type StateSummary = {
   topic_tags?: string[]
   active_node?: string
   status?: string
+  genHypnoTranscript?: Array<{ role: string; content: string }>
 }
 
 function extractMeta(raw: unknown): StateSummary | null {
   let state: any
   if (typeof raw === "string") {
     try { state = JSON.parse(raw) } catch { return null }
-  } else if (raw && typeof raw === "object") {
+  } else if (raw && typeof raw === "object\") {
     state = raw
   } else {
     return null
@@ -37,6 +38,12 @@ function extractMeta(raw: unknown): StateSummary | null {
 
   const m = state.meta
   const g = (key: string) => m[key]?.value
+
+  const rawTranscript = g("gen_hypno.transcript")
+  const genHypnoTranscript: Array<{ role: string; content: string }> | undefined =
+    Array.isArray(rawTranscript)
+      ? rawTranscript.filter((t: any) => t?.role && t?.content)
+      : undefined
 
   return {
     conversation_id: state.conversation_id,
@@ -48,6 +55,7 @@ function extractMeta(raw: unknown): StateSummary | null {
     topic_tags: Array.isArray(g("gen_hypno.topic_tags")) ? g("gen_hypno.topic_tags") : undefined,
     active_node: state.active_node,
     status: state.status,
+    genHypnoTranscript,
   }
 }
 
