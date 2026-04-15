@@ -241,7 +241,11 @@ function renderCaseList(ids){
 async function runCase(id,token,host,retain){
   // Chunked mode: kald i bidder af 4 turns for at undgå 60s timeout.
   // Chunk-mode kræver Redis (retain=7) da state ligger i Redis mellem kald.
-  const chunkSize = 3
+  const turnDelayForChunk = parseInt(document.getElementById('turnDelay')?.value || '0', 10) || 0
+  // Budget: 55s per chunk. Each turn costs ~12s (bot+driver LLM) + delay + 0.5s tick overhead.
+  // chunkSize = floor(55 / (12 + delaySeconds + 0.5)), min 1
+  const turnCostSeconds = 12.5 + turnDelayForChunk / 1000
+  const chunkSize = Math.max(1, Math.min(4, Math.floor(55 / turnCostSeconds)))
   let fromTurn = 0
   let userKey = ''
   let transcript = []
