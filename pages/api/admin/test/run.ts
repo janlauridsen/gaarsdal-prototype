@@ -203,9 +203,6 @@ async function tickLookahead(host: string, token: string, userKey: string): Prom
       { method: "GET" }
     )
   } catch { /* non-fatal */ }
-  } catch {
-    // Non-fatal — look-ahead er best-effort
-  }
 }
 
 function sleep(ms: number): Promise<void> {
