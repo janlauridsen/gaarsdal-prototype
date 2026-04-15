@@ -28,7 +28,7 @@ function extractMeta(raw: unknown): StateSummary | null {
   let state: any
   if (typeof raw === "string") {
     try { state = JSON.parse(raw) } catch { return null }
-  } else if (raw && typeof raw === "object\") {
+  } else if (raw && typeof raw === "object") {
     state = raw
   } else {
     return null
