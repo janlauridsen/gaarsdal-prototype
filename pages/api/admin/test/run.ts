@@ -272,8 +272,6 @@ async function handleChunk(req: NextApiRequest, res: NextApiResponse): Promise<v
         await tickLookahead(host, token, userKey)
         await sleep(turnDelayMs)
       }
-
-      currentState = null // Næste kald loader fra Redis
     }
 
     const allDone = stopped || transcript.length >= tc.maxTurns || transcript.length >= turnEnd && turnEnd >= tc.maxTurns
