@@ -235,6 +235,16 @@ async function fetchAnticipateDrafts(conversationId: string): Promise<Map<number
   return result
 }
 
+async function fetchCurrentState(userKey: string): Promise<unknown | null> {
+  try {
+    const client = getRedisClient()
+    if (!client) return null
+    const raw = await client.get(`gaarsdal:state:lobby:u:${userKey}`)
+    if (!raw) return null
+    return typeof raw === "string" ? JSON.parse(raw) : raw
+  } catch { return null }
+}
+
 // ─── Hjælpere ─────────────────────────────────────────────────────────────────
 
 function generateUserKey(): string {
@@ -285,8 +295,10 @@ async function handleChunk(req: NextApiRequest, res: NextApiResponse): Promise<v
       const rd = retentionDays > 0 ? retentionDays : 7
       const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays: rd })
       currentState = consent.state
+    } else {
+      // Chunk 2+: load state fra Redis — undgår at sende null som state
+      currentState = await fetchCurrentState(userKey)
     }
-    // fromTurn > 0: state læses fra Redis — send null, chat-API loader fra Redis via userKey-cookie
 
     const turnEnd = Math.min(fromTurn + chunkSize, tc.maxTurns)
     let stopped = false
