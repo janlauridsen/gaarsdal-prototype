@@ -198,6 +198,8 @@ function buildMetaDelta(params: {
     meta["focused_reflection.entry_source"] = params.sourceNode
     meta["focused_reflection.user_opt_in"] = true
     meta["focused_reflection.stage"] = "OPEN"
+  }
+  if (params.mode !== "closing") {
     meta["focused_reflection.transcript"] = params.updatedTranscript
   }
   if (params.mode === "closing") meta["focused_reflection.stage"] = "CLOSED"
@@ -302,19 +304,19 @@ export async function runUnifiedHypnoCapability(
     is_closing: detectClosingText(userText),
   }
 
-  // Detektér om brugeren har afvist et session-tilbud.
-  // Når flagget er sat, stopper botten med at pushe mod booking.
-  const OFFER_DECLINE_PHRASES = [
-    "ikke interesseret i behandling", "ikke klar til", "ikke interesseret i en session",
-    "ikke klar til at overveje", "vil ikke have en session", "ikke nu",
-    "hellere ikke", "ikke endnu", "ikke behandling", "ikke til hypnoterapi",
-    "ikke sikker på om jeg er klar", "ikke sikker på om jeg vil", "ikke klar til at prøve",
-    "stadig lidt nervøs", "ikke klar endnu", "ikke til det endnu",
-    "vil hellere ikke", "er ikke klar", "ikke parat",
+  // Crisis-flag: tjek både meta (sat af chat.ts på forrige turn) og brugerens aktuelle tekst
+  const crisisInMeta = (context.state.meta?.["safety.crisis_detected"] as any)?.value === true
+  const CRISIS_PHRASES_GENHYPNO = [
+    "gøre mig selv ondt", "slå mig selv", "skade mig selv",
+    "vil ikke leve", "ikke leve mere", "ikke her mere",
+    "tage mit eget liv", "ende det hele", "selvmord", "selvskade",
+    "ingen vej ud", "nogen vej ud", "ingen udvej", "nogen udvej",
+    "ikke lyst til at leve", "ingen grund til at fortsætte",
+    "lyst til at give op", "lyst til at slippe for det hele",
+    "slippe for det hele", "ville være lettere hvis jeg ikke var her",
   ]
-  const offerDeclinedInText = OFFER_DECLINE_PHRASES.some(p => userText.toLowerCase().includes(p))
-  const offerDeclinedInMeta = (context.state.meta?.["gen_hypno.offer_declined"] as any)?.value === true
-  const offerDeclined = offerDeclinedInMeta || offerDeclinedInText
+  const crisisInText = CRISIS_PHRASES_GENHYPNO.some((p) => userText.toLowerCase().includes(p))
+  const crisisDetected = crisisInMeta || crisisInText
 
   let turnOutput = await singleTurnCall({
     llm,
@@ -331,7 +333,7 @@ export async function runUnifiedHypnoCapability(
     previousRelationalState,
     policySignals,
     goalHypothesis: context.contextPack?.goal_hypothesis,
-    offerDeclined,
+    crisisDetected,
   })
 
   const usedFallback = !turnOutput
@@ -399,20 +401,6 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  // ─── Routing til CRISIS_INFO ──────────────────────────────────────────────
-  if (turnOutput.routing_intent === "crisis") {
-    return {
-      transition: {
-        type: "NODE_HOP",
-        from: context.state.active_node,
-        to: "CRISIS_INFO",
-        reason: "gen-hypno:crisis",
-        response_message: undefined,
-      },
-      debug: { capability: "unified-hypno-v5-single", used_fallback: false },
-    }
-  }
-
   // ─── Routing til HANDOFF_FORM ────────────────────────────────────────────
   if (turnOutput.routing_intent === "contact_booking") {
     const updatedTranscript = appendTranscript(transcript, userText, "")
@@ -454,7 +442,6 @@ export async function runUnifiedHypnoCapability(
   }
 
   const updatedTranscript = appendTranscript(transcript, userText, assistant)
-  const declineMeta = offerDeclinedInText && !offerDeclinedInMeta ? { "gen_hypno.offer_declined": true } : {}
   const ctaMeta = ctaConditionsMet ? { "gen_hypno.cta_shown": true } : {}
 
   return {
@@ -474,7 +461,6 @@ export async function runUnifiedHypnoCapability(
           arousalLevel: arousal.level,
         }),
         ...ctaMeta,
-        ...declineMeta,
       },
     },
     debug: { capability: "unified-hypno-v5-single", used_fallback: usedFallback },
