@@ -193,8 +193,23 @@ Undgå at starte med "Du spørger", "Du beskriver", "Du ønsker", "Du nævner". 
     )
   } else if (params.assistantCount === 2) {
     blocks.push(`PROGRESSION (turn 3): Mønsteret er ved at være belyst. Saml hvad der er fremkommet og tag et lille skridt fremad. Angiv hvad mønsteret ser ud til at være, og om hypnoterapi typisk adresserer netop det. Afslut med ét konkret spørgsmål mod brugerens næste skridt eller motivation.`)
-  } else if (params.assistantCount >= 3) {
+  } else if (params.assistantCount >= 3 && params.assistantCount <= 4) {
     blocks.push(`PROGRESSION (turn ${params.assistantCount + 1}): Samtalen har kortlagt mønsteret tilstrækkeligt. Komprimér mønsteret i 1-2 sætninger, sig hvad hypnoterapi kan gøre ved det, og afslut med ét spørgsmål om brugeren overvejer at tage kontakt. Brug conversation_move: synthesis eller practical_preparation.`)
+  } else if (params.assistantCount >= 5) {
+    blocks.push(
+      `DYBDE-SKIFT PÅKRÆVET (turn ${params.assistantCount + 1}): Brugeren holder samtalen i gang og ønsker at grave dybere — respektér det.\n` +
+      `Du MÅ IKKE:\n` +
+      `- gentage mønsterforklaringen med andre ord\n` +
+      `- bruge guided_observation to gange i træk\n` +
+      `- stille det samme type spørgsmål som sidst\n\n` +
+      `Du SKAL vælge ét af disse dybde-skift:\n` +
+      `(A) Hvad sker der UMIDDELBART EFTER reaktionen — hvad gør brugeren for at slippe væk fra følelsen?\n` +
+      `(B) Hvad ville se konkret anderledes ud i brugerens hverdag, hvis mønsteret var brudt?\n` +
+      `(C) Er der en bestemt situation eller relation, hvor mønsteret IKKE aktiveres — hvad er anderledes der?\n` +
+      `(D) Hvornår begyndte mønsteret — var der en periode hvor det ikke var der?\n\n` +
+      `Brug conversation_move: metacognitive_probe eller mild_challenge. Skift investigation_focus til noget nyt.\n` +
+      `Maksimalt ét afsnit + ét meget konkret spørgsmål.`
+    )
   }
 
   // WINDOW OF TOLERANCE
