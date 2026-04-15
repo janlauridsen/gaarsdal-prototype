@@ -10,7 +10,7 @@ type Handoff = { id: string; received_at: string; navn: string; emne: string; ko
 type Lead = { id: string; received_at: string; email: string; tema?: string; conversation_id: string }
 type FeedbackItem = { ts: string; conversation_id: string; revision?: number; rating: "positive" | "partial" | "negative"; tags?: string[]; note?: string; meta?: { node?: string; mode?: string; move?: string } }
 type AnticipateDraft = { job_id: string; based_on_revision: number; anticipated_user_text: string; rhetorical_instruction: string; conversation_goal_hypothesis: string | null; created_at: number }
-type StateSummary = { conversation_id: string; fit?: "good" | "explore" | "unknown"; fit_reason?: string; arousal_level?: string; arousal_score?: number; problem_title?: string; topic_tags?: string[] }
+type StateSummary = { conversation_id: string; fit?: "good" | "explore" | "unknown"; fit_reason?: string; arousal_level?: string; arousal_score?: number; problem_title?: string; topic_tags?: string[]; genHypnoTranscript?: Array<{role: string; content: string}> }
 type ExportData = { from: string; to: string; total_conversations: number; total_turns: number; conversations: Conversation[]; handoffs?: Handoff[]; leads?: Lead[]; feedback?: FeedbackItem[] }
 type Hit = { ts: string; path: string; city: string; postal?: string; region: string; day: string }
 
@@ -365,50 +365,97 @@ export default function AdminPage() {
 
               <div style={{ ...S.card, padding:"20px" }}>
                 <div style={{ fontSize:"12px", color:"#888888", marginBottom:"16px", fontFamily:"monospace", display:"flex", alignItems:"center", gap:"12px" }}>
-                  <span>{openConv.conversation_id} · {openConv.turns.length} turns</span>
+                  {(() => {
+                    const transcript = openState?.genHypnoTranscript
+                    const pairCount = transcript ? Math.floor(transcript.filter(t=>t.role==="user").length) : openConv.turns.filter(t=>t.user_input?.trim()).length
+                    return <span>{openConv.conversation_id} · {pairCount} turns{transcript ? " (fra transcript)" : ""}</span>
+                  })()}
                   {anticipateLoading && <span style={{ color:"#555555" }}>henter lookahead…</span>}
                   {!anticipateLoading && anticipateDrafts.length > 0 && <span style={{ color:"#6B8F71", fontSize:"11px" }}>✓ {anticipateDrafts.length} lookahead-drafts</span>}
                 </div>
                 <div style={{ display:"flex", flexDirection:"column", gap:"16px" }}>
-                  {openConv.turns.filter(t=>t.input_type==="FREE_TEXT").map((t,i)=>{
-                    const draft = anticipateDrafts.find(d=>d.based_on_revision===t.revision)
-                    const nextTurn = openConv.turns.filter(x=>x.input_type==="FREE_TEXT")[i+1]
-                    const hasOverlap = draft && nextTurn ? (() => { const ant = draft.anticipated_user_text.toLowerCase(); const act = nextTurn.user_input.toLowerCase(); return ant.split(/\s+/).filter(w=>w.length>4).some(tok=>act.includes(tok)) })() : false
-                    const draftKey = `draft-${t.revision}`
-                    return (
-                      <div key={i}>
-                        {t.user_input?.trim() && <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:"8px" }}><div style={{ background:"#6B8F71", color:"#1a1a1a", borderRadius:"12px 12px 2px 12px", padding:"10px 14px", maxWidth:"75%", fontSize:"14px", lineHeight:1.5 }}>{t.user_input}</div></div>}
-                        {t.assistant_output?.trim() && <div style={{ display:"flex", justifyContent:"flex-start", marginBottom:draft?"6px":"0" }}><div style={{ background:"#1f1f1f", color:"#cccccc", borderRadius:"12px 12px 12px 2px", padding:"10px 14px", maxWidth:"75%", fontSize:"14px", lineHeight:1.5, border:"1px solid #2d2d2d" }}>{t.assistant_output}</div></div>}
-                        {draft && (
-                          <div style={{ paddingLeft:"8px", marginBottom:"4px" }}>
-                            <button onClick={()=>setExpandedAnticipate(expandedAnticipate===draftKey?null:draftKey)}
-                              style={{ fontSize:"11px", padding:"2px 10px", borderRadius:"10px", border:"none", cursor:"pointer", background:hasOverlap?"#0f2b15":"#1f1f1f", color:hasOverlap?"#5aad72":"#888888", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:"4px" }}>
-                              {hasOverlap?"✓":"○"} lookahead {expandedAnticipate===draftKey?"▲":"▼"}
-                            </button>
-                            {expandedAnticipate===draftKey && (
-                              <div style={{ marginTop:"6px", background:"#1a1a1a", border:"1px solid #E5E7EB", borderRadius:"10px", padding:"12px 14px", fontSize:"13px", maxWidth:"80%" }}>
-                                <div style={{ marginBottom:"8px" }}>
-                                  <div style={{ fontSize:"11px", color:"#555555", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:"3px" }}>Forventet næste besked</div>
-                                  <div style={{ color:"#cccccc", lineHeight:1.5, fontStyle:"italic" }}>"{draft.anticipated_user_text}"</div>
-                                </div>
-                                {draft.conversation_goal_hypothesis && <div style={{ marginBottom:"8px" }}>
-                                  <div style={{ fontSize:"11px", color:"#555555", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:"3px" }}>Samtalemål-hypotese</div>
-                                  <div style={{ color:"#B48FE8", lineHeight:1.5, fontStyle:"italic" }}>{draft.conversation_goal_hypothesis}</div>
-                                </div>}
-                                <div>
-                                  <div style={{ fontSize:"11px", color:"#555555", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:"3px" }}>Retorisk instruktion</div>
-                                  <div style={{ color:"#7BA3E8", lineHeight:1.5 }}>{draft.rhetorical_instruction}</div>
-                                </div>
-                                {nextTurn && <div style={{ marginTop:"8px", paddingTop:"8px", borderTop:"1px solid #F3F4F6", fontSize:"11px", color:hasOverlap?"#5aad72":"#888888" }}>
-                                  {hasOverlap?"✓ Bruger fulgte forventet retning":"○ Bruger gik anden retning (topic-overlap miss)"}
-                                </div>}
+                  {(()=>{
+                    const transcript = openState?.genHypnoTranscript
+                    // Sort drafts by revision for position-based matching
+                    const sortedDrafts = [...anticipateDrafts].sort((a,b)=>a.based_on_revision-b.based_on_revision)
+
+                    if (transcript && transcript.length > 0) {
+                      // Build pairs from transcript
+                      const pairs: Array<{user: string; assistant: string; pairIndex: number}> = []
+                      let i = 0
+                      while (i < transcript.length) {
+                        if (transcript[i].role === "user") {
+                          const user = transcript[i].content
+                          const assistant = transcript[i+1]?.role === "assistant" ? transcript[i+1].content : ""
+                          pairs.push({ user, assistant, pairIndex: pairs.length })
+                          i += assistant ? 2 : 1
+                        } else { i++ }
+                      }
+
+                      return pairs.map((pair, idx) => {
+                        // Match draft by position: pair N gets sortedDrafts[N-1] (draft generated after pair N)
+                        const draft = sortedDrafts[idx] ?? null
+                        const nextPair = pairs[idx+1]
+                        const hasOverlap = draft && nextPair ? (() => { const ant = draft.anticipated_user_text.toLowerCase(); const act = nextPair.user.toLowerCase(); return ant.split(/\s+/).filter(w=>w.length>4).some(tok=>act.includes(tok)) })() : false
+                        const draftKey = `draft-t-${idx}`
+                        return (
+                          <div key={idx}>
+                            {pair.user && <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:"8px" }}><div style={{ background:"#6B8F71", color:"#1a1a1a", borderRadius:"12px 12px 2px 12px", padding:"10px 14px", maxWidth:"75%", fontSize:"14px", lineHeight:1.5 }}>{pair.user}</div></div>}
+                            {pair.assistant && <div style={{ display:"flex", justifyContent:"flex-start", marginBottom:draft?"6px":"0" }}><div style={{ background:"#1f1f1f", color:"#cccccc", borderRadius:"12px 12px 12px 2px", padding:"10px 14px", maxWidth:"75%", fontSize:"14px", lineHeight:1.5, border:"1px solid #2d2d2d" }}>{pair.assistant}</div></div>}
+                            {draft && (
+                              <div style={{ paddingLeft:"8px", marginBottom:"4px" }}>
+                                <button onClick={()=>setExpandedAnticipate(expandedAnticipate===draftKey?null:draftKey)}
+                                  style={{ fontSize:"11px", padding:"2px 10px", borderRadius:"10px", border:"none", cursor:"pointer", background:hasOverlap?"#0f2b15":"#1f1f1f", color:hasOverlap?"#5aad72":"#888888", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:"4px" }}>
+                                  {hasOverlap?"✓":"○"} lookahead {expandedAnticipate===draftKey?"▲":"▼"}
+                                </button>
+                                {expandedAnticipate===draftKey && (
+                                  <div style={{ marginTop:"6px", background:"#1a1a1a", border:"1px solid #2d2d2d", borderRadius:"10px", padding:"12px 14px", fontSize:"13px", maxWidth:"80%" }}>
+                                    <div style={{ marginBottom:"8px" }}>
+                                      <div style={{ fontSize:"11px", color:"#555555", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:"3px" }}>Forventet næste besked</div>
+                                      <div style={{ color:"#cccccc", lineHeight:1.5, fontStyle:"italic" }}>"{draft.anticipated_user_text}"</div>
+                                    </div>
+                                    {draft.conversation_goal_hypothesis && <div style={{ marginBottom:"8px" }}>
+                                      <div style={{ fontSize:"11px", color:"#555555", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:"3px" }}>Samtalemål-hypotese</div>
+                                      <div style={{ color:"#B48FE8", lineHeight:1.5, fontStyle:"italic" }}>{draft.conversation_goal_hypothesis}</div>
+                                    </div>}
+                                    <div>
+                                      <div style={{ fontSize:"11px", color:"#555555", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em", marginBottom:"3px" }}>Retorisk instruktion</div>
+                                      <div style={{ color:"#7BA3E8", lineHeight:1.5 }}>{draft.rhetorical_instruction}</div>
+                                    </div>
+                                    {nextPair && <div style={{ marginTop:"8px", paddingTop:"8px", borderTop:"1px solid #2d2d2d", fontSize:"11px", color:hasOverlap?"#5aad72":"#888888" }}>
+                                      {hasOverlap?"✓ Bruger fulgte forventet retning":"○ Bruger gik anden retning (topic-overlap miss)"}
+                                    </div>}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                    )
-                  })}
+                        )
+                      })
+                    }
+
+                    // Fallback: raw turns
+                    return openConv.turns.filter(t=>t.user_input?.trim()).map((t,i)=>{
+                      const draft = anticipateDrafts.find(d=>d.based_on_revision===t.revision)
+                      const nextTurn = openConv.turns.filter(x=>x.input_type==="FREE_TEXT")[i+1]
+                      const hasOverlap = draft && nextTurn ? (() => { const ant = draft.anticipated_user_text.toLowerCase(); const act = nextTurn.user_input.toLowerCase(); return ant.split(/\s+/).filter(w=>w.length>4).some(tok=>act.includes(tok)) })() : false
+                      const draftKey = `draft-${t.revision}`
+                      return (
+                        <div key={i}>
+                          {t.user_input?.trim() && <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:"8px" }}><div style={{ background:"#6B8F71", color:"#1a1a1a", borderRadius:"12px 12px 2px 12px", padding:"10px 14px", maxWidth:"75%", fontSize:"14px", lineHeight:1.5 }}>{t.user_input}</div></div>}
+                          {t.assistant_output?.trim() && <div style={{ display:"flex", justifyContent:"flex-start", marginBottom:draft?"6px":"0" }}><div style={{ background:"#1f1f1f", color:"#cccccc", borderRadius:"12px 12px 12px 2px", padding:"10px 14px", maxWidth:"75%", fontSize:"14px", lineHeight:1.5, border:"1px solid #2d2d2d" }}>{t.assistant_output}</div></div>}
+                          {draft && (
+                            <div style={{ paddingLeft:"8px", marginBottom:"4px" }}>
+                              <button onClick={()=>setExpandedAnticipate(expandedAnticipate===draftKey?null:draftKey)}
+                                style={{ fontSize:"11px", padding:"2px 10px", borderRadius:"10px", border:"none", cursor:"pointer", background:hasOverlap?"#0f2b15":"#1f1f1f", color:hasOverlap?"#5aad72":"#888888", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:"4px" }}>
+                                {hasOverlap?"✓":"○"} lookahead {expandedAnticipate===draftKey?"▲":"▼"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })
+                  })()}
                 </div>
               </div>
             </div>
