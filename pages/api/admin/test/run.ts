@@ -29,6 +29,7 @@ interface Turn {
   turn: number
   user: string
   bot: string
+  revision?: number
   lookahead?: Lookahead
 }
 
@@ -173,7 +174,7 @@ async function runObserver(tc: TestCase, transcript: Turn[]): Promise<{ passed: 
 
 // ─── Chat-kald ────────────────────────────────────────────────────────────────
 
-async function chatPost(host: string, userKey: string, state: unknown, input: unknown): Promise<{ state: unknown; botMessage: string }> {
+async function chatPost(host: string, userKey: string, state: unknown, input: unknown): Promise<{ state: unknown; botMessage: string; revision: number }> {
   const res = await fetch(`https://${host}/api/chat`, {
     method: "POST",
     headers: {
@@ -188,7 +189,8 @@ async function chatPost(host: string, userKey: string, state: unknown, input: un
     (data as any)?.transition?.response_message ||
     (data as any)?.state?.active_node_message ||
     ""
-  return { state: (data as any).state, botMessage }
+  const revision: number = (data as any)?.state?.revision ?? 0
+  return { state: (data as any).state, botMessage, revision }
 }
 
 // ─── Tick look-ahead ─────────────────────────────────────────────────────────
@@ -310,7 +312,7 @@ async function handleChunk(req: NextApiRequest, res: NextApiResponse): Promise<v
       const chatResult = await chatPost(host, userKey, currentState, { type: "FREE_TEXT", text: userMsg })
       currentState = chatResult.state
 
-      transcript.push({ turn: i + 1, user: userMsg, bot: chatResult.botMessage })
+      transcript.push({ turn: i + 1, user: userMsg, bot: chatResult.botMessage, revision: chatResult.revision })
 
       // Look-ahead: trigger async job processing på samme instans
       if (turnDelayMs > 0) {
@@ -336,9 +338,9 @@ async function handleChunk(req: NextApiRequest, res: NextApiResponse): Promise<v
     // Alle turns kørt — hent look-ahead drafts og annoteér transcript
     const conversationId = `lobby:u:${userKey}`
     const drafts = await fetchAnticipateDrafts(conversationId)
-    // revision = turn-index (1-baseret) → draft triggered after that turn
+    // based_on_revision = Redis state revision after that turn
     for (const t of transcript) {
-      const draft = drafts.get(t.turn)
+      const draft = drafts.get(t.revision ?? t.turn)
       if (draft) t.lookahead = draft
     }
 
@@ -387,7 +389,7 @@ async function runCase(tc: TestCase, host: string): Promise<TestResult> {
       const chatResult = await chatPost(host, userKey, currentState, { type: "FREE_TEXT", text: userMsg })
       currentState = chatResult.state
 
-      transcript.push({ turn: i + 1, user: userMsg, bot: chatResult.botMessage })
+      transcript.push({ turn: i + 1, user: userMsg, bot: chatResult.botMessage, revision: chatResult.revision })
     }
 
     const verdict = await runObserver(tc, transcript)
