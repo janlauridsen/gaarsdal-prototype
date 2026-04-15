@@ -66,11 +66,16 @@ async function drainAnticipateJobs(conversationId: string): Promise<{ ticked: st
     if (!lockAcquired) { skipped.push(jobId); continue }
 
     try {
-      const tickResult = await tickJob(job)
-      await writeJob(tickResult.job, jobsTtlSeconds())
-      if (isTerminal(tickResult.job.status)) {
-        await removePending(conversationId, jobId)
-        await releaseRunnerLock(conversationId)
+      // Loop ticks until terminal — job needs 3 ticks (INIT→SIMULATE→BUILD_INSTRUCTION→DONE)
+      let current = job
+      while (!isTerminal(current.status)) {
+        const tickResult = await tickJob(current)
+        current = tickResult.job
+        await writeJob(current, jobsTtlSeconds())
+        if (isTerminal(current.status)) {
+          await removePending(conversationId, jobId)
+          await releaseRunnerLock(conversationId)
+        }
       }
       ticked.push(jobId)
     } finally {
