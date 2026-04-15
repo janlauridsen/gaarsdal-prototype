@@ -22,7 +22,6 @@ import { getOrCreateThreadThemeAndEpisode } from "../../chat/memory/longTermMemo
 
 import { handleThreadCreate, handleThreadSwitch, handleThreadArchive } from "../../chat/threads/threadHandler"
 import { runPostTurn, maybeTriggerScanThreadsJob } from "../../chat/kernel/postTurn"
-import { processQueueBatch } from "../../chat/async/worker"
 
 import { setWidgetCors } from "./_utils/cors"
 import { ensureUserKey } from "./_utils/auth"
@@ -332,12 +331,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       deferred_job: scanThreads.deferredJob ?? null,
     })
 
-    // Post-response drain: kør op til 2 async jobs i baggrunden.
+    // Post-response drain: kald dedikeret drain-endpoint med global semaphore.
+    // 25s timeout giver anticipate_turn jobs tid til SIMULATE-trinnet (~15-20s).
     waitUntil(
-      Promise.race([
-        processQueueBatch(2),
-        new Promise<void>((resolve) => setTimeout(resolve, 8000)),
-      ]).catch(() => {})
+      fetch(`https://${req.headers.host}/api/jobs/drain`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId }),
+        signal: AbortSignal.timeout ? AbortSignal.timeout(25000) : undefined,
+      }).catch(() => {})
     )
 
   } catch (e: any) {
