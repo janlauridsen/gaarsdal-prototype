@@ -90,7 +90,7 @@ async function drainAnticipateJobs(conversationId: string): Promise<{ ticked: st
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const adminToken = process.env.ADMIN_TOKEN
   const token = req.query.token ?? (req.body as any)?.token
-  const conversationId = typeof req.query.conversationId === "string" ? req.query.conversationId : null
+  const conversationId = typeof req.query.conversationId === "string" ? req.query.conversationId : (typeof (req.body as any)?.conversationId === "string" ? (req.body as any).conversationId : null)
 
   // Auth: kræves for GET, valgfri for intern POST fra chat.ts (ingen token)
   if (req.method === "GET" && (!adminToken || token !== adminToken)) {
