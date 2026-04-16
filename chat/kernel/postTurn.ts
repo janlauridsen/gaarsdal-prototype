@@ -293,7 +293,7 @@ export async function runPostTurn(params: {
     ? Math.floor((Date.now() - lastTurnAt) / 1000)
     : undefined
 
-  Promise.allSettled([
+  await Promise.allSettled([
     emitCanonicalEvent({
       userKey, conversationId, revision, nodeId,
       eventType: "transition_applied",
