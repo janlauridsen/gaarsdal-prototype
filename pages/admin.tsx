@@ -392,7 +392,7 @@ export default function AdminPage() {
                     // 1. Start from transcript pairs (preserves GEN_HYPNO turns incl. turn 1)
                     // 2. For pairs missing assistant (node transitioned away), fill from raw:conversation
                     // 3. Append raw:conversation turns not covered by transcript
-                    type DisplayPair = { user: string; assistant: string; rawRevision?: number }
+                    type DisplayPair = { user: string; assistant: string; rawRevision?: number; ts?: string }
                     const rawFree = openConv.turns.filter(t=>t.user_input?.trim())
                     const allPairs: DisplayPair[] = []
 
@@ -409,7 +409,8 @@ export default function AdminPage() {
                             const rawMatch = rawFree.find(r => r.user_input?.trim() === user.trim())
                             if (rawMatch) { assistant = rawMatch.assistant_output ?? ""; }
                           }
-                          allPairs.push({ user, assistant })
+                          const rawForTs = rawFree.find(r => r.user_input?.trim() === user.trim())
+                          allPairs.push({ user, assistant, ts: rawForTs?.ts })
                           i += nextIsAssistant ? 2 : 1
                         } else { i++ }
                       }
@@ -417,13 +418,13 @@ export default function AdminPage() {
                       const transcriptUsers = new Set(allPairs.map(p=>p.user.trim()))
                       for (const raw of rawFree) {
                         if (!transcriptUsers.has(raw.user_input.trim())) {
-                          allPairs.push({ user: raw.user_input, assistant: raw.assistant_output ?? "", rawRevision: raw.revision })
+                          allPairs.push({ user: raw.user_input, assistant: raw.assistant_output ?? "", rawRevision: raw.revision, ts: raw.ts })
                         }
                       }
                     } else {
                       // No transcript — use raw turns directly
                       for (const raw of rawFree) {
-                        allPairs.push({ user: raw.user_input, assistant: raw.assistant_output ?? "", rawRevision: raw.revision })
+                        allPairs.push({ user: raw.user_input, assistant: raw.assistant_output ?? "", rawRevision: raw.revision, ts: raw.ts })
                       }
                     }
 
@@ -435,7 +436,20 @@ export default function AdminPage() {
                       return (
                         <div key={idx}>
                           {pair.user && <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:"8px" }}><div style={{ background:"#6B8F71", color:"#1a1a1a", borderRadius:"12px 12px 2px 12px", padding:"10px 14px", maxWidth:"75%", fontSize:"14px", lineHeight:1.5 }}>{pair.user}</div></div>}
-                          {pair.assistant && <div style={{ display:"flex", justifyContent:"flex-start", marginBottom:draft?"6px":"0" }}><div style={{ background:"#1f1f1f", color:"#cccccc", borderRadius:"12px 12px 12px 2px", padding:"10px 14px", maxWidth:"75%", fontSize:"14px", lineHeight:1.5, border:"1px solid #2d2d2d" }}>{pair.assistant}</div></div>}
+                          {pair.assistant && <div style={{ display:"flex", justifyContent:"flex-start", marginBottom:"2px" }}><div style={{ background:"#1f1f1f", color:"#cccccc", borderRadius:"12px 12px 12px 2px", padding:"10px 14px", maxWidth:"75%", fontSize:"14px", lineHeight:1.5, border:"1px solid #2d2d2d" }}>{pair.assistant}</div></div>}
+                          {pair.ts && (() => {
+                            const botTs = new Date(pair.ts)
+                            const botHms = botTs.toLocaleTimeString("da-DK",{hour:"2-digit",minute:"2-digit",second:"2-digit"})
+                            const dTs = draft ? new Date(draft.created_at) : null
+                            const dSec = dTs ? Math.round((dTs.getTime()-botTs.getTime())/1000) : null
+                            const nextTs = nextPair?.ts ? new Date(nextPair.ts) : null
+                            const margin = nextTs && dTs ? Math.round((nextTs.getTime()-dTs.getTime())/1000) : null
+                            return <div style={{ paddingLeft:"2px", marginBottom:draft?"2px":"4px", fontSize:"10px", color:"#444", display:"flex", gap:"8px", flexWrap:"wrap" }}>
+                              <span>bot {botHms}</span>
+                              {dSec !== null && <span style={{color:"#555"}}>lookahead +{dSec}s → {dTs!.toLocaleTimeString("da-DK",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span>}
+                              {margin !== null && <span style={{color:margin>0?"#6B8F71":"#c0392b"}}>{margin>0?`✓ ${margin}s klar før næste turn`:`✗ ${Math.abs(margin)}s for sent`}</span>}
+                            </div>
+                          })()}
                           {draft && (
                             <div style={{ paddingLeft:"8px", marginBottom:"4px" }}>
                               <button onClick={()=>setExpandedAnticipate(expandedAnticipate===draftKey?null:draftKey)}
