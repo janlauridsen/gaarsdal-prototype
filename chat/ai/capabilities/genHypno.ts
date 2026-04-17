@@ -430,12 +430,11 @@ export async function runUnifiedHypnoCapability(
 
   // D: Kontekstuel CTA — kun når brugeren er i beslutnings-mode (decision_support), ikke midt i refleksion
   const ctaAlreadyShown = context.state.meta["gen_hypno.cta_shown"]?.value === true
-  const ctaConditionsMet =
-    !ctaAlreadyShown &&
-    !!topic &&
-    turnOutput.relational_state === "decision_support" &&
-    modeUsed !== "closing" &&
-    modeUsed !== "reflection"
+  // LLM-trigger: explicit decision_support signal
+  const ctaLLMTrigger = turnOutput.relational_state === "decision_support" && modeUsed !== "closing" && modeUsed !== "reflection"
+  // Hard trigger: turn 5+ (assistantCountBefore >= 4) — forhindrer evig refleksion uden at ankomme et sted
+  const ctaHardTrigger = assistantCountBefore >= 4 && modeUsed !== "closing"
+  const ctaConditionsMet = !ctaAlreadyShown && !!topic && (ctaLLMTrigger || ctaHardTrigger)
 
   if (ctaConditionsMet) {
     assistant = assistant + "\n\nHvis du vil vide mere om hvad et konkret forløb indebærer, er du velkommen til at skrive det — eller tage kontakt til Jan direkte."
