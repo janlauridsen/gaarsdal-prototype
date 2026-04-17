@@ -2,7 +2,7 @@
 import { getRedisClient } from "../persistence/redis"
 import { readThreadIndex } from "../persistence/threadIndexStore"
 
-export type ConsentRetentionDays = 0 | 30 | 90 | 365
+export type ConsentRetentionDays = 0 | 7 | 30 | 90 | 365
 
 export type ConsentRecord = {
   version: 1
@@ -27,7 +27,7 @@ function isValidConsentRecord(v: unknown): v is ConsentRecord {
   return (
     r.version === 1 &&
     typeof r.allowed === "boolean" &&
-    [0, 30, 90, 365].includes(r.retentionDays) &&
+    [0, 7, 30, 90, 365].includes(r.retentionDays) &&
     typeof r.consentedAt === "string"
   )
 }
