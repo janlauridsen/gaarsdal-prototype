@@ -57,6 +57,34 @@ function scoreArousalTurn(text: string): number {
   const urgency = ["jeg kan ikke mere", "det er for meget", "jeg holder ikke ud", "jeg bryder sammen"]
   if (urgency.some((x) => normalize(t).includes(x))) score += 0.25
 
+  // Somatiske/kropslige distress-markører
+  const somatic = [
+    "hjertebanken", "banker hurtigt", "banker vildt",
+    "svedige", "sveder", "koldsved",
+    "ryster", "ryster af", "kroppen ryster",
+    "ude af kontrol", "ud af kontrol", "mister kontrollen", "miste kontrollen",
+    "kvalm", "svimmel", "svimmelhed",
+    "panik", "panikanfald", "angstanfald",
+    "åndenød", "kan ikke trække vejret", "kortåndet",
+    "kramper", "spændt i kroppen", "kroppen reagerer",
+    "overvældet", "overvælde", "det er overvældende",
+  ]
+  if (somatic.some((x) => normalize(t).includes(x))) score += 0.30
+
+  // Emotionel dybde — tunge personlige temaer
+  const emotionalDepth = [
+    "frygt for at miste", "bange for at miste",
+    "skuffe dem", "skuffer dem",
+    "ikke god nok", "ikke er god nok",
+    "følelse af skyld", "skyldfølelse", "føler skyld",
+    "skam", "skammer mig",
+    "udmattet", "udbrændt", "tærer på mig",
+    "ensomhed", "ensom", "alene med det",
+    "meningsløst", "giver ikke mening",
+    "taber mig selv", "mister mig selv",
+  ]
+  if (emotionalDepth.some((x) => normalize(t).includes(x))) score += 0.20
+
   const exclamations = (t.match(/!/g) ?? []).length
   if (exclamations >= 2) score += 0.15
   else if (exclamations === 1) score += 0.05
