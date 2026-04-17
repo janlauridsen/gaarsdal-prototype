@@ -51,22 +51,23 @@ async function releaseSemaphore(instanceId: string): Promise<void> {
   }
 }
 
-// ── Anticipate-job tick ───────────────────────────────────────────────────────
-async function drainAnticipateJobs(conversationId: string): Promise<{ ticked: string[]; skipped: string[] }> {
+// ── Conversation job tick ─────────────────────────────────────────────────────
+// Processer anticipate_turn og scan_threads jobs for en given samtale.
+async function drainConversationJobs(conversationId: string): Promise<{ ticked: string[]; skipped: string[] }> {
   const ticked: string[] = []
   const skipped: string[] = []
 
   const jobIds = await listPendingJobIds(conversationId, 10)
   for (const jobId of jobIds) {
     const job = await readJob(jobId)
-    if (!job || job.kind !== "anticipate_turn") { skipped.push(jobId); continue }
+    if (!job) { skipped.push(jobId); continue }
+    if (job.kind !== "anticipate_turn" && job.kind !== "scan_threads") { skipped.push(jobId); continue }
     if (isTerminal(job.status)) { skipped.push(jobId); continue }
 
     const lockAcquired = await acquireTickLock(jobId)
     if (!lockAcquired) { skipped.push(jobId); continue }
 
     try {
-      // Loop ticks until terminal — job needs 3 ticks (INIT→SIMULATE→BUILD_INSTRUCTION→DONE)
       let current = job
       while (!isTerminal(current.status)) {
         const tickResult = await tickJob(current)
@@ -114,7 +115,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 2. Drain anticipate_turn jobs for specifik samtale (hvis angivet)
     if (conversationId) {
-      const anticipateResult = await drainAnticipateJobs(conversationId)
+      const anticipateResult = await drainConversationJobs(conversationId)
       results.anticipate = anticipateResult
     }
 
