@@ -194,7 +194,14 @@ Undgå at starte med "Du spørger", "Du beskriver", "Du ønsker", "Du nævner". 
   } else if (params.assistantCount === 2) {
     blocks.push(`PROGRESSION (turn 3): Mønsteret er ved at være belyst. Saml hvad der er fremkommet og tag et lille skridt fremad. Angiv hvad mønsteret ser ud til at være, og om hypnoterapi typisk adresserer netop det. Afslut med ét konkret spørgsmål mod brugerens næste skridt eller motivation.`)
   } else if (params.assistantCount >= 3 && params.assistantCount <= 4) {
-    blocks.push(`PROGRESSION (turn ${params.assistantCount + 1}): Samtalen har kortlagt mønsteret tilstrækkeligt. Komprimér mønsteret i 1-2 sætninger, sig hvad hypnoterapi kan gøre ved det, og afslut med ét spørgsmål om brugeren overvejer at tage kontakt. Brug conversation_move: synthesis eller practical_preparation.`)
+    blocks.push(`PROGRESSION — KRAV (turn ${params.assistantCount + 1}): Du SKAL nu afslutte undersøgelsesfasen.
+Gør PRÆCIS dette i ét svar:
+1. Komprimér mønsteret i én konkret sætning (hvad brugeren kæmper med)
+2. Sig eksplicit hvad hypnoterapi adresserer ved netop det mønster — ikke generelt, specifikt
+3. Afslut med ét spørgsmål: overvejer brugeren at tage et konkret næste skridt?
+
+Brug conversation_move: synthesis. Brug IKKE guided_observation eller pattern_detection — det er allerede gjort.
+Gentag ikke hvad der allerede er sagt. Et nyt refleksivt spørgsmål er en fejl på dette trin.`)
   } else if (params.assistantCount >= 5) {
     blocks.push(
       `DYBDE-SKIFT PÅKRÆVET (turn ${params.assistantCount + 1}): Brugeren holder samtalen i gang og ønsker at grave dybere — respektér det.\n` +
