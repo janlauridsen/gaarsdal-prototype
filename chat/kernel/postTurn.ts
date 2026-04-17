@@ -190,8 +190,8 @@ async function enqueueSummarizeEpisode(params: {
 
   const N = 8
   const rhythmTrigger = params.revisionAfter % N === 0
-  // Emne er afklaret (LLM har sat problem_title) og vi er nået turn 3+
-  const earlyTopicTrigger = params.topicKnown === true && params.revisionAfter >= 3 && params.revisionAfter < N
+  // Emne er afklaret (LLM har sat problem_title) — kør én gang ved turn 3
+  const earlyTopicTrigger = params.topicKnown === true && params.revisionAfter === 3
   // Bruger har idlet > 60 sek — detekteret ved næste turn
   const idleTrigger = typeof params.secondsSinceLastTurn === "number" && params.secondsSinceLastTurn > 60
 
