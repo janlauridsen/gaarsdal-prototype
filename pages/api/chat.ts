@@ -230,8 +230,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // ── CONSENT_RESPONSE: gem samtykke og kør init ──────────────────────────
     if ((input as any).type === "CONSENT_RESPONSE") {
       const rd = (input as any).retentionDays
-      const validDays: ConsentRetentionDays[] = [0, 30, 90, 365]
-      const retentionDays: ConsentRetentionDays = validDays.includes(rd) ? rd : 90
+      const validDays: ConsentRetentionDays[] = [0, 7, 30, 90, 365]
+      const retentionDays: ConsentRetentionDays = validDays.includes(rd) ? rd : 30
       const newRecord: ConsentRecord = {
         version: 1,
         allowed: retentionDays > 0,
