@@ -47,6 +47,8 @@ interface TestResult {
   userKey: string
   error?: string
   criteria: CriterionResult[]
+  qualityRubric: CriterionResult[]
+  qualityPassed: boolean
   summary: string
   transcript: Turn[]
 }
@@ -172,7 +174,61 @@ async function runObserver(tc: TestCase, transcript: Turn[]): Promise<{ passed: 
   }
 }
 
-// ─── Chat-kald ────────────────────────────────────────────────────────────────
+// ─── Quality rubric ───────────────────────────────────────────────────────────
+
+const QUALITY_RUBRIC_CRITERIA = [
+  "ÅBNING: Chatbottens første svar er naturligt og velkomstnede — ikke akavet, for generisk eller for salgsagtigt",
+  "AFSLUTNING: Samtalen slutter naturligt — ikke abrupt afskåret, ikke hængende eller åben uden grund",
+  "FREMDRIFT: Hver tur rykker dialogen fremad — botten cirkler ikke, gentager ikke sin forrige pointe, og undgår at stille samme spørgsmål to gange",
+  "GENTAGELSE: Botten varierer sine formuleringer — ingen sætninger eller fraser gentages ord-for-ord på tværs af turns",
+  "SVAR-LÆNGDE: Bot-svarenes længde er passende til konteksten — korte svar til enkle inputs, dybere svar til tunge emner",
+]
+
+const QUALITY_RUBRIC_SYSTEM = `Du er kvalitetsvurderingsekspert for en hypnoterapi-forberedende chatbot kaldet Gaarsdal.
+Din opgave er at vurdere samtalens overordnede kvalitet på tværs af faste kriterier — uanset hvad den specifikke test handler om.
+Svar KUN med valid JSON — ingen tekst udenfor JSON-blokken, ingen markdown backticks.`
+
+async function runQualityRubric(transcript: Turn[]): Promise<{ passed: boolean; criteria: CriterionResult[] }> {
+  if (transcript.length === 0) return { passed: false, criteria: [] }
+
+  const transcriptText = transcript
+    .map((t) => `[Turn ${t.turn}]\nBruger: ${t.user}\nAssistent: ${t.bot}`)
+    .join("\n\n")
+
+  const prompt = [
+    `Transcript:`,
+    transcriptText,
+    ``,
+    `Evaluer disse universelle kvalitetskriterier:`,
+    QUALITY_RUBRIC_CRITERIA.map((c, i) => `${i + 1}. ${c}`).join("\n"),
+    ``,
+    `Returner JSON med præcis denne struktur:`,
+    `{`,
+    `  "passed": true/false,`,
+    `  "criteria": [`,
+    `    { "criterion": "...", "passed": true/false, "reasoning": "Konkret observation fra transcript på dansk (1 sætning)" }`,
+    `  ]`,
+    `}`,
+    `"passed" på topniveau er true kun hvis ALLE kriterier passer.`,
+  ].join("\n")
+
+  const raw = await callLLM(QUALITY_RUBRIC_SYSTEM, prompt, 0, 800)
+
+  try {
+    const parsed = JSON.parse(raw)
+    return {
+      passed: Boolean(parsed.passed),
+      criteria: Array.isArray(parsed.criteria) ? parsed.criteria : [],
+    }
+  } catch {
+    return {
+      passed: false,
+      criteria: [{ criterion: "Parse-fejl", passed: false, reasoning: raw.slice(0, 200) }],
+    }
+  }
+}
+
+
 
 async function chatPost(host: string, userKey: string, state: unknown, input: unknown): Promise<{ state: unknown; botMessage: string; revision: number }> {
   const res = await fetch(`https://${host}/api/chat`, {
@@ -343,6 +399,7 @@ async function handleChunk(req: NextApiRequest, res: NextApiResponse): Promise<v
     }
 
     const verdict = await runObserver(tc, transcript)
+    const quality = await runQualityRubric(transcript)
     const result: TestResult = {
       id: tc.id,
       description: tc.description,
@@ -350,6 +407,8 @@ async function handleChunk(req: NextApiRequest, res: NextApiResponse): Promise<v
       turns: transcript.length,
       userKey,
       criteria: verdict.criteria,
+      qualityRubric: quality.criteria,
+      qualityPassed: quality.passed,
       summary: verdict.summary,
       transcript,
     }
@@ -363,6 +422,8 @@ async function handleChunk(req: NextApiRequest, res: NextApiResponse): Promise<v
       userKey,
       error: String(e?.message ?? e),
       criteria: [],
+      qualityRubric: [],
+      qualityPassed: false,
       summary: "Test afbrudt pga. fejl",
       transcript,
     }
@@ -391,16 +452,19 @@ async function runCase(tc: TestCase, host: string): Promise<TestResult> {
     }
 
     const verdict = await runObserver(tc, transcript)
+    const quality = await runQualityRubric(transcript)
     return {
       id: tc.id, description: tc.description, passed: verdict.passed,
       turns: transcript.length, userKey, criteria: verdict.criteria,
+      qualityRubric: quality.criteria, qualityPassed: quality.passed,
       summary: verdict.summary, transcript,
     }
   } catch (e: any) {
     return {
       id: tc.id, description: tc.description, passed: false,
       turns: transcript.length, userKey, error: String(e?.message ?? e),
-      criteria: [], summary: "Test afbrudt pga. fejl", transcript,
+      criteria: [], qualityRubric: [], qualityPassed: false,
+      summary: "Test afbrudt pga. fejl", transcript,
     }
   }
 }
