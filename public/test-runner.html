@@ -79,7 +79,11 @@
   .turn-user { color:var(--accent);font-size:12px;line-height:1.5;margin-bottom:3px; }
   .turn-bot { color:var(--text);font-size:12px;line-height:1.5;white-space:pre-wrap; }
   .error-msg { font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red);margin-top:6px; }
-  footer { margin-top:40px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:16px; }
+  .quality-rubric { margin-top:10px;padding-top:10px;border-top:1px solid var(--border); }
+  .quality-rubric-header { font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:8px; }
+  .quality-badge { font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;padding:2px 6px;border-radius:2px; }
+  .quality-badge-pass { background:var(--green-dim);color:var(--green); }
+  .quality-badge-fail { background:var(--red-dim);color:var(--red); }
   .retention-toggle { font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;padding:4px 0; }
   .retention-toggle input { accent-color:var(--amber);cursor:pointer; }
   .retention-toggle:has(input:checked) { color:var(--amber); }
@@ -289,6 +293,18 @@ function renderDetail(id,result){
         <div><div class="criterion-text">${c.criterion}</div>
         <div class="criterion-reason">${c.reasoning||''}</div></div></div>`
     })
+  }
+  if(result.qualityRubric?.length){
+    const qPassed=result.qualityPassed
+    html+=`<div class="quality-rubric">
+      <div class="quality-rubric-header">Kvalitetsrubric <span class="quality-badge ${qPassed?'quality-badge-pass':'quality-badge-fail'}">${qPassed?'OK':'MANGLER'}</span></div>`
+    result.qualityRubric.forEach(c=>{
+      const icon=c.passed?'✓':'✗',color=c.passed?'var(--green)':'var(--red)'
+      html+=`<div class="criterion"><span class="criterion-icon" style="color:${color}">${icon}</span>
+        <div><div class="criterion-text">${c.criterion}</div>
+        <div class="criterion-reason">${c.reasoning||''}</div></div></div>`
+    })
+    html+=`</div>`
   }
   if(result.transcript?.length){
     const userTurns = result.transcript.filter(t=>t.user && !t.user.startsWith('EXPLICIT_TRANSITION')).length
