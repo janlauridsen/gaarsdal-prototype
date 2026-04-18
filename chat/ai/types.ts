@@ -23,6 +23,7 @@ export type AiCapabilityContext = {
     system: string
     user_profile?: string
     goal_hypothesis?: string | null
+    rhetorical_instruction?: string | null
   }
 }
 

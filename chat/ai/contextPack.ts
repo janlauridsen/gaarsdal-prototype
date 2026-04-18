@@ -419,35 +419,44 @@ export async function buildContextPackV23(params: {
     const isClosing = closingExact.includes(userLower)
       || closingPhrases.some(p => userLower.includes(p))
 
-    if (!isClosing) {
-      const anticipateDraft = await readAnticipateLatestDraft(params.state.conversation_id)
-      if (anticipateDraft?.summary_draft && anticipateDraft.open_questions?.[0]) {
-        const anticipatedText = anticipateDraft.open_questions[0].toLowerCase()
-        const actualText = params.userText.toLowerCase()
-        const currentRevision = (params.state.revision ?? 1)
-        const draftRevision = (anticipateDraft as any).based_on_revision ?? 0
-        const isFreshDraft = draftRevision >= currentRevision - 1
-        const isOnTrack = isFreshDraft || topicOverlap(anticipatedText, actualText)
-        if (isOnTrack) {
-          parts.push("")
-          parts.push("Retorisk retning (brug subtilt — ikke eksplicit):")
-          parts.push(clamp(anticipateDraft.summary_draft, 200))
-        }
-      }
-    }
   }
+
+  // rhetorical_instruction håndteres som separat felt (ikke i system-strengen)
+  // så det kan injiceres som et hard-directive i singleTurnCall fremfor som soft kontekst.
 
   // Guardrail: keep this compact; if empty, return empty string.
   const system = parts.join("\n").trim()
 
-  // Hent goal_hypothesis fra anticipate draft til brug i arc-beslutning
+  // Hent goal_hypothesis og rhetorical_instruction fra anticipate draft
   let goalHypothesis: string | null = null
+  let rhetoricalInstruction: string | null = null
   if (params.userText) {
     try {
-      const draft = await readAnticipateLatestDraft(params.state.conversation_id)
-      const gh = (draft as any)?.conversation_goal_hypothesis
-      if (typeof gh === "string" && gh.trim().length > 0) {
-        goalHypothesis = gh.trim()
+      const closingExact = ["tak", "ok tak", "okay tak", "mange tak", "farvel", "hej hej",
+        "det var nyttigt", "tusind tak", "tak for det", "tak skal du have", "det er nok"]
+      const closingPhrases = ["tak for", "jeg tager det med", "lad os stoppe", "det var alt",
+        "det vil jeg gøre", "godt, det prøver jeg", "ja det lyder godt"]
+      const userLower = params.userText.trim().toLowerCase()
+      const isClosing = closingExact.includes(userLower)
+        || closingPhrases.some(p => userLower.includes(p))
+
+      if (!isClosing) {
+        const draft = await readAnticipateLatestDraft(params.state.conversation_id)
+        const gh = (draft as any)?.conversation_goal_hypothesis
+        if (typeof gh === "string" && gh.trim().length > 0) {
+          goalHypothesis = gh.trim()
+        }
+        if (draft?.summary_draft && draft.open_questions?.[0]) {
+          const anticipatedText = draft.open_questions[0].toLowerCase()
+          const actualText = params.userText.toLowerCase()
+          const currentRevision = (params.state.revision ?? 1)
+          const draftRevision = (draft as any).based_on_revision ?? 0
+          const isFreshDraft = draftRevision >= currentRevision - 1
+          const isOnTrack = isFreshDraft || topicOverlap(anticipatedText, actualText)
+          if (isOnTrack) {
+            rhetoricalInstruction = clamp(draft.summary_draft, 300)
+          }
+        }
       }
     } catch { /* non-fatal */ }
   }
@@ -457,5 +466,6 @@ export async function buildContextPackV23(params: {
     theme_id: themeId,
     episode_id: episodeId,
     goal_hypothesis: goalHypothesis,
+    rhetorical_instruction: rhetoricalInstruction,
   }
 }
