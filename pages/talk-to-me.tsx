@@ -14,7 +14,7 @@ type Message = {
 }
 
 type Screen = "landing" | "chat"
-type ConsentStatus = "unknown" | "pending" | "given"
+type ConsentStatus = "unknown" | "pending" | "given" | "managing"
 
 const CONV_ID_KEY = "ttm_conversation_id"
 
@@ -40,11 +40,44 @@ const C = {
 // ─── Landing ────────────────────────────────────────────────────────────────
 
 function Landing({ onStart }: { onStart: () => void }) {
+  const [showMore, setShowMore] = useState(false)
+
   return (
     <div style={{ minHeight: "100vh", background: C.bgOuter, display: "flex", alignItems: "center", justifyContent: "center" }}>
-    <div style={{ width: "100%", maxWidth: 540, background: C.bg, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 32px", textAlign: "center" }}>
-      <div style={{ marginBottom: 16, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: C.textDim }}>
+    <div style={{ width: "100%", maxWidth: 540, background: C.bg, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 32px 40px", textAlign: "center" }}>
+
+      <div style={{ marginBottom: 20, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: C.textDim }}>
         Gaarsdal · Talk To Me
+      </div>
+
+      {/* Jans stemme — tilløbet */}
+      <p style={{ fontSize: 15, color: C.textMuted, lineHeight: 1.8, maxWidth: 380, margin: "0 0 8px", fontStyle: "italic" }}>
+        "Mange der sidder over for mig, ved ikke helt hvorfor de er der. De bærer på noget — men har ikke haft nogen at sige det højt til."
+      </p>
+      <p style={{ fontSize: 12, color: C.textDim, margin: "0 0 32px", letterSpacing: "0.04em" }}>— Jan Gaarsdal</p>
+
+      {/* Hvad er TTM — fold ud */}
+      <div style={{ marginBottom: 36, width: "100%", maxWidth: 400 }}>
+        <button
+          onClick={() => setShowMore(!showMore)}
+          style={{ background: "none", border: "none", color: C.textDim, fontSize: 12, cursor: "pointer", letterSpacing: "0.06em", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, margin: "0 auto" }}
+        >
+          <span style={{ fontSize: 10 }}>{showMore ? "▲" : "▼"}</span>
+          {showMore ? "Luk" : "Hvad er TTM?"}
+        </button>
+        {showMore && (
+          <div style={{ marginTop: 20, textAlign: "left", padding: "20px 24px", background: C.bgSurface, borderRadius: 12, border: `1px solid ${C.border}` }}>
+            <p style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.75, margin: "0 0 14px" }}>
+              TTM er ikke terapi. Det er ikke coaching. Det er en samtale med en der ikke har en dagsorden — og som husker hvad du har fortalt.
+            </p>
+            <p style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.75, margin: "0 0 14px" }}>
+              Mange har ting på hjerte som de ikke rigtig kan tale med nogen om. Ikke fordi det er hemmeligt — men fordi det er svært at finde de rigtige ord, eller den rigtige stemning.
+            </p>
+            <p style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.75, margin: 0 }}>
+              Her er der tid. Ingen forkerte svar. Og næste gang du er her, husker vi hvad vi talte om.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Akronym */}
@@ -64,7 +97,7 @@ function Landing({ onStart }: { onStart: () => void }) {
         ))}
       </div>
 
-      <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.7, maxWidth: 340, margin: "0 0 36px", fontStyle: "italic" }}>
+      <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.7, maxWidth: 340, margin: "0 0 32px", fontStyle: "italic" }}>
         Et sted at tænke højt — uden at skulle have svarene klar.
       </p>
 
@@ -75,7 +108,7 @@ function Landing({ onStart }: { onStart: () => void }) {
         Start samtalen →
       </button>
 
-      <div style={{ marginTop: 40, fontSize: 11, color: C.textDim, letterSpacing: "0.06em" }}>
+      <div style={{ marginTop: 36, fontSize: 11, color: C.textDim, letterSpacing: "0.06em" }}>
         Jan Gaarsdal · Hypnoterapeut · Birkerød
       </div>
     </div>
@@ -123,21 +156,47 @@ function NumberPicker({ onPick }: { onPick: (n: number) => void }) {
 
 // ─── Consent banner ─────────────────────────────────────────────────────────
 
-function ConsentBanner({ onConsent }: { onConsent: (days: number) => void }) {
+function ConsentBanner({ onConsent, manageMode = false, onClose }: {
+  onConsent: (days: number) => void
+  manageMode?: boolean
+  onClose?: () => void
+}) {
   return (
     <div style={{ background: C.bgConsent, borderTop: `1px solid ${C.border}`, padding: "14px 16px" }}>
-      <div style={{ fontSize: 12, color: C.textPrimary, fontWeight: 500, marginBottom: 5 }}>Inden vi begynder</div>
-      <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.6, marginBottom: 12 }}>
-        Vores samtaler kan indeholde følsomme personlige oplysninger. Må jeg gemme dem så vi kan fortsætte næste gang?
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+        <div style={{ fontSize: 12, color: C.textPrimary, fontWeight: 500 }}>
+          {manageMode ? "Dine data" : "Inden vi begynder"}
+        </div>
+        {onClose && (
+          <button onClick={onClose} style={{ background: "none", border: "none", color: C.textDim, cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 2px" }}>✕</button>
+        )}
       </div>
-      <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-        <button onClick={() => onConsent(90)} style={chipStyle("primary")}>Ja, 90 dage</button>
-        <button onClick={() => onConsent(0)} style={chipStyle("ghost")}>Kun denne samtale</button>
-        <button onClick={() => onConsent(365)} style={chipStyle("ghost")}>1 år</button>
-      </div>
-      <div style={{ fontSize: 10, color: C.textDim, marginTop: 8, lineHeight: 1.5 }}>
-        Ved at vælge gemme giver du udtrykkeligt samtykke til behandling af sundhedsrelaterede oplysninger (GDPR art. 9). Data deles ikke og bruges ikke til træning.
-      </div>
+      {manageMode ? (
+        <>
+          <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.6, marginBottom: 12 }}>
+            Skift opbevaringsperiode, eller slet alle dine data.
+          </div>
+          <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+            <button onClick={() => onConsent(90)} style={chipStyle("ghost")}>90 dage</button>
+            <button onClick={() => onConsent(365)} style={chipStyle("ghost")}>1 år</button>
+            <button onClick={() => onConsent(0)} style={chipStyle("ghost")}>Kun denne samtale</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.6, marginBottom: 12 }}>
+            Vores samtaler kan indeholde følsomme personlige oplysninger. Må jeg gemme dem så vi kan fortsætte næste gang?
+          </div>
+          <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+            <button onClick={() => onConsent(90)} style={chipStyle("primary")}>Ja, 90 dage</button>
+            <button onClick={() => onConsent(0)} style={chipStyle("ghost")}>Kun denne samtale</button>
+            <button onClick={() => onConsent(365)} style={chipStyle("ghost")}>1 år</button>
+          </div>
+          <div style={{ fontSize: 10, color: C.textDim, marginTop: 8, lineHeight: 1.5 }}>
+            Ved at vælge gemme giver du udtrykkeligt samtykke til behandling af sundhedsrelaterede oplysninger (GDPR art. 9). Data deles ikke og bruges ikke til træning.
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -161,6 +220,8 @@ function Chat({
   onSend,
   onPickNumber,
   onConsent,
+  onNewConversation,
+  onManageConsent,
 }: {
   messages: Message[]
   loading: boolean
@@ -168,6 +229,8 @@ function Chat({
   onSend: (text: string) => void
   onPickNumber: (n: number) => void
   onConsent: (days: number) => void
+  onNewConversation: () => void
+  onManageConsent: () => void
 }) {
   const [text, setText] = useState("")
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -205,9 +268,21 @@ function Chat({
         <div style={{ width: 32, height: 32, borderRadius: "50%", background: C.borderMid, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ width: 14, height: 14, borderRadius: "50%", background: C.accent, opacity: 0.7 }} />
         </div>
-        <div>
+        <div style={{ flex: 1 }}>
           <div style={{ fontSize: 14, color: C.textPrimary, fontWeight: 500 }}>Jan</div>
           <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.04em" }}>Talk To Me · Gaarsdal</div>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button
+            onClick={onManageConsent}
+            title="Dine data"
+            style={{ background: "none", border: "none", cursor: "pointer", color: C.textDim, fontSize: 16, padding: "4px 6px", lineHeight: 1, fontFamily: "inherit" }}
+          >⚙</button>
+          <button
+            onClick={onNewConversation}
+            title="Ny samtale"
+            style={{ background: "none", border: `1px solid ${C.borderMid}`, borderRadius: 20, cursor: "pointer", color: C.textDim, fontSize: 11, padding: "5px 12px", fontFamily: "inherit", letterSpacing: "0.04em", whiteSpace: "nowrap" as const }}
+          >Ny samtale</button>
         </div>
       </div>
 
@@ -252,8 +327,12 @@ function Chat({
       </div>
 
       {/* Consent */}
-      {consentStatus === "pending" && (
-        <ConsentBanner onConsent={onConsent} />
+      {(consentStatus === "pending" || consentStatus === "managing") && (
+        <ConsentBanner
+          onConsent={onConsent}
+          manageMode={consentStatus === "managing"}
+          onClose={consentStatus === "managing" ? onManageConsent : undefined}
+        />
       )}
 
       {/* Input */}
@@ -391,8 +470,6 @@ export default function TalkToMe() {
 
   async function handleConsent(days: number) {
     setConsentStatus("given")
-    // Gem samtykke via næste API-kald (retentionDays sendes med)
-    // Vi sender en tom besked med retentionDays for at registrere samtykket
     try {
       await fetch("/api/talk-to-me-chat", {
         method: "POST",
@@ -403,6 +480,25 @@ export default function TalkToMe() {
     } catch {
       // Non-critical
     }
+  }
+
+  // ── Administrer data ────────────────────────────────────────────────────────
+
+  function handleManageConsent() {
+    setConsentStatus((prev) => prev === "managing" ? "given" : "managing")
+  }
+
+  // ── Ny samtale ──────────────────────────────────────────────────────────────
+
+  function handleNewConversation() {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(CONV_ID_KEY)
+    }
+    setMessages([])
+    setConversationId("")
+    setConsentStatus("unknown")
+    initCalledRef.current = false
+    initChat()
   }
 
   return (
@@ -424,6 +520,8 @@ export default function TalkToMe() {
           onSend={sendMessage}
           onPickNumber={handlePickNumber}
           onConsent={handleConsent}
+          onNewConversation={handleNewConversation}
+          onManageConsent={handleManageConsent}
         />
       )}
     </>
