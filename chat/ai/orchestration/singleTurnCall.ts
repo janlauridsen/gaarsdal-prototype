@@ -50,6 +50,7 @@ function buildSystemPrompt(params: {
   previousRelationalState?: RelationalState
   policySignals?: { is_practical_request: boolean; is_closing: boolean }
   goalHypothesis?: string | null
+  rhetoricalInstruction?: string | null
 }): string {
   const blocks: string[] = []
 
@@ -294,6 +295,13 @@ Eksempler → "none" (spørgsmål, nysgerrighed, afklaring — IKKE en anmodning
 
 Tommelfingerregel: Var assistentens forrige spørgsmål et konkret tilbud om session? Og siger brugeren ja? → "contact_booking". Ellers → "none".`)
 
+  // RETORISK DIREKTIV — fra anticipation-system, baseret på forudsagt næste turn
+  if (params.rhetoricalInstruction) {
+    blocks.push(`RETORISK DIREKTIV (obligatorisk — følg dette i dit svar):
+${params.rhetoricalInstruction}
+Dette er ikke et forslag. Tilpas din core_answer og next_step til dette direktiv.`)
+  }
+
   // JSON-KONTRAKT
   blocks.push(`Returner KUN gyldig JSON — ingen tekst uden for JSON:
 {
@@ -440,6 +448,7 @@ export async function singleTurnCall(params: {
   policySignals?: { is_practical_request: boolean; is_closing: boolean }
   goalHypothesis?: string | null
   crisisDetected?: boolean
+  rhetoricalInstruction?: string | null
 }): Promise<SingleTurnOutput | null> {
   // Krise-override: returner hardcoded svar uden LLM-kald.
   // crisis_detected sættes i chat.ts og persisteres i meta på tværs af turns.
@@ -480,6 +489,7 @@ export async function singleTurnCall(params: {
     previousRelationalState: params.previousRelationalState,
     policySignals: params.policySignals,
     goalHypothesis: params.goalHypothesis,
+    rhetoricalInstruction: params.rhetoricalInstruction,
   })
 
   // C: Dynamisk temperatur — reflection er mere kreativ, evidence/info mere præcis
