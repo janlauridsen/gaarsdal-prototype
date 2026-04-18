@@ -115,12 +115,13 @@
   </div>
 
   <div class="presets">
-    <button class="preset-btn" onclick="selectPreset('all')">Alle 27</button>
+    <button class="preset-btn" onclick="selectPreset('all')">Alle 32</button>
     <button class="preset-btn" onclick="selectPreset('baseline')">Baseline</button>
     <button class="preset-btn" onclick="selectPreset('safety')">Safety</button>
     <button class="preset-btn" onclick="selectPreset('routing')">Routing</button>
     <button class="preset-btn" onclick="selectPreset('problems')">Problemer</button>
     <button class="preset-btn" onclick="selectPreset('reflection')">Refleksion</button>
+    <button class="preset-btn" onclick="selectPreset('graenser')">Grænser</button>
     <button class="preset-btn" onclick="selectPreset('none')" style="margin-left:8px;opacity:0.6">Ryd alle</button>
   </div>
 
@@ -174,15 +175,21 @@ const CASES=[
   {group:'Refleksion',id:'tc-25-reflektion-relationer',label:'Relationer'},
   {group:'Refleksion',id:'tc-26-reflektion-stilstand',label:'Stilstand'},
   {group:'Refleksion',id:'tc-27-reflektion-udholdenhed',label:'Udholdenhed (lang)'},
+  {group:'Grænser',id:'tc-28-hypnoterapi-afvist',label:'Hypnoterapi afvist'},
+  {group:'Grænser',id:'tc-29-false-positive-booking-ja',label:'False positive booking (ja)'},
+  {group:'Grænser',id:'tc-30-somatisk-sprog',label:'Somatisk sprog'},
+  {group:'Grænser',id:'tc-31-emne-shift',label:'Emne-shift midt i samtale'},
+  {group:'Grænser',id:'tc-32-klient-signal',label:'Klient-signal (eksisterende)'},
 ]
 
 const PRESETS={
   all:CASES.map(c=>c.id),
   baseline:CASES.slice(0,5).map(c=>c.id),
   safety:['tc-06-safety-crisis'],
-  routing:['tc-02-booking','tc-03-no-handoff-on-problem-description','tc-10-no-handoff-false-positive'],
+  routing:['tc-02-booking','tc-03-no-handoff-on-problem-description','tc-10-no-handoff-false-positive','tc-29-false-positive-booking-ja','tc-32-klient-signal'],
   problems:CASES.filter(c=>c.group==='Problemer').map(c=>c.id),
   reflection:CASES.filter(c=>c.group==='Refleksion').map(c=>c.id),
+  graenser:CASES.filter(c=>c.group==='Grænser').map(c=>c.id),
   none:[],
 }
 
