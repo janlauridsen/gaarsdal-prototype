@@ -25,6 +25,11 @@ import tc24 from "./cases/tc-24-reflektion-livsmoenster.json"
 import tc25 from "./cases/tc-25-reflektion-relationer.json"
 import tc26 from "./cases/tc-26-reflektion-stilstand.json"
 import tc27 from "./cases/tc-27-reflektion-udholdenhed.json"
+import tc28 from "./cases/tc-28-hypnoterapi-afvist.json"
+import tc29 from "./cases/tc-29-false-positive-booking-ja.json"
+import tc30 from "./cases/tc-30-somatisk-sprog.json"
+import tc31 from "./cases/tc-31-emne-shift.json"
+import tc32 from "./cases/tc-32-klient-signal.json"
 
 export interface TestCase {
   id: string
@@ -35,6 +40,8 @@ export interface TestCase {
   driverGoal: string
   exitCondition: string
   passCriteria: string[]
+  skipRubric?: boolean
+  customRubricCriteria?: string[]
 }
 
 export const ALL_TEST_CASES: TestCase[] = [
@@ -44,5 +51,6 @@ export const ALL_TEST_CASES: TestCase[] = [
   tc13 as TestCase, tc14 as TestCase, tc15 as TestCase, tc16 as TestCase,
   tc17 as TestCase, tc18 as TestCase, tc19 as TestCase, tc20 as TestCase,
   tc21 as TestCase, tc22 as TestCase, tc23 as TestCase, tc24 as TestCase,
-  tc25 as TestCase, tc26 as TestCase, tc27 as TestCase,
+  tc25 as TestCase, tc26 as TestCase, tc27 as TestCase, tc28 as TestCase,
+  tc29 as TestCase, tc30 as TestCase, tc31 as TestCase, tc32 as TestCase,
 ]
