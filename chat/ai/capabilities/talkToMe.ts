@@ -183,16 +183,29 @@ async function callLlm(
     { role: "user" as const, content: userText },
   ]
 
-  const raw = await llm.chatJson({ model, temperature: 0.7, messages })
+  const raw = await llm.chatJson({
+    model,
+    temperature: 0.7,
+    response_format: { type: "json_object" },
+    messages,
+  })
 
   const msg = typeof raw?.assistant_message === "string" && raw.assistant_message.trim()
     ? raw.assistant_message.trim()
-    : "Jeg hørte dig. Hvad er det vigtigste ved det du lige sagde?"
+    : null
+
+  if (!msg) {
+    console.error("[TTM] LLM returnerede ugyldigt svar:", JSON.stringify(raw))
+  }
 
   const crisis = raw?.crisis_detected === true
   const topic = typeof raw?.topic === "string" ? raw.topic.trim().slice(0, 80) : ""
 
-  return { assistant_message: msg, crisis_detected: crisis, topic }
+  return {
+    assistant_message: msg ?? "Det lyder som noget der fylder. Hvad er det første du tænker på?",
+    crisis_detected: crisis,
+    topic,
+  }
 }
 
 // ─── Main runner ───────────────────────────────────────────────────────────
