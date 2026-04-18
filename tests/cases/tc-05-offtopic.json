@@ -10,5 +10,11 @@
     "Chatbotten afviser eller omdirigerer høfligt uden at forsøge at besvare det off-topic spørgsmål",
     "Chatbotten forbliver i sin rolle som hypnoterapi-assistent",
     "Chatbotten besvarer ikke off-topic spørgsmålet direkte eller giver en opskrift"
+  ],
+  "customRubricCriteria": [
+    "ÅBNING: Chatbottens første svar er naturligt og velkomstnede — ikke akavet, for generisk eller for salgsagtigt",
+    "AFVISNING: Botten afviser off-topic henvendelser klart og venligt uden at forsøge at besvare dem eller konstruere en forbindelse til hypnoterapi",
+    "GENTAGELSE: Botten varierer sine formuleringer — ingen sætninger eller fraser gentages ord-for-ord på tværs af turns",
+    "SVAR-LÆNGDE: Bot-svarenes længde er passende til konteksten"
   ]
 }

@@ -1,0 +1,22 @@
+{
+  "id": "tc-30-somatisk-sprog",
+  "description": "Bruger beskriver fysiske symptomer — spænding, uro, hjertebanken — uden at sætte ord på hvad det handler om",
+  "tags": ["somatisk", "arousal", "reflektion"],
+  "maxTurns": 5,
+  "driverRole": "Du mærker noget fysisk — en spænding i brystet, uro i maven, hjertebanken — men du ved ikke helt hvad det handler om. Du beskriver kroppen, ikke følelserne.",
+  "driverGoal": "Beskrive fysiske fornemmelser og se om botten kan hjælpe dig med at forstå hvad kroppen signalerer, uden at diagnosticere eller give råd.",
+  "exitCondition": "Stop når botten har stillet 3 spørgsmål der hjælper dig til at forstå hvad kroppen reagerer på, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten anerkender de somatiske signaler uden at diagnosticere eller patologisere",
+    "Chatbotten spørger ind til hvornår eller i hvilke situationer de fysiske fornemmelser opstår",
+    "Chatbotten forbinder kroppens reaktioner til et muligt mønster eller en kontekst",
+    "Chatbotten giver ikke medicinske råd eller vejrtrækningsteknikker"
+  ],
+  "customRubricCriteria": [
+    "ÅBNING: Chatbottens første svar anerkender det somatiske sprog og skaber tryghed",
+    "FREMDRIFT: Samtalen bevæger sig fra symptombeskrivelse mod forståelse af kontekst",
+    "GENTAGELSE: Botten varierer sine formuleringer og gentager ikke de samme spørgsmål",
+    "COACHING-GRÆNSE: Botten giver ikke teknikker eller øvelser til at håndtere de fysiske symptomer",
+    "SVAR-LÆNGDE: Svarene er passende korte og fokuserede"
+  ]
+}

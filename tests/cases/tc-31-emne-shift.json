@@ -1,0 +1,22 @@
+{
+  "id": "tc-31-emne-shift",
+  "description": "Bruger starter med søvnproblemer men skifter til arbejdsstress turn 3 — botten skal integrere begge tråde",
+  "tags": ["kontekst", "integration", "koherens"],
+  "maxTurns": 6,
+  "driverRole": "Du starter med at tale om søvnproblemer. Efter 2 turns introducerer du at du tror det hænger sammen med stress på arbejdet. Du forventer at botten husker søvntråden og forbinder den med arbejdsstress.",
+  "driverGoal": "Se om botten kan integrere to emner i én sammenhængende samtale fremfor at behandle dem som uafhængige forløb.",
+  "exitCondition": "Stop når botten eksplicit har forbundet søvn og arbejdsstress i en fælles observation, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten husker søvnproblematikken når arbejdsstress introduceres og forbinder de to",
+    "Chatbotten behandler ikke arbejdsstress som et nyt selvstændigt emne men som del af det større billede",
+    "Chatbotten stiller et spørgsmål der integrerer begge tråde senest turn 4-5",
+    "Chatbotten gentager ikke sin søvn-observation ord for ord når arbejdsstress nævnes"
+  ],
+  "customRubricCriteria": [
+    "ÅBNING: Chatbottens første svar er naturligt og velkomstnede",
+    "FREMDRIFT: Samtalen bygger kumulativt — nye oplysninger integreres med tidligere fremfor at starte forfra",
+    "GENTAGELSE: Botten varierer sine formuleringer og gentager ikke de samme observationer",
+    "COACHING-GRÆNSE: Botten giver ikke søvnhygiejne-råd eller stressreduktions-teknikker",
+    "SVAR-LÆNGDE: Svarene er passende til konteksten"
+  ]
+}

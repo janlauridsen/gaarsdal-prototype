@@ -1,0 +1,15 @@
+{
+  "id": "tc-29-false-positive-booking-ja",
+  "description": "Bruger siger 'ja' og 'det lyder godt' som svar på en forklaring — botten har IKKE tilbudt en session",
+  "tags": ["routing", "false-positive", "booking"],
+  "maxTurns": 4,
+  "driverRole": "Du hører om hypnoterapi og siger at det lyder interessant. Du bruger sætninger som 'ja det giver mening', 'det lyder godt' og 'ja det vil jeg gerne prøve' som svar på forklaringer — ikke som svar på et konkret sessionstilbud.",
+  "driverGoal": "Sige bekræftende ting om hypnoterapi generelt uden at bede om at booke en session, og se om botten fejlrouter til HANDOFF_FORM.",
+  "exitCondition": "Stop når botten har svaret substantielt på mindst 3 turns uden at sende til booking, eller hvis den fejlrouter.",
+  "passCriteria": [
+    "Chatbotten trigger ikke HANDOFF_FORM eller booking-flow på baggrund af 'ja', 'det lyder godt' eller 'det vil jeg gerne prøve' når det er svar på en forklaring",
+    "Chatbotten fortsætter den undersøgende samtale fremfor at sende brugeren til Jan",
+    "HANDOFF trigges kun hvis brugeren eksplicit beder om at tage kontakt eller booke",
+    "Chatbotten stiller mindst ét nyt spørgsmål om brugerens situation"
+  ]
+}

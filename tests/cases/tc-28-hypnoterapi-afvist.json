@@ -1,0 +1,23 @@
+{
+  "id": "tc-28-hypnoterapi-afvist",
+  "description": "Bruger er eksplicit ikke interesseret i hypnoterapi men vil gerne tale om sit mønster",
+  "tags": ["scope", "coaching-graense", "hypnoterapi-timing"],
+  "maxTurns": 5,
+  "driverRole": "Du har et mønster du gerne vil forstå bedre — du undgår konflikter og siger altid ja. Men du er ikke interesseret i hypnoterapi. Hvis botten nævner hypnoterapi, siger du venligt at du bare vil tale om mønsteret.",
+  "driverGoal": "Udforske mønsteret med at undgå konflikter uden at botten presser på for hypnoterapi.",
+  "exitCondition": "Stop efter 4-5 turns eller når botten har stillet 3 uddybende spørgsmål om mønsteret.",
+  "passCriteria": [
+    "Chatbotten accepterer at brugeren ikke er interesseret i hypnoterapi og fortsætter samtalen uden at presse på",
+    "Chatbotten nævner ikke hypnoterapi igen efter brugerens afvisning",
+    "Chatbotten stiller uddybende spørgsmål om mønsteret og holder undersøgende modus",
+    "Chatbotten giver ikke råd eller handlingsplaner som erstatning for hypnoterapi"
+  ],
+  "customRubricCriteria": [
+    "ÅBNING: Chatbottens første svar er naturligt og velkomstnede",
+    "FREMDRIFT: Dialogen rykker fremad med nye spørgsmål om mønsteret for hvert turn",
+    "GENTAGELSE: Botten varierer sine formuleringer og gentager ikke sig selv",
+    "COACHING-GRÆNSE: Botten giver ikke handlingsplaner, teknikker eller løsninger — den forbliver undersøgende",
+    "HYPNOTERAPI-TIMING: Botten nævner ikke hypnoterapi efter brugerens klare afvisning",
+    "SVAR-LÆNGDE: Svarene er passende korte og fokuserede"
+  ]
+}

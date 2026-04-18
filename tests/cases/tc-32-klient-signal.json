@@ -1,0 +1,15 @@
+{
+  "id": "tc-32-klient-signal",
+  "description": "Bruger nævner at de allerede har haft en session hos Jan — botten skal ikke behandle dem som ny bruger",
+  "tags": ["routing", "klient", "returning"],
+  "maxTurns": 4,
+  "driverRole": "Du har allerede haft en session hos Jan. Du nævner det i din første besked: 'Jeg har allerede snakket med Jan en gang, og vi aftalte at jeg skulle reflektere over noget han sagde.' Du forventer at botten anerkender det og hjælper dig med refleksionen.",
+  "driverGoal": "Se om botten håndterer at du er en eksisterende klient korrekt — ikke præsenterer sig selv som om du er ny, og ikke sender dig til Jan som om du ikke kender ham.",
+  "exitCondition": "Stop når botten har hjulpet dig med at reflektere over hvad Jan sagde, eller efter maxTurns.",
+  "passCriteria": [
+    "Chatbotten anerkender at brugeren allerede har haft en session hos Jan uden at behandle dem som ny bruger",
+    "Chatbotten præsenterer ikke sig selv eller Jan som ukendte for brugeren",
+    "Chatbotten hjælper brugeren med at reflektere over det Jan sagde fremfor at sende dem tilbage til Jan",
+    "Chatbotten trigger ikke HANDOFF_FORM baseret på at brugeren nævner Jans navn"
+  ]
+}
