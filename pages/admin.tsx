@@ -11,6 +11,15 @@ type Lead = { id: string; received_at: string; email: string; tema?: string; con
 type FeedbackItem = { ts: string; conversation_id: string; revision?: number; rating: "positive" | "partial" | "negative"; tags?: string[]; note?: string; meta?: { node?: string; mode?: string; move?: string } }
 type AnticipateDraft = { job_id: string; based_on_revision: number; anticipated_user_text: string; rhetorical_instruction: string; conversation_goal_hypothesis: string | null; created_at: number }
 type StateSummary = { conversation_id: string; fit?: "good" | "explore" | "unknown"; fit_reason?: string; arousal_level?: string; arousal_score?: number; problem_title?: string; topic_tags?: string[]; genHypnoTranscript?: Array<{role: string; content: string}> }
+type TtmConversation = {
+  conversation_id: string
+  started_at: string
+  turn_count: number
+  score: number | null
+  last_topic: string | null
+  ritual_stage: string
+  transcript: Array<{ role: string; content: string }>
+}
 type ExportData = { from: string; to: string; total_conversations: number; total_turns: number; conversations: Conversation[]; handoffs?: Handoff[]; leads?: Lead[]; feedback?: FeedbackItem[] }
 type Hit = { ts: string; path: string; city: string; postal?: string; region: string; day: string }
 
@@ -68,9 +77,9 @@ export default function AdminPage() {
   const [data, setData] = useState<ExportData|null>(null)
   const [stateMap, setStateMap] = useState<Record<string,StateSummary>>({})
   const [statesLoading, setStatesLoading] = useState(false)
-  const [tab, setTab] = useState<"conversations"|"handoffs"|"leads"|"feedback"|"traffic"|"memory">("handoffs")
+  const [tab, setTab] = useState<"conversations"|"handoffs"|"leads"|"feedback"|"traffic"|"memory"|"ttm">("handoffs")
   const [openConvId, setOpenConvId] = useState<string|null>(null)
-  const [returnToTab, setReturnToTab] = useState<"conversations"|"handoffs"|"leads"|"feedback"|"traffic"|"memory">("conversations")
+  const [returnToTab, setReturnToTab] = useState<"conversations"|"handoffs"|"leads"|"feedback"|"traffic"|"memory"|"ttm">("conversations")
   const [anticipateDrafts, setAnticipateDrafts] = useState<AnticipateDraft[]>([])
   const [anticipateLoading, setAnticipateLoading] = useState(false)
   const [expandedAnticipate, setExpandedAnticipate] = useState<string|null>(null)
@@ -78,6 +87,10 @@ export default function AdminPage() {
   const [memoryLoading, setMemoryLoading] = useState(false)
   const [memoryError, setMemoryError] = useState<string|null>(null)
   const [expandedUser, setExpandedUser] = useState<string|null>(null)
+  const [ttmData, setTtmData] = useState<TtmConversation[]|null>(null)
+  const [ttmLoading, setTtmLoading] = useState(false)
+  const [ttmError, setTtmError] = useState<string|null>(null)
+  const [openTtmId, setOpenTtmId] = useState<string|null>(null)
   const [expandedThread, setExpandedThread] = useState<string|null>(null)
   const [hits, setHits] = useState<Hit[]>([])
   const [hitsLoading, setHitsLoading] = useState(false)
@@ -129,6 +142,15 @@ export default function AdminPage() {
     }
     setAnticipateLoading(false)
   }, [secret])
+
+  const fetchTtm = useCallback(async () => {
+    if (!secret) return; setTtmLoading(true); setTtmError(null)
+    try {
+      const res = await fetch(`/api/admin/ttm?secret=${encodeURIComponent(secret)}&from=${from}&to=${to}`)
+      if (!res.ok) { const j = await res.json().catch(()=>({})); setTtmError(j.error ?? `HTTP ${res.status}`); return }
+      const j = await res.json(); setTtmData(j.conversations ?? [])
+    } catch (e:any) { setTtmError(e.message ?? "Ukendt fejl") } finally { setTtmLoading(false) }
+  }, [secret, from, to])
 
   const fetchData = useCallback(async () => {
     if (!secret) return; setLoading(true); setError(null); setData(null); setOpenConvId(null); setStateMap({})
@@ -231,8 +253,9 @@ export default function AdminPage() {
               { id:"conversations", label:`Alle samtaler (${conversations.length})` },
               { id:"traffic", label:"Trafik" },
               { id:"memory", label:"Hukommelse" },
+              { id:"ttm", label:`TTM (${ttmData?.length ?? "?"})` },
             ] as const).map(t => (
-              <button key={t.id} onClick={()=>{ setTab(t.id); setOpenConvId(null); if(t.id==="memory"&&!memoryData&&!memoryLoading) fetchMemory(); if(t.id==="traffic"&&hits.length===0&&!hitsLoading) fetchHits() }}
+              <button key={t.id} onClick={()=>{ setTab(t.id); setOpenConvId(null); if(t.id==="memory"&&!memoryData&&!memoryLoading) fetchMemory(); if(t.id==="traffic"&&hits.length===0&&!hitsLoading) fetchHits(); if(t.id==="ttm"&&!ttmData&&!ttmLoading) fetchTtm() }}
                 style={{ padding:"8px 16px", borderRadius:"8px", fontSize:"14px", border:"none", cursor:"pointer", background:tab===t.id?"#6B8F71":"#1a1a1a", color:tab===t.id?"#1a1a1a":"#888888", fontWeight:tab===t.id?500:400, fontFamily:"inherit", boxShadow:"0 2px 10px rgba(0,0,0,0.05)" }}>
                 {t.label}
               </button>
@@ -651,6 +674,100 @@ export default function AdminPage() {
         </>}
 
         {!data && !loading && <div style={{ textAlign:"center", color:"#888888", fontSize:"14px", padding:"60px 0" }}>Vælg en periode og tryk "Hent data"</div>}
+
+          {/* TTM — Talk To Me */}
+          {tab==="ttm" && !openTtmId && (
+            <div>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"16px" }}>
+                <div style={{ fontSize:"14px", color:"#888888" }}>Talk To Me samtaler</div>
+                <button onClick={fetchTtm} disabled={ttmLoading} style={{ padding:"7px 16px", background:"#c4a97d", color:"#1a1610", border:"none", borderRadius:"8px", fontSize:"13px", cursor:ttmLoading?"not-allowed":"pointer", opacity:ttmLoading?0.7:1, fontFamily:"inherit" }}>{ttmLoading?"Henter…":"↻ Opdater"}</button>
+              </div>
+              {ttmError && <div style={{ background:"#2b0f0f", color:"#e06060", padding:"12px 16px", borderRadius:"8px", marginBottom:"16px", fontSize:"14px" }}>{ttmError}</div>}
+              {ttmLoading && !ttmData && <div style={{ textAlign:"center", color:"#888888", fontSize:"14px", padding:"40px 0" }}>Henter TTM-samtaler…</div>}
+              {ttmData && ttmData.length === 0 && <div style={{ textAlign:"center", color:"#888888", fontSize:"14px", padding:"40px 0" }}>Ingen TTM-samtaler i perioden</div>}
+              {ttmData && ttmData.length > 0 && (
+                <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"14px" }}>
+                  <thead>
+                    <tr style={{ borderBottom:"2px solid #2d2d2d" }}>
+                      <th style={{ padding:"10px 16px", textAlign:"left", color:"#888888", fontWeight:400 }}>Samtale</th>
+                      <th style={{ padding:"10px 16px", textAlign:"left", color:"#888888", fontWeight:400 }}>Score</th>
+                      <th style={{ padding:"10px 16px", textAlign:"left", color:"#888888", fontWeight:400 }}>Emne</th>
+                      <th style={{ padding:"10px 16px", textAlign:"left", color:"#888888", fontWeight:400 }}>Turns</th>
+                      <th style={{ padding:"10px 16px", textAlign:"left", color:"#888888", fontWeight:400 }}>Stage</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ttmData.map(conv => (
+                      <tr key={conv.conversation_id} onClick={()=>setOpenTtmId(conv.conversation_id)}
+                        style={{ borderBottom:"1px solid #2d2d2d", cursor:"pointer" }}
+                        onMouseEnter={e=>(e.currentTarget.style.background="#1f1f1f")}
+                        onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
+                        <td style={{ padding:"12px 16px", fontFamily:"monospace", fontSize:"12px", color:"#cccccc" }}>{conv.conversation_id.slice(-12)}</td>
+                        <td style={{ padding:"12px 16px" }}>
+                          {conv.score !== null
+                            ? <span style={{ padding:"2px 10px", borderRadius:"12px", fontSize:"13px",
+                                background: conv.score >= 7 ? "#0f2b15" : conv.score >= 4 ? "#2a2010" : "#2b0f0f",
+                                color: conv.score >= 7 ? "#5aad72" : conv.score >= 4 ? "#d4a264" : "#e06060" }}>
+                                {conv.score}/10
+                              </span>
+                            : <span style={{ color:"#555555" }}>—</span>}
+                        </td>
+                        <td style={{ padding:"12px 16px", color:"#cccccc", maxWidth:"200px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{conv.last_topic ?? "—"}</td>
+                        <td style={{ padding:"12px 16px", color:"#888888" }}>{conv.turn_count}</td>
+                        <td style={{ padding:"12px 16px" }}>
+                          <span style={{ fontSize:"12px", padding:"2px 8px", borderRadius:"10px",
+                            background: conv.ritual_stage === "open" ? "#0f2b15" : "#1f1f1f",
+                            color: conv.ritual_stage === "open" ? "#5aad72" : "#888888" }}>
+                            {conv.ritual_stage}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+          {/* TTM samtale-detalje */}
+          {tab==="ttm" && openTtmId && (() => {
+            const conv = ttmData?.find(c => c.conversation_id === openTtmId)
+            if (!conv) return null
+            return (
+              <div>
+                <button onClick={()=>setOpenTtmId(null)} style={{ display:"flex", alignItems:"center", gap:"6px", fontSize:"14px", color:"#c4a97d", background:"none", border:"none", cursor:"pointer", marginBottom:"16px", padding:0, fontFamily:"inherit" }}>← Tilbage til TTM</button>
+                <div style={{ display:"flex", gap:"16px", marginBottom:"20px", flexWrap:"wrap" }}>
+                  <div style={{ ...S.card, padding:"14px 20px", minWidth:"120px" }}>
+                    <div style={{ fontSize:"11px", color:"#888888", marginBottom:"4px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Score</div>
+                    <div style={{ fontSize:"24px", fontWeight:500, color: conv.score !== null ? (conv.score >= 7 ? "#5aad72" : conv.score >= 4 ? "#d4a264" : "#e06060") : "#888888" }}>{conv.score !== null ? `${conv.score}/10` : "—"}</div>
+                  </div>
+                  <div style={{ ...S.card, padding:"14px 20px", minWidth:"120px" }}>
+                    <div style={{ fontSize:"11px", color:"#888888", marginBottom:"4px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Turns</div>
+                    <div style={{ fontSize:"24px", fontWeight:500, color:"#cccccc" }}>{conv.turn_count}</div>
+                  </div>
+                  <div style={{ ...S.card, padding:"14px 20px", flex:1, minWidth:"200px" }}>
+                    <div style={{ fontSize:"11px", color:"#888888", marginBottom:"4px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Emne</div>
+                    <div style={{ fontSize:"16px", color:"#cccccc" }}>{conv.last_topic ?? "—"}</div>
+                  </div>
+                </div>
+                <div style={{ ...S.card, padding:"20px", display:"flex", flexDirection:"column", gap:"12px" }}>
+                  {conv.transcript.map((t, i) => (
+                    <div key={i} style={{ display:"flex", flexDirection:"column", alignItems: t.role === "user" ? "flex-end" : "flex-start", maxWidth:"80%", alignSelf: t.role === "user" ? "flex-end" : "flex-start" }}>
+                      <div style={{ fontSize:"10px", color:"#555555", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"4px" }}>{t.role === "assistant" ? "Jan" : "Bruger"}</div>
+                      <div style={{ padding:"10px 14px", borderRadius:"12px", fontSize:"13px", lineHeight:1.6, whiteSpace:"pre-wrap",
+                        background: t.role === "assistant" ? "#252018" : "#33291e",
+                        color: t.role === "assistant" ? "#c8bc9e" : "#e8dcc8",
+                        borderBottomLeftRadius: t.role === "assistant" ? 4 : 12,
+                        borderBottomRightRadius: t.role === "user" ? 4 : 12 }}>
+                        {t.content}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
+
       </div>
     </div>
   )
