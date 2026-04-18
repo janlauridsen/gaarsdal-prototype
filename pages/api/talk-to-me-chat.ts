@@ -36,11 +36,14 @@ type RequestBody = {
   retentionDays?: ConsentRetentionDays
 }
 
+type Turn = { role: "user" | "assistant"; content: string }
+
 type ResponseBody = {
   message: string
   conversationId: string
   showNumberPicker: boolean
   showContinuationPicker: boolean
+  previousTurns: Turn[]
   isReturning: boolean
   error?: string
 }
@@ -57,7 +60,7 @@ export default async function handler(
   }
 
   if (req.method !== "POST") {
-    res.status(405).json({ message: "", conversationId: "", showNumberPicker: false, showContinuationPicker: false, isReturning: false, error: "Method not allowed" })
+    res.status(405).json({ message: "", conversationId: "", showNumberPicker: false, showContinuationPicker: false, previousTurns: [], isReturning: false, error: "Method not allowed" })
     return
   }
 
@@ -114,6 +117,7 @@ export default async function handler(
       conversationId,
       showNumberPicker: false,
       showContinuationPicker: false,
+      previousTurns: [],
       isReturning,
       error: "capability_error",
     })
@@ -159,16 +163,28 @@ export default async function handler(
     }
   }
 
-  // ── showNumberPicker: vis talvælger når Q1 stilles ──────────────────────────
+  // ── showNumberPicker / showContinuationPicker ──────────────────────────────
   const ritualStage = nextMeta["ttm.ritual_stage"]?.value ?? "q1"
   const showNumberPicker = ritualStage === "q1" && assistantMessage.length > 0
   const showContinuationPicker = ritualStage === "continuation_check" && assistantMessage.length > 0
+
+  // Hent de sidste 6 turns fra transcript til at vise som historik ved continuation
+  let previousTurns: Turn[] = []
+  if (showContinuationPicker) {
+    const raw = nextMeta["ttm.transcript"]?.value
+    if (Array.isArray(raw)) {
+      previousTurns = (raw as Turn[])
+        .filter((t) => t && (t.role === "user" || t.role === "assistant") && typeof t.content === "string" && t.content.trim().length > 0)
+        .slice(-6)
+    }
+  }
 
   res.status(200).json({
     message: assistantMessage,
     conversationId,
     showNumberPicker,
     showContinuationPicker,
+    previousTurns,
     isReturning,
   })
 }
