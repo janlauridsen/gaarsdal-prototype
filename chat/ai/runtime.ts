@@ -3,11 +3,13 @@ import { AiCapability, AiCapabilityContext, AiCapabilityResult } from "./types"
 import { genHypnoCapability } from "./capabilities/genHypno"
 import { prequalifyCapability } from "./capabilities/prequalify"
 import { clientSupportCapability } from "./capabilities/clientSupport"
+import { talkToMeCapability } from "./capabilities/talkToMe"
 
 const CAPABILITIES: Record<string, AiCapability> = {
   [genHypnoCapability.id]: genHypnoCapability,
   [prequalifyCapability.id]: prequalifyCapability,
   [clientSupportCapability.id]: clientSupportCapability,
+  [talkToMeCapability.id]: talkToMeCapability,
 }
 
 export async function runCapability(
