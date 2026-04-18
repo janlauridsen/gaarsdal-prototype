@@ -5,7 +5,7 @@
 import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
 
 type Turn = { role: "user" | "assistant"; content: string }
-type RitualStage = "q1" | "q2" | "open"
+type RitualStage = "q1" | "q2" | "open" | "continuation_check"
 
 const MAX_TRANSCRIPT_TURNS = 24
 const MAX_TRANSCRIPT_CHARS = 5000
@@ -49,8 +49,18 @@ function appendTranscript(transcript: Turn[], userText: string, assistantText: s
 
 function readStage(context: AiCapabilityContext): RitualStage {
   const v = context.state.meta["ttm.ritual_stage"]?.value
-  if (v === "q2" || v === "open") return v
+  if (v === "q2" || v === "open" || v === "continuation_check") return v
   return "q1"
+}
+
+function readLastTurnAt(context: AiCapabilityContext): number | null {
+  const v = context.state.meta["ttm.last_turn_at"]?.value
+  return typeof v === "number" ? v : null
+}
+
+function isWithin24Hours(lastTurnAt: number | null): boolean {
+  if (lastTurnAt === null) return false
+  return (Date.now() - lastTurnAt) < 24 * 60 * 60 * 1000
 }
 
 function readTurnCount(context: AiCapabilityContext): number {
@@ -85,19 +95,27 @@ function detectCrisis(text: string): boolean {
 // ─── Ritual messages ───────────────────────────────────────────────────────
 
 function buildQ1Message(context: AiCapabilityContext): string {
-  // Returbruger: brug hukommelse hvis tilgængeligt
   const turnCount = readTurnCount(context)
   const lastScore = readScore(context)
   const lastTopic = readLastTopic(context)
 
+  // Ny dag, returbruger — ritual med kontekst
   if (turnCount > 2 && lastScore !== null && lastTopic) {
-    return `Du var på en ${lastScore} sidst — og ${lastTopic} fyldte. Hvordan er det nu? På en skala fra 1 til 10.`
+    return `Godt at se dig igen. Sidst var du på en ${lastScore} — og ${lastTopic} fyldte. Hvordan har du det nu? På en skala fra 1 til 10.`
   }
   if (turnCount > 2 && lastScore !== null) {
-    return `Du var på en ${lastScore} sidst. Hvordan har du det nu — på en skala fra 1 til 10?`
+    return `Godt at se dig igen. Sidst var du på en ${lastScore}. Hvordan har du det nu — på en skala fra 1 til 10?`
   }
 
   return "Hej. Godt du er her.\n\nHvordan har du det — på en skala fra 1 til 10?"
+}
+
+function buildContinuationMessage(context: AiCapabilityContext): string {
+  const lastTopic = readLastTopic(context)
+  if (lastTopic) {
+    return `Hej igen. Vi var i gang med ${lastTopic}. Vil du fortsætte, eller er der noget nyt?`
+  }
+  return "Hej igen. Vi var i gang med noget. Vil du fortsætte, eller er der noget nyt?"
 }
 
 const Q2_MESSAGE =
@@ -283,28 +301,93 @@ async function runTalkToMe(
     }
   }
 
-  // ── Ritual stage: q1 (ingen userText endnu — returnér Q1) ────────────────
-  if (stage === "q1" && !userText) {
-    const q1 = buildQ1Message(context)
+    // ── Init-kald (ingen userText) ────────────────────────────────────────────
+  if (!userText) {
+    const lastTurnAt = readLastTurnAt(context)
+    const sameDayReturn = stage === "open" && isWithin24Hours(lastTurnAt)
+
+    if (sameDayReturn) {
+      // Samme dag — tilbyd at fortsætte eller starte nyt
+      const msg = buildContinuationMessage(context)
+      return {
+        transition: {
+          type: "NODE_HOP",
+          from: context.state.active_node,
+          to: context.state.active_node,
+          reason: "ttm:continuation-check",
+          response_message: msg,
+          meta_delta: {
+            "ttm.ritual_stage": { value: "continuation_check", source_node: "TALK_TO_ME" },
+          },
+        },
+        debug: { capability: "talk-to-me-v1", used_fallback: false },
+      }
+    }
+
+    if (stage === "q1" || stage === "open") {
+      // Ny dag eller ny bruger — start ritual
+      const q1 = buildQ1Message(context)
+      return {
+        transition: {
+          type: "NODE_HOP",
+          from: context.state.active_node,
+          to: context.state.active_node,
+          reason: "ttm:ritual-q1",
+          response_message: q1,
+          meta_delta: {
+            "ttm.ritual_stage": { value: "q1", source_node: "TALK_TO_ME" },
+            "ttm.transcript": { value: appendTranscript(transcript, "", q1), source_node: "TALK_TO_ME" },
+            "ttm.turn_count": { value: turnCount, source_node: "TALK_TO_ME" },
+          },
+        },
+        debug: { capability: "talk-to-me-v1", used_fallback: false },
+      }
+    }
+
+    // Stage q2 eller continuation_check uden input — ingen handling
     return {
       transition: {
         type: "NODE_HOP",
         from: context.state.active_node,
         to: context.state.active_node,
-        reason: "ttm:ritual-q1",
-        response_message: q1,
-        meta_delta: {
-          "ttm.ritual_stage": { value: "q1", source_node: "TALK_TO_ME" },
-          "ttm.transcript": { value: appendTranscript(transcript, "", q1), source_node: "TALK_TO_ME" },
-          "ttm.turn_count": { value: turnCount, source_node: "TALK_TO_ME" },
-        },
+        reason: "ttm:noop",
+        response_message: "",
+        meta_delta: {},
       },
       debug: { capability: "talk-to-me-v1", used_fallback: false },
     }
   }
 
+  // ── Continuation check: bruger vælger fortsæt eller nyt emne ─────────────
+  if (stage === "continuation_check") {
+    const t = userText.toLowerCase()
+    const wantsNew = t.includes("nyt") || t.includes("ny") || t.includes("andet") || t.includes("new")
+
+    if (wantsNew) {
+      // Nyt emne → gå til Q2
+      const updatedTranscript = appendTranscript(transcript, userText, Q2_MESSAGE)
+      return {
+        transition: {
+          type: "NODE_HOP",
+          from: context.state.active_node,
+          to: context.state.active_node,
+          reason: "ttm:new-topic",
+          response_message: Q2_MESSAGE,
+          meta_delta: {
+            "ttm.ritual_stage": { value: "q2", source_node: "TALK_TO_ME" },
+            "ttm.transcript": { value: updatedTranscript, source_node: "TALK_TO_ME" },
+          },
+        },
+        debug: { capability: "talk-to-me-v1", used_fallback: false },
+      }
+    }
+
+    // Fortsæt → åbn samtalen direkte med LLM
+    // Falder igennem til åben samtale nedenfor
+  }
+
   // ── Ritual stage: q1 + userText (score modtaget → returnér Q2) ───────────
-  if (stage === "q1" && userText) {
+  if (stage === "q1") {
     const score = parseInt(userText.replace(/[^0-9]/g, ""), 10)
     const validScore = !isNaN(score) && score >= 1 && score <= 10 ? score : null
     const updatedTranscript = appendTranscript(transcript, userText, Q2_MESSAGE)
@@ -321,25 +404,6 @@ async function runTalkToMe(
           "ttm.transcript": { value: updatedTranscript, source_node: "TALK_TO_ME" },
           ...(validScore !== null ? { "ttm.score": { value: validScore, source_node: "TALK_TO_ME" } } : {}),
         },
-      },
-      debug: { capability: "talk-to-me-v1", used_fallback: false },
-    }
-  }
-
-  // ── Returning user init: stage=open, ingen userText → simpel kontinuitet ───
-  if (!userText) {
-    const lastTopic = readLastTopic(context)
-    const continuityMsg = lastTopic
-      ? `Velkommen tilbage. Vi talte sidst om ${lastTopic}. Hvad er der på hjerte i dag?`
-      : "Velkommen tilbage. Hvad er der på hjerte i dag?"
-    return {
-      transition: {
-        type: "NODE_HOP",
-        from: context.state.active_node,
-        to: context.state.active_node,
-        reason: "ttm:returning-init",
-        response_message: continuityMsg,
-        meta_delta: {},
       },
       debug: { capability: "talk-to-me-v1", used_fallback: false },
     }
@@ -379,6 +443,7 @@ async function runTalkToMe(
         "ttm.ritual_stage": { value: "open", source_node: "TALK_TO_ME" },
         "ttm.transcript": { value: updatedTranscript, source_node: "TALK_TO_ME" },
         "ttm.turn_count": { value: newTurnCount, source_node: "TALK_TO_ME" },
+        "ttm.last_turn_at": { value: Date.now(), source_node: "TALK_TO_ME" },
         ...(topic ? { "ttm.last_topic": { value: topic, source_node: "TALK_TO_ME" } } : {}),
       },
     },
