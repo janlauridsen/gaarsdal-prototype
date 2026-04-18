@@ -40,6 +40,7 @@ type ResponseBody = {
   message: string
   conversationId: string
   showNumberPicker: boolean
+  showContinuationPicker: boolean
   isReturning: boolean
   error?: string
 }
@@ -56,7 +57,7 @@ export default async function handler(
   }
 
   if (req.method !== "POST") {
-    res.status(405).json({ message: "", conversationId: "", showNumberPicker: false, isReturning: false, error: "Method not allowed" })
+    res.status(405).json({ message: "", conversationId: "", showNumberPicker: false, showContinuationPicker: false, isReturning: false, error: "Method not allowed" })
     return
   }
 
@@ -112,6 +113,7 @@ export default async function handler(
       message: "Noget gik galt. Prøv igen.",
       conversationId,
       showNumberPicker: false,
+      showContinuationPicker: false,
       isReturning,
       error: "capability_error",
     })
@@ -160,11 +162,13 @@ export default async function handler(
   // ── showNumberPicker: vis talvælger når Q1 stilles ──────────────────────────
   const ritualStage = nextMeta["ttm.ritual_stage"]?.value ?? "q1"
   const showNumberPicker = ritualStage === "q1" && assistantMessage.length > 0
+  const showContinuationPicker = ritualStage === "continuation_check" && assistantMessage.length > 0
 
   res.status(200).json({
     message: assistantMessage,
     conversationId,
     showNumberPicker,
+    showContinuationPicker,
     isReturning,
   })
 }
