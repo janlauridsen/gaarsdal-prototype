@@ -206,6 +206,26 @@ export const nodeRegistry: Record<string, Node> = {
     ],
   },
 
+  // ─── TTM — Talk To Me ──────────────────────────────────────────────────────
+
+  TALK_TO_ME: {
+    id: "TALK_TO_ME",
+    kind: "DIALOG",
+    goal: "Åben samtale om selvforståelse, relationer og menneskelige problemstillinger",
+    message: "Hej. Godt du er her.\n\nHvordan har du det — på en skala fra 1 til 10?",
+    allow_free_text: true,
+    allow_parentese: false,
+    capability_id: "talk-to-me-v1",
+    allowed_exits: ["TALK_TO_ME", "CRISIS_INFO"],
+    meta_domains_written: [
+      "ttm.transcript",
+      "ttm.ritual_stage",
+      "ttm.score",
+      "ttm.turn_count",
+      "ttm.last_topic",
+    ],
+  },
+
   // ─── Klient-støtte ─────────────────────────────────────────────────────────
 
   CLIENT_SUPPORT: {
