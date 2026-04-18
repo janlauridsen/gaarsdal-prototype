@@ -11,6 +11,7 @@ type Message = {
   role: "user" | "assistant"
   content: string
   showNumberPicker?: boolean
+  showContinuationPicker?: boolean
 }
 
 type Screen = "landing" | "chat"
@@ -154,6 +155,52 @@ function NumberPicker({ onPick }: { onPick: (n: number) => void }) {
   )
 }
 
+// ─── Continuation picker ────────────────────────────────────────────────────
+
+function ContinuationPicker({ onPick }: { onPick: (choice: "fortsæt" | "nyt emne") => void }) {
+  const [picked, setPicked] = useState<string | null>(null)
+
+  function pick(choice: "fortsæt" | "nyt emne") {
+    setPicked(choice)
+    setTimeout(() => onPick(choice), 180)
+  }
+
+  return (
+    <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" as const }}>
+      <button
+        onClick={() => pick("fortsæt")}
+        disabled={picked !== null}
+        style={{
+          background: picked === "fortsæt" ? C.accent : "transparent",
+          color: picked === "fortsæt" ? C.bg : C.accent,
+          border: `1px solid ${C.accent}`,
+          borderRadius: 20, padding: "7px 16px", fontSize: 13,
+          cursor: picked !== null ? "default" : "pointer",
+          fontFamily: "inherit", transition: "all 0.15s",
+          opacity: picked !== null && picked !== "fortsæt" ? 0.4 : 1,
+        }}
+      >
+        Fortsæt samtalen
+      </button>
+      <button
+        onClick={() => pick("nyt emne")}
+        disabled={picked !== null}
+        style={{
+          background: picked === "nyt emne" ? C.accent : "transparent",
+          color: picked === "nyt emne" ? C.bg : C.textMuted,
+          border: `1px solid ${C.borderMid}`,
+          borderRadius: 20, padding: "7px 16px", fontSize: 13,
+          cursor: picked !== null ? "default" : "pointer",
+          fontFamily: "inherit", transition: "all 0.15s",
+          opacity: picked !== null && picked !== "nyt emne" ? 0.4 : 1,
+        }}
+      >
+        Nyt emne
+      </button>
+    </div>
+  )
+}
+
 // ─── Consent banner ─────────────────────────────────────────────────────────
 
 function ConsentBanner({ onConsent, manageMode = false, onClose }: {
@@ -219,6 +266,7 @@ function Chat({
   consentStatus,
   onSend,
   onPickNumber,
+  onPickContinuation,
   onConsent,
   onNewConversation,
   onManageConsent,
@@ -228,6 +276,7 @@ function Chat({
   consentStatus: ConsentStatus
   onSend: (text: string) => void
   onPickNumber: (n: number) => void
+  onPickContinuation: (choice: "fortsæt" | "nyt emne") => void
   onConsent: (days: number) => void
   onNewConversation: () => void
   onManageConsent: () => void
@@ -242,8 +291,9 @@ function Chat({
 
   const lastMsg = messages[messages.length - 1]
   const showPicker = lastMsg?.showNumberPicker === true && lastMsg.role === "assistant"
+  const showContinuation = lastMsg?.showContinuationPicker === true && lastMsg.role === "assistant"
   const isQ2 = lastMsg?.role === "assistant" && lastMsg.content.includes("top-of-mind")
-  const showInput = !showPicker && consentStatus !== "pending"
+  const showInput = !showPicker && !showContinuation && consentStatus !== "pending"
 
   function handleSend() {
     const t = text.trim()
@@ -307,6 +357,9 @@ function Chat({
               {msg.content}
               {msg.showNumberPicker && msg.role === "assistant" && (
                 <NumberPicker onPick={onPickNumber} />
+              )}
+              {msg.showContinuationPicker && msg.role === "assistant" && (
+                <ContinuationPicker onPick={onPickContinuation} />
               )}
             </div>
           </div>
@@ -416,7 +469,7 @@ export default function TalkToMe() {
       }
 
       if (data.message) {
-        setMessages([{ role: "assistant", content: data.message, showNumberPicker: data.showNumberPicker }])
+        setMessages([{ role: "assistant", content: data.message, showNumberPicker: data.showNumberPicker, showContinuationPicker: data.showContinuationPicker }])
       }
 
       // Ny bruger uden samtykke → vis banner
@@ -450,7 +503,7 @@ export default function TalkToMe() {
       if (data.message) {
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: data.message, showNumberPicker: data.showNumberPicker },
+          { role: "assistant", content: data.message, showNumberPicker: data.showNumberPicker, showContinuationPicker: data.showContinuationPicker },
         ])
       }
     } catch {
@@ -464,6 +517,12 @@ export default function TalkToMe() {
 
   function handlePickNumber(n: number) {
     sendMessage(String(n))
+  }
+
+  // ── Continuation-vælger ────────────────────────────────────────────────────
+
+  function handlePickContinuation(choice: "fortsæt" | "nyt emne") {
+    sendMessage(choice)
   }
 
   // ── Samtykke ───────────────────────────────────────────────────────────────
@@ -519,6 +578,7 @@ export default function TalkToMe() {
           consentStatus={consentStatus}
           onSend={sendMessage}
           onPickNumber={handlePickNumber}
+          onPickContinuation={handlePickContinuation}
           onConsent={handleConsent}
           onNewConversation={handleNewConversation}
           onManageConsent={handleManageConsent}
