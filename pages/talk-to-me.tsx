@@ -12,6 +12,8 @@ type Message = {
   content: string
   showNumberPicker?: boolean
   showContinuationPicker?: boolean
+  isHistory?: boolean
+  isHistoryDivider?: boolean
 }
 
 type Screen = "landing" | "chat"
@@ -338,32 +340,50 @@ function Chat({
 
       {/* Messages */}
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px 12px", display: "flex", flexDirection: "column", gap: 14 }}>
-        {messages.map((msg, i) => (
-          <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: msg.role === "user" ? "flex-end" : "flex-start", maxWidth: "85%", alignSelf: msg.role === "user" ? "flex-end" : "flex-start" }}>
-            {msg.role === "assistant" && (
-              <div style={{ fontSize: 10, letterSpacing: "0.1em", color: C.textDim, textTransform: "uppercase", marginBottom: 5 }}>Jan</div>
-            )}
-            <div style={{
-              padding: "11px 14px",
-              borderRadius: 16,
-              borderBottomLeftRadius: msg.role === "assistant" ? 4 : 16,
-              borderBottomRightRadius: msg.role === "user" ? 4 : 16,
-              background: msg.role === "assistant" ? C.bgBubbleJan : C.bgBubbleUser,
-              color: msg.role === "assistant" ? "#c8bc9e" : "#ede3cc",
-              fontSize: 14,
-              lineHeight: 1.65,
-              whiteSpace: "pre-wrap" as const,
-            }}>
-              {msg.content}
-              {msg.showNumberPicker && msg.role === "assistant" && (
-                <NumberPicker onPick={onPickNumber} />
+        {messages.map((msg, i) => {
+          // Skillelinje over historiske beskeder
+          if (msg.isHistoryDivider) {
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0" }}>
+                <div style={{ flex: 1, height: 1, background: C.border }} />
+                <div style={{ fontSize: 10, color: C.textDim, letterSpacing: "0.08em", textTransform: "uppercase", whiteSpace: "nowrap" as const }}>Tidligere i samtalen</div>
+                <div style={{ flex: 1, height: 1, background: C.border }} />
+              </div>
+            )
+          }
+
+          const historyOpacity = msg.isHistory ? 0.55 : 1
+
+          return (
+            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: msg.role === "user" ? "flex-end" : "flex-start", maxWidth: "85%", alignSelf: msg.role === "user" ? "flex-end" : "flex-start", opacity: historyOpacity }}>
+              {msg.role === "assistant" && !msg.isHistory && (
+                <div style={{ fontSize: 10, letterSpacing: "0.1em", color: C.textDim, textTransform: "uppercase", marginBottom: 5 }}>Jan</div>
               )}
-              {msg.showContinuationPicker && msg.role === "assistant" && (
-                <ContinuationPicker onPick={onPickContinuation} />
-              )}
+              <div style={{
+                padding: "11px 14px",
+                borderRadius: 16,
+                borderBottomLeftRadius: msg.role === "assistant" ? 4 : 16,
+                borderBottomRightRadius: msg.role === "user" ? 4 : 16,
+                background: msg.isHistory
+                  ? (msg.role === "assistant" ? C.bgBubbleJan : C.bgBubbleUser)
+                  : (msg.role === "assistant" ? C.bgBubbleJan : C.bgBubbleUser),
+                color: msg.role === "assistant" ? "#c8bc9e" : "#ede3cc",
+                fontSize: msg.isHistory ? 13 : 14,
+                lineHeight: 1.65,
+                whiteSpace: "pre-wrap" as const,
+                border: msg.isHistory ? `1px solid ${C.border}` : "none",
+              }}>
+                {msg.content}
+                {msg.showNumberPicker && msg.role === "assistant" && (
+                  <NumberPicker onPick={onPickNumber} />
+                )}
+                {msg.showContinuationPicker && msg.role === "assistant" && (
+                  <ContinuationPicker onPick={onPickContinuation} />
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
 
         {loading && (
           <div style={{ alignSelf: "flex-start" }}>
@@ -469,7 +489,17 @@ export default function TalkToMe() {
       }
 
       if (data.message) {
-        setMessages([{ role: "assistant", content: data.message, showNumberPicker: data.showNumberPicker, showContinuationPicker: data.showContinuationPicker }])
+        const historyMsgs: Message[] = []
+        if (data.showContinuationPicker && Array.isArray(data.previousTurns) && data.previousTurns.length > 0) {
+          historyMsgs.push({ role: "assistant", content: "", isHistoryDivider: true })
+          for (const t of data.previousTurns) {
+            historyMsgs.push({ role: t.role as "user" | "assistant", content: t.content, isHistory: true })
+          }
+        }
+        setMessages([
+          ...historyMsgs,
+          { role: "assistant", content: data.message, showNumberPicker: data.showNumberPicker, showContinuationPicker: data.showContinuationPicker },
+        ])
       }
 
       // Ny bruger uden samtykke → vis banner
