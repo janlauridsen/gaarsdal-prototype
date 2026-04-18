@@ -22,6 +22,7 @@ const CONV_ID_KEY = "ttm_conversation_id"
 
 const C = {
   bg: "#1a1610",
+  bgOuter: "#120f0a",
   bgSurface: "#201c15",
   bgBubbleJan: "#252018",
   bgBubbleUser: "#3d3020",
@@ -40,7 +41,8 @@ const C = {
 
 function Landing({ onStart }: { onStart: () => void }) {
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", textAlign: "center" }}>
+    <div style={{ minHeight: "100vh", background: C.bgOuter, display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ width: "100%", maxWidth: 540, background: C.bg, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 32px", textAlign: "center" }}>
       <div style={{ marginBottom: 16, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: C.textDim }}>
         Gaarsdal · Talk To Me
       </div>
@@ -76,6 +78,7 @@ function Landing({ onStart }: { onStart: () => void }) {
       <div style={{ marginTop: 40, fontSize: 11, color: C.textDim, letterSpacing: "0.06em" }}>
         Jan Gaarsdal · Hypnoterapeut · Birkerød
       </div>
+    </div>
     </div>
   )
 }
@@ -194,7 +197,8 @@ function Chat({
   }
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: C.bg }}>
+    <div style={{ minHeight: "100vh", background: C.bgOuter, display: "flex", alignItems: "flex-start", justifyContent: "center" }}>
+    <div style={{ width: "100%", maxWidth: 680, minHeight: "100vh", display: "flex", flexDirection: "column", background: C.bg }}>
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderBottom: `1px solid ${C.border}`, background: C.bg, flexShrink: 0 }}>
@@ -291,6 +295,7 @@ function Chat({
         }
       `}</style>
     </div>
+    </div>
   )
 }
 
@@ -305,7 +310,11 @@ export default function TalkToMe() {
 
   // ── Init: hent åbningsbesked fra API ──────────────────────────────────────
 
+  const initCalledRef = useRef(false)
+
   const initChat = useCallback(async () => {
+    if (initCalledRef.current) return
+    initCalledRef.current = true
     setScreen("chat")
     setLoading(true)
 
