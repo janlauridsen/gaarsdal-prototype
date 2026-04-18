@@ -134,8 +134,9 @@ export default function ConsentBanner({
     <div style={styles.banner}>
       <p style={styles.title}>Inden vi begynder</p>
       <p style={styles.body}>
-        Må jeg gemme vores samtaler? Det giver mulighed for at fortsætte næste
-        gang og huske hvad vi har talt om.
+        Vores samtaler kan indeholde følsomme, personlige oplysninger om dit
+        helbred og velvære. Må jeg gemme dem? Det giver mulighed for at
+        fortsætte næste gang og huske hvad vi har talt om.
       </p>
       <div style={styles.chipRow}>
         <button
@@ -161,7 +162,9 @@ export default function ConsentBanner({
         </button>
       </div>
       <p style={styles.fine}>
-        Dine samtaler bruges ikke til træning og deles ikke med andre.
+        Ved at vælge gemme giver du udtrykkeligt samtykke til behandling af
+        sundhedsrelaterede oplysninger (GDPR art.&nbsp;9). Data bruges ikke til
+        træning og deles ikke med andre.
       </p>
     </div>
   )
