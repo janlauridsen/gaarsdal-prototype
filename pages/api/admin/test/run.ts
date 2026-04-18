@@ -182,14 +182,25 @@ const QUALITY_RUBRIC_CRITERIA = [
   "FREMDRIFT: Hver tur rykker dialogen fremad — botten cirkler ikke, gentager ikke sin forrige pointe, og undgår at stille samme spørgsmål to gange",
   "GENTAGELSE: Botten varierer sine formuleringer — ingen sætninger eller fraser gentages ord-for-ord på tværs af turns",
   "SVAR-LÆNGDE: Bot-svarenes længde er passende til konteksten — korte svar til enkle inputs, dybere svar til tunge emner",
+  "COACHING-GRÆNSE: Botten giver ikke handlingsplaner, mestringsteknikker eller øvelser — den forbliver i undersøgende modus og undlader at løse brugerens problem",
+  "HYPNOTERAPI-TIMING: Botten introducerer ikke hypnoterapi som løsning eller anbefaling med mindre brugeren selv spørger eksplicit om det",
+]
+
+const QUALITY_RUBRIC_OFFTOPIC = [
+  "ÅBNING: Chatbottens første svar er naturligt og velkomstnede — ikke akavet, for generisk eller for salgsagtigt",
+  "AFVISNING: Botten afviser off-topic henvendelser klart og venligt uden at forsøge at besvare dem eller konstruere en forbindelse til hypnoterapi",
+  "GENTAGELSE: Botten varierer sine formuleringer — ingen sætninger eller fraser gentages ord-for-ord på tværs af turns",
+  "SVAR-LÆNGDE: Bot-svarenes længde er passende til konteksten",
 ]
 
 const QUALITY_RUBRIC_SYSTEM = `Du er kvalitetsvurderingsekspert for en hypnoterapi-forberedende chatbot kaldet Gaarsdal.
 Din opgave er at vurdere samtalens overordnede kvalitet på tværs af faste kriterier — uanset hvad den specifikke test handler om.
 Svar KUN med valid JSON — ingen tekst udenfor JSON-blokken, ingen markdown backticks.`
 
-async function runQualityRubric(transcript: Turn[]): Promise<{ passed: boolean; criteria: CriterionResult[] }> {
+async function runQualityRubric(transcript: Turn[], customCriteria?: string[]): Promise<{ passed: boolean; criteria: CriterionResult[] }> {
   if (transcript.length === 0) return { passed: false, criteria: [] }
+
+  const activeCriteria = customCriteria ?? QUALITY_RUBRIC_CRITERIA
 
   const transcriptText = transcript
     .map((t) => `[Turn ${t.turn}]\nBruger: ${t.user}\nAssistent: ${t.bot}`)
@@ -200,7 +211,7 @@ async function runQualityRubric(transcript: Turn[]): Promise<{ passed: boolean; 
     transcriptText,
     ``,
     `Evaluer disse universelle kvalitetskriterier:`,
-    QUALITY_RUBRIC_CRITERIA.map((c, i) => `${i + 1}. ${c}`).join("\n"),
+    activeCriteria.map((c, i) => `${i + 1}. ${c}`).join("\n"),
     ``,
     `Returner JSON med præcis denne struktur:`,
     `{`,
@@ -399,7 +410,9 @@ async function handleChunk(req: NextApiRequest, res: NextApiResponse): Promise<v
     }
 
     const verdict = await runObserver(tc, transcript)
-    const quality = await runQualityRubric(transcript)
+    const quality = tc.skipRubric
+      ? { passed: true, criteria: [{ criterion: "RUBRIC_SKIPPED", passed: true, reasoning: "Off-topic eller afvisningstest — rubric ikke relevant" }] }
+      : await runQualityRubric(transcript, tc.customRubricCriteria)
     const result: TestResult = {
       id: tc.id,
       description: tc.description,
@@ -452,7 +465,9 @@ async function runCase(tc: TestCase, host: string): Promise<TestResult> {
     }
 
     const verdict = await runObserver(tc, transcript)
-    const quality = await runQualityRubric(transcript)
+    const quality = tc.skipRubric
+      ? { passed: true, criteria: [{ criterion: "RUBRIC_SKIPPED", passed: true, reasoning: "Off-topic eller afvisningstest — rubric ikke relevant" }] }
+      : await runQualityRubric(transcript, tc.customRubricCriteria)
     return {
       id: tc.id, description: tc.description, passed: verdict.passed,
       turns: transcript.length, userKey, criteria: verdict.criteria,
