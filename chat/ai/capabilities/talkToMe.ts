@@ -162,7 +162,16 @@ Krise: Hvis brugeren signalerer selvskade eller suicidale tanker — returnér a
 Svar på dansk. Ingen markdown. Ingen lister. Løbende tekst. Sjældent mere end 3 sætninger + ét spørgsmål.
 
 Returnér KUN JSON: { "assistant_message": "...", "crisis_detected": false, "topic": "..." }
-topic: det primære emne brugeren taler om (1-4 ord, dansk). Tom streng hvis ikke klart.`
+topic: det primære emne brugeren taler om (1-4 ord, dansk). Tom streng hvis ikke klart.
+
+## Sproglige mønstre der er forbudt
+
+Begynd ALDRIG et svar med "Det lyder som..." — det er overbrugt og distanceret.
+Brug i stedet direkte observation: "Du siger X." / "Der er to ting her." / "X og Y trækker i dig."
+Aldrig: "Det er helt okay ikke at have svarene." — det er en lukning.
+Aldrig: "Hvad tror du kunne hjælpe dig med at..." — det er løsningssøgende.
+Aldrig variere det samme spørgsmålsformat ("Hvordan påvirker det...") mere end én gang i træk.
+Varier åbningen af hvert svar — ingen to svar i træk må begynde med samme ord.`
 
 // ─── LLM call ──────────────────────────────────────────────────────────────
 
@@ -281,7 +290,25 @@ async function runTalkToMe(
     }
   }
 
-  // ── Ritual stage: q2 + userText (top-of-mind → LLM starter samtalen) ─────
+  // ── Returning user init: stage=open, ingen userText → simpel kontinuitet ───
+  if (!userText) {
+    const lastTopic = readLastTopic(context)
+    const continuityMsg = lastTopic
+      ? `Velkommen tilbage. Vi talte sidst om ${lastTopic}. Hvad er der på hjerte i dag?`
+      : "Velkommen tilbage. Hvad er der på hjerte i dag?"
+    return {
+      transition: {
+        type: "NODE_HOP",
+        from: context.state.active_node,
+        to: context.state.active_node,
+        reason: "ttm:returning-init",
+        response_message: continuityMsg,
+        meta_delta: {},
+      },
+      debug: { capability: "talk-to-me-v1", used_fallback: false },
+    }
+  }
+
   // ── Åben samtale ──────────────────────────────────────────────────────────
   const score = readScore(context)
   const { assistant_message, crisis_detected, topic } = await callLlm(userText, transcript, score, llm)
