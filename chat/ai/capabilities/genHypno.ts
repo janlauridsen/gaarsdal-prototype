@@ -170,7 +170,11 @@ function buildMetaDelta(params: {
   const prevAssistantCount = countAssistantTurns(previousTranscript)
   const nextAssistantCount = params.assistantMessage ? prevAssistantCount + 1 : prevAssistantCount
 
-  const dialogStage = params.mode === "closing" ? "close" : params.mode === "reflection" ? "explore_patterns" : "open"
+  const dialogStage =
+    params.mode === "closing" ? "close"
+    : prevAssistantCount <= 1 ? "open"
+    : prevAssistantCount <= 3 ? "deepening"
+    : "closing"
   // Topic-tags og problem-titel/-summary: brug LLM-analysens data direkte
   const derivedTopicTags = params.topic ? [params.topic] : []
   const derivedProblemTitle = params.analysis.topic ?? params.topic
@@ -333,6 +337,7 @@ export async function runUnifiedHypnoCapability(
     previousRelationalState,
     policySignals,
     goalHypothesis: context.contextPack?.goal_hypothesis,
+    rhetoricalInstruction: context.contextPack?.rhetorical_instruction,
     crisisDetected,
   })
 
