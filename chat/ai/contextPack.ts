@@ -19,6 +19,7 @@ export type ContextPackV23 = {
   theme_id?: string
   episode_id?: string
   goal_hypothesis?: string | null
+  rhetorical_instruction?: string | null
 }
 
 function clamp(s: string, max: number): string {
