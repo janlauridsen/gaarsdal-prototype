@@ -141,6 +141,20 @@ export default async function handler(
   // ── Persist ─────────────────────────────────────────────────────────────────
   if (canPersist) {
     await writeConversationState(nextState, ttlSeconds).catch(() => {})
+
+    // Skriv til TTM-index så admin kan hente samtalen
+    try {
+      const { getRedisClient } = await import("../../chat/persistence/redis")
+      const redis = getRedisClient()
+      if (redis) {
+        const TTM_INDEX_KEY = "gaarsdal:ttm:index"
+        const convIdShort = conversationId.replace(/^ttm:/, "")
+        await redis.zadd(TTM_INDEX_KEY, { score: Date.now(), member: convIdShort })
+        await redis.expire(TTM_INDEX_KEY, ttlSeconds)
+      }
+    } catch {
+      // Non-critical
+    }
   }
 
   // ── showNumberPicker: vis talvælger når Q1 stilles ──────────────────────────
