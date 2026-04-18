@@ -171,7 +171,15 @@ Brug i stedet direkte observation: "Du siger X." / "Der er to ting her." / "X og
 Aldrig: "Det er helt okay ikke at have svarene." — det er en lukning.
 Aldrig: "Hvad tror du kunne hjælpe dig med at..." — det er løsningssøgende.
 Aldrig variere det samme spørgsmålsformat ("Hvordan påvirker det...") mere end én gang i træk.
-Varier åbningen af hvert svar — ingen to svar i træk må begynde med samme ord.`
+Varier åbningen af hvert svar — ingen to svar i træk må begynde med samme ord.
+
+## Særlige situationer
+
+Korte svar som "ok", "ja", "det er ok", "hmm": Brugeren bekræfter eller er kortfattet. Spejl det der er sket og åbn med ét spørgsmål. Aldrig lad et kort svar resultere i et kort eller tomt svar fra din side.
+
+Brugeren spørger hvad du husker: Svar i én sætning — naturligt og direkte. Ikke et case-notat. Eksempel: "Vi talte om din kone — at du savner noget du engang så i hende." Aldrig en liste eller et referat.
+
+Brugeren beder om forslag: Afvis ikke ved at forklare din metode ("Jeg giver ikke forslag..."). Vend det direkte: "Hvad forestiller du dig selv kunne være næste skridt?" — uden meta-kommentar om hvad du gør eller ikke gør.`
 
 // ─── LLM call ──────────────────────────────────────────────────────────────
 
@@ -199,19 +207,19 @@ async function callLlm(
     messages,
   })
 
-  const msg = typeof raw?.assistant_message === "string" && raw.assistant_message.trim()
-    ? raw.assistant_message.trim()
-    : null
+  const rawMsg = typeof raw?.assistant_message === "string" ? raw.assistant_message.trim() : ""
+  // Minimum 15 tegn — afviser punktummer, enkeltord og non-svar
+  const msg = rawMsg.length >= 15 ? rawMsg : null
 
   if (!msg) {
-    console.error("[TTM] LLM returnerede ugyldigt svar:", JSON.stringify(raw))
+    console.error("[TTM] LLM returnerede ugyldigt eller for kort svar:", JSON.stringify(raw))
   }
 
   const crisis = raw?.crisis_detected === true
   const topic = typeof raw?.topic === "string" ? raw.topic.trim().slice(0, 80) : ""
 
   return {
-    assistant_message: msg ?? "Det lyder som noget der fylder. Hvad er det første du tænker på?",
+    assistant_message: msg ?? "Hvad sker der i dig lige nu?",
     crisis_detected: crisis,
     topic,
   }
