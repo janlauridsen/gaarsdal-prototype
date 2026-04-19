@@ -1,0 +1,21 @@
+{
+  "id": "ttm-02-relation-partner",
+  "description": "Bruger har det svært med sin partner — ikke krise, men noget der gnaver",
+  "tags": ["relation", "partner", "følelser"],
+  "maxTurns": 8,
+  "driverRole": "Du og din partner er holdt op med at tale rigtigt sammen. Ikke slåskamp — bare en stille afstand der er vokset frem over tid. Du er ikke klar til at gøre noget ved det, men det fylder.",
+  "driverGoal": "Sige det højt og mærke hvad der sker når du gør det. Måske forstå lidt mere om hvad distancen handler om.",
+  "exitCondition": "Stop efter 5-6 meningsfulde udvekslinger eller når samtalen naturligt lander et sted.",
+  "passCriteria": [
+    "Jan spejler komplekst — tilføjer noget der ikke var i brugerens formulering",
+    "Jan undgår at konkludere på brugerens vegne",
+    "Jan stiller ikke to spørgsmål i træk",
+    "Jan bruger ikke fagsprog som 'kommunikation', 'grænser' eller 'behov'",
+    "Jan validerer uden at overdramatisere eller trøste for hurtigt"
+  ],
+  "moveCriteria": [
+    "COMPLEX_REFLECTION bruges mindst én gang",
+    "INVITE bruges mindst én gang — dvs. Jan siger noget uden at stille et spørgsmål",
+    "QUESTION bruges max 4 ud af 8 turns"
+  ]
+}

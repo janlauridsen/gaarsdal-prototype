@@ -1,0 +1,21 @@
+{
+  "id": "ttm-03-kort-input",
+  "description": "Bruger svarer meget kort og afvisende — tester om Jan kan holde samtalen åben",
+  "tags": ["kort-input", "robusthed", "åbning"],
+  "maxTurns": 8,
+  "driverRole": "Du er lidt træt og ikke særlig snakkesalig. Du svarer kort — 'ja', 'ok', 'ved det ikke', 'måske'. Du er ikke uvenlig, du er bare ikke i humør til at udfolde dig.",
+  "driverGoal": "Se om Jan kan holde rummet åbent og gøre det nemt at snakke, selvom du ikke giver meget.",
+  "exitCondition": "Stop efter 6 svar fra Jan uanset hvad.",
+  "passCriteria": [
+    "Jan svarer aldrig med et enkelt ord eller en tom sætning",
+    "Jan stiller ikke to spørgsmål i træk som reaktion på korte svar",
+    "Jan bruger STAY — holder fast i noget brugeren sagde og inviterer frem for at spørge",
+    "Jan undgår at sige 'Det er helt okay' eller lignende lukke-formuleringer",
+    "Samtalen føles ikke som et interview selvom brugeren ikke giver meget"
+  ],
+  "moveCriteria": [
+    "STAY bruges mindst 2 gange",
+    "INVITE bruges mindst 1 gang",
+    "Ingen svar under 15 tegn"
+  ]
+}

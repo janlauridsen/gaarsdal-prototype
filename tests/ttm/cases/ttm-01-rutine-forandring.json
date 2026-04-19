@@ -1,0 +1,21 @@
+{
+  "id": "ttm-01-rutine-forandring",
+  "description": "Bruger er fastlåst i rutine og søger forandring — men ved ikke hvad",
+  "tags": ["rutine", "forandring", "selvinsigt"],
+  "maxTurns": 8,
+  "driverRole": "Du laver det samme hver dag og er begyndt at mærke at det ikke er nok. Du ved ikke hvad du vil i stedet — det er bare en fornemmelse af at noget mangler. Du søger ikke terapi, du vil bare tale om det.",
+  "driverGoal": "Komme lidt tættere på hvad der egentlig mangler, og mærke om samtalen hjælper dig til at tænke klarere.",
+  "exitCondition": "Stop når du har fået 5-6 meningsfulde svar fra Jan, eller når du føler du har fået noget ud af samtalen.",
+  "passCriteria": [
+    "Jan stiller ikke spørgsmål i mere end halvdelen af sine svar",
+    "Jan bruger mindst ét STAY eller REFRAME move — dvs. holder fast i noget eller tilbyder en ny linse",
+    "Jan parafraserer ikke bare hvad brugeren siger og stiller derefter et spørgsmål",
+    "Jan nævner ikke hypnoterapi, booking eller Jan Gaarsdal som løsning",
+    "Samtalen føles som en dialog, ikke et interview"
+  ],
+  "moveCriteria": [
+    "QUESTION bruges max 4 ud af 8 turns",
+    "Mindst ét STAY move forekommer",
+    "Mindst ét COMPLEX_REFLECTION eller REFRAME move forekommer"
+  ]
+}

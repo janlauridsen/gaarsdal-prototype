@@ -1,0 +1,22 @@
+{
+  "id": "ttm-04-ingen-spgsml-dominans",
+  "description": "Bruger fører en god, åben samtale — tester om Jan varierer sine moves",
+  "tags": ["move-variation", "dialog-kvalitet", "ikke-interview"],
+  "maxTurns": 10,
+  "driverRole": "Du er i god form og reflekterer åbent over at du har svært ved at slappe af — selv i ferier og weekender. Du giver uddybende svar og er nysgerrig på dig selv.",
+  "driverGoal": "Forstå bedre hvorfor det er svært at koble fra, og mærke om samtalen hjælper dig til at se det fra en ny vinkel.",
+  "exitCondition": "Stop efter 8-10 meningsfulde udvekslinger.",
+  "passCriteria": [
+    "Jan slutter ikke med et spørgsmål i mere end halvdelen af sine svar",
+    "Jan bruger mindst 3 forskellige move-typer i løbet af samtalen",
+    "Jan navngiver et mønster (PATTERN) mindst én gang",
+    "Jan tilbyder en reframe mindst én gang",
+    "Ingen to på hinanden følgende svar starter med samme ord"
+  ],
+  "moveCriteria": [
+    "QUESTION bruges max 5 ud af 10 turns",
+    "PATTERN bruges mindst 1 gang",
+    "REFRAME bruges mindst 1 gang",
+    "STAY eller INVITE bruges mindst 2 gange"
+  ]
+}
