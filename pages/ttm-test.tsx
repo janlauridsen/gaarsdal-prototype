@@ -233,33 +233,76 @@ export default function TtmTestPage() {
     setAuthError(false)
   }
 
-  const runTest = useCallback(async (model: string, setRes: (r: RunResult) => void) => {
-    setError(null)
-    const idParam = selectedTest ? `&id=${encodeURIComponent(selectedTest)}` : ""
-    const url = `/api/admin/ttm-test?token=${encodeURIComponent(token)}&model=${encodeURIComponent(model)}${idParam}`
+  const ALL_TEST_IDS = [
+    "ttm-01-rutine-forandring",
+    "ttm-02-relation-partner",
+    "ttm-03-kort-input",
+    "ttm-04-ingen-spgsml-dominans",
+    "ttm-05-krise-redirect",
+  ]
+
+  const [progress, setProgress] = useState("")
+
+  const runOneTest = useCallback(async (model: string, id: string): Promise<TestResult | null> => {
+    const url = `/api/admin/ttm-test?token=${encodeURIComponent(token)}&model=${encodeURIComponent(model)}&id=${encodeURIComponent(id)}`
     const res = await fetch(url)
-    if (res.status === 401) { setAuthError(true); setAuthed(false); return }
+    if (res.status === 401) { setAuthError(true); setAuthed(false); return null }
     if (!res.ok) {
       const j = await res.json().catch(() => ({}))
       throw new Error(j.error ?? `HTTP ${res.status}`)
     }
     const data: RunResult = await res.json()
-    setRes(data)
-  }, [token, selectedTest])
+    return data.results[0] ?? null
+  }, [token])
 
   async function handleRun() {
     setLoading(true)
     setResult(null)
     setCompareResult(null)
+    setError(null)
+    setProgress("")
+
+    const ids = selectedTest ? [selectedTest] : ALL_TEST_IDS
+
     try {
-      await runTest(selectedModel, setResult)
+      // Kør primær model
+      const primaryResults: TestResult[] = []
+      for (const id of ids) {
+        setProgress(`Kører ${id} (${selectedModel})…`)
+        const r = await runOneTest(selectedModel, id)
+        if (r) primaryResults.push(r)
+      }
+      const primaryPassed = primaryResults.filter(r => r.passed).length
+      setResult({
+        total: primaryResults.length,
+        passed: primaryPassed,
+        failed: primaryResults.length - primaryPassed,
+        model: selectedModel,
+        results: primaryResults,
+      })
+
+      // Kør sammenligningsmodel hvis valgt
       if (compareModel && compareModel !== selectedModel) {
-        await runTest(compareModel, setCompareResult)
+        const compareResults: TestResult[] = []
+        for (const id of ids) {
+          setProgress(`Kører ${id} (${compareModel})…`)
+          const r = await runOneTest(compareModel, id)
+          if (r) compareResults.push(r)
+        }
+        const comparePassed = compareResults.filter(r => r.passed).length
+        setCompareResult({
+          total: compareResults.length,
+          passed: comparePassed,
+          failed: compareResults.length - comparePassed,
+          model: compareModel,
+          results: compareResults,
+        })
       }
     } catch (e: any) {
       setError(e.message ?? "Ukendt fejl")
     } finally {
       setLoading(false)
+      setProgress("")
     }
   }
 
@@ -354,7 +397,7 @@ export default function TtmTestPage() {
 
           {loading && (
             <div style={{ marginTop: 16, fontSize: 13, color: S.muted }}>
-              Kører samtaler og evaluerer… dette tager typisk 30-60 sekunder per test.
+              {progress || "Starter…"} — typisk 15-30 sek. per test.
             </div>
           )}
         </div>
