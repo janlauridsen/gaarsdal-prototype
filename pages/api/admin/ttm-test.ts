@@ -119,21 +119,21 @@ async function ttmPost(
   userKey: string,
   conversationId: string,
   userText: string,
-  modelOverride?: string
+  modelOverride?: string,
+  retentionDays?: number
 ): Promise<{ botMessage: string; move?: string; conversationId: string }> {
-  // Sæt model via header hvis override
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Cookie: `gaarsdal_uid=${userKey}`,
   }
-  if (modelOverride) {
-    headers["x-ttm-model-override"] = modelOverride
-  }
+
+  const body: Record<string, unknown> = { userText, conversationId }
+  if (typeof retentionDays === "number") body.retentionDays = retentionDays
 
   const res = await fetch(`https://${host}/api/talk-to-me-chat`, {
     method: "POST",
     headers,
-    body: JSON.stringify({ userText, conversationId }),
+    body: JSON.stringify(body),
   })
   if (!res.ok) throw new Error(`TTM API fejl: ${res.status}`)
   const data = await res.json()
@@ -221,8 +221,15 @@ async function runOneTest(
   const transcript: Turn[] = []
   const moveDistribution: Record<string, number> = {}
 
+  // Begræns turns for store modeller der er langsomme (undgå 60s Vercel timeout)
+  const isLargeModel = modelOverride === "gpt-4o" || modelOverride === "gpt-4.1"
+  const effectiveMaxTurns = isLargeModel ? Math.min(tc.maxTurns, 4) : tc.maxTurns
+
   try {
-    // Init — hent Q1 fra Jan (tom besked starter ritualet)
+    // Init — sæt samtykke (retentionDays: 90) så state persisteres i Redis
+    await ttmPost(host, userKey, conversationId, "", modelOverride, 90)
+
+    // Hent Q1
     const init = await ttmPost(host, userKey, conversationId, "", modelOverride)
     const actualConvId = init.conversationId
 
@@ -234,7 +241,7 @@ async function runOneTest(
     }
 
     // Kør samtalen
-    for (let i = 0; i < tc.maxTurns; i++) {
+    for (let i = 0; i < effectiveMaxTurns; i++) {
       const userMsg = await driverNextMessage(tc, transcript)
       if (!userMsg) break
 
