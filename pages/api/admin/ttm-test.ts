@@ -148,6 +148,12 @@ async function ttmPost(
 
 const OBSERVER_SYSTEM = `Du er testobservatør for TTM — Talk To Me, en samtaleassistent.
 Din opgave er at evaluere om Jan (assistenten) lever op til kriterierne.
+
+Vigtige fortolkningsregler:
+- "Max X%" betyder at X% er et LOFT, ikke et mål. 0% spørgsmål er BEDRE end 50% og skal evalueres som bestået.
+- "Mindst ét X move" er bestået hvis X forekommer én eller flere gange.
+- Evaluer kvaliteten af Jan's svar, ikke kun tællebare mønstre.
+
 Svar KUN med valid JSON — ingen tekst udenfor JSON.`
 
 async function runObserver(
