@@ -231,7 +231,16 @@ Faktuel fejl: Korriger kort og direkte. Ingen indpakning.
 Svar på dansk. Ingen markdown. Ingen lister. Løbende tekst.
 Max 1-3 sætninger. Slut med spørgsmål MAX halvdelen af gangene.
 
-Returnér KUN JSON: { "assistant_message": "...", "crisis_detected": false, "topic": "..." }
+Returnér KUN JSON i denne rækkefølge:
+{
+  "move": "STAY | COMPLEX_REFLECTION | PATTERN | REFRAME | INVITE | QUESTION",
+  "assistant_message": "...",
+  "crisis_detected": false,
+  "topic": "..."
+}
+
+Vælg move FØR du skriver assistant_message. Det tvinger dig til at beslutte hvad du gør inden du gør det.
+QUESTION må kun vælges hver anden tur — hvis forrige move var QUESTION, vælg noget andet.
 topic: det primære emne (1-4 ord, dansk). Tom streng hvis ikke klart.`
 
 // ─── LLM call ──────────────────────────────────────────────────────────────
@@ -241,8 +250,8 @@ async function callLlm(
   transcript: Turn[],
   score: number | null,
   llm: LlmClient
-): Promise<{ assistant_message: string; crisis_detected: boolean; topic: string }> {
-  const model = process.env.HYPNO_MODEL ?? "gpt-4o-mini"
+): Promise<{ assistant_message: string; crisis_detected: boolean; topic: string; move: string }> {
+  const model = process.env.TTM_MODEL ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini"
   const trimmed = trimTranscript(transcript)
 
   const scoreHint = score !== null ? `\n[Brugerens stemningsscore denne session: ${score}/10]` : ""
@@ -261,11 +270,14 @@ async function callLlm(
   })
 
   const rawMsg = typeof raw?.assistant_message === "string" ? raw.assistant_message.trim() : ""
+  const move = typeof raw?.move === "string" ? raw.move.trim() : "UNKNOWN"
   // Minimum 15 tegn — afviser punktummer, enkeltord og non-svar
   const msg = rawMsg.length >= 15 ? rawMsg : null
 
   if (!msg) {
     console.error("[TTM] LLM returnerede ugyldigt eller for kort svar:", JSON.stringify(raw))
+  } else {
+    console.log(`[TTM] move=${move} model=${process.env.TTM_MODEL ?? "gpt-4.1-mini"}`)
   }
 
   const crisis = raw?.crisis_detected === true
@@ -275,6 +287,7 @@ async function callLlm(
     assistant_message: msg ?? "Hvad sker der i dig lige nu?",
     crisis_detected: crisis,
     topic,
+    move,
   }
 }
 
