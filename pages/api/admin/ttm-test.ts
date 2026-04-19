@@ -302,29 +302,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const id = typeof req.query.id === "string" ? req.query.id : null
   const modelOverride = typeof req.query.model === "string" ? req.query.model : undefined
 
-  const cases = id
-    ? ALL_TTM_TEST_CASES.filter((tc) => tc.id === id)
-    : ALL_TTM_TEST_CASES
+  // Backend kører altid kun ÉN test pr. kald for at undgå Vercel 60s timeout.
+  // Frontend kalder API'et én gang pr. test og samler resultaterne progressivt.
+  const tc = id
+    ? ALL_TTM_TEST_CASES.find((tc) => tc.id === id)
+    : ALL_TTM_TEST_CASES[0]
 
-  if (cases.length === 0) {
+  if (!tc) {
     res.status(404).json({ error: `Test ikke fundet: ${id}` })
     return
   }
 
   try {
-    const results: TtmTestResult[] = []
-    for (const tc of cases) {
-      const result = await runOneTest(tc, host, modelOverride)
-      results.push(result)
-    }
-
-    const passed = results.filter((r) => r.passed).length
+    const result = await runOneTest(tc, host, modelOverride)
     res.status(200).json({
-      total: results.length,
-      passed,
-      failed: results.length - passed,
+      total: 1,
+      passed: result.passed ? 1 : 0,
+      failed: result.passed ? 0 : 1,
       model: modelOverride ?? process.env.TTM_MODEL ?? "gpt-4.1-mini",
-      results,
+      results: [result],
     })
   } catch (err) {
     res.status(500).json({ error: String(err) })
