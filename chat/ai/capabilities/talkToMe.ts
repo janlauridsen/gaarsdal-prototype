@@ -431,7 +431,7 @@ async function runTalkToMe(
 
   // ── Åben samtale ──────────────────────────────────────────────────────────
   const score = readScore(context)
-  const { assistant_message, crisis_detected, topic } = await callLlm(userText, transcript, score, llm)
+  const { assistant_message, crisis_detected, topic, move } = await callLlm(userText, transcript, score, llm)
 
   if (crisis_detected) {
     return {
@@ -464,10 +464,11 @@ async function runTalkToMe(
         "ttm.transcript": { value: updatedTranscript, source_node: "TALK_TO_ME" },
         "ttm.turn_count": { value: newTurnCount, source_node: "TALK_TO_ME" },
         "ttm.last_turn_at": { value: Date.now(), source_node: "TALK_TO_ME" },
+        "ttm.last_move": { value: move, source_node: "TALK_TO_ME" },
         ...(topic ? { "ttm.last_topic": { value: topic, source_node: "TALK_TO_ME" } } : {}),
       },
     },
-    debug: { capability: "talk-to-me-v1", used_fallback: false },
+    debug: { capability: "talk-to-me-v1", used_fallback: false, ...(move ? { move } : {}) } as any,
   }
 }
 
