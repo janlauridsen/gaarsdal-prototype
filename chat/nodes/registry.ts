@@ -61,6 +61,7 @@ export const nodeRegistry: Record<string, Node> = {
       "focused_reflection.transcript",
       "wot.arousal_score",
       "wot.arousal_level",
+      "gen_hypno.model",
     ],
   },
 
