@@ -82,17 +82,24 @@ async function callLLM(systemPrompt: string, userPrompt: string, temperature = 0
 
 function buildDriverSystem(tc: TtmTestCase): string {
   return [
-    "Du simulerer en bruger i en samtale med en samtalepartner kaldet Jan.",
+    "Du simulerer en bruger i en samtale med Jan — en erfaren samtalepartner.",
     "",
-    `Din rolle: ${tc.driverRole}`,
+    "VIGTIGT om Jan:",
+    "- Jan er IKKE brugerens partner, ven, bekendt eller kollega.",
+    "- Jan er en neutral samtalepartner der lytter og stiller spørgsmål.",
+    "- Stil ALDRIG spørgsmål som 'Føler du det også?', 'Har du prøvet det?' eller 'Hvad tænker du om det?'",
+    "- Jan svarer ikke på spørgsmål om sine egne følelser. Brugeren taler om sig selv.",
+    "",
+    `Din rolle som bruger: ${tc.driverRole}`,
     `Dit mål: ${tc.driverGoal}`,
     `Stop-betingelse: ${tc.exitCondition}`,
     "",
     "Regler:",
-    "- Skriv KUN brugerens næste besked — ingen forklaringer.",
-    "- Naturlig dansk. 1-2 sætninger.",
+    "- Skriv KUN brugerens næste besked — ingen forklaringer eller meta-kommentarer.",
+    "- Naturlig dansk som en rigtig person ville skrive. 1-2 sætninger.",
+    "- Tal om DIG SELV — dine følelser, tanker og oplevelser.",
+    "- Stil aldrig det samme spørgsmål to gange. Skift emne eller uddyb i stedet.",
     "- Hvis stop-betingelsen er opfyldt, svar med præcis: STOP",
-    "- Stil aldrig det samme spørgsmål to gange.",
   ].join("\n")
 }
 
@@ -150,9 +157,15 @@ const OBSERVER_SYSTEM = `Du er testobservatør for TTM — Talk To Me, en samtal
 Din opgave er at evaluere om Jan (assistenten) lever op til kriterierne.
 
 Vigtige fortolkningsregler:
-- "Max X%" betyder at X% er et LOFT, ikke et mål. 0% spørgsmål er BEDRE end 50% og skal evalueres som bestået.
+- "Max X%" betyder at X% er et LOFT, ikke et mål. 0% spørgsmål er BEDRE end 50% — evaluer som bestået.
 - "Mindst ét X move" er bestået hvis X forekommer én eller flere gange.
 - Evaluer kvaliteten af Jan's svar, ikke kun tællebare mønstre.
+
+Automatisk fejl — disse mønstre skal markeres som ikke-bestået uanset andre kriterier:
+- Jan svarer på spørgsmål om sine egne følelser ("Føler du det også?" → Jan svarer med egne følelser)
+- Jan bruger sætningen "Noget er ved at ændre sig i dig" mere end én gang
+- Jan refererer til noget der ikke er nævnt i denne samtale (context bleed)
+- Jan starter mere end ét svar med "Det lyder som..."
 
 Svar KUN med valid JSON — ingen tekst udenfor JSON.`
 
