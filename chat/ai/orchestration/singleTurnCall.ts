@@ -287,15 +287,21 @@ Eksempler → "contact_booking" (eksplicit handling, evt. i kontekst af sessions
 
 Eksempler → "none" (spørgsmål, nysgerrighed, afklaring — IKKE en anmodning om kontakt):
 - "kan jeg kontakte Jan her?" (spørgsmål om mulighed, ikke en kontaktanmodning)
-- "hvad koster det?"
+- "hvad koster det?" → ALTID "none" — et prisspørgsmål er ikke en bookinghandling
+- "hvad koster en session?" → ALTID "none"
+- "hvor meget koster det?" → ALTID "none"
+- "hvor mange sessioner skal man forvente?" → ALTID "none"
+- "hvor mange gange skal man komme?" → ALTID "none"
 - "hvad sker der under hypnose?"
 - "jeg overvejer det"
 - "hvordan kontakter man jer?"
 - "hvor er klinikken?"
 - "har I ledige tider?"
 - "det er en god idé" når assistenten IKKE har tilbudt en session i forrige svar
+- Ethvert informationsspørgsmål om pris, varighed, antal sessioner eller metode → ALTID "none" uanset kontekst
 
-Tommelfingerregel: Var assistentens forrige spørgsmål et konkret tilbud om session? Og siger brugeren ja? → "contact_booking". Ellers → "none".`)
+Tommelfingerregel: Var assistentens forrige spørgsmål et konkret tilbud om session? Og siger brugeren ja? → "contact_booking". Ellers → "none".
+Særlig regel: Spørgsmål om pris, antal sessioner eller metode er ALDRIG "contact_booking" — selv hvis brugeren netop har bookingintention eller befinder sig i closing-kontekst.`)
 
   // RETORISK DIREKTIV — fra anticipation-system, baseret på forudsagt næste turn
   if (params.rhetoricalInstruction) {
