@@ -104,6 +104,14 @@
     <label class="retention-toggle" title="Gem test-sessioner i Redis i 7 dage så de kan inspiceres">
       <input type="checkbox" id="retain-data"> Gem i Redis (7 dage)
       &nbsp;&nbsp;
+      Model:
+      <select id="modelOverride" style="background:#1a1a1a;color:#ccc;border:1px solid #333;border-radius:3px;padding:2px 6px;font-size:12px;margin-right:10px">
+        <option value="" selected>ENV (standard)</option>
+        <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+        <option value="gpt-4o-mini">gpt-4o-mini</option>
+        <option value="gpt-4.1">gpt-4.1</option>
+        <option value="gpt-4o">gpt-4o</option>
+      </select>
       Look-ahead delay:
       <select id="turnDelay" style="background:#1a1a1a;color:#ccc;border:1px solid #333;border-radius:3px;padding:2px 6px;font-size:12px">
         <option value="0" selected>0 sek (standard)</option>
@@ -260,6 +268,7 @@ async function runCase(id,token,host,retain){
 
   while(true){
     const turnDelay = document.getElementById('turnDelay')?.value || '0'
+    const modelOverride = document.getElementById('modelOverride')?.value || ''
     const params = new URLSearchParams({
       token, id,
       chunk: '1',
@@ -269,6 +278,7 @@ async function runCase(id,token,host,retain){
       retain: '7', // chunk-mode kræver Redis til state
       turnDelay,
     })
+    if(modelOverride) params.set('model', modelOverride)
     if(userKey) params.set('userKey', userKey)
 
     const url = `https://${host}/api/admin/test/run?${params.toString()}`
@@ -292,6 +302,7 @@ function renderDetail(id,result){
   const detail=document.getElementById(`detail-${id}`)
   if(!result)return
   let html=''
+  if(result.model) html+=`<div style="font-size:11px;color:#888;margin-bottom:8px;font-family:'IBM Plex Mono',monospace">model: ${result.model}</div>`
   if(result.error)html+=`<div class="error-msg">Fejl: ${result.error}</div>`
   if(result.criteria?.length){
     result.criteria.forEach(c=>{
