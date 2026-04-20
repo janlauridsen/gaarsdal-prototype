@@ -212,6 +212,7 @@ function buildMetaDelta(params: {
   if (derivedTopicTags.length) meta["gen_hypno.topic_tags"] = derivedTopicTags
   if (typeof params.arousalScore === "number") meta["wot.arousal_score"] = params.arousalScore
   if (params.arousalLevel) meta["wot.arousal_level"] = params.arousalLevel
+  meta["gen_hypno.model"] = process.env.HYPNO_MODEL ?? "gpt-4.1-mini"
 
   return meta
 }

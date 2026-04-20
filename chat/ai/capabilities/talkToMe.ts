@@ -456,6 +456,7 @@ async function runTalkToMe(
         "ttm.turn_count": { value: newTurnCount, source_node: "TALK_TO_ME" },
         "ttm.last_turn_at": { value: Date.now(), source_node: "TALK_TO_ME" },
         "ttm.last_move": { value: move, source_node: "TALK_TO_ME" },
+        "ttm.model": { value: process.env.TTM_MODEL ?? "gpt-4.1-mini", source_node: "TALK_TO_ME" },
         ...(topic ? { "ttm.last_topic": { value: topic, source_node: "TALK_TO_ME" } } : {}),
       },
     },
