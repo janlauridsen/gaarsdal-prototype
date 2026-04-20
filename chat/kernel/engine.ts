@@ -147,6 +147,8 @@ function buildTransition(
       const returnResetDelta = isReturnToHypno ? {
         "dialog.stage": "open",
         "dialog.relational_state": "building_clarity",
+        "dialog.mode": "info",
+        "dialog.move": "direct_answer",
       } : null
 
       const combinedDelta = returnResetDelta
