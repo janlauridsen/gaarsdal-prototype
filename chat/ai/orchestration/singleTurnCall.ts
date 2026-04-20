@@ -451,6 +451,7 @@ export async function singleTurnCall(params: {
   goalHypothesis?: string | null
   crisisDetected?: boolean
   rhetoricalInstruction?: string | null
+  modelOverride?: string
 }): Promise<SingleTurnOutput | null> {
   // Krise-override: returner hardcoded svar uden LLM-kald.
   // crisis_detected sættes i chat.ts og persisteres i meta på tværs af turns.
@@ -505,7 +506,7 @@ export async function singleTurnCall(params: {
   let raw: Record<string, unknown> | null = null
   try {
     raw = await params.llm.chatJson({
-      model: process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
+      model: params.modelOverride ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
       temperature,
       response_format: { type: "json_object" },
       messages: [
