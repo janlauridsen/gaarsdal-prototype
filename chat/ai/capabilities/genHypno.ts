@@ -466,6 +466,7 @@ export async function runUnifiedHypnoCapability(
           arousalScore: arousal.score,
           arousalLevel: arousal.level,
         }),
+        "gen_hypno.model": context.modelOverride ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
         ...ctaMeta,
       },
     },
