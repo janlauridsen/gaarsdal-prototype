@@ -20,6 +20,7 @@ export type NodeRunParams = {
   state: ConversationState
   input: InputSignal
   userKey: string
+  modelOverride?: string
 }
 
 
@@ -231,6 +232,7 @@ export async function runNode(params: NodeRunParams): Promise<KernelResult> {
     const capabilityResult = await runCapability(capabilityId, {
       state,
       userText: input.text,
+      modelOverride: params.modelOverride,
       contextPack: {
         system: contextPack.system,
         user_profile: buildUserProfilePromptContext(profile),
