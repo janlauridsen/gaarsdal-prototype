@@ -138,12 +138,27 @@ function buildTransition(
         }
       }
 
+      // Reset closing-kontekst når bruger navigerer tilbage til GEN_HYPNO.
+      // Forhindrer at dialog.stage="closing" + dialog.relational_state="decision_support"
+      // fra et foregående HANDOFF_FORM-besøg dominerer LLM routing i næste turn.
+      const isReturnToHypno = input.target === "GEN_HYPNO" &&
+        (state.active_node === "HANDOFF_FORM" || state.active_node === "CLIENT_SUPPORT")
+
+      const returnResetDelta = isReturnToHypno ? {
+        "dialog.stage": "open",
+        "dialog.relational_state": "building_clarity",
+      } : null
+
+      const combinedDelta = returnResetDelta
+        ? { ...(uxMetaDelta ?? {}), ...returnResetDelta }
+        : uxMetaDelta
+
       return {
         type: "NODE_HOP",
         from: state.active_node,
         to: input.target,
         reason: "explicit transition",
-        ...(uxMetaDelta ? { meta_delta: uxMetaDelta } : {}),
+        ...(combinedDelta ? { meta_delta: combinedDelta } : {}),
       }
 
     case "UI_ACTION": {
