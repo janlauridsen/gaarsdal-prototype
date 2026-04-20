@@ -212,7 +212,7 @@ function buildMetaDelta(params: {
   if (derivedTopicTags.length) meta["gen_hypno.topic_tags"] = derivedTopicTags
   if (typeof params.arousalScore === "number") meta["wot.arousal_score"] = params.arousalScore
   if (params.arousalLevel) meta["wot.arousal_level"] = params.arousalLevel
-  meta["gen_hypno.model"] = process.env.HYPNO_MODEL ?? "gpt-4.1-mini"
+  // model logges fra capability niveau, ikke her
 
   return meta
 }
@@ -338,6 +338,7 @@ export async function runUnifiedHypnoCapability(
     previousRelationalState,
     policySignals,
     goalHypothesis: context.contextPack?.goal_hypothesis,
+    modelOverride: context.modelOverride,
     rhetoricalInstruction: context.contextPack?.rhetorical_instruction,
     crisisDetected,
   })
@@ -363,7 +364,7 @@ export async function runUnifiedHypnoCapability(
     if (hasLtmContext) {
       try {
         const raw = await llm.chatJson({
-          model: process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
+          model: context.modelOverride ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
           temperature: 0.3,
           response_format: { type: "json_object" },
           messages: [

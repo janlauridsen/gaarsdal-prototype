@@ -87,7 +87,7 @@ async function runPrequalify(
 
   try {
     const raw = await llm.chatJson({
-      model: process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
+      model: context.modelOverride ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
       temperature: 0.3,
       response_format: { type: "json_object" },
       messages,
