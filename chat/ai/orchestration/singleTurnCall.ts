@@ -301,7 +301,18 @@ Eksempler → "none" (spørgsmål, nysgerrighed, afklaring — IKKE en anmodning
 - Ethvert informationsspørgsmål om pris, varighed, antal sessioner eller metode → ALTID "none" uanset kontekst
 
 Tommelfingerregel: Var assistentens forrige spørgsmål et konkret tilbud om session? Og siger brugeren ja? → "contact_booking". Ellers → "none".
-Særlig regel: Spørgsmål om pris, antal sessioner eller metode er ALDRIG "contact_booking" — selv hvis brugeren netop har bookingintention eller befinder sig i closing-kontekst.`)
+Særlig regel: Spørgsmål om pris, antal sessioner, metode, oplevelse eller procedure er ALDRIG "contact_booking" — selv hvis brugeren netop har bookingintention eller befinder sig i closing-kontekst.
+
+HUSK: "contact_booking" kræver at brugeren AKTIVT tager et skridt mod kontakt — ikke blot at de er nysgerrige eller stiller opklarende spørgsmål inden de beslutter sig.
+
+Eksempler der er ALTID "none" uanset kontekst:
+- "gør det ondt?" / "gør hypnose ondt?"
+- "hvad sker der under en session?"
+- "er jeg bevidst under hypnose?"
+- "hvor lang tid tager en session?"
+- "hvornår mærker man effekten?"
+- "virker det på mig?"
+- Alle spørgsmål om selve metoden, oplevelsen eller forløbet`)
 
   // RETORISK DIREKTIV — fra anticipation-system, baseret på forudsagt næste turn
   if (params.rhetoricalInstruction) {
