@@ -90,7 +90,7 @@ export const nodeRegistry: Record<string, Node> = {
     allow_free_text: true,
     allow_parentese: false,
     allowed_exits: ["GEN_HYPNO", "LEAD_CAPTURE"],
-    meta_domains_written: ["ux"],
+    meta_domains_written: ["ux", "dialog.stage", "dialog.relational_state"],
   },
 
   HANDOFF_NOTIFY: {
