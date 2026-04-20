@@ -217,6 +217,24 @@ function buildMetaDelta(params: {
   return meta
 }
 
+// ─── Deterministisk info-spørgsmål detektion ──────────────────────────────
+// Bruges til at override LLM routing for kendte false-positive mønstre.
+// Prispørgsmål, sessionsspørgsmål og metodespørgsmål er altid "none".
+function isDefinitelyInfoQuery(text: string): boolean {
+  const t = text.toLowerCase().trim()
+  const patterns = [
+    "hvad koster", "koster det", "koster en session", "pris", "prisen",
+    "gør det ondt", "gør hypnose ondt", "gøre ondt",
+    "hvor mange gang", "hvor mange session", "antal session",
+    "hvad sker der", "hvad foregår der", "hvad sker under",
+    "er jeg bevidst", "er man bevidst",
+    "virker det", "hvor lang tid", "hvornår mærker",
+    "hvad indebærer", "hvad går det ud på",
+    "kan jeg kontakte", "hvordan kontakter",
+  ]
+  return patterns.some(p => t.includes(p))
+}
+
 // --- Main capability runner ---
 
 export async function runUnifiedHypnoCapability(
@@ -346,6 +364,15 @@ export async function runUnifiedHypnoCapability(
   const usedFallback = !turnOutput
   if (!turnOutput) {
     turnOutput = buildSingleTurnFallback(userText, previousTopic)
+  }
+
+  // ─── Deterministisk routing-override ──────────────────────────────────────
+  // Informationsspørgsmål om pris, metode, varighed og oplevelse skal ALDRIG
+  // route til HANDOFF_FORM — uanset hvad LLM'en konkluderer ud fra konteksten.
+  // LLM-routing er upålidelig for disse mønstre når dialog.stage er "closing"
+  // eller transcript indeholder booking-intent fra tidligere turns.
+  if (turnOutput.routing_intent === "contact_booking" && isDefinitelyInfoQuery(userText)) {
+    turnOutput = { ...turnOutput, routing_intent: "none" }
   }
 
   // Konvertér til TurnAnalysis for buildMetaDelta-kompatibilitet
