@@ -19,6 +19,7 @@ export type LlmClient = {
 export type AiCapabilityContext = {
   state: ConversationState
   userText: string
+  modelOverride?: string
   contextPack?: {
     system: string
     user_profile?: string
