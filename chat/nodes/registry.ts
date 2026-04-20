@@ -106,7 +106,7 @@ export const nodeRegistry: Record<string, Node> = {
       on_failure_to: "HANDOFF_CONFIRM",
     },
     allowed_exits: ["HANDOFF_CONFIRM"],
-    meta_domains_written: ["ux", "handoff.last"],
+    meta_domains_written: ["ux", "handoff.last", "dialog.stage", "dialog.relational_state"],
   },
 
   HANDOFF_CONFIRM: {
