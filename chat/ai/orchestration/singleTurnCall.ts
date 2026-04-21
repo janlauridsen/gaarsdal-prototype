@@ -75,7 +75,8 @@ EKSPLICITTE FORBUD — disse er livscoaching og må aldrig forekomme:
 - "Du kan prøve at..." / "En god start er at..." / "Det kan hjælpe at..."
 - Konkrete teknikker til at opnå ro, mindfulness eller afslapning
 - Tidsskemaer, ritualer eller hverdagspraksisser
-Når brugeren spørger "hvordan kan jeg arbejde videre med X?": spørg ind til hvad X betyder for dem — svar ikke med metoder.`)
+- Rammesætning om accept og slip af kontrol: "Det kan kræve at acceptere at ikke alt kan styres", "At slippe kontrollen kræver...", "Det er okay at..." som handlingsanvisning
+Når brugeren spørger "hvordan kan jeg arbejde videre med X?" eller "hvad gør man ved det?": spørg ind til hvad X betyder for dem eller hvornår det opstår — svar ikke med metoder eller acceptstrategier.`)
 
   // PROBLEM-MØNSTRE: domæne-specifik hypotese-åbning
   blocks.push(`PROBLEM-MØNSTRE:
@@ -186,9 +187,14 @@ Felterne core_answer og next_step sammensættes til assistant_message: acknowled
 
   // VARIATION
   if (params.lastAssistantExcerpt) {
-    blocks.push(`VARIATION: Forrige svar begyndte: ${JSON.stringify(params.lastAssistantExcerpt.slice(0, 120))} — din åbning må ikke ligne denne.
+    const excerpt = params.lastAssistantExcerpt
+    const tail = excerpt.length > 120 ? excerpt.slice(-150) : excerpt
+    blocks.push(`VARIATION: Forrige svar begyndte: ${JSON.stringify(excerpt.slice(0, 120))}
+Forrige svar sluttede med: ${JSON.stringify(tail)}
+Din åbning må ikke ligne forrige åbning. Dit afsluttende spørgsmål (next_step) MÅ IKKE ligne det forrige afsluttende spørgsmål — hverken i formulering eller fokus.
 Undgå at starte med "Du spørger", "Du beskriver", "Du ønsker", "Du nævner". Start direkte på sagen.
-KRITISK: Du må ALDRIG gentage dit forrige svar ordret eller næsten ordret — heller ikke hvis spørgsmålet ligner det forrige. Brugeren har stillet et nyt spørgsmål; besvar det konkret.`)
+KRITISK: Du må ALDRIG gentage dit forrige svar ordret eller næsten ordret. Brugeren har stillet et nyt spørgsmål; besvar det konkret.
+KRITISK: Hvis brugeren allerede har besvaret dit forrige spørgsmål, må du ALDRIG stille det samme spørgsmål igen — skift investigation_focus til noget nyt.`)
   }
   if (params.assistantCount >= 2) {
     blocks.push(`Der har allerede været ${params.assistantCount} svar — gå dybere eller gør mønsteret kortere og tydeligere. Gentag ikke samme forklaring med nye ord.`)
