@@ -28,11 +28,6 @@ export const nodeRegistry: Record<string, Node> = {
     allowed_exits: [
       "GEN_HYPNO",
       "HOME",
-      "BOOKING",
-      "HANDOFF_FORM",
-      "LEAD_CAPTURE",
-      "PREQUALIFY",
-      "CLIENT_SUPPORT",
       "CRISIS_INFO",
     ],
     meta_domains_written: [
@@ -44,8 +39,6 @@ export const nodeRegistry: Record<string, Node> = {
       "gen_hypno.topic_tags",
       "gen_hypno.assistant_turn_count",
       "gen_hypno.analysis",
-      "gen_hypno.cta_shown",
-      "gen_hypno.offer_declined",
       "dialog.mode",
       "dialog.move",
       "dialog.investigation_focus",
