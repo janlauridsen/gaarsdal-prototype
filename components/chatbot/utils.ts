@@ -59,22 +59,13 @@ export function derivePhase(meta: Record<string, any> | null | undefined): Phase
     : 0
   const stage = String(readValue("dialog.stage") ?? "")
   const relationalState = String(readValue("dialog.relational_state") ?? "")
-  const routingIntent = String(readValue("gen_hypno.analysis")
-    ? (readValue("gen_hypno.analysis") as any)?.routing_intent ?? ""
-    : "")
-  const ctaShown = Boolean(readValue("gen_hypno.cta_shown"))
   const objective = String(readValue("dialog.objective") ?? "")
 
-  // Fase 3-genvej: booking-intent, decision_support eller cta uanset turn count
+  // Fase 3-genvej: decision_support eller objective indikerer klar-til-næste-skridt
   if (
-    routingIntent === "contact_booking" ||
-    objective === "booking" ||
-    ctaShown ||
-    relationalState === "decision_support"
+    relationalState === "decision_support" ||
+    objective === "booking"
   ) {
-    if (routingIntent === "contact_booking" || objective === "booking" || ctaShown) {
-      return { phase: 3, label: "Klar til næste skridt?" }
-    }
     return { phase: 3, label: "Overvejer muligheder" }
   }
 

@@ -139,6 +139,28 @@ export function ChatHeader(props: ChatHeaderProps) {
 
                 <div className={styles.hamburgerDivider} />
 
+                {/* Kontakt Jan */}
+                <a
+                  className={styles.hamburgerItem}
+                  role="menuitem"
+                  href="tel:+4542807474"
+                  onClick={closeMenu}
+                >
+                  <span className={styles.hamburgerItemIcon} aria-hidden="true">📞</span>
+                  Ring til Jan
+                </a>
+                <a
+                  className={styles.hamburgerItem}
+                  role="menuitem"
+                  href={`mailto:jan@gaarsdal.net?subject=${encodeURIComponent("Henvendelse fra gaarsdal.net")}`}
+                  onClick={closeMenu}
+                >
+                  <span className={styles.hamburgerItemIcon} aria-hidden="true">✉️</span>
+                  Send en mail
+                </a>
+
+                <div className={styles.hamburgerDivider} />
+
                 {/* Om chatbotten */}
                 <button
                   className={styles.hamburgerItem}
