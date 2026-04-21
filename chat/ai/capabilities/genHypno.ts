@@ -367,6 +367,9 @@ export async function runUnifiedHypnoCapability(
   let analysis = outputToAnalysis(turnOutput, previousTopic)
 
   // ─── Hukommelse-forespørgsel ───────────────────────────────────────────────
+  // Kun aktiv når LLM siger is_history_query OG der faktisk er noget at rapportere.
+  // Uden kontekst (hverken LTM eller session) returnerer vi IKKE den ubrugelige
+  // "Vi er lige startet"-besked — vi falder igennem til normal dialog i stedet.
   if (turnOutput.is_history_query) {
     const cp = context.contextPack?.system ?? ""
     const hasLtmContext = cp.length > 200
@@ -374,52 +377,55 @@ export async function runUnifiedHypnoCapability(
     const hasSessionContext = sessionTurns >= 2
     const handoffDone = !!(context.state.meta?.["handoff.last"] as any)?.value
 
-    let assistant: string
-
-    if (hasLtmContext) {
-      try {
-        const raw = await llm.chatJson({
-          model: context.modelOverride ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
-          temperature: 0.3,
-          response_format: { type: "json_object" },
-          messages: [
-            {
-              role: "system",
-              content: "Du er den digitale assistent for Jan Lauridsen, hypnoterapeut på Gaarsdal. Brugeren spørger hvad du ved om dem ud fra tidligere samtaler.\n\nBrug KUN den kontekst der er givet nedenfor. Svar specifikt på brugerens spørgsmål. Vær konkret og ærlig — si eksplicit hvis noget IKKE er nævnt. Max 3-4 sætninger. Afslut med ét åbent spørgsmål.\n\nSvar KUN med JSON: { \"assistant_message\": \"...\" }\n\nKONTEKST:\n" + cp.slice(0, 2000),
-            },
-            { role: "user", content: userText },
-          ],
-        })
-        const msg = typeof raw?.assistant_message === "string" ? (raw.assistant_message as string).trim() : null
-        assistant = msg && msg.length > 10 ? msg : "Jeg kan se du har delt en del om dine vaner og mønstre. Er der noget bestemt du vil have mig til at uddybe?"
-      } catch {
-        assistant = "Jeg kan se du har delt en del om dine vaner og mønstre. Er der noget bestemt du vil have mig til at uddybe?"
-      }
-    } else if (hasSessionContext) {
-      const topicStr = previousTopic ? ` om ${previousTopic}` : ""
-      const handoffStr = handoffDone ? " Du har også sendt en henvendelse til Jan." : ""
-      assistant = `I denne samtale har vi talt${topicStr}.${handoffStr} Jeg husker hvad vi er kommet igennem her, men har endnu ikke adgang til evt. tidligere samtaler.\n\nEr der noget bestemt du vil vende tilbage til?`
+    // Ingen kontekst at give → ignorér is_history_query og behandl som normal tur
+    if (!hasLtmContext && !hasSessionContext) {
+      turnOutput = { ...turnOutput, is_history_query: false }
     } else {
-      assistant = "Vi er lige startet, så jeg har ikke meget at trække på endnu.\n\nEr der noget bestemt du gerne vil have mig til at holde fast i?"
-    }
+      let assistant: string
 
-    const updatedTranscript = appendTranscript(transcript, userText, assistant)
-    return {
-      transition: {
-        type: "NODE_HOP",
-        from: context.state.active_node,
-        to: context.state.active_node,
-        reason: "gen-hypno:history_query",
-        response_message: assistant,
-        meta_delta: buildMetaDelta({
-          context, assistantMessage: assistant, updatedTranscript,
-          topic: previousTopic, sourceNode: options.sourceNode,
-          transcriptKey: options.transcriptKey, userText,
-          analysis: { ...analysis, proposed_mode: "info", conversation_move: "direct_answer" },
-          mode: "info", relationalState: "building_clarity",
-        }),
-      },
-      debug: { capability: "unified-hypno-v5-single", used_fallback: false },
+      if (hasLtmContext) {
+        try {
+          const raw = await llm.chatJson({
+            model: context.modelOverride ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
+            temperature: 0.3,
+            response_format: { type: "json_object" },
+            messages: [
+              {
+                role: "system",
+                content: "Du er den digitale assistent for Jan Lauridsen, hypnoterapeut på Gaarsdal. Brugeren spørger hvad du ved om dem ud fra tidligere samtaler.\n\nBrug KUN den kontekst der er givet nedenfor. Svar specifikt på brugerens spørgsmål. Vær konkret og ærlig — si eksplicit hvis noget IKKE er nævnt. Max 3-4 sætninger. Afslut med ét åbent spørgsmål.\n\nSvar KUN med JSON: { \"assistant_message\": \"...\" }\n\nKONTEKST:\n" + cp.slice(0, 2000),
+              },
+              { role: "user", content: userText },
+            ],
+          })
+          const msg = typeof raw?.assistant_message === "string" ? (raw.assistant_message as string).trim() : null
+          assistant = msg && msg.length > 10 ? msg : "Jeg kan se du har delt en del om dine vaner og mønstre. Er der noget bestemt du vil have mig til at uddybe?"
+        } catch {
+          assistant = "Jeg kan se du har delt en del om dine vaner og mønstre. Er der noget bestemt du vil have mig til at uddybe?"
+        }
+      } else {
+        const topicStr = previousTopic ? ` om ${previousTopic}` : ""
+        const handoffStr = handoffDone ? " Du har også sendt en henvendelse til Jan." : ""
+        assistant = `I denne samtale har vi talt${topicStr}.${handoffStr} Jeg husker hvad vi er kommet igennem her, men har endnu ikke adgang til evt. tidligere samtaler.\n\nEr der noget bestemt du vil vende tilbage til?`
+      }
+
+      const updatedTranscript = appendTranscript(transcript, userText, assistant)
+      return {
+        transition: {
+          type: "NODE_HOP",
+          from: context.state.active_node,
+          to: context.state.active_node,
+          reason: "gen-hypno:history_query",
+          response_message: assistant,
+          meta_delta: buildMetaDelta({
+            context, assistantMessage: assistant, updatedTranscript,
+            topic: previousTopic, sourceNode: options.sourceNode,
+            transcriptKey: options.transcriptKey, userText,
+            analysis: { ...analysis, proposed_mode: "info", conversation_move: "direct_answer" },
+            mode: "info", relationalState: "building_clarity",
+          }),
+        },
+        debug: { capability: "unified-hypno-v5-single", used_fallback: false },
+      }
     }
   }
 
