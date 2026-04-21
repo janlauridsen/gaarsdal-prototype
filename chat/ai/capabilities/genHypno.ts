@@ -289,12 +289,19 @@ export async function runUnifiedHypnoCapability(
   const arousal = computeRollingArousal(trimmedTranscript, userText, previousArousalScore)
 
   // B: læs forrige turns mode og relational_state til sekvens-kontekst
-  // Hvis forrige mode var "closing" og brugeren sender et nyt substantielt input,
-  // nulstil konteksten så LLM'en ikke fortsætter i lukke-tone.
+  // Nulstil sekvens-kontekst når samtalen er i lukket/afsluttende tilstand
+  // og brugeren sender et nyt substantielt input.
+  // Dækker mode="closing", stage="closing", move="close" — alle låser LLM i lukke-tone.
   const rawPreviousMode = readStringMeta(context, "dialog.mode") as PromptMode | undefined
   const rawPreviousRelationalState = readStringMeta(context, "dialog.relational_state") as import("../contracts/turnAnalysis").RelationalState | undefined
+  const rawPreviousDialogStage = readStringMeta(context, "dialog.stage")
+  const rawPreviousDialogMove = readStringMeta(context, "dialog.move")
 
-  const isReopeningAfterClose = rawPreviousMode === "closing" && userText.trim().length > 10
+  const isReopeningAfterClose = (
+    rawPreviousMode === "closing" ||
+    rawPreviousDialogStage === "closing" ||
+    rawPreviousDialogMove === "close"
+  ) && userText.trim().length > 10
   const previousMode = isReopeningAfterClose ? undefined : rawPreviousMode
   const previousRelationalState = isReopeningAfterClose ? undefined : rawPreviousRelationalState
 
