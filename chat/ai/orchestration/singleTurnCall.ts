@@ -23,7 +23,6 @@ type TranscriptTurn = { role: "user" | "assistant"; content: string }
 
 export type SingleTurnOutput = {
   is_history_query: boolean
-  routing_intent: "contact_booking" | "none"
   mode_used: PromptMode
   conversation_move: ConversationMove
   investigation_focus: InvestigationFocus
@@ -127,8 +126,7 @@ Hvis brugeren spørger hvem Jan er:
 is_history_query: sæt true KUN hvis brugeren spørger hvad du ved om DEM fra tidligere samtaler (fx "hvad husker du om mig", "hvad har vi talt om"). Sæt IKKE true hvis brugeren spørger om din identitet eller hvem Jan er.`)
 
 
-  // MODE — vælges kun ved routing_intent === "none"
-  blocks.push(`MODE (bruges kun når routing_intent er "none"):
+  blocks.push(`MODE:
 
 info: direkte faktuel besvarelse. Start med kernepunktet, uddyb i 2-3 afsnit.
 reflection: flyt opmærksomheden til brugerens eget mønster. Ét præcist observationsfokus. Undgå brede lister.
@@ -262,57 +260,7 @@ Vurder om du skal fortsætte same spor, skifte gear eller afrunde — afhængigt
     blocks.push(`POLICY: Brugerens besked indeholder praktiske nøgleord (kontaktinfo, pris, booking, adresse e.l.) — sæt mode_used til "practical" medmindre brugerens besked i øvrigt er klart refleksiv eller følelsesladet.`)
   }
 
-  // ROUTING
-  const lastAssistantForRouting = params.lastAssistantExcerpt
-    ? `\n\nAssistentens forrige svar begyndte: ${JSON.stringify(params.lastAssistantExcerpt.slice(0, 150))}`
-    : ""
 
-  blocks.push(`ROUTING:
-routing_intent sættes KUN til "contact_booking" når brugeren EKSPLICIT og UTVETYDIGT ønsker at blive kontaktet eller booke — dvs. at de tager et konkret skridt mod kontakt NU.
-Brug assistentens forrige svar som kontekst: hvis assistenten tilbød en session eller spurgte om brugeren vil prøve, og brugeren svarer bekræftende, er det "contact_booking".
-Ellers: "none".${lastAssistantForRouting}
-
-Eksempler → "contact_booking" (eksplicit handling, evt. i kontekst af sessionstilbud):
-- "jeg vil gerne booke en tid"
-- "hvornår kan jeg komme til dig"
-- "vil gerne have Jan til at ringe til mig"
-- "kan jeg komme til en samtale"
-- "jeg er klar til at starte"
-- "jeg skriver" (når konteksten er booking/kontakt — brugeren handler)
-- "jeg ringer" (brugeren handler)
-- "det gør jeg" (når det refererer til at tage kontakt)
-- "jeg tager kontakt"
-- "det er en god idé" / "det lyder godt" / "ja, det vil jeg gerne" — KUN hvis assistenten netop har tilbudt eller foreslået en session eller kontakt
-- "ja" / "det prøver jeg" — KUN hvis assistenten i forrige svar direkte spurgte om brugeren vil prøve en session
-
-Eksempler → "none" (spørgsmål, nysgerrighed, afklaring — IKKE en anmodning om kontakt):
-- "kan jeg kontakte Jan her?" (spørgsmål om mulighed, ikke en kontaktanmodning)
-- "hvad koster det?" → ALTID "none" — et prisspørgsmål er ikke en bookinghandling
-- "hvad koster en session?" → ALTID "none"
-- "hvor meget koster det?" → ALTID "none"
-- "hvor mange sessioner skal man forvente?" → ALTID "none"
-- "hvor mange gange skal man komme?" → ALTID "none"
-- "hvad sker der under hypnose?"
-- "jeg overvejer det"
-- "hvordan kontakter man jer?"
-- "hvor er klinikken?"
-- "har I ledige tider?"
-- "det er en god idé" når assistenten IKKE har tilbudt en session i forrige svar
-- Ethvert informationsspørgsmål om pris, varighed, antal sessioner eller metode → ALTID "none" uanset kontekst
-
-Tommelfingerregel: Var assistentens forrige spørgsmål et konkret tilbud om session? Og siger brugeren ja? → "contact_booking". Ellers → "none".
-Særlig regel: Spørgsmål om pris, antal sessioner, metode, oplevelse eller procedure er ALDRIG "contact_booking" — selv hvis brugeren netop har bookingintention eller befinder sig i closing-kontekst.
-
-HUSK: "contact_booking" kræver at brugeren AKTIVT tager et skridt mod kontakt — ikke blot at de er nysgerrige eller stiller opklarende spørgsmål inden de beslutter sig.
-
-Eksempler der er ALTID "none" uanset kontekst:
-- "gør det ondt?" / "gør hypnose ondt?"
-- "hvad sker der under en session?"
-- "er jeg bevidst under hypnose?"
-- "hvor lang tid tager en session?"
-- "hvornår mærker man effekten?"
-- "virker det på mig?"
-- Alle spørgsmål om selve metoden, oplevelsen eller forløbet`)
 
   // RETORISK DIREKTIV — fra anticipation-system, baseret på forudsagt næste turn
   if (params.rhetoricalInstruction) {
@@ -325,7 +273,6 @@ Dette er ikke et forslag. Tilpas din core_answer og next_step til dette direktiv
   blocks.push(`Returner KUN gyldig JSON — ingen tekst uden for JSON:
 {
   "is_history_query": boolean,
-  "routing_intent": "contact_booking" | "none",
   "mode_used": "info" | "evidence" | "practical" | "reflection" | "closing",
   "conversation_move": "direct_answer" | "guided_observation" | "pattern_detection" | "metacognitive_probe" | "mild_challenge" | "practical_preparation" | "synthesis" | "close",
   "investigation_focus": "attention" | "interpretation" | "regulation" | "pattern" | "preparation" | "none",
@@ -375,8 +322,6 @@ function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTop
     ? (raw.relational_state as RelationalState)
     : "building_clarity"
 
-  const routing_intent = raw.routing_intent === "contact_booking" ? "contact_booking" : "none"
-
   const topic = typeof raw.topic === "string" && raw.topic.trim() ? raw.topic.trim() : lastTopic
   const objective = typeof raw.objective === "string" && raw.objective.trim() ? raw.objective.trim() : undefined
 
@@ -409,7 +354,6 @@ function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTop
 
   return {
     is_history_query,
-    routing_intent,
     mode_used,
     conversation_move,
     investigation_focus,
@@ -433,7 +377,7 @@ export function buildSingleTurnFallback(userText: string, lastTopic?: string): S
 
   if (isClosing) {
     return {
-      is_history_query: false, routing_intent: "none", mode_used: "closing",
+      is_history_query: false, mode_used: "closing",
       conversation_move: "close", investigation_focus: "none", relational_state: "gentle_close",
       topic: lastTopic, objective: undefined, acknowledgement: null,
       core_answer: "Selv tak.", next_step: null, signals: ["closing_fallback"],
@@ -442,7 +386,7 @@ export function buildSingleTurnFallback(userText: string, lastTopic?: string): S
   }
 
   return {
-    is_history_query: false, routing_intent: "none", mode_used: "info",
+    is_history_query: false, mode_used: "info",
     conversation_move: "direct_answer", investigation_focus: "none", relational_state: "orienting",
     topic: lastTopic, objective: undefined, acknowledgement: null,
     core_answer: "Jeg kan godt hjælpe med det. Fortæl gerne mere om hvad der er på hjerte.",
@@ -479,7 +423,6 @@ export async function singleTurnCall(params: {
       "(gratis, døgnet rundt), lægevagten på 1813, eller 112 hvis det er akut."
     return {
       is_history_query: false,
-      routing_intent: "none",
       mode_used: "info",
       conversation_move: "direct_answer",
       investigation_focus: "none",
