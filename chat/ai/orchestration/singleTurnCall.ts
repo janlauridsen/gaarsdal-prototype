@@ -221,7 +221,10 @@ Gør PRÆCIS dette i ét svar:
 3. Afslut med ét spørgsmål: overvejer brugeren at tage et konkret næste skridt?
 
 Brug conversation_move: synthesis. Brug IKKE guided_observation eller pattern_detection — det er allerede gjort.
-Gentag ikke hvad der allerede er sagt. Et nyt refleksivt spørgsmål er en fejl på dette trin.`)
+Gentag ikke hvad der allerede er sagt. Et nyt refleksivt spørgsmål er en fejl på dette trin.
+
+UNDTAGELSE: Hvis brugeren i DENNE tur stiller et direkte spørgsmål ("hvad gør man", "hvordan slipper jeg", "kan jeg lære at..."), besvar det direkte frem for at lave synthesis. PROGRESSION venter til næste tur.
+UNDTAGELSE: Hvis brugeren eksplicit signalerer at de allerede er i et forløb hos Jan, introducér IKKE hypnoterapi som ny mulighed.`)
   } else if (params.assistantCount >= 5) {
     blocks.push(
       `DYBDE-SKIFT PÅKRÆVET (turn ${params.assistantCount + 1}): Brugeren holder samtalen i gang og ønsker at grave dybere — respektér det.\n` +
@@ -309,7 +312,7 @@ Dette er ikke et forslag. Tilpas din core_answer og next_step til dette direktiv
 Regler for indhold:
 - acknowledgement: 0-1 korte sætninger, landing uden varmefraser. null hvis unødvendig. MÅ ALDRIG indeholde spørgsmål.
 - core_answer: selve svaret — ALDRIG tomt — konkret om brugerens situation frem for generel metode. MÅ ALDRIG indeholde spørgsmål.
-- next_step: ét og kun ét spørgsmål, ELLER null. Aldrig to spørgsmål. Aldrig "... eller er det anderledes?" kombineret med et nyt spørgsmål. Nævn ALDRIG kontaktinfo, Jans navn, pris eller booking som afslutning — medmindre brugeren i DENNE tur eksplicit har spurgt om kontakt, pris, adresse eller booking. Progression mod kontakt må kun ske på brugerinitiativ. Gentag ALDRIG kontaktoplysninger der allerede er nævnt i dette svar eller i et tidligere svar i samme samtale.
+- next_step: ét og kun ét spørgsmål, ELLER null. Aldrig to spørgsmål. Aldrig "... eller er det anderledes?" kombineret med et nyt spørgsmål. Nævn ALDRIG kontaktinfo, Jans navn, pris eller booking som afslutning — medmindre brugeren i DENNE tur eksplicit har spurgt om kontakt, pris, adresse eller booking. Progression mod kontakt må kun ske på brugerinitiativ. Gentag ALDRIG kontaktoplysninger der allerede er nævnt i dette svar eller i et tidligere svar i samme samtale. KRITISK: Dit spørgsmål i next_step MÅ IKKE ligne det spørgsmål du stillede i forrige svar — hverken i formulering eller investigation_focus. Hvis brugeren allerede har identificeret et specifikt domæne (fx arbejde, relationer, tidspunkter), skal næste spørgsmål gå DYBERE i det domæne — ikke spørge om domænet igen.
 - topic: emnet brugeren taler om (fx "søvnproblemer", "neglebidning") — null hvis uklart
 - signals: 2-4 korte signaler der forklarer dit valg`)
 
