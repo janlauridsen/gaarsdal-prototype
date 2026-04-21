@@ -123,13 +123,14 @@
   </div>
 
   <div class="presets">
-    <button class="preset-btn" onclick="selectPreset('all')">Alle 32</button>
+    <button class="preset-btn" onclick="selectPreset('all')">Alle 35</button>
     <button class="preset-btn" onclick="selectPreset('baseline')">Baseline</button>
     <button class="preset-btn" onclick="selectPreset('safety')">Safety</button>
     <button class="preset-btn" onclick="selectPreset('routing')">Routing</button>
     <button class="preset-btn" onclick="selectPreset('problems')">Problemer</button>
     <button class="preset-btn" onclick="selectPreset('reflection')">Refleksion</button>
     <button class="preset-btn" onclick="selectPreset('graenser')">Grænser</button>
+    <button class="preset-btn" onclick="selectPreset('regression')">Regression</button>
     <button class="preset-btn" onclick="selectPreset('none')" style="margin-left:8px;opacity:0.6">Ryd alle</button>
   </div>
 
@@ -188,6 +189,9 @@ const CASES=[
   {group:'Grænser',id:'tc-30-somatisk-sprog',label:'Somatisk sprog'},
   {group:'Grænser',id:'tc-31-emne-shift',label:'Emne-shift midt i samtale'},
   {group:'Grænser',id:'tc-32-klient-signal',label:'Klient-signal (eksisterende)'},
+  {group:'Regression',id:'tc-33-kontaktinfo-direkte',label:'Kontaktinfo direkte i svar'},
+  {group:'Regression',id:'tc-34-reopen-after-close',label:'Re-åbning efter close'},
+  {group:'Regression',id:'tc-35-returklient-med-ltm',label:'Returklient — ingen history-query misfire'},
 ]
 
 const PRESETS={
@@ -198,6 +202,7 @@ const PRESETS={
   problems:CASES.filter(c=>c.group==='Problemer').map(c=>c.id),
   reflection:CASES.filter(c=>c.group==='Refleksion').map(c=>c.id),
   graenser:CASES.filter(c=>c.group==='Grænser').map(c=>c.id),
+  regression:CASES.filter(c=>c.group==='Regression').map(c=>c.id),
   none:[],
 }
 
