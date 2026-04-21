@@ -15,13 +15,11 @@ import type {
   DeferredJobSignal,
   InputSignal,
   KernelResponse,
-  NodeFormSpec,
   ThreadTab,
   UiSuggestion,
 } from "./chatbot/types"
 
 import ChatComposer from "./chatbot/ChatComposer"
-import FormComposer from "./chatbot/FormComposer"
 import { ChatHeader } from "./chatbot/ChatHeader"
 import { MessagePane } from "./chatbot/MessagePane"
 import { SessionClose } from "./chatbot/SessionClose"
@@ -60,7 +58,6 @@ export default function Chatbot() {
   const [draftSummaryInput, setDraftSummaryInput] = useState("")
   const [draftOpenQuestionsInput, setDraftOpenQuestionsInput] = useState("")
   const [draftSaving, setDraftSaving] = useState(false)
-  const [nodeForm, setNodeForm] = useState<NodeFormSpec | null>(null)
   const [nodeAllowFreeText, setNodeAllowFreeText] = useState<boolean>(true)
   const [nodeAllowedExits, setNodeAllowedExits] = useState<string[]>([])
 
@@ -963,7 +960,6 @@ export default function Chatbot() {
 
       const data = await callKernel(null, { type: "THREAD_CREATE", mode: "normal" } as any)
       setState(data.state)
-      setNodeForm((data as any).node_form ?? null)
       setNodeAllowFreeText((data as any).node_allow_free_text ?? true)
       setNodeAllowedExits((data as any).node_allowed_exits ?? [])
       setNodeAllowFreeText((data as any).node_allow_free_text ?? true)
@@ -983,7 +979,6 @@ export default function Chatbot() {
     resetInactivityTimer(state)
     // Optimistically clear form UI on navigation
     if (nextInput.type === "EXPLICIT_TRANSITION") {
-      setNodeForm(null)
       setNodeAllowFreeText(true)
     }
     setLoading(true)
@@ -1009,7 +1004,6 @@ export default function Chatbot() {
       }
 
       setState(data.state)
-      setNodeForm((data as any).node_form ?? null)
       setNodeAllowFreeText((data as any).node_allow_free_text ?? true)
       setNodeAllowedExits((data as any).node_allowed_exits ?? [])
 
@@ -1241,54 +1235,7 @@ export default function Chatbot() {
                         onClose={() => setShowPrivacyPanel(false)}
                       />
                     )}
-                    {!consentRequired && state?.active_node === "HANDOFF_FORM" ? (
-                      <div className={styles.infoActions}>
-                        <a
-                          href="tel:+4542807474"
-                          className={styles.infoActionBtn}
-                          onClick={() => {}}
-                        >
-                          Ring: +45 42 80 74 74
-                        </a>
-                        <a
-                          href={`mailto:jan@gaarsdal.net?subject=${encodeURIComponent("Henvendelse fra gaarsdal.net")}`}
-                          className={styles.infoActionBtn}
-                        >
-                          Send en mail
-                        </a>
-                        <button
-                          className={styles.infoActionBtn}
-                          disabled={loading}
-                          onClick={() => dispatch({ type: "EXPLICIT_TRANSITION", target: "GEN_HYPNO" })}
-                        >
-                          Tilbage til samtalen
-                        </button>
-                      </div>
-                    ) : !consentRequired && nodeForm ? (
-                      <FormComposer
-                        fields={nodeForm.fields}
-                        loading={loading}
-                        disabled={!state || !freeTextEnabled}
-                        onCancel={() => dispatch({ type: "EXPLICIT_TRANSITION", target: "GEN_HYPNO" })}
-                        secondaryAction={state?.active_node === "HANDOFF_FORM" ? {
-                          label: "Ikke klar nu — efterlad kun din email",
-                          onClick: () => dispatch({ type: "EXPLICIT_TRANSITION", target: "LEAD_CAPTURE" })
-                        } : undefined}
-                        initialValues={state?.active_node === "HANDOFF_FORM" ? {
-                          emne: (state.meta["gen_hypno.problem_title"] as any)?.value as string ?? (state.meta["gen_hypno.topic_tags"] as any)?.value?.[0] ?? "",
-                        } : undefined}
-                        summary={state?.active_node === "HANDOFF_FORM" ? (() => {
-                          const s = (state.meta["gen_hypno.problem_summary"] as any)?.value as string | undefined
-                          if (!s || s.length < 40) return undefined
-                          const skip = ["booking", "bestil", "tid", "kontakt", "jan"]
-                          if (skip.some(w => s.toLowerCase().includes(w))) return undefined
-                          return s
-                        })() : undefined}
-                        onSend={(text) => {
-                          dispatch({ type: "FREE_TEXT", text })
-                        }}
-                      />
-                    ) : !nodeAllowFreeText && nodeAllowedExits.length > 0 ? (
+                    {!nodeAllowFreeText && nodeAllowedExits.length > 0 ? (
                       <div className={styles.infoActions}>
                         {nodeAllowedExits.slice(0, 3).map((exitId) => (
                           <button
@@ -1343,54 +1290,7 @@ export default function Chatbot() {
                   onClose={() => setShowPrivacyPanel(false)}
                 />
               )}
-              {!consentRequired && state?.active_node === "HANDOFF_FORM" ? (
-                <div className={styles.infoActions}>
-                  <a
-                    href="tel:+4542807474"
-                    className={styles.infoActionBtn}
-                    onClick={() => {}}
-                  >
-                    Ring: +45 42 80 74 74
-                  </a>
-                  <a
-                    href={`mailto:jan@gaarsdal.net?subject=${encodeURIComponent("Henvendelse fra gaarsdal.net")}`}
-                    className={styles.infoActionBtn}
-                  >
-                    Send en mail
-                  </a>
-                  <button
-                    className={styles.infoActionBtn}
-                    disabled={loading}
-                    onClick={() => dispatch({ type: "EXPLICIT_TRANSITION", target: "GEN_HYPNO" })}
-                  >
-                    Tilbage til samtalen
-                  </button>
-                </div>
-              ) : !consentRequired && nodeForm ? (
-                <FormComposer
-                  fields={nodeForm.fields}
-                  loading={loading}
-                  disabled={!state || !freeTextEnabled}
-                  onCancel={() => dispatch({ type: "EXPLICIT_TRANSITION", target: "GEN_HYPNO" })}
-                  secondaryAction={state?.active_node === "HANDOFF_FORM" ? {
-                    label: "Ikke klar nu — efterlad kun din email",
-                    onClick: () => dispatch({ type: "EXPLICIT_TRANSITION", target: "LEAD_CAPTURE" })
-                  } : undefined}
-                  initialValues={state?.active_node === "HANDOFF_FORM" ? {
-                    emne: (state.meta["gen_hypno.problem_title"] as any)?.value as string ?? (state.meta["gen_hypno.topic_tags"] as any)?.value?.[0] ?? "",
-                  } : undefined}
-                  summary={state?.active_node === "HANDOFF_FORM" ? (() => {
-                    const s = (state.meta["gen_hypno.problem_summary"] as any)?.value as string | undefined
-                    if (!s || s.length < 40) return undefined
-                    const skip = ["booking", "bestil", "tid", "kontakt", "jan"]
-                    if (skip.some(w => s.toLowerCase().includes(w))) return undefined
-                    return s
-                  })() : undefined}
-                  onSend={(text) => {
-                    dispatch({ type: "FREE_TEXT", text })
-                  }}
-                />
-              ) : !nodeAllowFreeText && nodeAllowedExits.length > 0 ? (
+              {!nodeAllowFreeText && nodeAllowedExits.length > 0 ? (
                 <div className={styles.infoActions}>
                   {nodeAllowedExits.slice(0, 3).map((exitId) => (
                     <button
