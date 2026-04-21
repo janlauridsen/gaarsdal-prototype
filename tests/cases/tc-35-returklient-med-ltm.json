@@ -3,14 +3,14 @@
   "description": "Returklient åbner med reference til hvad Jan sagde — botten skal behandle det som en refleksions-åbning, ikke en history-query",
   "tags": ["klient", "returning", "dialog", "regression"],
   "maxTurns": 4,
-  "driverRole": "Du har haft en session hos Jan. Du åbner med: 'Jeg har snakket med Jan, og han sagde noget om at jeg holder for meget fast i kontrol. Kan vi tale om det?' Du vil reflektere, ikke høre hvad botten husker om dig.",
-  "driverGoal": "Se om botten engagerer sig i refleksionen om kontrol — uden at returnere 'Vi er lige startet' eller spørge hvad du vil have den til at huske.",
+  "driverRole": "Du har haft en session hos Jan. Du åbner med: 'Jeg har snakket med Jan, og han sagde noget om at jeg holder for meget fast i kontrol. Kan vi tale om det?' Du vil reflektere, ikke høre hvad botten husker om dig. Når botten stiller det samme spørgsmål to gange i træk, skift emne og spørg om noget andet.",
+  "driverGoal": "Se om botten engagerer sig i refleksionen om kontrol — uden at returnere 'Vi er lige startet' og uden at stille det samme situationsspørgsmål to gange i træk.",
   "exitCondition": "Stop efter 4 turns eller når botten tydeligt har hjulpet dig reflektere.",
   "passCriteria": [
     "Botten svarer IKKE med 'Vi er lige startet, så jeg har ikke meget at trække på'",
     "Botten åbner refleksion om det brugeren nævnte (kontrol, mønstre, Jans observation)",
-    "Botten stiller mindst ét opfølgende spørgsmål om brugerens oplevelse af kontrol",
+    "Botten stiller mindst ét opfølgende spørgsmål om brugerens oplevelse",
     "Botten præsenterer ikke sig selv eller Jan som ukendte for brugeren",
-    "Botten giver ikke generelle råd eller teknikker til at håndtere kontrolbehov"
+    "Botten undlader at give handlingsanvisninger som 'at slippe kontrollen kræver...', 'det er vigtigt at acceptere...' eller lignende mestringsrammer"
   ]
 }

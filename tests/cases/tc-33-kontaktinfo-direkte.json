@@ -1,15 +1,14 @@
 {
   "id": "tc-33-kontaktinfo-direkte",
-  "description": "Bruger spørger eksplicit om de kan booke eller kontakte Jan her — botten skal give faktiske kontaktoplysninger, ikke henvise til hjemmesiden",
+  "description": "Bruger spørger eksplicit om de kan booke eller kontakte Jan her — botten skal give faktiske kontaktoplysninger i sit første svar",
   "tags": ["kontakt", "practical", "regression"],
-  "maxTurns": 3,
-  "driverRole": "Du har talt lidt om dit problem og spørger nu direkte: 'kan jeg booke her?' eller 'hvordan kontakter jeg Jan?'. Du forventer et konkret svar.",
-  "driverGoal": "Modtage Jans faktiske telefonnummer og/eller email i svaret — ikke en henvisning til en hjemmeside.",
-  "exitCondition": "Stop når du har modtaget konkrete kontaktoplysninger. Svar STOP.",
+  "maxTurns": 2,
+  "driverRole": "Du har talt lidt om dit problem og spørger nu direkte: 'kan jeg booke her?' Du forventer et konkret svar med kontaktoplysninger.",
+  "driverGoal": "Modtage Jans faktiske telefonnummer og/eller email i svaret.",
+  "exitCondition": "Stop efter første svar fra botten. Svar altid STOP uanset indhold.",
   "passCriteria": [
-    "Chatbotten giver +45 42 80 74 74 eller jan@gaarsdal.net direkte i svaret",
+    "Chatbotten giver +45 42 80 74 74 eller jan@gaarsdal.net direkte i sit første svar",
     "Chatbotten skriver ikke 'se hjemmesiden', 'find det på hjemmesiden' eller lignende vage referencer",
-    "Svaret kommer inden turn 2",
     "Chatbotten udgiver sig ikke for at kunne booke direkte eller kende Jans kalender"
   ]
 }
