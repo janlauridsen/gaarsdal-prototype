@@ -130,7 +130,7 @@ is_history_query: sæt true KUN hvis brugeren spørger hvad du ved om DEM fra ti
 
 info: direkte faktuel besvarelse. Start med kernepunktet, uddyb i 2-3 afsnit.
 reflection: flyt opmærksomheden til brugerens eget mønster. Ét præcist observationsfokus. Undgå brede lister.
-practical: konkret og handlingsorienteret. Brug kontaktoplysninger fra SITE-KONTEKST kun hvis brugeren direkte spørger.
+practical: konkret og handlingsorienteret. Når brugeren spørger om kontakt, booking eller Jan — giv ALTID de faktiske oplysninger fra SITE-KONTEKST: telefon +45 42 80 74 74 og email jan@gaarsdal.net. Skriv ALDRIG "se hjemmesiden" eller "find det på hjemmesiden" — det er en unyttig ikke-besvarelse.
 evidence: nøgtern vurdering af dokumentation for hypnoterapi. Angiv niveau: god/moderat/blandet/begrænset.
 closing: luk kort og naturligt. Max 1-2 sætninger. ALDRIG generiske afslutningsfraser som "Jeg er glad for at jeg kunne hjælpe", "Du er altid velkommen til at vende tilbage", "Tak fordi du tog kontakt" — disse er clichéer der ikke tilføjer noget. Sæt core_answer til den korte lukkesætning alene.
 
@@ -175,7 +175,8 @@ Felterne core_answer og next_step sammensættes til assistant_message: acknowled
   // VARIATION
   if (params.lastAssistantExcerpt) {
     blocks.push(`VARIATION: Forrige svar begyndte: ${JSON.stringify(params.lastAssistantExcerpt.slice(0, 120))} — din åbning må ikke ligne denne.
-Undgå at starte med "Du spørger", "Du beskriver", "Du ønsker", "Du nævner". Start direkte på sagen.`)
+Undgå at starte med "Du spørger", "Du beskriver", "Du ønsker", "Du nævner". Start direkte på sagen.
+KRITISK: Du må ALDRIG gentage dit forrige svar ordret eller næsten ordret — heller ikke hvis spørgsmålet ligner det forrige. Brugeren har stillet et nyt spørgsmål; besvar det konkret.`)
   }
   if (params.assistantCount >= 2) {
     blocks.push(`Der har allerede været ${params.assistantCount} svar — gå dybere eller gør mønsteret kortere og tydeligere. Gentag ikke samme forklaring med nye ord.`)
@@ -234,7 +235,8 @@ Undgå: lange sætninger · opstillede pointer · nye vinkler · fremadrettede r
     const stateLabel = params.previousRelationalState ?? "ukendt"
     blocks.push(`DIALOG-SEKVENS (brug som kontekst, ikke som regel):
 Forrige turn: mode=${modeLabel} · relational_state=${stateLabel}
-Vurder om du skal fortsætte same spor, skifte gear eller afrunde — afhængigt af brugerens nye besked.`)
+Vurder om du skal fortsætte same spor, skifte gear eller afrunde — afhængigt af brugerens nye besked.
+VIGTIG UNDTAGELSE: Hvis brugerens besked er et direkte spørgsmål (fx "virker det?", "kan hypno hjælpe?", "hvad koster det?"), besvar spørgsmålet direkte i mode=info/evidence/practical — uanset hvad forrige turn var. Et direkte spørgsmål afbryder altid refleksions- eller lukke-sporet.`)
   }
 
   // SITE-KONTEKST
