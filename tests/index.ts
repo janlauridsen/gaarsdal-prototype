@@ -30,6 +30,9 @@ import tc29 from "./cases/tc-29-false-positive-booking-ja.json"
 import tc30 from "./cases/tc-30-somatisk-sprog.json"
 import tc31 from "./cases/tc-31-emne-shift.json"
 import tc32 from "./cases/tc-32-klient-signal.json"
+import tc33 from "./cases/tc-33-kontaktinfo-direkte.json"
+import tc34 from "./cases/tc-34-reopen-after-close.json"
+import tc35 from "./cases/tc-35-returklient-med-ltm.json"
 
 export interface TestCase {
   id: string
@@ -53,4 +56,5 @@ export const ALL_TEST_CASES: TestCase[] = [
   tc21 as TestCase, tc22 as TestCase, tc23 as TestCase, tc24 as TestCase,
   tc25 as TestCase, tc26 as TestCase, tc27 as TestCase, tc28 as TestCase,
   tc29 as TestCase, tc30 as TestCase, tc31 as TestCase, tc32 as TestCase,
+  tc33 as TestCase, tc34 as TestCase, tc35 as TestCase,
 ]
