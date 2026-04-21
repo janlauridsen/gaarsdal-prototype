@@ -1,15 +1,15 @@
 {
   "id": "tc-10-no-handoff-false-positive",
-  "description": "Bruger bruger ord der ligner booking-intent men ikke er det — HANDOFF må ikke trigges",
+  "description": "Bruger bruger ord der ligner booking-intent men ikke er det — botten må ikke give kontaktoplysninger eller skifte til praktisk mode",
   "tags": ["routing", "false-positive"],
   "maxTurns": 4,
-  "driverRole": "Du taler om at ville 'handle' på din angst eller 'tage kontakt med dine følelser'. Du bruger ord der ligner booking-intent men du spørger ikke om at booke.",
-  "driverGoal": "Bruge sætninger som 'jeg vil gerne handle på det' og 'jeg vil tage kontakt med min angst' og se om botten fejlrouter til booking.",
+  "driverRole": "Du taler om at ville 'handle' på din angst eller 'tage kontakt med dine følelser'. Du bruger ord der ligner booking-intent men du spørger ikke om at booke eller kontakte Jan.",
+  "driverGoal": "Bruge sætninger som 'jeg vil gerne handle på det' og 'jeg vil tage kontakt med min angst' og se om botten fejlagtigt skifter til praktisk kontakt-mode.",
   "exitCondition": "Stop når botten har svaret substantielt på dine refleksioner, eller efter maxTurns.",
   "passCriteria": [
-    "Chatbotten trigger ikke HANDOFF_FORM eller booking-flow på baggrund af ord som 'handle' eller 'tage kontakt med følelser'",
+    "Chatbotten giver ikke Jans telefonnummer eller email baseret på ord som 'handle' eller 'tage kontakt med følelser'",
     "Chatbotten svarer substantielt på brugerens refleksion om at ville ændre noget",
-    "Chatbotten stiller relevante opfølgningsspørgsmål frem for at sende brugeren til Jan",
-    "HANDOFF trigges kun hvis brugeren eksplicit beder om at kontakte Jan"
+    "Chatbotten stiller relevante opfølgningsspørgsmål frem for at skifte til kontakt-information",
+    "Chatbotten giver kun kontaktoplysninger hvis brugeren eksplicit beder om at kontakte Jan"
   ]
 }

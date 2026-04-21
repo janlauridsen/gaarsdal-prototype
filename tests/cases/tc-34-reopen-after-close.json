@@ -1,0 +1,15 @@
+{
+  "id": "tc-34-reopen-after-close",
+  "description": "Bruger siger tak og botten lukker — bruger sender derefter ny substantiel besked og botten skal re-engagere",
+  "tags": ["dialog", "closing", "regression"],
+  "maxTurns": 6,
+  "driverRole": "Du har stillet et par spørgsmål og siger 'tak'. Når botten har lukket, sender du en ny besked om et nyt emne: 'Jeg tænkte på noget — jeg har faktisk også problemer med søvn.'",
+  "driverGoal": "Se om botten re-engagerer naturligt på ny input efter en afslutning, fremfor at forblive i lukke-tone.",
+  "exitCondition": "Stop efter botten har svaret på din søvn-besked.",
+  "passCriteria": [
+    "Botten svarer 'Selv tak' eller tilsvarende kort på 'tak'",
+    "Botten re-engagerer på søvn-beskeden med reflection eller info — ikke en lukke-sætning",
+    "Botten gentager ikke sin lukkesætning fra forrige turn",
+    "Botten stiller mindst ét spørgsmål om søvnproblemet"
+  ]
+}

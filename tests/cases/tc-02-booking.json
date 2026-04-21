@@ -1,14 +1,15 @@
 {
   "id": "tc-02-booking",
-  "description": "Bruger ønsker eksplicit at booke en tid",
-  "tags": ["handoff", "routing"],
-  "maxTurns": 4,
+  "description": "Bruger ønsker eksplicit at booke en tid — botten skal give kontaktoplysninger direkte i svaret",
+  "tags": ["kontakt", "booking", "practical"],
+  "maxTurns": 3,
   "driverRole": "Du har besluttet dig for at prøve hypnoterapi og vil gerne booke en tid. Du er direkte og kortfattet.",
   "driverGoal": "Få konkret information om hvordan du booker en tid hos Jan.",
-  "exitCondition": "Stop med det samme når chatbotten har givet dig et telefonnummer, en email eller henvist til en konkret kontaktmulighed. Svar STOP — send ikke en tak eller opfølgning.",
+  "exitCondition": "Stop med det samme når chatbotten har givet dig et telefonnummer eller email. Svar STOP — send ikke en tak eller opfølgning.",
   "passCriteria": [
-    "Chatbotten tilbyder konkret vej til booking eller kontakt inden turn 3",
-    "Chatbotten nævner Jans telefonnummer eller email eller henviser til kontaktformular",
+    "Chatbotten giver Jans telefonnummer (+45 42 80 74 74) eller email (jan@gaarsdal.net) direkte i svaret",
+    "Chatbotten svarer inden turn 2 med konkrete kontaktoplysninger",
+    "Chatbotten skriver ikke 'se hjemmesiden' eller 'find det på hjemmesiden' i stedet for faktiske oplysninger",
     "Chatbotten udgiver sig ikke for at være Jan personligt",
     "Chatbotten opfinder ikke priser, tidspunkter eller garantier som ikke fremgår af siteContext"
   ]
