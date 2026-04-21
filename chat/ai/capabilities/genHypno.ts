@@ -217,23 +217,7 @@ function buildMetaDelta(params: {
   return meta
 }
 
-// ─── Deterministisk info-spørgsmål detektion ──────────────────────────────
-// Bruges til at override LLM routing for kendte false-positive mønstre.
-// Prispørgsmål, sessionsspørgsmål og metodespørgsmål er altid "none".
-function isDefinitelyInfoQuery(text: string): boolean {
-  const t = text.toLowerCase().trim()
-  const patterns = [
-    "hvad koster", "koster det", "koster en session", "pris", "prisen",
-    "gør det ondt", "gør hypnose ondt", "gøre ondt",
-    "hvor mange gang", "hvor mange session", "antal session",
-    "hvad sker der", "hvad foregår der", "hvad sker under",
-    "er jeg bevidst", "er man bevidst",
-    "virker det", "hvor lang tid", "hvornår mærker",
-    "hvad indebærer", "hvad går det ud på",
-    "kan jeg kontakte", "hvordan kontakter",
-  ]
-  return patterns.some(p => t.includes(p))
-}
+// ─── Krise-fraser ─────────────────────────────────────────────────────────────
 
 // --- Main capability runner ---
 
@@ -366,15 +350,6 @@ export async function runUnifiedHypnoCapability(
     turnOutput = buildSingleTurnFallback(userText, previousTopic)
   }
 
-  // ─── Deterministisk routing-override ──────────────────────────────────────
-  // Informationsspørgsmål om pris, metode, varighed og oplevelse skal ALDRIG
-  // route til HANDOFF_FORM — uanset hvad LLM'en konkluderer ud fra konteksten.
-  // LLM-routing er upålidelig for disse mønstre når dialog.stage er "closing"
-  // eller transcript indeholder booking-intent fra tidligere turns.
-  if (turnOutput.routing_intent === "contact_booking" && isDefinitelyInfoQuery(userText)) {
-    turnOutput = { ...turnOutput, routing_intent: "none" }
-  }
-
   // Konvertér til TurnAnalysis for buildMetaDelta-kompatibilitet
   let analysis = outputToAnalysis(turnOutput, previousTopic)
 
@@ -435,47 +410,12 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
-  // ─── Routing til HANDOFF_FORM ────────────────────────────────────────────
-  if (turnOutput.routing_intent === "contact_booking") {
-    const updatedTranscript = appendTranscript(transcript, userText, "")
-    return {
-      transition: {
-        type: "NODE_HOP",
-        from: context.state.active_node,
-        to: "HANDOFF_FORM",
-        reason: "gen-hypno:contact_booking",
-        response_message: undefined,
-        meta_delta: buildMetaDelta({
-          context, assistantMessage: "", updatedTranscript, topic: turnOutput.topic || previousTopic,
-          sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
-          analysis, mode: turnOutput.mode_used, objective: turnOutput.objective,
-          relationalState: analysis.relational_state,
-          arousalScore: arousal.score, arousalLevel: arousal.level,
-        }),
-      },
-      debug: { capability: "unified-hypno-v5-single", used_fallback: false },
-    }
-  }
-
   // ─── Normal svar-sti ──────────────────────────────────────────────────────
   const modeUsed = turnOutput.mode_used
   const topic = turnOutput.topic || previousTopic
-  let assistant = turnOutput.assistant_message
-
-  // D: Kontekstuel CTA — kun når brugeren er i beslutnings-mode (decision_support), ikke midt i refleksion
-  const ctaAlreadyShown = context.state.meta["gen_hypno.cta_shown"]?.value === true
-  // LLM-trigger: explicit decision_support signal
-  const ctaLLMTrigger = turnOutput.relational_state === "decision_support" && modeUsed !== "closing" && modeUsed !== "reflection"
-  // Hard trigger: turn 5+ (assistantCountBefore >= 4) — forhindrer evig refleksion uden at ankomme et sted
-  const ctaHardTrigger = assistantCountBefore >= 4 && modeUsed !== "closing"
-  const ctaConditionsMet = !ctaAlreadyShown && !!topic && (ctaLLMTrigger || ctaHardTrigger)
-
-  if (ctaConditionsMet) {
-    assistant = assistant + "\n\nHvis du vil vide mere om hvad et konkret forløb indebærer, er du velkommen til at skrive det — eller tage kontakt til Jan direkte."
-  }
+  const assistant = turnOutput.assistant_message
 
   const updatedTranscript = appendTranscript(transcript, userText, assistant)
-  const ctaMeta = ctaConditionsMet ? { "gen_hypno.cta_shown": true } : {}
 
   return {
     transition: {
@@ -494,7 +434,6 @@ export async function runUnifiedHypnoCapability(
           arousalLevel: arousal.level,
         }),
         "gen_hypno.model": context.modelOverride ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
-        ...ctaMeta,
       },
     },
     debug: { capability: "unified-hypno-v5-single", used_fallback: usedFallback },
