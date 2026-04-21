@@ -289,8 +289,14 @@ export async function runUnifiedHypnoCapability(
   const arousal = computeRollingArousal(trimmedTranscript, userText, previousArousalScore)
 
   // B: læs forrige turns mode og relational_state til sekvens-kontekst
-  const previousMode = readStringMeta(context, "dialog.mode") as PromptMode | undefined
-  const previousRelationalState = readStringMeta(context, "dialog.relational_state") as import("../contracts/turnAnalysis").RelationalState | undefined
+  // Hvis forrige mode var "closing" og brugeren sender et nyt substantielt input,
+  // nulstil konteksten så LLM'en ikke fortsætter i lukke-tone.
+  const rawPreviousMode = readStringMeta(context, "dialog.mode") as PromptMode | undefined
+  const rawPreviousRelationalState = readStringMeta(context, "dialog.relational_state") as import("../contracts/turnAnalysis").RelationalState | undefined
+
+  const isReopeningAfterClose = rawPreviousMode === "closing" && userText.trim().length > 10
+  const previousMode = isReopeningAfterClose ? undefined : rawPreviousMode
+  const previousRelationalState = isReopeningAfterClose ? undefined : rawPreviousRelationalState
 
   // ─── Kombineret enkelt LLM-kald ───────────────────────────────────────────
   // Erstatter det gamle to-kaldede system (analyzeTurn + response).
