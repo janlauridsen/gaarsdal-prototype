@@ -216,9 +216,19 @@ export default function Home() {
 
               <blockquote className="bg-white rounded-xl px-6 py-5 border border-gray-100 shadow-sm">
                 <p className="text-muted text-sm leading-relaxed mb-3">
-                  "Aldrig været hos en der er så dygtig."
+                  "Tusind tak for din kyndige behandling af vores datter. Det har gjort en verden til forskel — nu er der slet intet problem i at møde eller gå forbi hunde. Hun er selv stolt og fortæller gerne andre, at hun ikke er bange for hunde mere, efter at hun har været i hypnose."
                 </p>
-                <footer className="text-xs text-muted/60">— Klient, 2019</footer>
+                <footer className="text-xs text-muted/60">— En taknemmelig mor og familie, april 2026</footer>
+              </blockquote>
+
+              <blockquote className="bg-white rounded-xl px-6 py-5 border border-gray-100 shadow-sm sm:col-span-2">
+                <p className="text-muted text-sm leading-relaxed mb-2">
+                  "Jeg er en 17-årig pige med forskellige diagnoser og udfordringer, herunder ADHD. Jeg har prøvet mange former for behandling, men hypnoterapi hos Jan er klart en af de bedste. Jeg var nervøs for, om jeg overhovedet kunne komme i hypnosen med ADHD og indre uro — men Jan er rolig og har en god energi. Alt foregår i dit eget tempo med struktur, der giver forudsigelighed. Selvom jeg har svære tillidsproblemer, tog Jan godt imod mig og hjalp mig til at føle mig tryg. Man samarbejder: det er altid en selv, der bestemmer, hvad der arbejdes med."
+                </p>
+                <p className="text-muted text-sm leading-relaxed mb-3">
+                  "Hypnoterapien har hjulpet mig med at fokusere på det relevante frem for at føle, at alt skal nås her og nu. Jeg har fået bedre selvværd, sover meget bedre, og det har hjulpet på mareridt fra traumer. Efter hver session har vi en samtale — lidt ligesom coaching — hvor vi reflekterer og sætter fokus fremad. Jan vil virkelig gerne sine klienter, og det har givet mig tryghed til at åbne mig op."
+                </p>
+                <footer className="text-xs text-muted/60">— 17-årig klient med ADHD</footer>
               </blockquote>
             </div>
           </div>
