@@ -96,6 +96,7 @@ export default function AdminPage() {
   const [hitsLoading, setHitsLoading] = useState(false)
   const [hitsError, setHitsError] = useState<string|null>(null)
   const [hitsDays, setHitsDays] = useState(30)
+  const [showTestUsers, setShowTestUsers] = useState(false)
 
   const fetchMemory = useCallback(async () => {
     if (!secret) return; setMemoryLoading(true); setMemoryError(null)
@@ -186,9 +187,10 @@ export default function AdminPage() {
     </div>
   )
 
-  const conversations = data?.conversations ?? []
-  const handoffs = (data?.handoffs ?? []) as Handoff[]
-  const leads = (data?.leads ?? []) as Lead[]
+  const isTestConversation = (id: string) => id.includes(":test-")
+  const conversations = (data?.conversations ?? []).filter(c => showTestUsers || !isTestConversation(c.conversation_id))
+  const handoffs = ((data?.handoffs ?? []) as Handoff[]).filter(h => showTestUsers || !isTestConversation(h.conversation_id))
+  const leads = ((data?.leads ?? []) as Lead[]).filter(l => showTestUsers || !isTestConversation(l.conversation_id))
   const feedbackItems = (data?.feedback ?? []) as FeedbackItem[]
   const openConv = conversations.find(c => c.conversation_id === openConvId) ?? null
   const openState = openConvId ? stateMap[openConvId] : null
@@ -220,6 +222,7 @@ export default function AdminPage() {
           {data && <>
             <button onClick={()=>downloadBlob(toCSV(conversations),`samtaler-${from}-${to}.csv`,"text/csv")} style={{ padding:"9px 16px", background:"transparent", color:"#6B8F71", border:"1.5px solid #627A52", borderRadius:"8px", fontSize:"14px", cursor:"pointer", fontFamily:"inherit" }}>Download CSV</button>
             <button onClick={()=>downloadBlob(JSON.stringify(data,null,2),`gaarsdal-export-${from}-${to}.json`,"application/json")} style={{ padding:"9px 16px", background:"transparent", color:"#888888", border:"1.5px solid #D8D5CC", borderRadius:"8px", fontSize:"14px", cursor:"pointer", fontFamily:"inherit" }}>Download JSON</button>
+            <button onClick={()=>setShowTestUsers(v=>!v)} style={{ padding:"9px 16px", background:"transparent", color:showTestUsers?"#d4a264":"#888888", border:`1.5px solid ${showTestUsers?"#d4a264":"#D8D5CC"}`, borderRadius:"8px", fontSize:"14px", cursor:"pointer", fontFamily:"inherit" }}>{showTestUsers ? "⚗ Vis testbrugere" : "⚗ Skjul testbrugere"}</button>
             {statesLoading && <span style={{ fontSize:"13px", color:"#555555" }}>Henter fit-data…</span>}
           </>}
         </div>
