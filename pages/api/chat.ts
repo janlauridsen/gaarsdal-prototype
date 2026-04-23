@@ -36,7 +36,11 @@ async function sendFirstMessageNotification({ userText, conversationId }: { user
   const resendKey = process.env.RESEND_API_KEY
   const notifyTo = process.env.HANDOFF_NOTIFY_EMAIL ?? "jan@gaarsdal.net"
   const notifyFrom = process.env.HANDOFF_FROM_EMAIL ?? "noreply@gaarsdal.net"
-  if (!resendKey) return
+  console.log("[first-msg] trigger", { hasKey: !!resendKey, notifyTo, notifyFrom, conversationId })
+  if (!resendKey) {
+    console.warn("[first-msg] RESEND_API_KEY ikke sat — mail ikke sendt")
+    return
+  }
   const snippet = userText.slice(0, 300)
   const html = [
     "<h2 style=\"font-family:sans-serif;color:#333\">Ny chatbot-bruger</h2>",
@@ -44,11 +48,17 @@ async function sendFirstMessageNotification({ userText, conversationId }: { user
     `<blockquote style=\"font-family:sans-serif;border-left:3px solid #627A52;padding:8px 16px;color:#333;margin:16px 0\">${snippet}${userText.length > 300 ? "…" : ""}</blockquote>`,
     `<p style=\"font-family:sans-serif;font-size:12px;color:#999\">Conversation: ${conversationId}<br>Tidspunkt: ${new Date().toISOString()}</p>`,
   ].join("")
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
-    body: JSON.stringify({ from: notifyFrom, to: [notifyTo], subject: "Ny chat startet – gaarsdal.net", html }),
-  })
+  try {
+    const resendRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
+      body: JSON.stringify({ from: notifyFrom, to: [notifyTo], subject: "Ny chat startet – gaarsdal.net", html }),
+    })
+    const resendBody = await resendRes.json().catch(() => ({}))
+    console.log("[first-msg] resend status", resendRes.status, JSON.stringify(resendBody))
+  } catch (e: any) {
+    console.error("[first-msg] resend fejl", e?.message ?? e)
+  }
 }
 
 function serializeActiveNode(nodeId: string): { node_kind: string; node_allow_free_text: boolean; node_allowed_exits: string[]; node_form?: { fields: Array<{ id: string; label: string; required?: boolean; placeholder?: string }> } } {
@@ -356,6 +366,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       (input as any).type === "FREE_TEXT" &&
       (baseState.revision ?? 0) === 0 &&
       !userKey.startsWith("test-")
+    console.log("[first-msg] check", { isFirstRealTurn, inputType: (input as any).type, revision: baseState.revision, isTest: userKey.startsWith("test-") })
 
     waitUntil(
       Promise.all([
