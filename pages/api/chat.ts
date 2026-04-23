@@ -32,6 +32,25 @@ import { readConsent, writeConsent, consentTtlSeconds, consentAllowsPersistence,
 import { isLobbyConversation, toLobbyConversationId, toUserInput, truncateText, withThreadMeta } from "../../chat/utils/conversation"
 import { nowMs } from "../../chat/utils/time"
 
+async function sendFirstMessageNotification({ userText, conversationId }: { userText: string; conversationId: string }): Promise<void> {
+  const resendKey = process.env.RESEND_API_KEY
+  const notifyTo = process.env.HANDOFF_NOTIFY_EMAIL ?? "jan@gaarsdal.net"
+  const notifyFrom = process.env.HANDOFF_FROM_EMAIL ?? "noreply@gaarsdal.net"
+  if (!resendKey) return
+  const snippet = userText.slice(0, 300)
+  const html = [
+    "<h2 style=\"font-family:sans-serif;color:#333\">Ny chatbot-bruger</h2>",
+    "<p style=\"font-family:sans-serif;color:#555\">En besøgende på gaarsdal.net har startet en chat og sendt sin første besked.</p>",
+    `<blockquote style=\"font-family:sans-serif;border-left:3px solid #627A52;padding:8px 16px;color:#333;margin:16px 0\">${snippet}${userText.length > 300 ? "…" : ""}</blockquote>`,
+    `<p style=\"font-family:sans-serif;font-size:12px;color:#999\">Conversation: ${conversationId}<br>Tidspunkt: ${new Date().toISOString()}</p>`,
+  ].join("")
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
+    body: JSON.stringify({ from: notifyFrom, to: [notifyTo], subject: "Ny chat startet – gaarsdal.net", html }),
+  })
+}
+
 function serializeActiveNode(nodeId: string): { node_kind: string; node_allow_free_text: boolean; node_allowed_exits: string[]; node_form?: { fields: Array<{ id: string; label: string; required?: boolean; placeholder?: string }> } } {
   try {
     const node = getNode(nodeId)
@@ -333,13 +352,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Post-response drain: kald dedikeret drain-endpoint med global semaphore.
     // 25s timeout giver anticipate_turn jobs tid til SIMULATE-trinnet (~15-20s).
+    const isFirstRealTurn =
+      (input as any).type === "FREE_TEXT" &&
+      (baseState.revision ?? 0) === 0 &&
+      !userKey.startsWith("test-")
+
     waitUntil(
-      fetch(`https://${req.headers.host}/api/jobs/drain`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId }),
-        signal: AbortSignal.timeout ? AbortSignal.timeout(25000) : undefined,
-      }).catch(() => {})
+      Promise.all([
+        fetch(`https://${req.headers.host}/api/jobs/drain`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conversationId }),
+          signal: AbortSignal.timeout ? AbortSignal.timeout(25000) : undefined,
+        }).catch(() => {}),
+        isFirstRealTurn
+          ? sendFirstMessageNotification({ userText, conversationId }).catch(() => {})
+          : Promise.resolve(),
+      ])
     )
 
   } catch (e: any) {
