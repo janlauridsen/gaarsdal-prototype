@@ -195,6 +195,7 @@ Regler:
 - Anerkend at brugeren er tilbage — referér kort til seneste emne HVIS det giver mening, men tving det ikke
 - Slut med ét åbent spørgsmål der lader brugeren sætte dagsordenen — fx "Hvad har du på hjerte i dag?" eller "Hvad vil du tale om nu?"
 - Antag IKKE hvad brugeren vil tale om — de åbner selv en ny tråd og kan have et helt andet emne
+- Skriv ALDRIG sætninger der forudsætter hvad brugeren har gjort siden sidst — fx "håber du har haft tid til at reflektere", "har du tænkt over det vi talte om", "har du prøvet det vi snakkede om". Brugeren har måske ikke gjort noget.
 - Varm og rolig tone — ikke klinisk, ikke overdrevet
 - Svar KUN med JSON: { "greeting": "...", "topic": "..." } hvor topic er det primære emne fra seneste samtale`,
         },
