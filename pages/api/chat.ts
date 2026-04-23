@@ -366,20 +366,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       (input as any).type === "FREE_TEXT" &&
       (baseState.revision ?? 0) === 0 &&
       !userKey.startsWith("test-")
-    console.log("[first-msg] check", { isFirstRealTurn, inputType: (input as any).type, revision: baseState.revision, isTest: userKey.startsWith("test-") })
+
+    // Kør notification synkront inden response — waitUntil fanger ikke console.log
+    if (isFirstRealTurn) {
+      await sendFirstMessageNotification({ userText, conversationId }).catch(() => {})
+    }
 
     waitUntil(
-      Promise.all([
-        fetch(`https://${req.headers.host}/api/jobs/drain`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ conversationId }),
-          signal: AbortSignal.timeout ? AbortSignal.timeout(25000) : undefined,
-        }).catch(() => {}),
-        isFirstRealTurn
-          ? sendFirstMessageNotification({ userText, conversationId }).catch(() => {})
-          : Promise.resolve(),
-      ])
+      fetch(`https://${req.headers.host}/api/jobs/drain`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId }),
+        signal: AbortSignal.timeout ? AbortSignal.timeout(25000) : undefined,
+      }).catch(() => {})
     )
 
   } catch (e: any) {
