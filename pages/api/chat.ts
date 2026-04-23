@@ -350,6 +350,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       consentRecord: consentRecord ?? null,
     }))])
 
+    // Notifikation køres inden response — post-response execution termineres for tidligt
+    const isFirstRealTurn =
+      (input as any).type === "FREE_TEXT" &&
+      (baseState.revision ?? 0) === 0 &&
+      !userKey.startsWith("test-")
+    if (isFirstRealTurn) {
+      await sendFirstMessageNotification({ userText, conversationId }).catch(() => {})
+    }
+
     // Send response immediately — bruger ser svar med det samme.
     // Drain kører bagefter via waitUntil, som holder funktionen i live
     // indtil jobsene er færdige (eller maxDuration rammes).
@@ -359,18 +368,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ...serializeActiveNode(kernelResultFinal.state.active_node),
       deferred_job: scanThreads.deferredJob ?? null,
     })
-
-    // Post-response drain: kald dedikeret drain-endpoint med global semaphore.
-    // 25s timeout giver anticipate_turn jobs tid til SIMULATE-trinnet (~15-20s).
-    const isFirstRealTurn =
-      (input as any).type === "FREE_TEXT" &&
-      (baseState.revision ?? 0) === 0 &&
-      !userKey.startsWith("test-")
-
-    // Kør notification synkront inden response — waitUntil fanger ikke console.log
-    if (isFirstRealTurn) {
-      await sendFirstMessageNotification({ userText, conversationId }).catch(() => {})
-    }
 
     waitUntil(
       fetch(`https://${req.headers.host}/api/jobs/drain`, {
