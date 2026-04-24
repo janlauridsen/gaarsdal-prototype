@@ -162,9 +162,11 @@ export default function ConsentBanner({
         </button>
       </div>
       <p style={styles.fine}>
-        Ved at vælge gemme giver du udtrykkeligt samtykke til behandling af
-        sundhedsrelaterede oplysninger (GDPR art.&nbsp;9). Data bruges ikke til
-        træning og deles ikke med andre.
+        Ved at vælge &ldquo;Ja&rdquo; giver du udtrykkeligt samtykke til, at Jan Lauridsen
+        (Gaarsdal, jan@gaarsdal.net) behandler dine sundhedsrelaterede oplysninger
+        til sessionsforberedelse (GDPR art.&nbsp;9, stk.&nbsp;2, litra&nbsp;a).
+        Data bruges ikke til træning og deles ikke med tredjeparter.
+        Du kan til enhver tid trække dit samtykke tilbage via &ldquo;Slet mine data&rdquo;.
       </p>
     </div>
   )
