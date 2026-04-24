@@ -23,14 +23,18 @@ type TtmConversation = {
 type ExportData = { from: string; to: string; total_conversations: number; total_turns: number; conversations: Conversation[]; handoffs?: Handoff[]; leads?: Lead[]; feedback?: FeedbackItem[] }
 type Hit = { ts: string; path: string; city: string; postal?: string; region: string; day: string }
 
-function ConvRow({ c, i, total, stateMap, onOpen, onDelete, deleting }: {
+function ConvRow({ c, i, total, stateMap, onOpen, onDelete, deleting, selected, onToggle }: {
   c: Conversation; i: number; total: number
   stateMap: Record<string, StateSummary>
   onOpen: () => void; onDelete: () => void; deleting: boolean
+  selected: boolean; onToggle: () => void
 }) {
   const s = stateMap[c.conversation_id]
   return (
-    <tr style={{ borderBottom:i<total-1?"1px solid #F0EDE7":"none" }}>
+    <tr style={{ borderBottom:i<total-1?"1px solid #F0EDE7":"none", background:selected?"#1a2a1a":"" }}>
+      <td style={{ padding:"12px 16px" }} onClick={e=>e.stopPropagation()}>
+        <input type="checkbox" checked={selected} onChange={onToggle} style={{ cursor:"pointer", accentColor:"#627A52" }} />
+      </td>
       <td style={{ padding:"12px 16px", color:"#888888", whiteSpace:"nowrap", cursor:"pointer" }} onClick={onOpen}>{formatDate(c.turns[0]?.ts??"")}</td>
       <td style={{ padding:"12px 16px", fontFamily:"monospace", fontSize:"12px", color:"#888888", cursor:"pointer" }} onClick={onOpen}>{shortId(c.conversation_id)}</td>
       <td style={{ padding:"12px 16px", cursor:"pointer" }} onClick={onOpen}>{countUserTurns(c.turns)}</td>
@@ -123,6 +127,7 @@ export default function AdminPage() {
   const [showTestUsers, setShowTestUsers] = useState(false)
   const [groupByUser, setGroupByUser] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   const fetchMemory = useCallback(async () => {
     if (!secret) return; setMemoryLoading(true); setMemoryError(null)
@@ -229,6 +234,26 @@ export default function AdminPage() {
     } finally {
       setDeletingId(null)
     }
+  }
+
+  async function bulkDelete() {
+    if (selectedIds.size === 0) return
+    if (!confirm(`Slet ${selectedIds.size} samtale${selectedIds.size!==1?"r":""}? Dette kan ikke fortrydes.`)) return
+    const ids = [...selectedIds]
+    setSelectedIds(new Set())
+    for (const id of ids) {
+      setDeletingId(id)
+      try {
+        await fetch("/api/admin/delete-conversation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ secret, conversation_id: id }),
+        })
+        setData(prev => prev ? { ...prev, conversations: prev.conversations.filter(c => c.conversation_id !== id) } : prev)
+        if (openConvId === id) setOpenConvId(null)
+      } catch { /* non-fatal */ }
+    }
+    setDeletingId(null)
   }
 
   const conversations = (data?.conversations ?? []).filter(c => showTestUsers || !isTestConversation(c.conversation_id))
@@ -380,15 +405,40 @@ export default function AdminPage() {
           {/* Conversations list */}
           {tab==="conversations" && !openConvId && (
             <div style={{ ...S.card, overflow:"hidden" }}>
-              {conversations.length===0 ? <div style={{ padding:"40px", textAlign:"center", color:"#888888", fontSize:"14px" }}>Ingen samtaler i perioden</div> : (
+              {conversations.length===0 ? <div style={{ padding:"40px", textAlign:"center", color:"#888888", fontSize:"14px" }}>Ingen samtaler i perioden</div> : (<>
+                {selectedIds.size > 0 && (
+                  <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"10px 16px", background:"#1a2a1a", borderBottom:"1px solid #2a3a2a" }}>
+                    <span style={{ fontSize:"13px", color:"#6B8F71" }}>{selectedIds.size} valgt</span>
+                    <button onClick={bulkDelete} style={{ padding:"6px 14px", background:"transparent", color:"#c0392b", border:"1.5px solid #c0392b", borderRadius:"6px", fontSize:"13px", cursor:"pointer", fontFamily:"inherit" }}>Slet valgte</button>
+                    <button onClick={()=>setSelectedIds(new Set())} style={{ padding:"6px 12px", background:"transparent", color:"#888888", border:"1.5px solid #444", borderRadius:"6px", fontSize:"13px", cursor:"pointer", fontFamily:"inherit" }}>Fravælg alle</button>
+                  </div>
+                )}
                 <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"14px" }}>
                   <thead><tr style={{ background:"#1f1f1f", borderBottom:"1px solid #D8D5CC" }}>
+                    <th style={{ padding:"10px 16px", width:"36px" }}>
+                      <input type="checkbox"
+                        style={{ cursor:"pointer", accentColor:"#627A52" }}
+                        checked={conversations.length > 0 && conversations.every(c => selectedIds.has(c.conversation_id))}
+                        onChange={e => {
+                          if (e.target.checked) setSelectedIds(new Set(conversations.map(c => c.conversation_id)))
+                          else setSelectedIds(new Set())
+                        }}
+                      />
+                    </th>
                     {["Start","ID","Turns","Problem / Første besked","Fit","Arousal","Slut-node",""].map(h=><th key={h} style={{ padding:"10px 16px", textAlign:"left", fontSize:"12px", color:"#888888", fontWeight:500 }}>{h}</th>)}
                   </tr></thead>
                   <tbody>{(() => {
                     const sorted = [...conversations].reverse()
-                    if (!groupByUser) return sorted.map((c,i) => <ConvRow key={c.conversation_id} c={c} i={i} total={sorted.length} stateMap={stateMap} onOpen={()=>{setReturnToTab("conversations");setOpenConvId(c.conversation_id);fetchAnticipate(c.conversation_id)}} onDelete={()=>deleteConversation(c.conversation_id)} deleting={deletingId===c.conversation_id} />)
-                    // Grouped by user_key
+                    const makeRow = (c: Conversation, i: number, total: number) => (
+                      <ConvRow key={c.conversation_id} c={c} i={i} total={total} stateMap={stateMap}
+                        onOpen={()=>{setReturnToTab("conversations");setOpenConvId(c.conversation_id);fetchAnticipate(c.conversation_id)}}
+                        onDelete={()=>deleteConversation(c.conversation_id)}
+                        deleting={deletingId===c.conversation_id}
+                        selected={selectedIds.has(c.conversation_id)}
+                        onToggle={()=>setSelectedIds(prev=>{const n=new Set(prev);n.has(c.conversation_id)?n.delete(c.conversation_id):n.add(c.conversation_id);return n})}
+                      />
+                    )
+                    if (!groupByUser) return sorted.map((c,i) => makeRow(c, i, sorted.length))
                     const groups: Map<string, typeof sorted> = new Map()
                     for (const c of sorted) {
                       const k = c.user_key ?? "ukendt"
@@ -397,13 +447,22 @@ export default function AdminPage() {
                     }
                     const rows: React.ReactNode[] = []
                     groups.forEach((convs, userKey) => {
-                      rows.push(<tr key={`group-${userKey}`}><td colSpan={8} style={{ padding:"8px 16px", background:"#161616", fontSize:"11px", color:"#555555", fontFamily:"monospace", borderBottom:"1px solid #2a2a2a" }}>👤 {userKey.slice(-12)} — {convs.length} samtale{convs.length!==1?"r":""}</td></tr>)
-                      convs.forEach((c,i) => rows.push(<ConvRow key={c.conversation_id} c={c} i={i} total={convs.length} stateMap={stateMap} onOpen={()=>{setReturnToTab("conversations");setOpenConvId(c.conversation_id);fetchAnticipate(c.conversation_id)}} onDelete={()=>deleteConversation(c.conversation_id)} deleting={deletingId===c.conversation_id} />))
+                      const allSelected = convs.every(c => selectedIds.has(c.conversation_id))
+                      rows.push(
+                        <tr key={`group-${userKey}`}>
+                          <td style={{ padding:"8px 16px", background:"#161616", borderBottom:"1px solid #2a2a2a" }}>
+                            <input type="checkbox" checked={allSelected} style={{ cursor:"pointer", accentColor:"#627A52" }}
+                              onChange={e=>{setSelectedIds(prev=>{const n=new Set(prev);convs.forEach(c=>e.target.checked?n.add(c.conversation_id):n.delete(c.conversation_id));return n})}} />
+                          </td>
+                          <td colSpan={8} style={{ padding:"8px 16px", background:"#161616", fontSize:"11px", color:"#555555", fontFamily:"monospace", borderBottom:"1px solid #2a2a2a" }}>👤 {userKey.slice(-12)} — {convs.length} samtale{convs.length!==1?"r":""}</td>
+                        </tr>
+                      )
+                      convs.forEach((c,i) => rows.push(makeRow(c, i, convs.length)))
                     })
                     return rows
                   })()}</tbody>
                 </table>
-              )}
+              </>)}
             </div>
           )}
 
