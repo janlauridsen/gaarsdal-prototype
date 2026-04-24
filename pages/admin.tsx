@@ -5,7 +5,7 @@ type RawTurn = {
   ts: string; conversation_id: string; revision: number
   node_id: string; input_type: string; user_input: string; assistant_output: string
 }
-type Conversation = { conversation_id: string; turns: RawTurn[] }
+type Conversation = { conversation_id: string; user_key?: string; turns: RawTurn[] }
 type Handoff = { id: string; received_at: string; navn: string; emne: string; kontakt: string; besked?: string; email_status?: string; conversation_id: string }
 type Lead = { id: string; received_at: string; email: string; tema?: string; conversation_id: string }
 type FeedbackItem = { ts: string; conversation_id: string; revision?: number; rating: "positive" | "partial" | "negative"; tags?: string[]; note?: string; meta?: { node?: string; mode?: string; move?: string } }
@@ -22,6 +22,30 @@ type TtmConversation = {
 }
 type ExportData = { from: string; to: string; total_conversations: number; total_turns: number; conversations: Conversation[]; handoffs?: Handoff[]; leads?: Lead[]; feedback?: FeedbackItem[] }
 type Hit = { ts: string; path: string; city: string; postal?: string; region: string; day: string }
+
+function ConvRow({ c, i, total, stateMap, onOpen, onDelete, deleting }: {
+  c: Conversation; i: number; total: number
+  stateMap: Record<string, StateSummary>
+  onOpen: () => void; onDelete: () => void; deleting: boolean
+}) {
+  const s = stateMap[c.conversation_id]
+  return (
+    <tr style={{ borderBottom:i<total-1?"1px solid #F0EDE7":"none" }}>
+      <td style={{ padding:"12px 16px", color:"#888888", whiteSpace:"nowrap", cursor:"pointer" }} onClick={onOpen}>{formatDate(c.turns[0]?.ts??"")}</td>
+      <td style={{ padding:"12px 16px", fontFamily:"monospace", fontSize:"12px", color:"#888888", cursor:"pointer" }} onClick={onOpen}>{shortId(c.conversation_id)}</td>
+      <td style={{ padding:"12px 16px", cursor:"pointer" }} onClick={onOpen}>{countUserTurns(c.turns)}</td>
+      <td style={{ padding:"12px 16px", maxWidth:"240px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", cursor:"pointer" }} onClick={onOpen}>
+        {s?.problem_title ? <span style={{ color:"#cccccc", fontWeight:500 }}>{s.problem_title}</span> : <span style={{ color:"#555555" }}>{getFirstUserMessage(c.turns)}</span>}
+      </td>
+      <td style={{ padding:"12px 16px", cursor:"pointer" }} onClick={onOpen}><FitBadge fit={s?.fit} /></td>
+      <td style={{ padding:"12px 16px", cursor:"pointer" }} onClick={onOpen}><ArousalBadge level={s?.arousal_level} /></td>
+      <td style={{ padding:"12px 16px", cursor:"pointer" }} onClick={onOpen}><span style={{ fontSize:"12px", padding:"2px 8px", borderRadius:"12px", background:getLastNode(c.turns)==="HANDOFF_CONFIRM"?"#0f2b15":"#1f1f1f", color:getLastNode(c.turns)==="HANDOFF_CONFIRM"?"#5aad72":"#888888" }}>{getLastNode(c.turns)}</span></td>
+      <td style={{ padding:"12px 16px" }}>
+        <button onClick={e=>{e.stopPropagation();onDelete()}} disabled={deleting} style={{ fontSize:"12px", color:"#c0392b", background:"none", border:"none", cursor:"pointer", padding:"2px 6px", opacity:deleting?0.4:1, fontFamily:"inherit" }}>{deleting?"…":"Slet"}</button>
+      </td>
+    </tr>
+  )
+}
 
 function formatDate(iso: string): string {
   try { return new Date(iso).toLocaleString("da-DK", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) }
@@ -97,6 +121,8 @@ export default function AdminPage() {
   const [hitsError, setHitsError] = useState<string|null>(null)
   const [hitsDays, setHitsDays] = useState(30)
   const [showTestUsers, setShowTestUsers] = useState(false)
+  const [groupByUser, setGroupByUser] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const fetchMemory = useCallback(async () => {
     if (!secret) return; setMemoryLoading(true); setMemoryError(null)
@@ -188,6 +214,23 @@ export default function AdminPage() {
   )
 
   const isTestConversation = (id: string) => id.includes(":test-")
+  async function deleteConversation(conversationId: string) {
+    if (!secret) return
+    if (!confirm("Slet denne samtale permanent?")) return
+    setDeletingId(conversationId)
+    try {
+      await fetch("/api/admin/delete-conversation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ secret, conversation_id: conversationId }),
+      })
+      setData(prev => prev ? { ...prev, conversations: prev.conversations.filter(c => c.conversation_id !== conversationId) } : prev)
+      if (openConvId === conversationId) setOpenConvId(null)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   const conversations = (data?.conversations ?? []).filter(c => showTestUsers || !isTestConversation(c.conversation_id))
   const handoffs = ((data?.handoffs ?? []) as Handoff[]).filter(h => showTestUsers || !isTestConversation(h.conversation_id))
   const leads = ((data?.leads ?? []) as Lead[]).filter(l => showTestUsers || !isTestConversation(l.conversation_id))
@@ -223,6 +266,7 @@ export default function AdminPage() {
             <button onClick={()=>downloadBlob(toCSV(conversations),`samtaler-${from}-${to}.csv`,"text/csv")} style={{ padding:"9px 16px", background:"transparent", color:"#6B8F71", border:"1.5px solid #627A52", borderRadius:"8px", fontSize:"14px", cursor:"pointer", fontFamily:"inherit" }}>Download CSV</button>
             <button onClick={()=>downloadBlob(JSON.stringify(data,null,2),`gaarsdal-export-${from}-${to}.json`,"application/json")} style={{ padding:"9px 16px", background:"transparent", color:"#888888", border:"1.5px solid #D8D5CC", borderRadius:"8px", fontSize:"14px", cursor:"pointer", fontFamily:"inherit" }}>Download JSON</button>
             <button onClick={()=>setShowTestUsers(v=>!v)} style={{ padding:"9px 16px", background:"transparent", color:showTestUsers?"#d4a264":"#888888", border:`1.5px solid ${showTestUsers?"#d4a264":"#D8D5CC"}`, borderRadius:"8px", fontSize:"14px", cursor:"pointer", fontFamily:"inherit" }}>{showTestUsers ? "⚗ Vis testbrugere" : "⚗ Skjul testbrugere"}</button>
+            <button onClick={()=>setGroupByUser(v=>!v)} style={{ padding:"9px 16px", background:"transparent", color:groupByUser?"#6B8F71":"#888888", border:`1.5px solid ${groupByUser?"#627A52":"#D8D5CC"}`, borderRadius:"8px", fontSize:"14px", cursor:"pointer", fontFamily:"inherit" }}>{groupByUser ? "👤 Grupperet pr. bruger" : "👤 Gruppér pr. bruger"}</button>
             {statesLoading && <span style={{ fontSize:"13px", color:"#555555" }}>Henter fit-data…</span>}
           </>}
         </div>
@@ -339,24 +383,25 @@ export default function AdminPage() {
               {conversations.length===0 ? <div style={{ padding:"40px", textAlign:"center", color:"#888888", fontSize:"14px" }}>Ingen samtaler i perioden</div> : (
                 <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"14px" }}>
                   <thead><tr style={{ background:"#1f1f1f", borderBottom:"1px solid #D8D5CC" }}>
-                    {["Start","ID","Turns","Problem / Første besked","Fit","Arousal","Slut-node"].map(h=><th key={h} style={{ padding:"10px 16px", textAlign:"left", fontSize:"12px", color:"#888888", fontWeight:500 }}>{h}</th>)}
+                    {["Start","ID","Turns","Problem / Første besked","Fit","Arousal","Slut-node",""].map(h=><th key={h} style={{ padding:"10px 16px", textAlign:"left", fontSize:"12px", color:"#888888", fontWeight:500 }}>{h}</th>)}
                   </tr></thead>
-                  <tbody>{[...conversations].reverse().map((c,i)=>{
-                    const s = stateMap[c.conversation_id]
-                    return <tr key={c.conversation_id} onClick={()=>{setReturnToTab("conversations");setOpenConvId(c.conversation_id);fetchAnticipate(c.conversation_id)}}
-                      style={{ borderBottom:i<conversations.length-1?"1px solid #F0EDE7":"none", cursor:"pointer" }}
-                      onMouseEnter={e=>(e.currentTarget.style.background="#222222")} onMouseLeave={e=>(e.currentTarget.style.background="")}>
-                      <td style={{ padding:"12px 16px", color:"#888888", whiteSpace:"nowrap" }}>{formatDate(c.turns[0]?.ts??"")}</td>
-                      <td style={{ padding:"12px 16px", fontFamily:"monospace", fontSize:"12px", color:"#888888" }}>{shortId(c.conversation_id)}</td>
-                      <td style={{ padding:"12px 16px" }}>{countUserTurns(c.turns)}</td>
-                      <td style={{ padding:"12px 16px", maxWidth:"240px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                        {s?.problem_title ? <span style={{ color:"#cccccc", fontWeight:500 }}>{s.problem_title}</span> : <span style={{ color:"#555555" }}>{getFirstUserMessage(c.turns)}</span>}
-                      </td>
-                      <td style={{ padding:"12px 16px" }}><FitBadge fit={s?.fit} /></td>
-                      <td style={{ padding:"12px 16px" }}><ArousalBadge level={s?.arousal_level} /></td>
-                      <td style={{ padding:"12px 16px" }}><span style={{ fontSize:"12px", padding:"2px 8px", borderRadius:"12px", background:getLastNode(c.turns)==="HANDOFF_CONFIRM"?"#0f2b15":"#1f1f1f", color:getLastNode(c.turns)==="HANDOFF_CONFIRM"?"#5aad72":"#888888" }}>{getLastNode(c.turns)}</span></td>
-                    </tr>
-                  })}</tbody>
+                  <tbody>{(() => {
+                    const sorted = [...conversations].reverse()
+                    if (!groupByUser) return sorted.map((c,i) => <ConvRow key={c.conversation_id} c={c} i={i} total={sorted.length} stateMap={stateMap} onOpen={()=>{setReturnToTab("conversations");setOpenConvId(c.conversation_id);fetchAnticipate(c.conversation_id)}} onDelete={()=>deleteConversation(c.conversation_id)} deleting={deletingId===c.conversation_id} />)
+                    // Grouped by user_key
+                    const groups: Map<string, typeof sorted> = new Map()
+                    for (const c of sorted) {
+                      const k = c.user_key ?? "ukendt"
+                      if (!groups.has(k)) groups.set(k, [])
+                      groups.get(k)!.push(c)
+                    }
+                    const rows: React.ReactNode[] = []
+                    groups.forEach((convs, userKey) => {
+                      rows.push(<tr key={`group-${userKey}`}><td colSpan={8} style={{ padding:"8px 16px", background:"#161616", fontSize:"11px", color:"#555555", fontFamily:"monospace", borderBottom:"1px solid #2a2a2a" }}>👤 {userKey.slice(-12)} — {convs.length} samtale{convs.length!==1?"r":""}</td></tr>)
+                      convs.forEach((c,i) => rows.push(<ConvRow key={c.conversation_id} c={c} i={i} total={convs.length} stateMap={stateMap} onOpen={()=>{setReturnToTab("conversations");setOpenConvId(c.conversation_id);fetchAnticipate(c.conversation_id)}} onDelete={()=>deleteConversation(c.conversation_id)} deleting={deletingId===c.conversation_id} />))
+                    })
+                    return rows
+                  })()}</tbody>
                 </table>
               )}
             </div>
