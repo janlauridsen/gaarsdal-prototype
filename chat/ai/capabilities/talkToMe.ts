@@ -346,8 +346,9 @@ async function runTalkToMe(
           reason: "ttm:ritual-q1",
           response_message: q1,
           meta_delta: {
+            // Gem IKKE hilsenen i transcript — kun reelle bruger↔assistent-ture hører til der.
+            // Hilsenen er deterministisk og tilføjes på ny ved hvert init-kald.
             "ttm.ritual_stage": { value: "q1", source_node: "TALK_TO_ME" },
-            "ttm.transcript": { value: appendTranscript(transcript, "", q1), source_node: "TALK_TO_ME" },
             "ttm.turn_count": { value: turnCount, source_node: "TALK_TO_ME" },
           },
         },
