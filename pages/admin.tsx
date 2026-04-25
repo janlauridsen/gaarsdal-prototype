@@ -184,6 +184,21 @@ export default function AdminPage() {
     } catch (e:any) { setTtmError(e.message ?? "Ukendt fejl") } finally { setTtmLoading(false) }
   }, [secret, from, to])
 
+  const deleteTtm = useCallback(async (conversationId: string) => {
+    if (!secret) return
+    if (!window.confirm(`Slet samtale ${conversationId.slice(-12)}?`)) return
+    try {
+      const res = await fetch(`/api/admin/ttm?secret=${encodeURIComponent(secret)}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversation_id: conversationId }),
+      })
+      if (!res.ok) { const j = await res.json().catch(()=>({})); alert(j.error ?? `Fejl ${res.status}`); return }
+      setTtmData(prev => prev ? prev.filter(c => c.conversation_id !== conversationId) : prev)
+      if (openTtmId === conversationId) setOpenTtmId(null)
+    } catch (e:any) { alert(e.message ?? "Ukendt fejl") }
+  }, [secret, openTtmId])
+
   const fetchData = useCallback(async () => {
     if (!secret) return; setLoading(true); setError(null); setData(null); setOpenConvId(null); setStateMap({})
     try {
@@ -801,6 +816,7 @@ export default function AdminPage() {
                       <th style={{ padding:"10px 16px", textAlign:"left", color:"#888888", fontWeight:400 }}>Emne</th>
                       <th style={{ padding:"10px 16px", textAlign:"left", color:"#888888", fontWeight:400 }}>Turns</th>
                       <th style={{ padding:"10px 16px", textAlign:"left", color:"#888888", fontWeight:400 }}>Stage</th>
+                      <th style={{ padding:"10px 4px", width:"40px" }}></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -828,6 +844,11 @@ export default function AdminPage() {
                             {conv.ritual_stage}
                           </span>
                         </td>
+                        <td style={{ padding:"12px 16px" }} onClick={e=>e.stopPropagation()}>
+                          <button onClick={()=>deleteTtm(conv.conversation_id)}
+                            style={{ background:"none", border:"none", cursor:"pointer", color:"#555555", fontSize:"16px", padding:"2px 6px", lineHeight:1, fontFamily:"inherit" }}
+                            title="Slet samtale">✕</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -842,7 +863,10 @@ export default function AdminPage() {
             if (!conv) return null
             return (
               <div>
-                <button onClick={()=>setOpenTtmId(null)} style={{ display:"flex", alignItems:"center", gap:"6px", fontSize:"14px", color:"#c4a97d", background:"none", border:"none", cursor:"pointer", marginBottom:"16px", padding:0, fontFamily:"inherit" }}>← Tilbage til TTM</button>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"16px" }}>
+                <button onClick={()=>setOpenTtmId(null)} style={{ display:"flex", alignItems:"center", gap:"6px", fontSize:"14px", color:"#c4a97d", background:"none", border:"none", cursor:"pointer", padding:0, fontFamily:"inherit" }}>← Tilbage til TTM</button>
+                <button onClick={()=>deleteTtm(conv.conversation_id)} style={{ fontSize:"13px", color:"#e06060", background:"none", border:"1px solid #4a1a1a", borderRadius:"8px", padding:"6px 14px", cursor:"pointer", fontFamily:"inherit" }}>Slet samtale</button>
+              </div>
                 <div style={{ display:"flex", gap:"16px", marginBottom:"20px", flexWrap:"wrap" }}>
                   <div style={{ ...S.card, padding:"14px 20px", minWidth:"120px" }}>
                     <div style={{ fontSize:"11px", color:"#888888", marginBottom:"4px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Score</div>
@@ -860,7 +884,7 @@ export default function AdminPage() {
                 <div style={{ ...S.card, padding:"20px", display:"flex", flexDirection:"column", gap:"12px" }}>
                   {conv.transcript.map((t, i) => (
                     <div key={i} style={{ display:"flex", flexDirection:"column", alignItems: t.role === "user" ? "flex-end" : "flex-start", maxWidth:"80%", alignSelf: t.role === "user" ? "flex-end" : "flex-start" }}>
-                      <div style={{ fontSize:"10px", color:"#555555", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"4px" }}>{t.role === "assistant" ? "Jan" : "Bruger"}</div>
+                      <div style={{ fontSize:"10px", color:"#555555", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"4px" }}>{t.role === "assistant" ? "Ida" : "Bruger"}</div>
                       <div style={{ padding:"10px 14px", borderRadius:"12px", fontSize:"13px", lineHeight:1.6, whiteSpace:"pre-wrap",
                         background: t.role === "assistant" ? "#252018" : "#33291e",
                         color: t.role === "assistant" ? "#c8bc9e" : "#e8dcc8",
