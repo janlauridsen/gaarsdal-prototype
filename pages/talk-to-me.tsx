@@ -131,6 +131,9 @@ function NumberPicker({ onPick }: { onPick: (n: number) => void }) {
 
   return (
     <div style={{ marginTop: 12 }}>
+      <div style={{ fontSize: 11, color: C.textDim, marginBottom: 8, letterSpacing: "0.03em" }}>
+        Tryk på et tal herunder
+      </div>
       <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
         {[1,2,3,4,5,6,7,8,9,10].map((n) => (
           <button
@@ -294,7 +297,7 @@ function Chat({
   const lastMsg = messages[messages.length - 1]
   const showPicker = lastMsg?.showNumberPicker === true && lastMsg.role === "assistant"
   const showContinuation = lastMsg?.showContinuationPicker === true && lastMsg.role === "assistant"
-  const isQ2 = lastMsg?.role === "assistant" && lastMsg.content.includes("top-of-mind")
+  const isQ2 = lastMsg?.role === "assistant" && lastMsg.content.includes("fylder så")
   const showInput = !showPicker && !showContinuation && consentStatus !== "pending"
 
   function handleSend() {
@@ -321,7 +324,7 @@ function Chat({
           <div style={{ width: 14, height: 14, borderRadius: "50%", background: C.accent, opacity: 0.7 }} />
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, color: C.textPrimary, fontWeight: 500 }}>Jan</div>
+          <div style={{ fontSize: 14, color: C.textPrimary, fontWeight: 500 }}>Ida</div>
           <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.04em" }}>Talk To Me · Gaarsdal</div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -357,7 +360,7 @@ function Chat({
           return (
             <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: msg.role === "user" ? "flex-end" : "flex-start", maxWidth: "85%", alignSelf: msg.role === "user" ? "flex-end" : "flex-start", opacity: historyOpacity }}>
               {msg.role === "assistant" && !msg.isHistory && (
-                <div style={{ fontSize: 10, letterSpacing: "0.1em", color: C.textDim, textTransform: "uppercase", marginBottom: 5 }}>Jan</div>
+                <div style={{ fontSize: 10, letterSpacing: "0.1em", color: C.textDim, textTransform: "uppercase", marginBottom: 5 }}>Ida</div>
               )}
               <div style={{
                 padding: "11px 14px",
@@ -387,7 +390,7 @@ function Chat({
 
         {loading && (
           <div style={{ alignSelf: "flex-start" }}>
-            <div style={{ fontSize: 10, letterSpacing: "0.1em", color: C.textDim, textTransform: "uppercase", marginBottom: 5 }}>Jan</div>
+            <div style={{ fontSize: 10, letterSpacing: "0.1em", color: C.textDim, textTransform: "uppercase", marginBottom: 5 }}>Ida</div>
             <div style={{ padding: "11px 16px", borderRadius: 16, borderBottomLeftRadius: 4, background: C.bgBubbleJan, display: "flex", gap: 6, alignItems: "center" }}>
               {[0,1,2].map((i) => (
                 <div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: C.textDim, animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
@@ -594,7 +597,7 @@ export default function TalkToMe() {
     <>
       <Head>
         <title>Talk To Me — Gaarsdal</title>
-        <meta name="description" content="Et sted at tænke højt — uden at skulle have svarene klar. TTM af Jan Gaarsdal." />
+        <meta name="description" content="Et sted at tænke højt — uden at skulle have svarene klar. TTM af Gaarsdal." />
         <meta name="robots" content="noindex" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
