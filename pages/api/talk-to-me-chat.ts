@@ -92,6 +92,24 @@ export default async function handler(
     ? rawConvId
     : `${TTM_CONV_PREFIX}${newUuid()}`
 
+  // userText trækkes ud tidligt så den kan bruges i early-return-tjekket nedenfor
+  const userText = typeof body?.userText === "string" ? body.userText.trim() : ""
+
+  // ── Rent samtykke-kald (ingen userText, kun retentionDays) ─────────────────
+  // Kør IKKE capability — det ville tilføje endnu en kopi af åbningshilsenen
+  // til transcript og skrive overflødig state til Redis.
+  if (typeof body?.retentionDays === "number" && !userText) {
+    res.status(200).json({
+      message: "",
+      conversationId,
+      showNumberPicker: false,
+      showContinuationPicker: false,
+      previousTurns: [],
+      isReturning: false,
+    })
+    return
+  }
+
   // ── State ───────────────────────────────────────────────────────────────────
   let state = canPersist ? await readConversationState(conversationId) : null
   const isReturning = state !== null && ((state.meta["ttm.turn_count"]?.value as number) ?? 0) > 0
@@ -101,8 +119,6 @@ export default async function handler(
   }
 
   // ── Run capability ──────────────────────────────────────────────────────────
-  const userText = typeof body?.userText === "string" ? body.userText.trim() : ""
-
   const llm = createOpenAiCompatibleClient()
   let result: Awaited<ReturnType<typeof talkToMeCapability.run>>
 
