@@ -223,10 +223,11 @@ async function runQualityRubric(transcript: Turn[], customCriteria?: string[]): 
     `"passed" på topniveau er true kun hvis ALLE kriterier passer.`,
   ].join("\n")
 
-  const raw = await callLLM(QUALITY_RUBRIC_SYSTEM, prompt, 0, 800)
+  const raw = await callLLM(QUALITY_RUBRIC_SYSTEM, prompt, 0, 1200)
 
   try {
-    const parsed = JSON.parse(raw)
+    const clean = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim()
+    const parsed = JSON.parse(clean)
     return {
       passed: Boolean(parsed.passed),
       criteria: Array.isArray(parsed.criteria) ? parsed.criteria : [],
@@ -234,7 +235,7 @@ async function runQualityRubric(transcript: Turn[], customCriteria?: string[]): 
   } catch {
     return {
       passed: false,
-      criteria: [{ criterion: "Parse-fejl", passed: false, reasoning: raw.slice(0, 200) }],
+      criteria: [{ criterion: "Parse-fejl", passed: false, reasoning: raw.slice(0, 300) }],
     }
   }
 }
