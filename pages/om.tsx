@@ -31,14 +31,14 @@ export default function Om() {
         <main className="max-w-3xl mx-auto py-24 px-6">
 
           {/* HERO MED BILLEDE */}
-          <div className="flex flex-col sm:flex-row gap-8 items-start mb-14">
+          <div className="flex flex-col sm:flex-row gap-8 items-center mb-14">
             <div className="flex-shrink-0">
               <Image
                 src="/Jan-AI.png"
                 alt="Jan Lauridsen, hypnoterapeut"
-                width={160}
-                height={160}
-                className="rounded-2xl object-cover shadow-sm"
+                width={120}
+                height={120}
+                className="rounded-xl object-cover shadow-sm"
                 priority
               />
             </div>
