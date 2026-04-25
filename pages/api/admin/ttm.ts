@@ -37,12 +37,40 @@ function parseDate(s: string, endOfDay = false): number {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (!validateToken(req, res)) return
+
+  // ── DELETE: slet én TTM-samtale ─────────────────────────────────────────
+  if (req.method === "DELETE") {
+    const conversationId = typeof req.body?.conversation_id === "string" ? req.body.conversation_id.trim() : ""
+    if (!conversationId.startsWith("ttm:")) {
+      res.status(400).json({ error: "Ugyldigt conversation_id" })
+      return
+    }
+
+    const client = getRedisClient()
+    if (!client) {
+      res.status(500).json({ error: "Redis ikke tilgængeligt" })
+      return
+    }
+
+    const shortId = conversationId.replace(/^ttm:/, "")
+    try {
+      await Promise.all([
+        client.del(`${TTM_STATE_PREFIX}${shortId}`),
+        client.zrem(TTM_INDEX_KEY, shortId),
+      ])
+      res.status(200).json({ deleted: conversationId })
+    } catch (err) {
+      console.error("[TTM admin DELETE]", err)
+      res.status(500).json({ error: String(err) })
+    }
+    return
+  }
+
   if (req.method !== "GET") {
     res.status(405).json({ error: "Method not allowed" })
     return
   }
-
-  if (!validateToken(req, res)) return
 
   const client = getRedisClient()
   if (!client) {
