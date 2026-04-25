@@ -1,5 +1,6 @@
 // pages/om.tsx
 import Head from "next/head";
+import Image from "next/image";
 import Link from "next/link";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -8,67 +9,82 @@ export default function Om() {
   return (
     <>
       <Head>
-        <title>Om Jan Gaarsdal – hypnoterapeut i Birkerød | Gaarsdal</title>
+        <title>Om Jan – hypnoterapeut i Birkerød | Gaarsdal</title>
         <meta
           name="description"
-          content="Om Jan Erik Gaarsdal Lauridsen – baggrund i ledelse og komplekse miljøer. En rolig, struktureret og nøgtern tilgang til hypnoterapi i Birkerød."
+          content="Jeg arbejder med mennesker, der har brug for ro, klarhed og en mere direkte vej til forandring. En rolig, jordnær tilgang til hypnoterapi i Birkerød."
         />
         <link rel="canonical" href="https://gaarsdal.net/om" />
-        <meta property="og:title" content="Om Jan Gaarsdal – hypnoterapeut i Birkerød" />
+        <meta property="og:title" content="Om Jan – hypnoterapeut i Birkerød" />
         <meta
           property="og:description"
-          content="Baggrund i ledelse og komplekse miljøer. En praktisk, nøgtern tilgang til hypnoterapi – uden store løfter og uden hastværk."
+          content="Jeg arbejder med mennesker, der har brug for ro, klarhed og en mere direkte vej til forandring."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://gaarsdal.net/om" />
-        <meta
-          property="og:image"
-          content="https://gaarsdal.net/Gaarsdal.net_logo_brand.png"
-        />
+        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta name="robots" content="index, follow" />
       </Head>
 
       <div className="min-h-screen bg-bg text-text">
         <Header />
         <main className="max-w-3xl mx-auto py-24 px-6">
-          {/* HERO */}
-          <div className="mb-12">
-            <h1 className="text-h1 font-medium mb-4">Om mig</h1>
-            <p className="text-base-lg text-muted">
-              En rolig og struktureret tilgang – uden store løfter og uden
-              hastværk.
-            </p>
+
+          {/* HERO MED BILLEDE */}
+          <div className="flex flex-col sm:flex-row gap-8 items-start mb-14">
+            <div className="flex-shrink-0">
+              <Image
+                src="/Jan-AI.png"
+                alt="Jan Lauridsen, hypnoterapeut"
+                width={160}
+                height={160}
+                className="rounded-2xl object-cover shadow-sm"
+                priority
+              />
+            </div>
+            <div>
+              <h1 className="text-h1 font-medium mb-3">Jeg hedder Jan</h1>
+              <p className="text-base-lg text-muted leading-relaxed">
+                Jeg arbejder med mennesker, der har brug for ro, klarhed og en
+                mere direkte vej til forandring.
+              </p>
+            </div>
           </div>
 
-          {/* ANERKENDELSE AF KLIENTENS REJSE */}
-          <section className="bg-white p-6 rounded-lg shadow-sm mb-10">
-            <p className="text-muted leading-relaxed mb-4">
-              De fleste der kontakter mig har allerede arbejdet med deres
-              udfordring i nogen tid — måske via psykolog, coaching, mindfulness
-              eller ved at forsøge at tænke sig ud af det. De har indsigten.
-              De mangler bevægelsen.
+          {/* JANS STEMME */}
+          <section className="bg-white p-6 rounded-lg shadow-sm mb-10 space-y-4">
+            <p className="text-muted leading-relaxed">
+              Mange af dem, der kommer til mig, har prøvet meget: tænkt,
+              analyseret, kæmpet, forsøgt at tage sig sammen. Alligevel sidder
+              de fast i noget, der ikke slipper.
             </p>
             <p className="text-muted leading-relaxed">
-              Hypnoterapi er en metode der arbejder der, hvor analysen ikke
-              når ind — med de automatiske reaktioner og mønstre der gentager
-              sig, selvom man rationelt ved bedre. Det er ikke magi. Men det
-              kan føles meget mere direkte end det, man har prøvet før.
+              Jeg har altid været optaget af, hvordan mennesker fungerer — ikke
+              kun på overfladen, men i de dybere lag, hvor vores automatiske
+              reaktioner bliver skabt. Det er også derfor, jeg arbejder med
+              hypnose. Det er en metode, der giver adgang til de steder, hvor
+              forandring faktisk kan ske, uden at man skal presse sig selv eller
+              forklare alting perfekt.
+            </p>
+            <p className="text-muted leading-relaxed">
+              Min tilgang er rolig, jordnær og uden drama. Jeg tror ikke på
+              hurtige slogans eller "nu fikser vi dig"-mentalitet. Jeg tror på
+              at skabe et trygt rum, hvor du kan være dig selv uden at blive
+              dømt. Her arbejder vi med det, der viser sig — i dit tempo, med
+              respekt for dine grænser og din historie.
             </p>
           </section>
 
           {/* BAGGRUND */}
-          <section className="bg-white p-6 rounded-lg shadow-sm mb-10">
-            <h2 className="text-h2 font-light mb-4">Baggrund</h2>
-            <p className="text-muted leading-relaxed mb-4">
-              Jeg har baggrund i ledelse og arbejde i komplekse miljøer, hvor
-              pres, beslutninger og menneskelige reaktioner er en del af
-              hverdagen. Det har formet en praktisk tilgang: mindre fokus på
-              forklaringer, mere fokus på hvad der virker i praksis.
-            </p>
-            <p className="text-muted leading-relaxed mb-4">
-              Hypnoterapi bruger jeg som et præcist redskab til at arbejde med
-              automatiske mønstre. Målet er forandringer, der holder i
-              hverdagen – i et tempo der er realistisk og meningsfuldt.
+          <section className="bg-white p-6 rounded-lg shadow-sm mb-10 space-y-4">
+            <h2 className="text-h2 font-light mb-2">Baggrund</h2>
+            <p className="text-muted leading-relaxed">
+              Jeg har en baggrund, hvor jeg i mange år har arbejdet med
+              komplekse systemer, mønstre og problemløsning. Det har lært mig
+              én ting: Når noget bliver ved med at drille, er det sjældent fordi
+              man ikke prøver hårdt nok. Det er fordi man ikke har fået adgang
+              til det sted, hvor mønstret styres fra. Det er præcis dér, hypnose
+              kan noget særligt.
             </p>
             <p className="text-muted leading-relaxed">
               Jeg er ikke psykolog eller læge. Hypnoterapi er ikke behandling i
@@ -153,12 +169,18 @@ export default function Om() {
             </div>
           </section>
 
+          {/* AFSLUTTENDE CITAT */}
+          <section className="bg-accent/5 border border-accent/20 rounded-xl p-6 mb-10">
+            <p className="text-muted leading-relaxed italic">
+              "Hvis du søger en behandler, der møder dig med ro, nysgerrighed
+              og respekt — uden at gøre dig forkert — så er du velkommen her."
+            </p>
+          </section>
+
           {/* CONTACT */}
           <section className="bg-white p-6 rounded-lg border border-gray-100">
             <h3 className="font-semibold mb-2">Kontakt</h3>
-            <p className="text-sm text-muted mb-1">
-              Bakkevej 36, 3460 Birkerød
-            </p>
+            <p className="text-sm text-muted mb-1">Bakkevej 36, 3460 Birkerød</p>
             <p className="text-sm text-muted mb-1">
               Mail:{" "}
               <a href="mailto:jan@gaarsdal.net" className="text-accent hover:underline">
@@ -181,8 +203,8 @@ export default function Om() {
               </Link>
             </div>
           </section>
-        </main>
 
+        </main>
         <Footer />
       </div>
     </>
