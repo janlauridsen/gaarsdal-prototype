@@ -94,19 +94,18 @@ function detectCrisis(text: string): boolean {
 
 // ─── Ritual messages ───────────────────────────────────────────────────────
 
-function buildQ1Message(context: AiCapabilityContext): string {
+function buildOpeningMessage(context: AiCapabilityContext): string {
   const turnCount = readTurnCount(context)
-  const lastScore = readScore(context)
   const lastTopic = readLastTopic(context)
 
-  if (turnCount > 2 && lastScore !== null && lastTopic) {
-    return `Hej igen. Sidst talte vi om ${lastTopic} — og du var på en ${lastScore}. Hvor er du henne nu? På en skala fra 1 til 10.`
+  if (turnCount > 2 && lastTopic) {
+    return `Hej igen. Vi talte om ${lastTopic} sidst. Hvad sker der?`
   }
-  if (turnCount > 2 && lastScore !== null) {
-    return `Hej igen. Sidst var du på en ${lastScore}. Hvad med nu?`
+  if (turnCount > 2) {
+    return "Hej igen. Godt at se dig. Hvad er der?"
   }
 
-  return "Hej. Godt du er her.\n\nHvordan har du det — på en skala fra 1 til 10?"
+  return "Hej. Hvad er der?"
 }
 
 function buildContinuationMessage(context: AiCapabilityContext): string {
@@ -335,17 +334,18 @@ async function runTalkToMe(
     }
 
     if (stage === "q1" || stage === "open") {
-      const q1 = buildQ1Message(context)
+      const opening = buildOpeningMessage(context)
       return {
         transition: {
           type: "NODE_HOP",
           from: context.state.active_node,
           to: context.state.active_node,
-          reason: "ttm:ritual-q1",
-          response_message: q1,
+          reason: "ttm:opening",
+          response_message: opening,
           meta_delta: {
-            // Gem IKKE hilsenen i transcript — kun reelle bruger↔assistent-ture hører til der.
-            "ttm.ritual_stage": { value: "q1", source_node: "TALK_TO_ME" },
+            // Sæt stage til "open" med det samme — ingen ritual-tvang.
+            // Hilsenen gemmes ikke i transcript — kun reelle ture hører til der.
+            "ttm.ritual_stage": { value: "open", source_node: "TALK_TO_ME" },
             "ttm.turn_count": { value: turnCount, source_node: "TALK_TO_ME" },
           },
         },
@@ -391,29 +391,6 @@ async function runTalkToMe(
     }
 
     // Fortsæt → falder igennem til åben samtale
-  }
-
-  // ── Ritual stage: q1 + userText (score modtaget → returnér Q2) ───────────
-  if (stage === "q1") {
-    const score = parseInt(userText.replace(/[^0-9]/g, ""), 10)
-    const validScore = !isNaN(score) && score >= 1 && score <= 10 ? score : null
-    const updatedTranscript = appendTranscript(transcript, userText, Q2_MESSAGE)
-
-    return {
-      transition: {
-        type: "NODE_HOP",
-        from: context.state.active_node,
-        to: context.state.active_node,
-        reason: "ttm:ritual-q2",
-        response_message: Q2_MESSAGE,
-        meta_delta: {
-          "ttm.ritual_stage": { value: "q2", source_node: "TALK_TO_ME" },
-          "ttm.transcript": { value: updatedTranscript, source_node: "TALK_TO_ME" },
-          ...(validScore !== null ? { "ttm.score": { value: validScore, source_node: "TALK_TO_ME" } } : {}),
-        },
-      },
-      debug: { capability: "talk-to-me-v1", used_fallback: false },
-    }
   }
 
   // ── Åben samtale ──────────────────────────────────────────────────────────
