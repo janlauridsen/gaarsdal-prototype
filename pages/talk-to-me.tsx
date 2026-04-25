@@ -131,7 +131,7 @@ function NumberPicker({ onPick }: { onPick: (n: number) => void }) {
 
   return (
     <div style={{ marginTop: 12 }}>
-      <div style={{ fontSize: 11, color: C.textDim, marginBottom: 8, letterSpacing: "0.03em" }}>
+      <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 10, letterSpacing: "0.02em" }}>
         Tryk på et tal herunder
       </div>
       <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
@@ -140,11 +140,11 @@ function NumberPicker({ onPick }: { onPick: (n: number) => void }) {
             key={n}
             onClick={() => pick(n)}
             style={{
-              width: 32, height: 32, borderRadius: "50%",
+              width: 34, height: 34, borderRadius: "50%",
               border: `1px solid ${selected === n ? C.accent : C.borderMid}`,
               background: selected === n ? C.accent : "transparent",
-              color: selected === n ? C.bg : C.textDim,
-              fontSize: 12, cursor: "pointer", fontWeight: selected === n ? 600 : 400,
+              color: selected === n ? C.bg : C.textMuted,
+              fontSize: 13, cursor: "pointer", fontWeight: selected === n ? 600 : 400,
               transition: "all 0.15s",
             }}
           >
@@ -152,7 +152,7 @@ function NumberPicker({ onPick }: { onPick: (n: number) => void }) {
           </button>
         ))}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 11, color: C.textDim }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 12, color: C.textMuted }}>
         <span>Det er svært</span>
         <span>Det går godt</span>
       </div>
