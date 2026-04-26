@@ -36,6 +36,46 @@ export function detectClosingText(text: string): boolean {
   return phrases.some((p) => t.includes(p))
 }
 
+/**
+ * Detekterer readiness-signaler — bruger accepterer/bekræfter uden at spørge om kontakt eksplicit.
+ * Bruges til at tvinge synthesis + practical_preparation i singleTurnCall.
+ */
+export function detectReadinessSignal(text: string): boolean {
+  const t = normalize(text)
+  const exact = [
+    "det kan vi godt", "det kan vi godt se på", "det lyder godt", "det prøver jeg",
+    "ja det prøver jeg", "godt", "ja tak", "det giver mening", "det giver god mening",
+    "det er nok", "ja", "okay", "ok", "lad os det", "det vil jeg gerne",
+    "det synes jeg lyder godt", "det er en god idé", "det er en god ide",
+    "absolut", "selvfølgelig", "ja selvfølgelig",
+  ]
+  if (exact.includes(t)) return true
+  const phrases = [
+    "det kan vi se på", "lad os se på", "det kan vi godt se",
+    "det lyder rigtigt", "det lyder som noget", "det passer",
+    "det er rigtigt", "det er korrekt", "det stemmer",
+    "ja det stemmer", "det er mig", "det genkender jeg",
+    "det er præcis", "præcis det", "netop",
+  ]
+  return phrases.some((p) => t.includes(p))
+}
+
+/**
+ * Detekterer kontekst der tyder på barn eller forælder-til-barn.
+ * Sænker PROGRESSION-tærsklen og tilføjer Jan-invitation i synthesis.
+ */
+export function detectChildContext(text: string, transcript: TranscriptTurn[]): boolean {
+  const all = [text, ...transcript.map(t => t.content)].join(" ").toLowerCase()
+  const childWords = [
+    "skolen", "skole", "klassen", "klasse", "lektier", "hjemmearbejde",
+    "lærer", "læreren", "faget", "karakterer", "eksamener", "eksamen",
+    "mit barn", "min søn", "min datter", "vores barn", "han er", "hun er",
+    "årig", "år gammel", "årsdag",
+    "sengevædning", "tisser i sengen", "tisser om natten",
+  ]
+  return childWords.some((w) => all.includes(w))
+}
+
 // ─── Window of Tolerance ─────────────────────────────────────────────────────
 // Scorer sproglige arousal-markører pr. turn.
 // Teori: Siegel / Ogden — Somatic/Polyvagal

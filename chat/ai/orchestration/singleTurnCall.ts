@@ -47,7 +47,7 @@ function buildSystemPrompt(params: {
   userProfileSystem: string | undefined
   previousMode?: PromptMode
   previousRelationalState?: RelationalState
-  policySignals?: { is_practical_request: boolean; is_closing: boolean }
+  policySignals?: { is_practical_request: boolean; is_closing: boolean; is_ready_signal?: boolean; is_child_context?: boolean }
   goalHypothesis?: string | null
   rhetoricalInstruction?: string | null
 }): string {
@@ -81,7 +81,8 @@ EKSPLICITTE FORBUD — disse er livscoaching og må aldrig forekomme:
 - Selvhævdelses- og kommunikationsstrategier: råd om håndtering af situationer med andre, konfliktløsning, assertiv kommunikation
 Når brugeren spørger "hvordan kan jeg arbejde videre med X?" eller "hvad gør man ved det?": spørg ind til hvad X betyder for dem eller hvornår det opstår — svar ikke med metoder, acceptstrategier eller skriveopgaver.`)
 
-  // PROBLEM-MØNSTRE: domæne-specifik hypotese-åbning
+  // PROBLEM-MØNSTRE: kun aktiv på første svar — derefter er undersøgelsesfasen i gang
+  if (params.assistantCount === 0) {
   blocks.push(`PROBLEM-MØNSTRE:
 Når brugeren nævner et konkret problem, start med en kvalificeret antagelse om det mest sandsynlige mønster — ikke med åbne kortlægningsspørgsmål.
 Præsentér antagelsen som noget genkendeligt brugeren kan bekræfte eller korrigere. Afslut altid med en åbning: "eller er det anderledes for dig?"
@@ -121,7 +122,8 @@ Spørgsmålstyper — variér mellem disse, brug ikke kun introspektive spørgsm
 - Hypotese: "For mange med X sker det typisk som… minder det om noget?"
 - Valg: "Er det mest en automatisk vane, eller en aktiv beslutning i øjeblikket?"
 - Kontrast: "Er der situationer hvor det ikke sker — hvad er anderledes der?"
-- Mønster: "Sker det på bestemte tidspunkter, eller er det mere uforudsigeligt?"`)
+- Mønster: "Sker det på bestemte tidspunkter, eller er det mere uforudsigeligt?"`) 
+  } // end PROBLEM-MØNSTRE
 
   // IDENTITET
   blocks.push(`IDENTITET (svar direkte hvis brugeren spørger):
@@ -182,7 +184,7 @@ Hvis anerkendelse bruges: max én sætning, ingen gentagelse af brugerens ord.
 Max to korte afsnit i alt. Spørgsmålet må stå alene som det eneste afsnit.
 
 Svar på dansk. Første sætning konkret og menneskelig — ikke akademisk.
-Brug 'det lyder som' / 'det kan hænge sammen med' frem for kliniske termer.
+Undgå 'det lyder som' og 'det kan hænge sammen med' — de er kliniske klichéer. Vær direkte og konkret i stedet.
 Undgå fagtermer som 'reguleringsstrategier', 'metakognition', 'opmærksomhedsmønstre' — omformuler til hverdagssprog.
 Hvis svaret passer til mange samtaler, er det for generisk.
 
@@ -216,19 +218,23 @@ KRITISK EKSEMPEL PÅ FORBUDT GENTAGELSE: Bruger siger "jeg bekymrer mig om arbej
       `Du behøver ikke vente på et bestemt turn-nummer. Brug brugerens faktiske signal.`
     )
   } else if (params.assistantCount === 2) {
-    blocks.push(`PROGRESSION (turn 3): Mønsteret er ved at være belyst. Saml hvad der er fremkommet og tag et lille skridt fremad. Angiv hvad mønsteret ser ud til at være i én konkret sætning. Afslut med ét spørgsmål mod brugerens næste skridt eller motivation. Introducer IKKE hypnoterapi som svar — det sker kun hvis brugeren selv spørger.`)
+    blocks.push(`PROGRESSION — OBLIGATORISK (turn 3): Undersøgelsesfasen er afsluttet. Du SKAL:
+1. Samle mønsteret i én konkret sætning — hvad er det der sker for brugeren?
+2. Koble det specifikt til hvad hypnoterapi adresserer ved netop det mønster
+3. Afslutte med én blød invitation: "Vil du høre mere om hvad et forløb hos Jan kan indebære?"
+Brug conversation_move: synthesis. Stil IKKE et nyt undersøgelsesspørgsmål.`)
   } else if (params.assistantCount >= 3 && params.assistantCount <= 4) {
-    blocks.push(`PROGRESSION — KRAV (turn ${params.assistantCount + 1}): Du SKAL nu afslutte undersøgelsesfasen.
-Gør PRÆCIS dette i ét svar:
-1. Komprimér mønsteret i én konkret sætning (hvad brugeren kæmper med)
-2. Sig eksplicit hvad hypnoterapi adresserer ved netop det mønster — ikke generelt, specifikt
-3. Afslut med ét spørgsmål: overvejer brugeren at tage et konkret næste skridt?
+    blocks.push(`PROGRESSION — OBLIGATORISK OVERRIDE (turn ${params.assistantCount + 1}): Du SKAL afslutte undersøgelsesfasen nu. guided_observation og pattern_detection er FORBUDT i dette svar.
+Gør PRÆCIS dette:
+1. Komprimér mønsteret i én konkret sætning
+2. Sig specifikt hvad hypnoterapi kan gøre ved netop det mønster
+3. Afslut med invitation til Jan: "Hvis du har lyst til at tage det videre, kan du altid kontakte Jan."
 
-Brug conversation_move: synthesis. Brug IKKE guided_observation eller pattern_detection — det er allerede gjort.
-Gentag ikke hvad der allerede er sagt. Et nyt refleksivt spørgsmål er en fejl på dette trin.
+conversation_move SKAL være: synthesis
+Et nyt undersøgelsesspørgsmål er en fejl — systemet registrerer det.
 
-UNDTAGELSE: Hvis brugeren i DENNE tur stiller et direkte spørgsmål ("hvad gør man", "hvordan slipper jeg", "kan jeg lære at..."), besvar det direkte frem for at lave synthesis. PROGRESSION venter til næste tur.
-UNDTAGELSE: Hvis brugeren eksplicit signalerer at de allerede er i et forløb hos Jan, introducér IKKE hypnoterapi som ny mulighed.`)
+UNDTAGELSE: Direkte spørgsmål fra brugeren i DENNE tur ("hvad gør man", "virker det") besvares direkte — PROGRESSION venter til næste tur.
+UNDTAGELSE: Brugeren er allerede i forløb hos Jan — introducér ikke hypnoterapi som ny mulighed.`)
   } else if (params.assistantCount >= 5) {
     blocks.push(
       `DYBDE-SKIFT PÅKRÆVET (turn ${params.assistantCount + 1}): Brugeren holder samtalen i gang og ønsker at grave dybere — respektér det.\n` +
@@ -285,6 +291,22 @@ VIGTIG UNDTAGELSE: Hvis brugerens besked er et direkte spørgsmål (fx "virker d
     blocks.push(`POLICY: Brugerens besked indeholder afslutningstegn (tak, farvel e.l.) — sæt mode_used til "closing" medmindre konteksten klart modsiger det.`)
   } else if (params.policySignals?.is_practical_request) {
     blocks.push(`POLICY: Brugerens besked indeholder praktiske nøgleord (kontaktinfo, pris, booking, adresse e.l.) — sæt mode_used til "practical" medmindre brugerens besked i øvrigt er klart refleksiv eller følelsesladet.`)
+  } else if (params.policySignals?.is_ready_signal) {
+    blocks.push(`POLICY — OBLIGATORISK OVERRIDE: Brugerens besked er et accept-/readiness-signal ("det kan vi godt", "det lyder godt", "ja", "det giver mening" e.l.).
+Du SKAL:
+1. Sæt conversation_move til "synthesis"
+2. Sæt mode_used til "practical_preparation" 
+3. Komprimér mønsteret i én sætning
+4. Afslut med én blød invitation til Jan — fx: "Hvis du har lyst til at tage det videre, kan du altid skrive eller ringe til Jan."
+Dette er ikke valgfrit. Gentag IKKE undersøgelsesspørgsmål.`)
+  }
+
+  if (params.policySignals?.is_child_context) {
+    blocks.push(`KONTEKST — BARN/UNG: Samtalen handler om eller involverer sandsynligvis et barn eller en ung.
+- Tilpas sprog og tone til dette
+- Sænk PROGRESSION-tærsklen: synthesis er påkrævet fra assistantCount >= 2 (ikke 3)
+- I synthesis: nævn eksplicit at Jan arbejder med børn og unge, og at det er en god idé at tage kontakt
+- Undgå dybe introspektive spørgsmål rettet mod et barn — hold det konkret og jordnært`)
   }
 
 
@@ -316,7 +338,7 @@ Dette er ikke et forslag. Tilpas din core_answer og next_step til dette direktiv
 Regler for indhold:
 - acknowledgement: 0-1 korte sætninger, landing uden varmefraser. null hvis unødvendig. MÅ ALDRIG indeholde spørgsmål.
 - core_answer: selve svaret — ALDRIG tomt — konkret om brugerens situation frem for generel metode. MÅ ALDRIG indeholde spørgsmål.
-- next_step: ét og kun ét spørgsmål, ELLER null. Aldrig to spørgsmål. Aldrig "... eller er det anderledes?" kombineret med et nyt spørgsmål. Nævn ALDRIG kontaktinfo, Jans navn, pris eller booking som afslutning — medmindre brugeren i DENNE tur eksplicit har spurgt om kontakt, pris, adresse eller booking. Progression mod kontakt må kun ske på brugerinitiativ. Gentag ALDRIG kontaktoplysninger der allerede er nævnt i dette svar eller i et tidligere svar i samme samtale. KRITISK: Dit spørgsmål i next_step MÅ IKKE ligne det spørgsmål du stillede i forrige svar — hverken i formulering eller investigation_focus. Hvis brugeren allerede har identificeret et specifikt domæne (fx arbejde, relationer, tidspunkter), skal næste spørgsmål gå DYBERE i det domæne — ikke spørge om domænet igen.
+- next_step: ét og kun ét spørgsmål, ELLER null, ELLER én blød Jan-invitation. Aldrig to spørgsmål. Aldrig "... eller er det anderledes?" kombineret med et nyt spørgsmål. Nævn ALDRIG telefonnummer eller email som afslutning — medmindre brugeren i DENNE tur eksplicit har spurgt om kontaktinfo. MEN: efter conversation_move === "synthesis" MÅ du afslutte med én blød invitation til Jan uden at nævne kontaktdetaljer — fx "Hvis du vil tage det videre, kan du altid tage kontakt til Jan." Gentag ALDRIG kontaktoplysninger der allerede er nævnt i dette svar eller i et tidligere svar i samme samtale. KRITISK: Dit spørgsmål i next_step MÅ IKKE ligne det spørgsmål du stillede i forrige svar — hverken i formulering eller investigation_focus. Hvis brugeren allerede har identificeret et specifikt domæne (fx arbejde, relationer, tidspunkter), skal næste spørgsmål gå DYBERE i det domæne — ikke spørge om domænet igen.
 - topic: emnet brugeren taler om (fx "søvnproblemer", "neglebidning") — null hvis uklart
 - signals: 2-4 korte signaler der forklarer dit valg`)
 
@@ -435,7 +457,7 @@ export async function singleTurnCall(params: {
   userProfileSystem?: string
   previousMode?: PromptMode
   previousRelationalState?: RelationalState
-  policySignals?: { is_practical_request: boolean; is_closing: boolean }
+  policySignals?: { is_practical_request: boolean; is_closing: boolean; is_ready_signal?: boolean; is_child_context?: boolean }
   goalHypothesis?: string | null
   crisisDetected?: boolean
   rhetoricalInstruction?: string | null
