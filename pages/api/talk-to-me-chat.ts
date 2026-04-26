@@ -3,12 +3,17 @@
 // Deler ingen logik med /api/chat eller hypno-flowet.
 
 import type { NextApiRequest, NextApiResponse } from "next"
+
+// waitUntil: holder serverless-funktionen i live til compression er færdig
+const waitUntil: (p: Promise<unknown>) => void =
+  (globalThis as any)[Symbol.for("vercel.waitUntil")] ??
+  ((p: Promise<unknown>) => { p.catch((e) => console.error("[TTM waitUntil]", e)) })
 import { setWidgetCors } from "./_utils/cors"
 import { ensureUserKey } from "./_utils/auth"
 import { newUuid } from "../../chat/utils/ids"
 import { readConsent, writeConsent, consentAllowsPersistence, consentTtlSeconds, type ConsentRetentionDays } from "../../chat/consent/store"
 import { readConversationState, writeConversationState } from "../../chat/persistence/conversationStateStore"
-import { talkToMeCapability } from "../../chat/ai/capabilities/talkToMe"
+import { talkToMeCapability, compressTtmTranscriptIfNeeded } from "../../chat/ai/capabilities/talkToMe"
 import { createOpenAiCompatibleClient } from "../../chat/ai/provider"
 import type { ConversationState } from "../../chat/kernel/types"
 import { SESSION_TTL_SECONDS } from "../../chat/utils/ttl"
@@ -118,6 +123,28 @@ export default async function handler(
     state = createTTMState(conversationId)
   }
 
+  // ── Hard reset (DELETE) ────────────────────────────────────────────────────
+  if (req.method === "DELETE") {
+    if (conversationId && conversationId !== TTM_CONV_PREFIX) {
+      const shortId = conversationId.replace(/^ttm:/, "")
+      try {
+        const { getRedisClient } = await import("../../chat/persistence/redis")
+        const redis = getRedisClient()
+        if (redis) {
+          const stateKey = `gaarsdal:state:${conversationId}`
+          await Promise.all([
+            redis.del(stateKey),
+            redis.zrem("gaarsdal:ttm:index", shortId),
+          ])
+        }
+      } catch (e) {
+        console.error("[TTM hard reset]", e)
+      }
+    }
+    res.status(200).json({ reset: true })
+    return
+  }
+
   // ── Run capability ──────────────────────────────────────────────────────────
   const llm = createOpenAiCompatibleClient()
   let result: Awaited<ReturnType<typeof talkToMeCapability.run>>
@@ -207,4 +234,16 @@ export default async function handler(
     isReturning,
     move,
   })
+
+  // ── Post-response: komprimér transcript hvis >= 10 rå ture ─────────────────
+  if (canPersist && userText) {
+    waitUntil(
+      compressTtmTranscriptIfNeeded({
+        conversationId,
+        userKey,
+        canPersist,
+        ttlSeconds,
+      })
+    )
+  }
 }
