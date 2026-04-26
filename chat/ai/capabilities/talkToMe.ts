@@ -493,7 +493,7 @@ export async function compressTtmTranscriptIfNeeded(params: {
 }): Promise<void> {
   if (!params.canPersist) return
 
-  const { readConversationState, writeConversationState } = await import("../persistence/conversationStateStore")
+  const { readConversationState, writeConversationState } = await import("../../persistence/conversationStateStore")
   const state = await readConversationState(params.conversationId)
   if (!state) return
 
