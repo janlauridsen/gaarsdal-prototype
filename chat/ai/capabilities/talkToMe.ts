@@ -125,7 +125,7 @@ function buildOpeningMessage(context: AiCapabilityContext): string {
     return "Hej igen. Godt du er her. Hvad er der?"
   }
 
-  return "Hej. Jeg er Ida.\n\nJeg er ikke terapeut — jeg er bare god til at lytte og til at sige hvad jeg tænker. Du behøver ikke vide hvad du vil sige. Start bare et sted."
+  return "Hej, jeg hedder Ida.\n\nJeg er ikke terapeut — jeg er her for at lytte og tænke højt med dig. Sig det der fylder. Vi finder ud af resten undervejs."
 }
 
 function buildContinuationMessage(context: AiCapabilityContext): string {
