@@ -7,7 +7,15 @@ import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from
 type Turn = { role: "user" | "assistant"; content: string }
 type RitualStage = "q1" | "q2" | "open" | "continuation_check"
 
+export type SummaryBlock = {
+  turn_range: [number, number] // [globalTurnStart, globalTurnEnd] inclusive
+  summary: string
+  compressed_at: number
+}
+
 const MAX_TRANSCRIPT_TURNS = 24
+const COMPRESS_THRESHOLD = 10  // komprimér når transcript har >= dette antal rå ture
+const MAX_SUMMARY_BLOCKS = 12  // maks blokke i historik
 const MAX_TRANSCRIPT_CHARS = 5000
 
 // ─── Transcript helpers ────────────────────────────────────────────────────
@@ -36,6 +44,18 @@ function trimTranscript(turns: Turn[]): Turn[] {
     chars += len
   }
   return result
+}
+
+function readSummaryBlocks(context: AiCapabilityContext): SummaryBlock[] {
+  const raw = context.state.meta["ttm.summary_blocks"]?.value
+  if (!Array.isArray(raw)) return []
+  return raw.filter(
+    (b): b is SummaryBlock =>
+      b && typeof b === "object" &&
+      Array.isArray(b.turn_range) && b.turn_range.length === 2 &&
+      typeof b.summary === "string" && b.summary.length > 0 &&
+      typeof b.compressed_at === "number"
+  )
 }
 
 function appendTranscript(transcript: Turn[], userText: string, assistantText: string): Turn[] {
@@ -248,15 +268,29 @@ async function callLlm(
   userText: string,
   transcript: Turn[],
   score: number | null,
-  llm: LlmClient
+  llm: LlmClient,
+  summaryBlocks: SummaryBlock[] = []
 ): Promise<{ assistant_message: string; crisis_detected: boolean; topic: string; move: string }> {
   const model = process.env.TTM_MODEL ?? "gpt-4.1-mini"
   const trimmed = trimTranscript(transcript)
 
   const scoreHint = score !== null ? `\n[Brugerens stemningsscore denne session: ${score}/10]` : ""
 
+  // Komprimeret historik injiceres som første user+assistant par
+  const historikPrefix: Array<{role: "user"|"assistant", content: string}> = []
+  if (summaryBlocks.length > 0) {
+    const historikText = summaryBlocks
+      .map((b, i) => `[Komprimeret del ${i + 1}, ture ${b.turn_range[0]}–${b.turn_range[1]}]\n${b.summary}`)
+      .join("\n\n")
+    historikPrefix.push(
+      { role: "user" as const, content: "[Tidligere samtalehistorik — komprimeret]" },
+      { role: "assistant" as const, content: historikText },
+    )
+  }
+
   const messages = [
     { role: "system" as const, content: SYSTEM_PROMPT + scoreHint },
+    ...historikPrefix,
     ...trimmed.map((t) => ({ role: t.role as "user" | "assistant", content: t.content })),
     { role: "user" as const, content: userText },
   ]
@@ -404,7 +438,8 @@ async function runTalkToMe(
 
   // ── Åben samtale ──────────────────────────────────────────────────────────
   const score = readScore(context)
-  const { assistant_message, crisis_detected, topic, move } = await callLlm(userText, transcript, score, llm)
+  const summaryBlocks = readSummaryBlocks(context)
+  const { assistant_message, crisis_detected, topic, move } = await callLlm(userText, transcript, score, llm, summaryBlocks)
 
   if (crisis_detected) {
     return {
@@ -444,6 +479,107 @@ async function runTalkToMe(
     },
     debug: { capability: "talk-to-me-v1", used_fallback: false, ...(move ? { move } : {}) } as any,
   }
+}
+
+// ─── Post-response compression ────────────────────────────────────────────────
+// Kaldes via waitUntil efter svar er sendt.
+// Tager de 10 ældste rå ture, komprimerer til en SummaryBlock, fjerner dem fra transcript.
+
+export async function compressTtmTranscriptIfNeeded(params: {
+  conversationId: string
+  userKey: string
+  canPersist: boolean
+  ttlSeconds: number
+}): Promise<void> {
+  if (!params.canPersist) return
+
+  const { readConversationState, writeConversationState } = await import("../persistence/conversationStateStore")
+  const state = await readConversationState(params.conversationId)
+  if (!state) return
+
+  const rawTranscript: Turn[] = (() => {
+    const raw = state.meta["ttm.transcript"]?.value
+    if (!Array.isArray(raw)) return []
+    return raw.filter(
+      (t): t is Turn =>
+        t && typeof t === "object" &&
+        (t.role === "user" || t.role === "assistant") &&
+        typeof t.content === "string" && t.content.trim().length > 0
+    )
+  })()
+
+  if (rawTranscript.length < COMPRESS_THRESHOLD) return
+
+  const toCompress = rawTranscript.slice(0, COMPRESS_THRESHOLD)
+  const remaining = rawTranscript.slice(COMPRESS_THRESHOLD)
+
+  const existingBlocks: SummaryBlock[] = (() => {
+    const raw = state.meta["ttm.summary_blocks"]?.value
+    if (!Array.isArray(raw)) return []
+    return raw as SummaryBlock[]
+  })()
+
+  const globalTurnBase = existingBlocks.reduce((acc, b) => Math.max(acc, b.turn_range[1]), 0)
+  const turnStart = globalTurnBase + 1
+  const turnEnd = globalTurnBase + toCompress.length
+
+  // LLM-komprimering
+  let summary = ""
+  try {
+    const { createOpenAiCompatibleClient } = await import("../provider")
+    const llm = createOpenAiCompatibleClient()
+    const transcriptText = toCompress
+      .map((t) => `${t.role === "user" ? "Bruger" : "Ida"}: ${t.content}`)
+      .join("\n")
+
+    const raw = await llm.chatJson({
+      model: process.env.TTM_MODEL ?? "gpt-4.1-mini",
+      temperature: 0.2,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "Du komprimerer et uddrag af en samtale til en kort, faktuel opsummering på dansk. " +
+            "Bevar konkrete emner, følelsesmæssige skift og uafsluttede tråde. " +
+            "Maks 120 ord. Skriv i nutid, som om Ida husker det. " +
+            "Returnér KUN JSON: { \"summary\": \"...\" }",
+        },
+        { role: "user", content: transcriptText },
+      ],
+    })
+    summary = typeof (raw as any)?.summary === "string" ? (raw as any).summary.trim() : ""
+  } catch (e) {
+    console.error("[TTM compress] LLM fejl:", e)
+  }
+
+  if (!summary) {
+    // Fallback: simpel concatenation
+    summary = toCompress
+      .filter((t) => t.role === "user")
+      .map((t) => t.content.slice(0, 80))
+      .join(" / ")
+      .slice(0, 300)
+  }
+
+  const newBlock: SummaryBlock = {
+    turn_range: [turnStart, turnEnd],
+    summary,
+    compressed_at: Date.now(),
+  }
+
+  const updatedBlocks = [...existingBlocks, newBlock].slice(-MAX_SUMMARY_BLOCKS)
+
+  const nextMeta = { ...state.meta }
+  nextMeta["ttm.transcript"] = { value: remaining, source_node: "TALK_TO_ME" }
+  nextMeta["ttm.summary_blocks"] = { value: updatedBlocks, source_node: "TALK_TO_ME" }
+
+  const nextState = { ...state, meta: nextMeta }
+  await writeConversationState(nextState, params.ttlSeconds).catch((e) =>
+    console.error("[TTM compress] Redis write fejl:", e)
+  )
+
+  console.log(`[TTM compress] ${params.conversationId} ture ${turnStart}-${turnEnd} komprimeret. Blokke: ${updatedBlocks.length}`)
 }
 
 export const talkToMeCapability: AiCapability = {
