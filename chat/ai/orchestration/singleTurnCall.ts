@@ -217,7 +217,10 @@ KRITISK EKSEMPEL PÅ FORBUDT GENTAGELSE: Bruger siger "jeg bekymrer mig om arbej
       `- Afslut aldrig med ny refleksion hvis brugeren viser readiness-signaler (fx "hvad gør jeg så", "lyder godt", "det giver mening")\n\n` +
       `Du behøver ikke vente på et bestemt turn-nummer. Brug brugerens faktiske signal.`
     )
-  } else if (params.assistantCount === 2) {
+  }
+
+  // PROGRESSION kører uafhængigt af goalHypothesis — else if ville undertrykke den
+  if (params.assistantCount === 2) {
     blocks.push(`PROGRESSION — OBLIGATORISK (turn 3): Undersøgelsesfasen er afsluttet. Du SKAL:
 1. Samle mønsteret i én konkret sætning — hvad er det der sker for brugeren?
 2. Koble det specifikt til hvad hypnoterapi adresserer ved netop det mønster
