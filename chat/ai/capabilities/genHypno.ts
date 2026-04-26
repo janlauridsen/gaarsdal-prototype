@@ -1,6 +1,6 @@
 import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
 import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
-import { computeRollingArousal, detectPracticalKeywords, detectClosingText } from "../orchestration/applyPolicy"
+import { computeRollingArousal, detectPracticalKeywords, detectClosingText, detectReadinessSignal, detectChildContext } from "../orchestration/applyPolicy"
 // detectPracticalKeywords + detectClosingText used as upstream policy signals (not post-hoc overrides)
 import { detectClientSignals } from "./clientDetection"
 import { singleTurnCall, buildSingleTurnFallback, SingleTurnOutput } from "../orchestration/singleTurnCall"
