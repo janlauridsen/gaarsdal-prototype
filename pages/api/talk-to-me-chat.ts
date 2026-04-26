@@ -58,10 +58,35 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseBody>
 ) {
-  setWidgetCors(req, res, "POST, OPTIONS")
+  setWidgetCors(req, res, "POST, DELETE, OPTIONS")
 
   if (req.method === "OPTIONS") {
     res.status(200).end()
+    return
+  }
+
+  // ── Hard reset (DELETE) ────────────────────────────────────────────────────
+  if (req.method === "DELETE") {
+    const userKey = ensureUserKey(req, res)
+    if (!userKey) return
+    const body = req.body ?? {}
+    const rawConvId = typeof body?.conversationId === "string" ? body.conversationId.trim() : ""
+    if (rawConvId.startsWith(TTM_CONV_PREFIX)) {
+      const shortId = rawConvId.replace(/^ttm:/, "")
+      try {
+        const { getRedisClient } = await import("../../chat/persistence/redis")
+        const redis = getRedisClient()
+        if (redis) {
+          await Promise.all([
+            redis.del(`gaarsdal:state:${rawConvId}`),
+            redis.zrem("gaarsdal:ttm:index", shortId),
+          ])
+        }
+      } catch (e) {
+        console.error("[TTM hard reset]", e)
+      }
+    }
+    res.status(200).json({ message: "", conversationId: rawConvId, showNumberPicker: false, showContinuationPicker: false, previousTurns: [], isReturning: false })
     return
   }
 
@@ -121,28 +146,6 @@ export default async function handler(
 
   if (!state) {
     state = createTTMState(conversationId)
-  }
-
-  // ── Hard reset (DELETE) ────────────────────────────────────────────────────
-  if (req.method === "DELETE") {
-    if (conversationId && conversationId !== TTM_CONV_PREFIX) {
-      const shortId = conversationId.replace(/^ttm:/, "")
-      try {
-        const { getRedisClient } = await import("../../chat/persistence/redis")
-        const redis = getRedisClient()
-        if (redis) {
-          const stateKey = `gaarsdal:state:${conversationId}`
-          await Promise.all([
-            redis.del(stateKey),
-            redis.zrem("gaarsdal:ttm:index", shortId),
-          ])
-        }
-      } catch (e) {
-        console.error("[TTM hard reset]", e)
-      }
-    }
-    res.status(200).json({ reset: true })
-    return
   }
 
   // ── Run capability ──────────────────────────────────────────────────────────
