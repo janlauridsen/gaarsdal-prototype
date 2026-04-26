@@ -34,8 +34,8 @@ const C = {
   accent: "#c4a97d",
   accentDim: "rgba(196,169,125,0.15)",
   textPrimary: "#e8dcc8",
-  textMuted: "#7a6e5e",
-  textDim: "#4a4030",
+  textMuted: "#b8a888",
+  textDim: "#7a6e5e",
   border: "#2e2820",
   borderMid: "#3a3028",
 }
@@ -49,31 +49,31 @@ function Landing({ onStart }: { onStart: () => void }) {
     <div style={{ minHeight: "100vh", background: C.bgOuter, display: "flex", alignItems: "center", justifyContent: "center" }}>
     <div style={{ width: "100%", maxWidth: 540, background: C.bg, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 32px 40px", textAlign: "center" }}>
 
-      <div style={{ marginBottom: 20, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: C.textDim }}>
+      <div style={{ marginBottom: 20, fontSize: 12, letterSpacing: "0.15em", textTransform: "uppercase", color: C.textMuted }}>
         Gaarsdal · Talk To Me
       </div>
 
       {/* Jans stemme — tilløbet */}
-      <p style={{ fontSize: 15, color: C.textMuted, lineHeight: 1.8, maxWidth: 380, margin: "0 0 8px", fontStyle: "italic" }}>
+      <p style={{ fontSize: 16, color: C.textPrimary, lineHeight: 1.8, maxWidth: 380, margin: "0 0 8px", fontStyle: "italic" }}>
         "Mange der sidder over for mig, ved ikke helt hvorfor de er der. De bærer på noget — men har ikke haft nogen at sige det højt til."
       </p>
-      <p style={{ fontSize: 12, color: C.textDim, margin: "0 0 32px", letterSpacing: "0.04em" }}>— Jan Gaarsdal</p>
+      <p style={{ fontSize: 13, color: C.textMuted, margin: "0 0 32px", letterSpacing: "0.04em" }}>— Jan Gaarsdal</p>
 
       {/* Hvad er TTM — fold ud */}
       <div style={{ marginBottom: 36, width: "100%", maxWidth: 400 }}>
         <button
           onClick={() => setShowMore(!showMore)}
-          style={{ background: "none", border: "none", color: C.textDim, fontSize: 12, cursor: "pointer", letterSpacing: "0.06em", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, margin: "0 auto" }}
+          style={{ background: "none", border: "none", color: C.textMuted, fontSize: 13, cursor: "pointer", letterSpacing: "0.06em", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, margin: "0 auto" }}
         >
           <span style={{ fontSize: 10 }}>{showMore ? "▲" : "▼"}</span>
           {showMore ? "Luk" : "Hvad er TTM?"}
         </button>
         {showMore && (
           <div style={{ marginTop: 20, textAlign: "left", padding: "20px 24px", background: C.bgSurface, borderRadius: 12, border: `1px solid ${C.border}` }}>
-            <p style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.75, margin: "0 0 14px" }}>
+            <p style={{ fontSize: 14, color: C.textPrimary, lineHeight: 1.8, margin: "0 0 14px" }}>
               TTM er ikke terapi. Det er ikke coaching. Det er en samtale med en der ikke har en dagsorden — og som husker hvad du har fortalt.
             </p>
-            <p style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.75, margin: "0 0 14px" }}>
+            <p style={{ fontSize: 14, color: C.textPrimary, lineHeight: 1.8, margin: "0 0 14px" }}>
               Mange har ting på hjerte som de ikke rigtig kan tale med nogen om. Ikke fordi det er hemmeligt — men fordi det er svært at finde de rigtige ord, eller den rigtige stemning.
             </p>
             <p style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.75, margin: 0 }}>
@@ -94,13 +94,13 @@ function Landing({ onStart }: { onStart: () => void }) {
             <span style={{ fontFamily: "Georgia, serif", fontSize: 26, color: C.accent, width: 20, textAlign: "right", flexShrink: 0 }}>{letter}</span>
             <div>
               <div style={{ fontSize: 15, color: C.textPrimary, letterSpacing: "0.03em" }}>{word}</div>
-              <div style={{ fontSize: 12, color: C.textDim, marginTop: 1 }}>{desc}</div>
+              <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>{desc}</div>
             </div>
           </div>
         ))}
       </div>
 
-      <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.7, maxWidth: 340, margin: "0 0 32px", fontStyle: "italic" }}>
+      <p style={{ fontSize: 15, color: C.textPrimary, lineHeight: 1.7, maxWidth: 340, margin: "0 0 32px", fontStyle: "italic" }}>
         Et sted at tænke højt — uden at skulle have svarene klar.
       </p>
 
@@ -111,7 +111,7 @@ function Landing({ onStart }: { onStart: () => void }) {
         Start samtalen →
       </button>
 
-      <div style={{ marginTop: 36, fontSize: 11, color: C.textDim, letterSpacing: "0.06em" }}>
+      <div style={{ marginTop: 36, fontSize: 12, color: C.textMuted, letterSpacing: "0.06em" }}>
         Jan Gaarsdal · Hypnoterapeut · Birkerød
       </div>
     </div>
@@ -216,7 +216,7 @@ function ConsentBanner({ onConsent, manageMode = false, onClose }: {
   return (
     <div style={{ background: C.bgConsent, borderTop: `1px solid ${C.border}`, padding: "14px 16px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-        <div style={{ fontSize: 12, color: C.textPrimary, fontWeight: 500 }}>
+        <div style={{ fontSize: 14, color: C.textPrimary, fontWeight: 600 }}>
           {manageMode ? "Dine data" : "Inden vi begynder"}
         </div>
         {onClose && (
@@ -225,7 +225,7 @@ function ConsentBanner({ onConsent, manageMode = false, onClose }: {
       </div>
       {manageMode ? (
         <>
-          <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.6, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, color: C.textPrimary, lineHeight: 1.65, marginBottom: 12 }}>
             Skift opbevaringsperiode, eller slet alle dine data.
           </div>
           <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
@@ -236,7 +236,7 @@ function ConsentBanner({ onConsent, manageMode = false, onClose }: {
         </>
       ) : (
         <>
-          <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.6, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, color: C.textPrimary, lineHeight: 1.65, marginBottom: 12 }}>
             Vores samtaler kan indeholde følsomme personlige oplysninger. Må jeg gemme dem så vi kan fortsætte næste gang?
           </div>
           <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
@@ -244,7 +244,7 @@ function ConsentBanner({ onConsent, manageMode = false, onClose }: {
             <button onClick={() => onConsent(0)} style={chipStyle("ghost")}>Kun denne samtale</button>
             <button onClick={() => onConsent(365)} style={chipStyle("ghost")}>1 år</button>
           </div>
-          <div style={{ fontSize: 10, color: C.textDim, marginTop: 8, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 11, color: C.textMuted, marginTop: 8, lineHeight: 1.55 }}>
             Ved at vælge gemme giver du udtrykkeligt samtykke til behandling af sundhedsrelaterede oplysninger (GDPR art. 9). Data deles ikke og bruges ikke til træning.
           </div>
         </>
@@ -258,7 +258,7 @@ function chipStyle(variant: "primary" | "ghost"): React.CSSProperties {
     background: variant === "primary" ? C.accent : "transparent",
     color: variant === "primary" ? C.bg : C.textMuted,
     border: `1px solid ${variant === "primary" ? C.accent : C.borderMid}`,
-    borderRadius: 20, padding: "6px 13px", fontSize: 11, cursor: "pointer",
+    borderRadius: 20, padding: "7px 14px", fontSize: 12, cursor: "pointer",
     fontFamily: "inherit", whiteSpace: "nowrap" as const,
   }
 }
@@ -325,18 +325,18 @@ function Chat({
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 14, color: C.textPrimary, fontWeight: 500 }}>Ida</div>
-          <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.04em" }}>Talk To Me · Gaarsdal</div>
+          <div style={{ fontSize: 12, color: C.textMuted, letterSpacing: "0.04em" }}>Talk To Me · Gaarsdal</div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <button
             onClick={onManageConsent}
             title="Dine data"
-            style={{ background: "none", border: "none", cursor: "pointer", color: C.textDim, fontSize: 16, padding: "4px 6px", lineHeight: 1, fontFamily: "inherit" }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: C.textMuted, fontSize: 16, padding: "4px 6px", lineHeight: 1, fontFamily: "inherit" }}
           >⚙</button>
           <button
             onClick={onNewConversation}
             title="Ny samtale"
-            style={{ background: "none", border: `1px solid ${C.borderMid}`, borderRadius: 20, cursor: "pointer", color: C.textDim, fontSize: 11, padding: "5px 12px", fontFamily: "inherit", letterSpacing: "0.04em", whiteSpace: "nowrap" as const }}
+            style={{ background: "none", border: `1px solid ${C.borderMid}`, borderRadius: 20, cursor: "pointer", color: C.textMuted, fontSize: 12, padding: "5px 12px", fontFamily: "inherit", letterSpacing: "0.04em", whiteSpace: "nowrap" as const }}
           >Ny samtale</button>
         </div>
       </div>
@@ -349,7 +349,7 @@ function Chat({
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0" }}>
                 <div style={{ flex: 1, height: 1, background: C.border }} />
-                <div style={{ fontSize: 10, color: C.textDim, letterSpacing: "0.08em", textTransform: "uppercase", whiteSpace: "nowrap" as const }}>Tidligere i samtalen</div>
+                <div style={{ fontSize: 11, color: C.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", whiteSpace: "nowrap" as const }}>Tidligere i samtalen</div>
                 <div style={{ flex: 1, height: 1, background: C.border }} />
               </div>
             )
@@ -360,7 +360,7 @@ function Chat({
           return (
             <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: msg.role === "user" ? "flex-end" : "flex-start", maxWidth: "85%", alignSelf: msg.role === "user" ? "flex-end" : "flex-start", opacity: historyOpacity }}>
               {msg.role === "assistant" && !msg.isHistory && (
-                <div style={{ fontSize: 10, letterSpacing: "0.1em", color: C.textDim, textTransform: "uppercase", marginBottom: 5 }}>Ida</div>
+                <div style={{ fontSize: 12, letterSpacing: "0.1em", color: C.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Ida</div>
               )}
               <div style={{
                 padding: "11px 14px",
@@ -390,7 +390,7 @@ function Chat({
 
         {loading && (
           <div style={{ alignSelf: "flex-start" }}>
-            <div style={{ fontSize: 10, letterSpacing: "0.1em", color: C.textDim, textTransform: "uppercase", marginBottom: 5 }}>Ida</div>
+            <div style={{ fontSize: 12, letterSpacing: "0.1em", color: C.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Ida</div>
             <div style={{ padding: "11px 16px", borderRadius: 16, borderBottomLeftRadius: 4, background: C.bgBubbleJan, display: "flex", gap: 6, alignItems: "center" }}>
               {[0,1,2].map((i) => (
                 <div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: C.textDim, animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
