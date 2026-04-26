@@ -582,7 +582,19 @@ export default function TalkToMe() {
 
   // ── Ny samtale ──────────────────────────────────────────────────────────────
 
-  function handleNewConversation() {
+  async function handleNewConversation() {
+    // Hard reset: slet Redis-state for nuværende samtale
+    if (conversationId) {
+      try {
+        await fetch("/api/talk-to-me-chat", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conversationId }),
+        })
+      } catch {
+        // Non-critical — state udløber alligevel via TTL
+      }
+    }
     if (typeof window !== "undefined") {
       localStorage.removeItem(CONV_ID_KEY)
     }
