@@ -322,6 +322,8 @@ export async function runUnifiedHypnoCapability(
   const policySignals = {
     is_practical_request: detectPracticalKeywords(userText),
     is_closing: detectClosingText(userText),
+    is_ready_signal: detectReadinessSignal(userText),
+    is_child_context: detectChildContext(userText, trimmedTranscript),
   }
 
   // Crisis-flag: tjek både meta (sat af chat.ts på forrige turn) og brugerens aktuelle tekst
