@@ -85,6 +85,7 @@ export default async function handler(
         if (redis) {
           await Promise.all([
             redis.del(`gaarsdal:state:${rawConvId}`),
+            redis.del(`gaarsdal:persona:${rawConvId}`),
             redis.zrem("gaarsdal:ttm:index", shortId),
           ])
         }
@@ -155,7 +156,10 @@ export default async function handler(
   }
 
   // ── Persona state ───────────────────────────────────────────────────────────
-  let personaState: PersonaState = await readPersonaState(conversationId)
+  // Ny samtale (ingen eksisterende state) → start med frisk personaState
+  let personaState: PersonaState = (!isReturning && state === null)
+    ? { user: { ...DEFAULT_PERSONA_VALUES }, ida: { ...DEFAULT_PERSONA_VALUES }, idaReason: "", overrides: {}, updatedAt: Date.now() }
+    : await readPersonaState(conversationId)
 
   // Opdatér bruger-slider-værdier hvis sendt fra frontend
   if (body?.personaUserValues && typeof body.personaUserValues === "object") {
