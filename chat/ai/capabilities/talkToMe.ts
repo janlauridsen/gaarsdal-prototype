@@ -3,6 +3,8 @@
 // Isoleret fra GEN_HYPNO og hypno-flowet.
 
 import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
+import { personaValuesToInstructions, parsePersonaDelta } from "../../persona/prompt"
+import type { PersonaState, PersonaValues } from "../../persona/types"
 
 type Turn = { role: "user" | "assistant"; content: string }
 type RitualStage = "q1" | "q2" | "open" | "continuation_check"
@@ -269,12 +271,14 @@ async function callLlm(
   transcript: Turn[],
   score: number | null,
   llm: LlmClient,
-  summaryBlocks: SummaryBlock[] = []
-): Promise<{ assistant_message: string; crisis_detected: boolean; topic: string; move: string }> {
+  summaryBlocks: SummaryBlock[] = [],
+  personaValues: PersonaValues | null = null
+): Promise<{ assistant_message: string; crisis_detected: boolean; topic: string; move: string; personaDeltaRaw: unknown }> {
   const model = process.env.TTM_MODEL ?? "gpt-4.1-mini"
   const trimmed = trimTranscript(transcript)
 
   const scoreHint = score !== null ? `\n[Brugerens stemningsscore denne session: ${score}/10]` : ""
+  const personaBlock = personaValues ? "\n\n" + personaValuesToInstructions(personaValues) : ""
 
   // Komprimeret historik injiceres som første user+assistant par
   const historikPrefix: Array<{role: "user"|"assistant", content: string}> = []
@@ -289,7 +293,7 @@ async function callLlm(
   }
 
   const messages = [
-    { role: "system" as const, content: SYSTEM_PROMPT + scoreHint },
+    { role: "system" as const, content: SYSTEM_PROMPT + scoreHint + personaBlock },
     ...historikPrefix,
     ...trimmed.map((t) => ({ role: t.role as "user" | "assistant", content: t.content })),
     { role: "user" as const, content: userText },
@@ -321,14 +325,16 @@ async function callLlm(
     crisis_detected: crisis,
     topic,
     move,
+    personaDeltaRaw: raw?.personaDelta ?? null,
   }
 }
 
 // ─── Main runner ───────────────────────────────────────────────────────────
 
-async function runTalkToMe(
+export async function runTTMWithPersona(
   context: AiCapabilityContext,
-  llm: LlmClient
+  llm: LlmClient,
+  personaState: PersonaState | null = null
 ): Promise<AiCapabilityResult> {
   const userText = (context.userText ?? "").trim()
   const stage = readStage(context)
@@ -386,8 +392,6 @@ async function runTalkToMe(
           reason: "ttm:opening",
           response_message: opening,
           meta_delta: {
-            // Sæt stage til "open" med det samme — ingen ritual-tvang.
-            // Hilsenen gemmes ikke i transcript — kun reelle ture hører til der.
             "ttm.ritual_stage": { value: "open", source_node: "TALK_TO_ME" },
             "ttm.turn_count": { value: turnCount, source_node: "TALK_TO_ME" },
           },
@@ -439,7 +443,10 @@ async function runTalkToMe(
   // ── Åben samtale ──────────────────────────────────────────────────────────
   const score = readScore(context)
   const summaryBlocks = readSummaryBlocks(context)
-  const { assistant_message, crisis_detected, topic, move } = await callLlm(userText, transcript, score, llm, summaryBlocks)
+  const personaValues = personaState ? personaState.ida : null
+
+  const { assistant_message, crisis_detected, topic, move, personaDeltaRaw } =
+    await callLlm(userText, transcript, score, llm, summaryBlocks, personaValues)
 
   if (crisis_detected) {
     return {
@@ -457,6 +464,7 @@ async function runTalkToMe(
     }
   }
 
+  const { delta: personaDelta, reason: idaReason } = parsePersonaDelta(personaDeltaRaw)
   const updatedTranscript = appendTranscript(transcript, userText, assistant_message)
   const newTurnCount = turnCount + 1
 
@@ -477,8 +485,20 @@ async function runTalkToMe(
         ...(topic ? { "ttm.last_topic": { value: topic, source_node: "TALK_TO_ME" } } : {}),
       },
     },
-    debug: { capability: "talk-to-me-v1", used_fallback: false, ...(move ? { move } : {}) } as any,
+    debug: {
+      capability: "talk-to-me-v1",
+      used_fallback: false,
+      ...(move ? { move } : {}),
+      ...(Object.keys(personaDelta).length > 0 ? { personaDelta, idaReason } : {}),
+    } as any,
   }
+}
+
+async function runTalkToMe(
+  context: AiCapabilityContext,
+  llm: LlmClient
+): Promise<AiCapabilityResult> {
+  return runTTMWithPersona(context, llm, null)
 }
 
 // ─── Post-response compression ────────────────────────────────────────────────
