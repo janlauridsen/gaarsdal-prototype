@@ -344,39 +344,80 @@ function SessionDashboard({
           {PARAM_CONFIG.map((param) => {
             const userVal = personaState.user[param.key]
             const idaVal = personaState.ida[param.key]
-            const idaPct = ((idaVal - 1) / 4) * 100
+            // Procent langs skinnen (1→0%, 5→100%)
+            const userPct = ((userVal - 1) / 4) * 100
+            const idaPct  = ((idaVal  - 1) / 4) * 100
+            const hasIdaDiff = idaVal !== userVal
 
             return (
-              <div key={param.key} style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+              <div key={param.key} style={{ marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                   <span style={{ fontSize: 11, color: C.textMuted }}>{param.label}</span>
                   <span style={{ fontSize: 10, color: C.textDim }}>{param.left} ← {param.right}</span>
                 </div>
-                <div style={{ position: "relative", height: 20 }}>
-                  {/* Bruger-slider */}
-                  <input
-                    type="range"
-                    min={1}
-                    max={5}
-                    step={1}
-                    value={userVal}
-                    onChange={(e) => onUserChange(param.key, parseInt(e.target.value))}
-                    style={{
-                      position: "absolute", top: 0, left: 0, width: "100%",
-                      height: 20, cursor: "pointer", accentColor: C.accent,
-                    }}
-                  />
-                  {/* Ida-markør (◆) */}
-                  {idaVal !== userVal && (
+
+                {/* Custom slider container */}
+                <div
+                  style={{ position: "relative", height: 24, cursor: "pointer" }}
+                  onClick={(e) => {
+                    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect()
+                    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+                    const val = Math.round(pct * 4) + 1
+                    onUserChange(param.key, val)
+                  }}
+                >
+                  {/* Skinne */}
+                  <div style={{
+                    position: "absolute", top: "50%", left: 0, right: 0,
+                    height: 3, marginTop: -1.5,
+                    background: "#2e2820", borderRadius: 2,
+                  }} />
+                  {/* Fyldt del (bruger) */}
+                  <div style={{
+                    position: "absolute", top: "50%", left: 0,
+                    width: `${userPct}%`, height: 3, marginTop: -1.5,
+                    background: C.accent, borderRadius: 2,
+                    transition: "width 0.15s",
+                  }} />
+
+                  {/* Tick-marks for 1–5 */}
+                  {[0,1,2,3,4].map((i) => (
+                    <div key={i} style={{
+                      position: "absolute", top: "50%", left: `${i * 25}%`,
+                      width: 1, height: 5, marginTop: -2.5, marginLeft: -0.5,
+                      background: "#3a3028",
+                    }} />
+                  ))}
+
+                  {/* Ida-markør ◆ — kun hvis forskellig fra bruger */}
+                  {hasIdaDiff && (
                     <div style={{
-                      position: "absolute",
-                      left: `calc(${idaPct}% - 6px)`,
-                      top: -2,
+                      position: "absolute", top: "50%",
+                      left: `calc(${idaPct}% - 5px)`,
+                      marginTop: -5,
+                      width: 10, height: 10,
+                      transform: "rotate(45deg)",
+                      background: "#7eb8b0",
+                      borderRadius: 1,
                       pointerEvents: "none",
-                    }}>
-                      <span style={{ fontSize: 12, color: "#7eb8b0", lineHeight: 1 }}>◆</span>
-                    </div>
+                      transition: "left 0.3s",
+                    }} />
                   )}
+
+                  {/* Bruger-markør ● */}
+                  <div style={{
+                    position: "absolute", top: "50%",
+                    left: `calc(${userPct}% - 8px)`,
+                    marginTop: -8,
+                    width: 16, height: 16,
+                    borderRadius: "50%",
+                    background: C.accent,
+                    border: `2px solid ${C.bg}`,
+                    boxShadow: "0 0 0 1px rgba(196,169,125,0.4)",
+                    cursor: "grab",
+                    transition: "left 0.1s",
+                    // Drag via mousedown
+                  }} />
                 </div>
               </div>
             )
