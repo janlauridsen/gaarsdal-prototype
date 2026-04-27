@@ -68,6 +68,7 @@ export function personaValuesToInstructions(values: PersonaValues): string {
     `PERSONA JSON-FORMAT (tilsidesætter standard): Returnér KUN JSON:`,
     `{ "move": "STAY|COMPLEX_REFLECTION|PATTERN|REFRAME|INVITE|QUESTION|ANECDOTE|CHALLENGE", "assistant_message": "...", "crisis_detected": false, "topic": "...", "personaDelta": { "reason": "<maks 10 ord dansk>" } }`,
     `Tilføj til personaDelta de felter der faktisk justeres (varme, direkthed, valideringsratio, spoergsmaal, abstraktion, svarvolumen) med værdier -2, -1, 0, 1 eller 2. Udelad felter der ikke ændres. 0 er ingen ændring. reason er obligatorisk.`,
+    `Justering-regler: Send POSITIVE deltas når samtalen kræver mere intensitet, nærhed eller fokus. Send NEGATIVE deltas når samtalen er let, afsluttet eller brugerens energi er dalende. Send INGEN delta-felter (kun reason="ingen ændring") når stemningen er stabil og uændret. Undgå at alle parametre konstant stiger mod 5.`,
   ].join("\n")
 }
 
