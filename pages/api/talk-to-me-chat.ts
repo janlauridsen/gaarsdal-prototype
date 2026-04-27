@@ -13,10 +13,14 @@ import { ensureUserKey } from "./_utils/auth"
 import { newUuid } from "../../chat/utils/ids"
 import { readConsent, writeConsent, consentAllowsPersistence, consentTtlSeconds, type ConsentRetentionDays } from "../../chat/consent/store"
 import { readConversationState, writeConversationState } from "../../chat/persistence/conversationStateStore"
-import { talkToMeCapability, compressTtmTranscriptIfNeeded } from "../../chat/ai/capabilities/talkToMe"
+import { talkToMeCapability, compressTtmTranscriptIfNeeded, runTTMWithPersona } from "../../chat/ai/capabilities/talkToMe"
 import { createOpenAiCompatibleClient } from "../../chat/ai/provider"
 import type { ConversationState } from "../../chat/kernel/types"
 import { SESSION_TTL_SECONDS } from "../../chat/utils/ttl"
+import { readPersonaState, writePersonaState } from "../../chat/persona/store"
+import { applyPersonaDelta, parsePersonaDelta } from "../../chat/persona/prompt"
+import type { PersonaState, PersonaValues } from "../../chat/persona/types"
+import { DEFAULT_PERSONA_VALUES, PERSONA_KEYS } from "../../chat/persona/types"
 
 export const config = { maxDuration: 30 }
 
@@ -39,6 +43,7 @@ type RequestBody = {
   userText?: string
   conversationId?: string
   retentionDays?: ConsentRetentionDays
+  personaUserValues?: Partial<PersonaValues>   // bruger-slider-værdier fra frontend
 }
 
 type Turn = { role: "user" | "assistant"; content: string }
@@ -51,6 +56,7 @@ type ResponseBody = {
   previousTurns: Turn[]
   isReturning: boolean
   move?: string
+  personaState?: PersonaState
   error?: string
 }
 
@@ -148,14 +154,31 @@ export default async function handler(
     state = createTTMState(conversationId)
   }
 
+  // ── Persona state ───────────────────────────────────────────────────────────
+  let personaState: PersonaState = await readPersonaState(conversationId)
+
+  // Opdatér bruger-slider-værdier hvis sendt fra frontend
+  if (body?.personaUserValues && typeof body.personaUserValues === "object") {
+    const incoming = body.personaUserValues as Record<string, unknown>
+    const nextUser = { ...personaState.user }
+    for (const k of PERSONA_KEYS) {
+      const v = incoming[k]
+      if (typeof v === "number" && v >= 1 && v <= 5) {
+        nextUser[k] = Math.round(v)
+      }
+    }
+    personaState = { ...personaState, user: nextUser, updatedAt: Date.now() }
+  }
+
   // ── Run capability ──────────────────────────────────────────────────────────
   const llm = createOpenAiCompatibleClient()
-  let result: Awaited<ReturnType<typeof talkToMeCapability.run>>
+  let result: Awaited<ReturnType<typeof runTTMWithPersona>>
 
   try {
-    result = await talkToMeCapability.run(
+    result = await runTTMWithPersona(
       { state, userText, contextPack: undefined },
-      llm
+      llm,
+      personaState
     )
   } catch (err) {
     console.error("[TTM] capability fejlede", String(err))
@@ -191,9 +214,26 @@ export default async function handler(
     meta: nextMeta,
   }
 
+  // ── Opdatér personaState med Ida's delta ────────────────────────────────────
+  const debugAny = result.debug as any
+  if (debugAny?.personaDelta && Object.keys(debugAny.personaDelta).length > 0) {
+    const newIdaValues = applyPersonaDelta(
+      personaState.user,
+      personaState.ida,
+      debugAny.personaDelta
+    )
+    personaState = {
+      ...personaState,
+      ida: newIdaValues,
+      idaReason: debugAny.idaReason ?? "",
+      updatedAt: Date.now(),
+    }
+  }
+
   // ── Persist ─────────────────────────────────────────────────────────────────
   if (canPersist) {
     await writeConversationState(nextState, ttlSeconds).catch(() => {})
+    await writePersonaState(conversationId, personaState, ttlSeconds).catch(() => {})
 
     // Skriv til TTM-index så admin kan hente samtalen
     try {
@@ -236,6 +276,7 @@ export default async function handler(
     previousTurns,
     isReturning,
     move,
+    personaState,
   })
 
   // ── Post-response: komprimér transcript hvis >= 10 rå ture ─────────────────
