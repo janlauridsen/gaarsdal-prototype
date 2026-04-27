@@ -19,6 +19,37 @@ type Message = {
 type Screen = "landing" | "chat"
 type ConsentStatus = "unknown" | "pending" | "given" | "managing"
 
+// Persona types (spejler chat/persona/types.ts)
+type PersonaValues = {
+  varme: number
+  direkthed: number
+  valideringsratio: number
+  spoergsmaal: number
+  abstraktion: number
+  svarvolumen: number
+}
+type PersonaState = {
+  user: PersonaValues
+  ida: PersonaValues
+  idaReason: string
+  overrides: Partial<PersonaValues>
+  updatedAt: number
+}
+
+const DEFAULT_PERSONA: PersonaValues = {
+  varme: 3, direkthed: 3, valideringsratio: 3,
+  spoergsmaal: 3, abstraktion: 3, svarvolumen: 3,
+}
+
+const PARAM_CONFIG: { key: keyof PersonaValues; label: string; left: string; right: string }[] = [
+  { key: "varme",           label: "Varme",      left: "Klinisk",     right: "Varm" },
+  { key: "direkthed",       label: "Direkthed",  left: "Udforskende", right: "Direkte" },
+  { key: "valideringsratio",label: "Validering", left: "Validering",  right: "Udfordring" },
+  { key: "spoergsmaal",     label: "Spørgsmål",  left: "Cirkulært",   right: "Fokuseret" },
+  { key: "abstraktion",     label: "Abstraktion",left: "Metaforisk",  right: "Konkret" },
+  { key: "svarvolumen",     label: "Volumen",    left: "Kort",        right: "Uddybende" },
+]
+
 const CONV_ID_KEY = "ttm_conversation_id"
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
@@ -265,28 +296,141 @@ function chipStyle(variant: "primary" | "ghost"): React.CSSProperties {
 
 // ─── Chat ────────────────────────────────────────────────────────────────────
 
+// ─── Session Dashboard ─────────────────────────────────────────────────────
+
+function SessionDashboard({
+  personaState,
+  onUserChange,
+  open,
+  onToggle,
+}: {
+  personaState: PersonaState
+  onUserChange: (key: keyof PersonaValues, value: number) => void
+  open: boolean
+  onToggle: () => void
+}) {
+  const hasIdaAdjustment = PARAM_CONFIG.some(
+    (p) => personaState.ida[p.key] !== personaState.user[p.key]
+  )
+
+  return (
+    <div style={{ borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+      {/* Toggle-header */}
+      <button
+        onClick={onToggle}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "8px 18px", background: "none", border: "none", cursor: "pointer",
+          fontFamily: "inherit",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 11, color: C.textMuted, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            Ida TTM
+          </span>
+          {hasIdaAdjustment && !open && (
+            <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 8, background: C.accentDim, color: C.accent }}>
+              {personaState.idaReason || "justeret"}
+            </span>
+          )}
+        </div>
+        <span style={{ fontSize: 10, color: C.textDim }}>{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <div style={{ padding: "8px 18px 14px" }}>
+
+          {/* Sliders */}
+          {PARAM_CONFIG.map((param) => {
+            const userVal = personaState.user[param.key]
+            const idaVal = personaState.ida[param.key]
+            const idaPct = ((idaVal - 1) / 4) * 100
+
+            return (
+              <div key={param.key} style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                  <span style={{ fontSize: 11, color: C.textMuted }}>{param.label}</span>
+                  <span style={{ fontSize: 10, color: C.textDim }}>{param.left} ← {param.right}</span>
+                </div>
+                <div style={{ position: "relative", height: 20 }}>
+                  {/* Bruger-slider */}
+                  <input
+                    type="range"
+                    min={1}
+                    max={5}
+                    step={1}
+                    value={userVal}
+                    onChange={(e) => onUserChange(param.key, parseInt(e.target.value))}
+                    style={{
+                      position: "absolute", top: 0, left: 0, width: "100%",
+                      height: 20, cursor: "pointer", accentColor: C.accent,
+                    }}
+                  />
+                  {/* Ida-markør (◆) */}
+                  {idaVal !== userVal && (
+                    <div style={{
+                      position: "absolute",
+                      left: `calc(${idaPct}% - 6px)`,
+                      top: -2,
+                      pointerEvents: "none",
+                    }}>
+                      <span style={{ fontSize: 12, color: "#7eb8b0", lineHeight: 1 }}>◆</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+
+          {/* Ida status */}
+          {(personaState.idaReason || hasIdaAdjustment) && (
+            <div style={{
+              marginTop: 6, padding: "6px 10px", borderRadius: 6,
+              background: "rgba(126,184,176,0.08)", border: "1px solid rgba(126,184,176,0.15)",
+              fontSize: 12, color: "#7eb8b0", fontStyle: "italic",
+            }}>
+              Ida: {personaState.idaReason || "har justeret en eller flere parametre"}
+            </div>
+          )}
+
+          {/* Legende */}
+          <div style={{ marginTop: 8, display: "flex", gap: 14, fontSize: 10, color: C.textDim }}>
+            <span>● dig</span>
+            <span style={{ color: "#7eb8b0" }}>◆ Ida</span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Chat({
   messages,
   loading,
   consentStatus,
+  personaState,
   onSend,
   onPickNumber,
   onPickContinuation,
   onConsent,
   onNewConversation,
   onManageConsent,
+  onPersonaChange,
 }: {
   messages: Message[]
   loading: boolean
   consentStatus: ConsentStatus
+  personaState: PersonaState
   onSend: (text: string) => void
   onPickNumber: (n: number) => void
   onPickContinuation: (choice: "fortsæt" | "nyt emne") => void
   onConsent: (days: number) => void
   onNewConversation: () => void
   onManageConsent: () => void
+  onPersonaChange: (key: keyof PersonaValues, value: number) => void
 }) {
   const [text, setText] = useState("")
+  const [dashboardOpen, setDashboardOpen] = useState(true)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -340,6 +484,14 @@ function Chat({
           >Ny samtale</button>
         </div>
       </div>
+
+      {/* Session Dashboard */}
+      <SessionDashboard
+        personaState={personaState}
+        onUserChange={onPersonaChange}
+        open={dashboardOpen}
+        onToggle={() => setDashboardOpen((v) => !v)}
+      />
 
       {/* Messages */}
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px 12px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -462,6 +614,13 @@ export default function TalkToMe() {
   const [loading, setLoading] = useState(false)
   const [conversationId, setConversationId] = useState<string>("")
   const [consentStatus, setConsentStatus] = useState<ConsentStatus>("unknown")
+  const [personaState, setPersonaState] = useState<PersonaState>({
+    user: { ...DEFAULT_PERSONA },
+    ida: { ...DEFAULT_PERSONA },
+    idaReason: "",
+    overrides: {},
+    updatedAt: Date.now(),
+  })
 
   // ── Init: hent åbningsbesked fra API ──────────────────────────────────────
 
@@ -522,7 +681,11 @@ export default function TalkToMe() {
     setLoading(true)
 
     try {
-      const body: Record<string, unknown> = { userText, conversationId }
+      const body: Record<string, unknown> = {
+        userText,
+        conversationId,
+        personaUserValues: personaState.user,
+      }
       if (typeof retentionDays === "number") body.retentionDays = retentionDays
 
       const res = await fetch("/api/talk-to-me-chat", {
@@ -538,6 +701,9 @@ export default function TalkToMe() {
           ...prev,
           { role: "assistant", content: data.message, showNumberPicker: data.showNumberPicker, showContinuationPicker: data.showContinuationPicker },
         ])
+      }
+      if (data.personaState) {
+        setPersonaState(data.personaState)
       }
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Noget gik galt. Prøv igen." }])
@@ -605,6 +771,17 @@ export default function TalkToMe() {
     initChat()
   }
 
+  // ── Persona slider ──────────────────────────────────────────────────────────
+
+  function handlePersonaChange(key: keyof PersonaValues, value: number) {
+    setPersonaState((prev) => ({
+      ...prev,
+      user: { ...prev.user, [key]: value },
+      ida: { ...prev.ida, [key]: value },
+      updatedAt: Date.now(),
+    }))
+  }
+
   return (
     <>
       <Head>
@@ -621,6 +798,8 @@ export default function TalkToMe() {
           messages={messages}
           loading={loading}
           consentStatus={consentStatus}
+          personaState={personaState}
+          onPersonaChange={handlePersonaChange}
           onSend={sendMessage}
           onPickNumber={handlePickNumber}
           onPickContinuation={handlePickContinuation}
