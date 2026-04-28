@@ -648,34 +648,6 @@ function toggleChat() {
   document.getElementById('chat-panel').classList.toggle('open');
 }
 
-const SYSTEM = `Du er en venlig og kyndig assistent der besvarer spørgsmål om et sommerhus til salg på Røsnæs.
-
-Nøglefakta:
-- Adresse: Klinten 2, 4400 Kalundborg
-- Pris: 1.500.000 kr. kontant
-- Størrelse: 55 m² helårsisoleret hovedhus
-- Grundareal: knap 1.200 m²
-- Sovepladser: 6 i hovedhuset + 2 i gæstehuset = 8 i alt
-- Gæstehus: separat enhed med 2 sovepladser
-- Udhuse: 2 stk. til brænde, cykler mv.
-- Køkken: nyt IKEA-køkken 2020 inkl. opvaskemaskine og alle hvidevarer
-- Opvarmning: varmepumpe (app-styring), 3 solpaneler, brændeovn
-- Terrasser: 3 stk., to nybyggede i 2022 og 2025
-- Badeværelse renoveret 2005
-- Tag: elefantpap under sten – meget lang holdbarhed
-- Flagstang
-- Udsigt til vandet mod nord
-- Fælles badebro ved strand
-- Familiens hus i over 40 år – mormors sommerhus frem til 2018
-- Møbler og indbo kan overtages mod rimelig merpris
-- Nær Dyrehøj Vingård og golfbane
-- Ca. 90 min fra København
-- Beligger på lukket, ugenert område op til fredede arealer på Røsnæs
-
-Salg foregår via Danbolig Kalundborg, Strandstræde 1, 4400 Kalundborg, tlf. 59 56 16 00.
-
-Svar kort, venligt og konkret på dansk. Hvis du ikke ved noget, sig at interesserede skal kontakte Danbolig Kalundborg.`;
-
 let chatHistory = [];
 
 async function sendMsg() {
@@ -690,18 +662,13 @@ async function sendMsg() {
   const thinking = addMsg('…', 'bot thinking');
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/api/sommerhus-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: SYSTEM,
-        messages: chatHistory
-      })
+      body: JSON.stringify({ messages: chatHistory })
     });
     const data = await res.json();
-    const reply = data.content?.find(b => b.type === 'text')?.text || 'Prøv igen om lidt.';
+    const reply = data.reply || 'Prøv igen om lidt.';
     thinking.textContent = reply;
     thinking.classList.remove('thinking');
     chatHistory.push({ role: 'assistant', content: reply });
