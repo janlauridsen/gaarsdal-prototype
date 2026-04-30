@@ -59,7 +59,7 @@ OPVARMNING:
 - Huset holder sig varmt og tørt hele året uden manuel indgriben
 
 TAG OG KONSTRUKTION:
-- Elefantpap under sten – meget lang forventet holdbarhed (30+ år, forlænget af stenbelægning)
+- Elefantpap dækket af småsten på alle tage – meget lang forventet holdbarhed (30+ år)
 - Isoleret til vinterbrug
 
 UDSEENDE OG STIL – EKSTERIOR:
@@ -80,7 +80,8 @@ UDSEENDE OG STIL – INTERIØR:
 - Lysegrå sofa i stuen
 - Grønne keramikpotter på terrassen
 - Gammel gyngestol i stuen
-- Haveudsigt fra store panoramavinduer/skydedøre mod terrassen
+- Store franske døre/terrassedøre mod terrassen (ikke skydedøre)
+- Tag: elefantpap dækket af småsten på alle tage – meget lang holdbarhed
 
 TERRASSER (3 stk.):
 - To nybyggede – én i 2022, én i 2025
