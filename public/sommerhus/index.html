@@ -289,8 +289,8 @@
   .msg { padding: .65rem .9rem; border-radius: 8px; line-height: 1.55; max-width: 90%; }
   .msg.bot { background: #f0f0f0; color: var(--dark); align-self: flex-start; }
   .msg.user { background: var(--green); color: white; align-self: flex-end; }
-  .msg.bot ol, .msg.bot ul { padding-left: 1.1rem; margin: .3rem 0; line-height: 1.8; }
-  .msg.bot li { margin-bottom: .1rem; }
+  .msg.bot ol, .msg.bot ul { padding-left: 1.1rem; margin: .15rem 0; line-height: 1.55; }
+  .msg.bot li { margin-bottom: .15rem; }
   .msg.bot strong { font-weight: 700; }
   .msg.bot em { font-style: italic; }
   .chat-input-row {
@@ -767,7 +767,7 @@ function mdToHtml(text) {
     .replace(/^[-–]\s+(.+)$/gm, '<li>$1</li>')
     .replace(/(<li>.*<\/li>)/gs, (m) => m.includes('<ol') ? m : '<ul style="margin:.4rem 0 .4rem 1.1rem;padding:0;line-height:1.8;">'+m+'</ul>')
     // Linjeskift
-    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n\n/g, '<br>')
     .replace(/\n/g, '<br>');
 }
 
