@@ -289,7 +289,10 @@
   .msg { padding: .65rem .9rem; border-radius: 8px; line-height: 1.55; max-width: 90%; }
   .msg.bot { background: #f0f0f0; color: var(--dark); align-self: flex-start; }
   .msg.user { background: var(--green); color: white; align-self: flex-end; }
-  .msg.thinking { opacity: .5; font-style: italic; }
+  .msg.bot ol, .msg.bot ul { padding-left: 1.1rem; margin: .3rem 0; line-height: 1.8; }
+  .msg.bot li { margin-bottom: .1rem; }
+  .msg.bot strong { font-weight: 700; }
+  .msg.bot em { font-style: italic; }
   .chat-input-row {
     display: flex; gap: .5rem; padding: .75rem;
     border-top: 1px solid #eee;
@@ -743,7 +746,7 @@ async function sendMsg() {
     });
     const data = await res.json();
     const reply = data.reply || 'Prøv igen om lidt.';
-    thinking.textContent = reply;
+    thinking.innerHTML = mdToHtml(reply);
     thinking.classList.remove('thinking');
     chatHistory.push({ role: 'assistant', content: reply });
   } catch(e) {
@@ -752,11 +755,31 @@ async function sendMsg() {
   }
 }
 
+function mdToHtml(text) {
+  return text
+    // **fed** og *kursiv*
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // Nummererede lister
+    .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ol style="margin:.4rem 0 .4rem 1.1rem;padding:0;line-height:1.8;">$1</ol>')
+    // Bullet lister
+    .replace(/^[-–]\s+(.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, (m) => m.includes('<ol') ? m : '<ul style="margin:.4rem 0 .4rem 1.1rem;padding:0;line-height:1.8;">'+m+'</ul>')
+    // Linjeskift
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+}
+
 function addMsg(text, type) {
   const box = document.getElementById('chat-messages');
   const div = document.createElement('div');
   div.className = 'msg ' + type;
-  div.textContent = text;
+  if (type.includes('bot') && !type.includes('thinking')) {
+    div.innerHTML = mdToHtml(text);
+  } else {
+    div.textContent = text;
+  }
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
   return div;
