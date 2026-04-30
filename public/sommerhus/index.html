@@ -310,6 +310,24 @@
   }
   #chat-send:hover { background: var(--green-lt); }
 
+  /* ── VIDEO ── */
+  .video-thumb {
+    position:relative; cursor:pointer;
+    background:#111; border-radius:8px; overflow:hidden; aspect-ratio:16/9;
+  }
+  .video-thumb img { width:100%; height:100%; object-fit:cover; display:block; transition:opacity .3s; }
+  .video-thumb:hover img { opacity:.8; }
+  .video-play {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:60px; height:60px; background:rgba(43,95,62,.9); border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:1.4rem; pointer-events:none;
+  }
+  .video-label {
+    position:absolute; bottom:0; left:0; right:0;
+    padding:.5rem .75rem; background:rgba(0,0,0,.6); color:white; font-size:.8rem;
+  }
+  .video-frame { width:100%; aspect-ratio:16/9; border:none; border-radius:8px; display:block; }
+
   /* ── FOOTER ── */
   footer {
     background: var(--dark); color: rgba(255,255,255,.4);
@@ -510,6 +528,31 @@
       <p>Knap 1.200 m² på lukket, ugenert område direkte op til fredede arealer. God plads til leg – sandkasse og gynge er der allerede. Og steder man kan gemme sig eller bare hygge på bænken med den store udsigt, mens duften af syrener blander sig med den friske havluft.</p>
       <p>Mellem solbær-, hindbær- og stikkelsbærbuskene gemmer sig morello-, blomme-, kirsebær- og æbletræer. Foran køkkendøren et bed med krydderurter. Flagstangen giver det klassiske sommerhus-look.</p>
       <p>2 udhuse til brænde, cykler og alt det andet – det ene med fryser og ekstra køleskab.</p>
+
+      <div class="two-col fade-in" style="margin-top:2rem;align-items:center;">
+        <div>
+          <img src="/sommerhus/images/hortensia.jpg" alt="Kæmpe hortensia i haven" style="width:100%;display:block;" onclick="openLightbox(this.src)">
+        </div>
+        <div>
+          <h3>Hortensiaerne</h3>
+          <p>I haven blomstrer en kæmpe hortensia i de smukkeste farver – blå, lilla og pink side om side. Et af de første ting man lægger mærke til, og et af de billeder man tager hjem.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIDEO SEKTION -->
+    <div class="section-inner" style="margin-top:3rem;" id="video-sektion">
+      <div class="section-label">Se og oplev</div>
+      <h3 style="margin-bottom:1.5rem;">Huset og området i video</h3>
+      <div id="video-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem;">
+        <!-- VIDEO PLACEHOLDER 1 -->
+        <!-- Udskift data-src med din YouTube/Vimeo URL -->
+        <!-- Eksempel: data-src="https://www.youtube.com/embed/VIDEOID" -->
+        <div class="video-thumb" data-src="" style="display:none;">
+          <div class="video-label"></div>
+        </div>
+      </div>
+      <p style="font-size:.8rem;color:var(--gray);margin-top:.5rem;font-style:italic;">Upload din video til YouTube eller Vimeo og send mig linket – så sætter jeg det ind her.</p>
     </div>
   </div>
 </section>
@@ -879,7 +922,30 @@ function mdToHtml(text) {
     .replace(/\n/g, '<br>');
 }
 
-function addMsg(text, type) {
+// ── VIDEO LAZY LOAD ───────────────────────────────────────────────────────────
+// Viser kun thumbnail – loader iframe når der klikkes
+function initVideos() {
+  document.querySelectorAll('.video-thumb[data-src]').forEach(thumb => {
+    const src = thumb.getAttribute('data-src');
+    if (!src) return; // skip tomme placeholders
+    thumb.style.display = 'block';
+
+    // Byg thumbnail URL fra YouTube/Vimeo ID
+    let thumbUrl = '/sommerhus/images/hortensia.jpg'; // fallback
+    const ytMatch = src.match(/embed\/([\w-]+)/);
+    if (ytMatch) thumbUrl = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+
+    thumb.innerHTML = `
+      <img src="${thumbUrl}" alt="Video" loading="lazy">
+      <div class="video-play">▶</div>
+      <div class="video-label">${thumb.querySelector('.video-label')?.textContent || ''}</div>
+    `;
+    thumb.addEventListener('click', () => {
+      thumb.innerHTML = `<iframe class="video-frame" src="${src}?autoplay=1" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+    });
+  });
+}
+document.addEventListener('DOMContentLoaded', initVideos);
   const box = document.getElementById('chat-messages');
   const div = document.createElement('div');
   div.className = 'msg ' + type;
