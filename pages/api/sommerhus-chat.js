@@ -62,6 +62,26 @@ TAG OG KONSTRUKTION:
 - Elefantpap under sten – meget lang forventet holdbarhed (30+ år, forlænget af stenbelægning)
 - Isoleret til vinterbrug
 
+UDSEENDE OG STIL – EKSTERIOR:
+- Huset er malet sort (sort træbeklædning)
+- Vinduer og døre er hvide
+- Flagstang med Dannebrog
+- Tre træterrasser i naturfarvet/grå træ
+- Gæstehuset har rødt tegltag
+- Sort udhus/skur
+
+UDSEENDE OG STIL – INTERIØR:
+- Hvide vægge med lodrette bræddepaneler (beadboard)
+- Originale honningfarvede fyrretræsgulve
+- Synlige hvide loftbjælker i stuen
+- Sort støbejernsbrændeovn centralt placeret
+- Hvidt IKEA-køkken
+- Rødt spisebord med rotting-/kurvstole
+- Lysegrå sofa i stuen
+- Grønne keramikpotter på terrassen
+- Gammel gyngestol i stuen
+- Haveudsigt fra store panoramavinduer/skydedøre mod terrassen
+
 TERRASSER (3 stk.):
 - To nybyggede – én i 2022, én i 2025
 - Plads til langbord og sofamøbler
