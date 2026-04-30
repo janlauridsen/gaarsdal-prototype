@@ -960,6 +960,8 @@ const videoObserver = new IntersectionObserver((entries) => {
 }, { rootMargin: '200px' });
 
 document.querySelectorAll('video.lazy-video').forEach(v => videoObserver.observe(v));
+
+function addMsg(text, type) {
   const box = document.getElementById('chat-messages');
   const div = document.createElement('div');
   div.className = 'msg ' + type;
