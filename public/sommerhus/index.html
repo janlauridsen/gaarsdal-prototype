@@ -541,18 +541,39 @@
     </div>
 
     <!-- VIDEO SEKTION -->
-    <div class="section-inner" style="margin-top:3rem;" id="video-sektion">
+    <div class="section-inner" style="margin-top:3rem;">
       <div class="section-label">Se og oplev</div>
       <h3 style="margin-bottom:1.5rem;">Huset og området i video</h3>
-      <div id="video-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem;">
-        <!-- VIDEO PLACEHOLDER 1 -->
-        <!-- Udskift data-src med din YouTube/Vimeo URL -->
-        <!-- Eksempel: data-src="https://www.youtube.com/embed/VIDEOID" -->
-        <div class="video-thumb" data-src="" style="display:none;">
-          <div class="video-label"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem;">
+
+        <div>
+          <video class="lazy-video" poster="/sommerhus/images/UdsigtenFjorden2_poster.jpg"
+            preload="none" controls playsinline
+            style="width:100%;border-radius:8px;display:block;background:#000;">
+            <source data-src="/sommerhus/videos/UdsigtenFjorden2.mp4" type="video/mp4">
+          </video>
+          <p style="font-size:.8rem;color:var(--gray);margin-top:.5rem;text-align:center;">Udsigten mod fjorden – på vej ned til stranden</p>
         </div>
+
+        <div>
+          <video class="lazy-video" poster="/sommerhus/images/Flagstangen_poster.jpg"
+            preload="none" controls playsinline
+            style="width:100%;border-radius:8px;display:block;background:#000;">
+            <source data-src="/sommerhus/videos/Flagstangen.mp4" type="video/mp4">
+          </video>
+          <p style="font-size:.8rem;color:var(--gray);margin-top:.5rem;text-align:center;">Flagstangen og kig til haven</p>
+        </div>
+
+        <div>
+          <video class="lazy-video" poster="/sommerhus/images/Bastian_klinten_poster.jpg"
+            preload="none" controls playsinline
+            style="width:100%;border-radius:8px;display:block;background:#000;">
+            <source data-src="/sommerhus/videos/Bastian_klinten.mp4" type="video/mp4">
+          </video>
+          <p style="font-size:.8rem;color:var(--gray);margin-top:.5rem;text-align:center;">Bastian på skrænterne ved klinterne</p>
+        </div>
+
       </div>
-      <p style="font-size:.8rem;color:var(--gray);margin-top:.5rem;font-style:italic;">Upload din video til YouTube eller Vimeo og send mig linket – så sætter jeg det ind her.</p>
     </div>
   </div>
 </section>
@@ -923,29 +944,22 @@ function mdToHtml(text) {
 }
 
 // ── VIDEO LAZY LOAD ───────────────────────────────────────────────────────────
-// Viser kun thumbnail – loader iframe når der klikkes
-function initVideos() {
-  document.querySelectorAll('.video-thumb[data-src]').forEach(thumb => {
-    const src = thumb.getAttribute('data-src');
-    if (!src) return; // skip tomme placeholders
-    thumb.style.display = 'block';
-
-    // Byg thumbnail URL fra YouTube/Vimeo ID
-    let thumbUrl = '/sommerhus/images/hortensia.jpg'; // fallback
-    const ytMatch = src.match(/embed\/([\w-]+)/);
-    if (ytMatch) thumbUrl = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
-
-    thumb.innerHTML = `
-      <img src="${thumbUrl}" alt="Video" loading="lazy">
-      <div class="video-play">▶</div>
-      <div class="video-label">${thumb.querySelector('.video-label')?.textContent || ''}</div>
-    `;
-    thumb.addEventListener('click', () => {
-      thumb.innerHTML = `<iframe class="video-frame" src="${src}?autoplay=1" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
-    });
+// Sætter kun src på video når den scroller ind i viewport
+const videoObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const video = e.target;
+      video.querySelectorAll('source[data-src]').forEach(s => {
+        s.src = s.getAttribute('data-src');
+        s.removeAttribute('data-src');
+      });
+      video.load();
+      videoObserver.unobserve(video);
+    }
   });
-}
-document.addEventListener('DOMContentLoaded', initVideos);
+}, { rootMargin: '200px' });
+
+document.querySelectorAll('video.lazy-video').forEach(v => videoObserver.observe(v));
   const box = document.getElementById('chat-messages');
   const div = document.createElement('div');
   div.className = 'msg ' + type;
