@@ -27,8 +27,8 @@ SOVEPLADSER:
 
 KØKKEN-ALRUM:
 - Nyt IKEA-køkken 2020: langt lyst bord med 7 skabe med udtræksskuffer
-- Keramisk komfur med ovn, opvaskemaskine, køleskab og mikroovn – alle fra 2020
-- Brændeovn centralt placeret i køkken-alrum
+- Keramisk komfur med ovn, opvaskemaskine, køleskab, mikroovn og emhætte – alle fra 2020
+- Brændeovn centralt placeret i stuen
 - Sofagruppe med TV i hjørne modsat køkkenet
 - Spisesektion med sofa der udfoldes til dobbeltseng
 - Direkte adgang til terras
@@ -55,7 +55,7 @@ UDHUSE (2 stk.):
 OPVARMNING:
 - Solvarme til badeværelse, soveværelse og gæsteværelse
 - Luft-til-luft varmepumpe i stuen – kører automatisk ved frost, styres via app hjemmefra
-- Brændeovn i køkken-alrum – til de ekstra kolde og fugtige dage
+- Brændeovn centralt i stuen – til de ekstra kolde og fugtige dage
 - Huset holder sig varmt og tørt hele året uden manuel indgriben
 
 TAG OG KONSTRUKTION:
@@ -96,8 +96,8 @@ SMART HOME & TEKNOLOGI:
 - Indlagt fiber (bredbånd)
 - Temperatur overvåges og varme kontrolleres via app hjemmefra
 - Philips Hue smart belysning – styres fra app (kan overtages mod merpris)
-- Sonos musikanlæg (kan overtages mod merpris)
-- Overvågningskameraer (kan overtages mod merpris)
+- Sonos musikanlæg installeret i køkken, soveværelse og stue med soundbar på TV (kan tilkøbes)
+- Overvågningskameraer med solceller, inde og ude (kan overtages mod merpris)
 
 HAVEN:
 - Knap 1.200 m² på lukket, ugenert område
@@ -113,20 +113,20 @@ HAVEN:
 
 INDBO OG MØBLER:
 - Møbler og indbo kan overtages mod rimelig merpris
-- Philips Hue, Sonos og overvågning kan overtages mod merpris
+- Philips Hue og overvågning kan overtages mod merpris. Sonos kan tilkøbes.
 - Afhænger af købers interesse og behov
 
 KONTAKT OG SALG:
 - Danbolig Kalundborg, Strandstræde 1, 4400 Kalundborg
 - Tlf: 59 56 16 00
 - Åbent man–fre 9.00–17.00
-- Hjemmeside med billeder og info: gaarsdal.net/sommerhus
+- Hjemmeside med billeder, videoer og chatbot: https://gaarsdal.net/sommerhus
 
 ════════════════════════
 BELIGGENHED OG AFSTAND
 ════════════════════════
 
-- Ca. 1 time fra Indre By, København – via motorvejen mod Kalundborg
+- Ca. godt 1 time fra Indre By, København – via motorvejen mod Kalundborg
 - Lukket, ugenert område på Røsnæs halvøen
 - Op til fredede naturarealer
 - Kig til vandet mod nord
