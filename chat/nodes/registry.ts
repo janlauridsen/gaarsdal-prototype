@@ -67,7 +67,7 @@ export const nodeRegistry: Record<string, Node> = {
     kind: "INFO",
     goal: "Kontaktinfo og booking-veje",
     message:
-      "Du kan kontakte Jan direkte:\n\n📞 +45 42 80 74 74\n✉️ jan@gaarsdal.net\n📍 Bakkevej 36, 3460 Birkerød\n\nEn første samtale er uforpligtende — du kan stille spørgsmål og mærke om det giver mening for dig.\n\nVil du have Jan til at kontakte dig, kan du skrive dit navn og hvad du ønsker hjælp til.",
+      "Du kan kontakte Jan direkte:\n\n📞 +45 42 80 74 74\n✉️ jan@gaarsdal.net\n📍 Bakkevej 36, 3460 Birkerød\n\nDu kan også sende en besked via kontaktformularen på hjemmesiden.\n\nEn første samtale er uforpligtende — du kan stille spørgsmål og mærke om det giver mening for dig.",
     allow_free_text: true,
     allow_parentese: false,
     allowed_exits: ["HOME", "GEN_HYPNO", "HANDOFF_FORM", "LEAD_CAPTURE", "PREQUALIFY"],
