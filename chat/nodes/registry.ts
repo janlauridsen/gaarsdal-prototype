@@ -29,6 +29,8 @@ export const nodeRegistry: Record<string, Node> = {
       "GEN_HYPNO",
       "HOME",
       "CRISIS_INFO",
+      "BOOKING",
+      "HANDOFF_FORM",
     ],
     meta_domains_written: [
       "ux",
