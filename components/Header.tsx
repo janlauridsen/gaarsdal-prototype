@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 
 export default function Header({
   siteTitle = 'Gaarsdal Hypnoterapi',
@@ -10,8 +11,13 @@ export default function Header({
     { label: 'Kontakt', href: '/kontakt' },
   ],
 }) {
+  const router = useRouter()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
+
+  function isActive(href: string) {
+    return router.pathname === href
+  }
 
   useEffect(() => {
     function onScroll() {
@@ -53,7 +59,11 @@ export default function Header({
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-muted hover:text-text transition-colors"
+                className={`transition-colors ${
+                  isActive(item.href)
+                    ? 'text-text font-medium border-b border-accent'
+                    : 'text-muted hover:text-text'
+                }`}
               >
                 {item.label}
               </Link>
@@ -114,7 +124,11 @@ export default function Header({
               <Link
                 key={item.href}
                 href={item.href}
-                className="block py-2 text-lg text-text hover:text-accent transition-colors"
+                className={`block py-2 text-lg transition-colors ${
+                  isActive(item.href)
+                    ? 'text-accent font-medium'
+                    : 'text-text hover:text-accent'
+                }`}
                 onClick={() => setOpen(false)}
               >
                 {item.label}
