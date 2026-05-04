@@ -326,6 +326,40 @@ export async function runUnifiedHypnoCapability(
     is_child_context: detectChildContext(userText, trimmedTranscript),
   }
 
+  // ─── Forløb-invitation: route til BOOKING når bruger bekræfter ────────────
+  // Detekteres deterministisk: forrige assistent-besked indeholdt invitation om forløb
+  // OG brugerens svar er et bekræftende signal (ja, gerne, etc.)
+  if (
+    options.stayOnNode === "GEN_HYPNO" &&
+    policySignals.is_ready_signal
+  ) {
+    const lastAssistant = lastAssistantExcerpt(trimmedTranscript)
+    const invitationShown =
+      lastAssistant &&
+      (lastAssistant.includes("forløb") || lastAssistant.includes("tage det videre") || lastAssistant.includes("høre mere"))
+    if (invitationShown) {
+      const bookingNode = "BOOKING"
+      const assistant = "Du er velkommen til at kontakte Jan direkte:\n\n📞 +45 42 80 74 74\n✉️ jan@gaarsdal.net\n📍 Bakkevej 36, 3460 Birkerød\n\nEn første samtale er uforpligtende — du kan stille spørgsmål og mærke om det giver mening for dig.\n\nVil du have Jan til at kontakte dig, kan du skrive dit navn og hvad du ønsker hjælp til."
+      const updatedTranscript = appendTranscript(transcript, userText, assistant)
+      return {
+        transition: {
+          type: "NODE_HOP",
+          from: context.state.active_node,
+          to: bookingNode,
+          reason: "gen-hypno:forloeb-invitation-confirmed",
+          response_message: assistant,
+          meta_delta: buildMetaDelta({
+            context, assistantMessage: assistant, updatedTranscript, topic: previousTopic,
+            sourceNode: options.sourceNode, transcriptKey: options.transcriptKey, userText,
+            analysis: buildDefaultAnalysis(userText, previousTopic, "practical"),
+            mode: "practical", relationalState: "decision_support",
+          }),
+        },
+        debug: { capability: "unified-hypno-v5-single", used_fallback: false },
+      }
+    }
+  }
+
   // Crisis-flag: tjek både meta (sat af chat.ts på forrige turn) og brugerens aktuelle tekst
   const crisisInMeta = (context.state.meta?.["safety.crisis_detected"] as any)?.value === true
   const CRISIS_PHRASES_GENHYPNO = [
