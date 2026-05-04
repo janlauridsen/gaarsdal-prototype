@@ -224,7 +224,7 @@ KRITISK EKSEMPEL PÅ FORBUDT GENTAGELSE: Bruger siger "jeg bekymrer mig om arbej
     blocks.push(`PROGRESSION — OBLIGATORISK (turn 3): Undersøgelsesfasen er afsluttet. Du SKAL:
 1. Samle mønsteret i én konkret sætning — hvad er det der sker for brugeren?
 2. Koble det specifikt til hvad hypnoterapi adresserer ved netop det mønster
-3. Afslutte med én blød invitation: "Vil du høre mere om hvad et forløb hos Jan kan indebære?"
+3. Afslutte med én blød invitation: "Vil du tage kontakt til Jan — eller høre hvad næste skridt er?"
 Brug conversation_move: synthesis. Stil IKKE et nyt undersøgelsesspørgsmål.`)
   } else if (params.assistantCount >= 3 && params.assistantCount <= 4) {
     blocks.push(`PROGRESSION — OBLIGATORISK OVERRIDE (turn ${params.assistantCount + 1}): Du SKAL afslutte undersøgelsesfasen nu. guided_observation og pattern_detection er FORBUDT i dette svar.
