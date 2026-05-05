@@ -3,7 +3,7 @@ export default function Footer({ contact = { phone: '+45 42 80 74 74', email: 'j
     <footer className="bg-white border-t py-16 mt-20" style={{ position: 'relative', overflow: 'hidden' }}>
       {/* Vandmærke — stort logo centreret bag teksten */}
       <img
-        src="/gaarsdal-logo-2026-02.png"
+        src="gaarsdal-logo-branding-notext.png"
         alt=""
         aria-hidden="true"
         style={{
@@ -13,7 +13,7 @@ export default function Footer({ contact = { phone: '+45 42 80 74 74', email: 'j
           transform: 'translate(-50%, -50%)',
           height: '220px',
           width: 'auto',
-          opacity: 0.25,
+          opacity: 0.33,
           pointerEvents: 'none',
           userSelect: 'none',
         }}
