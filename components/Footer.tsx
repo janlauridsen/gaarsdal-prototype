@@ -8,7 +8,7 @@ export default function Footer({ contact = { phone: '+45 42 80 74 74', email: 'j
         aria-hidden="true"
         style={{
           position: 'absolute',
-          top: '75%',
+          top: '66%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
           height: '220px',
