@@ -60,7 +60,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const uid = Math.random().toString(36).slice(2, 8)
 
   // Member er unik: uid sikrer ingen kollision selv ved samme ms
-  const member = JSON.stringify({ uid, ts: new Date(now).toISOString(), path, city, postal, region, day })
+  const mobile = /mobile|android|iphone|ipad|ipod/i.test(ua)
+  const member = JSON.stringify({ uid, ts: new Date(now).toISOString(), path, city, postal, region, day, mobile })
 
   const redis = getRedisClient()
   if (!redis) return res.status(204).end()
