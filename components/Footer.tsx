@@ -11,7 +11,7 @@ export default function Footer({ contact = { phone: '+45 42 80 74 74', email: 'j
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          height: '220px',
+          height: '440px',
           width: 'auto',
           opacity: 0.33,
           pointerEvents: 'none',
