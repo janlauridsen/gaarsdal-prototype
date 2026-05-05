@@ -1,15 +1,24 @@
 export default function Footer({ contact = { phone: '+45 42 80 74 74', email: 'jan@gaarsdal.net' } }) {
   return (
-    <footer className="bg-white border-t py-12 mt-20">
-      <div className="max-w-5xl mx-auto px-6 text-center">
-        <div className="mx-auto mb-6">
-          <img
-            src="/gaarsdal-logo-branding-notext.png"
-            alt="Gaarsdal Hypnoterapi logo"
-            style={{ height: "48px", width: "auto", opacity: 0.85 }}
-          />
-        </div>
-
+    <footer className="bg-white border-t py-16 mt-20" style={{ position: 'relative', overflow: 'hidden' }}>
+      {/* Vandmærke — stort logo centreret bag teksten */}
+      <img
+        src="/gaarsdal-logo-2026-02.png"
+        alt=""
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          height: '220px',
+          width: 'auto',
+          opacity: 0.06,
+          pointerEvents: 'none',
+          userSelect: 'none',
+        }}
+      />
+      <div className="max-w-5xl mx-auto px-6 text-center" style={{ position: 'relative', zIndex: 1 }}>
         <div className="text-text mb-2">Gaarsdal Hypnoterapi</div>
         <div className="text-muted mb-4">{contact.phone} • {contact.email}</div>
         <div className="text-xs text-muted">Bakkevej 36, 3460 Birkerød</div>
