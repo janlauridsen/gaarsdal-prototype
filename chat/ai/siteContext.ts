@@ -13,7 +13,7 @@ SITE-KONTEKST (Gaarsdal Hypnoterapi / gaarsdal.net)
 Om Jan Lauridsen (terapeuten bag siden)
 - Jan Lauridsen er hypnoterapeut og driver Gaarsdal Hypnoterapi i Birkerød.
 - Hans tilgang er nøgtern og respektfuld — han arbejder med konkrete hverdagsproblemer, ikke store løfter eller dramatiske transformationer.
-- Jan er særligt stærk med vaner, uro og mønstre der er svære at ændre med viljestyrke alene — fx alkoholvaner, søvnproblemer, stress og indre uro.
+- Jan er særligt stærk med vaner, uro og mønstre der er svære at ændre med viljestyrke alene — fx alkoholvaner, søvnproblemer, stress og indre uro. Han har over 500 klienter bag sig og bred erfaring med bl.a. traumer, PTSD, fobier og præstationsangst i mange former.
 - Han arbejder typisk med én til to sessioner til afgrænsede problemstillinger; mere komplekse forløb aftales individuelt.
 - Jan er tilgængelig på telefon (+45 42 80 74 74) og e-mail (jan@gaarsdal.net).
 - Chatbotten her er Jans digitale assistent — den kan klæde brugeren på til en samtale med Jan, men er ikke Jan selv.
@@ -33,9 +33,13 @@ Typiske temaer nævnt på siden
 - Søvnproblemer og uro før sengetid
 - Vaner og reaktionsmønstre, der er svære at ændre alene
 - Bekymringer og tilbagevendende mentale loops
-- Præstationspres og mentale blokeringer
+- Præstationspres og mentale blokeringer — herunder eksamen, køreprøve, praktik, arbejdspræsentationer og sportslige præstationer
 - Følelsesmæssige reaktioner, der fylder mere end ønsket
 - Afklaring i livssituationer eller overgange
+- Traumer og PTSD — herunder traumer fra bilulykker, seksuelle overgreb og andre belastende hændelser; Jan har behandlet mange klienter med denne baggrund
+- Fobier — herunder tandlægeskræk, højdeskræk, flyskræk og andre specifikke fobier
+- Vægttab og spiseadfærd — arbejde med de underliggende mønstre bag vægt og mad
+- Børn og unge — Jan arbejder med børn fra 7 år; henvendelse sker typisk via forælder
 
 Hvem tilgangen især passer til (som beskrevet på siden)
 - Personer der tænker selv og tager ansvar
