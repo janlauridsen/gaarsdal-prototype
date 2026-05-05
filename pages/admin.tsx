@@ -21,7 +21,7 @@ type TtmConversation = {
   transcript: Array<{ role: string; content: string }>
 }
 type ExportData = { from: string; to: string; total_conversations: number; total_turns: number; conversations: Conversation[]; handoffs?: Handoff[]; leads?: Lead[]; feedback?: FeedbackItem[] }
-type Hit = { ts: string; path: string; city: string; postal?: string; region: string; day: string }
+type Hit = { ts: string; path: string; city: string; postal?: string; region: string; day: string; mobile?: boolean }
 
 function ConvRow({ c, i, total, stateMap, onOpen, onDelete, deleting, selected, onToggle }: {
   c: Conversation; i: number; total: number
@@ -715,6 +715,37 @@ export default function AdminPage() {
                           </div>
                         ))}
                       </div>
+                    </div>
+
+                    {/* By device */}
+                    <div style={{ ...S.card, padding:"20px" }}>
+                      <div style={{ fontSize:"13px", fontWeight:500, color:"#888888", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Enhed</div>
+                      {(() => {
+                        const mobileCount = hits.filter(h => h.mobile === true).length
+                        const desktopCount = hits.filter(h => h.mobile === false).length
+                        const unknownCount = hits.filter(h => h.mobile === undefined).length
+                        const total = hits.length
+                        const rows = [
+                          { label:"📱 Mobil", count: mobileCount },
+                          { label:"🖥 Desktop", count: desktopCount },
+                          ...(unknownCount > 0 ? [{ label:"? Ukendt", count: unknownCount }] : []),
+                        ]
+                        return (
+                          <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+                            {rows.map(r => (
+                              <div key={r.label}>
+                                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"4px" }}>
+                                  <span style={{ fontSize:"13px", color:"#cccccc" }}>{r.label}</span>
+                                  <span style={{ fontSize:"13px", fontWeight:500, color:"#6B8F71" }}>{r.count} <span style={{ color:"#888888", fontWeight:400 }}>({total > 0 ? Math.round(r.count/total*100) : 0}%)</span></span>
+                                </div>
+                                <div style={{ background:"#1f1f1f", borderRadius:"4px", height:"6px", overflow:"hidden" }}>
+                                  <div style={{ height:"100%", background:"#6B8F71", borderRadius:"4px", width:`${total > 0 ? (r.count/total)*100 : 0}%` }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      })()}
                     </div>
                   </div>
                 )}
