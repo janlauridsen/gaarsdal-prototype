@@ -39,11 +39,12 @@ export default function Om() {
                 width={120}
                 height={120}
                 className="rounded-xl object-cover shadow-sm"
+                style={{ opacity: 0.82 }}
                 priority
               />
             </div>
             <div>
-              <h1 className="text-h1 font-medium mb-3">Jeg hedder Jan</h1>
+              <h1 className="text-4xl font-normal mb-3 text-text">Jeg hedder Jan</h1>
               <p className="text-base-lg text-muted leading-relaxed">
                 Jeg arbejder med mennesker, der har brug for ro, klarhed og en
                 mere direkte vej til forandring.
