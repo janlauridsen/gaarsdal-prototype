@@ -13,7 +13,7 @@ export default function Footer({ contact = { phone: '+45 42 80 74 74', email: 'j
           transform: 'translate(-50%, -50%)',
           height: '220px',
           width: 'auto',
-          opacity: 0.15,
+          opacity: 0.25,
           pointerEvents: 'none',
           userSelect: 'none',
         }}
