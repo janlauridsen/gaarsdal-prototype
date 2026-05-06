@@ -22,6 +22,7 @@ import { getOrCreateThreadThemeAndEpisode } from "../../chat/memory/longTermMemo
 
 import { handleThreadCreate, handleThreadSwitch, handleThreadArchive } from "../../chat/threads/threadHandler"
 import { runPostTurn, maybeTriggerScanThreadsJob } from "../../chat/kernel/postTurn"
+import { incrementKeywordCounts } from "../../chat/analytics/keywordCounts"
 
 import { setWidgetCors } from "./_utils/cors"
 import { ensureUserKey } from "./_utils/auth"
@@ -377,6 +378,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         signal: AbortSignal.timeout ? AbortSignal.timeout(25000) : undefined,
       }).catch(() => {})
     )
+
+    // Anonymiseret keyword-tæller — kører uanset samtykke, ingen session-link
+    const _rawTopicMeta = kernelResultFinal.state?.meta?.["gen_hypno.topic_tags"]
+    const _topicTagsValue = _rawTopicMeta && typeof _rawTopicMeta === "object" && "value" in (_rawTopicMeta as any)
+      ? (_rawTopicMeta as any).value
+      : _rawTopicMeta
+    const _topicTags = Array.isArray(_topicTagsValue)
+      ? _topicTagsValue.filter((t: unknown): t is string => typeof t === "string")
+      : []
+    if (_topicTags.length) waitUntil(incrementKeywordCounts(_topicTags))
 
   } catch (e: any) {
     await emitCanonicalEvent({
