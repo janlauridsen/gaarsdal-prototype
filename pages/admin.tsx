@@ -124,6 +124,8 @@ export default function AdminPage() {
   const [hitsLoading, setHitsLoading] = useState(false)
   const [hitsError, setHitsError] = useState<string|null>(null)
   const [hitsDays, setHitsDays] = useState(30)
+  const [kwData, setKwData] = useState<Array<{ day: string; keywords: Record<string, number> }>>([])
+  const [kwLoading, setKwLoading] = useState(false)
   const [showTestUsers, setShowTestUsers] = useState(false)
   const [groupByUser, setGroupByUser] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -145,6 +147,14 @@ export default function AdminPage() {
       if (!res.ok) { const j = await res.json().catch(()=>({})); setHitsError(j.error ?? `HTTP ${res.status}`); return }
       const j = await res.json(); setHits(j.hits ?? [])
     } catch (e:any) { setHitsError(e.message ?? "Ukendt fejl") } finally { setHitsLoading(false) }
+  }, [secret, hitsDays])
+
+  const fetchKeywords = useCallback(async (days = hitsDays) => {
+    setKwLoading(true)
+    try {
+      const res = await fetch(`/api/admin/keyword-counts?secret=${encodeURIComponent(secret)}&days=${days}`)
+      const j = await res.json(); setKwData(j.days ?? [])
+    } catch {} finally { setKwLoading(false) }
   }, [secret, hitsDays])
 
   const fetchStates = useCallback(async (ids: string[]) => {
@@ -342,7 +352,7 @@ export default function AdminPage() {
               { id:"memory", label:"Hukommelse" },
               { id:"ttm", label:`TTM (${ttmData?.length ?? "?"})` },
             ] as const).map(t => (
-              <button key={t.id} onClick={()=>{ setTab(t.id); setOpenConvId(null); if(t.id==="memory"&&!memoryData&&!memoryLoading) fetchMemory(); if(t.id==="traffic"&&hits.length===0&&!hitsLoading) fetchHits(); if(t.id==="ttm"&&!ttmData&&!ttmLoading) fetchTtm() }}
+              <button key={t.id} onClick={()=>{ setTab(t.id); setOpenConvId(null); if(t.id==="memory"&&!memoryData&&!memoryLoading) fetchMemory(); if(t.id==="traffic"&&hits.length===0&&!hitsLoading) { fetchHits(); fetchKeywords() }; if(t.id==="ttm"&&!ttmData&&!ttmLoading) fetchTtm() }}
                 style={{ padding:"8px 16px", borderRadius:"8px", fontSize:"14px", border:"none", cursor:"pointer", background:tab===t.id?"#6B8F71":"#1a1a1a", color:tab===t.id?"#1a1a1a":"#888888", fontWeight:tab===t.id?500:400, fontFamily:"inherit", boxShadow:"0 2px 10px rgba(0,0,0,0.05)" }}>
                 {t.label}
               </button>
@@ -659,7 +669,7 @@ export default function AdminPage() {
                     <div style={{ fontSize:"14px", color:"#888888" }}>Danske besøgende · {hits.length} hits</div>
                     <select
                       value={hitsDays}
-                      onChange={e => { const d = Number(e.target.value); setHitsDays(d); fetchHits(d) }}
+                      onChange={e => { const d = Number(e.target.value); setHitsDays(d); fetchHits(d); fetchKeywords(d) }}
                       style={{ padding:"4px 8px", border:"1px solid #D8D5CC", borderRadius:"6px", fontSize:"13px", fontFamily:"inherit", color:"#cccccc", outline:"none" }}
                     >
                       <option value={7}>7 dage</option>
@@ -668,7 +678,7 @@ export default function AdminPage() {
                       <option value={365}>365 dage</option>
                     </select>
                   </div>
-                  <button onClick={()=>fetchHits()} disabled={hitsLoading} style={{ padding:"7px 16px", background:"#6B8F71", color:"#1a1a1a", border:"none", borderRadius:"8px", fontSize:"13px", cursor:hitsLoading?"not-allowed":"pointer", opacity:hitsLoading?0.7:1, fontFamily:"inherit" }}>{hitsLoading?"Henter…":"↻ Opdater"}</button>
+                  <button onClick={()=>{ fetchHits(); fetchKeywords() }} disabled={hitsLoading} style={{ padding:"7px 16px", background:"#6B8F71", color:"#1a1a1a", border:"none", borderRadius:"8px", fontSize:"13px", cursor:hitsLoading?"not-allowed":"pointer", opacity:hitsLoading?0.7:1, fontFamily:"inherit" }}>{hitsLoading?"Henter…":"↻ Opdater"}</button>
                 </div>
                 {hitsError && <div style={{ background:"#2b0f0f", color:"#e06060", padding:"12px 16px", borderRadius:"8px", marginBottom:"16px", fontSize:"14px" }}>{hitsError}</div>}
                 {hitsLoading && hits.length===0 && <div style={{ textAlign:"center", color:"#888888", fontSize:"14px", padding:"40px 0" }}>Henter trafik…</div>}
@@ -747,6 +757,39 @@ export default function AdminPage() {
                         )
                       })()}
                     </div>
+                  </div>
+                )}
+
+                {/* Emne-keywords fra samtaler */}
+                {(kwData.length > 0 || kwLoading) && (
+                  <div style={{ ...S.card, padding:"20px", marginTop:"16px" }}>
+                    <div style={{ fontSize:"13px", fontWeight:500, color:"#888888", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Emner pr. dag (fra chatsamtaler)</div>
+                    {kwLoading && kwData.length === 0 && <div style={{ color:"#888888", fontSize:"13px" }}>Henter…</div>}
+                    {kwData.length > 0 && (
+                      <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
+                        {kwData.map(({ day, keywords }) => {
+                          const sorted = Object.entries(keywords).sort((a,b)=>b[1]-a[1])
+                          const max = Math.max(...sorted.map(e=>e[1]), 1)
+                          return (
+                            <div key={day}>
+                              <div style={{ fontSize:"12px", color:"#666", marginBottom:"6px" }}>{day.slice(5)}</div>
+                              <div style={{ display:"flex", flexDirection:"column", gap:"4px" }}>
+                                {sorted.map(([kw, count]) => (
+                                  <div key={kw} style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                                    <div style={{ fontSize:"12px", color:"#cccccc", width:"140px", flexShrink:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{kw}</div>
+                                    <div style={{ flex:1, background:"#1f1f1f", borderRadius:"3px", height:"14px", overflow:"hidden" }}>
+                                      <div style={{ height:"100%", background:"#5a7a8f", borderRadius:"3px", width:`${(count/max)*100}%` }} />
+                                    </div>
+                                    <div style={{ fontSize:"12px", color:"#888", width:"20px", textAlign:"right" }}>{count}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                    {!kwLoading && kwData.length === 0 && <div style={{ color:"#888888", fontSize:"13px" }}>Ingen emner endnu — data akkumuleres fra chatsamtaler</div>}
                   </div>
                 )}
               </div>
