@@ -39,7 +39,7 @@ export default function Om() {
                 width={120}
                 height={120}
                 className="rounded-xl object-cover shadow-sm"
-                style={{ opacity: 0.66 }}
+                style={{ opacity: 0.80 }}
                 priority
               />
             </div>
