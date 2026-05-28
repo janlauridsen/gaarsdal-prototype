@@ -105,7 +105,7 @@ export default function ChildrenPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           state,
-          input: { type: "TEXT", text: userMessage, source: "web" },
+          input: { type: "FREE_TEXT", text: userMessage },
           chatbotType: "children",
         }),
       })
