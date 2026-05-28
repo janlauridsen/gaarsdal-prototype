@@ -86,7 +86,7 @@ function serializeActiveNode(nodeId: string): { node_kind: string; node_allow_fr
   }
 }
 
-type ChatRequestBody = { state: any; input: ApiInputSignal }
+type ChatRequestBody = { state: any; input: ApiInputSignal; chatbotType?: "children" | "standard" }
 
 type ApiInputSignal =
   | InputSignal
@@ -170,6 +170,13 @@ async function handleInitOrRestore(params: {
   }
 
   const baseState = storedState ?? (conversationKind === "lobby" ? createLobbyState(conversationId) : createInitialState(conversationId))
+  
+  // Route to correct HOME node based on chatbotType
+  if (!storedState) {
+    baseState.active_node = chatbotType === "children" ? "HOME_CHILDREN" : "HOME"
+    baseState.meta = baseState.meta || {}
+    baseState.meta["chatbotType"] = { value: chatbotType, source_node: "SYSTEM_INIT" }
+  }
   const isNew = !storedState
   if (isNew && params.consentRecord && params.consentRecord.retentionDays > 0) {
     await writeConversationState(baseState, SESSION_TTL_SECONDS)
@@ -251,6 +258,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     (isPlatformThreadInput(input) && (input as any).type === "THREAD_SWITCH" && (input as any).conversation_id) ||
     (clientState && typeof clientState.conversation_id === "string" ? clientState.conversation_id : undefined)
 
+  const chatbotType = body.chatbotType ?? "standard"
+  const namespace = chatbotType === "children" ? "children" : "gaarsdal"
   const conversationId = requestedConversationId || toLobbyConversationId(userKey)
   const conversationKind: "lobby" | "thread" = isLobbyConversation(conversationId) ? "lobby" : "thread"
   const stored = await readConversationState(conversationId)
