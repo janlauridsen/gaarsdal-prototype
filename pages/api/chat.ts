@@ -148,9 +148,9 @@ async function ensureThreadBindingOnState(params: { userKey: string; conversatio
 async function handleInitOrRestore(params: {
   clientState: any; storedState: any | null; conversationId: string
   conversationKind: "lobby" | "thread"; userKey: string; res: NextApiResponse
-  consentRecord: ConsentRecord | null
+  consentRecord: ConsentRecord | null; chatbotType: "standard" | "children"
 }): Promise<boolean> {
-  const { clientState, storedState, conversationId, conversationKind, userKey, res } = params
+  const { clientState, storedState, conversationId, conversationKind, userKey, res, chatbotType } = params
   if (clientState !== null) return false
 
   // Consent-gate: ingen samtykke → svar med consent_required flag
@@ -288,6 +288,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         conversationKind,
         userKey,
         res,
+        chatbotType,
         consentRecord: newRecord,
       })
       return
@@ -316,7 +317,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if ((input as any).type === "THREAD_ARCHIVE") { await handleThreadArchive({ userKey, res, conversationId: (input as any).conversation_id }); return }
     }
 
-    const restored = await handleInitOrRestore({ clientState, storedState: stored, conversationId, conversationKind, userKey, res, consentRecord: consentRecord ?? null })
+    const restored = await handleInitOrRestore({ clientState, storedState: stored, conversationId, conversationKind, userKey, res, consentRecord: consentRecord ?? null, chatbotType })
     if (restored) return
 
     const baseState = stored ?? clientState
