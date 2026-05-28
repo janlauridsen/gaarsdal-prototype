@@ -60,6 +60,65 @@ export const nodeRegistry: Record<string, Node> = {
     ],
   },
 
+
+  // ─── Children chatbot entry points ──────────────────────────────────────
+
+  HOME_CHILDREN: {
+    id: "HOME_CHILDREN",
+    kind: "ROUTER",
+    goal: "Entry to children chatbot",
+    message:
+      "Hi! You can ask questions or share what's on your mind. I'm here to listen.",
+    allow_free_text: true,
+    allow_parentese: false,
+    allowed_exits: ["GEN_CHILDREN", "BOOKING", "HANDOFF_FORM"],
+    meta_domains_written: ["ux", "router.decision", "gen_children.last_topic", "gen_children.problem_path"],
+  },
+
+  GEN_CHILDREN: {
+    id: "GEN_CHILDREN",
+    kind: "DIALOG",
+    goal: "Child-friendly conversation about feelings, habits and patterns",
+    message:
+      "You're welcome to share what's on your mind. It's fine to be worried, angry, scared or unhappy — there's a reason for it.",
+    allow_free_text: true,
+    allow_parentese: true,
+    capability_id: "gen-children-v1",
+    allowed_exits: [
+      "GEN_CHILDREN",
+      "HOME_CHILDREN",
+      "CRISIS_INFO",
+      "BOOKING",
+      "HANDOFF_FORM",
+    ],
+    meta_domains_written: [
+      "ux",
+      "gen_children.transcript",
+      "gen_children.last_topic",
+      "gen_children.problem_title",
+      "gen_children.problem_summary",
+      "gen_children.topic_tags",
+      "gen_children.assistant_turn_count",
+      "gen_children.analysis",
+      "dialog.mode",
+      "dialog.move",
+      "dialog.investigation_focus",
+      "dialog.stage",
+      "dialog.topic",
+      "dialog.objective",
+      "dialog.relational_state",
+      "focused_reflection.readiness",
+      "focused_reflection.topic",
+      "focused_reflection.entry_source",
+      "focused_reflection.user_opt_in",
+      "focused_reflection.stage",
+      "focused_reflection.transcript",
+      "wot.arousal_score",
+      "wot.arousal_level",
+      "gen_children.model",
+    ],
+  },
+
   // ─── Booking / kontakt ─────────────────────────────────────────────────────
 
   BOOKING: {
