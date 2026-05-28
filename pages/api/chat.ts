@@ -260,7 +260,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     (isPlatformThreadInput(input) && (input as any).type === "THREAD_SWITCH" && (input as any).conversation_id) ||
     (clientState && typeof clientState.conversation_id === "string" ? clientState.conversation_id : undefined)
 
-  const namespace = chatbotType === "children" ? "children" : "gaarsdal"
   const conversationId = requestedConversationId || toLobbyConversationId(userKey)
   const conversationKind: "lobby" | "thread" = isLobbyConversation(conversationId) ? "lobby" : "thread"
   const stored = await readConversationState(conversationId)
