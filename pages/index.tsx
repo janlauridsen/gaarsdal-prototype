@@ -94,6 +94,27 @@ export default function Home() {
           </div>
         </section>
 
+
+        {/* BØRN & UNGE — SÆRLIGT FOKUSOMRÅDE */}
+        <section className="py-24 px-6 bg-gradient-to-b from-blue-50 to-white">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-h2 font-light mb-4">
+              Arbejder du med børn eller unge?
+            </h2>
+            <p className="text-muted mb-8 text-lg">
+              Jeg har særligt fokus på børn og unge (8-25 år) med angst, sociale vanskeligheder, 
+              præstationsangst og selvbilledsproblemer. Jeg tilbyder en børn-tilpasset tilgang 
+              der fungerer på deres præmisser.
+            </p>
+            <Link
+              href="/children"
+              className="inline-block bg-accent text-white px-8 py-4 rounded-lg shadow hover:bg-accent/90 transition font-medium"
+            >
+              Se hvordan jeg hjælper børn og unge →
+            </Link>
+          </div>
+        </section>
+
         {/* HVEM DET PASSER TIL — flyttet op */}
         <section className="py-24 px-6 bg-white">
           <div className="max-w-3xl mx-auto">
