@@ -350,7 +350,7 @@ export default function ChildrenPage() {
               </div>
 
               <p style={{ fontSize: "12px", color: "#888", marginTop: "16px" }}>
-                Se vores <a href="/privatliv" style={{ color: "#5a7a8f", textDecoration: "underline" }}>privatlivspolitik</a> for detaljer.
+                Dine samtaler bruges ikke til træning og deles ikke med tredjeparter. Jan ser ikke dine refleksioner.
               </p>
 
               <button
@@ -459,7 +459,7 @@ export default function ChildrenPage() {
                   ))}
                 </div>
                 <p style={{ color: "#999", fontSize: "12px", marginTop: "10px" }}>
-                  Se vores <a href="/privatliv" style={{ color: "#5a7a8f" }}>privatlivspolitik</a> for detaljer.
+                  Dine samtaler bruges ikke til træning og deles ikke med tredjeparter. Jan ser ikke dine refleksioner.
                 </p>
               </div>
             )}
