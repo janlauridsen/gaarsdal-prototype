@@ -229,7 +229,15 @@ export async function runUnifiedHypnoCapability(
   const transcript = readTranscriptByKey(context, options.transcriptKey)
   const trimmedTranscript = trimTranscript(transcript)
   const userText = context.userText ?? ""
-  const previousTopic = readStringMeta(context, "gen_children.last_topic") || readStringMeta(context, "dialog.topic")
+  const storedTopic = readStringMeta(context, "gen_children.last_topic") || readStringMeta(context, "dialog.topic")
+  // Nulstil topic hvis bruger eksplicit skifter emne (kort besked der ikke matcher previous topic)
+  const isTopicChange = storedTopic && trimmedTranscript.length >= 2 && (
+    userText.toLowerCase().includes("ny samtale") ||
+    userText.toLowerCase().includes("nyt emne") ||
+    userText.toLowerCase().includes("andet emne") ||
+    userText.toLowerCase().includes("skifte emne")
+  )
+  const previousTopic = isTopicChange ? undefined : storedTopic
 
   // Hard exit
   if (isHardExit(userText)) {
@@ -323,7 +331,7 @@ export async function runUnifiedHypnoCapability(
     is_practical_request: detectPracticalKeywords(userText),
     is_closing: detectClosingText(userText),
     is_ready_signal: detectReadinessSignal(userText),
-    is_child_context: detectChildContext(userText, trimmedTranscript),
+    is_child_context: true, // Altid sandt i børne-chatbot
   }
 
   // ─── Forløb-invitation: route til BOOKING når bruger bekræfter ────────────
@@ -374,16 +382,23 @@ export async function runUnifiedHypnoCapability(
   const crisisInText = CRISIS_PHRASES_GENHYPNO.some((p) => userText.toLowerCase().includes(p))
   const crisisDetected = crisisInMeta || crisisInText
 
+  const CHILDREN_CONTEXT = `Du taler med en forælder om deres barn.
+- Svar kort og direkte: max 2-3 sætninger + ét spørgsmål
+- ALDRIG gentage formuleringer fra dine tidligere svar i samme samtale
+- Hvis brugerens besked IKKE handler om børn eller hypnoterapi, svar venligt at du kun kan hjælpe med emner relateret til børn og Jan Gaarsdals arbejde
+- Brug ikke akademisk eller klinisk sprog - tal som et menneske
+- Fokusér på forælderens oplevelse, ikke generelle fakta om børn`
+
   let turnOutput = await singleTurnCall({
     llm,
     transcript: trimmedTranscript,
     userText,
-    lastTopic: previousTopic,
+    lastTopic: isTopicChange ? undefined : previousTopic,
     arousalLevel: arousal.level,
     assistantCount: assistantCountBefore,
     contextPackSystem: greetingHint
-      ? (context.contextPack?.system ?? "") + greetingHint
-      : context.contextPack?.system,
+      ? CHILDREN_CONTEXT + "\n\n" + (context.contextPack?.system ?? "") + greetingHint
+      : CHILDREN_CONTEXT + (context.contextPack?.system ? "\n\n" + context.contextPack.system : ""),
     userProfileSystem: context.contextPack?.user_profile,
     previousMode,
     previousRelationalState,
