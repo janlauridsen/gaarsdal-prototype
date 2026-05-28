@@ -8,6 +8,7 @@ import { talkToMeCapability } from "./capabilities/talkToMe"
 
 const CAPABILITIES: Record<string, AiCapability> = {
   [genHypnoCapability.id]: genHypnoCapability,
+  [genChildrenCapability.id]: genChildrenCapability,
   [prequalifyCapability.id]: prequalifyCapability,
   [clientSupportCapability.id]: clientSupportCapability,
   [talkToMeCapability.id]: talkToMeCapability,
