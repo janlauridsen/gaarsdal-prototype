@@ -179,7 +179,7 @@ async function handleInitOrRestore(params: {
   }
   const isNew = !storedState
   if (isNew && params.consentRecord && params.consentRecord.retentionDays > 0) {
-    await writeConversationState(baseState, SESSION_TTL_SECONDS)
+    await writeConversationState(baseState, SESSION_TTL_SECONDS, namespace)
   }
 
   // Session-only: spring canonical events over
@@ -262,7 +262,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const conversationId = requestedConversationId || toLobbyConversationId(userKey)
   const conversationKind: "lobby" | "thread" = isLobbyConversation(conversationId) ? "lobby" : "thread"
-  const stored = await readConversationState(conversationId)
+  const stored = await readConversationState(conversationId, namespace)
   const consentRecord = await readConsent(userKey)
 
   try {
@@ -279,7 +279,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       await writeConsent(userKey, newRecord)
       // Kør init-flow med det nye samtykke
-      const stored2 = await readConversationState(conversationId)
+      const stored2 = await readConversationState(conversationId, namespace)
       await handleInitOrRestore({
         clientState: null,
         storedState: stored2,
@@ -333,7 +333,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Session-only (retentionDays === 0): skriv ikke til Redis — state lever kun i RAM.
     // Klienten sender state med i hvert request, så dette er tilstrækkeligt.
     if (consentAllowsPersistence(consentRecord ?? null)) {
-      await writeConversationState(kernelResultFinal.state, consentTtlSeconds(consentRecord ?? null))
+      await writeConversationState(kernelResultFinal.state, consentTtlSeconds(consentRecord ?? null), namespace)
     }
 
     const [scanThreads, indexNow] = await Promise.all([
