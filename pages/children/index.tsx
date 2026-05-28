@@ -135,20 +135,41 @@ export default function ChildrenPage() {
   }
 
   const resetChat = async () => {
+    // 1. Clear screen immediately
+    setMessages([])
+    setState(null)
+    setLoading(false)
+    // 2. Delete Redis state
     try {
       await fetch("/api/children-reset", { method: "POST" })
     } catch (e) {
-      // Ignorer fejl - fortsæt alligevel
+      // Ignorer fejl
     }
-    setMessages([])
-    setState(null)
-    setHasConsent(false)
-    setShowChat(false)
-    // Giv UI tid til at resette, åbn derefter igen
-    setTimeout(() => {
-      setShowChat(true)
-      initChat()
-    }, 50)
+    // 3. Start fresh INIT - state is now null in Redis so no restore happens
+    setLoading(true)
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          state: null,
+          input: { type: "INIT", text: "" },
+          chatbotType: "children",
+        }),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setState(data.state)
+        const msg = data.state?.active_node_message ?? data.transition?.response_message
+        if (msg) {
+          setMessages([{ role: "assistant", content: msg }])
+        }
+      }
+    } catch (e) {
+      console.error("Reset init error:", e)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
