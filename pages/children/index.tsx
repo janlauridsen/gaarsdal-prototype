@@ -56,38 +56,38 @@ export default function ChildrenPage() {
   const [loading, setLoading] = useState(false)
   const [conversationId, setConversationId] = useState<string>("")
   const [state, setState] = useState<any>(null)
+  const [hasConsent, setHasConsent] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  const initChat = async () => {
-    if (!conversationId) {
-      const newConvId = "conv_" + Math.random().toString(36).substring(7)
-      setConversationId(newConvId)
+  const startChat = async (retentionDays: number) => {
+    setHasConsent(true)
+    const newConvId = "conv_" + Math.random().toString(36).substring(7)
+    setConversationId(newConvId)
+    
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          state: null,
+          input: { type: "INIT", text: "" },
+          chatbotType: "children",
+        }),
+      })
       
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            state: null,
-            input: { type: "INIT", text: "" },
-            chatbotType: "children",
-          }),
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          setState(data.state)
-          if (data.message) {
-            setMessages([{ role: "assistant", content: data.message }])
-          }
+      if (response.ok) {
+        const data = await response.json()
+        setState(data.state)
+        if (data.message) {
+          setMessages([{ role: "assistant", content: data.message }])
         }
-      } catch (error) {
-        console.error("Chat init error:", error)
       }
+    } catch (error) {
+      console.error("Chat init error:", error)
     }
   }
 
@@ -134,12 +134,16 @@ export default function ChildrenPage() {
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "40px 20px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.6, color: "#333" }}>
         
         {/* SEKTION 1: GENKENDELSE */}
-        <section style={{ marginBottom: "60px", textAlign: "center" }}>
-          <h1 style={{ fontSize: "32px", fontWeight: 600, marginBottom: "12px" }}>Dit barn har det svært - og du ved ikke hvad du skal gøre</h1>
-          <p style={{ fontSize: "18px", color: "#666", marginBottom: "20px" }}>Du har prøvet meget. Måske systemet. Måske venner. Du elsker dit barn og kan ikke nå ind til det. Det er ikke din fejl.</p>
-          <p style={{ fontSize: "16px", color: "#555" }}>Jeg arbejder med børn og unge der kæmper med angst, sociale problemer, selvbillede, søvnproblemer og præstationsangst. Jeg hjælper dem med at blive mere sig selv igen - og hjælper dig med at forstå hvad der sker.</p>
-          <div style={{ marginTop: "30px" }}>
-            <Image src="/Jan-AI.png" alt="Jan Lauridsen" width={150} height={150} style={{ borderRadius: "50%", objectFit: "cover" }} />
+        <section style={{ marginBottom: "60px" }}>
+          <div style={{ display: "flex", gap: "30px", alignItems: "flex-start" }}>
+            <div style={{ flex: 1 }}>
+              <h1 style={{ fontSize: "32px", fontWeight: 600, marginBottom: "16px" }}>Dit barn har det svært - og du ved ikke hvad du skal gøre</h1>
+              <p style={{ fontSize: "16px", color: "#666", marginBottom: "16px" }}>Du har prøvet meget. Måske systemet. Måske venner. Du elsker dit barn og kan ikke nå ind til det. Det er ikke din fejl.</p>
+              <p style={{ fontSize: "15px", color: "#555" }}>Jeg arbejder med børn og unge der kæmper med angst, sociale problemer, selvbillede, søvnproblemer og præstationsangst. Jeg hjælper dem med at blive mere sig selv igen - og hjælper dig med at forstå hvad der sker.</p>
+            </div>
+            <div style={{ flexShrink: 0 }}>
+              <Image src="/Jan-AI.png" alt="Jan Lauridsen" width={120} height={120} style={{ borderRadius: "50%", objectFit: "cover" }} />
+            </div>
           </div>
         </section>
 
@@ -209,49 +213,98 @@ export default function ChildrenPage() {
         {/* SEKTION 4: CHATBOT */}
         {!showChat ? (
           <section style={{ marginBottom: "60px", padding: "40px", background: "#f5f7fa", borderRadius: "8px", textAlign: "center" }}>
-            <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Vil du tale med mig?</h2>
-            <p style={{ fontSize: "16px", marginBottom: "24px", maxWidth: "600px", margin: "0 auto 24px", color: "#555" }}>
-              Du kan åbne en chat her hvor du kan skrive hvad som helst. Jeg lytter uden at dømme.
+            <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Du kan snakke med en AI-assistent her</h2>
+            <p style={{ fontSize: "15px", marginBottom: "24px", maxWidth: "600px", margin: "0 auto 24px", color: "#555" }}>
+              Jeg har en AI-assistent der kan besvare almindelige spørgsmål og lytte uden at dømme. Det er ikke direkte kontakt med Jan, men den kan hjælpe dig med at klare tankerne.
             </p>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", maxWidth: "500px", margin: "0 auto 30px" }}>
-              <button
-                onClick={() => { setShowChat(true); initChat() }}
-                style={{
-                  padding: "12px 24px",
-                  background: "#5a7a8f",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "4px",
-                  fontWeight: 500,
-                  fontSize: "15px",
-                  cursor: "pointer",
-                }}
-              >
-                Åbn chat
-              </button>
-              <a
-                href="mailto:jan@gaarsdal.net"
-                style={{
-                  padding: "12px 24px",
-                  background: "#e8eef5",
-                  color: "#5a7a8f",
-                  textDecoration: "none",
-                  borderRadius: "4px",
-                  fontWeight: 500,
-                  fontSize: "15px",
-                }}
-              >
-                Eller send email
-              </a>
-            </div>
+            <button
+              onClick={() => setShowChat(true)}
+              style={{
+                padding: "12px 24px",
+                background: "#5a7a8f",
+                color: "#fff",
+                border: "none",
+                borderRadius: "4px",
+                fontWeight: 500,
+                fontSize: "15px",
+                cursor: "pointer",
+              }}
+            >
+              Åbn AI-chat
+            </button>
 
-            <p style={{ fontSize: "13px", color: "#888" }}>Alt hvad du deler er fortroligt. Vi overholder dansk GDPR.</p>
+            <p style={{ fontSize: "13px", color: "#888", marginTop: "16px" }}>Eller kontakt mig direkte på +45 42 80 74 74 eller jan@gaarsdal.net</p>
+          </section>
+        ) : !hasConsent ? (
+          <section style={{ marginBottom: "60px", padding: "40px", background: "#fff", borderRadius: "8px", border: "1px solid #ddd" }}>
+            <div style={{ maxWidth: "500px", margin: "0 auto", textAlign: "center" }}>
+              <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "16px" }}>Samtykke til at gemme din samtale</h2>
+              <p style={{ fontSize: "14px", color: "#555", marginBottom: "24px", lineHeight: 1.6 }}>
+                Denne AI-assistent kan gemme dine beskeder for at huske konteksten i samtalen. 
+                Vælg nedenfor hvad du er komfortabel med.
+              </p>
+              
+              <div style={{ display: "grid", gap: "12px" }}>
+                <button
+                  onClick={() => startChat(365)}
+                  style={{
+                    padding: "12px 20px",
+                    background: "#5a7a8f",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "4px",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  Gem samtale (1 år)
+                </button>
+                <button
+                  onClick={() => startChat(0)}
+                  style={{
+                    padding: "12px 20px",
+                    background: "transparent",
+                    color: "#5a7a8f",
+                    border: "1px solid #5a7a8f",
+                    borderRadius: "4px",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  Kun denne session (ingen gemte data)
+                </button>
+              </div>
+
+              <p style={{ fontSize: "12px", color: "#888", marginTop: "16px" }}>
+                Se vores <a href="/privatliv" style={{ color: "#5a7a8f", textDecoration: "underline" }}>privatlivspolitik</a> for detaljer.
+              </p>
+
+              <button
+                onClick={() => setShowChat(false)}
+                style={{
+                  marginTop: "12px",
+                  padding: "8px 16px",
+                  background: "transparent",
+                  color: "#666",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                }}
+              >
+                Annuller
+              </button>
+            </div>
           </section>
         ) : (
           <section style={{ marginBottom: "60px", padding: "30px", background: "#fff", borderRadius: "8px", border: "1px solid #ddd" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <h2 style={{ fontSize: "18px", fontWeight: 600 }}>Chat</h2>
+              <h2 style={{ fontSize: "18px", fontWeight: 600 }}>AI-assistent</h2>
               <button
                 onClick={() => setShowChat(false)}
                 style={{
@@ -301,7 +354,7 @@ export default function ChildrenPage() {
               ))}
               {loading && (
                 <div style={{ color: "#999", fontSize: "13px" }}>
-                  Jan skriver...
+                  Assistenten skriver...
                 </div>
               )}
               <div ref={messagesEndRef} />
