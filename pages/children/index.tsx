@@ -82,8 +82,9 @@ export default function ChildrenPage() {
       if (response.ok) {
         const data = await response.json()
         setState(data.state)
-        if (data.message) {
-          setMessages([{ role: "assistant", content: data.message }])
+        const initMsg = data.state?.active_node_message ?? data.transition?.response_message
+        if (initMsg) {
+          setMessages([{ role: "assistant", content: initMsg }])
         }
       }
     } catch (error) {
@@ -113,8 +114,9 @@ export default function ChildrenPage() {
       if (response.ok) {
         const data = await response.json()
         setState(data.state)
-        if (data.message) {
-          setMessages(prev => [...prev, { role: "assistant", content: data.message }])
+        const replyMsg = data.state?.active_node_message ?? data.transition?.response_message
+        if (replyMsg) {
+          setMessages(prev => [...prev, { role: "assistant", content: replyMsg }])
         }
       }
     } catch (error) {
