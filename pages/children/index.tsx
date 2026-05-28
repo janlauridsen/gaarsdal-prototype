@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import Head from "next/head"
 import Image from "next/image"
 
@@ -8,43 +8,121 @@ const problems = {
   skolevægring: {
     title: "Vil ikke i skole",
     morensOplevelse: "Hver morgen er en kamp. Dit barn vil ikke op. Først ondt i maven, så hovedpine, så det kan slet ikke. Du ved ikke om du skal være hård eller blød. Er det angst eller manipulation? Du er begyndt at tvivle på dig selv. Dit eget arbejde lider.",
-    hvadSker: "Skolevægring er sjældent dovenskab. Det er angst der har sat sig som en fysisk reaktion — kroppen reagerer rigtigt. Dit barn lyver ikke. Det har lært at skolen betyder fare — socialt, fagligt eller begge dele. Den overbevisning sidder dybt og når ikke gennem samtale alene.",
-    hvadVirker: "Arbejder direkte med den overbevisning der driver reaktionen — uden at dit barn behøver forstå hvorfor. Det får nye indre billeder af sig selv i skolen. Trygt i stedet for fare. Resultater kommer typisk hurtigt fordi børn ikke bruger energi på at tvivle undervejs.",
+    hvadSker: "Skolevægring er sjældent dovenskab. Det er angst der har sat sig som en fysisk reaktion - kroppen reagerer rigtigt. Dit barn lyver ikke. Det har lært at skolen betyder fare - socialt, fagligt eller begge dele. Den overbevisning sidder dybt og når ikke gennem samtale alene.",
+    hvadVirker: "Arbejder direkte med den overbevisning der driver reaktionen - uden at dit barn behøver forstå hvorfor. Det får nye indre billeder af sig selv i skolen. Trygt i stedet for fare. Resultater kommer typisk hurtigt fordi børn ikke bruger energi på at tvivle undervejs.",
   },
   social: {
     title: "Føler sig udenfor",
     morensOplevelse: "Dit barn sidder alene i weekenden mens andre børn er sammen. Du hører ikke om fødselsdage. Måske bliver det ikke inviteret. Du arrangerer legeaftaler der ikke fører til venskaber. Du ved ikke om det er valgt ensomhed eller smerteful udelukkelse. Du sover dårligt over det.",
     hvadSker: "Dit barn har en fast overbevisning om sig selv: 'jeg er kedelig', 'de kan ikke lide mig', 'jeg ved ikke hvad jeg skal sige', 'jeg passer ikke ind.' Den styrer adfærden fuldstændigt. Trækker sig, andre tolker det som uinteresse, afstanden vokser. Cirklen er selvforstærkende.",
-    hvadVirker: "Arbejder med den grundlæggende selvopfattelse — ikke de sociale færdigheder. Dit barn behøver ikke lære teknikker. Det behøver et nyt udgangspunkt. Et barn der inderst inde tror det er værd at kende opfører sig anderledes uden at blive undervist i det.",
+    hvadVirker: "Arbejder med den grundlæggende selvopfattelse - ikke de sociale færdigheder. Dit barn behøver ikke lære teknikker. Det behøver et nyt udgangspunkt. Et barn der inderst inde tror det er værd at kende opfører sig anderledes uden at blive undervist i det.",
   },
   præstationsangst: {
     title: "Crasher til eksamen",
-    morensOplevelse: "Dit barn er intelligent og velfungerende i hverdagen — men crasher til prøver og eksamener. Karaktererne afspejler ikke hvad det kan. Det er i panik uger før en test. Sover dårligt, spiser dårligt, bliver irritabelt. Du prøver at motivere og berolige — intet virker.",
-    hvadSker: "Præstationsangst er ikke mangel på viden eller forberedelse. Det er en overbevisning om at resultatet definerer værdi som menneske — og en forventning om at fejle. Kroppen aktiverer en reel stressrespons der blokerer adgang til det barnet faktisk ved.",
-    hvadVirker: "To ting samtidigt. Arbejder med overbevisningen om at resultatet definerer værdi — og træner kroppen i en anden fysiologisk respons til prøvesituationen. Dit barn lærer at aktivere ro og fokus i stedet for panik. Det er en reel ændring i nervesystemet.",
+    morensOplevelse: "Dit barn er intelligent og velfungerende i hverdagen - men crasher til prøver og eksamener. Karaktererne afspejler ikke hvad det kan. Det er i panik uger før en test. Sover dårligt, spiser dårligt, bliver irritabelt. Du prøver at motivere og berolige - intet virker.",
+    hvadSker: "Præstationsangst er ikke mangel på viden eller forberedelse. Det er en overbevisning om at resultatet definerer værdi som menneske - og en forventning om at fejle. Kroppen aktiverer en reel stressrespons der blokerer adgang til det barnet faktisk ved.",
+    hvadVirker: "To ting samtidigt. Arbejder med overbevisningen om at resultatet definerer værdi - og træner kroppen i en anden fysiologisk respons til prøvesituationen. Dit barn lærer at aktivere ro og fokus i stedet for panik. Det er en reel ændring i nervesystemet.",
   },
   søvn: {
-    title: "Sover ikke / Bekymrer sig",
-    morensOplevelse: "Dit barn vil ikke sove alene, eller ligger vågen i timevis. Måske vågner med mareridt eller uro du ikke kan forklare. Du ligger selv vågen og lytter. Du er udmattet. Jeres relation handler nu kun om søvn — hver aften er en forhandling.",
+    title: "Sover ikke - Bekymrer sig",
+    morensOplevelse: "Dit barn vil ikke sove alene, eller ligger vågen i timevis. Måske vågner med mareridt eller uro du ikke kan forklare. Du ligger selv vågen og lytter. Du er udmattet. Jeres relation handler nu kun om søvn - hver aften er en forhandling.",
     hvadSker: "Søvnproblemer hos børn er sjældent søvnproblemet. Det er angst der manifesterer sig om natten når der ikke er distraktioner. Dit barn er alene med sine tanker og har ingen strategi til at håndtere dem. Tankerne kører i ring. Kroppen er aktiveret når den burde slappe af.",
-    hvadVirker: "Søvn er et af hypnoterapiens stærkeste områder fordi hypnotisk tilstand og søvnindledning aktiverer de samme neurologiske mekanismer. Dit barn lærer at lede sig selv ned i ro — via nye indre billeder. Resultater kommer typisk hurtigt.",
+    hvadVirker: "Søvn er et af hypnoterapiens stærkeste områder fordi hypnotisk tilstand og søvnindledning aktiverer de samme neurologiske mekanismer. Dit barn lærer at lede sig selv ned i ro - via nye indre billeder. Resultater kommer typisk hurtigt.",
   },
   selvbillede: {
     title: "Dårligt selvbillede",
-    morensOplevelse: "Dit barn siger 'jeg er dum', 'jeg er grim', 'ingen kan lide mig', 'jeg er dårlig til alt.' Du afviser det — 'det er ikke sandt, du er fantastisk' — og barnet lukker i. Din beroligelse virker ikke. Du ser et barn der ikke kan tage imod kærlighed.",
-    hvadSker: "Selvbilledet er summen af alle overbevisninger dit barn har om sig selv — og de fleste er ikke bevidst valgte. Positive feedback afvises fordi den ikke passer ind i det eksisterende selvbillede. Kritik bekræfter det. Systemet er selvlåsende.",
-    hvadVirker: "Selvbillede er det dybeste arbejdsområde fordi overbevisningerne sidder under bevidst tænkning. Hypnoterapi går derind og erstatter de gamle overbevisninger med nye — ikke som positiv tænkning men som en reel oplevelse. Dit barn tager imod det på en måde få voksne kan.",
+    morensOplevelse: "Dit barn siger 'jeg er dum', 'jeg er grim', 'ingen kan lide mig', 'jeg er dårlig til alt.' Du afviser det - 'det er ikke sandt, du er fantastisk' - og barnet lukker i. Din beroligelse virker ikke. Du ser et barn der ikke kan tage imod kærlighed.",
+    hvadSker: "Selvbilledet er summen af alle overbevisninger dit barn har om sig selv - og de fleste er ikke bevidst valgte. Positive feedback afvises fordi den ikke passer ind i det eksisterende selvbillede. Kritik bekræfter det. Systemet er selvlåsende.",
+    hvadVirker: "Selvbillede er det dybeste arbejdsområde fordi overbevisningerne sidder under bevidst tænkning. Hypnoterapi går derind og erstatter de gamle overbevisninger med nye - ikke som positiv tænkning men som en reel oplevelse. Dit barn tager imod det på en måde få voksne kan.",
   },
   mobning: {
     title: "Bliver mobbet",
-    morensOplevelse: "Du finder ud af det for sent. Dit barn har skjult det — af skam, af frygt for at det bliver værre. Når du endelig ved det er du vred, ked af det og magtesløs. Du kontakter skolen. Det lover bedring. Men dit barn er ikke det samme. Det er blevet mindre, mere indadvendt.",
-    hvadSker: "Mobning efterlader ikke bare dårlige minder — det efterlader overbevisninger. 'Jeg fortjener det', 'der er noget galt med mig', 'jeg kan ikke stole på andre'. Dit barn tolker uretfærdighed som sin egen fejl. Skammen er størst.",
-    hvadVirker: "Arbejder direkte med de overbevisninger mobningen har efterladt. Dit barn behøver ikke genfortælle det der skete. Det arbejder med hvad barnet tror om sig selv nu — og erstatter det med en oplevelse af integritet der ikke er afhængig af hvad andre har gjort.",
+    morensOplevelse: "Du finder ud af det for sent. Dit barn har skjult det - af skam, af frygt for at det bliver værre. Når du endelig ved det er du vred, ked af det og magtesløs. Du kontakter skolen. Det lover bedring. Men dit barn er ikke det samme. Det er blevet mindre, mere indadvendt.",
+    hvadSker: "Mobning efterlader ikke bare dårlige minder - det efterlader overbevisninger. 'Jeg fortjener det', 'der er noget galt med mig', 'jeg kan ikke stole på andre'. Dit barn tolker uretfærdighed som sin egen fejl. Skammen er størst.",
+    hvadVirker: "Arbejder direkte med de overbevisninger mobningen har efterladt. Dit barn behøver ikke genfortælle det der skete. Det arbejder med hvad barnet tror om sig selv nu - og erstatter det med en oplevelse af integritet der ikke er afhængig af hvad andre har gjort.",
   },
+}
+
+interface Message {
+  role: "user" | "assistant"
+  content: string
 }
 
 export default function ChildrenPage() {
   const [selected, setSelected] = useState<ProblemType>(null)
+  const [showChat, setShowChat] = useState(false)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [conversationId, setConversationId] = useState<string>("")
+  const [state, setState] = useState<any>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
+
+  const initChat = async () => {
+    if (!conversationId) {
+      const newConvId = "conv_" + Math.random().toString(36).substring(7)
+      setConversationId(newConvId)
+      
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            state: null,
+            input: { type: "INIT", text: "" },
+            chatbotType: "children",
+          }),
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setState(data.state)
+          if (data.message) {
+            setMessages([{ role: "assistant", content: data.message }])
+          }
+        }
+      } catch (error) {
+        console.error("Chat init error:", error)
+      }
+    }
+  }
+
+  const sendMessage = async () => {
+    if (!input.trim() || loading) return
+
+    const userMessage = input
+    setInput("")
+    setMessages(prev => [...prev, { role: "user", content: userMessage }])
+    setLoading(true)
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          state,
+          input: { type: "TEXT", text: userMessage, source: "web" },
+          chatbotType: "children",
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setState(data.state)
+        if (data.message) {
+          setMessages(prev => [...prev, { role: "assistant", content: data.message }])
+        }
+      }
+    } catch (error) {
+      console.error("Chat error:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <>
@@ -57,9 +135,9 @@ export default function ChildrenPage() {
         
         {/* SEKTION 1: GENKENDELSE */}
         <section style={{ marginBottom: "60px", textAlign: "center" }}>
-          <h1 style={{ fontSize: "32px", fontWeight: 600, marginBottom: "12px" }}>Dit barn har det svært — og du ved ikke hvad du skal gøre</h1>
+          <h1 style={{ fontSize: "32px", fontWeight: 600, marginBottom: "12px" }}>Dit barn har det svært - og du ved ikke hvad du skal gøre</h1>
           <p style={{ fontSize: "18px", color: "#666", marginBottom: "20px" }}>Du har prøvet meget. Måske systemet. Måske venner. Du elsker dit barn og kan ikke nå ind til det. Det er ikke din fejl.</p>
-          <p style={{ fontSize: "16px", color: "#555" }}>Jeg arbejder med børn og unge der kæmper med angst, sociale problemer, selvbillede, søvnproblemer og præstationsangst. Jeg hjælper dem med at blive mere sig selv igen — og hjælper dig med at forstå hvad der sker.</p>
+          <p style={{ fontSize: "16px", color: "#555" }}>Jeg arbejder med børn og unge der kæmper med angst, sociale problemer, selvbillede, søvnproblemer og præstationsangst. Jeg hjælper dem med at blive mere sig selv igen - og hjælper dig med at forstå hvad der sker.</p>
           <div style={{ marginTop: "30px" }}>
             <Image src="/Jan-AI.png" alt="Jan Lauridsen" width={150} height={150} style={{ borderRadius: "50%", objectFit: "cover" }} />
           </div>
@@ -128,46 +206,143 @@ export default function ChildrenPage() {
           </section>
         )}
 
-        {/* SEKTION 4: AFKLARINGSMØDE */}
-        <section style={{ marginBottom: "60px", padding: "40px", background: "#f5f7fa", borderRadius: "8px", textAlign: "center" }}>
-          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Start her</h2>
-          <p style={{ fontSize: "16px", marginBottom: "24px", maxWidth: "600px", margin: "0 auto 24px" }}>
-            Et kort afklarende møde — kun dig og Jan — hvor du fortæller om dit barn og får svar på dine spørgsmål. Ingen forpligtelse. Bare en ærlig samtale om hvad der er muligt.
-          </p>
+        {/* SEKTION 4: CHATBOT */}
+        {!showChat ? (
+          <section style={{ marginBottom: "60px", padding: "40px", background: "#f5f7fa", borderRadius: "8px", textAlign: "center" }}>
+            <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Vil du tale med mig?</h2>
+            <p style={{ fontSize: "16px", marginBottom: "24px", maxWidth: "600px", margin: "0 auto 24px", color: "#555" }}>
+              Du kan åbne en chat her hvor du kan skrive hvad som helst. Jeg lytter uden at dømme.
+            </p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", maxWidth: "500px", margin: "0 auto 30px" }}>
-            <a
-              href="tel:+4542807474"
-              style={{
-                padding: "12px 24px",
-                background: "#5a7a8f",
-                color: "#fff",
-                textDecoration: "none",
-                borderRadius: "4px",
-                fontWeight: 500,
-                fontSize: "15px",
-              }}
-            >
-              📞 Ring +45 42 80 74 74
-            </a>
-            <a
-              href="mailto:jan@gaarsdal.net"
-              style={{
-                padding: "12px 24px",
-                background: "#e8eef5",
-                color: "#5a7a8f",
-                textDecoration: "none",
-                borderRadius: "4px",
-                fontWeight: 500,
-                fontSize: "15px",
-              }}
-            >
-              ✉️ Send email
-            </a>
-          </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", maxWidth: "500px", margin: "0 auto 30px" }}>
+              <button
+                onClick={() => { setShowChat(true); initChat() }}
+                style={{
+                  padding: "12px 24px",
+                  background: "#5a7a8f",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "4px",
+                  fontWeight: 500,
+                  fontSize: "15px",
+                  cursor: "pointer",
+                }}
+              >
+                Åbn chat
+              </button>
+              <a
+                href="mailto:jan@gaarsdal.net"
+                style={{
+                  padding: "12px 24px",
+                  background: "#e8eef5",
+                  color: "#5a7a8f",
+                  textDecoration: "none",
+                  borderRadius: "4px",
+                  fontWeight: 500,
+                  fontSize: "15px",
+                }}
+              >
+                Eller send email
+              </a>
+            </div>
 
-          <p style={{ fontSize: "13px", color: "#888" }}>Alt hvad du deler er fortroligt. Vi overholder dansk GDPR.</p>
-        </section>
+            <p style={{ fontSize: "13px", color: "#888" }}>Alt hvad du deler er fortroligt. Vi overholder dansk GDPR.</p>
+          </section>
+        ) : (
+          <section style={{ marginBottom: "60px", padding: "30px", background: "#fff", borderRadius: "8px", border: "1px solid #ddd" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h2 style={{ fontSize: "18px", fontWeight: 600 }}>Chat</h2>
+              <button
+                onClick={() => setShowChat(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  fontSize: "20px",
+                  cursor: "pointer",
+                  color: "#999",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{
+              height: "400px",
+              overflowY: "auto",
+              border: "1px solid #e5e7eb",
+              borderRadius: "6px",
+              padding: "16px",
+              marginBottom: "16px",
+              background: "#fafbfc",
+            }}>
+              {messages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    marginBottom: "12px",
+                    display: "flex",
+                    justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+                  }}
+                >
+                  <div
+                    style={{
+                      maxWidth: "70%",
+                      padding: "10px 14px",
+                      borderRadius: "6px",
+                      background: msg.role === "user" ? "#5a7a8f" : "#e5e7eb",
+                      color: msg.role === "user" ? "#fff" : "#333",
+                      fontSize: "14px",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              {loading && (
+                <div style={{ color: "#999", fontSize: "13px" }}>
+                  Jan skriver...
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                placeholder="Skriv hvad som helst..."
+                disabled={loading}
+                style={{
+                  flex: 1,
+                  padding: "10px 14px",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                  fontFamily: "inherit",
+                }}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={loading || !input.trim()}
+                style={{
+                  padding: "10px 20px",
+                  background: "#5a7a8f",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: loading ? "default" : "pointer",
+                  fontSize: "14px",
+                  opacity: loading || !input.trim() ? 0.6 : 1,
+                }}
+              >
+                Send
+              </button>
+            </div>
+          </section>
+        )}
 
       </div>
     </>
