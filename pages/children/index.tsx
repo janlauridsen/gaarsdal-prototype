@@ -63,25 +63,28 @@ export default function ChildrenPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  const startChat = async (retentionDays: number) => {
-    setHasConsent(true)
-    const newConvId = "conv_" + Math.random().toString(36).substring(7)
-    setConversationId(newConvId)
-    
+  const initChat = async (consentRecord?: { retentionDays: number }) => {
     try {
+      const body: any = {
+        state: null,
+        input: consentRecord
+          ? { type: "CONSENT_RESPONSE", retentionDays: consentRecord.retentionDays }
+          : { type: "INIT", text: "" },
+        chatbotType: "children",
+      }
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          state: null,
-          input: { type: "INIT", text: "" },
-          chatbotType: "children",
-        }),
+        body: JSON.stringify(body),
       })
-      
       if (response.ok) {
         const data = await response.json()
         setState(data.state)
+        if (data.consent_required) {
+          // Consent not yet given - show banner
+          return
+        }
+        setHasConsent(true)
         const initMsg = data.state?.active_node_message ?? data.transition?.response_message
         if (initMsg) {
           setMessages([{ role: "assistant", content: initMsg }])
@@ -90,6 +93,11 @@ export default function ChildrenPage() {
     } catch (error) {
       console.error("Chat init error:", error)
     }
+  }
+
+  const startChat = async (retentionDays: number) => {
+    setHasConsent(true)
+    await initChat({ retentionDays })
   }
 
   const sendMessage = async () => {
@@ -221,7 +229,7 @@ export default function ChildrenPage() {
             </p>
 
             <button
-              onClick={() => setShowChat(true)}
+              onClick={() => { setShowChat(true); initChat() }}
               style={{
                 padding: "12px 24px",
                 background: "#5a7a8f",
