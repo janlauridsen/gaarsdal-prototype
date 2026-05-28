@@ -67,7 +67,7 @@ export default function Home() {
 
           <p className="text-base-lg text-muted max-w-2xl mx-auto mb-6 leading-relaxed">
             Du har sandsynligvis allerede brugt tid på at forstå det.
-            Hypnoterapi arbejder der, hvor analysen ikke når ind — med de
+            Hypnoterapi arbejder der, hvor analysen ikke når ind - med de
             reaktioner og mønstre, der bliver ved, selvom du rationelt godt ved
             bedre.
           </p>
@@ -95,7 +95,7 @@ export default function Home() {
         </section>
 
 
-        {/* BØRN & UNGE — SÆRLIGT FOKUSOMRÅDE */}
+        {/* BØRN & UNGE - SÆRLIGT FOKUSOMRÅDE */}
         <section className="py-24 px-6 bg-gradient-to-b from-blue-50 to-white">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-h2 font-light mb-4">
@@ -115,7 +115,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* HVEM DET PASSER TIL — flyttet op */}
+        {/* HVEM DET PASSER TIL - flyttet op */}
         <section className="py-24 px-6 bg-white">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-h2 font-light text-center mb-4">
@@ -123,7 +123,7 @@ export default function Home() {
             </h2>
             <p className="text-muted mb-8 text-center">
               De fleste der kontakter mig har allerede prøvet at arbejde med
-              deres udfordring — via psykolog, coaching, mindfulness eller
+              deres udfordring - via psykolog, coaching, mindfulness eller
               viljestyrke. De har indsigten, men savner bevægelsen.
             </p>
             <div className="grid sm:grid-cols-2 gap-4 mb-8">
@@ -211,11 +211,11 @@ export default function Home() {
               <blockquote className="bg-white rounded-xl px-6 py-5 border border-gray-100 shadow-sm">
                 <p className="text-muted text-sm leading-relaxed mb-3">
                   "Jeg var lidt skeptisk. Men Jan hjalp mig med at finde
-                  årsagen til min angst ved at køre i bjerge — og nu er jeg SÅ
+                  årsagen til min angst ved at køre i bjerge - og nu er jeg SÅ
                   klar. Jeg var helt høj efter min oplevelse hos ham. Jeg har
                   allerede booket en tid til et andet problem."
                 </p>
-                <footer className="text-xs text-muted/60">— Klient, 2019</footer>
+                <footer className="text-xs text-muted/60">- Klient, 2019</footer>
               </blockquote>
 
               <blockquote className="bg-white rounded-xl px-6 py-5 border border-gray-100 shadow-sm">
@@ -224,7 +224,7 @@ export default function Home() {
                   job. Man får klar besked på hvad der skal ske. Du er i sikre
                   og kompetente hænder."
                 </p>
-                <footer className="text-xs text-muted/60">— Klient, 2018</footer>
+                <footer className="text-xs text-muted/60">- Klient, 2018</footer>
               </blockquote>
 
               <blockquote className="bg-white rounded-xl px-6 py-5 border border-gray-100 shadow-sm">
@@ -232,24 +232,24 @@ export default function Home() {
                   "Jan er en som går mere op i sit arbejde end pengene. Sidst
                   jeg var så afslappet var jeg dybt påvirket af stoffer."
                 </p>
-                <footer className="text-xs text-muted/60">— Klient, 2019</footer>
+                <footer className="text-xs text-muted/60">- Klient, 2019</footer>
               </blockquote>
 
               <blockquote className="bg-white rounded-xl px-6 py-5 border border-gray-100 shadow-sm">
                 <p className="text-muted text-sm leading-relaxed mb-3">
-                  "Tusind tak for din kyndige behandling af vores datter. Det har gjort en verden til forskel — nu er der slet intet problem i at møde eller gå forbi hunde. Hun er selv stolt og fortæller gerne andre, at hun ikke er bange for hunde mere, efter at hun har været i hypnose."
+                  "Tusind tak for din kyndige behandling af vores datter. Det har gjort en verden til forskel - nu er der slet intet problem i at møde eller gå forbi hunde. Hun er selv stolt og fortæller gerne andre, at hun ikke er bange for hunde mere, efter at hun har været i hypnose."
                 </p>
-                <footer className="text-xs text-muted/60">— En taknemmelig mor og familie, april 2026</footer>
+                <footer className="text-xs text-muted/60">- En taknemmelig mor og familie, april 2026</footer>
               </blockquote>
 
               <blockquote className="bg-white rounded-xl px-6 py-5 border border-gray-100 shadow-sm sm:col-span-2">
                 <p className="text-muted text-sm leading-relaxed mb-2">
-                  "Jeg er en 17-årig pige med forskellige diagnoser og udfordringer, herunder ADHD. Jeg har prøvet mange former for behandling, men hypnoterapi hos Jan er klart en af de bedste. Jeg var nervøs for, om jeg overhovedet kunne komme i hypnosen med ADHD og indre uro — men Jan er rolig og har en god energi. Alt foregår i dit eget tempo med struktur, der giver forudsigelighed. Selvom jeg har svære tillidsproblemer, tog Jan godt imod mig og hjalp mig til at føle mig tryg. Man samarbejder: det er altid en selv, der bestemmer, hvad der arbejdes med."
+                  "Jeg er en 17-årig pige med forskellige diagnoser og udfordringer, herunder ADHD. Jeg har prøvet mange former for behandling, men hypnoterapi hos Jan er klart en af de bedste. Jeg var nervøs for, om jeg overhovedet kunne komme i hypnosen med ADHD og indre uro - men Jan er rolig og har en god energi. Alt foregår i dit eget tempo med struktur, der giver forudsigelighed. Selvom jeg har svære tillidsproblemer, tog Jan godt imod mig og hjalp mig til at føle mig tryg. Man samarbejder: det er altid en selv, der bestemmer, hvad der arbejdes med."
                 </p>
                 <p className="text-muted text-sm leading-relaxed mb-3">
-                  "Hypnoterapien har hjulpet mig med at fokusere på det relevante frem for at føle, at alt skal nås her og nu. Jeg har fået bedre selvværd, sover meget bedre, og det har hjulpet på mareridt fra traumer. Efter hver session har vi en samtale — lidt ligesom coaching — hvor vi reflekterer og sætter fokus fremad. Jan vil virkelig gerne sine klienter, og det har givet mig tryghed til at åbne mig op."
+                  "Hypnoterapien har hjulpet mig med at fokusere på det relevante frem for at føle, at alt skal nås her og nu. Jeg har fået bedre selvværd, sover meget bedre, og det har hjulpet på mareridt fra traumer. Efter hver session har vi en samtale - lidt ligesom coaching - hvor vi reflekterer og sætter fokus fremad. Jan vil virkelig gerne sine klienter, og det har givet mig tryghed til at åbne mig op."
                 </p>
-                <footer className="text-xs text-muted/60">— 17-årig klient med ADHD</footer>
+                <footer className="text-xs text-muted/60">- 17-årig klient med ADHD</footer>
               </blockquote>
             </div>
           </div>
