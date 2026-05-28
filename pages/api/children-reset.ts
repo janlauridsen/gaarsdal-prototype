@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import { ensureUserKey } from "../../chat/auth/userKey"
+import { ensureUserKey } from "./_utils/auth"
 import { getRedisClient } from "../../chat/persistence/redis"
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
