@@ -40,7 +40,8 @@ function parseState(raw: unknown): ConversationState | null {
 }
 
 export async function readConversationState(
-  conversationId: string
+  conversationId: string,
+  namespace: "gaarsdal" | "children" = "gaarsdal"
 ): Promise<ConversationState | null> {
   const client = getRedisClient()
   if (!client) return null
@@ -51,7 +52,8 @@ export async function readConversationState(
 
 export async function writeConversationState(
   state: ConversationState,
-  ttlSeconds: number
+  ttlSeconds: number,
+  namespace: "gaarsdal" | "children" = "gaarsdal"
 ): Promise<void> {
   const client = getRedisClient()
   if (!client) return
