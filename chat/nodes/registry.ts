@@ -65,27 +65,14 @@ export const nodeRegistry: Record<string, Node> = {
 
   HOME_CHILDREN: {
     id: "HOME_CHILDREN",
-    kind: "ROUTER",
-    goal: "Entry to children chatbot",
-    message:
-      "Hi! You can ask questions or share what's on your mind. I'm here to listen.",
-    allow_free_text: true,
-    allow_parentese: false,
-    allowed_exits: ["GEN_CHILDREN", "BOOKING", "HANDOFF_FORM"],
-    meta_domains_written: ["ux", "router.decision", "gen_children.last_topic", "gen_children.problem_path"],
-  },
-
-  GEN_CHILDREN: {
-    id: "GEN_CHILDREN",
     kind: "DIALOG",
-    goal: "Child-friendly conversation about feelings, habits and patterns",
+    goal: "Children chatbot entry and conversation",
     message:
-      "You're welcome to share what's on your mind. It's fine to be worried, angry, scared or unhappy - there's a reason for it.",
+      "Du kan skrive hvad som helst. Jeg lytter uden at dømme.",
     allow_free_text: true,
     allow_parentese: true,
     capability_id: "gen-children-v1",
     allowed_exits: [
-      "GEN_CHILDREN",
       "HOME_CHILDREN",
       "CRISIS_INFO",
       "BOOKING",
@@ -118,6 +105,7 @@ export const nodeRegistry: Record<string, Node> = {
       "gen_children.model",
     ],
   },
+
 
   // ─── Booking / kontakt ─────────────────────────────────────────────────────
 
