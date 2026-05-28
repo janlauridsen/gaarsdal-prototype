@@ -134,6 +134,23 @@ export default function ChildrenPage() {
     }
   }
 
+  const resetChat = async () => {
+    try {
+      await fetch("/api/children-reset", { method: "POST" })
+    } catch (e) {
+      // Ignorer fejl - fortsæt alligevel
+    }
+    setMessages([])
+    setState(null)
+    setHasConsent(false)
+    setShowChat(false)
+    // Giv UI tid til at resette, åbn derefter igen
+    setTimeout(() => {
+      setShowChat(true)
+      initChat()
+    }, 50)
+  }
+
   return (
     <>
       <Head>
@@ -315,18 +332,34 @@ export default function ChildrenPage() {
           <section style={{ marginBottom: "60px", padding: "30px", background: "#fff", borderRadius: "8px", border: "1px solid #ddd" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
               <h2 style={{ fontSize: "18px", fontWeight: 600 }}>AI-assistent</h2>
-              <button
-                onClick={() => setShowChat(false)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  fontSize: "20px",
-                  cursor: "pointer",
-                  color: "#999",
-                }}
-              >
-                ✕
-              </button>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <button
+                  onClick={resetChat}
+                  style={{
+                    background: "transparent",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                    padding: "5px 10px",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                    color: "#666",
+                  }}
+                >
+                  Ny samtale
+                </button>
+                <button
+                  onClick={() => setShowChat(false)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    fontSize: "20px",
+                    cursor: "pointer",
+                    color: "#999",
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             <div style={{
