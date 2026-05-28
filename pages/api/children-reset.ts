@@ -15,22 +15,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const redis = getRedisClient()
     if (redis) {
-      // Check if gaarsdal:state is a children conversation before deleting
-      const stateRaw = await redis.get(`gaarsdal:state:${conversationId}`)
-      const keysToDelete = [
-        `children:state:${conversationId}`,
-        `children:events:v1:conv:${conversationId}`,
-        `children:raw:conversation:${conversationId}`,
-      ]
-      if (stateRaw) {
-        try {
-          const state = JSON.parse(stateRaw as string)
-          if (state?.meta?.chatbotType?.value === "children") {
-            keysToDelete.push(`gaarsdal:state:${conversationId}`)
-          }
-        } catch {}
-      }
-      await Promise.all(keysToDelete.map(k => redis.del(k)))
+      await Promise.all([
+        redis.del(`gaarsdal:state:${conversationId}`),
+        redis.del(`children:state:${conversationId}`),
+        redis.del(`children:events:v1:conv:${conversationId}`),
+        redis.del(`children:raw:conversation:${conversationId}`),
+      ])
     }
   } catch (e) {
     console.error("[children-reset]", e)
