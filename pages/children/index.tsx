@@ -2,44 +2,44 @@ import React, { useState } from "react"
 import Head from "next/head"
 import Image from "next/image"
 
-type ProblemType = "schoolrefusal" | "social" | "performance" | "sleep" | "selfimage" | "bullying" | null
+type ProblemType = "skolevægring" | "social" | "præstationsangst" | "søvn" | "selvbillede" | "mobning" | null
 
 const problems = {
-  schoolrefusal: {
-    title: "Won't go to school",
-    experience: "Every morning is a battle. Your child won't get up. First a stomachache, then a headache, then they can't. You don't know if you should be firm or soft. Is it anxiety or manipulation? You've started to doubt yourself. Your own work suffers.",
-    whathappens: "School refusal is rarely laziness. It's anxiety that has become a physical reaction — the body responds for real. Your child isn't lying. They've learned that school means danger — socially, academically, or both. That belief sits deep and won't reach them through conversation alone.",
-    whathelps: "Works directly with the belief driving the reaction — without your child needing to understand why. They get new inner images of themselves at school. Safe instead of dangerous. Results typically come quickly because children don't spend energy doubting themselves in the process.",
+  skolevægring: {
+    title: "Vil ikke i skole",
+    morensOplevelse: "Hver morgen er en kamp. Dit barn vil ikke op. Først ondt i maven, så hovedpine, så det kan slet ikke. Du ved ikke om du skal være hård eller blød. Er det angst eller manipulation? Du er begyndt at tvivle på dig selv. Dit eget arbejde lider.",
+    hvadSker: "Skolevægring er sjældent dovenskab. Det er angst der har sat sig som en fysisk reaktion — kroppen reagerer rigtigt. Dit barn lyver ikke. Det har lært at skolen betyder fare — socialt, fagligt eller begge dele. Den overbevisning sidder dybt og når ikke gennem samtale alene.",
+    hvadVirker: "Arbejder direkte med den overbevisning der driver reaktionen — uden at dit barn behøver forstå hvorfor. Det får nye indre billeder af sig selv i skolen. Trygt i stedet for fare. Resultater kommer typisk hurtigt fordi børn ikke bruger energi på at tvivle undervejs.",
   },
   social: {
-    title: "Feels left out",
-    experience: "Your child sits alone on weekends while other kids are together. You don't hear about birthday parties. Maybe they're not invited. You arrange playdates that don't lead to friendships. You don't know if it's chosen loneliness or painful exclusion. You sleep poorly over it.",
-    whathappens: "Your child has a fixed belief about themselves: 'I'm boring', 'they don't like me', 'I don't know what to say', 'I don't fit in.' It controls their behavior completely. They withdraw, others interpret it as disinterest, distance grows. The cycle reinforces itself.",
-    whathelps: "Works with the basic self-perception — not social skills. Your child doesn't need to learn techniques. They need a new starting point. A child who deep down believes they're worth knowing behaves differently without being taught.",
+    title: "Føler sig udenfor",
+    morensOplevelse: "Dit barn sidder alene i weekenden mens andre børn er sammen. Du hører ikke om fødselsdage. Måske bliver det ikke inviteret. Du arrangerer legeaftaler der ikke fører til venskaber. Du ved ikke om det er valgt ensomhed eller smerteful udelukkelse. Du sover dårligt over det.",
+    hvadSker: "Dit barn har en fast overbevisning om sig selv: 'jeg er kedelig', 'de kan ikke lide mig', 'jeg ved ikke hvad jeg skal sige', 'jeg passer ikke ind.' Den styrer adfærden fuldstændigt. Trækker sig, andre tolker det som uinteresse, afstanden vokser. Cirklen er selvforstærkende.",
+    hvadVirker: "Arbejder med den grundlæggende selvopfattelse — ikke de sociale færdigheder. Dit barn behøver ikke lære teknikker. Det behøver et nyt udgangspunkt. Et barn der inderst inde tror det er værd at kende opfører sig anderledes uden at blive undervist i det.",
   },
-  performance: {
-    title: "Crashes during exams",
-    experience: "Your child is intelligent and functions well in everyday life — but crashes during tests and exams. Grades don't reflect what they can do. They're in panic weeks before a test. Sleep poorly, eat poorly, become irritable. You try to motivate and reassure — nothing works.",
-    whathappens: "Performance anxiety isn't lack of knowledge or preparation. It's a belief that results define worth as a person — and an expectation of failure. The body activates a real stress response that blocks access to what the child actually knows.",
-    whathelps: "Two things at once. Works with the belief that results define worth — and trains the body in a different physiological response to test situations. Your child learns to activate calm and focus instead of panic. It's a real change in the nervous system.",
+  præstationsangst: {
+    title: "Crasher til eksamen",
+    morensOplevelse: "Dit barn er intelligent og velfungerende i hverdagen — men crasher til prøver og eksamener. Karaktererne afspejler ikke hvad det kan. Det er i panik uger før en test. Sover dårligt, spiser dårligt, bliver irritabelt. Du prøver at motivere og berolige — intet virker.",
+    hvadSker: "Præstationsangst er ikke mangel på viden eller forberedelse. Det er en overbevisning om at resultatet definerer værdi som menneske — og en forventning om at fejle. Kroppen aktiverer en reel stressrespons der blokerer adgang til det barnet faktisk ved.",
+    hvadVirker: "To ting samtidigt. Arbejder med overbevisningen om at resultatet definerer værdi — og træner kroppen i en anden fysiologisk respons til prøvesituationen. Dit barn lærer at aktivere ro og fokus i stedet for panik. Det er en reel ændring i nervesystemet.",
   },
-  sleep: {
-    title: "Can't sleep / Constant worry",
-    experience: "Your child won't sleep alone, or lies awake for hours. Maybe wakes with nightmares or worry you can't explain. You lie awake listening. You're exhausted. Your relationship now revolves only around sleep — every evening is negotiation.",
-    whathappens: "Sleep problems in children are rarely the sleep problem itself. It's anxiety manifesting at night when there are no distractions. Your child is alone with their thoughts and has no strategy to handle them. Thoughts loop. The body is activated when it should be winding down.",
-    whathelps: "Sleep is one of hypnotherapy's strongest areas because hypnotic state and sleep onset activate the same neurological mechanisms. Your child learns to guide themselves into calm — through new inner images. Results typically come quickly.",
+  søvn: {
+    title: "Sover ikke / Bekymrer sig",
+    morensOplevelse: "Dit barn vil ikke sove alene, eller ligger vågen i timevis. Måske vågner med mareridt eller uro du ikke kan forklare. Du ligger selv vågen og lytter. Du er udmattet. Jeres relation handler nu kun om søvn — hver aften er en forhandling.",
+    hvadSker: "Søvnproblemer hos børn er sjældent søvnproblemet. Det er angst der manifesterer sig om natten når der ikke er distraktioner. Dit barn er alene med sine tanker og har ingen strategi til at håndtere dem. Tankerne kører i ring. Kroppen er aktiveret når den burde slappe af.",
+    hvadVirker: "Søvn er et af hypnoterapiens stærkeste områder fordi hypnotisk tilstand og søvnindledning aktiverer de samme neurologiske mekanismer. Dit barn lærer at lede sig selv ned i ro — via nye indre billeder. Resultater kommer typisk hurtigt.",
   },
-  selfimage: {
-    title: "Poor self-image",
-    experience: "Your child says 'I'm stupid', 'I'm ugly', 'nobody likes me', 'I'm bad at everything.' You reject it — 'that's not true, you're amazing' — and your child shuts down. Your reassurance doesn't work. You see a child who can't accept love.",
-    whathappens: "Self-image is the sum of all beliefs your child has about themselves — and most aren't consciously chosen. Positive feedback is rejected because it doesn't fit the existing self-image. Criticism confirms it. The system reinforces itself.",
-    whathelps: "Self-image is the deepest work area because beliefs sit below conscious thought. Hypnotherapy goes there and replaces old beliefs with new ones — not as positive thinking but as real experience. Your child receives it in a way few adults can.",
+  selvbillede: {
+    title: "Dårligt selvbillede",
+    morensOplevelse: "Dit barn siger 'jeg er dum', 'jeg er grim', 'ingen kan lide mig', 'jeg er dårlig til alt.' Du afviser det — 'det er ikke sandt, du er fantastisk' — og barnet lukker i. Din beroligelse virker ikke. Du ser et barn der ikke kan tage imod kærlighed.",
+    hvadSker: "Selvbilledet er summen af alle overbevisninger dit barn har om sig selv — og de fleste er ikke bevidst valgte. Positive feedback afvises fordi den ikke passer ind i det eksisterende selvbillede. Kritik bekræfter det. Systemet er selvlåsende.",
+    hvadVirker: "Selvbillede er det dybeste arbejdsområde fordi overbevisningerne sidder under bevidst tænkning. Hypnoterapi går derind og erstatter de gamle overbevisninger med nye — ikke som positiv tænkning men som en reel oplevelse. Dit barn tager imod det på en måde få voksne kan.",
   },
-  bullying: {
-    title: "Being bullied",
-    experience: "You find out too late. Your child has hidden it — from shame, from fear it will get worse. When you finally know, you're angry, heartbroken, and helpless. You contact the school. There are meetings. It promises to improve. But your child isn't the same. Smaller. More withdrawn.",
-    whathappens: "Bullying leaves behind beliefs, not just bad memories. 'I deserve it', 'there's something wrong with me', 'I can't trust others', 'it's not safe to be visible.' Your child interprets injustice as their own fault. The shame is biggest.",
-    whathelps: "Works directly with beliefs bullying has left behind. Your child doesn't need to retell what happened. It works with what your child believes about themselves now — and replaces it with an experience of integrity that doesn't depend on what others have done.",
+  mobning: {
+    title: "Bliver mobbet",
+    morensOplevelse: "Du finder ud af det for sent. Dit barn har skjult det — af skam, af frygt for at det bliver værre. Når du endelig ved det er du vred, ked af det og magtesløs. Du kontakter skolen. Det lover bedring. Men dit barn er ikke det samme. Det er blevet mindre, mere indadvendt.",
+    hvadSker: "Mobning efterlader ikke bare dårlige minder — det efterlader overbevisninger. 'Jeg fortjener det', 'der er noget galt med mig', 'jeg kan ikke stole på andre'. Dit barn tolker uretfærdighed som sin egen fejl. Skammen er størst.",
+    hvadVirker: "Arbejder direkte med de overbevisninger mobningen har efterladt. Dit barn behøver ikke genfortælle det der skete. Det arbejder med hvad barnet tror om sig selv nu — og erstatter det med en oplevelse af integritet der ikke er afhængig af hvad andre har gjort.",
   },
 }
 
@@ -49,25 +49,25 @@ export default function ChildrenPage() {
   return (
     <>
       <Head>
-        <title>Help for children | Gaarsdal Hypnotherapy</title>
-        <meta name="description" content="Hypnotherapy for children with anxiety, social problems, performance anxiety and more." />
+        <title>Hjælp til barn | Gaarsdal Hypnoterapi</title>
+        <meta name="description" content="Hypnoterapi til børn og unge med angst, sociale problemer, præstationsangst og mere." />
       </Head>
 
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "40px 20px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.6, color: "#333" }}>
         
-        {/* SECTION 1: RECOGNITION */}
+        {/* SEKTION 1: GENKENDELSE */}
         <section style={{ marginBottom: "60px", textAlign: "center" }}>
-          <h1 style={{ fontSize: "32px", fontWeight: 600, marginBottom: "12px" }}>Your child is struggling — and you don't know what to do</h1>
-          <p style={{ fontSize: "18px", color: "#666", marginBottom: "20px" }}>You've tried a lot. Maybe the system. Maybe friends. You love your child and can't reach them. It's not your fault.</p>
-          <p style={{ fontSize: "16px", color: "#555" }}>I work with children and young people struggling with anxiety, social problems, self-image, sleep issues, and performance anxiety. I help them become more themselves again — and help you understand what's happening.</p>
+          <h1 style={{ fontSize: "32px", fontWeight: 600, marginBottom: "12px" }}>Dit barn har det svært — og du ved ikke hvad du skal gøre</h1>
+          <p style={{ fontSize: "18px", color: "#666", marginBottom: "20px" }}>Du har prøvet meget. Måske systemet. Måske venner. Du elsker dit barn og kan ikke nå ind til det. Det er ikke din fejl.</p>
+          <p style={{ fontSize: "16px", color: "#555" }}>Jeg arbejder med børn og unge der kæmper med angst, sociale problemer, selvbillede, søvnproblemer og præstationsangst. Jeg hjælper dem med at blive mere sig selv igen — og hjælper dig med at forstå hvad der sker.</p>
           <div style={{ marginTop: "30px" }}>
             <Image src="/Jan-AI.png" alt="Jan Lauridsen" width={150} height={150} style={{ borderRadius: "50%", objectFit: "cover" }} />
           </div>
         </section>
 
-        {/* SECTION 2: CHOOSE PROBLEM */}
+        {/* SEKTION 2: VALG AF PROBLEMSTILLING */}
         <section style={{ marginBottom: "60px" }}>
-          <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "24px", textAlign: "center" }}>Recognize your child:</h2>
+          <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "24px", textAlign: "center" }}>Genkend dit barn:</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", marginBottom: "40px" }}>
             {Object.entries(problems).map(([key, prob]) => (
               <button
@@ -91,24 +91,24 @@ export default function ChildrenPage() {
           </div>
         </section>
 
-        {/* SECTION 3: DEEP DIVE */}
+        {/* SEKTION 3: FORDYBELSE */}
         {selected && problems[selected] && (
           <section style={{ marginBottom: "60px", padding: "30px", background: "#f9fafb", borderRadius: "8px" }}>
             <h3 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "20px" }}>{problems[selected].title}</h3>
 
             <div style={{ marginBottom: "30px" }}>
-              <h4 style={{ fontSize: "14px", fontWeight: 600, textTransform: "uppercase", color: "#888", marginBottom: "12px" }}>Your experience</h4>
-              <p style={{ fontSize: "15px", lineHeight: 1.7 }}>{problems[selected].experience}</p>
+              <h4 style={{ fontSize: "14px", fontWeight: 600, textTransform: "uppercase", color: "#888", marginBottom: "12px" }}>Dit perspektiv</h4>
+              <p style={{ fontSize: "15px", lineHeight: 1.7 }}>{problems[selected].morensOplevelse}</p>
             </div>
 
             <div style={{ marginBottom: "30px" }}>
-              <h4 style={{ fontSize: "14px", fontWeight: 600, textTransform: "uppercase", color: "#888", marginBottom: "12px" }}>What's happening in your child</h4>
-              <p style={{ fontSize: "15px", lineHeight: 1.7 }}>{problems[selected].whathappens}</p>
+              <h4 style={{ fontSize: "14px", fontWeight: 600, textTransform: "uppercase", color: "#888", marginBottom: "12px" }}>Hvad der sker i dit barn</h4>
+              <p style={{ fontSize: "15px", lineHeight: 1.7 }}>{problems[selected].hvadSker}</p>
             </div>
 
             <div style={{ marginBottom: "30px" }}>
-              <h4 style={{ fontSize: "14px", fontWeight: 600, textTransform: "uppercase", color: "#888", marginBottom: "12px" }}>How hypnotherapy helps</h4>
-              <p style={{ fontSize: "15px", lineHeight: 1.7 }}>{problems[selected].whathelps}</p>
+              <h4 style={{ fontSize: "14px", fontWeight: 600, textTransform: "uppercase", color: "#888", marginBottom: "12px" }}>Hvordan hypnoterapi hjælper</h4>
+              <p style={{ fontSize: "15px", lineHeight: 1.7 }}>{problems[selected].hvadVirker}</p>
             </div>
 
             <button
@@ -123,16 +123,16 @@ export default function ChildrenPage() {
                 color: "#666",
               }}
             >
-              Close
+              Luk
             </button>
           </section>
         )}
 
-        {/* SECTION 4: CONSULTATION */}
+        {/* SEKTION 4: AFKLARINGSMØDE */}
         <section style={{ marginBottom: "60px", padding: "40px", background: "#f5f7fa", borderRadius: "8px", textAlign: "center" }}>
-          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Start here</h2>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Start her</h2>
           <p style={{ fontSize: "16px", marginBottom: "24px", maxWidth: "600px", margin: "0 auto 24px" }}>
-            A brief consultation — just you and Jan — where you tell about your child and get answers to your questions. No obligation. Just an honest conversation about what's possible.
+            Et kort afklarende møde — kun dig og Jan — hvor du fortæller om dit barn og får svar på dine spørgsmål. Ingen forpligtelse. Bare en ærlig samtale om hvad der er muligt.
           </p>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", maxWidth: "500px", margin: "0 auto 30px" }}>
@@ -148,7 +148,7 @@ export default function ChildrenPage() {
                 fontSize: "15px",
               }}
             >
-              📞 Call +45 42 80 74 74
+              📞 Ring +45 42 80 74 74
             </a>
             <a
               href="mailto:jan@gaarsdal.net"
@@ -166,7 +166,7 @@ export default function ChildrenPage() {
             </a>
           </div>
 
-          <p style={{ fontSize: "13px", color: "#888" }}>Everything you share is confidential. We comply with GDPR.</p>
+          <p style={{ fontSize: "13px", color: "#888" }}>Alt hvad du deler er fortroligt. Vi overholder dansk GDPR.</p>
         </section>
 
       </div>
