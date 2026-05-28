@@ -1,6 +1,7 @@
 import { createOpenAiCompatibleClient } from "./provider"
 import { AiCapability, AiCapabilityContext, AiCapabilityResult } from "./types"
 import { genHypnoCapability } from "./capabilities/genHypno"
+import { genChildrenCapability } from "./capabilities/genChildren"
 import { prequalifyCapability } from "./capabilities/prequalify"
 import { clientSupportCapability } from "./capabilities/clientSupport"
 import { talkToMeCapability } from "./capabilities/talkToMe"
