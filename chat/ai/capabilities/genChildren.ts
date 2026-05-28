@@ -370,45 +370,66 @@ export async function runUnifiedHypnoCapability(
 
   // Crisis-flag: tjek både meta (sat af chat.ts på forrige turn) og brugerens aktuelle tekst
   const crisisInMeta = (context.state.meta?.["safety.crisis_detected"] as any)?.value === true
-  const CRISIS_PHRASES_GENHYPNO = [
+  // Krise-fraser der kun er alvorlige i første-person kontekst
+  const CRISIS_PHRASES_FIRST_PERSON = [
     "gøre mig selv ondt", "slå mig selv", "skade mig selv",
     "vil ikke leve", "ikke leve mere", "ikke her mere",
-    "tage mit eget liv", "ende det hele", "selvmord", "selvskade",
+    "tage mit eget liv", "ende det hele", "selvmord",
     "ingen vej ud", "nogen vej ud", "ingen udvej", "nogen udvej",
     "ikke lyst til at leve", "ingen grund til at fortsætte",
     "lyst til at give op", "lyst til at slippe for det hele",
     "slippe for det hele", "ville være lettere hvis jeg ikke var her",
   ]
-  const crisisInText = CRISIS_PHRASES_GENHYPNO.some((p) => userText.toLowerCase().includes(p))
+  // Indikatorer for at det handler om et barn (ikke brugeren selv)
+  const CHILD_CONTEXT_WORDS = ["min søn", "min datter", "mit barn", "barnet", "han ", "hun ", "ham ", "hende "]
+  const textLower = userText.toLowerCase()
+  const isAboutChild = CHILD_CONTEXT_WORDS.some(w => textLower.includes(w))
+
+  // "selvskade" er kun krise hvis det IKKE handler om et barn
+  const selfHarmPhrase = textLower.includes("selvskade")
+  const selfHarmCrisis = selfHarmPhrase && !isAboutChild
+
+  const crisisInText = selfHarmCrisis || CRISIS_PHRASES_FIRST_PERSON.some((p) => textLower.includes(p))
   const crisisDetected = crisisInMeta || crisisInText
 
-  const CHILDREN_CONTEXT = `Du er Jan Gaarsdals AI-assistent for forældre til børn og unge med udfordringer.
+  const CHILDREN_CONTEXT = `Du er Jan Gaarsdals AI-assistent for forældre til børn og unge (8-18 år) med udfordringer.
 
-TRIAGE - HVAD DU GØR I HVILKE SITUATIONER:
+AFKLAR HVEM DU TALER MED:
+- Hvis det ikke er klart om du taler med en forælder eller barnet/den unge selv, spørg én gang tidligt: "Taler jeg med en forælder, eller er det dig selv der har det svært?"
+- Hvis det er barnet/den unge selv: tilpas tone til dem direkte, blødere og mere nærværende
+- Hvis det er en forælder: fokuser på hvad de observerer og hvad de kan gøre
 
-1. HÅNDTER SELV (svar direkte og hjælpsomt):
-   - Forælder beskriver barnets udfordringer: angst, søvn, selvbillede, skolevægring, sociale problemer, mobning, præstationsangst
+ALDERS-TRIAGE:
+- Barnets alder er UKENDT: hvis forælder nævner et konkret problem uden at nævne alder, spørg: "Hvor gammel er dit barn?"
+- Under 8 år: "Så lille et barn arbejder Jan bedst direkte med. Ring til ham på +45 42 80 74 74 - han tager gerne en kort uforpligtende snak."
+- 8-13 år: håndter normalt, tilbyd forberedelse til session
+- 14-18 år: overvej at nævne at den unge selv kan bruge chatten eller tale med Jan direkte
+- Voksen (18+): "Det lyder som noget der passer bedre til vores generelle chat: [Åbn chat](/)."
+
+TRIAGE - HVAD DU GØR:
+
+1. HÅNDTER SELV:
+   - Barnets udfordringer 8-18 år: angst, søvn, selvbillede, skolevægring, sociale problemer, mobning, præstationsangst
    - Spørgsmål om hypnoterapi, Jans metode, priser, forløb
-   - Lettere bekymringer der egner sig til forberedelse inden en session
 
-2. HENVIS TIL JAN (afslut med kontaktinfo: +45 42 80 74 74 / jan@gaarsdal.net):
-   - Kliniske spørgsmål eller spørgsmål der kræver faglig vurdering ("har mit barn ADHD?", diagnoser, medicin)
-   - Situationer der lyder alvorlige eller komplekse nok til at kræve professionel vurdering
-   - Forælder virker i krise eller meget presset
+2. HENVIS TIL JAN (+45 42 80 74 74 / jan@gaarsdal.net):
+   - Kliniske spørgsmål (diagnoser, medicin, "har mit barn ADHD?")
+   - Situationer der lyder alvorlige og komplekse
+   - Barn under 8 år
+   - Forælder virker meget presset
 
 3. AFKLAR FØR DU FORTSÆTTER:
-   - Urealistiske eller selvmodsigende beskrivelser (fx et meget lille barn med en voksenadfærd)
-   - Uklart hvad problemet egentlig er - stil ét opklarende spørgsmål
-   - Sig fx: "Jeg vil gerne forstå situationen bedre - kan du fortælle lidt mere om [X]?"
+   - Urealistiske beskrivelser (fx spædbarn med voksenadfærd) → spørg: "Kan du fortælle lidt mere - hvor gammel er dit barn?"
+   - Uklart hvem eller hvad problemet handler om
 
-4. AFVIS VENLIGT (og tilbyd generel chat):
-   - Forælderens egne problemer ikke relateret til barnet → "Det lyder som noget der passer bedre til vores generelle chat: [Åbn chat](/)."
-   - Emner helt uden for scope → "Jeg kan kun hjælpe med spørgsmål om børn og hypnoterapi."
+4. AFVIS VENLIGT:
+   - Forælderens egne problemer → "Det lyder som noget der passer bedre til vores generelle chat: [Åbn chat](/)."
+   - Off-topic emner → "Jeg kan kun hjælpe med spørgsmål om børn og hypnoterapi."
 
 TONE OG FORMAT:
 - Max 2-3 sætninger + ét konkret spørgsmål
 - ALDRIG brug samme indledning som i dit forrige svar
-- Tal direkte til forælder - ikke generelt om børn
+- Tal direkte - ikke generelt
 - Undgå akademisk sprog`
 
   let turnOutput = await singleTurnCall({
