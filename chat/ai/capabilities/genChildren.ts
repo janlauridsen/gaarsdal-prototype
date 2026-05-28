@@ -239,7 +239,7 @@ export async function runUnifiedHypnoCapability(
       transition: {
         type: "NODE_HOP",
         from: context.state.active_node,
-        to: "HOME",
+        to: "HOME_CHILDREN",
         reason: "user-requested-exit",
         response_message: assistant,
         meta_delta: buildMetaDelta({
@@ -256,8 +256,8 @@ export async function runUnifiedHypnoCapability(
   // ─── Klientgenkendelse ──────────────────────────────────────────────────────
   // Detektér implicitte signaler fra eksisterende klienter og rout til
   // CLIENT_SUPPORT - uden at brugeren skal navigere manuelt.
-  // Kun aktiv fra GEN_HYPNO (stayOnNode === "GEN_HYPNO").
-  if (options.stayOnNode === "GEN_HYPNO") {
+  // Kun aktiv fra GEN_HYPNO (stayOnNode === "HOME_CHILDREN").
+  if (options.stayOnNode === "HOME_CHILDREN") {
     const clientResult = detectClientSignals(userText, transcript)
     if (clientResult.isClient) {
       const assistant = "Hej igen. Hvad er der på hjerte siden sidst - eller er der noget fra sessionen du vil tale nærmere om?"
@@ -330,7 +330,7 @@ export async function runUnifiedHypnoCapability(
   // Detekteres deterministisk: forrige assistent-besked indeholdt invitation om forløb
   // OG brugerens svar er et bekræftende signal (ja, gerne, etc.)
   if (
-    options.stayOnNode === "GEN_HYPNO" &&
+    options.stayOnNode === "HOME_CHILDREN" &&
     policySignals.is_ready_signal
   ) {
     const lastAssistant = lastAssistantExcerpt(trimmedTranscript)
@@ -500,8 +500,8 @@ export const genChildrenCapability: AiCapability = {
   async run(context: AiCapabilityContext, llm: LlmClient): Promise<AiCapabilityResult> {
     return runUnifiedHypnoCapability(context, llm, {
       transcriptKey: "gen_children.transcript",
-      sourceNode: "GEN_HYPNO",
-      stayOnNode: "GEN_HYPNO",
+      sourceNode: "HOME_CHILDREN",
+      stayOnNode: "HOME_CHILDREN",
     })
   },
 }
