@@ -9,7 +9,7 @@ export const nodeRegistry: Record<string, Node> = {
     kind: "ROUTER",
     goal: "Indgang og routing baseret på brugerens hensigt",
     message:
-      "Velkommen til Gaarsdal Hypnoterapi. Du kan få information om hypnoterapi, reflektere over vaner og mønstre, booke en tid — eller blot skrive hvad du har på hjerte.",
+      "Velkommen til Gaarsdal Hypnoterapi. Du kan få information om hypnoterapi, reflektere over vaner og mønstre, booke en tid - eller blot skrive hvad du har på hjerte.",
     allow_free_text: true,
     allow_parentese: false,
     allowed_exits: ["GEN_HYPNO", "BOOKING", "CLIENT_SUPPORT", "HANDOFF_FORM", "LEAD_CAPTURE"],
@@ -80,7 +80,7 @@ export const nodeRegistry: Record<string, Node> = {
     kind: "DIALOG",
     goal: "Child-friendly conversation about feelings, habits and patterns",
     message:
-      "You're welcome to share what's on your mind. It's fine to be worried, angry, scared or unhappy — there's a reason for it.",
+      "You're welcome to share what's on your mind. It's fine to be worried, angry, scared or unhappy - there's a reason for it.",
     allow_free_text: true,
     allow_parentese: true,
     capability_id: "gen-children-v1",
@@ -126,7 +126,7 @@ export const nodeRegistry: Record<string, Node> = {
     kind: "INFO",
     goal: "Kontaktinfo og booking-veje",
     message:
-      "Du kan kontakte Jan direkte:\n\n📞 +45 42 80 74 74\n✉️ jan@gaarsdal.net\n📍 Bakkevej 36, 3460 Birkerød\n\nDu kan også sende en besked via kontaktformularen på hjemmesiden.\n\nEn første samtale er uforpligtende — du kan stille spørgsmål og mærke om det giver mening for dig.",
+      "Du kan kontakte Jan direkte:\n\n📞 +45 42 80 74 74\n✉️ jan@gaarsdal.net\n📍 Bakkevej 36, 3460 Birkerød\n\nDu kan også sende en besked via kontaktformularen på hjemmesiden.\n\nEn første samtale er uforpligtende - du kan stille spørgsmål og mærke om det giver mening for dig.",
     allow_free_text: true,
     allow_parentese: false,
     allowed_exits: ["HOME", "GEN_HYPNO", "HANDOFF_FORM", "LEAD_CAPTURE", "PREQUALIFY"],
@@ -168,7 +168,7 @@ export const nodeRegistry: Record<string, Node> = {
     kind: "INFO",
     goal: "Bekræft at henvendelsen er modtaget",
     message:
-      "Tak — Jan modtager din henvendelse og kontakter dig inden for 24 timer.\n\nDu kan også selv ringe på +45 42 80 74 74 eller skrive til jan@gaarsdal.net.",
+      "Tak - Jan modtager din henvendelse og kontakter dig inden for 24 timer.\n\nDu kan også selv ringe på +45 42 80 74 74 eller skrive til jan@gaarsdal.net.",
     allow_free_text: false,
     allow_parentese: false,
     allowed_exits: ["HOME", "GEN_HYPNO"],
@@ -196,7 +196,7 @@ export const nodeRegistry: Record<string, Node> = {
     kind: "FORM",
     goal: "Indsaml email til opfølgning for ikke-klar besøgende",
     message:
-      "Ingen stress — du behøver ikke beslutte dig nu.\n\nEfterlad din email, så sender Jan en kort besked om hvad en første session typisk indebærer.\n\nSkriv:\n- email: Din emailadresse\n- tema: (valgfrit) Hvad handler det primært om?",
+      "Ingen stress - du behøver ikke beslutte dig nu.\n\nEfterlad din email, så sender Jan en kort besked om hvad en første session typisk indebærer.\n\nSkriv:\n- email: Din emailadresse\n- tema: (valgfrit) Hvad handler det primært om?",
     allow_free_text: true,
     allow_parentese: false,
     form: {
@@ -261,13 +261,13 @@ export const nodeRegistry: Record<string, Node> = {
     ],
   },
 
-  // ─── TTM — Talk To Me ──────────────────────────────────────────────────────
+  // ─── TTM - Talk To Me ──────────────────────────────────────────────────────
 
   TALK_TO_ME: {
     id: "TALK_TO_ME",
     kind: "DIALOG",
     goal: "Åben samtale om selvforståelse, relationer og menneskelige problemstillinger",
-    message: "Hej. Godt du er her.\n\nHvordan har du det — på en skala fra 1 til 10?",
+    message: "Hej. Godt du er her.\n\nHvordan har du det - på en skala fra 1 til 10?",
     allow_free_text: true,
     allow_parentese: false,
     capability_id: "talk-to-me-v1",
@@ -288,7 +288,7 @@ export const nodeRegistry: Record<string, Node> = {
     kind: "DIALOG",
     goal: "Støtte til eksisterende klienter mellem sessioner",
     message:
-      "Hej igen. Hvad er der på hjerte siden sidst — eller er der noget fra sessionen du vil tale nærmere om?",
+      "Hej igen. Hvad er der på hjerte siden sidst - eller er der noget fra sessionen du vil tale nærmere om?",
     allow_free_text: true,
     allow_parentese: true,
     capability_id: "client-support-v1",
