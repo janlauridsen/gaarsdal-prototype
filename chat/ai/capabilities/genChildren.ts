@@ -182,18 +182,18 @@ function buildMetaDelta(params: {
 
   const meta: Record<string, unknown> = {
     [params.transcriptKey]: params.updatedTranscript,
-    "gen_hypno.transcript": params.updatedTranscript,
-    "gen_hypno.assistant_turn_count": nextAssistantCount,
+    "gen_children.transcript": params.updatedTranscript,
+    "gen_children.assistant_turn_count": nextAssistantCount,
     "dialog.mode": params.mode,
     "dialog.move": params.analysis.conversation_move,
     "dialog.investigation_focus": params.analysis.investigation_focus,
     "dialog.stage": dialogStage,
     "dialog.relational_state": params.relationalState,
-    "gen_hypno.analysis": params.analysis,
+    "gen_children.analysis": params.analysis,
   }
 
   if (params.topic) {
-    meta["gen_hypno.last_topic"] = params.topic
+    meta["gen_children.last_topic"] = params.topic
     meta["dialog.topic"] = params.topic
     meta["focused_reflection.topic"] = params.topic
   }
@@ -207,9 +207,9 @@ function buildMetaDelta(params: {
     meta["focused_reflection.transcript"] = params.updatedTranscript
   }
   if (params.mode === "closing") meta["focused_reflection.stage"] = "CLOSED"
-  if (derivedProblemTitle) meta["gen_hypno.problem_title"] = derivedProblemTitle
-  if (derivedProblemSummary) meta["gen_hypno.problem_summary"] = derivedProblemSummary
-  if (derivedTopicTags.length) meta["gen_hypno.topic_tags"] = derivedTopicTags
+  if (derivedProblemTitle) meta["gen_children.problem_title"] = derivedProblemTitle
+  if (derivedProblemSummary) meta["gen_children.problem_summary"] = derivedProblemSummary
+  if (derivedTopicTags.length) meta["gen_children.topic_tags"] = derivedTopicTags
   if (typeof params.arousalScore === "number") meta["wot.arousal_score"] = params.arousalScore
   if (params.arousalLevel) meta["wot.arousal_level"] = params.arousalLevel
   // model logges fra capability niveau, ikke her
@@ -229,7 +229,7 @@ export async function runUnifiedHypnoCapability(
   const transcript = readTranscriptByKey(context, options.transcriptKey)
   const trimmedTranscript = trimTranscript(transcript)
   const userText = context.userText ?? ""
-  const previousTopic = readStringMeta(context, "gen_hypno.last_topic") || readStringMeta(context, "dialog.topic")
+  const previousTopic = readStringMeta(context, "gen_children.last_topic") || readStringMeta(context, "dialog.topic")
 
   // Hard exit
   if (isHardExit(userText)) {
@@ -312,7 +312,7 @@ export async function runUnifiedHypnoCapability(
 
   // Hvis topic er sat af greeting-systemet (SYSTEM_THREAD_CREATE) og brugeren spørger om historik,
   // injicér greeting-kontekst så LLM'en ikke modsiger velkomstbeskeden.
-  const lastTopicSourceNode = (context.state.meta?.["gen_hypno.last_topic"] as any)?.source_node
+  const lastTopicSourceNode = (context.state.meta?.["gen_children.last_topic"] as any)?.source_node
   const greetingHint =
     lastTopicSourceNode === "SYSTEM_THREAD_CREATE" && previousTopic
       ? `\n\nNOTE: Brugeren blev budt velkommen med en hilsen der refererede til emnet "${previousTopic}" fra en tidligere samtale. Bekræft dette emne hvis brugeren spørger om historik - svar IKKE at der ingen historik er.`
@@ -488,7 +488,7 @@ export async function runUnifiedHypnoCapability(
           arousalScore: arousal.score,
           arousalLevel: arousal.level,
         }),
-        "gen_hypno.model": context.modelOverride ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
+        "gen_children.model": context.modelOverride ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
       },
     },
     debug: { capability: "unified-hypno-v5-single", used_fallback: usedFallback },
@@ -499,7 +499,7 @@ export const genChildrenCapability: AiCapability = {
   id: "gen-children-v1",
   async run(context: AiCapabilityContext, llm: LlmClient): Promise<AiCapabilityResult> {
     return runUnifiedHypnoCapability(context, llm, {
-      transcriptKey: "gen_hypno.transcript",
+      transcriptKey: "gen_children.transcript",
       sourceNode: "GEN_HYPNO",
       stayOnNode: "GEN_HYPNO",
     })
