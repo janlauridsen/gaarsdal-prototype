@@ -57,6 +57,8 @@ export default function ChildrenPage() {
   const [conversationId, setConversationId] = useState<string>("")
   const [state, setState] = useState<any>(null)
   const [hasConsent, setHasConsent] = useState(false)
+  const [retentionDays, setRetentionDays] = useState<number>(365)
+  const [showSettings, setShowSettings] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -95,9 +97,10 @@ export default function ChildrenPage() {
     }
   }
 
-  const startChat = async (retentionDays: number) => {
+  const startChat = async (days: number) => {
+    setRetentionDays(days)
     setHasConsent(true)
-    await initChat({ retentionDays })
+    await initChat({ retentionDays: days })
   }
 
   const sendMessage = async () => {
@@ -131,6 +134,24 @@ export default function ChildrenPage() {
       console.error("Chat error:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const updateConsent = async (days: number) => {
+    setRetentionDays(days)
+    setShowSettings(false)
+    try {
+      await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          state,
+          input: { type: "CONSENT_RESPONSE", retentionDays: days },
+          chatbotType: "children",
+        }),
+      })
+    } catch (e) {
+      console.error("Consent update error:", e)
     }
   }
 
@@ -355,6 +376,21 @@ export default function ChildrenPage() {
               <h2 style={{ fontSize: "18px", fontWeight: 600 }}>AI-assistent</h2>
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button
+                  onClick={() => setShowSettings(s => !s)}
+                  title="Dataindstillinger"
+                  style={{
+                    background: "transparent",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                    padding: "5px 8px",
+                    fontSize: "14px",
+                    cursor: "pointer",
+                    color: "#888",
+                  }}
+                >
+                  ⚙
+                </button>
+                <button
                   onClick={resetChat}
                   style={{
                     background: "transparent",
@@ -382,6 +418,51 @@ export default function ChildrenPage() {
                 </button>
               </div>
             </div>
+
+            {showSettings && (
+              <div style={{
+                marginBottom: "12px",
+                padding: "14px 16px",
+                background: "#f5f7fa",
+                borderRadius: "6px",
+                border: "1px solid #e5e7eb",
+                fontSize: "13px",
+              }}>
+                <div style={{ fontWeight: 600, marginBottom: "10px", color: "#444" }}>Dataindstillinger</div>
+                <p style={{ color: "#666", marginBottom: "10px", lineHeight: 1.5 }}>
+                  Vælg hvor længe vi må huske dine samtaler. Du kan ændre det til enhver tid.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {([
+                    { days: 365, label: "Gem i 1 år" },
+                    { days: 90,  label: "Gem i 3 måneder" },
+                    { days: 30,  label: "Gem i 30 dage" },
+                    { days: 0,   label: "Kun denne session (ingen gemte data)" },
+                  ] as { days: number; label: string }[]).map(({ days, label }) => (
+                    <button
+                      key={days}
+                      onClick={() => updateConsent(days)}
+                      style={{
+                        padding: "8px 12px",
+                        background: retentionDays === days ? "#5a7a8f" : "#fff",
+                        color: retentionDays === days ? "#fff" : "#444",
+                        border: "1px solid",
+                        borderColor: retentionDays === days ? "#5a7a8f" : "#ddd",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        textAlign: "left",
+                      }}
+                    >
+                      {label}{retentionDays === days ? " ✓" : ""}
+                    </button>
+                  ))}
+                </div>
+                <p style={{ color: "#999", fontSize: "12px", marginTop: "10px" }}>
+                  Se vores <a href="/privatliv" style={{ color: "#5a7a8f" }}>privatlivspolitik</a> for detaljer.
+                </p>
+              </div>
+            )}
 
             <div style={{
               height: "400px",
