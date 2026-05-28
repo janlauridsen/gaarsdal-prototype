@@ -255,12 +255,12 @@ export async function runUnifiedHypnoCapability(
 
   // ─── Klientgenkendelse ──────────────────────────────────────────────────────
   // Detektér implicitte signaler fra eksisterende klienter og rout til
-  // CLIENT_SUPPORT — uden at brugeren skal navigere manuelt.
+  // CLIENT_SUPPORT - uden at brugeren skal navigere manuelt.
   // Kun aktiv fra GEN_HYPNO (stayOnNode === "GEN_HYPNO").
   if (options.stayOnNode === "GEN_HYPNO") {
     const clientResult = detectClientSignals(userText, transcript)
     if (clientResult.isClient) {
-      const assistant = "Hej igen. Hvad er der på hjerte siden sidst — eller er der noget fra sessionen du vil tale nærmere om?"
+      const assistant = "Hej igen. Hvad er der på hjerte siden sidst - eller er der noget fra sessionen du vil tale nærmere om?"
       const updatedTranscript = appendTranscript(transcript, userText, assistant)
       return {
         transition: {
@@ -291,7 +291,7 @@ export async function runUnifiedHypnoCapability(
   // B: læs forrige turns mode og relational_state til sekvens-kontekst
   // Nulstil sekvens-kontekst når samtalen er i lukket/afsluttende tilstand
   // og brugeren sender et nyt substantielt input.
-  // Dækker mode="closing", stage="closing", move="close" — alle låser LLM i lukke-tone.
+  // Dækker mode="closing", stage="closing", move="close" - alle låser LLM i lukke-tone.
   const rawPreviousMode = readStringMeta(context, "dialog.mode") as PromptMode | undefined
   const rawPreviousRelationalState = readStringMeta(context, "dialog.relational_state") as import("../contracts/turnAnalysis").RelationalState | undefined
   const rawPreviousDialogStage = readStringMeta(context, "dialog.stage")
@@ -315,7 +315,7 @@ export async function runUnifiedHypnoCapability(
   const lastTopicSourceNode = (context.state.meta?.["gen_hypno.last_topic"] as any)?.source_node
   const greetingHint =
     lastTopicSourceNode === "SYSTEM_THREAD_CREATE" && previousTopic
-      ? `\n\nNOTE: Brugeren blev budt velkommen med en hilsen der refererede til emnet "${previousTopic}" fra en tidligere samtale. Bekræft dette emne hvis brugeren spørger om historik — svar IKKE at der ingen historik er.`
+      ? `\n\nNOTE: Brugeren blev budt velkommen med en hilsen der refererede til emnet "${previousTopic}" fra en tidligere samtale. Bekræft dette emne hvis brugeren spørger om historik - svar IKKE at der ingen historik er.`
       : undefined
 
   // A: Beregn policy-signaler her og send dem med som input til LLM (upstream hints, ikke post-hoc override)
@@ -339,7 +339,7 @@ export async function runUnifiedHypnoCapability(
       (lastAssistant.includes("forløb") || lastAssistant.includes("tage det videre") || lastAssistant.includes("høre mere"))
     if (invitationShown) {
       const bookingNode = "BOOKING"
-      const assistant = "Du kan kontakte Jan direkte:\n\n📞 +45 42 80 74 74\n✉️ jan@gaarsdal.net\n📍 Bakkevej 36, 3460 Birkerød\n\nDu kan også sende en besked via kontaktformularen på hjemmesiden.\n\nEn første samtale er uforpligtende — du kan stille spørgsmål og mærke om det giver mening for dig."
+      const assistant = "Du kan kontakte Jan direkte:\n\n📞 +45 42 80 74 74\n✉️ jan@gaarsdal.net\n📍 Bakkevej 36, 3460 Birkerød\n\nDu kan også sende en besked via kontaktformularen på hjemmesiden.\n\nEn første samtale er uforpligtende - du kan stille spørgsmål og mærke om det giver mening for dig."
       const updatedTranscript = appendTranscript(transcript, userText, assistant)
       return {
         transition: {
@@ -405,7 +405,7 @@ export async function runUnifiedHypnoCapability(
   // ─── Hukommelse-forespørgsel ───────────────────────────────────────────────
   // Kun aktiv når LLM siger is_history_query OG der faktisk er noget at rapportere.
   // Uden kontekst (hverken LTM eller session) returnerer vi IKKE den ubrugelige
-  // "Vi er lige startet"-besked — vi falder igennem til normal dialog i stedet.
+  // "Vi er lige startet"-besked - vi falder igennem til normal dialog i stedet.
   if (turnOutput.is_history_query) {
     const cp = context.contextPack?.system ?? ""
     const hasLtmContext = cp.length > 200
@@ -428,7 +428,7 @@ export async function runUnifiedHypnoCapability(
             messages: [
               {
                 role: "system",
-                content: "Du er den digitale assistent for Jan Lauridsen, hypnoterapeut på Gaarsdal. Brugeren spørger hvad du ved om dem ud fra tidligere samtaler.\n\nBrug KUN den kontekst der er givet nedenfor. Svar specifikt på brugerens spørgsmål. Vær konkret og ærlig — si eksplicit hvis noget IKKE er nævnt. Max 3-4 sætninger. Afslut med ét åbent spørgsmål.\n\nSvar KUN med JSON: { \"assistant_message\": \"...\" }\n\nKONTEKST:\n" + cp.slice(0, 2000),
+                content: "Du er den digitale assistent for Jan Lauridsen, hypnoterapeut på Gaarsdal. Brugeren spørger hvad du ved om dem ud fra tidligere samtaler.\n\nBrug KUN den kontekst der er givet nedenfor. Svar specifikt på brugerens spørgsmål. Vær konkret og ærlig - si eksplicit hvis noget IKKE er nævnt. Max 3-4 sætninger. Afslut med ét åbent spørgsmål.\n\nSvar KUN med JSON: { \"assistant_message\": \"...\" }\n\nKONTEKST:\n" + cp.slice(0, 2000),
               },
               { role: "user", content: userText },
             ],
