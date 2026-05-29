@@ -22,6 +22,7 @@ type StateSummary = {
   active_node?: string
   status?: string
   genHypnoTranscript?: Array<{ role: string; content: string }>
+  chatbotType?: "standard" | "children"
 }
 
 function extractMeta(raw: unknown): StateSummary | null {
@@ -54,6 +55,7 @@ function extractMeta(raw: unknown): StateSummary | null {
     problem_title: g("gen_hypno.problem_title"),
     topic_tags: Array.isArray(g("gen_hypno.topic_tags")) ? g("gen_hypno.topic_tags") : undefined,
     active_node: state.active_node,
+    chatbotType: g("chatbotType") === "children" ? "children" : "standard",
     status: state.status,
     genHypnoTranscript,
   }
