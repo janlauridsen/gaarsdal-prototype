@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import Head from "next/head"
 import Image from "next/image"
 import Link from "next/link"
@@ -75,7 +75,16 @@ const problems: Record<Exclude<ProblemType, null>, { title: string; oplevelse: s
 
 export default function KenderDuDetPage() {
   const [selected, setSelected] = useState<ProblemType>(null)
+  const detailRef = useRef<HTMLDivElement>(null)
 
+
+  useEffect(() => {
+    if (selected && detailRef.current) {
+      setTimeout(() => {
+        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }, 50)
+    }
+  }, [selected])
 
   return (
     <>
