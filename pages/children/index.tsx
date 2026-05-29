@@ -196,8 +196,38 @@ export default function ChildrenPage() {
   return (
     <>
       <Head>
-        <title>Hjælp til barn | Gaarsdal Hypnoterapi</title>
-        <meta name="description" content="Hypnoterapi til børn og unge med angst, sociale problemer, præstationsangst og mere." />
+        <title>Hypnoterapi til børn og unge i Birkerød | Gaarsdal</title>
+        <meta name="description" content="Hypnoterapi til børn og unge (8-18 år) i Birkerød. Jan Gaarsdal hjælper med angst, skolevægring, søvnproblemer, selvbillede og sociale udfordringer." />
+        <link rel="canonical" href="https://gaarsdal.net/children" />
+        <meta property="og:title" content="Hypnoterapi til børn og unge | Gaarsdal Birkerød" />
+        <meta property="og:description" content="Hjælp til børn og unge med angst, selvbillede og sociale udfordringer. Jan Gaarsdal arbejder med børn fra 8 år i Birkerød." />
+        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:url" content="https://gaarsdal.net/children" />
+        <meta property="og:type" content="website" />
+        <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "MedicalWebPage",
+              name: "Hypnoterapi til børn og unge",
+              description: "Hypnoterapi til børn og unge (8-18 år) med angst, skolevægring, søvnproblemer og sociale udfordringer. Jan Gaarsdal, Birkerød.",
+              url: "https://gaarsdal.net/children",
+              about: {
+                "@type": "MedicalTherapy",
+                name: "Hypnoterapi for børn",
+                relevantSpecialty: "Psykologi",
+              },
+              provider: {
+                "@type": "Person",
+                name: "Jan Gaarsdal",
+                url: "https://gaarsdal.net/om",
+                telephone: "+4542807474",
+              },
+            }),
+          }}
+        />
       </Head>
 
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "40px 20px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.6, color: "#333" }}>
