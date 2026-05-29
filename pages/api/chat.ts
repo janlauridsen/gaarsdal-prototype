@@ -241,7 +241,7 @@ async function handleInitOrRestore(params: {
   return true
 }
 
-async function runTurnWithAutoAdvance(params: { baseState: any; input: InputSignal; userKey: string }): Promise<KernelResult> {
+async function runTurnWithAutoAdvance(params: { baseState: any; input: InputSignal; userKey: string; chatbotType?: "standard" | "children" }): Promise<KernelResult> {
   const fromNode = params.baseState.active_node
   let kernelResult = await runNode({ state: params.baseState, input: params.input, userKey: params.userKey })
 
