@@ -241,13 +241,7 @@ export default function ChildrenPage() {
 
   return (
     <>
-      <Header menu={[
-        { label: "Forside", href: "/" },
-        { label: "Hypnoterapi", href: "/hypnoterapi" },
-        { label: "Børn & Unge", href: "/children" },
-        { label: "Om", href: "/om" },
-        { label: "Kontakt", href: "/kontakt" },
-      ]} />
+      <Header />
       <Head>
         <title>Hypnoterapi til børn og unge i Birkerød | Angst, skolevægring, selvværd | Gaarsdal</title>
         <meta name="description" content="Hypnoterapi til børn og unge (8-18 år) i Birkerød. Jan Gaarsdal hjælper med angst, skolevægring, ensomhed, skærmbrug, kropsutilfredshed, søvnproblemer og selvbillede." />
