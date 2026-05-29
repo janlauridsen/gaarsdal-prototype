@@ -153,7 +153,15 @@ export default function KenderDuDetPage() {
 
         {/* SEKTION 3: FORDYBELSE */}
         {selected && problems[selected] && (
-          <section style={{ marginBottom: "60px", padding: "30px", background: "#f9fafb", borderRadius: "8px" }}>
+          <section
+            ref={detailRef}
+            style={{
+              marginBottom: "60px",
+              padding: "30px",
+              background: "#f9fafb",
+              borderRadius: "8px",
+              animation: "slideDown 0.25s ease-out",
+            }}>
             <h3 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "20px" }}>{problems[selected].title}</h3>
             <div style={{ marginBottom: "24px" }}>
               <h4 style={{ fontSize: "13px", fontWeight: 600, textTransform: "uppercase", color: "#888", marginBottom: "10px", letterSpacing: "0.05em" }}>Din oplevelse</h4>
