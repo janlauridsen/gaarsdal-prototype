@@ -205,7 +205,7 @@ export default function KenderDuDetPage() {
           </p>
           <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
             <Link
-              href="/?chat=open"
+              href="/?open=chat"
               style={{
                 padding: "14px 28px",
                 background: "#5a7a8f",
