@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react"
 import Head from "next/head"
 import Image from "next/image"
-import Header from "../components/Header"
-import Footer from "../components/Footer"
+import Header from "../../components/Header"
+import Footer from "../../components/Footer"
 
 type ProblemType = "skolevægring" | "social" | "præstationsangst" | "søvn" | "selvbillede" | "mobning" | "angst" | "skærm" | "ensomhed" | "krop" | null
 
