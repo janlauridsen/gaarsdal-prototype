@@ -30,15 +30,24 @@ export default function Home() {
           content="https://gaarsdal.net/Gaarsdal.net_logo_brand.png"
         />
         <meta name="robots" content="index, follow" />
+        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image:width" content="400" />
+        <meta property="og:image:height" content="400" />
+        <meta property="og:url" content="https://gaarsdal.net/" />
+        <meta property="og:type" content="website" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "MedicalBusiness",
+              "@type": ["MedicalBusiness", "LocalBusiness"],
               name: "Gaarsdal Hypnoterapi",
+              description: "Hypnoterapi i Birkerød. Individuelle sessioner for voksne og børn. Specialiseret i angst, søvn, vaner og selvbillede.",
               url: "https://gaarsdal.net",
               telephone: "+4542807474",
+              email: "jan@gaarsdal.net",
+              priceRange: "600-900 kr",
+              image: "https://gaarsdal.net/Jan-AI.png",
               address: {
                 "@type": "PostalAddress",
                 streetAddress: "Bakkevej 36",
@@ -47,10 +56,16 @@ export default function Home() {
                 addressRegion: "Rudersdal",
                 addressCountry: "DK",
               },
-              areaServed: {
-                "@type": "AdministrativeArea",
-                name: "Rudersdal Kommune",
+              geo: {
+                "@type": "GeoCoordinates",
+                latitude: 55.8479,
+                longitude: 12.4304,
               },
+              areaServed: [
+                { "@type": "AdministrativeArea", name: "Rudersdal Kommune" },
+                { "@type": "AdministrativeArea", name: "Nordsjælland" },
+              ],
+              sameAs: ["https://gaarsdal.net"],
             }),
           }}
         />
