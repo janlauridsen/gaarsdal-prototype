@@ -8,6 +8,7 @@ export default function Header({
     { label: 'Forside', href: '/' },
     { label: 'Hypnoterapi', href: '/hypnoterapi' },
     { label: 'Børn & Unge', href: '/children' },
+    { label: 'Kender du det?', href: '/kender-du-det' },
     { label: 'Om', href: '/om' },
     { label: 'Kontakt', href: '/kontakt' },
   ],
