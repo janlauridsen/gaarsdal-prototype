@@ -110,23 +110,37 @@ export default function Home() {
         </section>
 
 
-        {/* BØRN & UNGE - SÆRLIGT FOKUSOMRÅDE */}
-        <section className="py-24 px-6 bg-gradient-to-b from-blue-50 to-white">
+        {/* HVAD KÆMPER DU MED */}
+        <section className="py-20 px-6 bg-white">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-h2 font-light mb-4">
-              Arbejder du med børn eller unge?
-            </h2>
-            <p className="text-muted mb-8 text-lg">
-              Jeg har særligt fokus på børn og unge (8-25 år) med angst, sociale vanskeligheder, 
-              præstationsangst og selvbilledsproblemer. Jeg tilbyder en børn-tilpasset tilgang 
-              der fungerer på deres præmisser.
+            <h2 className="text-h2 font-light mb-4">Hvad kæmper du med?</h2>
+            <p className="text-muted mb-10 text-lg">
+              Hypnoterapi hjælper der analysen ikke når ind. Se om du genkender dig selv.
             </p>
-            <Link
-              href="/children"
-              className="inline-block bg-accent text-white px-8 py-4 rounded-lg shadow hover:bg-accent/90 transition font-medium"
-            >
-              Se hvordan jeg hjælper børn og unge →
-            </Link>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+              <Link
+                href="/kender-du-det"
+                className="block p-8 bg-stone-50 rounded-xl border border-stone-200 hover:border-stone-400 transition-all group"
+              >
+                <div className="text-2xl mb-3">🧠</div>
+                <h3 className="text-xl font-semibold mb-2 group-hover:text-accent transition-colors">Kender du det?</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Bekymringer der ikke stopper. Søvn der ikke vil. Vaner du ikke kan bryde.
+                </p>
+                <span className="mt-4 inline-block text-sm font-medium text-accent">Se alle udfordringer →</span>
+              </Link>
+              <Link
+                href="/children"
+                className="block p-8 bg-stone-50 rounded-xl border border-stone-200 hover:border-stone-400 transition-all group"
+              >
+                <div className="text-2xl mb-3">👨‍👩‍👧</div>
+                <h3 className="text-xl font-semibold mb-2 group-hover:text-accent transition-colors">Børn & Unge</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Dit barn har det svært og du ved ikke hvad du skal gøre.
+                </p>
+                <span className="mt-4 inline-block text-sm font-medium text-accent">Se børns udfordringer →</span>
+              </Link>
+            </div>
           </div>
         </section>
 
