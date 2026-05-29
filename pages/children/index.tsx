@@ -349,6 +349,41 @@ export default function ChildrenPage() {
           </section>
         )}
 
+
+        {/* TILLID - hvem er Jan */}
+        <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
+          <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
+            <div style={{ flex: 1 }}>
+              <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px", color: "#333" }}>
+                Hvem er Jan Gaarsdal?
+              </h2>
+              <p style={{ fontSize: "15px", lineHeight: 1.7, marginBottom: "12px", color: "#555" }}>
+                Jan er hypnoterapeut i Birkerød og arbejder med børn fra 8 år. Han tilpasser sin tilgang til barnets alder og temperament - og involverer altid forældrene som en del af forløbet.
+              </p>
+              <p style={{ fontSize: "15px", lineHeight: 1.7, color: "#555" }}>
+                Hypnoterapi arbejder med de overbevisninger og reaktionsmønstre der driver adfærden - under bevidst tænkning. Dit barn behøver ikke forstå hvorfor for at ændre sig. Første samtale er uforpligtende.
+              </p>
+              <div style={{ marginTop: "16px", display: "flex", gap: "24px", flexWrap: "wrap" }}>
+                <a href="/om" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
+                  Læs mere om Jan →
+                </a>
+                <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
+                  Ring +45 42 80 74 74
+                </a>
+              </div>
+            </div>
+            <div style={{ flexShrink: 0 }}>
+              <Image
+                src="/Jan-AI.png"
+                alt="Jan Gaarsdal"
+                width={90}
+                height={90}
+                className="rounded-xl object-cover shadow-sm"
+              />
+            </div>
+          </div>
+        </section>
+
         {/* SEKTION 4: CHATBOT */}
         {!showChat ? (
           <section style={{ marginBottom: "60px", padding: "40px", background: "#f5f7fa", borderRadius: "8px", textAlign: "center" }}>
