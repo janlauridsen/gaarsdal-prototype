@@ -411,6 +411,24 @@ export async function runUnifiedHypnoCapability(
     }
   }
 
+  const SITE_CONTEXT = `Jan Gaarsdal er hypnoterapeut i Birkerød. Han arbejder med børn og unge (8-18 år) og deres forældre.
+
+JANS ARBEJDSOMRÅDER (hvad siden beskriver):
+1. Skolevægring - angst der sidder som fysisk reaktion. Barnet lyver ikke. Arbejder med overbevisningen direkte.
+2. Sociale problemer / udenfor - selvopfattelsen driver adfærden. Ændres indefra, ikke via sociale teknikker.
+3. Præstationsangst - overbevisning om at resultatet definerer værdi. Træner ny fysiologisk respons.
+4. Søvnproblemer og bekymring - hypnotisk tilstand og søvn aktiverer samme mekanismer. Hurtige resultater.
+5. Dårligt selvbillede - sidder under bevidst tænkning. Hypnoterapi når derind.
+6. Mobning - efterlader overbevisninger om skyld og skam. Arbejder med hvad barnet tror om sig selv nu.
+7. Angst generelt - nervesystem i alarmberedskab. Barnet lærer at skifte til ro via nye indre billeder.
+8. Skærm og sociale medier - underliggende behov for anerkendelse og tilhør. Behovet mødes på anden måde.
+9. Ensomhed - overbevisning om ikke at være værd at kende. Ændres indefra.
+10. Kropsutilfredshed - forvredet selvbillede. Arbejdes med under bevidst tænkning.
+
+JANS TILGANG: Hypnoterapi arbejder med overbevisninger og reaktionsmønstre under bevidst tænkning. Barnet behøver ikke forstå hvorfor for at ændre sig. Resultater kommer typisk hurtigt.
+PRISER: 900 kr første session, 600 kr opfølgning. Forløb aftales individuelt.
+KONTAKT: +45 42 80 74 74 / jan@gaarsdal.net / Bakkevej 36, 3460 Birkerød.`
+
   const CHILDREN_CONTEXT = `Du er Jan Gaarsdals AI-assistent for forældre til børn og unge (8-18 år).
 Siden er primært til forældre - men unge på 14-18 kan også selv skrive.
 
