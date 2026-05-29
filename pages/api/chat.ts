@@ -173,7 +173,10 @@ async function handleInitOrRestore(params: {
   
   // Route to correct HOME node based on chatbotType
   if (!storedState) {
-    baseState.active_node = chatbotType === "children" ? "HOME_CHILDREN" : "HOME"
+    const homeNodeId = chatbotType === "children" ? "HOME_CHILDREN" : "HOME"
+    const homeNode = getNode(homeNodeId)
+    baseState.active_node = homeNodeId
+    baseState.active_node_message = homeNode.message  // ← fix: use correct node's message
     baseState.meta = baseState.meta || {}
     baseState.meta["chatbotType"] = { value: chatbotType, source_node: "SYSTEM_INIT" }
   }
