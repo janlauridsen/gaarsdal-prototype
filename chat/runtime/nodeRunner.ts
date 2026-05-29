@@ -21,6 +21,7 @@ export type NodeRunParams = {
   input: InputSignal
   userKey: string
   modelOverride?: string
+  chatbotType?: "standard" | "children"
 }
 
 
@@ -226,7 +227,8 @@ export async function runNode(params: NodeRunParams): Promise<KernelResult> {
       state,
       ttlSeconds: MEMORY_TTL_SECONDS,
       userText: input.text,
-      sessionOnly: !consentAllowsPersistence(consentRecord),
+      // Children chatbot: aldrig brug LTM - børnedata må ikke blandes med forældrers profil
+      sessionOnly: params.chatbotType === "children" || !consentAllowsPersistence(consentRecord),
     })
     const profile = await readUserProfile(params.userKey)
     const capabilityResult = await runCapability(capabilityId, {
