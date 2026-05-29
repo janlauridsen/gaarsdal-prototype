@@ -593,6 +593,66 @@ export default function ChildrenPage() {
                   </div>
                 </div>
               ))}
+              {messages.length === 1 && !loading && (
+                <div style={{ marginTop: "16px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {[
+                    "Mit barn har angst",
+                    "Problemer i skolen",
+                    "Sover dårligt",
+                    "Føler sig udenfor",
+                    "Vil gerne booke en tid",
+                  ].map((chip) => (
+                    <button
+                      key={chip}
+                      onClick={async () => {
+                        if (loading) return
+                        const chipText = chip
+                        setMessages(prev => [...prev, { role: "user", content: chipText }])
+                        setLoading(true)
+                        try {
+                          const response = await fetch("/api/chat", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              state,
+                              input: { type: "FREE_TEXT", text: chipText },
+                              chatbotType: "children",
+                            }),
+                          })
+                          if (response.ok) {
+                            const data = await response.json()
+                            setState(data.state)
+                            const isCrisis = data.transition?.to === "CRISIS_INFO" || data.transition?.reason?.includes("crisis")
+                            if (isCrisis) {
+                              setShowCrisisBanner(true)
+                            } else {
+                              const replyMsg = data.state?.active_node_message ?? data.transition?.response_message
+                              if (replyMsg) setMessages(prev => [...prev, { role: "assistant", content: replyMsg }])
+                            }
+                          }
+                        } catch (e) {
+                          console.error("Chip error:", e)
+                        } finally {
+                          setLoading(false)
+                        }
+                      }}
+                      style={{
+                        padding: "7px 14px",
+                        background: "#f0f4f8",
+                        border: "1px solid #d0dce8",
+                        borderRadius: "20px",
+                        fontSize: "13px",
+                        cursor: "pointer",
+                        color: "#3d5a72",
+                        transition: "background 0.15s",
+                      }}
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {loading && (
                 <div style={{ color: "#999", fontSize: "13px" }}>
                   Assistenten skriver...
