@@ -10,7 +10,7 @@ type Handoff = { id: string; received_at: string; navn: string; emne: string; ko
 type Lead = { id: string; received_at: string; email: string; tema?: string; conversation_id: string }
 type FeedbackItem = { ts: string; conversation_id: string; revision?: number; rating: "positive" | "partial" | "negative"; tags?: string[]; note?: string; meta?: { node?: string; mode?: string; move?: string } }
 type AnticipateDraft = { job_id: string; based_on_revision: number; anticipated_user_text: string; rhetorical_instruction: string; conversation_goal_hypothesis: string | null; created_at: number }
-type StateSummary = { conversation_id: string; fit?: "good" | "explore" | "unknown"; fit_reason?: string; arousal_level?: string; arousal_score?: number; problem_title?: string; topic_tags?: string[]; genHypnoTranscript?: Array<{role: string; content: string}> }
+type StateSummary = { conversation_id: string; fit?: "good" | "explore" | "unknown"; fit_reason?: string; arousal_level?: string; arousal_score?: number; problem_title?: string; topic_tags?: string[]; genHypnoTranscript?: Array<{role: string; content: string}>; chatbotType?: "standard" | "children" }
 type TtmConversation = {
   conversation_id: string
   started_at: string
@@ -127,6 +127,7 @@ export default function AdminPage() {
   const [kwData, setKwData] = useState<Array<{ day: string; keywords: Record<string, number> }>>([])
   const [kwLoading, setKwLoading] = useState(false)
   const [showTestUsers, setShowTestUsers] = useState(false)
+  const [chatbotTypeFilter, setChatbotTypeFilter] = useState<"all" | "standard" | "children">("all")
   const [groupByUser, setGroupByUser] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -281,7 +282,13 @@ export default function AdminPage() {
     setDeletingId(null)
   }
 
-  const conversations = (data?.conversations ?? []).filter(c => showTestUsers || !isTestConversation(c.conversation_id))
+  const conversations = (data?.conversations ?? [])
+    .filter(c => showTestUsers || !isTestConversation(c.conversation_id))
+    .filter(c => {
+      if (chatbotTypeFilter === "all") return true
+      const t = stateMap[c.conversation_id]?.chatbotType ?? "standard"
+      return chatbotTypeFilter === "children" ? t === "children" : t !== "children"
+    })
   const handoffs = ((data?.handoffs ?? []) as Handoff[]).filter(h => showTestUsers || !isTestConversation(h.conversation_id))
   const leads = ((data?.leads ?? []) as Lead[]).filter(l => showTestUsers || !isTestConversation(l.conversation_id))
   const feedbackItems = (data?.feedback ?? []) as FeedbackItem[]
@@ -316,6 +323,13 @@ export default function AdminPage() {
             <button onClick={()=>downloadBlob(toCSV(conversations),`samtaler-${from}-${to}.csv`,"text/csv")} style={{ padding:"9px 16px", background:"transparent", color:"#6B8F71", border:"1.5px solid #627A52", borderRadius:"8px", fontSize:"14px", cursor:"pointer", fontFamily:"inherit" }}>Download CSV</button>
             <button onClick={()=>downloadBlob(JSON.stringify(data,null,2),`gaarsdal-export-${from}-${to}.json`,"application/json")} style={{ padding:"9px 16px", background:"transparent", color:"#888888", border:"1.5px solid #D8D5CC", borderRadius:"8px", fontSize:"14px", cursor:"pointer", fontFamily:"inherit" }}>Download JSON</button>
             <button onClick={()=>setShowTestUsers(v=>!v)} style={{ padding:"9px 16px", background:"transparent", color:showTestUsers?"#d4a264":"#888888", border:`1.5px solid ${showTestUsers?"#d4a264":"#D8D5CC"}`, borderRadius:"8px", fontSize:"14px", cursor:"pointer", fontFamily:"inherit" }}>{showTestUsers ? "⚗ Vis testbrugere" : "⚗ Skjul testbrugere"}</button>
+            <div style={{ display:"flex", gap:"6px" }}>
+              {(["all","standard","children"] as const).map(f => (
+                <button key={f} onClick={() => setChatbotTypeFilter(f)} style={{ padding:"9px 14px", background:chatbotTypeFilter===f?"#5a7a8f":"transparent", color:chatbotTypeFilter===f?"#fff":"#888888", border:`1.5px solid ${chatbotTypeFilter===f?"#5a7a8f":"#D8D5CC"}`, borderRadius:"8px", fontSize:"13px", cursor:"pointer", fontFamily:"inherit" }}>
+                  {f === "all" ? "Alle" : f === "standard" ? "Voksne" : "Børn & Unge"}
+                </button>
+              ))}
+            </div>
             <button onClick={()=>setGroupByUser(v=>!v)} style={{ padding:"9px 16px", background:"transparent", color:groupByUser?"#6B8F71":"#888888", border:`1.5px solid ${groupByUser?"#627A52":"#D8D5CC"}`, borderRadius:"8px", fontSize:"14px", cursor:"pointer", fontFamily:"inherit" }}>{groupByUser ? "👤 Grupperet pr. bruger" : "👤 Gruppér pr. bruger"}</button>
             {statesLoading && <span style={{ fontSize:"13px", color:"#555555" }}>Henter fit-data…</span>}
           </>}
