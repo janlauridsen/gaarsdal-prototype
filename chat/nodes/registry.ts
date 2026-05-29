@@ -68,7 +68,7 @@ export const nodeRegistry: Record<string, Node> = {
     kind: "DIALOG",
     goal: "Children chatbot entry and conversation",
     message:
-      "Du kan skrive hvad som helst. Jeg lytter uden at dømme.",
+      "Hej. Hvad har du på hjerte om dit barn?",
     allow_free_text: true,
     allow_parentese: true,
     capability_id: "gen-children-v1",
