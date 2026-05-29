@@ -1,6 +1,7 @@
 import React, { useState } from "react"
 import Head from "next/head"
 import Image from "next/image"
+import Link from "next/link"
 import Header from "../../components/Header"
 import Footer from "../../components/Footer"
 
@@ -193,6 +194,45 @@ export default function KenderDuDetPage() {
             <div style={{ flexShrink: 0 }}>
               <Image src="/Jan-AI.png" alt="Jan Gaarsdal" width={90} height={90} className="rounded-xl object-cover shadow-sm" />
             </div>
+          </div>
+        </section>
+
+
+        {/* CTA */}
+        <section style={{ marginBottom: "60px", textAlign: "center", padding: "40px 20px" }}>
+          <p style={{ fontSize: "16px", color: "#555", marginBottom: "28px" }}>
+            Første samtale er en afklaring - ingen forpligtelse.
+          </p>
+          <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
+            <Link
+              href="/?chat=open"
+              style={{
+                padding: "14px 28px",
+                background: "#5a7a8f",
+                color: "#fff",
+                textDecoration: "none",
+                borderRadius: "6px",
+                fontWeight: 500,
+                fontSize: "16px",
+              }}
+            >
+              Er det noget for mig? →
+            </Link>
+            <Link
+              href="/kontakt"
+              style={{
+                padding: "14px 28px",
+                background: "transparent",
+                color: "#5a7a8f",
+                textDecoration: "none",
+                border: "1px solid #5a7a8f",
+                borderRadius: "6px",
+                fontWeight: 500,
+                fontSize: "16px",
+              }}
+            >
+              Kontakt for afklaring
+            </Link>
           </div>
         </section>
 
