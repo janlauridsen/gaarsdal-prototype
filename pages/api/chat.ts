@@ -176,7 +176,8 @@ async function handleInitOrRestore(params: {
     const homeNodeId = chatbotType === "children" ? "HOME_CHILDREN" : "HOME"
     const homeNode = getNode(homeNodeId)
     baseState.active_node = homeNodeId
-    baseState.active_node_message = homeNode.message  // ← fix: use correct node's message
+    baseState.active_node_message = homeNode.message
+    baseState.allowed_transitions = homeNode.allowed_exits
     baseState.meta = baseState.meta || {}
     baseState.meta["chatbotType"] = { value: chatbotType, source_node: "SYSTEM_INIT" }
   }
