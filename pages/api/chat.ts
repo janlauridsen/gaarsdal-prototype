@@ -178,6 +178,24 @@ async function handleInitOrRestore(params: {
     baseState.active_node = homeNodeId
     baseState.active_node_message = homeNode.message
     baseState.allowed_transitions = homeNode.allowed_exits
+
+    // Sæt greeting chips baseret på chatbotType
+    const greetingChips = chatbotType === "children"
+      ? [
+          { id: "c1", label: "Mit barn vil ikke i skole" },
+          { id: "c2", label: "Mit barn har angst" },
+          { id: "c3", label: "Sover dårligt" },
+          { id: "c4", label: "Føler sig udenfor" },
+          { id: "c5", label: "Vil gerne booke en tid" },
+        ]
+      : [
+          { id: "h1", label: "Hvad er hypnoterapi?" },
+          { id: "h2", label: "Hvad koster det?" },
+          { id: "h3", label: "Kan det hjælpe mig med angst?" },
+          { id: "h4", label: "Jeg vil gerne stoppe med at ryge" },
+          { id: "h5", label: "Book en tid" },
+        ]
+    baseState.meta["ui.suggestions"] = { value: greetingChips, source_node: "SYSTEM_INIT" }
     baseState.meta = baseState.meta || {}
     baseState.meta["chatbotType"] = { value: chatbotType, source_node: "SYSTEM_INIT" }
   }
