@@ -7,6 +7,7 @@ export default function Header({
   menu = [
     { label: 'Forside', href: '/' },
     { label: 'Hypnoterapi', href: '/hypnoterapi' },
+    { label: 'Børn & Unge', href: '/children' },
     { label: 'Om', href: '/om' },
     { label: 'Kontakt', href: '/kontakt' },
   ],
