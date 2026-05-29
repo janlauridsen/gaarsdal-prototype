@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react"
 import Head from "next/head"
 import Image from "next/image"
 
-type ProblemType = "skolevægring" | "social" | "præstationsangst" | "søvn" | "selvbillede" | "mobning" | null
+type ProblemType = "skolevægring" | "social" | "præstationsangst" | "søvn" | "selvbillede" | "mobning" | "angst" | "skærm" | "ensomhed" | "krop" | null
 
 const problems = {
   skolevægring: {
@@ -40,6 +40,30 @@ const problems = {
     morensOplevelse: "Du finder ud af det for sent. Dit barn har skjult det - af skam, af frygt for at det bliver værre. Når du endelig ved det er du vred, ked af det og magtesløs. Du kontakter skolen. Det lover bedring. Men dit barn er ikke det samme. Det er blevet mindre, mere indadvendt.",
     hvadSker: "Mobning efterlader ikke bare dårlige minder - det efterlader overbevisninger. 'Jeg fortjener det', 'der er noget galt med mig', 'jeg kan ikke stole på andre'. Dit barn tolker uretfærdighed som sin egen fejl. Skammen er størst.",
     hvadVirker: "Arbejder direkte med de overbevisninger mobningen har efterladt. Dit barn behøver ikke genfortælle det der skete. Det arbejder med hvad barnet tror om sig selv nu - og erstatter det med en oplevelse af integritet der ikke er afhængig af hvad andre har gjort.",
+  },
+  angst: {
+    title: "Er angst og bekymret",
+    morensOplevelse: "Dit barn bekymrer sig om alt - skolen, venner, fremtiden, ting der endnu ikke er sket. Det virker som om det altid venter på at noget går galt. Du prøver at berolige det, men det hjælper kun i et øjeblik. Angsten er større end det du siger.",
+    hvadSker: "Angst hos børn er ikke overdrivelse - det er et nervesystem der er låst i alarmberedskab. Hjernen har lært at verden er usikker og reagerer derefter. Tankerne kører i ring. Kroppen spænder op. Det er ikke noget barnet vælger og det forsvinder ikke ved at tale fornuft.",
+    hvadVirker: "Hypnoterapi arbejder direkte med nervesystemet - ikke med tankerne. Dit barn lærer at skifte fra alarmberedskab til ro via nye indre billeder og reaktionsmønstre. Det behøver ikke forstå sin angst for at ændre den. Mange oplever mærkbar forskel allerede efter første session.",
+  },
+  skærm: {
+    title: "Skærm og sociale medier",
+    morensOplevelse: "Du kan ikke få telefonen fra det. Humøret afhænger af hvad der sker online. Det sover dårligt, er irritabelt og har svært ved at koncentrere sig i skolen. Du ved det hænger sammen med skærmen men ved ikke hvad du skal gøre. Konflikter om telefonen er blevet hverdag.",
+    hvadSker: "Sociale medier aktiverer de samme belønningsmekanismer som afhængighed. Sammenligningen med andres tilsyneladende liv skaber lavt selvværd. Søvnen forstyrres af blåt lys og mentalt uro. Det er ikke svag viljestyrke - det er en hjerne der reagerer præcis som den er designet til.",
+    hvadVirker: "Arbejder med den underliggende trang og det behov sociale medier dækker - typisk anerkendelse, tilhørsforhold eller flugt fra ubehag. Når det behov mødes på en anden måde, falder afhængigheden naturligt. Dit barn behøver ikke kæmpe mod sig selv.",
+  },
+  ensomhed: {
+    title: "Er ensom",
+    morensOplevelse: "Dit barn har måske klassekammerater men ingen rigtige venner. Det er ikke inviteret med. Det kommer hjem og lukker sig inde. Du spørger hvordan det går - det svarer 'fint'. Du kan se det ikke er fint. Ensomheden hos et barn er en af de tungeste ting at se på som forælder.",
+    hvadSker: "Ensomhed hos børn handler sjældent om at de er asociale. Det handler om at de mangler redskaberne til at skabe de forbindelser de ønsker - eller at de bærer på en overbevisning om at andre ikke vil have dem. Den overbevisning styrer adfærden og bekræfter sig selv.",
+    hvadVirker: "Arbejder med den grundlæggende overbevisning om hvad barnet er værd i andres øjne. Et barn der inderst inde tror det er værd at kende opfører sig anderledes - uden at blive undervist i sociale teknikker. Forandringen kommer indefra.",
+  },
+  krop: {
+    title: "Kropsutilfredshed og pres",
+    morensOplevelse: "Dit barn siger det er for tykt, for grimt, for lille, for stort. Det vil ikke med til stranden. Det sammenligner sig konstant med andre - på skolen og på sociale medier. Du siger det er smukt som det er. Det tror dig ikke. Du ved ikke hvordan du skal nå ind til det.",
+    hvadSker: "Kropsutilfredshed er ikke forfængelighed - det er et forvredet selvbillede der sidder dybere end spejlet. Sociale medier og jævnaldrende skaber et konstant sammenligningspres. Det barnet ser på sig selv er ikke det du ser. Den overbevisning kan ikke tales væk.",
+    hvadVirker: "Selvbillede arbejdes med under bevidst tænkning - der hvor overbevisningerne faktisk sidder. Dit barn lærer at opleve sig selv anderledes indefra, ikke at overbevise sig selv udefra. Det er en af de mest markante forandringer hypnoterapi kan skabe hos unge.",
   },
 }
 
@@ -203,11 +227,11 @@ export default function ChildrenPage() {
   return (
     <>
       <Head>
-        <title>Hypnoterapi til børn og unge i Birkerød | Gaarsdal</title>
-        <meta name="description" content="Hypnoterapi til børn og unge (8-18 år) i Birkerød. Jan Gaarsdal hjælper med angst, skolevægring, søvnproblemer, selvbillede og sociale udfordringer." />
+        <title>Hypnoterapi til børn og unge i Birkerød | Angst, skolevægring, selvværd | Gaarsdal</title>
+        <meta name="description" content="Hypnoterapi til børn og unge (8-18 år) i Birkerød. Jan Gaarsdal hjælper med angst, skolevægring, ensomhed, skærmbrug, kropsutilfredshed, søvnproblemer og selvbillede." />
         <link rel="canonical" href="https://gaarsdal.net/children" />
         <meta property="og:title" content="Hypnoterapi til børn og unge | Gaarsdal Birkerød" />
-        <meta property="og:description" content="Hjælp til børn og unge med angst, selvbillede og sociale udfordringer. Jan Gaarsdal arbejder med børn fra 8 år i Birkerød." />
+        <meta property="og:description" content="Hjælp til børn og unge med angst, skolevægring, ensomhed, skærmbrug og selvbillede. Jan Gaarsdal, Birkerød." />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/children" />
         <meta property="og:type" content="website" />
