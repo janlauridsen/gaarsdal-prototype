@@ -350,7 +350,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       baseState.active_node = "HOME_CHILDREN"
     }
 
-    let kernelResultFinal = await runTurnWithAutoAdvance({ baseState, input: input as InputSignal, userKey })
+    let kernelResultFinal = await runTurnWithAutoAdvance({ baseState, input: input as InputSignal, userKey, chatbotType })
 
     // Session-only: spring theme/episode-binding over — ingen Redis-writes
     const binding = consentAllowsPersistence(consentRecord ?? null)
