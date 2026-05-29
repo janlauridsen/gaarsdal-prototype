@@ -83,7 +83,7 @@ export default function KenderDuDetPage() {
       setTimeout(() => {
         const el = detailRef.current
         if (el) {
-          const top = el.getBoundingClientRect().top + window.scrollY - 96
+          const top = el.getBoundingClientRect().top + window.scrollY - 120
           window.scrollTo({ top, behavior: "smooth" })
         }
       }, 50)
