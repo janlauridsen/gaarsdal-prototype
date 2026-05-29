@@ -59,6 +59,8 @@ export default function ChildrenPage() {
   const [hasConsent, setHasConsent] = useState(false)
   const [retentionDays, setRetentionDays] = useState<number>(365)
   const [showSettings, setShowSettings] = useState(false)
+  const [showCrisisBanner, setShowCrisisBanner] = useState(false)
+  const [showCrisisResources, setShowCrisisResources] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -125,9 +127,14 @@ export default function ChildrenPage() {
       if (response.ok) {
         const data = await response.json()
         setState(data.state)
-        const replyMsg = data.state?.active_node_message ?? data.transition?.response_message
-        if (replyMsg) {
-          setMessages(prev => [...prev, { role: "assistant", content: replyMsg }])
+        const isCrisis = data.transition?.to === "CRISIS_INFO" || data.transition?.reason?.includes("crisis")
+        if (isCrisis) {
+          setShowCrisisBanner(true)
+        } else {
+          const replyMsg = data.state?.active_node_message ?? data.transition?.response_message
+          if (replyMsg) {
+            setMessages(prev => [...prev, { role: "assistant", content: replyMsg }])
+          }
         }
       }
     } catch (error) {
@@ -491,6 +498,65 @@ export default function ChildrenPage() {
                 <p style={{ color: "#999", fontSize: "12px", marginTop: "10px" }}>
                   Dine samtaler bruges ikke til træning og deles ikke med tredjeparter. Jan ser ikke dine refleksioner.
                 </p>
+              </div>
+            )}
+
+            {showCrisisBanner && (
+              <div style={{
+                marginBottom: "12px",
+                padding: "14px 16px",
+                background: "#fff",
+                border: "1px solid #e5e7eb",
+                borderRadius: "8px",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "12px",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+              }}>
+                <span style={{ fontSize: "22px", flexShrink: 0 }}>🕊</span>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: "13px", color: "#444", margin: 0, lineHeight: 1.5 }}>
+                    Hvis du eller nogen du kender har det svært, er der gratis hjælp at få.
+                  </p>
+                  {showCrisisResources && (
+                    <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <a href="tel:70201201" style={{ fontSize: "13px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
+                        📞 Livslinjen — 70 201 201 (gratis, døgnet rundt)
+                      </a>
+                      <a href="tel:1813" style={{ fontSize: "13px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
+                        📞 Lægevagten — 1813
+                      </a>
+                      <a href="tel:112" style={{ fontSize: "13px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
+                        📞 Akut hjælp — 112
+                      </a>
+                      <a href="https://www.livslinjen.dk" target="_blank" rel="noopener noreferrer" style={{ fontSize: "13px", color: "#888", textDecoration: "underline" }}>
+                        livslinjen.dk
+                      </a>
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: "6px", flexShrink: 0, alignItems: "center" }}>
+                  <button
+                    onClick={() => setShowCrisisResources(r => !r)}
+                    style={{
+                      padding: "5px 10px",
+                      border: "1px solid #ccc",
+                      borderRadius: "4px",
+                      background: "#fff",
+                      fontSize: "12px",
+                      cursor: "pointer",
+                      color: "#444",
+                    }}
+                  >
+                    {showCrisisResources ? "Skjul ▲" : "Find hjælp ▼"}
+                  </button>
+                  <button
+                    onClick={() => { setShowCrisisBanner(false); setShowCrisisResources(false) }}
+                    style={{ background: "transparent", border: "none", fontSize: "16px", cursor: "pointer", color: "#bbb" }}
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             )}
 
