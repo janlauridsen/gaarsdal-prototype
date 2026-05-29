@@ -97,7 +97,11 @@ export default function ChildrenPage() {
   useEffect(() => {
     if (selected && detailRef.current) {
       setTimeout(() => {
-        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+        const el = detailRef.current
+        if (el) {
+          const top = el.getBoundingClientRect().top + window.scrollY - 96
+          window.scrollTo({ top, behavior: "smooth" })
+        }
       }, 50)
     }
   }, [selected])
