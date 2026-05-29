@@ -88,10 +88,19 @@ export default function ChildrenPage() {
   const [showCrisisBanner, setShowCrisisBanner] = useState(false)
   const [showCrisisResources, setShowCrisisResources] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const detailRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  useEffect(() => {
+    if (selected && detailRef.current) {
+      setTimeout(() => {
+        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }, 50)
+    }
+  }, [selected])
 
   const initChat = async (consentRecord?: { retentionDays: number }) => {
     try {
@@ -312,7 +321,15 @@ export default function ChildrenPage() {
 
         {/* SEKTION 3: FORDYBELSE */}
         {selected && problems[selected] && (
-          <section style={{ marginBottom: "60px", padding: "30px", background: "#f9fafb", borderRadius: "8px" }}>
+          <section
+            ref={detailRef}
+            style={{
+              marginBottom: "60px",
+              padding: "30px",
+              background: "#f9fafb",
+              borderRadius: "8px",
+              animation: "slideDown 0.25s ease-out",
+            }}>
             <h3 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "20px" }}>{problems[selected].title}</h3>
 
             <div style={{ marginBottom: "30px" }}>
