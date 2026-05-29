@@ -281,7 +281,7 @@ export default function ChildrenPage() {
               <p style={{ fontSize: "15px", color: "#555" }}>Jeg arbejder med børn og unge der kæmper med angst, sociale problemer, selvbillede, søvnproblemer og præstationsangst. Jeg hjælper dem med at blive mere sig selv igen - og hjælper dig med at forstå hvad der sker.</p>
             </div>
             <div style={{ flexShrink: 0 }}>
-              <Image src="/Jan-AI.png" alt="Jan Lauridsen" width={120} height={120} style={{ borderRadius: "50%", objectFit: "cover" }} />
+              <Image src="/Jan-AI.png" alt="Jan Lauridsen" width={120} height={120} className="rounded-xl object-cover shadow-sm" />
             </div>
           </div>
         </section>
