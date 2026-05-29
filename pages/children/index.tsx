@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react"
 import Head from "next/head"
 import Image from "next/image"
+import Header from "../components/Header"
+import Footer from "../components/Footer"
 
 type ProblemType = "skolevægring" | "social" | "præstationsangst" | "søvn" | "selvbillede" | "mobning" | "angst" | "skærm" | "ensomhed" | "krop" | null
 
@@ -226,6 +228,13 @@ export default function ChildrenPage() {
 
   return (
     <>
+      <Header menu={[
+        { label: "Forside", href: "/" },
+        { label: "Hypnoterapi", href: "/hypnoterapi" },
+        { label: "Børn & Unge", href: "/children" },
+        { label: "Om", href: "/om" },
+        { label: "Kontakt", href: "/kontakt" },
+      ]} />
       <Head>
         <title>Hypnoterapi til børn og unge i Birkerød | Angst, skolevægring, selvværd | Gaarsdal</title>
         <meta name="description" content="Hypnoterapi til børn og unge (8-18 år) i Birkerød. Jan Gaarsdal hjælper med angst, skolevægring, ensomhed, skærmbrug, kropsutilfredshed, søvnproblemer og selvbillede." />
@@ -261,7 +270,7 @@ export default function ChildrenPage() {
         />
       </Head>
 
-      <div style={{ maxWidth: "900px", margin: "0 auto", padding: "40px 20px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.6, color: "#333" }}>
+      <main style={{ maxWidth: "900px", margin: "0 auto", padding: "120px 20px 60px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.6, color: "#333" }}>
         
         {/* SEKTION 1: GENKENDELSE */}
         <section style={{ marginBottom: "60px" }}>
@@ -722,7 +731,8 @@ export default function ChildrenPage() {
           </section>
         )}
 
-      </div>
+      </main>
+      <Footer />
     </>
   )
 }
