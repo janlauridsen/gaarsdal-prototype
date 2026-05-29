@@ -407,6 +407,7 @@ export async function runUnifiedHypnoCapability(
         response_message: crisisMessage,
         meta_delta: {},
       },
+      debug: { capability: "gen-children-v1", used_fallback: false },
     }
   }
 
