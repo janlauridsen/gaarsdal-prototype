@@ -370,15 +370,17 @@ export async function runUnifiedHypnoCapability(
 
   // Crisis-flag: tjek både meta (sat af chat.ts på forrige turn) og brugerens aktuelle tekst
   const crisisInMeta = (context.state.meta?.["safety.crisis_detected"] as any)?.value === true
-  // Krise-fraser der kun er alvorlige i første-person kontekst
+  // Krise-fraser - første-person (bruger om sig selv)
   const CRISIS_PHRASES_FIRST_PERSON = [
     "gøre mig selv ondt", "slå mig selv", "skade mig selv",
-    "vil ikke leve", "ikke leve mere", "ikke her mere",
+    "vil ikke leve", "ikke leve mere", "ikke her mere", "gider leve",
     "tage mit eget liv", "ende det hele", "selvmord",
     "ingen vej ud", "nogen vej ud", "ingen udvej", "nogen udvej",
     "ikke lyst til at leve", "ingen grund til at fortsætte",
     "lyst til at give op", "lyst til at slippe for det hele",
     "slippe for det hele", "ville være lettere hvis jeg ikke var her",
+    "vil hellere dø", "hellere dø", "vil dø", "ønsker jeg var død",
+    "ikke eksistere", "leve mere",
   ]
   // Indikatorer for at det handler om et barn (ikke brugeren selv)
   const CHILD_CONTEXT_WORDS = ["min søn", "min datter", "mit barn", "barnet", "han ", "hun ", "ham ", "hende "]
@@ -391,6 +393,22 @@ export async function runUnifiedHypnoCapability(
 
   const crisisInText = selfHarmCrisis || CRISIS_PHRASES_FIRST_PERSON.some((p) => textLower.includes(p))
   const crisisDetected = crisisInMeta || crisisInText
+
+  // ═══ HARD STOP: Krise afbryder LLM-kaldet helt ═══
+  // Hvis krise detekteres, returner krise-svar direkte uden LLM-involvering
+  if (crisisDetected) {
+    const crisisMessage = "Det lyder som om du har det meget svært lige nu.\n\nDet er vigtigt at du ikke står alene med de tanker. Ring til Livslinjen på 70 201 201 (gratis, døgnet rundt), lægevagten på 1813, eller 112 hvis det er akut."
+    return {
+      transition: {
+        type: "NODE_HOP" as const,
+        from: context.state.active_node,
+        to: "CRISIS_INFO",
+        reason: "crisis detected - hard stop",
+        response_message: crisisMessage,
+        meta_delta: {},
+      },
+    }
+  }
 
   const CHILDREN_CONTEXT = `Du er Jan Gaarsdals AI-assistent. Du hjælper KUN forældre med spørgsmål om hypnoterapi til børn og unge (8-18 år).
 
