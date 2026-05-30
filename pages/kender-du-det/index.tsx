@@ -196,7 +196,7 @@ export default function KenderDuDetPage() {
         )}
 
         {/* SEKTION 4: OM JAN */}
-        <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
+        <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #e8916f" }}>
           <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
             <div style={{ flex: 1 }}>
               <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px", color: "#333" }}>
@@ -230,7 +230,7 @@ export default function KenderDuDetPage() {
               href="/?open=chat"
               style={{
                 padding: "14px 28px",
-                background: "#5a7a8f",
+                background: "#e8916f",
                 color: "#fff",
                 textDecoration: "none",
                 borderRadius: "6px",
@@ -245,9 +245,9 @@ export default function KenderDuDetPage() {
               style={{
                 padding: "14px 28px",
                 background: "transparent",
-                color: "#5a7a8f",
+                color: "#e8916f",
                 textDecoration: "none",
-                border: "1px solid #5a7a8f",
+                border: "1px solid #e8916f",
                 borderRadius: "6px",
                 fontWeight: 500,
                 fontSize: "16px",
