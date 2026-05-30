@@ -148,13 +148,14 @@ export default function KenderDuDetPage() {
                 onClick={() => setSelected(key as ProblemType)}
                 style={{
                   padding: "20px",
-                  border: selected === key ? "2px solid #5a7a8f" : "1px solid #ddd",
-                  background: selected === key ? "#f0f4f8" : "#fff",
+                  border: selected === key ? "2px solid #e8916f" : "1px solid #e8b89e",
+                  background: selected === key ? "#e8916f" : "#fdf0ea",
                   borderRadius: "8px",
                   cursor: "pointer",
                   fontSize: "16px",
                   fontWeight: 500,
                   textAlign: "left",
+                  color: selected === key ? "#fff" : "#333",
                   transition: "all 0.15s",
                 }}
               >
