@@ -301,8 +301,8 @@ export default function ChildrenPage() {
                 onClick={() => setSelected(key as ProblemType)}
                 style={{
                   padding: "20px",
-                  border: selected === key ? "2px solid #5a7a8f" : "1px solid #c5d2da",
-                  background: selected === key ? "#5a7a8f" : "#eef3f6",
+                  border: selected === key ? "2px solid #5a7a8f" : "1px solid #ddd",
+                  background: selected === key ? "#f0f4f8" : "#fff",
                   borderRadius: "8px",
                   cursor: "pointer",
                   fontSize: "16px",
@@ -364,7 +364,7 @@ export default function ChildrenPage() {
 
 
         {/* TILLID - hvem er Jan */}
-        <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #e8916f" }}>
+        <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
             <div style={{ flex: 1 }}>
               <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px", color: "#333" }}>
@@ -399,7 +399,7 @@ export default function ChildrenPage() {
 
         {/* SEKTION 4: CHATBOT */}
         {!showChat ? (
-          <section style={{ marginBottom: "60px", padding: "40px", background: "#fdf0ea", borderRadius: "8px", textAlign: "center" }}>
+          <section style={{ marginBottom: "60px", padding: "40px", background: "#f5f7fa", borderRadius: "8px", textAlign: "center" }}>
             <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Du kan snakke med en AI-assistent her</h2>
             <p style={{ fontSize: "15px", marginBottom: "24px", maxWidth: "600px", margin: "0 auto 24px", color: "#555" }}>
               Jeg har en AI-assistent der kan besvare almindelige spørgsmål og lytte uden at dømme. Det er ikke direkte kontakt med Jan, men den kan hjælpe dig med at klare tankerne.
