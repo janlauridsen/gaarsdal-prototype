@@ -148,8 +148,8 @@ export default function KenderDuDetPage() {
                 onClick={() => setSelected(key as ProblemType)}
                 style={{
                   padding: "20px",
-                  border: selected === key ? "2px solid #5a7a8f" : "1px solid #c5d2da",
-                  background: selected === key ? "#5a7a8f" : "#eef3f6",
+                  border: selected === key ? "2px solid #5a7a8f" : "1px solid #ddd",
+                  background: selected === key ? "#f0f4f8" : "#fff",
                   borderRadius: "8px",
                   cursor: "pointer",
                   fontSize: "16px",
@@ -196,7 +196,7 @@ export default function KenderDuDetPage() {
         )}
 
         {/* SEKTION 4: OM JAN */}
-        <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #e8916f" }}>
+        <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
             <div style={{ flex: 1 }}>
               <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px", color: "#333" }}>
@@ -230,7 +230,7 @@ export default function KenderDuDetPage() {
               href="/?open=chat"
               style={{
                 padding: "14px 28px",
-                background: "#e8916f",
+                background: "#5a7a8f",
                 color: "#fff",
                 textDecoration: "none",
                 borderRadius: "6px",
@@ -245,9 +245,9 @@ export default function KenderDuDetPage() {
               style={{
                 padding: "14px 28px",
                 background: "transparent",
-                color: "#e8916f",
+                color: "#5a7a8f",
                 textDecoration: "none",
-                border: "1px solid #e8916f",
+                border: "1px solid #5a7a8f",
                 borderRadius: "6px",
                 fontWeight: 500,
                 fontSize: "16px",
