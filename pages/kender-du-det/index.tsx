@@ -18,7 +18,7 @@ const problems: Record<Exclude<ProblemType, null>, { title: string; oplevelse: s
     hvadVirker: "Hypnoterapi arbejder direkte med det lag der kører bekymringen. Dit nervesystem lærer at den konstante scanning ikke er nødvendig. Du ændrer ikke hvad du tænker - du ændrer hvad der sker automatisk.",
   },
   søvn: {
-    title: "Kan ikke sove →",
+    title: "Kan ikke sove",
     oplevelse: "Du er træt om aftenen men vågen så snart du lægger dig. Tankerne starter. Du vågner om natten og kan ikke falde i søvn igen. Du har prøvet alt - ingen skærme, magnesium, podcasts. Ingenting virker konsekvent.",
     hvadSker: "Søvnproblemer hos voksne er sjældent et søvnproblem. Det er et nervesystem der er for aktiveret til at slippe ned. Hjernen associerer sengen med uro i stedet for ro. Den association sidder dybere end viljestyrke kan nå.",
     hvadVirker: "Hypnotisk tilstand og søvnindledning aktiverer de samme neurologiske mekanismer. Du lærer at lede dig selv ned i ro - ikke som teknik du skal huske, men som en ny automatisk reaktion. Resultater kommer typisk hurtigt.",
