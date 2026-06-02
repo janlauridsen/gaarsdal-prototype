@@ -10,6 +10,7 @@ export default function Header({
     { label: 'Børn & Unge', href: '/children' },
     { label: 'Kender du det?', href: '/kender-du-det' },
     { label: 'Om', href: '/om' },
+    { label: 'Priser', href: '/priser' },
     { label: 'Kontakt', href: '/kontakt' },
   ],
 }) {
