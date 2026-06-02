@@ -8,28 +8,57 @@ export default function Page() {
     <>
       <Header />
       <Head>
-        <title>Skærmafhængighed hos børn og unge | Gaarsdal Birkerød</title>
-        <meta name="description" content="Dit barn kan ikke lægge telefonen. Humøret afhænger af hvad der sker online. Hypnoterapi arbejder med det underliggende behov der driver skærmbrugen. Jan Gaarsdal." />
+        <title>Skærmafhængighed hos børn og unge, hypnoterapi Birkerød | Gaarsdal</title>
+        <meta name="description" content="Dit barn kan ikke lægge telefonen. Humøret afhænger af hvad der sker online. Hypnoterapi arbejder med det underliggende behov. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/skaerm-born" />
-        <meta property="og:title" content="Skærmafhængighed hos børn og unge | Gaarsdal Birkerød" />
-        <meta property="og:description" content="Dit barn kan ikke lægge telefonen. Humøret afhænger af hvad der sker online. Hypnoterapi arbejder med det underliggende behov der driver skærmbrugen. Jan Gaarsdal." />
+        <meta property="og:title" content="Skærmafhængighed hos børn og unge, hypnoterapi Birkerød | Gaarsdal" />
+        <meta property="og:description" content="Dit barn kan ikke lægge telefonen. Humøret afhænger af hvad der sker online. Hypnoterapi arbejder med det underliggende behov. Jan Gaarsdal, Birkerød." />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/skaerm-born" />
         <meta name="robots" content="index, follow" />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Dit barn kan ikke lægge telefonen, og konflikter om det er hverdag</h1>
-          <p style={{ fontSize: "18px", color: "#555", maxWidth: "660px" }}>Humøret afhænger af hvad der sker online. Det sover dårligt og er irritabelt. Du ved det hænger sammen med skærmen, men forbud og konflikter ændrer ikke på det underliggende.</p>
+          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Humøret afhænger af hvad der sker online. Det sover dårligt fordi det ligger med telefonen om natten. Det er irritabelt og trækker sig fra familien. Forbud og regler fører til konflikter. Du er bekymret, men ved ikke hvad der vil virke.</p>
+          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Skærmafhængighed er ikke et opdragelsesproblem. Det er et belønningssystem i hjernen der er aktiveret på samme måde som andre afhængighedsmekanismer.</p>
         </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "20px" }}>Hvad der faktisk sker</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
+                        <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Sociale medier er designet til afhængighed</h3>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Notifikationer, likes og uforudsigelig belønning aktiverer dopaminsystemet på præcis den måde der skaber afhængighed. Det er ikke tilfældigt, det er designet. Barnet reagerer neurologisk præcis som det er meningen.</p>
+            </div>
+            <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Sammenligningskulturen rammer selvbilledet</h3>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Sociale medier leverer konstant sammenligningsgrundlag med andres tilsyneladende bedste øjeblikke. For børn og unge i identitetsudvikling er dette særligt skadeligt og kan forstærke lavt selvbillede og social angst markant.</p>
+            </div>
+            <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Skærmen dækker et underliggende behov</h3>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Bag skærmafhængighed ligger typisk et uopfyldt behov for anerkendelse, tilhørsforhold eller flugt fra ubehag. Barnet finder det online fordi det ikke finder det tilstrækkeligt andetsteds. Forbud adresserer ikke det behov.</p>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
+          <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Forskning viser en klar sammenhæng mellem høj skærmtid og øget forekomst af angst, depression og søvnproblemer hos børn og unge. Sundhedsstyrelsen og WHO anbefaler begrænsning af skærmtid og adressering af de sociale og psykologiske behov bag brugen.</p>
+          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, WHO Guidelines on Physical Activity and Sedentary Behaviour, Twenge et al. 2018.</p>
+        </section>
+
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px" }}>Hypnoterapi arbejder med det behov skærmen dækker, typisk anerkendelse, tilhørsforhold eller flugt fra ubehag. Når behovet mødes på en anden måde, falder afhængigheden naturligt.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med det underliggende behov der driver skærmbrugen. Når behovet mødes på anden måde, falder afhængigheden naturligt. Det er ikke en kamp mod telefonen, det er en forandring indefra.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med skærmproblematikker som en del af et bredere billede. Tilgangen tilpasses hvad der driver dit barns specifikke brug.</p>
         </section>
+
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
-          <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px" }}>
-            Jan arbejder med børn fra 8 år og involverer altid forældrene i forløbet. Den gratis forsamtale på 30 minutter afklarer om hypnoterapi er det rette for dit barn.
+          <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>
+            Jan arbejder med børn fra 8 år og involverer altid forældrene i forløbet. Den gratis forsamtale på 30 minutter, telefon eller fysisk, afklarer om hypnoterapi er det rette for dit barn.
           </p>
           <div style={{ padding: "12px 16px", background: "#f0f4f8", borderRadius: "6px", display: "inline-block" }}>
             <p style={{ fontSize: "14px", fontWeight: 500, color: "#333", margin: "0 0 8px" }}>🎯 Gratis forsamtale, 30 minutter, telefon eller fysisk</p>
@@ -39,14 +68,19 @@ export default function Page() {
             </div>
           </div>
         </section>
+
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <Link href="/selvbillede-born" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Selvbillede</Link>
+            <Link href="/angst-born" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Angst hos børn</Link>
+            <Link href="/sovn-born" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Søvnproblemer</Link>
             <Link href="/children" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Børn & Unge</Link>
             <Link href="/priser" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Priser</Link>
             <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan</Link>
           </div>
         </section>
+
       </main>
       <Footer />
     </>
