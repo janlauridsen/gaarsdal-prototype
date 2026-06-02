@@ -32,29 +32,29 @@ export default function Page() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
                         <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Trangen er ikke i tankerne</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Rygning er koblet til belønningssystemet i hjernens basale dele. Ikke til den del der beslutter og planlægger. Hjernen har lært at cigaretten giver ro, pause, belønning. Den kobling kører automatisk og er stærkere end intentionen i det øjeblik den udløses.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Rygning er koblet til belønningssystemet i hjernens basale dele. Ikke til den del der beslutter og planlægger. Hjernen har lært, at cigaretten giver ro, pause, belønning. Den kobling kører automatisk og er stærkere end intentionen i det øjeblik den udløses.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Triggere styrer adfærden</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Kaffe, stress, bestemte tidspunkter, bestemte steder. Hjernen har koblet disse situationer direkte til rygning. Det er ikke et valg i øjeblikket, det er en automatisk reaktion på en trigger. Det er derfor beslutningen ikke er nok alene.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Kaffe, stress, bestemte tidspunkter, bestemte steder. Hjernen har koblet disse situationer direkte til rygning. Det er ikke et valg i øjeblikket, det er en automatisk reaktion på en trigger. Det er derfor, beslutningen ikke er nok alene.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Viljestyrke udtømmes</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Viljestyrke er en begrænset ressource. Jo mere du bruger den på at modstå trangen, jo sværere bliver det over tid, særligt i stressede situationer. Det forklarer mønsteret: det går godt i starten, og glider bagud når livet presser.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Viljestyrke er en begrænset ressource. Jo mere du bruger den på at modstå trangen, jo sværere bliver det over tid, særligt i stressede situationer. Det forklarer mønsteret: det går godt i starten, og glider bagud, når livet presser.</p>
             </div>
           </div>
         </section>
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Rygning er den enkeltfaktor der koster flest leveår i Danmark. Sundhedsstyrelsen vurderer at ca. 3.800 danskere dør af rygning hvert år. Mange forsøger at stoppe, men mere end halvdelen ryger igen inden for et år ved brug af viljestyrke alene.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Rygning er den enkeltfaktor der koster flest leveår i Danmark. Sundhedsstyrelsen vurderer, at ca. 3.800 danskere dør af rygning hvert år. Mange forsøger at stoppe, men mere end halvdelen ryger igen inden for et år ved brug af viljestyrke alene.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, Kræftens Bekæmpelse.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder direkte med de associationer der driver trangen, ikke med viljestyrken. Hjernen lærer at afkoble triggerne fra reaktionen. Mange oplever at lysten falder markant efter én til to sessioner.</p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan tilpasser sin tilgang til hvad der driver dit specifikke rygemønster. Hvad udløser trangen, hvad dækker rygningen over, og hvad skal erstatte det.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan tilpasser sin tilgang til, hvad der driver dit specifikke rygemønster. Hvad udløser trangen, hvad dækker rygningen over, og hvad skal erstatte det.</p>
         </section>
 
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>

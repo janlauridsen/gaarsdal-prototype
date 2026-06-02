@@ -45,10 +45,10 @@ export default function PraestationsangstPage() {
             Du ved hvad du kan, men kroppen blokerer
           </h1>
           <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>
-            Du har forberedt dig. Du kender stoffet. Og alligevel, når det gælder, er det som om adgangen til det du ved forsvinder. Hjernen kører i tomgang. Kroppen spænder op. Du ser andre klare det tilsyneladende uden besvær.
+            Du har forberedt dig. Du kender stoffet. Og alligevel, når det gælder, er det som om adgangen til det, du ved, forsvinder. Hjernen kører i tomgang. Kroppen spænder op. Du ser andre klare det tilsyneladende uden besvær.
           </p>
           <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>
-            Det er ikke et spørgsmål om forberedelse eller intelligens. Det er et nervesystem der reagerer forkert på det rette tidspunkt.
+            Det er ikke et spørgsmål om forberedelse eller intelligens. Det er et nervesystem, der reagerer forkert på det rette tidspunkt.
           </p>
         </section>
 
@@ -59,15 +59,15 @@ export default function PraestationsangstPage() {
             {[
               {
                 titel: "Kroppen aktiverer flugt-respons",
-                tekst: "Præstationsangst er ikke svaghed. Det er en reel stressrespons, aktiveret af hjernen fordi den opfatter situationen som farlig. Cortisol og adrenalin frigives. Blod ledes væk fra den tænkende del af hjernen. Du blokerer ikke fordi du er dårlig forberedt, men fordi din krop prøver at beskytte dig.",
+                tekst: "Præstationsangst er ikke svaghed. Det er en reel stressrespons, aktiveret af hjernen, fordi den opfatter situationen som farlig. Cortisol og adrenalin frigives. Blod ledes væk fra den tænkende del af hjernen. Du blokerer ikke, fordi du er dårlig forberedt, men fordi din krop prøver at beskytte dig.",
               },
               {
                 titel: "Resultatet definerer din værdi",
-                tekst: "Bag præstationsangst ligger ofte en dyb overbevisning: at resultatet siger noget fundamentalt om hvem du er. Den overbevisning aktiverer alarmsystemet. Jo mere der er på spil, jo stærkere reaktionen. Det er ikke en tankegang, det er en automatisk reaktion.",
+                tekst: "Bag præstationsangst ligger ofte en dyb overbevisning: at resultatet siger noget fundamentalt om, hvem du er. Den overbevisning aktiverer alarmsystemet. Jo mere der er på spil, jo stærkere reaktionen. Det er ikke en tankegang, det er en automatisk reaktion.",
               },
               {
                 titel: "Forberedelse løser det ikke",
-                tekst: "De fleste med præstationsangst er faktisk godt forberedte. Problemet er ikke viden, det er hvad der sker i kroppen i den afgørende situation. Mere forberedelse dæmper angsten kortvarigt men ændrer ikke grundmønsteret.",
+                tekst: "De fleste med præstationsangst er faktisk godt forberedte. Problemet er ikke viden, det er hvad der sker i kroppen i den afgørende situation. Mere forberedelse dæmper angsten kortvarigt, men ændrer ikke grundmønsteret.",
               },
             ].map((k) => (
               <div key={k.titel} style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
@@ -85,7 +85,7 @@ export default function PraestationsangstPage() {
             Præstationsangst er udbredt ved eksamener, mundtlige fremlæggelser, vigtige jobsamtaler, sportskonkurrencer og præstationssituationer på arbejdet. Det rammer på tværs af alder, og Jan arbejder med både unge under eksamenspres og voksne i professionelle sammenhænge.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "16px" }}>
-            Forskning viser at eksamensangst påvirker en betydelig del af studerende og kan have direkte indvirkning på resultater, uanset det faglige niveau. Sundhedsstyrelsen anerkender præstationsangst som en af de hyppigste årsager til psykisk mistrivsel hos unge.
+            Forskning viser, at eksamensangst påvirker en betydelig del af studerende og kan have direkte indvirkning på resultater, uanset det faglige niveau. Sundhedsstyrelsen anerkender præstationsangst som en af de hyppigste årsager til psykisk mistrivsel hos unge.
           </p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>
             Kilde: Sundhedsstyrelsen.dk, Vidensråd for Forebyggelse.
@@ -96,7 +96,7 @@ export default function PraestationsangstPage() {
         {/* CITAT - KØREPRØVE */}
         <section style={{ marginBottom: "60px", padding: "32px", background: "#fff", borderRadius: "10px", border: "1px solid #e5e7eb", borderLeft: "4px solid #5a7a8f" }}>
           <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#333", marginBottom: "16px", fontStyle: "italic" }}>
-            "Jeg har behandlet over 25 klienter der havde problemer med at gennemføre og blive indstillet til køreprøven, samt bestå selve prøven. Alle har bestået efter blot én behandling. Enkelte ønskede selv en opfølgende session."
+            "Jeg har behandlet over 25 klienter, der havde problemer med at gennemføre og blive indstillet til køreprøven, samt bestå selve prøven. Alle har bestået efter blot én behandling. Enkelte ønskede selv en opfølgende session."
           </p>
           <p style={{ fontSize: "14px", color: "#888", fontWeight: 500 }}>Jan Gaarsdal, hypnoterapeut</p>
         </section>
@@ -111,7 +111,7 @@ export default function PraestationsangstPage() {
             Under hypnoterapi lærer nervesystemet at aktivere ro og fokus i stedet for panik. Det sker ikke ved at du taler dig til ro, men ved at du øver den faktiske fysiologiske tilstand i en kontekst der ligner præstationssituationen. Reaktionen ændres ved kilden, ikke ved overfladen.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
-            Jan arbejder også med de unge der har eksamen forude, og tilpasser sit arbejde til om angsten primært sidder i kroppen, i tankerne eller i overbevisninger om hvad der sker hvis det går galt.
+            Jan arbejder også med de unge der har eksamen forude, og tilpasser sit arbejde til om angsten primært sidder i kroppen, i tankerne eller i overbevisninger om, hvad der sker, hvis det går galt.
           </p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>
             Resultater kan komme hurtigt, særligt ved situationsbestemt præstationsangst. Den gratis forsamtale afklarer om hypnoterapi er det rette for dig.

@@ -9,7 +9,7 @@ export default function Page() {
       <Header />
       <Head>
         <title>Fobi og frygt, hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="Bange for højder, flyvning, sprøjter, edderkopper eller noget helt andet? Fobi er en lært reaktion der kan ændres. Jan Gaarsdal, Birkerød." />
+        <meta name="description" content="Bange for højder, flyvning, sprøjter, edderkopper eller noget helt andet? Fobi er en lært reaktion, der kan ændres. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/fobi" />
         <meta property="og:title" content="Fobi og frygt, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Bange for højder, flyvning, sprøjter, edderkopper eller noget helt andet? Fobi er en lært reaktion der kan ændres. Jan Gaarsdal, Birkerød." />
@@ -24,7 +24,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Du ved det er irrationelt. Det hjælper ikke.</h1>
           <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Frygtreaktionen kører alligevel, hurtigt og totalt. Du planlægger dit liv delvist for at undgå det. Du har måske prøvet at tale dig selv til ro. Det hjælper ikke i det øjeblik det sker.</p>
-          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>En fobi er ikke en tanke. Det er en lært reaktion der sidder i hjernens alarmsystem og ikke kan overtalses væk.</p>
+          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>En fobi er ikke en tanke. Det er en lært reaktion, der sidder i hjernens alarmsystem og ikke kan overtalses væk.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
@@ -32,7 +32,7 @@ export default function Page() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
                         <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Fobien sidder i amygdala</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Frygtreaktionen ved en fobi udløses i amygdala, hjernens alarmsystem, og overstyrker den rationelle del af hjernen. Det sker så hurtigt at den rationelle del ikke når at reagere. Det er derfor du ved det er irrationelt, og alligevel reagerer som du gør.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Frygtreaktionen ved en fobi udløses i amygdala, hjernens alarmsystem, og overstyrker den rationelle del af hjernen. Det sker så hurtigt at den rationelle del ikke når at reagere. Det er derfor, du ved, det er irrationelt, og alligevel reagerer, som du gør.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Det er en lært reaktion</h3>
@@ -40,14 +40,14 @@ export default function Page() {
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Undgåelse vedligeholder fobien</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Når du undgår det du er bange for, bekræfter hjernen at det faktisk er farligt. Undgåelse giver kortvarig lettelse men forstærker fobien over tid. Det er en fælde de fleste med fobier befinder sig i.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Når du undgår det du er bange for, bekræfter hjernen at det faktisk er farligt. Undgåelse giver kortvarig lettelse, men forstærker fobien over tid. Det er en fælde de fleste med fobier befinder sig i.</p>
             </div>
           </div>
         </section>
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Fobier er blandt de mest udbredte angstlidelser. Sundhedsstyrelsen estimerer at specifikke fobier rammer op mod 10 pct. af befolkningen. Mange lever med deres fobi fordi de ikke kender til effektive behandlingsmuligheder.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Fobier er blandt de mest udbredte angstlidelser. Sundhedsstyrelsen estimerer, at specifikke fobier rammer op mod 10 pct. af befolkningen. Mange lever med deres fobi, fordi de ikke kender til effektive behandlingsmuligheder.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, ICD-10 klassifikation.</p>
         </section>
 

@@ -22,7 +22,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Dit barn vil ikke i skole, og du ved ikke hvad du skal gøre</h1>
           <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Morgenerne er kaos. Mavepine, gråd, sommetider panik. Du trøster, forklarer, sætter grænser. Intet virker konsekvent. Dit barn er ikke doven og lyver ikke om mavepinen. Noget ved skolen udløser en reel fysiologisk reaktion. Og den kan ikke tales væk.</p>
-          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Skolevægring er ikke en opdragelsesopgave. Det er et nervesystem der har lært at skolen er farlig.</p>
+          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Skolevægring er ikke en opdragelsesopgave. Det er et nervesystem, der har lært, at skolen er farlig.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
@@ -34,24 +34,24 @@ export default function Page() {
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Undgåelse forværrer det</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hver gang barnet slipper for det frygtsomme, bekræfter hjernen at faren var reel. Undgåelsen giver kortvarig lettelse men fastlåser angsten. Over tid udvides det barnet ikke kan klare. Det er ikke villet, det er et neurologisk mønster.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hver gang barnet slipper for det frygtsomme, bekræfter hjernen, at faren var reel. Undgåelsen giver kortvarig lettelse men fastlåser angsten. Over tid udvides det barnet ikke kan klare. Det er ikke villet, det er et neurologisk mønster.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Årsagen er sjældent skolen i sig selv</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Bag skolevægring ligger typisk social angst, præstationsangst, angst for at forlade hjemmet eller en generel angstlidelse. Skolen er konteksten, ikke årsagen. Det forklarer hvorfor skoleskift sjældent løser problemet varigt.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Bag skolevægring ligger typisk social angst, præstationsangst, angst for at forlade hjemmet eller en generel angstlidelse. Skolen er konteksten, ikke årsagen. Det forklarer, hvorfor skoleskift sjældent løser problemet varigt.</p>
             </div>
           </div>
         </section>
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Skolevægring rammer estimeret 1-5 pct. af alle skoleelever i Danmark og er stigende. Forskning viser at tidlig intervention er afgørende for at forhindre langvarig fastlåsning. Sundhedsstyrelsen og kommunernes PPR anerkender skolevægring som en kompleks tilstand der kræver individuel tilgang.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Skolevægring rammer estimeret 1-5 pct. af alle skoleelever i Danmark og er stigende. Forskning viser, at tidlig intervention er afgørende for at forhindre langvarig fastlåsning. Sundhedsstyrelsen og kommunernes PPR anerkender skolevægring som en kompleks tilstand der kræver individuel tilgang.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, SFI Campbell, Videnscenter for Distriktpsykiatri.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med den automatiske angstreaktion der sidder bag skolevægringen, ikke med selve skolen. Barnet lærer at skifte fra alarmberedskab til ro i de situationer der tidligere udløste reaktionen. Det er en reel neurologisk ændring.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med den automatiske angstreaktion der sidder bag skolevægringen, ikke med selve skolen. Barnet lærer at skifte fra alarmberedskab til ro i de situationer, der tidligere udløste reaktionen. Det er en reel neurologisk ændring.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med børn fra 8 år. Forældrene er altid en del af forløbet. Mange familier oplever markant bedring allerede efter 1-2 sessioner. Den gratis forsamtale afklarer om hypnoterapi er det rette skridt.</p>
         </section>
 

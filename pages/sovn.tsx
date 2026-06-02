@@ -9,7 +9,7 @@ export default function SovnPage() {
       <Header />
       <Head>
         <title>Søvnproblemer og hypnoterapi i Birkerød | Gaarsdal</title>
-        <meta name="description" content="Kan du ikke sove? Vågner om natten? Hypnoterapi arbejder med nervesystemet der holder dig vågen - ikke med viljestyrke. Jan Gaarsdal, Birkerød." />
+        <meta name="description" content="Kan du ikke sove? Vågner om natten? Hypnoterapi arbejder med nervesystemet, der holder dig vågen. Ikke med viljestyrke. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/sovn" />
         <meta property="og:title" content="Søvnproblemer og hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="Søvnproblemer sidder dybere end gode vaner og skærmfri aftener. Hypnoterapi arbejder der viljestyrken ikke når ind." />
@@ -56,10 +56,10 @@ export default function SovnPage() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser om søvn</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>
-            Sundhedsstyrelsen anbefaler at voksne sover mindst 7 timer pr. nat. Ny forskning publiceret i Nature (2025) viser at både for kort og for lang søvn accelererer den biologiske aldring i otte organer — hjernen, lunger, lever, immunsystem og flere andre.
+            Sundhedsstyrelsen anbefaler, at voksne sover mindst 7 timer pr. nat. Ny forskning publiceret i Nature (2025) viser, at både for kort og for lang søvn accelererer den biologiske aldring i otte organer — hjernen, lunger, lever, immunsystem og flere andre.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>
-            Samme forskning finder at for lidt søvn øger risikoen for hjerte-kar-sygdomme, diabetes og en række muskel- og ledsygdomme. Mænd ser ud til at være mere sårbare overfor søvnunderskud end kvinder.
+            Samme forskning finder, at for lidt søvn øger risikoen for hjerte-kar-sygdomme, diabetes og en række muskel- og ledsygdomme. Mænd ser ud til at være mere sårbare overfor søvnunderskud end kvinder.
           </p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>
             Kilde: Nature, maj 2025. Sundhedsstyrelsen.dk.
@@ -73,15 +73,15 @@ export default function SovnPage() {
             {[
               {
                 titel: "Nervesystemet er i beredskab",
-                tekst: "Søvnproblemer handler sjældent om søvn i sig selv. De handler om et nervesystem der ikke slipper ned. Hjernen opfatter sengen som et sted med uro — ikke ro. Den association kører automatisk og kan ikke brydes ved at tænke sig til det.",
+                tekst: "Søvnproblemer handler sjældent om søvn i sig selv. De handler om et nervesystem der ikke slipper ned. Hjernen opfatter sengen som et sted med uro, ikke ro. Den association kører automatisk og kan ikke brydes ved at tænke sig til det.",
               },
               {
                 titel: "Tankerne kører af sig selv",
-                tekst: "Overtænkning om natten er ikke et tegn på, at du er bekymret over noget konkret. Det er et nervesystem der kompenserer for usikkerhed ved at simulere og kontrollere. Det kører fordi det tror det hjælper dig.",
+                tekst: "Overtænkning om natten er ikke et tegn på, at du er bekymret over noget konkret. Det er et nervesystem der kompenserer for usikkerhed ved at simulere og kontrollere. Det kører, fordi det tror, det hjælper dig.",
               },
               {
                 titel: "Viljestyrke virker ikke her",
-                tekst: "Du kan beslutte dig for at sove. Du kan gøre alt rigtigt. Og alligevel ligge vågen. Det er fordi beslutningen og vanen sidder i to forskellige dele af hjernen — og det er den automatiske der vinder.",
+                tekst: "Du kan beslutte dig for at sove. Du kan gøre alt rigtigt. Og alligevel ligge vågen. Det er fordi beslutningen og vanen sidder i to forskellige dele af hjernen — og det er den automatiske, der vinder.",
               },
             ].map((k) => (
               <div key={k.titel} style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
@@ -96,7 +96,7 @@ export default function SovnPage() {
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør ved søvnproblemer</h2>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
-            Hypnotisk tilstand og søvnindledning aktiverer de samme neurologiske mekanismer. Det giver en unik mulighed: du lærer at lede nervesystemet ned i ro — ikke som en teknik du skal huske at bruge, men som en ny automatisk reaktion.
+            Hypnotisk tilstand og søvnindledning aktiverer de samme neurologiske mekanismer. Det giver en unik mulighed: du lærer at lede nervesystemet ned i ro — ikke som en teknik, du skal huske at bruge, men som en ny automatisk reaktion.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
             Arbejdet handler ikke om at lære dig gode søvnvaner. Det handler om at ændre hvad hjernen automatisk forbinder med sengen og med natten. Mange oplever mærkbar forskel allerede efter første session.
@@ -110,13 +110,13 @@ export default function SovnPage() {
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
             <div style={{ flex: 1 }}>
-              <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal — hypnoterapeut i Birkerød</h2>
+              <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
               <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>
                 Jan arbejder med søvnproblemer hos voksne og unge. Han tilpasser sin tilgang til hvad der driver dit specifikke søvnproblem — uro, tankemylder, tidlig opvågning eller indsoningsbesvær.
               </p>
               <div style={{ padding: "12px 16px", background: "#f0f4f8", borderRadius: "6px", display: "inline-block" }}>
                 <p style={{ fontSize: "14px", fontWeight: 500, color: "#333", margin: "0 0 8px" }}>
-                  🎯 Gratis forsamtale — 30 minutter, telefon eller fysisk
+                  🎯 Gratis forsamtale, 30 minutter, telefon eller fysisk
                 </p>
                 <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
                   <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>

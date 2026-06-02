@@ -23,7 +23,7 @@ export default function PriserPage() {
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "16px" }}>Priser</h1>
           <p style={{ fontSize: "18px", color: "#555", maxWidth: "620px" }}>
-            Vi starter altid med en gratis forsamtale på 30 minutter, telefon eller fysisk, så du kan vurdere om metoden og min tilgang passer til dig. Ingen forpligtelse.
+            Vi starter altid med en gratis forsamtale på 30 minutter, telefon eller fysisk, så du kan vurdere, om metoden og min tilgang passer til dig. Ingen forpligtelse.
           </p>
         </section>
 
@@ -50,7 +50,7 @@ export default function PriserPage() {
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "8px" }}>Særlige vilkår</h2>
           <p style={{ fontSize: "15px", color: "#666", marginBottom: "24px", maxWidth: "620px" }}>
-            Jan mener at adgang til hjælp ikke bør begrænses af økonomi. Nedenstående vilkår gælder ved dokumentation.
+            Jan mener, at adgang til hjælp ikke bør begrænses af økonomi. Nedenstående vilkår gælder ved dokumentation.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
             {[

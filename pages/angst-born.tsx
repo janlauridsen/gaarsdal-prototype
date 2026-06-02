@@ -9,10 +9,10 @@ export default function Page() {
       <Header />
       <Head>
         <title>Angst hos børn og unge, hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="Dit barn bekymrer sig om alt og kan ikke slappe af. Hypnoterapi arbejder med nervesystemet der er låst i alarmberedskab. Jan Gaarsdal, Birkerød." />
+        <meta name="description" content="Dit barn bekymrer sig om alt og kan ikke slappe af. Hypnoterapi arbejder med nervesystemet, der er låst i alarmberedskab. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/angst-born" />
         <meta property="og:title" content="Angst hos børn og unge, hypnoterapi Birkerød | Gaarsdal" />
-        <meta property="og:description" content="Dit barn bekymrer sig om alt og kan ikke slappe af. Hypnoterapi arbejder med nervesystemet der er låst i alarmberedskab. Jan Gaarsdal, Birkerød." />
+        <meta property="og:description" content="Dit barn bekymrer sig om alt og kan ikke slappe af. Hypnoterapi arbejder med nervesystemet, der er låst i alarmberedskab. Jan Gaarsdal, Birkerød." />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/angst-born" />
         <meta name="robots" content="index, follow" />
@@ -21,8 +21,8 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Dit barn venter altid på at noget går galt</h1>
-          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Det bekymrer sig om skolen, venner, fremtiden og ting der endnu ikke er sket. Det virker som om det altid er på vagt. Du prøver at berolige det, og det hjælper i et øjeblik. Så er bekymringerne der igen. Barnet kan ikke bare lade være, selvom det gerne vil.</p>
-          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Angst hos børn er ikke overdrivelse eller opmærksomhedssøgning. Det er et nervesystem der er låst i beredskab.</p>
+          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Det bekymrer sig om skolen, venner, fremtiden og ting, der endnu ikke er sket. Det virker som om det altid er på vagt. Du prøver at berolige det, og det hjælper i et øjeblik. Så er bekymringerne der igen. Barnet kan ikke bare lade være, selvom det gerne vil.</p>
+          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Angst hos børn er ikke overdrivelse eller opmærksomhedssøgning. Det er et nervesystem, der er låst i beredskab.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
@@ -30,7 +30,7 @@ export default function Page() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
                         <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Alarmsystemet kører på fuld kraft</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Amygdala, hjernens alarmsystem, er hos angste børn konstant aktiveret. Den scanner omgivelserne for trusler og finder dem, selv i neutrale situationer. Det er ikke noget barnet vælger, det er en neurologisk tilstand.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Amygdala, hjernens alarmsystem, er hos angste børn konstant aktiveret. Den scanner omgivelserne for trusler og finder dem, selv i neutrale situationer. Det er ikke noget barnet vælger. Det er en neurologisk tilstand.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Kroppen mærker angsten fysisk</h3>
@@ -38,14 +38,14 @@ export default function Page() {
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Bekymring giver en illusion af kontrol</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hjernen har lært at bekymring er forberedelse. At gennemtænke alle scenarier giver en fornemmelse af at have styr på det. Det er en strategi der vedligeholder angsten og gør nervesystemet mere sensitivt over tid.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hjernen har lært at bekymring er forberedelse. At gennemtænke alle scenarier giver en fornemmelse af at have styr på det. Det er en strategi, der vedligeholder angsten og gør nervesystemet mere sensitivt over tid.</p>
             </div>
           </div>
         </section>
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Angst er den hyppigste psykiske lidelse hos børn og unge i Danmark. Sundhedsstyrelsen vurderer at op mod 10-15 pct. af børn og unge oplever angst i en grad der påvirker deres hverdag. Ubehandlet angst i barndommen øger risikoen for angst og depression i voksenlivet.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Angst er den hyppigste psykiske lidelse hos børn og unge i Danmark. Sundhedsstyrelsen vurderer, at op mod 10-15 pct. af børn og unge oplever angst i en grad der påvirker deres hverdag. Ubehandlet angst i barndommen øger risikoen for angst og depression i voksenlivet.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, Psykiatrifonden, WHO Mental Health Atlas.</p>
         </section>
 

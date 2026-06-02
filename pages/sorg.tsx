@@ -9,7 +9,7 @@ export default function Page() {
       <Header />
       <Head>
         <title>Sorg og tab, hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="Sorg der ikke slipper. Hypnoterapi hjælper med at bearbejde tab og finde en vej videre. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter." />
+        <meta name="description" content="Sorg, der ikke slipper. Hypnoterapi hjælper med at bearbejde tab og finde en vej videre. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter." />
         <link rel="canonical" href="https://gaarsdal.net/sorg" />
         <meta property="og:title" content="Sorg og tab, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Sorg der ikke slipper. Hypnoterapi hjælper med at bearbejde tab og finde en vej videre. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter." />
@@ -21,8 +21,8 @@ export default function Page() {
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Sorgen fylder mere end omgivelserne forstår</h1>
-          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Du har mistet nogen eller noget der betød alt. Omgivelserne siger det tager tid. Det er rigtigt, men det siger ikke noget om hvad du gør med den tid. Sorg er ikke noget der bare går over.</p>
-          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Sorg der sidder fast er ikke svaghed. Det er et nervesystem der ikke har fundet vej igennem tabet.</p>
+          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Du har mistet nogen eller noget der betød alt. Omgivelserne siger det tager tid. Det er rigtigt, men det siger ikke noget om, hvad du gør med den tid. Sorg er ikke noget der bare går over.</p>
+          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Sorg der sidder fast er ikke svaghed. Det er et nervesystem, der ikke har fundet vej igennem tabet.</p>
         </section>
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "20px" }}>Hvad der faktisk sker</h2>
@@ -33,7 +33,7 @@ export default function Page() {
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Fastlåst sorg</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Nogle gange finder sorgen ikke vej igennem. Den sidder fast som en tilstand af uro, tomhed eller vedvarende smerte. Det kan skyldes at tabet var pludseligt, traumatisk eller kom med uafsluttede forhold.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Nogle gange finder sorgen ikke vej igennem. Den sidder fast som en tilstand af uro, tomhed eller vedvarende smerte. Det kan skyldes, at tabet var pludseligt, traumatisk eller kom med uafsluttede forhold.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Kroppen bærer sorgen</h3>
@@ -43,7 +43,7 @@ export default function Page() {
         </section>
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Sorg og tab er naturlige menneskelige reaktioner. Sundhedsstyrelsen og WHO anerkender at kompliceret sorg, som rammer en del af dem der mister, kræver særlig opmærksomhed og støtte ud over det sociale netværk.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Sorg og tab er naturlige menneskelige reaktioner. Sundhedsstyrelsen og WHO anerkender, at kompliceret sorg, som rammer en del af dem, der mister, kræver særlig opmærksomhed og støtte ud over det sociale netværk.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, WHO Mental Health Report.</p>
         </section>
         <section style={{ marginBottom: "60px" }}>

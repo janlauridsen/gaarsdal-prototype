@@ -21,7 +21,7 @@ export default function Page() {
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Kroppen siger stop, selvom lægerne ikke finder noget</h1>
-          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Mavesmerter der kommer og går. Spændinger i nakke og skuldre. Hovedpine der vender tilbage. Lægerne har undersøgt og ikke fundet noget konkret. Du ved at det er reelt, men ved ikke hvad du skal stille op med det.</p>
+          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Mavesmerter der kommer og går. Spændinger i nakke og skuldre. Hovedpine der vender tilbage. Lægerne har undersøgt og ikke fundet noget konkret. Du ved, at det er reelt, men ved ikke hvad du skal stille op med det.</p>
           <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Psykosomatiske symptomer er ikke indbildte. De er kroppens reaktion på det nervesystemet bærer.</p>
         </section>
         <section style={{ marginBottom: "60px" }}>
@@ -33,7 +33,7 @@ export default function Page() {
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>IBS og stress er tæt forbundet</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Forskning viser en stærk sammenhæng mellem stressniveauer og IBS-symptomer. Tarmen reagerer direkte på nervesystemets tilstand. Det forklarer hvorfor symptomerne ofte forværres i pressede perioder.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Forskning viser en stærk sammenhæng mellem stressniveauer og IBS-symptomer. Tarmen reagerer direkte på nervesystemets tilstand. Det forklarer, hvorfor symptomerne ofte forværres i pressede perioder.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Spændingshovedpine er ikke tilfældig</h3>
@@ -43,7 +43,7 @@ export default function Page() {
         </section>
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Forskning viser at op mod 20 pct. af befolkningen lider af IBS. Studier publiceret i journals som Gut og Alimentary Pharmacology viser at hypnoterapi har dokumenteret effekt på IBS-symptomer, anerkendt af internationale gastroenterologiske guidelines.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Forskning viser at op mod 20 pct. af befolkningen lider af IBS. Studier publiceret i journals som Gut og Alimentary Pharmacology viser, at hypnoterapi har dokumenteret effekt på IBS-symptomer, anerkendt af internationale gastroenterologiske guidelines.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Gut Journal, Alimentary Pharmacology & Therapeutics, Sundhedsstyrelsen.dk.</p>
         </section>
         <section style={{ marginBottom: "60px" }}>

@@ -23,7 +23,7 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Det er ikke sult der driver det</h1>
-          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Du ved godt hvornår du spiser på følelserne. Det er kedsomhed, stress, uro, ensomhed, og maden dæmper det i et øjeblik. Bagefter er der skam oveni. Du har prøvet at lade være. Det virker ikke konsekvent.</p>
+          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Du ved godt, hvornår du spiser på følelserne. Det er kedsomhed, stress, uro, ensomhed. Maden dæmper det i et øjeblik. Bagefter er der skam oveni. Du har prøvet at lade være. Det virker ikke konsekvent.</p>
           <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Følelsesspisning er ikke svag viljestyrke. Det er en reguleringsmekanisme der sidder dybere end beslutninger kan nå.</p>
         </section>
 
@@ -32,11 +32,11 @@ export default function Page() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
                         <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Maden dækker et behov</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hjernen har lært at mad dæmper ubehag hurtigt og pålideligt. Den reaktion kører automatisk og er stærkere end beslutningen om at lade være i det øjeblik ubehaget opstår. Det er ikke grådighed, det er en lært kobling.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hjernen har lært at mad dæmper ubehag hurtigt og pålideligt. Den reaktion kører automatisk og er stærkere end beslutningen om at lade være, i det øjeblik ubehaget opstår. Det er ikke grådighed, det er en lært kobling.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Skam forstærker mønsteret</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Skam efter overspisning øger det ubehag der drev spisningen i første omgang. Det skaber en cirkel: ubehag, spiser, skam, mere ubehag. Viljestyrke og selvkritik bryder ikke cirklen, de forstærker den.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Skam efter overspisning øger det ubehag, der drev spisningen i første omgang. Det skaber en cirkel: ubehag, spiser, skam, mere ubehag. Viljestyrke og selvkritik bryder ikke cirklen, de forstærker den.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Restriktioner virker ikke langsigtet</h3>
@@ -54,7 +54,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med det underliggende behov der driver spisningen, ikke med maden i sig selv. Når hjernen finder andre måder at regulere ubehaget, falder trangen naturligt. Ingen restriktioner, ingen viljestyrke.</p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan tilpasser sin tilgang til hvad der driver dit specifikke mønster, om det primært er stress, kedsomhed, ensomhed eller noget andet.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan tilpasser sin tilgang til, hvad der driver dit specifikke mønster, om det primært er stress, kedsomhed, ensomhed eller noget andet.</p>
         </section>
 
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>

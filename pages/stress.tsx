@@ -9,7 +9,7 @@ export default function Page() {
       <Header />
       <Head>
         <title>Konstant stress og hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="Stress der ikke slipper, selv i weekenden. Hypnoterapi resetter nervesystemets grundindstilling. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter." />
+        <meta name="description" content="Stress, der ikke slipper, selv i weekenden. Hypnoterapi resetter nervesystemets grundindstilling. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter." />
         <link rel="canonical" href="https://gaarsdal.net/stress" />
         <meta property="og:title" content="Konstant stress og hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Stress der ikke slipper, selv i weekenden. Hypnoterapi resetter nervesystemets grundindstilling. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter." />
@@ -23,7 +23,7 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Du funktionerer, men det koster mere end det burde</h1>
-          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Du har altid noget der presser. Selv når der objektivt set ikke er grund til stress, er kroppen på vagt. Du slapper ikke rigtig af, ikke eneste i weekenden. Du er ikke i krise, men du er heller ikke i ro.</p>
+          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Du har altid noget der presser. Selv når der objektivt set ikke er grund til stress, er kroppen på vagt. Du slapper ikke rigtig af, ikke engang i weekenden. Du er ikke i krise, men du er heller ikke i ro.</p>
           <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Det er ikke et produktivitetsproblem. Det er et nervesystem der er låst i grundberedskab.</p>
         </section>
 
@@ -36,7 +36,7 @@ export default function Page() {
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Hjernen scanner konstant for problemer</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Et nervesystem under kronisk stress er altid på udkig. Hvad kan gå galt, hvad er ikke løst, hvad mangler. Det er ikke pessimisme, det er et alarmsystem der kører på fuld kraft fordi det ikke har lært at sætte sig i ro.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Et nervesystem under kronisk stress er altid på udkig. Hvad kan gå galt, hvad er ikke løst, hvad mangler. Det er ikke pessimisme, det er et alarmsystem, der kører på fuld kraft fordi det ikke har lært at sætte sig i ro.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Det akkumulerer</h3>
@@ -47,14 +47,14 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Langvarig stress er en af de hyppigste årsager til sygemeldinger i Danmark. Vidensråd for Forebyggelse vurderer at stress koster det danske samfund betydelige ressourcer i tabte arbejdsdage og sundhedsudgifter. WHO anerkender arbejdsstress som en global sundhedskrise.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Langvarig stress er en af de hyppigste årsager til sygemeldinger i Danmark. Vidensråd for Forebyggelse vurderer, at stress koster det danske samfund betydelige ressourcer i tabte arbejdsdage og sundhedsudgifter. WHO anerkender arbejdsstress som en global sundhedskrise.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Vidensråd for Forebyggelse, WHO, Sundhedsstyrelsen.dk.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi resetter nervesystemets grundindstilling. Dit system lærer at ro er standard, ikke beredskab. Det sker ikke ved afspænding eller mindfulness alene, men ved en dybere ændring i hvad nervesystemet opfatter som normalt.</p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med kronisk stress hos både erhvervsaktive og unge. Tilgangen tilpasses til om stressen primært sidder i tanker, krop eller overbevisninger om hvad der er nødvendigt.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi resetter nervesystemets grundindstilling. Dit system lærer, at ro er standard, ikke beredskab. Det sker ikke ved afspænding eller mindfulness alene, men ved en dybere ændring i, hvad nervesystemet opfatter som normalt.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med kronisk stress hos både erhvervsaktive og unge. Tilgangen tilpasses til om stressen primært sidder i tanker, krop eller overbevisninger om, hvad der er nødvendigt.</p>
         </section>
 
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>

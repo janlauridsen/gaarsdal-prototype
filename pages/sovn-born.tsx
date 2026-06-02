@@ -30,7 +30,7 @@ export default function Page() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
                         <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Sengen er koblet til uro, ikke ro</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hjernen arbejder med associationer. Hvis barnet gentagne gange har ligget vågent og bekymret sig i sengen, lærer hjernen at sengen er et sted med uro. Den automatiske reaktion er aktivering, ikke afslapning. Det kan ikke ændres med gode rutiner alene.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hjernen arbejder med associationer. Hvis barnet gentagne gange har ligget vågent og bekymret sig i sengen, lærer hjernen, at sengen er et sted med uro. Den automatiske reaktion er aktivering, ikke afslapning. Det kan ikke ændres med gode rutiner alene.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Bekymringer om natten er ikke tilfældige</h3>
@@ -38,20 +38,20 @@ export default function Page() {
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Søvnmangel forværrer alt andet</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Forskning viser at søvnmangel hos børn direkte påvirker indlæring, emotionel regulering og immunforsvar. Et barn der sover dårligt har sværere ved at håndtere det der er svært i dagtimerne. Søvn og trivsel er tæt forbundet.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Forskning viser, at søvnmangel hos børn direkte påvirker indlæring, emotionel regulering og immunforsvar. Et barn der sover dårligt har sværere ved at håndtere det der er svært i dagtimerne. Søvn og trivsel er tæt forbundet.</p>
             </div>
           </div>
         </section>
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Søvnproblemer hos børn og unge er stigende i Danmark. Sundhedsstyrelsen vurderer at op mod 20 pct. af børn og unge oplever søvnproblemer. Forskning viser at hypnotisk tilstand og søvnindledning aktiverer de samme neurologiske mekanismer og at hypnoterapi har dokumenteret effekt på søvnproblemer hos unge.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Søvnproblemer hos børn og unge er stigende i Danmark. Sundhedsstyrelsen vurderer, at op mod 20 pct. af børn og unge oplever søvnproblemer. Forskning viser at hypnotisk tilstand og søvnindledning aktiverer de samme neurologiske mekanismer, og at hypnoterapi har dokumenteret effekt på søvnproblemer hos unge.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, European Sleep Research Society, American Journal of Clinical Hypnosis.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder direkte med nervesystemets evne til at slippe ned i ro. Barnet lærer at lede sig selv mod søvn, ikke som en teknik det skal huske, men som en ny automatisk reaktion. Mange børn oplever mærkbar bedring hurtigt.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder direkte med nervesystemets evne til at slippe ned i ro. Barnet lærer at lede sig selv mod søvn, ikke som en teknik, det skal huske, men som en ny automatisk reaktion. Mange børn oplever mærkbar bedring hurtigt.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan tilpasser sit arbejde til om søvnproblemet primært handler om indsovning, opvågning, bekymringer eller en kombination. Forældrene er altid en del af forløbet.</p>
         </section>
 

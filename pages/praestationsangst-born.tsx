@@ -21,7 +21,7 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Dit barn ved hvad det kan, men kroppen blokerer når det gælder</h1>
-          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Til prøver og fremlæggelser forsvinder det dit barn ved. Hjernen kører i tomgang. Kroppen spænder op. Efterfølgende ved barnet svaret, og det er frustrerende for jer begge. Det er ikke mangel på forberedelse. Det er et nervesystem der reagerer forkert i den afgørende situation.</p>
+          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Til prøver og fremlæggelser forsvinder det, dit barn ved. Hjernen kører i tomgang. Kroppen spænder op. Efterfølgende ved barnet svaret, og det er frustrerende for jer begge. Det er ikke mangel på forberedelse. Det er et nervesystem, der reagerer forkert i den afgørende situation.</p>
           <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Præstationsangst er en fysiologisk reaktion, ikke et karaktertræk eller en svaghed.</p>
         </section>
 
@@ -34,11 +34,11 @@ export default function Page() {
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Resultatet er koblet til selvværd</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Bag præstationsangst ligger typisk en overbevisning om at resultatet siger noget fundamentalt om hvem barnet er. Jo mere der er på spil følelsesmæssigt, jo stærkere aktiveres alarmsystemet. Mere forberedelse hjælper ikke på dette niveau.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Bag præstationsangst ligger typisk en overbevisning om, at resultatet siger noget fundamentalt om hvem barnet er. Jo mere der er på spil følelsesmæssigt, jo stærkere aktiveres alarmsystemet. Mere forberedelse hjælper ikke på dette niveau.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Mønsteret forstærkes med tid</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hver negativ præstationsoplevelse bekræfter at situationen er farlig. Angsten øges. Barnet forsøger at undgå de situationer der trigger den, og undgåelsen begrænser gradvist barnets liv og muligheder.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hver negativ præstationsoplevelse bekræfter, at situationen er farlig. Angsten øges. Barnet forsøger at undgå de situationer, der trigger den, og undgåelsen begrænser gradvist barnets liv og muligheder.</p>
             </div>
           </div>
         </section>
@@ -52,7 +52,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi ændrer den fysiologiske stressrespons i præstationssituationen. Barnet øver den faktiske tilstand af ro og fokus i en kontekst der ligner prøvesituationen. Reaktionen ændres ved kilden. Resultater kommer ofte hurtigt.</p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med præstationsangst hos børn fra 8 år og unge op til 18. Tilgangen tilpasses om angsten primært sidder i kroppen, i tankerne eller i overbevisninger om hvad der sker hvis det går galt.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med præstationsangst hos børn fra 8 år og unge op til 18. Tilgangen tilpasses om angsten primært sidder i kroppen, i tankerne eller i overbevisninger om, hvad der sker, hvis det går galt.</p>
         </section>
 
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>

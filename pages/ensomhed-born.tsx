@@ -30,7 +30,7 @@ export default function Page() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
                         <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Overbevisningen er selvforstærkende</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Et barn der tror det ikke er værd at kende trækker sig, undgår initiativ og fortolker andres adfærd negativt. Denne adfærd fører til færre positive sociale erfaringer, som bekræfter overbevisningen. Det er en cirkel der er svær at bryde udefra.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Et barn, der tror, det ikke er værd at kende trækker sig, undgår initiativ og fortolker andres adfærd negativt. Denne adfærd fører til færre positive sociale erfaringer, som bekræfter overbevisningen. Det er en cirkel, der er svær at bryde udefra.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Ensomhed er ikke det samme som at være alene</h3>
@@ -45,13 +45,13 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>En rapport fra VIVE (Det Nationale Forsknings- og Analysecenter for Velfærd) viser at en stigende andel af børn og unge i Danmark oplever ensomhed. Sundhedsstyrelsen fremhæver ensomhed som en af de centrale trivselstrusler for unge i dag.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>En rapport fra VIVE (Det Nationale Forsknings- og Analysecenter for Velfærd) viser, at en stigende andel af børn og unge i Danmark oplever ensomhed. Sundhedsstyrelsen fremhæver ensomhed som en af de centrale trivselstrusler for unge i dag.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: VIVE Rapport om Børn og Unges Trivsel, Sundhedsstyrelsen.dk, WHO.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi ændrer den grundlæggende overbevisning om barnets sociale værdi. Et barn der inderst inde tror det er værd at kende opfører sig anderledes, spontant og uden at øve teknikker. Forandringen kommer indefra og er bæredygtig.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi ændrer den grundlæggende overbevisning om barnets sociale værdi. Et barn, der inderst inde tror, det er værd at kende, opfører sig anderledes, spontant og uden at øve teknikker. Forandringen kommer indefra og er bæredygtig.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med ensomhed som en del af et bredere selvbilledarbejde. Forældrene er altid involveret i forløbet.</p>
         </section>
 

@@ -9,7 +9,7 @@ export default function Page() {
       <Header />
       <Head>
         <title>Dårligt selvbillede hos børn og unge, hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="Dit barn tror ikke det er godt nok. Hypnoterapi arbejder med overbevisningerne under bevidst tænkning. Jan Gaarsdal, Birkerød." />
+        <meta name="description" content="Dit barn tror ikke, det er godt nok. Hypnoterapi arbejder med overbevisningerne under bevidst tænkning. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/selvbillede-born" />
         <meta property="og:title" content="Dårligt selvbillede hos børn og unge, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Dit barn tror ikke det er godt nok. Hypnoterapi arbejder med overbevisningerne under bevidst tænkning. Jan Gaarsdal, Birkerød." />
@@ -30,7 +30,7 @@ export default function Page() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
                         <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Hjernen afviser information der ikke passer</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Ros og bekræftelse opfattes som undtagelsen der bekræfter reglen, når selvbilledet er lavt. Det er ikke negativt tænkning, det er et kognitivt filter. Hjernen sorterer information så den passer til det eksisterende billede af sig selv.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Ros og bekræftelse opfattes som undtagelsen, der bekræfter reglen, når selvbilledet er lavt. Det er ikke negativt tænkning, det er et kognitivt filter. Hjernen sorterer information, så den passer til det eksisterende billede af sig selv.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Sociale medier forstærker det</h3>
@@ -38,21 +38,21 @@ export default function Page() {
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Det er lært og kan ændres</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Overbevisninger om ens egen værdi er ikke medfødte. De er formet af erfaringer, reaktioner fra omgivelserne og de historier hjernen har skabt. De sidder dybt, men de kan ændres. Ikke ved at tale om dem, men ved at arbejde der hvor de faktisk sidder.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Overbevisninger om ens egen værdi er ikke medfødte. De er formet af erfaringer, reaktioner fra omgivelserne og de historier, hjernen har skabt. De sidder dybt, men de kan ændres. Ikke ved at tale om dem, men ved at arbejde der hvor de faktisk sidder.</p>
             </div>
           </div>
         </section>
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Lavt selvbillede hos børn og unge er tæt forbundet med angst, depression og social isolation. Sundhedsstyrelsen fremhæver selvbillede som en central beskyttelsesfaktor for mental sundhed. Forskning viser at selvbilledet er plastisk og kan ændres med de rette metoder.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Lavt selvbillede hos børn og unge er tæt forbundet med angst, depression og social isolation. Sundhedsstyrelsen fremhæver selvbillede som en central beskyttelsesfaktor for mental sundhed. Forskning viser, at selvbilledet er plastisk og kan ændres med de rette metoder.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, WHO Mental Health Report, Rosenberg Self-Esteem Research.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi går ind under de bevidste lag og arbejder direkte med overbevisningerne om barnets egen værdi. Det er anderledes end at tale om selvbillede. Barnet oplever sig selv anderledes indefra. Forandringen er reel og mærkbar.</p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med selvbillede hos børn fra 8 år. Tilgangen tilpasses barnets alder og hvad der historisk har formet selvbilledet.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med selvbillede hos børn fra 8 år. Tilgangen tilpasses barnets alder og, hvad der historisk har formet selvbilledet.</p>
         </section>
 
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>

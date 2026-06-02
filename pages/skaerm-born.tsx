@@ -9,7 +9,7 @@ export default function Page() {
       <Header />
       <Head>
         <title>Skærmafhængighed hos børn og unge, hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="Dit barn kan ikke lægge telefonen. Humøret afhænger af hvad der sker online. Hypnoterapi arbejder med det underliggende behov. Jan Gaarsdal, Birkerød." />
+        <meta name="description" content="Dit barn kan ikke lægge telefonen. Humøret afhænger af, hvad der sker online. Hypnoterapi arbejder med det underliggende behov. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/skaerm-born" />
         <meta property="og:title" content="Skærmafhængighed hos børn og unge, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Dit barn kan ikke lægge telefonen. Humøret afhænger af hvad der sker online. Hypnoterapi arbejder med det underliggende behov. Jan Gaarsdal, Birkerød." />
@@ -22,7 +22,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Dit barn kan ikke lægge telefonen, og konflikter om det er hverdag</h1>
           <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Humøret afhænger af hvad der sker online. Det sover dårligt fordi det ligger med telefonen om natten. Det er irritabelt og trækker sig fra familien. Forbud og regler fører til konflikter. Du er bekymret, men ved ikke hvad der vil virke.</p>
-          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Skærmafhængighed er ikke et opdragelsesproblem. Det er et belønningssystem i hjernen der er aktiveret på samme måde som andre afhængighedsmekanismer.</p>
+          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Skærmafhængighed er ikke et opdragelsesproblem. Det er et belønningssystem i hjernen, der er aktiveret på samme måde som andre afhængighedsmekanismer.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
@@ -52,7 +52,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med det underliggende behov der driver skærmbrugen. Når behovet mødes på anden måde, falder afhængigheden naturligt. Det er ikke en kamp mod telefonen, det er en forandring indefra.</p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med skærmproblematikker som en del af et bredere billede. Tilgangen tilpasses hvad der driver dit barns specifikke brug.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med skærmproblematikker som en del af et bredere billede. Tilgangen tilpasses, hvad der driver dit barns specifikke brug.</p>
         </section>
 
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>

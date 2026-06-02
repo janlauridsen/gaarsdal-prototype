@@ -9,7 +9,7 @@ export default function Page() {
       <Header />
       <Head>
         <title>Mobning, børn og unge, hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="Mobning efterlader overbevisninger om skyld og skam der sidder længe efter mobningen stopper. Hypnoterapi arbejder med hvad barnet tror om sig selv nu. Jan Gaarsdal." />
+        <meta name="description" content="Mobning efterlader overbevisninger om skyld og skam, der sidder længe efter mobningen stopper. Hypnoterapi arbejder med, hvad barnet tror om sig selv nu. Jan Gaarsdal." />
         <link rel="canonical" href="https://gaarsdal.net/mobning" />
         <meta property="og:title" content="Mobning, børn og unge, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Mobning efterlader overbevisninger om skyld og skam der sidder længe efter mobningen stopper. Hypnoterapi arbejder med hvad barnet tror om sig selv nu. Jan Gaarsdal." />
@@ -21,8 +21,8 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Mobningen er stoppet, men dit barn er ikke sig selv igen</h1>
-          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Barnet trækker sig, vil ikke i skole, er ændret. Du siger at det ikke var barnets skyld. Det ved barnet godt. Det hjælper alligevel ikke. Mobning efterlader ikke kun minder. Det efterlader overbevisninger om hvem man er, som sidder langt efter selve mobningen stopper.</p>
-          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Det er ikke det der skete der holder barnet fast. Det er hvad hjernen konkluderede om sig selv i situationen.</p>
+          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Barnet trækker sig, vil ikke i skole, er ændret. Du siger at det ikke var barnets skyld. Det ved barnet godt. Det hjælper alligevel ikke. Mobning efterlader ikke kun minder. Det efterlader overbevisninger om, hvem man er, som sidder langt efter selve mobningen stopper.</p>
+          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Det er ikke det, der skete, der holder barnet fast. Det er hvad hjernen konkluderede om sig selv i situationen.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
@@ -34,7 +34,7 @@ export default function Page() {
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Skam sidder dybere end skyld</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Skyld handler om hvad man har gjort. Skam handler om hvem man er. Mobning aktiverer skam, ikke skyld. Det er det der gør det så svært at komme videre, selvom barnet rationelt ved at det ikke var dets ansvar.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Skyld handler om hvad man har gjort. Skam handler om hvem man er. Mobning aktiverer skam, ikke skyld. Det er det, der gør det så svært at komme videre, selvom barnet rationelt ved, at det ikke var dets ansvar.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Nye sociale relationer reparerer det ikke alene</h3>
@@ -45,13 +45,13 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Forskning viser at mobning har langvarige psykologiske konsekvenser. Børn der har været udsat for mobning har øget risiko for angst, depression og lavt selvværd i voksenlivet. Tidlig bearbejdning reducerer risikoen for langvarige konsekvenser markant.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Forskning viser at mobning har langvarige psykologiske konsekvenser. Børn, der har været udsat for mobning har øget risiko for angst, depression og lavt selvværd i voksenlivet. Tidlig bearbejdning reducerer risikoen for langvarige konsekvenser markant.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, Nationalt Videnscenter for Trivsel og Mobning, Olweus Bullying Research.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med de overbevisninger om skyld og skam som mobning efterlader. Ikke med hvad der skete, men med hvad barnet tror om sig selv nu. Mange børn oplever en mærkbar lettelse og bedre selvbillede efter 1-2 sessioner.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med de overbevisninger om skyld og skam som mobning efterlader. Ikke med, hvad der skete, men med, hvad barnet tror om sig selv nu. Mange børn oplever en mærkbar lettelse og bedre selvbillede efter 1-2 sessioner.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med mobningens eftervirkninger hos børn og unge. Forældrene inddrages altid. Tilgangen er skånsom og tilpasset barnets alder.</p>
         </section>
 

@@ -21,8 +21,8 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Dit barn kan ikke se sig selv som du ser det</h1>
-          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Det siger det er for tykt, for grimt, for lille eller for stort. Det vil ikke med til stranden. Det sammenligner sig konstant med andre, på skolen og på sociale medier. Du siger det er smukt præcis som det er. Det tror dig ikke. Du ved ikke hvad du skal stille op.</p>
-          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Kropsutilfredshed er ikke forfængelighed. Det er et forvredet selvbillede der sidder dybere end spejlet og dybere end ord.</p>
+          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Det siger det er for tykt, for grimt, for lille eller for stort. Det vil ikke med til stranden. Det sammenligner sig konstant med andre, på skolen og på sociale medier. Du siger det er smukt præcis som det er. Det tror dig ikke. Du ved ikke, hvad du skal stille op.</p>
+          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Kropsutilfredshed er ikke forfængelighed. Det er et forvredet selvbillede, der sidder dybere end spejlet og dybere end ord.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
@@ -30,7 +30,7 @@ export default function Page() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
                         <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Det forvredne selvbillede er neurologisk</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hvad et barn ser når det kigger i spejlet er ikke blot en visuel registrering. Det er en fortolkning filtreret gennem eksisterende overbevisninger. Et barn med lavt selvbillede ser sig selv anderledes end andre ser det. Det er ikke indbildning, det er neurologisk.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hvad et barn ser, når det kigger i spejlet er ikke blot en visuel registrering. Det er en fortolkning filtreret gennem eksisterende overbevisninger. Et barn med lavt selvbillede ser sig selv anderledes end andre ser det. Det er ikke indbildning, det er neurologisk.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Sociale medier forstærker presset massivt</h3>
@@ -38,20 +38,20 @@ export default function Page() {
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Verbal ros ændrer det ikke</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Forældrenes bekræftelse afvises ikke fordi barnet er utaknemmeligt, men fordi det kognitive filter sorterer det fra. Overbevisningen om kroppen som utilstrækkelig sidder under bevidst tænkning og kan ikke nås med ord alene.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Forældrenes bekræftelse afvises ikke, fordi barnet er utaknemmeligt, men fordi det kognitive filter sorterer det fra. Overbevisningen om kroppen som utilstrækkelig sidder under bevidst tænkning og kan ikke nås med ord alene.</p>
             </div>
           </div>
         </section>
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Kropsutilfredshed er stigende blandt børn og unge i Danmark. VIVE og Sundhedsstyrelsen viser at en stor andel af unge piger og en stigende andel af drenge er utilfredse med deres krop. Ubehandlet kropsutilfredshed er en risikofaktor for spiseforstyrrelser og depression.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Kropsutilfredshed er stigende blandt børn og unge i Danmark. VIVE og Sundhedsstyrelsen viser, at en stor andel af unge piger og en stigende andel af drenge er utilfredse med deres krop. Ubehandlet kropsutilfredshed er en risikofaktor for spiseforstyrrelser og depression.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: VIVE Rapport om Unges Trivsel, Sundhedsstyrelsen.dk, National Eating Disorders Association.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med selvbilledet under bevidst tænkning, det sted overbevisningerne faktisk sidder. Barnet lærer at opleve sig selv anderledes indefra. Det er en af de mest markante forandringer hypnoterapi kan skabe hos unge.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med selvbilledet under bevidst tænkning, det sted, overbevisningerne faktisk sidder. Barnet lærer at opleve sig selv anderledes indefra. Det er en af de mest markante forandringer hypnoterapi kan skabe hos unge.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med kropsutilfredshed som en del af et bredere selvbilledarbejde. Tilgangen er skånsom og tilpasset barnets alder. Forældrene er en del af forløbet.</p>
         </section>
 

@@ -36,25 +36,25 @@ export default function Page() {
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Triggere styrer adfærden</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Enhver vane har en trigger, en situation, en følelse, et tidspunkt. Hjernen har koblet triggeren direkte til adfærden. Det er den kobling der skal ændres, ikke motivationen. Mere motivation ændrer ikke koblingen.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Enhver vane har en trigger, en situation, en følelse, et tidspunkt. Hjernen har koblet triggeren direkte til adfærden. Det er den kobling, der skal ændres, ikke motivationen. Mere motivation ændrer ikke koblingen.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Beslutninger er ikke nok</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Du kan beslutte dig for at ændre en vane. Og holde det i dagevis. Det er den bevidste del af hjernen der styrer. Så sker der noget, stress, træthed, en bestemt situation, og den automatiske del tager over igen.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Du kan beslutte dig for at ændre en vane. Og holde det i dagevis. Det er den bevidste del af hjernen, der styrer. Så sker der noget, stress, træthed, en bestemt situation, og den automatiske del tager over igen.</p>
             </div>
           </div>
         </section>
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Forskning i adfærdsændring viser at over 40 pct. af daglig adfærd er vanestyret snarere end intentionsstyret. Ændring af vaner kræver arbejde med de automatiske reaktioner, ikke kun de bevidste beslutninger.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Forskning i adfærdsændring viser, at over 40 pct. af daglig adfærd er vanestyret snarere end intentionsstyret. Ændring af vaner kræver arbejde med de automatiske reaktioner, ikke kun de bevidste beslutninger.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Wood & Neal, Psychology of Habit, Annual Review of Psychology.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder direkte med den automatiske reaktion der driver vanen. Ikke med viljestyrken eller motivationen, men med hvad der sker i det øjeblik triggeren opstår. Koblingen afkobles og erstattes med en ny reaktion.</p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med en bred vifte af vanemønstre. Tilgangen tilpasses til hvad der driver din specifikke vane og hvad der udløser den.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder direkte med den automatiske reaktion der driver vanen. Ikke med viljestyrken eller motivationen, men med, hvad der sker i det øjeblik, triggeren opstår. Koblingen afkobles og erstattes med en ny reaktion.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med en bred vifte af vanemønstre. Tilgangen tilpasses til, hvad der driver din specifikke vane, og, hvad der udløser den.</p>
         </section>
 
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>

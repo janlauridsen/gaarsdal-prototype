@@ -82,8 +82,8 @@ export default function Om() {
             <p className="text-muted leading-relaxed">
               Jeg har en baggrund, hvor jeg i mange år har arbejdet med
               komplekse systemer, mønstre og problemløsning. Det har lært mig
-              én ting: Når noget bliver ved med at drille, er det sjældent fordi
-              man ikke prøver hårdt nok. Det er fordi man ikke har fået adgang
+              én ting: Når noget bliver ved med at drille, er det sjældent, fordi
+              man ikke prøver hårdt nok. Det er, fordi man ikke har fået adgang
               til det sted, hvor mønstret styres fra. Det er præcis dér, hypnose
               kan noget særligt.
             </p>
@@ -103,14 +103,14 @@ export default function Om() {
                 <h3 className="font-semibold mb-2">Ro og struktur</h3>
                 <p className="text-sm text-muted leading-relaxed">
                   Tydelige rammer og en proces, der er til at være i. Vi arbejder
-                  konkret med det, der gentager sig – ikke det, vi tror det
-                  handler om.
+                  konkret med det, der gentager sig, ikke det, vi tror,
+                  det handler om.
                 </p>
               </div>
               <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                 <h3 className="font-semibold mb-2">Nøgternhed</h3>
                 <p className="text-sm text-muted leading-relaxed">
-                  Ingen peptalks og ingen forhåndsløfter. Afklaring først – så du
+                  Ingen peptalks og ingen forhåndsløfter. Afklaring først, så du
                   kan vurdere relevansen, inden du forpligter dig til noget.
                 </p>
               </div>
