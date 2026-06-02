@@ -10,7 +10,7 @@ type ProblemType =
   | "selvværd" | "vaner" | "stress" | "fobi"
   | "spisning" | "tanker" | null
 
-const problems: Record<Exclude<ProblemType, null>, { title: string; oplevelse: string; hvadSker: string; hvadVirker: string }> = {
+const problems: Record<Exclude<ProblemType, null>, { title: string; oplevelse: string; hvadSker: string; hvadVirker: string; link?: string }> = {
   bekymring: {
     title: "Bekymrer mig hele tiden",
     oplevelse: "Du ved godt at det du bekymrer dig om sandsynligvis ikke sker. Og alligevel stopper tankerne ikke. De starter om morgenen og følger dig hele dagen. Du er træt af det - men kan ikke bare beslutte dig for at lade være.",
@@ -19,6 +19,7 @@ const problems: Record<Exclude<ProblemType, null>, { title: string; oplevelse: s
   },
   søvn: {
     title: "Kan ikke sove",
+    link: "/sovn",
     oplevelse: "Du er træt om aftenen men vågen så snart du lægger dig. Tankerne starter. Du vågner om natten og kan ikke falde i søvn igen. Du har prøvet alt - ingen skærme, magnesium, podcasts. Ingenting virker konsekvent.",
     hvadSker: "Søvnproblemer hos voksne er sjældent et søvnproblem. Det er et nervesystem der er for aktiveret til at slippe ned. Hjernen associerer sengen med uro i stedet for ro. Den association sidder dybere end viljestyrke kan nå.",
     hvadVirker: "Hypnotisk tilstand og søvnindledning aktiverer de samme neurologiske mekanismer. Du lærer at lede dig selv ned i ro - ikke som teknik du skal huske, men som en ny automatisk reaktion. Resultater kommer typisk hurtigt.",
@@ -31,6 +32,7 @@ const problems: Record<Exclude<ProblemType, null>, { title: string; oplevelse: s
   },
   præstation: {
     title: "Præsterer ikke som jeg burde",
+    link: "/praestationsangst",
     oplevelse: "Du er dygtig - det ved du godt. Men i vigtige situationer blokerer du. Eksamen, præsentationer, samtaler der betyder noget. Du ser andre klare det ubesværet. Du forbereder dig mere end de fleste og leverer alligevel ikke det du ved du kan.",
     hvadSker: "Præstationsangst er ikke mangel på evner eller forberedelse. Det er en overbevisning om at resultatet definerer din værdi - og en forventning om at fejle. Kroppen aktiverer en reel stressrespons der blokerer adgang til det du faktisk ved.",
     hvadVirker: "To ting samtidigt: overbevisningen om at resultatet definerer værdi, og kroppens automatiske stressrespons i præstationssituationen. Du lærer at aktivere ro og fokus i stedet for panik. Det er en reel ændring i nervesystemet.",
@@ -189,9 +191,16 @@ export default function KenderDuDetPage() {
               <h4 style={{ fontSize: "13px", fontWeight: 600, textTransform: "uppercase", color: "#888", marginBottom: "10px", letterSpacing: "0.05em" }}>Hvad der virker</h4>
               <p style={{ fontSize: "15px", lineHeight: 1.7 }}>{problems[selected].hvadVirker}</p>
             </div>
-            <button onClick={() => setSelected(null)} style={{ padding: "8px 16px", fontSize: "13px", background: "transparent", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer", color: "#666" }}>
-              Luk
-            </button>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <button onClick={() => setSelected(null)} style={{ padding: "8px 16px", fontSize: "13px", background: "transparent", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer", color: "#666" }}>
+                Luk
+              </button>
+              {problems[selected].link && (
+                <a href={problems[selected].link} style={{ fontSize: "13px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
+                  Læs mere om dette emne →
+                </a>
+              )}
+            </div>
           </section>
         )}
 
