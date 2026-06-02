@@ -92,6 +92,15 @@ export default function PraestationsangstPage() {
           </p>
         </section>
 
+
+        {/* CITAT - KØREPRØVE */}
+        <section style={{ marginBottom: "60px", padding: "32px", background: "#fff", borderRadius: "10px", border: "1px solid #e5e7eb", borderLeft: "4px solid #5a7a8f" }}>
+          <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#333", marginBottom: "16px", fontStyle: "italic" }}>
+            "Jeg har behandlet over 25 klienter der havde problemer med at gennemføre og blive indstillet til køreprøven, samt bestå selve prøven. Alle har bestået efter blot én behandling. Enkelte ønskede selv en opfølgende session."
+          </p>
+          <p style={{ fontSize: "14px", color: "#888", fontWeight: 500 }}>Jan Gaarsdal, hypnoterapeut</p>
+        </section>
+
         {/* HVAD HYPNOTERAPI GØR */}
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør ved præstationsangst</h2>
