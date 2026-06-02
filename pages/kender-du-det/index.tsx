@@ -13,6 +13,7 @@ type ProblemType =
 const problems: Record<Exclude<ProblemType, null>, { title: string; oplevelse: string; hvadSker: string; hvadVirker: string; link?: string }> = {
   bekymring: {
     title: "Bekymrer mig hele tiden",
+    link: "/angst",
     oplevelse: "Du ved godt at det du bekymrer dig om sandsynligvis ikke sker. Og alligevel stopper tankerne ikke. De starter om morgenen og følger dig hele dagen. Du er træt af det - men kan ikke bare beslutte dig for at lade være.",
     hvadSker: "Bekymring er ikke en tankegang - det er en neurologisk vane. Hjernen har lært at scanning for trusler er nødvendig for din sikkerhed. Den kører automatisk, under bevidst kontrol. Rationelle argumenter når ikke derind - de er fra et andet lag af hjernen.",
     hvadVirker: "Hypnoterapi arbejder direkte med det lag der kører bekymringen. Dit nervesystem lærer at den konstante scanning ikke er nødvendig. Du ændrer ikke hvad du tænker - du ændrer hvad der sker automatisk.",
@@ -26,6 +27,7 @@ const problems: Record<Exclude<ProblemType, null>, { title: string; oplevelse: s
   },
   rygning: {
     title: "Vil gerne holde op med at ryge",
+    link: "/rygestop",
     oplevelse: "Du har prøvet at holde op - måske flere gange. Du ved godt det er skadeligt. Du vil gerne stoppe. Men i bestemte situationer - stress, kaffe, pauser - er lysten der automatisk. Viljestyrke slår fra når det gælder.",
     hvadSker: "Rygning er ikke en vane der sidder i tankerne - den sidder i de automatiske reaktioner. Hjernen har koblet cigaretter til ro, pauser og belønning. Den kobling kører under bevidst styring og kan ikke brydes ved at tænke sig til det.",
     hvadVirker: "Arbejder direkte med de associationer der driver trangen. Ikke med viljestyrke eller erstatninger - men med hvad hjernen automatisk kobler til rygning. Mange oplever at lysten forsvinder efter 1-2 sessioner.",
@@ -39,36 +41,42 @@ const problems: Record<Exclude<ProblemType, null>, { title: string; oplevelse: s
   },
   selvværd: {
     title: "Lavt selvværd",
+    link: "/selvvaerd",
     oplevelse: "Du sammenligner dig med andre og kommer til kort. Du afviser komplimenter - de passer ikke ind i dit billede af dig selv. Du er hårdere ved dig selv end du ville være ved nogen anden. Det er ikke noget du vælger.",
     hvadSker: "Selvværd er summen af alle de overbevisninger du har om dig selv - og de fleste er ikke bevidst valgte. De er bygget op over tid og sidder under rationel tænkning. Positive bekræftelser afvises fordi de ikke passer ind i systemet.",
     hvadVirker: "Hypnoterapi går ind under de bevidste lag og erstatter de gamle overbevisninger med nye - ikke som positiv tænkning, men som en reel oplevelse. Det er anderledes end at tale om selvværd. Det ændrer udgangspunktet.",
   },
   vaner: {
     title: "Vaner jeg ikke kan bryde",
+    link: "/vaner",
     oplevelse: "Du ved præcis hvad du burde gøre anderledes. Du har besluttet dig mange gange. De første dage går godt - og så er du tilbage til det gamle. Det er ikke manglende motivation. Du har masser af motivation. Det virker bare ikke.",
     hvadSker: "Vaner kører i de basale dele af hjernen - ikke i den del der beslutter og planlægger. Det er derfor beslutninger ikke er nok. Vanen har sin egen automatik der er stærkere end intentionen i det øjeblik den udløses.",
     hvadVirker: "Arbejder direkte med den automatiske reaktion der driver vanen. Ændrer hvad der sker i det øjeblik vanen ville have kørt - ikke ved at styrke viljestyrken, men ved at afkoble triggeren fra reaktionen.",
   },
   stress: {
     title: "Konstant stress",
+    link: "/stress",
     oplevelse: "Du har altid noget der presser. Selv når der objektivt set ikke er grund til stress, er kroppen på vagt. Du slapper ikke rigtig af - ikke engang i weekenden. Du funktionerer, men det koster mere end det burde.",
     hvadSker: "Kronisk stress er et nervesystem der er låst i beredskab. Det er ikke en reaktion på aktuelle trusler - det er en grundindstilling. Kroppen ved ikke at krigen er slut. Den kører på lavblus alarmberedskab kontinuerligt.",
     hvadVirker: "Resetter nervesystemets grundindstilling. Dit system lærer at beredskab ikke er standard - ro er. Det er ikke afspænding eller mindfulness. Det er en dybere ændring i hvad kroppen opfatter som normalt.",
   },
   fobi: {
     title: "Bange for noget specifikt",
+    link: "/fobi",
     oplevelse: "Du ved det er irrationelt. Det hjælper ikke. Frygtreaktionen kører alligevel - hurtigt og totalt. Det kan være højder, flyvning, sprøjter, edderkopper eller noget helt andet. Du planlægger dit liv delvist for at undgå det.",
     hvadSker: "En fobi er en lært reaktion der sidder i amygdala - hjernens alarmsystem. Den er ikke styret af den rationelle del af hjernen, og den kan ikke overtalges væk. Den udløses automatisk og er designet til at overstyre alt andet.",
     hvadVirker: "Et af hypnoterapiens stærkeste områder. Arbejder direkte med den lærte reaktion og erstatter den med ro. Ikke gradvis eksponering eller rationalisering - men en direkte ændring af den automatiske respons.",
   },
   spisning: {
     title: "Spiser på følelserne",
+    link: "/spisning",
     oplevelse: "Det er ikke sult der driver det. Det er kedsomhed, stress, uro, ensomhed - og maden dæmper det i et øjeblik. Du ved det. Det ændrer ikke på at det sker igen. Efterfølgende er der skam oveni.",
     hvadSker: "Følelsesspisning er en reguleringsmekanisme. Hjernen har lært at mad dæmper ubehag hurtigt og pålideligt. Den reaktion kører automatisk og er stærkere end beslutningen om at lade være i det øjeblik ubehaget opstår.",
     hvadVirker: "Arbejder med det underliggende behov der driver spisningen - ikke med maden i sig selv. Når hjernen finder andre måder at regulere ubehaget, falder trangen naturligt. Ingen restriktioner. Ingen viljestyrke.",
   },
   tanker: {
     title: "Overvældet af tanker",
+    link: "/tanker",
     oplevelse: "Du kan ikke slukke for det. Du gennemtænker samtaler der allerede er sket, forbereder dig på scenarier der aldrig sker, forestiller dig hvad andre tænker. Det er udmattende. Din hjerne holder ikke pause.",
     hvadSker: "Overtænkning er ikke intelligens - det er et nervesystem der kompenserer for usikkerhed ved at simulere og kontrollere. Hjernen tror den hjælper dig. Den kører et program der er beregnet til at beskytte, og det kører på fuld kraft.",
     hvadVirker: "Ændrer hvad nervesystemet opfatter som nødvendigt. Når hjernen lærer at usikkerhed ikke er farlig, falder behovet for konstant simulering. Du tænker stadig - men du styrer det i stedet for at det styrer dig.",
