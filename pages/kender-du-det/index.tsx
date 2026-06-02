@@ -18,7 +18,7 @@ const problems: Record<Exclude<ProblemType, null>, { title: string; oplevelse: s
     hvadVirker: "Hypnoterapi arbejder direkte med det lag der kører bekymringen. Dit nervesystem lærer at den konstante scanning ikke er nødvendig. Du ændrer ikke hvad du tænker - du ændrer hvad der sker automatisk.",
   },
   søvn: {
-    title: "Kan ikke sove",
+    title: "Kan ikke sove →",
     oplevelse: "Du er træt om aftenen men vågen så snart du lægger dig. Tankerne starter. Du vågner om natten og kan ikke falde i søvn igen. Du har prøvet alt - ingen skærme, magnesium, podcasts. Ingenting virker konsekvent.",
     hvadSker: "Søvnproblemer hos voksne er sjældent et søvnproblem. Det er et nervesystem der er for aktiveret til at slippe ned. Hjernen associerer sengen med uro i stedet for ro. Den association sidder dybere end viljestyrke kan nå.",
     hvadVirker: "Hypnotisk tilstand og søvnindledning aktiverer de samme neurologiske mekanismer. Du lærer at lede dig selv ned i ro - ikke som teknik du skal huske, men som en ny automatisk reaktion. Resultater kommer typisk hurtigt.",
@@ -205,12 +205,18 @@ export default function KenderDuDetPage() {
               <p style={{ fontSize: "15px", lineHeight: 1.7, marginBottom: "12px", color: "#555" }}>
                 Jan er hypnoterapeut i Birkerød. Han arbejder med de mønstre og reaktioner der kører automatisk - dem der ikke ændrer sig selv om man forstår dem nok og vil nok.
               </p>
-              <p style={{ fontSize: "15px", lineHeight: 1.7, color: "#555" }}>
-                Første samtale er altid en afklaring - ingen forpligtelse. Du finder ud af om metoden og Jans måde at arbejde på giver mening for dig.
-              </p>
-              <div style={{ marginTop: "16px", display: "flex", gap: "24px", flexWrap: "wrap" }}>
-                <a href="/om" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>Læs mere om Jan →</a>
-                <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>Ring +45 42 80 74 74</a>
+              <div style={{ marginTop: "16px", padding: "12px 16px", background: "#f0f4f8", borderRadius: "6px", display: "inline-block" }}>
+                <p style={{ fontSize: "14px", fontWeight: 500, color: "#333", margin: "0 0 8px" }}>
+                  🎯 Gratis forsamtale — 30 minutter, telefon eller fysisk
+                </p>
+                <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                  <a href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>
+                    Book forsamtale →
+                  </a>
+                  <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>
+                    Ring +45 42 80 74 74
+                  </a>
+                </div>
               </div>
             </div>
             <div style={{ flexShrink: 0 }}>
@@ -223,7 +229,7 @@ export default function KenderDuDetPage() {
         {/* CTA */}
         <section style={{ marginBottom: "60px", textAlign: "center", padding: "40px 20px" }}>
           <p style={{ fontSize: "16px", color: "#555", marginBottom: "28px" }}>
-            Første samtale er en afklaring - ingen forpligtelse.
+            Gratis forsamtale på 30 minutter — telefon eller fysisk. Ingen forpligtelse.
           </p>
           <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
             <Link
