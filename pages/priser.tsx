@@ -33,7 +33,7 @@ export default function PriserPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
             {[
               { titel: "Gratis forsamtale", pris: "0 kr", varighed: "30 minutter", note: "Telefon eller fysisk. Afklaring af om hypnoterapi er relevant for dig." },
-              { titel: "Første session", pris: "900 kr", varighed: "60-75 minutter", note: "Inkluderer grundig indledende samtale og hypnoterapi." },
+              { titel: "Første session", pris: "900 kr", varighed: "90 minutter", note: "Inkluderer grundig indledende samtale og hypnoterapi." },
               { titel: "Opfølgende session", pris: "600 kr", varighed: "60 minutter", note: "Alle sessioner efter den første." },
             ].map((p) => (
               <div key={p.titel} style={{ padding: "28px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px" }}>
