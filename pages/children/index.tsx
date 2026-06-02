@@ -355,20 +355,30 @@ export default function ChildrenPage() {
               <p style={{ fontSize: "15px", lineHeight: 1.7 }}>{problems[selected].hvadVirker}</p>
             </div>
 
-            <button
-              onClick={() => setSelected(null)}
-              style={{
-                padding: "8px 16px",
-                fontSize: "13px",
-                background: "transparent",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-                cursor: "pointer",
-                color: "#666",
-              }}
-            >
-              Luk
-            </button>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center", marginTop: "8px" }}>
+              <button
+                onClick={() => setSelected(null)}
+                style={{
+                  padding: "8px 16px",
+                  fontSize: "13px",
+                  background: "transparent",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  color: "#666",
+                }}
+              >
+                Luk
+              </button>
+              {(() => {
+                const prob = selected ? (problems as any)[selected] : null
+                return prob?.link ? (
+                  <a href={prob.link} style={{ fontSize: "13px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
+                    Læs mere om dette emne →
+                  </a>
+                ) : null
+              })()}
+            </div>
           </section>
         )}
 
