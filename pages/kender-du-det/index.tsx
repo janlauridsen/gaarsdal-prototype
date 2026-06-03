@@ -218,6 +218,8 @@ export default function KenderDuDetPage() {
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <a href="/kaerlighed" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Kærlighed og relationer</a>
             <a href="/alkohol" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Alkohol</a>
+            <a href="/ptsd" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>PTSD og traumer</a>
+            <a href="/adhd" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>ADHD</a>
             <a href="/overgangsalder" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Overgangsalder</a>
             <a href="/fertilitetsstress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Fertilitetsstress</a>
             <a href="/tinnitus" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Tinnitus</a>
