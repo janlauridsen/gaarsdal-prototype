@@ -212,6 +212,19 @@ export default function KenderDuDetPage() {
           </section>
         )}
 
+        {/* JAN ARBEJDER OGSÅ MED */}
+        <section style={{ marginBottom: "48px" }}>
+          <p style={{ fontSize: "15px", color: "#888", marginBottom: "12px" }}>Jan arbejder også med:</p>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <a href="/overgangsalder" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Overgangsalder</a>
+            <a href="/fertilitetsstress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Fertilitetsstress</a>
+            <a href="/tinnitus" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Tinnitus</a>
+            <a href="/sorg" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Sorg og tab</a>
+            <a href="/ibs-spaendinger" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>IBS og spændinger</a>
+            <a href="/parforhold" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Parforhold</a>
+          </div>
+        </section>
+
         {/* SEKTION 4: OM JAN */}
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
