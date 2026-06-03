@@ -17,6 +17,10 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/fobi" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose fjerne en fobi?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi er et af de mest effektive redskaber mod fobier. Arbejdet sker direkte med den lærte frygtreaktion og erstatter den med ro, ikke ved gradvis eksponering eller rationalisering, men ved at ændre den automatiske respons ved kilden.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor hjælper det ikke at vide at fobien er irrationel?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Fordi frygtreaktionen udløses i amygdala, hjernens alarmsystem, hurtigere end den rationelle del af hjernen når at reagere. Derfor kan du godt vide at det er irrationelt og alligevel reagere stærkt. Fobien sidder ikke i fornuften.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner kræver en fobi?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Specifikke fobier reagerer ofte hurtigt på hypnoterapi, nogle gange på få sessioner. Det afhænger af fobien og dens historie. Den gratis forsamtale giver et realistisk billede.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod køreangst og flyskræk?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Jan har erfaring med blandt andet køreangst, køreprøveangst, flyskræk, højdeskræk og sprøjteskræk. Tilgangen tilpasses den specifikke fobi.\"}}]}" }}
+        />
       </Head>
 
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
@@ -73,6 +77,28 @@ export default function Page() {
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>
                 Ring +45 42 80 74 74
               </a>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose fjerne en fobi?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi er et af de mest effektive redskaber mod fobier. Arbejdet sker direkte med den lærte frygtreaktion og erstatter den med ro, ikke ved gradvis eksponering eller rationalisering, men ved at ændre den automatiske respons ved kilden.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvorfor hjælper det ikke at vide at fobien er irrationel?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Fordi frygtreaktionen udløses i amygdala, hjernens alarmsystem, hurtigere end den rationelle del af hjernen når at reagere. Derfor kan du godt vide at det er irrationelt og alligevel reagere stærkt. Fobien sidder ikke i fornuften.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvor mange sessioner kræver en fobi?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Specifikke fobier reagerer ofte hurtigt på hypnoterapi, nogle gange på få sessioner. Det afhænger af fobien og dens historie. Den gratis forsamtale giver et realistisk billede.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mod køreangst og flyskræk?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Jan har erfaring med blandt andet køreangst, køreprøveangst, flyskræk, højdeskræk og sprøjteskræk. Tilgangen tilpasses den specifikke fobi.</p>
             </div>
           </div>
         </section>

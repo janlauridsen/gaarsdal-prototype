@@ -17,6 +17,10 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/tanker" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod overtænkning?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi ændrer hvad nervesystemet opfatter som nødvendigt. Når hjernen lærer at usikkerhed ikke er farlig, falder behovet for konstant simulering, og du styrer tankerne i stedet for at de styrer dig.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor kan jeg ikke bare stoppe med at tænke så meget?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Fordi overtænkning kører fordi hjernen tror den hjælper dig. Den opfatter det som forberedelse og kontrol. At beslutte at stoppe virker ikke, fordi mønsteret kører hurtigere end den bevidste beslutning.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor tænker jeg mest om natten?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Fordi hjernen fylder stilheden og hvilen med simulering. Når der ikke er distraktioner, får tankemylderet frit løb. Det er også derfor overtænkning og søvnproblemer ofte følges ad.\"}}, {\"@type\": \"Question\", \"name\": \"Hænger overtænkning sammen med angst?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ofte ja. Vedvarende overtænkning og bekymring er tæt forbundet med angst. Hypnoterapi kan arbejde med begge dele, da de udspringer af det samme behov for kontrol og sikkerhed.\"}}]}" }}
+        />
       </Head>
 
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
@@ -81,6 +85,28 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#f0f4f8", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "12px" }}>Indsigt er ikke det samme som forandring</h2>
           <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Du ved godt at overtænkning ikke hjælper. Du kan måske endda forklare hvorfor du gør det. Men det stopper ikke tankerne, for de kører hurtigere end den bevidste indsigt.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mod overtænkning?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi ændrer hvad nervesystemet opfatter som nødvendigt. Når hjernen lærer at usikkerhed ikke er farlig, falder behovet for konstant simulering, og du styrer tankerne i stedet for at de styrer dig.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvorfor kan jeg ikke bare stoppe med at tænke så meget?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Fordi overtænkning kører fordi hjernen tror den hjælper dig. Den opfatter det som forberedelse og kontrol. At beslutte at stoppe virker ikke, fordi mønsteret kører hurtigere end den bevidste beslutning.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvorfor tænker jeg mest om natten?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Fordi hjernen fylder stilheden og hvilen med simulering. Når der ikke er distraktioner, får tankemylderet frit løb. Det er også derfor overtænkning og søvnproblemer ofte følges ad.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hænger overtænkning sammen med angst?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ofte ja. Vedvarende overtænkning og bekymring er tæt forbundet med angst. Hypnoterapi kan arbejde med begge dele, da de udspringer af det samme behov for kontrol og sikkerhed.</p>
+            </div>
+          </div>
         </section>
 
         <section style={{ marginBottom: "40px" }}>

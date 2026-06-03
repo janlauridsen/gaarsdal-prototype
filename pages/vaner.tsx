@@ -17,6 +17,10 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/vaner" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mig med at bryde en vane?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder direkte med den automatiske reaktion der driver vanen, ikke med viljestyrken. Koblingen mellem trigger og adfærd afkobles og kan erstattes med en ny reaktion.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor kan jeg ikke bare ændre vanen med viljestyrke?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Fordi vaner kører i de basale dele af hjernen, ikke i den del der beslutter og planlægger. Når triggeren opstår, kører reaktionen hurtigere end den bevidste intention. Det er derfor beslutninger alene sjældent holder.\"}}, {\"@type\": \"Question\", \"name\": \"Hvilke vaner kan hypnoterapi hjælpe med?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"En bred vifte af vanemønstre, fra konkrete handlingsvaner til mere følelsesmæssige mønstre. Tilgangen tilpasses hvad der driver din specifikke vane, og hvad der udløser den.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor hurtigt kan en vane ændres?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Det varierer. Da arbejdet retter sig mod den automatiske kobling frem for viljestyrken, oplever mange forandring relativt hurtigt. Den gratis forsamtale afklarer hvad der er realistisk for dig.\"}}]}" }}
+        />
       </Head>
 
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
@@ -81,6 +85,28 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#f0f4f8", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "12px" }}>Indsigt er ikke det samme som forandring</h2>
           <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Du ved præcis hvad du burde gøre anderledes. Du har måske læst om vaner og forstået mekanismen. Men i det øjeblik triggeren opstår, er beslutningen væk, for vanen sidder et andet sted end viden.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mig med at bryde en vane?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi arbejder direkte med den automatiske reaktion der driver vanen, ikke med viljestyrken. Koblingen mellem trigger og adfærd afkobles og kan erstattes med en ny reaktion.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvorfor kan jeg ikke bare ændre vanen med viljestyrke?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Fordi vaner kører i de basale dele af hjernen, ikke i den del der beslutter og planlægger. Når triggeren opstår, kører reaktionen hurtigere end den bevidste intention. Det er derfor beslutninger alene sjældent holder.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvilke vaner kan hypnoterapi hjælpe med?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>En bred vifte af vanemønstre, fra konkrete handlingsvaner til mere følelsesmæssige mønstre. Tilgangen tilpasses hvad der driver din specifikke vane, og hvad der udløser den.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvor hurtigt kan en vane ændres?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Det varierer. Da arbejdet retter sig mod den automatiske kobling frem for viljestyrken, oplever mange forandring relativt hurtigt. Den gratis forsamtale afklarer hvad der er realistisk for dig.</p>
+            </div>
+          </div>
         </section>
 
         <section style={{ marginBottom: "40px" }}>

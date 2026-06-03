@@ -17,6 +17,10 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/selvvaerd" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe på lavt selvværd?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med de grundlæggende overbevisninger om din egen værdi, der sidder under bevidst tænkning. Det er anderledes end at tale om selvværd, fordi du oplever dig selv anderledes indefra, ikke ved at overbevise dig selv udefra.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor virker positive bekræftelser ikke for mig?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Fordi hjernen afviser information der ikke passer ind i det eksisterende selvbillede. Hvis du grundlæggende tror du ikke er god nok, opfattes ros som undtagelsen. Det er ikke modvilje, det er et kognitivt filter der kører automatisk.\"}}, {\"@type\": \"Question\", \"name\": \"Kan man ændre et selvværd man har haft hele livet?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Selvværd er lært, ikke medfødt, og det er ikke permanent. Overbevisningerne kan ændres, men ikke ved at tale sig til en anden mening. Hypnoterapi arbejder der hvor de faktisk sidder.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner kræver det?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Det afhænger af hvor dybt det lave selvværd sidder, og hvad der har formet det. Den gratis forsamtale giver et realistisk billede af forløbet for netop dig.\"}}]}" }}
+        />
       </Head>
 
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
@@ -81,6 +85,28 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#f0f4f8", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "12px" }}>Indsigt er ikke det samme som forandring</h2>
           <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Du ved måske godt at du er hårdere ved dig selv end rimeligt er. Du har måske endda forstået hvorfor. Men det ændrer ikke følelsen, for selvværdet sidder under bevidst tænkning, ikke i det du ved om dig selv.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe på lavt selvværd?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi arbejder med de grundlæggende overbevisninger om din egen værdi, der sidder under bevidst tænkning. Det er anderledes end at tale om selvværd, fordi du oplever dig selv anderledes indefra, ikke ved at overbevise dig selv udefra.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvorfor virker positive bekræftelser ikke for mig?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Fordi hjernen afviser information der ikke passer ind i det eksisterende selvbillede. Hvis du grundlæggende tror du ikke er god nok, opfattes ros som undtagelsen. Det er ikke modvilje, det er et kognitivt filter der kører automatisk.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan man ændre et selvværd man har haft hele livet?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Selvværd er lært, ikke medfødt, og det er ikke permanent. Overbevisningerne kan ændres, men ikke ved at tale sig til en anden mening. Hypnoterapi arbejder der hvor de faktisk sidder.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvor mange sessioner kræver det?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Det afhænger af hvor dybt det lave selvværd sidder, og hvad der har formet det. Den gratis forsamtale giver et realistisk billede af forløbet for netop dig.</p>
+            </div>
+          </div>
         </section>
 
         <section style={{ marginBottom: "40px" }}>

@@ -17,6 +17,10 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/spisning" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod følelsesspisning?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med det underliggende behov der driver spisningen, ikke med maden i sig selv. Når hjernen finder andre måder at regulere ubehaget på, falder trangen naturligt, uden restriktioner eller viljestyrke.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor kan jeg ikke bare lade være med at spise på følelserne?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Fordi hjernen har lært at mad dæmper ubehag hurtigt og pålideligt. Den reaktion kører automatisk og er stærkere end beslutningen om at lade være i det øjeblik ubehaget opstår. Det er en lært kobling, ikke svag vilje.\"}}, {\"@type\": \"Question\", \"name\": \"Skal jeg på en diæt?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej. Hypnoterapi mod følelsesspisning handler ikke om kost eller restriktioner, men om at adressere det behov maden dækker. Restriktioner adresserer ikke årsagen og kan endda øge trangen.\"}}, {\"@type\": \"Question\", \"name\": \"Hvornår er det mere end følelsesspisning?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ved tegn på en egentlig spiseforstyrrelse som anoreksi, bulimi eller tvangsoverspisning skal du altid starte hos din læge eller et specialiseret behandlingstilbud. Hypnoterapi er her højst et supplement, ikke den primære behandling.\"}}]}" }}
+        />
       </Head>
 
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
@@ -81,6 +85,28 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Vigtigt at vide om spiseforstyrrelser</h2>
           <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Denne side handler om følelsesmæssig spisning og overspisning. Ved tegn på en egentlig spiseforstyrrelse som anoreksi, bulimi eller tvangsoverspisning skal du altid starte hos din læge eller et specialiseret behandlingstilbud. Spiseforstyrrelser kan være alvorlige og kræver tværfaglig behandling, hvor hypnoterapi højst er et supplement.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mod følelsesspisning?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi arbejder med det underliggende behov der driver spisningen, ikke med maden i sig selv. Når hjernen finder andre måder at regulere ubehaget på, falder trangen naturligt, uden restriktioner eller viljestyrke.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvorfor kan jeg ikke bare lade være med at spise på følelserne?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Fordi hjernen har lært at mad dæmper ubehag hurtigt og pålideligt. Den reaktion kører automatisk og er stærkere end beslutningen om at lade være i det øjeblik ubehaget opstår. Det er en lært kobling, ikke svag vilje.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Skal jeg på en diæt?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Nej. Hypnoterapi mod følelsesspisning handler ikke om kost eller restriktioner, men om at adressere det behov maden dækker. Restriktioner adresserer ikke årsagen og kan endda øge trangen.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvornår er det mere end følelsesspisning?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ved tegn på en egentlig spiseforstyrrelse som anoreksi, bulimi eller tvangsoverspisning skal du altid starte hos din læge eller et specialiseret behandlingstilbud. Hypnoterapi er her højst et supplement, ikke den primære behandling.</p>
+            </div>
+          </div>
         </section>
 
         <section style={{ marginBottom: "40px" }}>
