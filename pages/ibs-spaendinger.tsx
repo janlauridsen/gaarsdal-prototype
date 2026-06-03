@@ -17,6 +17,10 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/ibs-spaendinger" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod IBS?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi til IBS er veldokumenteret og anerkendt i internationale gastroenterologiske guidelines. Det virker ved at arbejde med forbindelsen mellem nervesystemet og tarmen, som er central i IBS.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod spændingshovedpine?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Spændingshovedpine opstår ofte fra vedvarende muskelspænding drevet af en kronisk stressrespons. Hypnoterapi arbejder med nervesystemets grundindstilling og kan dermed reducere de spændinger der udløser hovedpinen.\"}}, {\"@type\": \"Question\", \"name\": \"Er mine symptomer indbildte hvis lægen ikke finder noget?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej. Psykosomatiske symptomer er reelle og målbare. At lægen ikke finder en fysisk årsag betyder ikke at symptomerne er opdigtede, men at de udspringer af nervesystemets tilstand frem for en fysisk skade.\"}}, {\"@type\": \"Question\", \"name\": \"Skal jeg stadig gå til lægen?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Få altid fysiske symptomer undersøgt af din læge først, så alvorlige årsager udelukkes. Hypnoterapi er et supplement til, ikke en erstatning for, lægelig udredning.\"}}]}" }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
         <section style={{ marginBottom: "60px" }}>
@@ -64,6 +68,28 @@ export default function Page() {
             </div>
           </div>
         </section>
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mod IBS?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi til IBS er veldokumenteret og anerkendt i internationale gastroenterologiske guidelines. Det virker ved at arbejde med forbindelsen mellem nervesystemet og tarmen, som er central i IBS.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mod spændingshovedpine?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Spændingshovedpine opstår ofte fra vedvarende muskelspænding drevet af en kronisk stressrespons. Hypnoterapi arbejder med nervesystemets grundindstilling og kan dermed reducere de spændinger der udløser hovedpinen.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Er mine symptomer indbildte hvis lægen ikke finder noget?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Nej. Psykosomatiske symptomer er reelle og målbare. At lægen ikke finder en fysisk årsag betyder ikke at symptomerne er opdigtede, men at de udspringer af nervesystemets tilstand frem for en fysisk skade.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Skal jeg stadig gå til lægen?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Få altid fysiske symptomer undersøgt af din læge først, så alvorlige årsager udelukkes. Hypnoterapi er et supplement til, ikke en erstatning for, lægelig udredning.</p>
+            </div>
+          </div>
+        </section>
+
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>

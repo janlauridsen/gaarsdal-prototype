@@ -17,6 +17,10 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/sorg" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod sorg?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja, der hvor sorgen sidder fast. Hypnoterapi fjerner ikke savnet, men hjælper nervesystemet med at bearbejde tabet, så du finder en bæredygtig måde at leve videre på. Det er særligt relevant ved fastlåst eller kompliceret sorg.\"}}, {\"@type\": \"Question\", \"name\": \"Hvornår er sorg fastlåst?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Når sorgen ikke finder vej igennem, men bliver en vedvarende tilstand af uro, tomhed eller smerte uden bedring over tid. Det ses ofte ved pludselige, traumatiske eller uafsluttede tab. Den gratis forsamtale afklarer om det er tilfældet for dig.\"}}, {\"@type\": \"Question\", \"name\": \"Tager hypnose minderne om den jeg har mistet?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej. Hypnoterapi fjerner hverken minder eller kærligheden til den du har mistet. Den arbejder med den fastlåste smerte, så minderne kan være der uden at lamme dig.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor lang tid efter et tab kan jeg søge hjælp?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Der er ingen rigtig tidsramme. Nogle søger hjælp tidligt, andre år efter et tab der aldrig blev bearbejdet. Hypnoterapi kan hjælpe uanset hvor lang tid der er gået.\"}}]}" }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
         <section style={{ marginBottom: "60px" }}>
@@ -64,6 +68,28 @@ export default function Page() {
             </div>
           </div>
         </section>
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mod sorg?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja, der hvor sorgen sidder fast. Hypnoterapi fjerner ikke savnet, men hjælper nervesystemet med at bearbejde tabet, så du finder en bæredygtig måde at leve videre på. Det er særligt relevant ved fastlåst eller kompliceret sorg.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvornår er sorg fastlåst?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Når sorgen ikke finder vej igennem, men bliver en vedvarende tilstand af uro, tomhed eller smerte uden bedring over tid. Det ses ofte ved pludselige, traumatiske eller uafsluttede tab. Den gratis forsamtale afklarer om det er tilfældet for dig.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Tager hypnose minderne om den jeg har mistet?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Nej. Hypnoterapi fjerner hverken minder eller kærligheden til den du har mistet. Den arbejder med den fastlåste smerte, så minderne kan være der uden at lamme dig.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvor lang tid efter et tab kan jeg søge hjælp?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Der er ingen rigtig tidsramme. Nogle søger hjælp tidligt, andre år efter et tab der aldrig blev bearbejdet. Hypnoterapi kan hjælpe uanset hvor lang tid der er gået.</p>
+            </div>
+          </div>
+        </section>
+
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>

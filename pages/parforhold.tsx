@@ -17,6 +17,10 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/parforhold" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Tilbyder Jan parterapi?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Jan tilbyder en fælles indledende session for par, hvor mønstrene i relationen kortlægges. Derefter arbejdes der individuelt med de reaktioner og overbevisninger hver part bringer ind i forholdet. Det er ikke klassisk parterapi, men individuel hypnoterapi med fokus på relationen.\"}}, {\"@type\": \"Question\", \"name\": \"Hvordan kan individuel hypnose hjælpe vores parforhold?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"De fleste konflikter i parforhold drives af individuelle reaktionsmønstre formet af tidlige erfaringer. Når den enkelte arbejder med sine egne automatiske reaktioner, ændres dynamikken i forholdet ofte mærkbart.\"}}, {\"@type\": \"Question\", \"name\": \"Skal vi begge deltage?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"I den indledende session er det en fordel at I begge deltager, så mønstrene kan kortlægges sammen. Det efterfølgende arbejde foregår individuelt. Den gratis forsamtale afklarer hvad der passer til jer.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose redde et parforhold i krise?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Hypnoterapi kan ikke garantere et bestemt udfald, men det kan ændre de individuelle reaktioner der driver konflikterne. Det giver et nyt udgangspunkt, uanset hvilken retning forholdet derefter tager.\"}}]}" }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
         <section style={{ marginBottom: "60px" }}>
@@ -64,6 +68,28 @@ export default function Page() {
             </div>
           </div>
         </section>
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Tilbyder Jan parterapi?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Jan tilbyder en fælles indledende session for par, hvor mønstrene i relationen kortlægges. Derefter arbejdes der individuelt med de reaktioner og overbevisninger hver part bringer ind i forholdet. Det er ikke klassisk parterapi, men individuel hypnoterapi med fokus på relationen.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvordan kan individuel hypnose hjælpe vores parforhold?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>De fleste konflikter i parforhold drives af individuelle reaktionsmønstre formet af tidlige erfaringer. Når den enkelte arbejder med sine egne automatiske reaktioner, ændres dynamikken i forholdet ofte mærkbart.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Skal vi begge deltage?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>I den indledende session er det en fordel at I begge deltager, så mønstrene kan kortlægges sammen. Det efterfølgende arbejde foregår individuelt. Den gratis forsamtale afklarer hvad der passer til jer.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose redde et parforhold i krise?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Hypnoterapi kan ikke garantere et bestemt udfald, men det kan ændre de individuelle reaktioner der driver konflikterne. Det giver et nyt udgangspunkt, uanset hvilken retning forholdet derefter tager.</p>
+            </div>
+          </div>
+        </section>
+
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
