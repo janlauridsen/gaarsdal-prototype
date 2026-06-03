@@ -11,7 +11,8 @@ export const GAARSDAL_SITE_CONTEXT_DA = `
 SITE-KONTEKST (Gaarsdal Hypnoterapi / gaarsdal.net)
 
 Om Jan Lauridsen (terapeuten bag siden)
-- Jan Lauridsen er hypnoterapeut og driver Gaarsdal Hypnoterapi i Birkerød.
+- Jan Gaarsdal Lauridsen er hypnoterapeut og driver Gaarsdal Hypnoterapi i Birkerød. Han omtales på siden som Jan.
+- Jan er uddannet ved Institut for Avanceret Hypnose og har deltaget i mere end 30 relevante kurser og forløb.
 - Hans tilgang er nøgtern og respektfuld — han arbejder med konkrete hverdagsproblemer, ikke store løfter eller dramatiske transformationer.
 - Jan er særligt stærk med vaner, uro og mønstre der er svære at ændre med viljestyrke alene — fx alkoholvaner, søvnproblemer, stress og indre uro. Han har over 500 klienter bag sig og bred erfaring med bl.a. traumer, PTSD, fobier og præstationsangst i mange former.
 - Han arbejder typisk med én til to sessioner til afgrænsede problemstillinger; mere komplekse forløb aftales individuelt.
@@ -61,9 +62,12 @@ Voksne:
 - Tinnitus — håndtering af øresusen (/tinnitus)
 - Kærlighed og tilknytningsmønstre — frygt for afvisning, gentagne mønstre, undgåelse af nærhed (/kaerlighed)
 - Alkohol — for stort forbrug i gråzonen, diskret og fordomsfrit (/alkohol)
+- PTSD og traumer — arbejde med traumet der hvor det er lagret, ofte som supplement til anden behandling (/ptsd)
+- ADHD — hjælp med den uro, stress, søvn og selvværd der følger med, ikke behandling af selve ADHD'en (/adhd)
 
 Børn og unge (fra 8 år, via forælder):
 - Skolevægring, social angst, præstationsangst, søvn, selvbillede, mobning, angst, skærmafhængighed, ensomhed, kropsutilfredshed
+- Forælderen deltager i forsamtale og opsamlende samtaler og kan være til stede under sessionen hvis barnet ønsker det. Separate samtaler er også en mulighed, tilpasset barnets alder og tryghed.
 
 Kernepositionering (vigtig — afspejl denne forståelse)
 - Et centralt budskab på siderne: INDSIGT er ikke det samme som FORANDRING.
@@ -99,6 +103,7 @@ Gratis forsamtale (vigtigt — nævn dette aktivt)
 - Alle forløb starter med en GRATIS forsamtale på 30 minutter, telefon eller fysisk.
 - Den er uforpligtende og bruges til at afklare om metoden og Jans tilgang passer til personen.
 - Dette er en bevidst lav tærskel — assistenten må gerne foreslå den som et naturligt næste skridt.
+- Sessioner kan foregå fysisk i Birkerød eller online efter aftale.
 
 Priser (som på /priser-siden)
 - Gratis forsamtale: 0 kr, 30 minutter (telefon eller fysisk)
@@ -108,14 +113,14 @@ Priser (som på /priser-siden)
 - Forløb der kræver mere end 3 gange aftales og betragtes som en transformation snarere end en enkelt problemstilling
 
 Særlige vilkår (ved dokumentation)
-- Studerende: 400 kr pr. session
-- Arbejdsløse: 400 kr pr. session
+- Studerende: 400 kr for ALLE sessioner, også den 90 min lange første session (ved studiekort)
+- Arbejdsløse: 400 kr for ALLE sessioner, også første (ved dokumentation)
 - Flygtninge: GRATIS — sessioner kan foregå på dansk eller engelsk, ingen dokumentation krævet
 
 Pakker (aftales, betales forud)
 - 3-session pakke: 1.800 kr (passer til afgrænsede problemstillinger som rygestop, fobi, søvn)
 - 5-session pakke: 2.800 kr (passer til mere komplekse mønstre som angst, selvværd, vaner)
-- Børneforløb: aftales individuelt, inkl. forældresamtale
+- Børneforløb: samme prisstruktur som voksne (gratis forsamtale, 900 kr første, 600 kr opfølgning), inkl. forældreinddragelse
 
 Praktisk (kontakt / lokation)
 - Klinikadresse: Bakkevej 36, 3460 Birkerød (Rudersdal)
