@@ -24,6 +24,21 @@ export default function Om() {
         <meta property="og:url" content="https://gaarsdal.net/om" />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Person",
+            "name": "Jan Gaarsdal Lauridsen",
+            "jobTitle": "Hypnoterapeut",
+            "worksFor": { "@type": "Organization", "name": "Gaarsdal Hypnoterapi" },
+            "url": "https://gaarsdal.net/om",
+            "telephone": "+4542807474",
+            "email": "jan@gaarsdal.net",
+            "alumniOf": "Institut for Avanceret Hypnose",
+            "address": { "@type": "PostalAddress", "streetAddress": "Bakkevej 36", "postalCode": "3460", "addressLocality": "Birkerød", "addressCountry": "DK" }
+          }) }}
+        />
       </Head>
 
       <div className="min-h-screen bg-bg text-text">
@@ -35,7 +50,7 @@ export default function Om() {
             <div className="flex-shrink-0">
               <Image
                 src="/Jan-AI.png"
-                alt="Jan Lauridsen, hypnoterapeut"
+                alt="Jan Gaarsdal Lauridsen, hypnoterapeut"
                 width={120}
                 height={120}
                 className="rounded-xl object-cover shadow-sm"
@@ -44,10 +59,9 @@ export default function Om() {
               />
             </div>
             <div>
-              <h1 className="text-4xl font-normal mb-3 text-text">Jeg hedder Jan</h1>
+              <h1 className="text-4xl font-normal mb-3 text-text">Jeg hedder Jan Gaarsdal Lauridsen</h1>
               <p className="text-base-lg text-muted leading-relaxed">
-                Jeg arbejder med mennesker, der har brug for ro, klarhed og en
-                mere direkte vej til forandring.
+                Jeg er hypnoterapeut og driver Gaarsdal Hypnoterapi i Birkerød. Jeg arbejder med mennesker, der har brug for ro, klarhed og en mere direkte vej til forandring.
               </p>
             </div>
           </div>
@@ -80,12 +94,19 @@ export default function Om() {
           <section className="bg-white p-6 rounded-lg shadow-sm mb-10 space-y-4">
             <h2 className="text-h2 font-light mb-2">Baggrund</h2>
             <p className="text-muted leading-relaxed">
-              Jeg har en baggrund, hvor jeg i mange år har arbejdet med
-              komplekse systemer, mønstre og problemløsning. Det har lært mig
-              én ting: Når noget bliver ved med at drille, er det sjældent, fordi
-              man ikke prøver hårdt nok. Det er, fordi man ikke har fået adgang
-              til det sted, hvor mønstret styres fra. Det er præcis dér, hypnose
-              kan noget særligt.
+              Jeg er uddannet ved Institut for Avanceret Hypnose og har desuden
+              deltaget i mere end 30 relevante kurser og forløb inden for
+              hypnose, terapi og mental forandring. Jeg har over 500 klienter bag
+              mig og bred erfaring med blandt andet angst, vaner, søvn,
+              præstationsangst, fobier, traumer, PTSD og ADHD.
+            </p>
+            <p className="text-muted leading-relaxed">
+              Jeg har i mange år været optaget af, hvordan mennesker fungerer i
+              de dybere lag, hvor automatiske reaktioner og mønstre skabes. Det
+              har lært mig én ting: Når noget bliver ved med at drille, er det
+              sjældent, fordi man ikke prøver hårdt nok. Det er, fordi man ikke
+              har fået adgang til det sted, hvor mønstret styres fra. Det er
+              præcis dér, hypnose kan noget særligt.
             </p>
             <p className="text-muted leading-relaxed">
               Jeg er ikke psykolog eller læge. Hypnoterapi er ikke behandling i

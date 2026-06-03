@@ -54,8 +54,8 @@ export default function PriserPage() {
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
             {[
-              { titel: "Studerende", pris: "400 kr", note: "Gælder studerende ved dokumentation af studiekort. Alle sessioner inkl. første.", badge: "SU" },
-              { titel: "Arbejdsløse", pris: "400 kr", note: "Gælder ved dokumentation af ledighedsstatus. Alle sessioner inkl. første.", badge: "A-kasse" },
+              { titel: "Studerende", pris: "400 kr", note: "Gælder ALLE sessioner ved dokumentation af studiekort, også den 90 minutter lange første session (normalt 900 kr).", badge: "SU" },
+              { titel: "Arbejdsløse", pris: "400 kr", note: "Gælder ALLE sessioner ved dokumentation af ledighedsstatus, også den 90 minutter lange første session (normalt 900 kr).", badge: "A-kasse" },
               { titel: "Flygtninge", pris: "Gratis", note: "Gælder flygtninge med opholdstilladelse. Session på dansk eller engelsk. Ingen dokumentation krævet.", badge: "🌍" },
             ].map((p) => (
               <div key={p.titel} style={{ padding: "28px", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "10px" }}>
@@ -80,7 +80,7 @@ export default function PriserPage() {
             {[
               { titel: "3-session pakke", pris: "1.800 kr", note: "Første session + 2 opfølgende. Passer til afgrænsede problemstillinger som rygestop, fobi eller søvn.", besparelse: "Spar 300 kr" },
               { titel: "5-session pakke", pris: "2.800 kr", note: "Første session + 4 opfølgende. Passer til mere komplekse mønstre som angst, selvværd eller vaner.", besparelse: "Spar 500 kr" },
-              { titel: "Børneforløb", pris: "Aftales", note: "Forløb for børn og unge tilpasses individuelt. Inkluderer forældresamtale. Kontakt Jan for pris.", besparelse: "" },
+              { titel: "Børneforløb", pris: "Som voksne", note: "Samme prisstruktur som for voksne: gratis forsamtale, 900 kr første session, 600 kr opfølgning. Inkluderer forældreinddragelse.", besparelse: "" },
             ].map((p) => (
               <div key={p.titel} style={{ padding: "28px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", position: "relative" }}>
                 {p.besparelse && (
