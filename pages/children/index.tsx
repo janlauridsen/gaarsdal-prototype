@@ -388,7 +388,7 @@ export default function ChildrenPage() {
           <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
             <div style={{ flex: 1 }}>
               <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px", color: "#333" }}>
-                Hvem er Jan Gaarsdal?
+                Hvem er Jan?
               </h2>
               <p style={{ fontSize: "15px", lineHeight: 1.7, marginBottom: "12px", color: "#555" }}>
                 Jan er hypnoterapeut i Birkerød og arbejder med børn fra 8 år. Han tilpasser sin tilgang til barnets alder og temperament - og involverer altid forældrene som en del af forløbet.
@@ -415,6 +415,17 @@ export default function ChildrenPage() {
               />
             </div>
           </div>
+        </section>
+
+        {/* FORÆLDREINDDRAGELSE */}
+        <section style={{ marginBottom: "48px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
+          <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "16px" }}>Sådan inddrages du som forælder</h2>
+          <p style={{ fontSize: "15px", color: "#555", marginBottom: "12px", lineHeight: 1.7 }}>
+            Som forælder er du altid en del af forløbet. Du deltager i den indledende forsamtale og i de opsamlende samtaler, og du er velkommen til at være til stede under selve sessionen, hvis barnet ønsker det.
+          </p>
+          <p style={{ fontSize: "15px", color: "#555", margin: 0, lineHeight: 1.7 }}>
+            Nogle børn, særligt de ældre, arbejder bedst når de har rummet for sig selv. Derfor er separate samtaler også en mulighed. Vi tilpasser det til barnets alder, temperament og hvad der skaber mest tryghed.
+          </p>
         </section>
 
         {/* SEKTION 4: CHATBOT */}
