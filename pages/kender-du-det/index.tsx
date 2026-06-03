@@ -216,6 +216,7 @@ export default function KenderDuDetPage() {
         <section style={{ marginBottom: "48px" }}>
           <p style={{ fontSize: "15px", color: "#888", marginBottom: "12px" }}>Jan arbejder også med:</p>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <a href="/kaerlighed" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Kærlighed og relationer</a>
             <a href="/overgangsalder" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Overgangsalder</a>
             <a href="/fertilitetsstress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Fertilitetsstress</a>
             <a href="/tinnitus" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Tinnitus</a>
