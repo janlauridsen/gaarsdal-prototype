@@ -17,6 +17,10 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/rygestop" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mig med at stoppe med at ryge?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder direkte med de associationer der driver trangen, ikke med viljestyrken. Hjernen lærer at afkoble triggerne fra reaktionen, og mange oplever at lysten falder markant efter én til to sessioner.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner skal jeg bruge for at stoppe med at ryge?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Mange opnår resultater efter én til to sessioner. Da rygning er en lært kobling mellem triggere og adfærd, kan den kobling ofte ændres relativt hurtigt med hypnoterapi.\"}}, {\"@type\": \"Question\", \"name\": \"Tager jeg på i vægt hvis jeg stopper med at ryge via hypnose?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Hypnoterapi adresserer det underliggende behov rygningen dækker, så risikoen for at erstatte cigaretter med mad reduceres. Det kan indgå som en del af arbejdet at forebygge vægtøgning.\"}}, {\"@type\": \"Question\", \"name\": \"Virker hypnose mod rygning hvis jeg har røget i mange år?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Antallet af år betyder mindre end man tror, fordi hypnoterapi arbejder med den automatiske kobling, ikke med nikotinens fysiske afhængighed alene. Mange mangeårige rygere stopper med succes.\"}}]}" }}
+        />
       </Head>
 
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
@@ -73,6 +77,28 @@ export default function Page() {
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>
                 Ring +45 42 80 74 74
               </a>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mig med at stoppe med at ryge?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi arbejder direkte med de associationer der driver trangen, ikke med viljestyrken. Hjernen lærer at afkoble triggerne fra reaktionen, og mange oplever at lysten falder markant efter én til to sessioner.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvor mange sessioner skal jeg bruge for at stoppe med at ryge?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Mange opnår resultater efter én til to sessioner. Da rygning er en lært kobling mellem triggere og adfærd, kan den kobling ofte ændres relativt hurtigt med hypnoterapi.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Tager jeg på i vægt hvis jeg stopper med at ryge via hypnose?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Hypnoterapi adresserer det underliggende behov rygningen dækker, så risikoen for at erstatte cigaretter med mad reduceres. Det kan indgå som en del af arbejdet at forebygge vægtøgning.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Virker hypnose mod rygning hvis jeg har røget i mange år?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Antallet af år betyder mindre end man tror, fordi hypnoterapi arbejder med den automatiske kobling, ikke med nikotinens fysiske afhængighed alene. Mange mangeårige rygere stopper med succes.</p>
             </div>
           </div>
         </section>

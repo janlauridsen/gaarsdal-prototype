@@ -35,6 +35,10 @@ export default function SovnPage() {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod søvnproblemer?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnotisk tilstand og søvnindledning aktiverer de samme neurologiske mekanismer. Hypnoterapi lærer nervesystemet at slippe ned i ro, så søvnen kommer naturligt i stedet for at skulle tvinges frem.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor hurtigt virker hypnose mod søvnløshed?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Mange oplever mærkbar forskel allerede efter første session. Da søvnproblemer ofte handler om en lært association mellem sengen og uro, kan ændringen af det mønster ske relativt hurtigt.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor virker gode søvnvaner ikke for mig?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Fordi søvnproblemer sjældent handler om vaner alene. De handler om et nervesystem i beredskab og en hjerne der har lært at forbinde sengen med uro. Den association kan ikke ændres ved viljestyrke eller rutiner alene.\"}}, {\"@type\": \"Question\", \"name\": \"Er hypnose mod søvn det samme som søvnmedicin?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej. Søvnmedicin dæmper symptomet midlertidigt, mens hypnoterapi arbejder med årsagen til at nervesystemet ikke slipper ned. Hypnose har ingen bivirkninger og skaber ikke afhængighed.\"}}]}" }}
+        />
       </Head>
 
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
@@ -127,6 +131,29 @@ export default function SovnPage() {
                   </a>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mod søvnproblemer?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnotisk tilstand og søvnindledning aktiverer de samme neurologiske mekanismer. Hypnoterapi lærer nervesystemet at slippe ned i ro, så søvnen kommer naturligt i stedet for at skulle tvinges frem.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvor hurtigt virker hypnose mod søvnløshed?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Mange oplever mærkbar forskel allerede efter første session. Da søvnproblemer ofte handler om en lært association mellem sengen og uro, kan ændringen af det mønster ske relativt hurtigt.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvorfor virker gode søvnvaner ikke for mig?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Fordi søvnproblemer sjældent handler om vaner alene. De handler om et nervesystem i beredskab og en hjerne der har lært at forbinde sengen med uro. Den association kan ikke ændres ved viljestyrke eller rutiner alene.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Er hypnose mod søvn det samme som søvnmedicin?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Nej. Søvnmedicin dæmper symptomet midlertidigt, mens hypnoterapi arbejder med årsagen til at nervesystemet ikke slipper ned. Hypnose har ingen bivirkninger og skaber ikke afhængighed.</p>
             </div>
           </div>
         </section>

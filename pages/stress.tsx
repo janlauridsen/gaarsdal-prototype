@@ -17,6 +17,10 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/stress" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod stress?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi resetter nervesystemets grundindstilling, så ro bliver standard i stedet for beredskab. Det er en dybere ændring end afspændingsøvelser, fordi det arbejder med hvad nervesystemet automatisk opfatter som normaltilstand.\"}}, {\"@type\": \"Question\", \"name\": \"Hvad er forskellen på hypnose og mindfulness mod stress?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Mindfulness træner din bevidste opmærksomhed. Hypnoterapi arbejder direkte med de automatiske reaktioner under bevidst tænkning. De kan supplere hinanden, men hypnose når et dybere lag.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner kræver stressbehandling?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Det afhænger af hvor længe stressen har stået på. Den gratis forsamtale giver et realistisk billede. Mange oplever bedring i søvn og ro tidligt i forløbet.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe ved arbejdsrelateret stress?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med den grundlæggende stressrespons uanset hvad der udløser den. Det ændrer hvordan nervesystemet reagerer på pres, så du genvinder overskud og ro.\"}}]}" }}
+        />
       </Head>
 
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
@@ -73,6 +77,28 @@ export default function Page() {
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>
                 Ring +45 42 80 74 74
               </a>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mod stress?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi resetter nervesystemets grundindstilling, så ro bliver standard i stedet for beredskab. Det er en dybere ændring end afspændingsøvelser, fordi det arbejder med hvad nervesystemet automatisk opfatter som normaltilstand.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvad er forskellen på hypnose og mindfulness mod stress?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Mindfulness træner din bevidste opmærksomhed. Hypnoterapi arbejder direkte med de automatiske reaktioner under bevidst tænkning. De kan supplere hinanden, men hypnose når et dybere lag.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvor mange sessioner kræver stressbehandling?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Det afhænger af hvor længe stressen har stået på. Den gratis forsamtale giver et realistisk billede. Mange oplever bedring i søvn og ro tidligt i forløbet.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe ved arbejdsrelateret stress?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi arbejder med den grundlæggende stressrespons uanset hvad der udløser den. Det ændrer hvordan nervesystemet reagerer på pres, så du genvinder overskud og ro.</p>
             </div>
           </div>
         </section>

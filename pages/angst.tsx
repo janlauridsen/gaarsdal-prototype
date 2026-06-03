@@ -17,6 +17,10 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/angst" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod angst?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder direkte med nervesystemet og de automatiske reaktioner der driver angsten, ikke kun med tankerne. Mange oplever mærkbar bedring, fordi metoden når ind under den bevidste tænkning, hvor angsten faktisk sidder.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner kræver det?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Det varierer efter angstens type og varighed. Situationsbestemt angst kan ofte bedres på få sessioner, mens mere dybtliggende angst kan kræve et længere forløb. Den gratis forsamtale giver et realistisk billede af dit forløb.\"}}, {\"@type\": \"Question\", \"name\": \"Er hypnose mod angst farligt?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej. Hypnose er en naturlig, afslappet tilstand du selv har kontrol over. Du kan ikke fastlåses eller tvinges til noget. Det er en anerkendt psykologisk metode, som blandt andre professor Bobby Zachariae ved Aarhus Universitet har forsket i.\"}}, {\"@type\": \"Question\", \"name\": \"Virker hypnose hvis jeg er skeptisk?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Du behøver ikke tro på hypnose for at det virker. Du skal blot være villig til at deltage. Hypnose er en fokuseret tilstand de fleste mennesker kan opnå, uanset deres forhåndsindstilling.\"}}, {\"@type\": \"Question\", \"name\": \"Hvad er forskellen på hypnose og medicin mod angst?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Medicin dæmper symptomerne, mens hypnoterapi arbejder med de underliggende mønstre der skaber angsten. Hypnose er en ikke-medicinsk tilgang uden bivirkninger. Ved svær angst bør du altid tale med din læge om den samlede behandling.\"}}]}" }}
+        />
       </Head>
 
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
@@ -73,6 +77,32 @@ export default function Page() {
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>
                 Ring +45 42 80 74 74
               </a>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mod angst?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi arbejder direkte med nervesystemet og de automatiske reaktioner der driver angsten, ikke kun med tankerne. Mange oplever mærkbar bedring, fordi metoden når ind under den bevidste tænkning, hvor angsten faktisk sidder.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvor mange sessioner kræver det?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Det varierer efter angstens type og varighed. Situationsbestemt angst kan ofte bedres på få sessioner, mens mere dybtliggende angst kan kræve et længere forløb. Den gratis forsamtale giver et realistisk billede af dit forløb.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Er hypnose mod angst farligt?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Nej. Hypnose er en naturlig, afslappet tilstand du selv har kontrol over. Du kan ikke fastlåses eller tvinges til noget. Det er en anerkendt psykologisk metode, som blandt andre professor Bobby Zachariae ved Aarhus Universitet har forsket i.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Virker hypnose hvis jeg er skeptisk?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Du behøver ikke tro på hypnose for at det virker. Du skal blot være villig til at deltage. Hypnose er en fokuseret tilstand de fleste mennesker kan opnå, uanset deres forhåndsindstilling.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvad er forskellen på hypnose og medicin mod angst?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Medicin dæmper symptomerne, mens hypnoterapi arbejder med de underliggende mønstre der skaber angsten. Hypnose er en ikke-medicinsk tilgang uden bivirkninger. Ved svær angst bør du altid tale med din læge om den samlede behandling.</p>
             </div>
           </div>
         </section>

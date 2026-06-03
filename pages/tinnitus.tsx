@@ -16,6 +16,10 @@ export default function Page() {
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/tinnitus" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod tinnitus?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med hjernens reaktion på tinnituslyden og det stressniveau der forstærker den. Målet er sjældent at fjerne lyden helt, men at ændre den automatiske reaktion, så lyden fylder mindre i bevidstheden.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose fjerne min tinnitus helt?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Sjældent helt, men mange oplever at lyden fylder markant mindre når hjernens reaktion på den ændres. Når lyden ikke længere udløser uro, falder den i baggrunden som anden konstant baggrundsstøj.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner kræver tinnitus?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Jan anbefaler typisk at starte med et kort forløb og derefter vurdere effekten. Mange oplever bedring efter de første sessioner. Det er vigtigt at have fået din tinnitus undersøgt af en læge først.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor forværres min tinnitus når jeg er stresset?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Når nervesystemet er i beredskab, skærpes sansernes opmærksomhed, også på tinnituslyden. Derfor hænger stress og tinnitus tæt sammen, og derfor er stressreduktion en central del af hypnoterapien.\"}}]}" }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
@@ -65,6 +69,28 @@ export default function Page() {
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
               <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>Book forsamtale</Link>
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>Ring +45 42 80 74 74</a>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mod tinnitus?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi arbejder med hjernens reaktion på tinnituslyden og det stressniveau der forstærker den. Målet er sjældent at fjerne lyden helt, men at ændre den automatiske reaktion, så lyden fylder mindre i bevidstheden.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose fjerne min tinnitus helt?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Sjældent helt, men mange oplever at lyden fylder markant mindre når hjernens reaktion på den ændres. Når lyden ikke længere udløser uro, falder den i baggrunden som anden konstant baggrundsstøj.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvor mange sessioner kræver tinnitus?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Jan anbefaler typisk at starte med et kort forløb og derefter vurdere effekten. Mange oplever bedring efter de første sessioner. Det er vigtigt at have fået din tinnitus undersøgt af en læge først.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvorfor forværres min tinnitus når jeg er stresset?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Når nervesystemet er i beredskab, skærpes sansernes opmærksomhed, også på tinnituslyden. Derfor hænger stress og tinnitus tæt sammen, og derfor er stressreduktion en central del af hypnoterapien.</p>
             </div>
           </div>
         </section>

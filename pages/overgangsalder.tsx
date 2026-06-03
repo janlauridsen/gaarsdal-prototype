@@ -16,6 +16,10 @@ export default function Page() {
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/overgangsalder" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod gener i overgangsalderen?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med nervesystemet og kan reducere både hedeture, søvnproblemer og den følelsesmæssige uro der ofte følger overgangsalderen. Internationale studier peger på markant reduktion i hedeture.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod hedeture?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Studier viser at hypnoterapi kan reducere både hyppigheden og intensiteten af hedeture. Det sker ved at arbejde med kroppens temperaturregulering og det nervesystem der forstærker reaktionen.\"}}, {\"@type\": \"Question\", \"name\": \"Er hypnose et alternativ til hormonbehandling?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Hypnoterapi er en ikke-medicinsk tilgang der kan stå alene eller supplere anden behandling. Ved overvejelser om hormonbehandling bør du altid tale med din læge. Hypnose har ingen bivirkninger.\"}}, {\"@type\": \"Question\", \"name\": \"Hjælper hypnose mod humørsvingninger i overgangsalderen?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med den følelsesmæssige regulering og det nervesystem der påvirkes i overgangsalderen, så du genvinder mere balance og ro.\"}}]}" }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
@@ -65,6 +69,28 @@ export default function Page() {
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
               <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>Book forsamtale</Link>
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>Ring +45 42 80 74 74</a>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mod gener i overgangsalderen?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi arbejder med nervesystemet og kan reducere både hedeture, søvnproblemer og den følelsesmæssige uro der ofte følger overgangsalderen. Internationale studier peger på markant reduktion i hedeture.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mod hedeture?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Studier viser at hypnoterapi kan reducere både hyppigheden og intensiteten af hedeture. Det sker ved at arbejde med kroppens temperaturregulering og det nervesystem der forstærker reaktionen.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Er hypnose et alternativ til hormonbehandling?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Hypnoterapi er en ikke-medicinsk tilgang der kan stå alene eller supplere anden behandling. Ved overvejelser om hormonbehandling bør du altid tale med din læge. Hypnose har ingen bivirkninger.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hjælper hypnose mod humørsvingninger i overgangsalderen?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi arbejder med den følelsesmæssige regulering og det nervesystem der påvirkes i overgangsalderen, så du genvinder mere balance og ro.</p>
             </div>
           </div>
         </section>
