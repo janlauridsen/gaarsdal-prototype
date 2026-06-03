@@ -48,7 +48,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>Følelsesspisning er en af de hyppigste årsager til overspisning og vægtproblemer. Forskning viser at adfærdsbaserede tilgange der adresserer de underliggende følelsesmæssige mønstre er mere effektive end kostbaserede løsninger alene.</p>
-          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Fairburn, Cognitive Behavioral Therapy for Eating Disorders. Sundhedsstyrelsen.dk.</p>
+          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk om følelsesmæssig spisning og vaner.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
@@ -75,6 +75,12 @@ export default function Page() {
               </a>
             </div>
           </div>
+        </section>
+
+        {/* VIGTIG AFGRÆNSNING */}
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Vigtigt at vide om spiseforstyrrelser</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Denne side handler om følelsesmæssig spisning og overspisning. Ved tegn på en egentlig spiseforstyrrelse som anoreksi, bulimi eller tvangsoverspisning skal du altid starte hos din læge eller et specialiseret behandlingstilbud. Spiseforstyrrelser kan være alvorlige og kræver tværfaglig behandling, hvor hypnoterapi højst er et supplement.</p>
         </section>
 
         <section style={{ marginBottom: "40px" }}>

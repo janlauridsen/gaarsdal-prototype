@@ -30,10 +30,8 @@ export default function Home() {
           content="https://gaarsdal.net/Gaarsdal.net_logo_brand.png"
         />
         <meta name="robots" content="index, follow" />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:image:width" content="400" />
         <meta property="og:image:height" content="400" />
-        <meta property="og:url" content="https://gaarsdal.net/" />
         <meta property="og:type" content="website" />
         <script
           type="application/ld+json"
@@ -88,9 +86,7 @@ export default function Home() {
           </p>
 
           <p className="text-base-lg text-muted max-w-xl mx-auto mb-12 leading-relaxed">
-            Jeg tilbyder forløb i Birkerød. Vi starter altid med en afklaring,
-            så du kan vurdere, om metoden og min måde at arbejde på passer til
-            dig.
+            Jeg tilbyder forløb i Birkerød. Vi starter altid med en gratis forsamtale på 30 minutter - telefon eller fysisk - så du kan vurdere om metoden og min måde at arbejde på passer til dig.
           </p>
 
           <div className="flex justify-center gap-4 flex-wrap">
@@ -104,7 +100,7 @@ export default function Home() {
               href="/kontakt"
               className="border border-accent text-accent px-6 py-3 rounded-lg hover:bg-accent/10 transition"
             >
-              Kontakt for afklaring
+              Book gratis forsamtale (30 min)
             </Link>
           </div>
         </section>
@@ -330,7 +326,7 @@ export default function Home() {
                   href="/kontakt"
                   className="bg-accent text-white px-5 py-2.5 rounded-lg shadow hover:bg-accent/90 transition"
                 >
-                  Kontakt for afklaring
+                  Book gratis forsamtale (30 min)
                 </Link>
                 <a
                   className="border border-accent text-accent px-5 py-2.5 rounded-lg hover:bg-accent/10 transition"

@@ -47,8 +47,8 @@ export default function Page() {
         </section>
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Sorg og tab er naturlige menneskelige reaktioner. Sundhedsstyrelsen og WHO anerkender, at kompliceret sorg, som rammer en del af dem, der mister, kræver særlig opmærksomhed og støtte ud over det sociale netværk.</p>
-          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, WHO Mental Health Report.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Sorg og tab er naturlige menneskelige reaktioner. For de fleste aftager sorgen gradvist, men hos nogle bliver den vedvarende og invaliderende. Denne tilstand, kaldet forlænget sorglidelse (prolonged grief disorder), blev anerkendt som en selvstændig diagnose i WHO's ICD-11 i 2022. Den rammer en mindre andel af efterladte og er kendetegnet ved intens, fastlåst sorg længe efter tabet.</p>
+          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: WHO ICD-11 (2022) om forlænget sorglidelse, Sundhedsstyrelsen.dk.</p>
         </section>
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
@@ -68,6 +68,12 @@ export default function Page() {
             </div>
           </div>
         </section>
+        {/* VIGTIG AFGRÆNSNING */}
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Når sorgen er mere end sorg</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Hvis sorgen ledsages af vedvarende håbløshed, tanker om ikke at ville leve, eller manglende evne til at fungere i hverdagen over længere tid, bør du tale med din læge. Det kan være tegn på depression eller forlænget sorglidelse, som kræver professionel behandling. Hypnoterapi kan støtte sorgbearbejdning, men erstatter ikke lægelig hjælp ved disse tegn.</p>
+        </section>
+
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>

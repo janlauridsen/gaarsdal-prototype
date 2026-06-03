@@ -18,7 +18,7 @@ export default function Page() {
         <meta name="robots" content="index, follow" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe under fertilitetsbehandling?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med den stress og uro et fertilitetsforløb skaber. Det lover ikke et bestemt resultat, men hjælper dig med at bære processen og reducere den belastning der påvirker både dig og kroppen.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose øge mine chancer for at blive gravid?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Studier peger på at psykologisk behandling med hypnoseteknikker både kan mindske belastningen og potentielt øge graviditetschancerne. Et studie viste 52 pct. graviditet i behandlingsgruppen mod 20 pct. i kontrolgruppen. Det er ikke en garanti, men stress påvirker fertiliteten.\"}}, {\"@type\": \"Question\", \"name\": \"Kan vi komme som par?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Jan tilbyder individuelle sessioner og en fælles indledende session for par der ønsker det. Den gratis forsamtale afklarer hvad der passer til jeres situation.\"}}, {\"@type\": \"Question\", \"name\": \"Hvornår i forløbet skal jeg starte med hypnose?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Hypnoterapi kan hjælpe på alle stadier af et fertilitetsforløb, både før, under og mellem behandlinger. Jo tidligere du får redskaber til at håndtere stressen, jo bedre.\"}}]}" }}
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe under fertilitetsbehandling?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med den stress og uro et fertilitetsforløb skaber. Det lover ikke et bestemt resultat, men hjælper dig med at bære processen og reducere den belastning der påvirker både dig og kroppen.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose øge mine chancer for at blive gravid?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Hypnoterapi kan mindske den psykiske belastning under et fertilitetsforløb. Enkelte studier har antydet en mulig positiv effekt på graviditetschancer, men det er ikke konsistent dokumenteret, og hypnose lover ikke et bestemt resultat. Det vi med sikkerhed ved er, at hypnose kan reducere stress, angst og søvnproblemer.\"}}, {\"@type\": \"Question\", \"name\": \"Kan vi komme som par?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Jan tilbyder individuelle sessioner og en fælles indledende session for par der ønsker det. Den gratis forsamtale afklarer hvad der passer til jeres situation.\"}}, {\"@type\": \"Question\", \"name\": \"Hvornår i forløbet skal jeg starte med hypnose?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Hypnoterapi kan hjælpe på alle stadier af et fertilitetsforløb, både før, under og mellem behandlinger. Jo tidligere du får redskaber til at håndtere stressen, jo bedre.\"}}]}" }}
         />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
@@ -49,8 +49,8 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Studier publiceret internationalt viser at psykologisk behandling med hypnoseteknikker både kan mindske den psykiske belastning og potentielt øge graviditetschancerne. Et studie viste at 52 pct. i behandlingsgruppen blev gravide under andet IVF-forsøg mod 20 pct. i kontrolgruppen. Hypnose har desuden veldokumenteret effekt på angst, stress og søvn.</p>
-          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Levitas et al. (IVF-studie), Sygeforsikringen Danmark / Netdoktor (2025).</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Hypnose har veldokumenteret effekt på angst, stress og søvn, som ofte belaster et fertilitetsforløb. Enkelte studier har desuden antydet en mulig sammenhæng mellem afspænding og graviditetschancer, men resultaterne er ikke konsistent replikeret, og man skal være varsom med at drage stærke konklusioner. Hypnoterapi bør derfor ses som støtte til at bære processen, ikke som en behandling der lover et bestemt resultat.</p>
+          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sygeforsikringen Danmark / Netdoktor (2025) om hypnosens effekt på stress og angst.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
@@ -73,6 +73,12 @@ export default function Page() {
           </div>
         </section>
 
+        {/* VIGTIG AFGRÆNSNING */}
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Vigtigt at vide</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Hypnoterapi er støtte til den psykiske belastning under et fertilitetsforløb, ikke en fertilitetsbehandling. Den erstatter ikke lægelig udredning eller behandling. Hvis du oplever vedvarende nedtrykthed eller håbløshed, bør du tale med din læge eller fertilitetsklinikkens psykolog.</p>
+        </section>
+
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -82,7 +88,7 @@ export default function Page() {
             </div>
             <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose øge mine chancer for at blive gravid?</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Studier peger på at psykologisk behandling med hypnoseteknikker både kan mindske belastningen og potentielt øge graviditetschancerne. Et studie viste 52 pct. graviditet i behandlingsgruppen mod 20 pct. i kontrolgruppen. Det er ikke en garanti, men stress påvirker fertiliteten.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Hypnoterapi kan mindske den psykiske belastning under et fertilitetsforløb. Enkelte studier har antydet en mulig positiv effekt på graviditetschancer, men det er ikke konsistent dokumenteret, og hypnose lover ikke et bestemt resultat. Det vi med sikkerhed ved er, at hypnose kan reducere stress, angst og søvnproblemer.</p>
             </div>
             <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan vi komme som par?</h3>

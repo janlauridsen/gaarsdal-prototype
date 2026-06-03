@@ -69,6 +69,12 @@ export default function Page() {
           </div>
         </section>
 
+        {/* VIGTIG AFGRÆNSNING */}
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Når skærmbrug kan være et symptom</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Massiv skærmbrug kan nogle gange være et symptom på noget andet, for eksempel ADHD, autisme, angst eller depression. Hvis I oplever at problemet er en del af et bredere billede, eller at barnet mistrives markant, bør I tale med egen læge eller PPR. Hypnoterapi kan arbejde med vanen og det underliggende behov, men erstatter ikke en udredning.</p>
+        </section>
+
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>

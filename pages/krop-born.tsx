@@ -69,6 +69,12 @@ export default function Page() {
           </div>
         </section>
 
+        {/* VIGTIG AFGRÆNSNING */}
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Hvornår skal I søge anden hjælp</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Hvis dit barns kropsutilfredshed ledsages af ændrede spisevaner, vægttab, overdreven motion eller tegn på en spiseforstyrrelse, skal I altid kontakte egen læge. Spiseforstyrrelser hos børn og unge kræver specialiseret, tværfaglig behandling. Hypnoterapi kan i de tilfælde højst være et supplement, ikke den primære indsats.</p>
+        </section>
+
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>

@@ -57,8 +57,8 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Tilknytningsforskning viser at de mønstre vi danner tidligt i livet, det sikre, det ængstelige og det undvigende, præger vores voksne relationer dybt. Forskning anslår at omkring 20 pct. har et ængsteligt tilknytningsmønster. Studier publiceret i Frontiers in Psychology (2024) har undersøgt sammenhængen mellem tilknytningsstil og hypnose. Professor Bobby Zachariae ved Aarhus Universitet fremhæver hypnose som en dokumenteret metode mod blandt andet angst og lavt selvværd, der ofte ligger bag relationsmønstre.</p>
-          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Frontiers in Psychology (2024), Bartholomew &amp; Horowitz attachment research, Sygeforsikringen Danmark (2025).</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Tilknytningsforskning viser at de mønstre vi danner tidligt i livet, det sikre, det ængstelige og det undvigende, præger vores voksne relationer dybt. Forskning anslår at omkring 20 pct. har et ængsteligt tilknytningsmønster. Professor Bobby Zachariae ved Aarhus Universitet fremhæver hypnose som en dokumenteret metode mod blandt andet angst og lavt selvværd, der ofte ligger bag relationsmønstre. Tilknytningsmønstre regnes desuden for plastiske, altså noget der kan ændres gennem nye erfaringer og målrettet arbejde.</p>
+          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Tilknytningsforskning (Bowlby, Ainsworth, Bartholomew &amp; Horowitz), Sygeforsikringen Danmark (2025).</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>

@@ -49,7 +49,7 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Cirka 16 pct. af voksne lider af konstant tinnitus. Der findes ingen medicinsk kur, og behandlingen fokuserer derfor på at ændre reaktionen på lyden. Professor Bobby Zachariae, Aarhus Universitet, fremhæver hypnose som en dokumenteret metode til behandling af stress og de tilstande der ofte ledsager tinnitus.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Cirka 16 pct. af voksne lider af konstant tinnitus. Der findes ingen medicinsk kur, og behandlingen fokuserer derfor på at ændre reaktionen på lyden. Professor Bobby Zachariae, Aarhus Universitet, fremhæver hypnose som en dokumenteret metode mod stress og angst. Det er relevant for tinnitus, fordi netop stress og uro ofte forstærker oplevelsen af lyden, men referencen gælder hypnosens generelle effekt, ikke tinnitus specifikt.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Høreforeningen.dk, Sygeforsikringen Danmark / Netdoktor (2025).</p>
         </section>
 
