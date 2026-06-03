@@ -77,6 +77,12 @@ export default function Page() {
           </div>
         </section>
 
+        {/* INDSIGT ER IKKE NOK */}
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#f0f4f8", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
+          <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "12px" }}>Indsigt er ikke det samme som forandring</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Du ved godt at overtænkning ikke hjælper. Du kan måske endda forklare hvorfor du gør det. Men det stopper ikke tankerne, for de kører hurtigere end den bevidste indsigt.</p>
+        </section>
+
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>

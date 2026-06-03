@@ -81,7 +81,13 @@ export default function Page() {
           </div>
         </section>
 
-        <section style={{ marginBottom: "60px" }}>
+        {/* INDSIGT ER IKKE NOK */}
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#f0f4f8", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
+          <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "12px" }}>Indsigt er ikke det samme som forandring</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Du ved måske allerede hvad du er bange for, og at det er irrationelt. Måske har du læst om angst eller talt med en AI om den. Men angsten kører videre alligevel, fordi den ikke sidder i det du ved, men i det der reagerer hurtigere end tanken.</p>
+        </section>
+
+                <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>

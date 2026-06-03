@@ -77,6 +77,12 @@ export default function Page() {
           </div>
         </section>
 
+        {/* INDSIGT ER IKKE NOK */}
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#f0f4f8", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
+          <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "12px" }}>Indsigt er ikke det samme som forandring</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Du ved måske godt at du er hårdere ved dig selv end rimeligt er. Du har måske endda forstået hvorfor. Men det ændrer ikke følelsen, for selvværdet sidder under bevidst tænkning, ikke i det du ved om dig selv.</p>
+        </section>
+
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
