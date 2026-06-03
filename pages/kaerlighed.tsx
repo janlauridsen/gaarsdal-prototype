@@ -30,19 +30,20 @@ export default function Page() {
         </section>
 
         <section style={{ marginBottom: "60px" }}>
-          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "20px" }}>Mønstrene der styrer i det skjulte</h2>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "12px" }}>Mønstrene der styrer i det skjulte</h2>
+          <p style={{ fontSize: "15px", color: "#666", marginBottom: "24px", maxWidth: "700px" }}>Tilknytningsmønstre er ikke personlighedstyper, men reguleringsstrategier. De er strategier dit nervesystem lærte tidligt for at sikre nærhed, og de kører automatisk i voksenlivet, hurtigere end den bevidste tanke.</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Det ængstelige mønster</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Frygt for at blive forladt fører til klamren, konstant behov for bekræftelse og overfortolkning af partnerens signaler. Det skaber ofte en selvopfyldende profeti, hvor uroen skubber den anden væk og bekræfter den dybeste frygt. Det er ikke svaghed, det er en lært beskyttelsesreaktion.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Frygt for at blive forladt fører til konstant overvågning af relationen, overfortolkning af små signaler og svært ved at falde til ro uden bekræftelse. Det kaldes hyperaktivering af tilknytningssystemet. Barnet lærte: jeg får kun kontakt hvis jeg kæmper for den. Det er ikke svaghed eller drama, det er en indlært reguleringsstrategi.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Det undvigende mønster</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Når nærhed bliver for tæt, trækker du dig. Kærlighed forbindes ubevidst med tab af selv eller med pligt og pres. Du finder fejl ved partnere eller mister interessen præcis når det bliver alvorligt. Mønsteret beskytter mod en sårbarhed der engang føltes farlig.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Når nærhed bliver for tæt, trækker du dig. Du nedtoner egne behov, holder følelser på afstand og mister interessen præcis når det bliver alvorligt. Det kaldes deaktivering af tilknytningssystemet. Barnet lærte: jeg må klare mig selv, for mine behov bliver ikke mødt. Det er ikke mangel på følelser, men en strategi der engang var nødvendig.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>De gentagne mønstre</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Du tiltrækkes af de samme forkerte typer, eller skubber de rigtige væk. Det velkendte føles trygt, selv når det er usundt. Disse mønstre er ofte rodfæstet i tidlige relationer og gentager sig indtil de bliver bearbejdet der hvor de sidder.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Du tiltrækkes af de samme forkerte typer, eller skubber de rigtige væk. Det velkendte føles trygt, selv når det er usundt. Mønstrene er lagret i de dybe, automatiske lag, ikke i det bevidste tankelag, og gentager sig indtil de bliver bearbejdet der hvor de faktisk sidder.</p>
             </div>
           </div>
         </section>
