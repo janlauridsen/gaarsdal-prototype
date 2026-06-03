@@ -16,6 +16,10 @@ export default function Page() {
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/ptsd" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod PTSD?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja, hypnoterapi har en lang historie i traumebehandling og kan hjælpe med at bearbejde traumet der hvor det er lagret, i kroppens alarmsystem. Ved svær PTSD bruges det bedst som supplement til psykologisk eller psykiatrisk behandling.\"}}, {\"@type\": \"Question\", \"name\": \"Skal jeg genopleve traumet under hypnose?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej, ikke nødvendigvis. Arbejdet foregår skånsomt og i dit tempo. Moderne traumearbejde med hypnose handler ikke om at tvinge dig gennem hændelsen igen, men om at hjælpe nervesystemet med at slippe sit alarmberedskab.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner kræver traumebehandling?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Det afhænger helt af traumets karakter og hvor længe det har stået på. Enkelte afgrænsede traumer kan bedres relativt hurtigt, mens kompleks PTSD kræver et længere, tålmodigt forløb. Den gratis forsamtale giver et realistisk billede.\"}}, {\"@type\": \"Question\", \"name\": \"Er hypnose nok, eller skal jeg også have anden behandling?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ved svær PTSD, krise eller selvmordstanker skal du altid have lægelig eller psykiatrisk hjælp. Hypnoterapi kan være en værdifuld del af et samlet forløb, men erstatter ikke behandling i sundhedssystemet ved svære tilstande.\"}}]}" }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
@@ -70,6 +74,28 @@ export default function Page() {
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
               <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>Book forsamtale</Link>
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>Ring +45 42 80 74 74</a>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mod PTSD?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja, hypnoterapi har en lang historie i traumebehandling og kan hjælpe med at bearbejde traumet der hvor det er lagret, i kroppens alarmsystem. Ved svær PTSD bruges det bedst som supplement til psykologisk eller psykiatrisk behandling.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Skal jeg genopleve traumet under hypnose?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Nej, ikke nødvendigvis. Arbejdet foregår skånsomt og i dit tempo. Moderne traumearbejde med hypnose handler ikke om at tvinge dig gennem hændelsen igen, men om at hjælpe nervesystemet med at slippe sit alarmberedskab.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvor mange sessioner kræver traumebehandling?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Det afhænger helt af traumets karakter og hvor længe det har stået på. Enkelte afgrænsede traumer kan bedres relativt hurtigt, mens kompleks PTSD kræver et længere, tålmodigt forløb. Den gratis forsamtale giver et realistisk billede.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Er hypnose nok, eller skal jeg også have anden behandling?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ved svær PTSD, krise eller selvmordstanker skal du altid have lægelig eller psykiatrisk hjælp. Hypnoterapi kan være en værdifuld del af et samlet forløb, men erstatter ikke behandling i sundhedssystemet ved svære tilstande.</p>
             </div>
           </div>
         </section>

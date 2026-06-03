@@ -16,6 +16,10 @@ export default function Page() {
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/adhd" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose kurere ADHD?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej. ADHD er en neuroudviklingsmæssig tilstand der ikke kan kureres med hypnose. Men hypnoterapi kan hjælpe med mange af de ting der følger med, som indre uro, stress, søvnproblemer og lavt selvværd.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose erstatte min ADHD-medicin?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej. Hypnoterapi er ikke en erstatning for medicin eller anden behandling i sundhedssystemet. Drøft altid din samlede behandling med din læge. Hypnose kan være et supplement der hjælper med følgevirkningerne.\"}}, {\"@type\": \"Question\", \"name\": \"Hvad kan hypnose så hjælpe med ved ADHD?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Den indre uro, stressen, søvnen og det lave selvværd der ofte opstår efter mange nederlag. For mange fylder netop disse følgevirkninger lige så meget som kernesymptomerne, og det er her hypnoterapi kan gøre en forskel.\"}}, {\"@type\": \"Question\", \"name\": \"Kan børn og unge med ADHD få hypnoterapi?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja, Jan arbejder med både unge og voksne med ADHD, altid som supplement til den behandling de modtager i sundhedssystemet, og for børn altid med forældrene inddraget.\"}}]}" }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
@@ -70,6 +74,28 @@ export default function Page() {
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
               <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>Book forsamtale</Link>
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>Ring +45 42 80 74 74</a>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose kurere ADHD?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Nej. ADHD er en neuroudviklingsmæssig tilstand der ikke kan kureres med hypnose. Men hypnoterapi kan hjælpe med mange af de ting der følger med, som indre uro, stress, søvnproblemer og lavt selvværd.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose erstatte min ADHD-medicin?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Nej. Hypnoterapi er ikke en erstatning for medicin eller anden behandling i sundhedssystemet. Drøft altid din samlede behandling med din læge. Hypnose kan være et supplement der hjælper med følgevirkningerne.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvad kan hypnose så hjælpe med ved ADHD?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Den indre uro, stressen, søvnen og det lave selvværd der ofte opstår efter mange nederlag. For mange fylder netop disse følgevirkninger lige så meget som kernesymptomerne, og det er her hypnoterapi kan gøre en forskel.</p>
+            </div>
+            <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan børn og unge med ADHD få hypnoterapi?</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja, Jan arbejder med både unge og voksne med ADHD, altid som supplement til den behandling de modtager i sundhedssystemet, og for børn altid med forældrene inddraget.</p>
             </div>
           </div>
         </section>
