@@ -633,13 +633,13 @@ export default function ChildrenPage() {
                   {showCrisisResources && (
                     <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
                       <a href="tel:70201201" style={{ fontSize: "13px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
-                        📞 Livslinjen — 70 201 201 (gratis, døgnet rundt)
+                        📞 Livslinjen, 70 201 201 (gratis, døgnet rundt)
                       </a>
                       <a href="tel:1813" style={{ fontSize: "13px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
-                        📞 Lægevagten — 1813
+                        📞 Lægevagten, 1813
                       </a>
                       <a href="tel:112" style={{ fontSize: "13px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
-                        📞 Akut hjælp — 112
+                        📞 Akut hjælp, 112
                       </a>
                       <a href="https://www.livslinjen.dk" target="_blank" rel="noopener noreferrer" style={{ fontSize: "13px", color: "#888", textDecoration: "underline" }}>
                         livslinjen.dk
