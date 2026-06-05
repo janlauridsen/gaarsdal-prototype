@@ -10,7 +10,7 @@ export default function Kontakt() {
     email: "",
     phone: "",
     message: "",
-    website: "", // honeypot — må ikke udfyldes
+    website: "", // honeypot, må ikke udfyldes
   });
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">(
     "idle"
@@ -50,7 +50,7 @@ export default function Kontakt() {
         setStatus("error");
       }
     } catch {
-      setErrorMsg("Netværksfejl — prøv igen.");
+      setErrorMsg("Netværksfejl, prøv igen.");
       setStatus("error");
     }
   }
@@ -58,10 +58,10 @@ export default function Kontakt() {
   return (
     <div className="min-h-screen bg-bg text-text">
       <Head>
-        <title>Kontakt – uforpligtende afklaring | Gaarsdal Hypnoterapi</title>
+        <title>Book gratis forsamtale (30 min) | Gaarsdal Hypnoterapi Birkerød</title>
         <meta
           name="description"
-          content="Kontakt Jan Gaarsdal for en uforpligtende afklaring af, om hypnoterapi er relevant for dig. Klinik i Birkerød."
+          content="Book en gratis forsamtale på 30 minutter med Jan Gaarsdal - telefon eller fysisk i Birkerød. Find ud af om hypnoterapi passer til dig."
         />
         <link rel="canonical" href="https://gaarsdal.net/kontakt" />
         <meta property="og:title" content="Kontakt Gaarsdal Hypnoterapi" />
@@ -83,15 +83,15 @@ export default function Kontakt() {
         <h1 className="text-h1 font-light mb-4">Kontakt</h1>
 
         <p className="text-base-lg text-muted mb-10">
-          Kontakt mig, hvis du vil afklare om hypnoterapi – og min tilgang – er
+          Kontakt mig, hvis du vil afklare om hypnoterapi, og min tilgang, er
           relevant for dig.
         </p>
 
-        {/* AFKLARING — øverst nu */}
+        {/* AFKLARING - øverst nu */}
         <section className="bg-white p-6 rounded-lg shadow-sm mb-8">
           <h2 className="font-medium mb-2">Hvad er en "afklaring"?</h2>
           <p className="text-muted mb-3">
-            Formålet er at få et klart billede af, hvad der sker for dig – og
+            Formålet er at få et klart billede af, hvad der sker for dig, og
             om det giver mening at arbejde med det via hypnoterapi. Der er ingen
             forpligtelse.
           </p>
@@ -134,7 +134,7 @@ export default function Kontakt() {
 
           {status === "success" ? (
             <div className="py-8 text-center">
-              <p className="text-lg font-medium mb-2">Tak – din besked er modtaget.</p>
+              <p className="text-lg font-medium mb-2">Tak, din besked er modtaget.</p>
               <p className="text-muted">Jeg vender tilbage hurtigst muligt.</p>
             </div>
           ) : (
@@ -203,7 +203,7 @@ export default function Kontakt() {
                 />
               </div>
 
-              {/* Honeypot — skjult for brugere, bots udfylder det */}
+              {/* Honeypot - skjult for brugere, bots udfylder det */}
               <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }} aria-hidden="true">
                 <label htmlFor="website">Udfyld ikke dette felt</label>
                 <input

@@ -46,10 +46,10 @@ export default function SovnPage() {
         {/* GENKENDELSE */}
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>
-            Du er træt — men kan ikke sove
+            Du er træt, men kan ikke sove
           </h1>
           <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>
-            Du lægger dig. Tankerne starter. Du vågner kl. 3 og kan ikke falde i søvn igen. Du har prøvet alt — ingen skærm, magnesium, melatonin, podcasts. Det hjælper lidt. Men ikke nok. Og ikke konsekvent.
+            Du lægger dig. Tankerne starter. Du vågner kl. 3 og kan ikke falde i søvn igen. Du har prøvet alt, ingen skærm, magnesium, melatonin, podcasts. Det hjælper lidt. Men ikke nok. Og ikke konsekvent.
           </p>
           <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>
             Det er ikke din viljestyrke der svigter. Problemet sidder et andet sted.
@@ -60,7 +60,7 @@ export default function SovnPage() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser om søvn</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>
-            Sundhedsstyrelsen anbefaler, at voksne sover mindst 7 timer pr. nat. Ny forskning publiceret i Nature (2025) viser, at både for kort og for lang søvn accelererer den biologiske aldring i otte organer — hjernen, lunger, lever, immunsystem og flere andre.
+            Sundhedsstyrelsen anbefaler, at voksne sover mindst 7 timer pr. nat. Ny forskning publiceret i Nature (2025) viser, at både for kort og for lang søvn accelererer den biologiske aldring i otte organer, hjernen, lunger, lever, immunsystem og flere andre.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>
             Samme forskning finder, at for lidt søvn øger risikoen for hjerte-kar-sygdomme, diabetes og en række muskel- og ledsygdomme. Mænd ser ud til at være mere sårbare overfor søvnunderskud end kvinder.
@@ -85,7 +85,7 @@ export default function SovnPage() {
               },
               {
                 titel: "Viljestyrke virker ikke her",
-                tekst: "Du kan beslutte dig for at sove. Du kan gøre alt rigtigt. Og alligevel ligge vågen. Det er fordi beslutningen og vanen sidder i to forskellige dele af hjernen — og det er den automatiske, der vinder.",
+                tekst: "Du kan beslutte dig for at sove. Du kan gøre alt rigtigt. Og alligevel ligge vågen. Det er fordi beslutningen og vanen sidder i to forskellige dele af hjernen, og det er den automatiske, der vinder.",
               },
             ].map((k) => (
               <div key={k.titel} style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
@@ -100,7 +100,7 @@ export default function SovnPage() {
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør ved søvnproblemer</h2>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
-            Hypnotisk tilstand og søvnindledning aktiverer de samme neurologiske mekanismer. Det giver en unik mulighed: du lærer at lede nervesystemet ned i ro — ikke som en teknik, du skal huske at bruge, men som en ny automatisk reaktion.
+            Hypnotisk tilstand og søvnindledning aktiverer de samme neurologiske mekanismer. Det giver en unik mulighed: du lærer at lede nervesystemet ned i ro, ikke som en teknik, du skal huske at bruge, men som en ny automatisk reaktion.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
             Arbejdet handler ikke om at lære dig gode søvnvaner. Det handler om at ændre hvad hjernen automatisk forbinder med sengen og med natten. Mange oplever mærkbar forskel allerede efter første session.
@@ -116,7 +116,7 @@ export default function SovnPage() {
             <div style={{ flex: 1 }}>
               <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
               <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>
-                Jan arbejder med søvnproblemer hos voksne og unge. Han tilpasser sin tilgang til hvad der driver dit specifikke søvnproblem — uro, tankemylder, tidlig opvågning eller indsoningsbesvær.
+                Jan arbejder med søvnproblemer hos voksne og unge. Han tilpasser sin tilgang til hvad der driver dit specifikke søvnproblem, uro, tankemylder, tidlig opvågning eller indsoningsbesvær.
               </p>
               <div style={{ padding: "12px 16px", background: "#f0f4f8", borderRadius: "6px", display: "inline-block" }}>
                 <p style={{ fontSize: "14px", fontWeight: 500, color: "#333", margin: "0 0 8px" }}>

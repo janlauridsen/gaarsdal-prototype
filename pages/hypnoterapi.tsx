@@ -8,13 +8,13 @@ export default function Hypnoterapi() {
   return (
     <div className="min-h-screen bg-bg text-text">
       <Head>
-        <title>Hypnoterapi – metode, forløb og FAQ | Gaarsdal</title>
+        <title>Hypnoterapi - metode, forløb og FAQ | Gaarsdal</title>
         <meta
           name="description"
           content="En nøgtern og struktureret tilgang til hypnoterapi i Birkerød. Læs om metoden, hvad der sker i en session, og svar på de spørgsmål jeg oftest får."
         />
         <link rel="canonical" href="https://gaarsdal.net/hypnoterapi" />
-        <meta property="og:title" content="Hypnoterapi – metode og forløb | Gaarsdal" />
+        <meta property="og:title" content="Hypnoterapi - metode og forløb | Gaarsdal" />
         <meta
           property="og:description"
           content="En nøgtern og struktureret tilgang til hypnoterapi i Birkerød. Afklaring før du starter."
@@ -48,12 +48,12 @@ export default function Hypnoterapi() {
           <p className="text-muted leading-relaxed mb-4">
             Hypnose er ikke søvn og ikke kontroltab. Du er vågen, bevidst og kan
             stoppe når som helst. I praksis handler det om fokuseret
-            opmærksomhed – en tilstand, hvor opmærksomheden er indadvendt og
+            opmærksomhed, en tilstand, hvor opmærksomheden er indadvendt og
             koncentreret. I den tilstand er det ofte lettere at justere
             automatiske reaktioner og vaner end ved viljestyrke alene.
           </p>
           <p className="text-muted leading-relaxed mb-4">
-            Hypnose er for mig en metode – ikke en oplevelse. Vi arbejder konkret
+            Hypnose er for mig en metode, ikke en oplevelse. Vi arbejder konkret
             med det, du ønsker skal være anderledes i din hverdag. Der er ingen
             dramatik, ingen "djupt i søvn"-kommandoer og ingen løfter om hurtige
             resultater.
@@ -77,7 +77,7 @@ export default function Hypnoterapi() {
               <div>
                 <h3 className="font-medium mb-1">Afklaring og målretning</h3>
                 <p className="text-muted text-sm leading-relaxed">
-                  Vi taler konkret om, hvad der sker for dig – ikke hvad det
+                  Vi taler konkret om, hvad der sker for dig, ikke hvad det
                   sandsynligvis handler om, men hvad du faktisk oplever i de
                   situationer, du vil ændre. Hvad vil du have mere af? Hvad skal
                   stoppe med at tage energi?
@@ -94,7 +94,7 @@ export default function Hypnoterapi() {
                 <p className="text-muted text-sm leading-relaxed">
                   Du sidder eller ligger komfortabelt. Jeg guider dig ind i en
                   tilstand af fokuseret ro. Vi arbejder med de mønstre eller
-                  reaktioner, vi har identificeret – inden for den ramme, vi har
+                  reaktioner, vi har identificeret, inden for den ramme, vi har
                   aftalt. Du er bevidst og kan stoppe eller holde pause når som
                   helst.
                 </p>
@@ -109,7 +109,7 @@ export default function Hypnoterapi() {
                 <h3 className="font-medium mb-1">Evaluering</h3>
                 <p className="text-muted text-sm leading-relaxed">
                   Kort afrunding: hvad gav mening, hvad mærkede du, og hvad er
-                  næste realistiske skridt. Ingen store analyser – bare det, der
+                  næste realistiske skridt. Ingen store analyser, bare det, der
                   faktisk er nyttigt at tage med.
                 </p>
               </div>
@@ -121,12 +121,12 @@ export default function Hypnoterapi() {
         <section className="bg-white p-6 rounded-lg shadow-sm mb-10">
           <h2 className="text-h2 font-light mb-4">Hvad er et forløb?</h2>
           <p className="text-muted leading-relaxed mb-4">
-            Vi starter med en afklaring – en kortere samtale, hvor vi vurderer om
+            Vi starter med en afklaring, en kortere samtale, hvor vi vurderer om
             hypnoterapi er den rigtige tilgang for dig og din situation. Der er
             ingen forpligtelse ved at tage kontakt.
           </p>
           <p className="text-muted leading-relaxed mb-4">
-            Et typisk forløb er 3–6 sessioner, men det afhænger af, hvad vi
+            Et typisk forløb er 3-6 sessioner, men det afhænger af, hvad vi
             arbejder med. Tempoet er dit. Der er ingen standardpakker, og vi
             justerer undervejs ud fra, hvad der faktisk virker.
           </p>
@@ -158,7 +158,7 @@ export default function Hypnoterapi() {
               <p className="text-muted leading-relaxed text-sm">
                 Det er meget almindeligt. Hypnoterapi kræver ikke, at du kan
                 "slukke hjernen". Vi tilpasser tilgangen til det, der faktisk
-                sker for dig – ikke til en idé om, hvordan det burde føles.
+                sker for dig, ikke til en idé om, hvordan det burde føles.
               </p>
             </div>
 

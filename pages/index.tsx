@@ -11,7 +11,7 @@ export default function Home() {
     <div className="bg-bg text-text min-h-screen">
       <Head>
         <title>
-          Hypnoterapi i Birkerød – ro, klarhed og ændringer der holder | Gaarsdal
+          Hypnoterapi i Birkerød, ro, klarhed og ændringer der holder | Gaarsdal
         </title>
         <meta
           name="description"
@@ -21,7 +21,7 @@ export default function Home() {
         <meta property="og:title" content="Hypnoterapi i Birkerød | Gaarsdal" />
         <meta
           property="og:description"
-          content="Rolig og struktureret hypnoterapi i Birkerød – med fokus på reaktioner og mønstre, der gentager sig. Uforpligtende afklaring."
+          content="Rolig og struktureret hypnoterapi i Birkerød, med fokus på reaktioner og mønstre, der gentager sig. Uforpligtende afklaring."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://gaarsdal.net/" />
@@ -186,7 +186,7 @@ export default function Home() {
               justeres mere direkte end ved viljestyrke alene.
             </p>
             <p className="text-muted leading-relaxed">
-              Hypnose er for mig en metode – ikke en oplevelse. Vi arbejder
+              Hypnose er for mig en metode, ikke en oplevelse. Vi arbejder
               konkret med det, du ønsker skal være anderledes i din hverdag.
             </p>
           </div>
@@ -220,7 +220,7 @@ export default function Home() {
 
             <p className="text-muted leading-relaxed text-center">
               Formålet er ikke at blive "fikset", men at skabe bevægelse og
-              flere handlemuligheder – i et tempo der er realistisk og
+              flere handlemuligheder, i et tempo der er realistisk og
               meningsfuldt.
             </p>
           </div>
@@ -297,8 +297,8 @@ export default function Home() {
             <div className="bg-bg rounded-xl p-6 shadow-sm border border-gray-200">
               <h3 className="text-xl font-medium mb-3">Kontakt</h3>
               <p className="text-muted leading-relaxed mb-4">
-                Kontakt mig, hvis du vil afklare om hypnoterapi – og min tilgang
-                – er relevant for dig.
+                Kontakt mig, hvis du vil afklare om hypnoterapi, og min tilgang
+               , er relevant for dig.
               </p>
               <div className="space-y-2 text-muted">
                 <p>

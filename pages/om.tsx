@@ -9,13 +9,13 @@ export default function Om() {
   return (
     <>
       <Head>
-        <title>Om Jan – hypnoterapeut i Birkerød | Gaarsdal</title>
+        <title>Om Jan - hypnoterapeut i Birkerød | Gaarsdal</title>
         <meta
           name="description"
           content="Jeg arbejder med mennesker, der har brug for ro, klarhed og en mere direkte vej til forandring. En rolig, jordnær tilgang til hypnoterapi i Birkerød."
         />
         <link rel="canonical" href="https://gaarsdal.net/om" />
-        <meta property="og:title" content="Om Jan – hypnoterapeut i Birkerød" />
+        <meta property="og:title" content="Om Jan - hypnoterapeut i Birkerød" />
         <meta
           property="og:description"
           content="Jeg arbejder med mennesker, der har brug for ro, klarhed og en mere direkte vej til forandring."
@@ -74,7 +74,7 @@ export default function Om() {
               de fast i noget, der ikke slipper.
             </p>
             <p className="text-muted leading-relaxed">
-              Jeg har altid været optaget af, hvordan mennesker fungerer — ikke
+              Jeg har altid været optaget af, hvordan mennesker fungerer, ikke
               kun på overfladen, men i de dybere lag, hvor vores automatiske
               reaktioner bliver skabt. Det er også derfor, jeg arbejder med
               hypnose. Det er en metode, der giver adgang til de steder, hvor
@@ -85,7 +85,7 @@ export default function Om() {
               Min tilgang er rolig, jordnær og uden drama. Jeg tror ikke på
               hurtige slogans eller "nu fikser vi dig"-mentalitet. Jeg tror på
               at skabe et trygt rum, hvor du kan være dig selv uden at blive
-              dømt. Her arbejder vi med det, der viser sig — i dit tempo, med
+              dømt. Her arbejder vi med det, der viser sig, i dit tempo, med
               respekt for dine grænser og din historie.
             </p>
           </section>
@@ -158,7 +158,7 @@ export default function Om() {
                 <div>
                   <strong className="block mb-1">Afklaring og målretning</strong>
                   <p className="text-sm text-muted leading-relaxed">
-                    Hvad sker der konkret for dig – og hvad ønsker du ændret? Vi
+                    Hvad sker der konkret for dig, og hvad ønsker du ændret? Vi
                     starter altid med det, der faktisk er i spil, ikke med
                     antagelser.
                   </p>
@@ -195,7 +195,7 @@ export default function Om() {
           <section className="bg-accent/5 border border-accent/20 rounded-xl p-6 mb-10">
             <p className="text-muted leading-relaxed italic">
               "Hvis du søger en behandler, der møder dig med ro, nysgerrighed
-              og respekt — uden at gøre dig forkert — så er du velkommen her."
+              og respekt, uden at gøre dig forkert, så er du velkommen her."
             </p>
           </section>
 
