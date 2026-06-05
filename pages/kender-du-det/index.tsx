@@ -241,7 +241,7 @@ export default function KenderDuDetPage() {
               </p>
               <div style={{ marginTop: "16px", padding: "12px 16px", background: "#f0f4f8", borderRadius: "6px", display: "inline-block" }}>
                 <p style={{ fontSize: "14px", fontWeight: 500, color: "#333", margin: "0 0 8px" }}>
-                  🎯 Gratis forsamtale — 30 minutter, telefon eller fysisk
+                  🎯 Gratis forsamtale, 30 minutter, telefon eller fysisk
                 </p>
                 <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
                   <a href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>
@@ -263,7 +263,7 @@ export default function KenderDuDetPage() {
         {/* CTA */}
         <section style={{ marginBottom: "60px", textAlign: "center", padding: "40px 20px" }}>
           <p style={{ fontSize: "16px", color: "#555", marginBottom: "28px" }}>
-            Gratis forsamtale på 30 minutter — telefon eller fysisk. Ingen forpligtelse.
+            Gratis forsamtale på 30 minutter, telefon eller fysisk. Ingen forpligtelse.
           </p>
           <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
             <Link
