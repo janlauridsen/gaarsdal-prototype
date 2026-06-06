@@ -21,7 +21,7 @@ type TtmConversation = {
   transcript: Array<{ role: string; content: string }>
 }
 type ExportData = { from: string; to: string; total_conversations: number; total_turns: number; conversations: Conversation[]; handoffs?: Handoff[]; leads?: Lead[]; feedback?: FeedbackItem[] }
-type Hit = { ts: string; path: string; city: string; postal?: string; region: string; day: string; mobile?: boolean }
+type Hit = { ts: string; path: string; city: string; postal?: string; region: string; day: string; mobile?: boolean; type?: string; sid?: string; entry?: boolean; referrer?: string; referrer_source?: string; utm_source?: string; utm_medium?: string; utm_campaign?: string; vw?: number; lang?: string; prev_path?: string; prev_dwell_ms?: number; prev_scroll_pct?: number; dwell_ms?: number; scroll_pct?: number }
 
 function ConvRow({ c, i, total, stateMap, onOpen, onDelete, deleting, selected, onToggle }: {
   c: Conversation; i: number; total: number
@@ -662,25 +662,70 @@ export default function AdminPage() {
 
           {/* Memory */}
           {tab==="traffic" && !openConvId && (() => {
+            // Adskil page-hits fra engagement-events
+            const pageHits = hits.filter(h => h.type !== "engagement")
+            const engagementEvents = hits.filter(h => h.type === "engagement")
+
             // Aggregate hits
             const byDay: Record<string, number> = {}
             const byPath: Record<string, number> = {}
             const byCity: Record<string, number> = {}
-            for (const h of hits) {
+            const bySource: Record<string, number> = {}
+            const byUTM: Record<string, number> = {}
+            const byEntry: Record<string, number> = {}
+            for (const h of pageHits) {
               byDay[h.day] = (byDay[h.day] ?? 0) + 1
               byPath[h.path] = (byPath[h.path] ?? 0) + 1
               const cityKey = h.postal ? `${h.city} (${h.postal})` : h.city
               byCity[cityKey] = (byCity[cityKey] ?? 0) + 1
+              const src = h.referrer_source || "ukendt"
+              bySource[src] = (bySource[src] ?? 0) + 1
+              if (h.utm_source) {
+                const u = `${h.utm_source}${h.utm_medium ? " / " + h.utm_medium : ""}${h.utm_campaign ? " / " + h.utm_campaign : ""}`
+                byUTM[u] = (byUTM[u] ?? 0) + 1
+              }
+              if (h.entry && h.path) byEntry[h.path] = (byEntry[h.path] ?? 0) + 1
             }
             const days = Object.entries(byDay).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,30)
             const paths = Object.entries(byPath).sort((a,b)=>b[1]-a[1])
             const cities = Object.entries(byCity).sort((a,b)=>b[1]-a[1]).slice(0,10)
+            const sources = Object.entries(bySource).sort((a,b)=>b[1]-a[1])
+            const utms = Object.entries(byUTM).sort((a,b)=>b[1]-a[1]).slice(0,10)
+            const entryPaths = Object.entries(byEntry).sort((a,b)=>b[1]-a[1]).slice(0,10)
             const maxDay = Math.max(...days.map(d=>d[1]), 1)
+
+            // Engagement per side: gennemsnitlig tid og scroll
+            const engByPath: Record<string, { dwell: number[]; scroll: number[] }> = {}
+            for (const e of engagementEvents) {
+              const pth = e.path || ""
+              if (!pth) continue
+              if (!engByPath[pth]) engByPath[pth] = { dwell: [], scroll: [] }
+              if (typeof e.dwell_ms === "number") engByPath[pth].dwell.push(e.dwell_ms)
+              if (typeof e.scroll_pct === "number") engByPath[pth].scroll.push(e.scroll_pct)
+            }
+            const engRows = Object.entries(engByPath).map(([pth, d]) => {
+              const avgDwell = d.dwell.length ? Math.round(d.dwell.reduce((a,b)=>a+b,0)/d.dwell.length/1000) : 0
+              const avgScroll = d.scroll.length ? Math.round(d.scroll.reduce((a,b)=>a+b,0)/d.scroll.length) : 0
+              return { path: pth, avgDwell, avgScroll, n: d.dwell.length || d.scroll.length }
+            }).sort((a,b)=>b.n-a.n).slice(0,12)
+
+            // Session-rejser: grupper hits per sid, sorter kronologisk
+            const bySid: Record<string, Hit[]> = {}
+            for (const h of pageHits) {
+              if (!h.sid) continue
+              if (!bySid[h.sid]) bySid[h.sid] = []
+              bySid[h.sid].push(h)
+            }
+            const journeys = Object.entries(bySid)
+              .map(([sid, hs]) => ({ sid, hits: hs.sort((a,b)=>a.ts.localeCompare(b.ts)) }))
+              .filter(j => j.hits.length > 0)
+              .sort((a,b)=>b.hits[b.hits.length-1].ts.localeCompare(a.hits[a.hits.length-1].ts))
+              .slice(0,25)
             return (
               <div>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"16px" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
-                    <div style={{ fontSize:"14px", color:"#888888" }}>Danske besøgende · {hits.length} hits</div>
+                    <div style={{ fontSize:"14px", color:"#888888" }}>Danske besøgende · {pageHits.length} sidevisninger · {journeys.length} sessioner</div>
                     <select
                       value={hitsDays}
                       onChange={e => { const d = Number(e.target.value); setHitsDays(d); fetchHits(d); fetchKeywords(d) }}
@@ -770,6 +815,104 @@ export default function AdminPage() {
                           </div>
                         )
                       })()}
+                    </div>
+                  </div>
+                )}
+
+                {/* Kilde (referrer) */}
+                {hits.length > 0 && (
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px", marginTop:"16px" }}>
+                    <div style={{ ...S.card, padding:"20px" }}>
+                      <div style={{ fontSize:"13px", fontWeight:500, color:"#888888", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Kilde (hvor kom de fra)</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                        {sources.map(([src, count]) => (
+                          <div key={src} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                            <span style={{ fontSize:"13px", color:"#cccccc" }}>{src}</span>
+                            <span style={{ fontSize:"13px", fontWeight:500, color:"#6B8F71" }}>{count}</span>
+                          </div>
+                        ))}
+                        {sources.length === 0 && <span style={{ fontSize:"13px", color:"#666" }}>Ingen data endnu</span>}
+                      </div>
+                    </div>
+
+                    {/* Entry-sider (hvor landede de først) */}
+                    <div style={{ ...S.card, padding:"20px" }}>
+                      <div style={{ fontSize:"13px", fontWeight:500, color:"#888888", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Entry-side (første side i besøg)</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                        {entryPaths.map(([pth, count]) => (
+                          <div key={pth} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                            <span style={{ fontSize:"13px", color:"#cccccc", fontFamily:"monospace" }}>{pth || "/"}</span>
+                            <span style={{ fontSize:"13px", fontWeight:500, color:"#6B8F71" }}>{count}</span>
+                          </div>
+                        ))}
+                        {entryPaths.length === 0 && <span style={{ fontSize:"13px", color:"#666" }}>Ingen data endnu</span>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* UTM-kampagner (kun hvis der er nogen) */}
+                {utms.length > 0 && (
+                  <div style={{ ...S.card, padding:"20px", marginTop:"16px" }}>
+                    <div style={{ fontSize:"13px", fontWeight:500, color:"#888888", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>UTM-kampagner (source / medium / campaign)</div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                      {utms.map(([u, count]) => (
+                        <div key={u} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                          <span style={{ fontSize:"13px", color:"#cccccc", fontFamily:"monospace" }}>{u}</span>
+                          <span style={{ fontSize:"13px", fontWeight:500, color:"#6B8F71" }}>{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Engagement: tid og scroll pr. side */}
+                {engRows.length > 0 && (
+                  <div style={{ ...S.card, padding:"20px", marginTop:"16px" }}>
+                    <div style={{ fontSize:"13px", fontWeight:500, color:"#888888", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Engagement pr. side (gns. tid og scroll)</div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+                      {engRows.map(r => (
+                        <div key={r.path} style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                          <span style={{ fontSize:"13px", color:"#cccccc", fontFamily:"monospace", width:"160px", flexShrink:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.path || "/"}</span>
+                          <span style={{ fontSize:"12px", color:"#6B8F71", width:"70px" }}>{r.avgDwell}s</span>
+                          <div style={{ flex:1, background:"#1f1f1f", borderRadius:"3px", height:"14px", overflow:"hidden" }}>
+                            <div style={{ height:"100%", background:"#5a7a8f", borderRadius:"3px", width:`${r.avgScroll}%` }} />
+                          </div>
+                          <span style={{ fontSize:"12px", color:"#888", width:"40px", textAlign:"right" }}>{r.avgScroll}%</span>
+                          <span style={{ fontSize:"11px", color:"#666", width:"36px", textAlign:"right" }}>n={r.n}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ fontSize:"11px", color:"#666", marginTop:"10px" }}>Tid = gns. sekunder på siden · søjle = gns. scroll-dybde · n = antal målinger</div>
+                  </div>
+                )}
+
+                {/* Session-rejser */}
+                {journeys.length > 0 && (
+                  <div style={{ ...S.card, padding:"20px", marginTop:"16px" }}>
+                    <div style={{ fontSize:"13px", fontWeight:500, color:"#888888", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Besøgsrejser (seneste 25 sessioner)</div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
+                      {journeys.map(j => {
+                        const first = j.hits[0]
+                        const src = first.referrer_source || "ukendt"
+                        const when = first.ts.slice(0,16).replace("T", " ")
+                        const cityLabel = first.postal ? `${first.city} (${first.postal})` : first.city
+                        return (
+                          <div key={j.sid} style={{ borderBottom:"1px solid #1f1f1f", paddingBottom:"10px" }}>
+                            <div style={{ fontSize:"11px", color:"#666", marginBottom:"4px" }}>
+                              {when} · {cityLabel} · via {src} · {first.mobile ? "📱" : "🖥"} · {j.hits.length} sider
+                            </div>
+                            <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:"4px" }}>
+                              {j.hits.map((h, i) => (
+                                <span key={i} style={{ display:"flex", alignItems:"center", gap:"4px" }}>
+                                  <span style={{ fontSize:"12px", color:"#cccccc", fontFamily:"monospace", background:"#1a1a1a", padding:"2px 6px", borderRadius:"4px" }}>{h.path || "/"}</span>
+                                  {i < j.hits.length-1 && <span style={{ fontSize:"12px", color:"#666" }}>→</span>}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 )}
