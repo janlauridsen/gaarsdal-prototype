@@ -21,7 +21,7 @@ type TtmConversation = {
   transcript: Array<{ role: string; content: string }>
 }
 type ExportData = { from: string; to: string; total_conversations: number; total_turns: number; conversations: Conversation[]; handoffs?: Handoff[]; leads?: Lead[]; feedback?: FeedbackItem[] }
-type Hit = { ts: string; path: string; city: string; postal?: string; region: string; day: string; mobile?: boolean; type?: string; sid?: string; entry?: boolean; referrer?: string; referrer_source?: string; utm_source?: string; utm_medium?: string; utm_campaign?: string; vw?: number; lang?: string; prev_path?: string; prev_dwell_ms?: number; prev_scroll_pct?: number; dwell_ms?: number; scroll_pct?: number }
+type Hit = { ts: string; path: string; city: string; postal?: string; region: string; day: string; mobile?: boolean; type?: string; sid?: string; entry?: boolean; referrer?: string; referrer_source?: string; utm_source?: string; utm_medium?: string; utm_campaign?: string; vw?: number; lang?: string; prev_path?: string; prev_dwell_ms?: number; prev_scroll_pct?: number; dwell_ms?: number; scroll_pct?: number; own?: boolean }
 
 function ConvRow({ c, i, total, stateMap, onOpen, onDelete, deleting, selected, onToggle }: {
   c: Conversation; i: number; total: number
@@ -124,6 +124,7 @@ export default function AdminPage() {
   const [hitsLoading, setHitsLoading] = useState(false)
   const [hitsError, setHitsError] = useState<string|null>(null)
   const [hitsDays, setHitsDays] = useState(30)
+  const [hideOwn, setHideOwn] = useState(true)
   const [kwData, setKwData] = useState<Array<{ day: string; keywords: Record<string, number> }>>([])
   const [kwLoading, setKwLoading] = useState(false)
   const [showTestUsers, setShowTestUsers] = useState(false)
@@ -662,9 +663,12 @@ export default function AdminPage() {
 
           {/* Memory */}
           {tab==="traffic" && !openConvId && (() => {
+            // Skjul egne besøg hvis slået til
+            const visibleHits = hideOwn ? hits.filter(h => h.own !== true) : hits
+            const ownCount = hits.filter(h => h.own === true && h.type !== "engagement").length
             // Adskil page-hits fra engagement-events
-            const pageHits = hits.filter(h => h.type !== "engagement")
-            const engagementEvents = hits.filter(h => h.type === "engagement")
+            const pageHits = visibleHits.filter(h => h.type !== "engagement")
+            const engagementEvents = visibleHits.filter(h => h.type === "engagement")
 
             // Aggregate hits
             const byDay: Record<string, number> = {}
@@ -737,7 +741,10 @@ export default function AdminPage() {
                       <option value={365}>365 dage</option>
                     </select>
                   </div>
-                  <button onClick={()=>{ fetchHits(); fetchKeywords() }} disabled={hitsLoading} style={{ padding:"7px 16px", background:"#6B8F71", color:"#1a1a1a", border:"none", borderRadius:"8px", fontSize:"13px", cursor:hitsLoading?"not-allowed":"pointer", opacity:hitsLoading?0.7:1, fontFamily:"inherit" }}>{hitsLoading?"Henter…":"↻ Opdater"}</button>
+                  <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                    <button onClick={()=>setHideOwn(v=>!v)} style={{ padding:"7px 14px", background:"transparent", color:hideOwn?"#d4a264":"#888888", border:`1.5px solid ${hideOwn?"#d4a264":"#D8D5CC"}`, borderRadius:"8px", fontSize:"13px", cursor:"pointer", fontFamily:"inherit" }}>{hideOwn ? `🙈 Egne skjult (${ownCount})` : "👁 Egne vist"}</button>
+                    <button onClick={()=>{ fetchHits(); fetchKeywords() }} disabled={hitsLoading} style={{ padding:"7px 16px", background:"#6B8F71", color:"#1a1a1a", border:"none", borderRadius:"8px", fontSize:"13px", cursor:hitsLoading?"not-allowed":"pointer", opacity:hitsLoading?0.7:1, fontFamily:"inherit" }}>{hitsLoading?"Henter…":"↻ Opdater"}</button>
+                  </div>
                 </div>
                 {hitsError && <div style={{ background:"#2b0f0f", color:"#e06060", padding:"12px 16px", borderRadius:"8px", marginBottom:"16px", fontSize:"14px" }}>{hitsError}</div>}
                 {hitsLoading && hits.length===0 && <div style={{ textAlign:"center", color:"#888888", fontSize:"14px", padding:"40px 0" }}>Henter trafik…</div>}
