@@ -99,6 +99,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // gem engagement som separat let event (ingen ny IP-opslag nødvendig).
   if (isExitBeacon && prevPath) {
     try {
+      const ownIpsE = (process.env.OWN_IP ?? "").split(",").map(s => s.trim()).filter(Boolean)
+      const isOwnE = clientIp ? ownIpsE.includes(clientIp) : false
       const now = Date.now()
       const engagement = JSON.stringify({
         type: "engagement",
@@ -108,11 +110,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         scroll_pct: prevScrollPct,
         ts: new Date(now).toISOString(),
         day: new Date(now).toISOString().slice(0, 10),
+        own: isOwnE,
       })
       await redis.zadd(HITS_KEY, { score: now, member: engagement })
     } catch {}
     return res.status(204).end()
   }
+
+  // Egen-besøg: sammenlign mod OWN_IP (kommasepareret liste tilladt).
+  // Vi gemmer IKKE fremmede IP'er, kun et boolean-flag.
+  const ownIps = (process.env.OWN_IP ?? "").split(",").map(s => s.trim()).filter(Boolean)
+  const isOwn = clientIp ? ownIps.includes(clientIp) : false
 
   let city = "Ukendt"
   let postal = ""
@@ -152,6 +160,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     utm_campaign: utmCampaign,
     vw: viewportW,
     lang,
+    own: isOwn,
     // engagement for forrige side, hvis sendt sammen med denne navigation:
     prev_path: prevPath,
     prev_dwell_ms: prevDwellMs,
