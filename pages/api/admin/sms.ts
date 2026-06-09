@@ -15,12 +15,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === "GET") {
     const [optinRaw, positiveRaw, stopped, sentRaw] = await Promise.all([
-      redis.zrange(OPTIN_KEY, 0, -1, { rev: true }).catch(() => [] as string[]),
-      redis.zrange(POSITIVE_KEY, 0, -1, { rev: true }).catch(() => [] as string[]),
+      (redis.zrange(OPTIN_KEY, 0, -1) as Promise<string[]>).catch(() => [] as string[]),
+      (redis.zrange(POSITIVE_KEY, 0, -1) as Promise<string[]>).catch(() => [] as string[]),
       redis.smembers(STOPPED_KEY).catch(() => [] as string[]),
-      redis.zrange(SENT_KEY, 0, -1, { rev: true }).catch(() => [] as string[]),
+      (redis.zrange(SENT_KEY, 0, -1) as Promise<string[]>).catch(() => [] as string[]),
     ]) as [string[], string[], string[], string[]]
-    const parse = (arr: string[]) => arr.map(m => { try { return JSON.parse(m) } catch { return null } }).filter(Boolean)
+    const parse = (arr: string[]) => [...arr].reverse().map(m => { try { return JSON.parse(m) } catch { return null } }).filter(Boolean)
     return res.status(200).json({
       optin: parse(optinRaw),
       positive: parse(positiveRaw),
