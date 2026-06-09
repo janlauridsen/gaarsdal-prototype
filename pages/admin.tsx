@@ -142,6 +142,15 @@ export default function AdminPage() {
     } catch (e:any) { setMemoryError(e.message ?? "Ukendt fejl") } finally { setMemoryLoading(false) }
   }, [secret])
 
+  const fetchSms = useCallback(async () => {
+    if (!secret) return
+    setSmsLoading(true)
+    try {
+      const r = await fetch("/api/admin/sms?token=" + encodeURIComponent(secret))
+      if (r.ok) setSmsData(await r.json())
+    } catch {} finally { setSmsLoading(false) }
+  }, [secret])
+
   const fetchHits = useCallback(async (days = hitsDays) => {
     if (!secret) return; setHitsLoading(true); setHitsError(null)
     try {
@@ -366,6 +375,7 @@ export default function AdminPage() {
               { id:"traffic", label:"Trafik" },
               { id:"memory", label:"Hukommelse" },
               { id:"ttm", label:`TTM (${ttmData?.length ?? "?"})` },
+              { id:"sms", label:"SMS" },
             ] as const).map(t => (
               <button key={t.id} onClick={()=>{ setTab(t.id); setOpenConvId(null); if(t.id==="memory"&&!memoryData&&!memoryLoading) fetchMemory(); if(t.id==="traffic"&&hits.length===0&&!hitsLoading) { fetchHits(); fetchKeywords() }; if(t.id==="ttm"&&!ttmData&&!ttmLoading) fetchTtm() }}
                 style={{ padding:"8px 16px", borderRadius:"8px", fontSize:"14px", border:"none", cursor:"pointer", background:tab===t.id?"#6B8F71":"#1a1a1a", color:tab===t.id?"#1a1a1a":"#888888", fontWeight:tab===t.id?500:400, fontFamily:"inherit", boxShadow:"0 2px 10px rgba(0,0,0,0.05)" }}>
@@ -1096,6 +1106,134 @@ export default function AdminPage() {
           )}
 
           {/* TTM samtale-detalje */}
+          {tab==="sms" && (() => {
+            const optin = smsData?.optin ?? []
+            const positive = smsData?.positive ?? []
+            const stopped = smsData?.stopped ?? []
+            const sent = smsData?.sent ?? []
+            const allRecipients = smsTarget === "optin" ? optin.map((o:any)=>o.phone)
+              : smsTarget === "positive" ? positive.map((o:any)=>o.phone)
+              : [...new Set([...optin.map((o:any)=>o.phone), ...positive.map((o:any)=>o.phone)])]
+            const MSG_LIMIT = 160 - 30 // reserve for STOP line
+
+            const sendSms = async () => {
+              if (!smsMsg.trim() || allRecipients.length === 0) return
+              setSmsSending(true); setSmsSendResult(null)
+              try {
+                const r = await fetch("/api/sms/send", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "x-admin-token": secret },
+                  body: JSON.stringify({ message: smsMsg, recipients: allRecipients })
+                })
+                const d = await r.json()
+                setSmsSendResult(d.ok ? `✓ Sendt til ${d.sent} (sprunget over: ${d.skipped})` : `Fejl: ${d.error}`)
+                if (d.ok) { setSmsMsg(""); fetchSms() }
+              } catch (e) { setSmsSendResult("Netværksfejl") } finally { setSmsSending(false) }
+            }
+
+            const addPositive = async () => {
+              if (!smsNewPhone.trim()) return
+              await fetch("/api/admin/sms?token=" + encodeURIComponent(secret), {
+                method: "POST", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ action: "add_positive", phone: smsNewPhone, note: smsNewNote })
+              })
+              setSmsNewPhone(""); setSmsNewNote(""); fetchSms()
+            }
+
+            return (
+              <div style={{ padding:"16px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:"12px", marginBottom:"20px" }}>
+                  <h2 style={{ fontSize:"18px", fontWeight:500, color:"#dddddd", margin:0 }}>SMS</h2>
+                  <button onClick={fetchSms} disabled={smsLoading} style={{ padding:"7px 14px", background:"#6B8F71", color:"#1a1a1a", border:"none", borderRadius:"8px", fontSize:"13px", cursor:"pointer" }}>{smsLoading?"Henter…":"↻ Opdater"}</button>
+                  <span style={{ fontSize:"13px", color:"#888" }}>Opt-in: {optin.length} · Positiv: {positive.length} · STOP: {stopped.length}</span>
+                </div>
+
+                {/* SEND */}
+                <div style={{ ...S.card, padding:"20px", marginBottom:"16px" }}>
+                  <div style={{ fontSize:"13px", fontWeight:500, color:"#888", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Send SMS</div>
+                  <div style={{ display:"flex", gap:"10px", marginBottom:"12px" }}>
+                    {(["optin","positive","both"] as const).map(t => (
+                      <button key={t} onClick={()=>setSmsTarget(t)} style={{ padding:"6px 14px", background:smsTarget===t?"#5a7a8f":"transparent", color:smsTarget===t?"#fff":"#888", border:`1px solid ${smsTarget===t?"#5a7a8f":"#333"}`, borderRadius:"6px", fontSize:"13px", cursor:"pointer" }}>
+                        {t==="optin"?`Opt-in (${optin.length})`:t==="positive"?`Positiv (${positive.length})`:`Begge (${allRecipients.length})`}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={smsMsg}
+                    onChange={e=>setSmsMsg(e.target.value)}
+                    placeholder="Skriv din SMS-besked her... (STOP-linje tilføjes automatisk)"
+                    rows={4}
+                    style={{ width:"100%", padding:"10px", background:"#1a1a1a", color:"#ddd", border:"1px solid #333", borderRadius:"6px", fontSize:"14px", fontFamily:"inherit", resize:"vertical", boxSizing:"border-box" }}
+                  />
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:"8px" }}>
+                    <span style={{ fontSize:"12px", color: smsMsg.length > MSG_LIMIT ? "#d4a264" : "#666" }}>{smsMsg.length}/{MSG_LIMIT} tegn · ca. {smsMsg.length + 30} med STOP-linje</span>
+                    <button onClick={sendSms} disabled={smsSending || allRecipients.length===0 || !smsMsg.trim()} style={{ padding:"9px 20px", background:"#6B8F71", color:"#1a1a1a", border:"none", borderRadius:"6px", fontSize:"13px", cursor:"pointer", opacity: (smsSending||allRecipients.length===0||!smsMsg.trim())?0.5:1 }}>
+                      {smsSending ? "Sender…" : `Send til ${allRecipients.length} numre`}
+                    </button>
+                  </div>
+                  {smsSendResult && <div style={{ marginTop:"10px", padding:"10px", background: smsSendResult.startsWith("✓")?"#0f2b15":"#2a1010", color: smsSendResult.startsWith("✓")?"#5aad72":"#d46a6a", borderRadius:"6px", fontSize:"13px" }}>{smsSendResult}</div>}
+                </div>
+
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px", marginBottom:"16px" }}>
+                  {/* OPT-IN LISTE */}
+                  <div style={{ ...S.card, padding:"20px" }}>
+                    <div style={{ fontSize:"13px", fontWeight:500, color:"#888", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Opt-in via chatbot ({optin.length})</div>
+                    {optin.length === 0 && <span style={{ fontSize:"13px", color:"#555" }}>Ingen endnu</span>}
+                    {optin.map((o:any, i:number) => (
+                      <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:"1px solid #1f1f1f", paddingBottom:"8px", marginBottom:"8px" }}>
+                        <div>
+                          <span style={{ fontSize:"13px", color:"#ccc", fontFamily:"monospace" }}>{o.phone}</span>
+                          <span style={{ fontSize:"11px", color:"#666", marginLeft:"8px" }}>{o.source} · {o.day}</span>
+                        </div>
+                        <button onClick={async ()=>{ await fetch("/api/admin/sms?token="+encodeURIComponent(secret),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"remove_optin",phone:o.phone})}); fetchSms() }} style={{ background:"none", border:"none", color:"#666", cursor:"pointer", fontSize:"12px" }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* POSITIV LISTE */}
+                  <div style={{ ...S.card, padding:"20px" }}>
+                    <div style={{ fontSize:"13px", fontWeight:500, color:"#888", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Positiv liste ({positive.length})</div>
+                    <div style={{ display:"flex", gap:"8px", marginBottom:"12px" }}>
+                      <input value={smsNewPhone} onChange={e=>setSmsNewPhone(e.target.value)} placeholder="Tlf nr (8 cifre)" style={{ flex:1, padding:"7px 10px", background:"#1a1a1a", color:"#ddd", border:"1px solid #333", borderRadius:"6px", fontSize:"13px", fontFamily:"inherit" }} />
+                      <input value={smsNewNote} onChange={e=>setSmsNewNote(e.target.value)} placeholder="Note (navn/kilde)" style={{ flex:1, padding:"7px 10px", background:"#1a1a1a", color:"#ddd", border:"1px solid #333", borderRadius:"6px", fontSize:"13px", fontFamily:"inherit" }} />
+                      <button onClick={addPositive} style={{ padding:"7px 14px", background:"#6B8F71", color:"#1a1a1a", border:"none", borderRadius:"6px", fontSize:"13px", cursor:"pointer" }}>+ Tilføj</button>
+                    </div>
+                    {positive.length === 0 && <span style={{ fontSize:"13px", color:"#555" }}>Ingen endnu — tilføj manuelt</span>}
+                    {positive.map((o:any, i:number) => (
+                      <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:"1px solid #1f1f1f", paddingBottom:"8px", marginBottom:"8px" }}>
+                        <div>
+                          <span style={{ fontSize:"13px", color:"#ccc", fontFamily:"monospace" }}>{o.phone}</span>
+                          {o.note && <span style={{ fontSize:"11px", color:"#888", marginLeft:"8px" }}>{o.note}</span>}
+                          <span style={{ fontSize:"11px", color:"#666", marginLeft:"8px" }}>{o.day}</span>
+                        </div>
+                        <button onClick={async ()=>{ await fetch("/api/admin/sms?token="+encodeURIComponent(secret),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"remove_positive",phone:o.phone})}); fetchSms() }} style={{ background:"none", border:"none", color:"#666", cursor:"pointer", fontSize:"12px" }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* STOP + SENDT */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px" }}>
+                  <div style={{ ...S.card, padding:"20px" }}>
+                    <div style={{ fontSize:"13px", fontWeight:500, color:"#888", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>STOP-liste ({stopped.length})</div>
+                    {stopped.length === 0 && <span style={{ fontSize:"13px", color:"#555" }}>Ingen afmeldinger</span>}
+                    {stopped.map((p:string,i:number) => <div key={i} style={{ fontSize:"13px", color:"#666", fontFamily:"monospace", paddingBottom:"4px" }}>{p}</div>)}
+                  </div>
+                  <div style={{ ...S.card, padding:"20px" }}>
+                    <div style={{ fontSize:"13px", fontWeight:500, color:"#888", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Sendte kampagner (seneste 20)</div>
+                    {sent.length === 0 && <span style={{ fontSize:"13px", color:"#555" }}>Ingen endnu</span>}
+                    {sent.map((s:any,i:number) => (
+                      <div key={i} style={{ borderBottom:"1px solid #1f1f1f", paddingBottom:"8px", marginBottom:"8px" }}>
+                        <span style={{ fontSize:"12px", color:"#888" }}>{s.ts?.slice(0,16).replace("T"," ")} · {s.sent} sendt</span>
+                        <div style={{ fontSize:"12px", color:"#666", marginTop:"2px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.message?.slice(0,80)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+
           {tab==="ttm" && openTtmId && (() => {
             const conv = ttmData?.find(c => c.conversation_id === openTtmId)
             if (!conv) return null
