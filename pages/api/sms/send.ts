@@ -20,10 +20,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: "Mangler besked eller modtagere" })
   }
 
-  const apiKey = process.env.GATEWAYAPI_KEY
   const apiToken = process.env.GATEWAYAPI_TOKEN
-  if (!apiKey || !apiToken) {
-    return res.status(500).json({ error: "GATEWAYAPI_KEY / GATEWAYAPI_TOKEN mangler i env" })
+  if (!apiToken) {
+    return res.status(500).json({ error: "GATEWAYAPI_TOKEN mangler i env" })
   }
 
   const redis = getRedisClient()
@@ -54,7 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Basic " + Buffer.from(`${apiKey}:${apiToken}`).toString("base64"),
+        "Authorization": "Basic " + Buffer.from(`${apiToken}:`).toString("base64"),
       },
       body: JSON.stringify(payload),
     })
