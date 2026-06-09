@@ -47,6 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       safeZrange(redis, SENT_KEY),
     ])
 
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
     return res.status(200).json({
       optin: parseMembers(optinRaw),
       positive: parseMembers(positiveRaw),
@@ -69,7 +70,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         day: new Date(now).toISOString().slice(0, 10),
       })
       await redis.zadd(POSITIVE_KEY, { score: now, member: record })
-      return res.status(200).json({ ok: true })
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+    return res.status(200).json({ ok: true })
     }
 
     if (action === "remove_positive" || action === "remove_optin") {
@@ -80,7 +82,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           if (JSON.parse(m).phone === normalized) await redis.zrem(key, m)
         } catch {}
       }
-      return res.status(200).json({ ok: true })
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+    return res.status(200).json({ ok: true })
     }
   }
 
