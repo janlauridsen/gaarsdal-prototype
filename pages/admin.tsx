@@ -154,7 +154,7 @@ export default function AdminPage() {
     if (!secret) return
     setSmsLoading(true)
     try {
-      const r = await fetch("/api/admin/sms?token=" + encodeURIComponent(secret))
+      const r = await fetch("/api/admin/sms?token=" + encodeURIComponent(secret) + "&t=" + Date.now())
       if (r.ok) setSmsData(await r.json())
     } catch {} finally { setSmsLoading(false) }
   }, [secret])
