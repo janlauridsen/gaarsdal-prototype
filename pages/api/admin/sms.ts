@@ -41,14 +41,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({ ok: true })
     }
     if (action === "remove_positive") {
-      const all = await redis.zrange(POSITIVE_KEY, 0, -1).catch(() => [] as string[])
+      const all = (await redis.zrange(POSITIVE_KEY, 0, -1).catch(() => [] as string[])) as string[]
       for (const m of all) {
         try { if (JSON.parse(m).phone === normalized) await redis.zrem(POSITIVE_KEY, m) } catch {}
       }
       return res.status(200).json({ ok: true })
     }
     if (action === "remove_optin") {
-      const all = await redis.zrange(OPTIN_KEY, 0, -1).catch(() => [] as string[])
+      const all = (await redis.zrange(OPTIN_KEY, 0, -1).catch(() => [] as string[])) as string[]
       for (const m of all) {
         try { if (JSON.parse(m).phone === normalized) await redis.zrem(OPTIN_KEY, m) } catch {}
       }
