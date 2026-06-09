@@ -6,12 +6,8 @@ import { OPTIN_KEY, POSITIVE_KEY, STOPPED_KEY, SENT_KEY, normalizePhone } from "
 
 function parseMembers(raw: unknown): any[] {
   if (!Array.isArray(raw)) return []
-  return raw
-    .reverse()
-    .map(m => {
-      try { return JSON.parse(String(m)) } catch { return null }
-    })
-    .filter(Boolean)
+  // Upstash returnerer allerede parsede objekter - ingen JSON.parse/String() konvertering
+  return [...raw].reverse().filter(m => m !== null && m !== undefined)
 }
 
 async function safeZrange(redis: any, key: string): Promise<any[]> {
