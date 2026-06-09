@@ -14,10 +14,11 @@ function parseMembers(raw: unknown): any[] {
     .filter(Boolean)
 }
 
-async function safeZrange(redis: any, key: string): Promise<string[]> {
+async function safeZrange(redis: any, key: string): Promise<any[]> {
   try {
+    // Upstash auto-deserialiser JSON - returner objekter direkte
     const result = await redis.zrange(key, 0, -1)
-    return Array.isArray(result) ? result.map(String) : []
+    return Array.isArray(result) ? result : []
   } catch {
     return []
   }
