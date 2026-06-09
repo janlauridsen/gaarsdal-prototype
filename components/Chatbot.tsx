@@ -63,6 +63,10 @@ export default function Chatbot() {
 
   // ─── Consent-state ─────────────────────────────────────────────────────────
   const [consentRequired, setConsentRequired] = useState(false)
+  const [showSmsOptin, setShowSmsOptin] = useState(false)
+  const [smsPhone, setSmsPhone] = useState("")
+  const [smsStatus, setSmsStatus] = useState<"idle"|"sending"|"ok"|"error"|"stopped">("idle")
+  const [smsChatbotType, setSmsChatbotType] = useState<string>("standard")
   const [showPrivacyPanel, setShowPrivacyPanel] = useState(false)
   const [consentRetentionDays, setConsentRetentionDays] = useState<ConsentRetentionDays | null>(null)
 
@@ -1046,6 +1050,10 @@ export default function Chatbot() {
       setConsentRetentionDays(retentionDays)
       setConsentRequired(false)
       setShowPrivacyPanel(false)
+      // Vis SMS opt-in hvis brugeren valgte at gemme
+      if (retentionDays > 0) {
+        setShowSmsOptin(true)
+      }
       // Re-init nu med samtykke
       initInFlightRef.current = false
       void init()
@@ -1053,6 +1061,25 @@ export default function Chatbot() {
       // Fejl: lad brugeren prøve igen
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleSmsOptin() {
+    if (!smsPhone.trim()) return
+    setSmsStatus("sending")
+    try {
+      const sid = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("g_sid") ?? "" : ""
+      const res = await fetch("/api/sms/optin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: smsPhone.trim(), source: "chatbot_consent", sid, chatbotType: smsChatbotType }),
+      })
+      const data = await res.json()
+      if (data.ok) setSmsStatus("ok")
+      else if (data.reason === "stopped") setSmsStatus("stopped")
+      else setSmsStatus("error")
+    } catch {
+      setSmsStatus("error")
     }
   }
 
@@ -1217,7 +1244,60 @@ export default function Chatbot() {
                 {!composerDetached && (
                   <div ref={footerRef} className={footerClass}>
                     {/* ── Consent banner (første besøg) ── */}
-                    {consentRequired && (
+                    {showSmsOptin && smsStatus === "idle" && (
+                <div style={{ margin: "12px 16px", padding: "16px", background: "#f0f4f8", borderRadius: "10px", border: "1px solid #c5d2da" }}>
+                  <p style={{ fontSize: "13px", fontWeight: 500, color: "#333", margin: "0 0 4px" }}>
+                    📱 Vil du modtage nyheder fra Jan 1-2 gange om året?
+                  </p>
+                  <p style={{ fontSize: "12px", color: "#666", margin: "0 0 12px" }}>
+                    Dit nummer gemmes kun til dette formål. Du kan altid afmelde med STOP.
+                  </p>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                    <input
+                      type="tel"
+                      placeholder="Dit telefonnummer"
+                      value={smsPhone}
+                      onChange={e => setSmsPhone(e.target.value)}
+                      style={{ flex: 1, minWidth: "140px", padding: "8px 10px", border: "1px solid #c5d2da", borderRadius: "6px", fontSize: "13px", fontFamily: "inherit" }}
+                    />
+                    <button
+                      onClick={handleSmsOptin}
+                      style={{ padding: "8px 14px", background: "#5a7a8f", color: "#fff", border: "none", borderRadius: "6px", fontSize: "13px", cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      Ja tak
+                    </button>
+                    <button
+                      onClick={() => setShowSmsOptin(false)}
+                      style={{ padding: "8px 10px", background: "transparent", color: "#888", border: "none", borderRadius: "6px", fontSize: "13px", cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      Nej tak
+                    </button>
+                  </div>
+                </div>
+              )}
+              {showSmsOptin && smsStatus === "sending" && (
+                <div style={{ margin: "12px 16px", padding: "12px 16px", background: "#f0f4f8", borderRadius: "10px", fontSize: "13px", color: "#666" }}>
+                  Gemmer dit nummer...
+                </div>
+              )}
+              {showSmsOptin && smsStatus === "ok" && (
+                <div style={{ margin: "12px 16px", padding: "12px 16px", background: "#e8f5e9", borderRadius: "10px", fontSize: "13px", color: "#4a7c5f" }}>
+                  ✓ Tak! Jan kontakter dig højst 1-2 gange om året. Svar altid STOP for at afmelde.
+                </div>
+              )}
+              {showSmsOptin && smsStatus === "stopped" && (
+                <div style={{ margin: "12px 16px", padding: "12px 16px", background: "#f5f7fa", borderRadius: "10px", fontSize: "13px", color: "#666" }}>
+                  Dit nummer er på afmeldingslisten. Vi sender dig ingen SMS.
+                </div>
+              )}
+              {showSmsOptin && smsStatus === "error" && (
+                <div style={{ margin: "12px 16px", padding: "12px 16px", background: "#fdf6f0", borderRadius: "10px", fontSize: "13px", color: "#c0783a" }}>
+                  Noget gik galt. Prøv igen eller spring over.
+                  <button onClick={() => { setSmsStatus("idle"); setSmsPhone("") }} style={{ marginLeft: "8px", background: "none", border: "none", color: "#5a7a8f", cursor: "pointer", fontSize: "13px" }}>Prøv igen</button>
+                  <button onClick={() => setShowSmsOptin(false)} style={{ marginLeft: "8px", background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: "13px" }}>Spring over</button>
+                </div>
+              )}
+              {consentRequired && (
                       <ConsentBanner
                         onConsent={handleConsent}
                         onDelete={handleDeleteData}
