@@ -19,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       redis.zrange(POSITIVE_KEY, 0, -1, { rev: true }).catch(() => [] as string[]),
       redis.smembers(STOPPED_KEY).catch(() => [] as string[]),
       redis.zrange(SENT_KEY, 0, -1, { rev: true }).catch(() => [] as string[]),
-    ])
+    ]) as [string[], string[], string[], string[]]
     const parse = (arr: string[]) => arr.map(m => { try { return JSON.parse(m) } catch { return null } }).filter(Boolean)
     return res.status(200).json({
       optin: parse(optinRaw),
