@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Fjern fra opt-in liste (scan og slet match)
   for (const key of [OPTIN_KEY, POSITIVE_KEY]) {
-    const all = await redis.zrange(key, 0, -1).catch(() => [] as string[])
+    const all = (await redis.zrange(key, 0, -1).catch(() => [] as string[])) as string[]
     for (const m of all) {
       try {
         const parsed = JSON.parse(m)
