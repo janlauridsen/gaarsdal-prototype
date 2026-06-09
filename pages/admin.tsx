@@ -116,6 +116,14 @@ export default function AdminPage() {
   const [memoryError, setMemoryError] = useState<string|null>(null)
   const [expandedUser, setExpandedUser] = useState<string|null>(null)
   const [ttmData, setTtmData] = useState<TtmConversation[]|null>(null)
+  const [smsData, setSmsData] = useState<{optin:any[];positive:any[];stopped:string[];sent:any[]}|null>(null)
+  const [smsLoading, setSmsLoading] = useState(false)
+  const [smsMsg, setSmsMsg] = useState("")
+  const [smsTarget, setSmsTarget] = useState<"optin"|"positive"|"both">("optin")
+  const [smsSending, setSmsSending] = useState(false)
+  const [smsSendResult, setSmsSendResult] = useState<string|null>(null)
+  const [smsNewPhone, setSmsNewPhone] = useState("")
+  const [smsNewNote, setSmsNewNote] = useState("")
   const [ttmLoading, setTtmLoading] = useState(false)
   const [ttmError, setTtmError] = useState<string|null>(null)
   const [openTtmId, setOpenTtmId] = useState<string|null>(null)
@@ -377,7 +385,7 @@ export default function AdminPage() {
               { id:"ttm", label:`TTM (${ttmData?.length ?? "?"})` },
               { id:"sms", label:"SMS" },
             ] as const).map(t => (
-              <button key={t.id} onClick={()=>{ setTab(t.id); setOpenConvId(null); if(t.id==="memory"&&!memoryData&&!memoryLoading) fetchMemory(); if(t.id==="traffic"&&hits.length===0&&!hitsLoading) { fetchHits(); fetchKeywords() }; if(t.id==="ttm"&&!ttmData&&!ttmLoading) fetchTtm() }}
+              <button key={t.id} onClick={()=>{ setTab(t.id); setOpenConvId(null); if(t.id==="memory"&&!memoryData&&!memoryLoading) fetchMemory(); if(t.id==="traffic"&&hits.length===0&&!hitsLoading) { fetchHits(); fetchKeywords() }; if(t.id==="ttm"&&!ttmData&&!ttmLoading) fetchTtm(); if(t.id==="sms"&&!smsData&&!smsLoading) fetchSms() }}
                 style={{ padding:"8px 16px", borderRadius:"8px", fontSize:"14px", border:"none", cursor:"pointer", background:tab===t.id?"#6B8F71":"#1a1a1a", color:tab===t.id?"#1a1a1a":"#888888", fontWeight:tab===t.id?500:400, fontFamily:"inherit", boxShadow:"0 2px 10px rgba(0,0,0,0.05)" }}>
                 {t.label}
               </button>
