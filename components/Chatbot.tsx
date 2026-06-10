@@ -66,6 +66,14 @@ export default function Chatbot() {
   const [showSmsOptin, setShowSmsOptin] = useState(false)
   const [smsPhone, setSmsPhone] = useState("")
   const [smsStatus, setSmsStatus] = useState<"idle"|"sending"|"ok"|"error"|"stopped">("idle")
+
+  // Auto-dismiss SMS banner 3 sekunder efter ok/stopped
+  useEffect(() => {
+    if (smsStatus === "ok" || smsStatus === "stopped") {
+      const t = setTimeout(() => setShowSmsOptin(false), 3000)
+      return () => clearTimeout(t)
+    }
+  }, [smsStatus])
   const [smsChatbotType, setSmsChatbotType] = useState<string>("standard")
   const [showPrivacyPanel, setShowPrivacyPanel] = useState(false)
   const [consentRetentionDays, setConsentRetentionDays] = useState<ConsentRetentionDays | null>(null)
