@@ -71,6 +71,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ ok: true })
     }
 
+    if (action === "remove_stopped") {
+      await redis.srem(STOPPED_KEY, normalized)
+      return res.status(200).json({ ok: true })
+    }
+
     if (action === "remove_positive" || action === "remove_optin") {
       const key = action === "remove_positive" ? POSITIVE_KEY : OPTIN_KEY
       const all = await safeZrange(redis, key)
