@@ -28,8 +28,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const redis = getRedisClient()
 
   // Tilføj STOP-instruks automatisk hvis ikke allerede i beskeden
-  const stopText = "Svar STOP for at afmelde"
-  const fullMessage = message.toLowerCase().includes("stop") ? message : `${message}\n${stopText}`
+  const stopText = "Afmeld: gaarsdal.net/afmeld"
+  const fullMessage = message.toLowerCase().includes("afmeld") || message.toLowerCase().includes("gaarsdal.net/afmeld") ? message : `${message}\n${stopText}`
 
   // Filtrer STOP-listen
   const stopped = redis ? await redis.smembers(STOPPED_KEY).catch(() => []) : []
