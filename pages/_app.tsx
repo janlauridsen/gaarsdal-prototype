@@ -171,6 +171,9 @@ export default function App({ Component, pageProps }: AppProps) {
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
         />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet" />
         <meta name="google-site-verification" content="l36Yfpb4X_h62m5tGYL9MRXgFSUpwBBtcX_5aSw193M" />
         <link rel="icon" type="image/png" href="/android-chrome-512x512.png" />
         <link rel="apple-touch-icon" href="/android-chrome-512x512.png" />
