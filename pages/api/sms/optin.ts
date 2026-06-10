@@ -33,9 +33,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const redis = getRedisClient()
   if (!redis) return res.status(500).json({ error: "Ingen Redis" })
 
-  // Tjek STOP-liste — respektér altid
+  // Hvis aktivt tilmelder sig igen, fjern fra STOP-liste (nyt eksplicit samtykke)
   const stopped = await redis.sismember(STOPPED_KEY, normalized).catch(() => 0)
-  if (stopped) return res.status(200).json({ ok: false, reason: "stopped" })
+  if (stopped) {
+    await redis.srem(STOPPED_KEY, normalized).catch(() => null)
+  }
 
   const now = Date.now()
   const record = JSON.stringify({
