@@ -65,7 +65,7 @@ export default function Chatbot() {
   const [consentRequired, setConsentRequired] = useState(false)
   const [showSmsOptin, setShowSmsOptin] = useState(false)
   const [smsPhone, setSmsPhone] = useState("")
-  const [smsStatus, setSmsStatus] = useState<"idle"|"sending"|"ok"|"error"|"stopped">("idle")
+  const [smsStatus, setSmsStatus] = useState<"idle"|"sending"|"ok"|"error"|"stopped"|"invalid">("idle")
 
   // Auto-dismiss SMS banner 3 sekunder efter ok/stopped
   useEffect(() => {
@@ -1082,6 +1082,7 @@ export default function Chatbot() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: smsPhone.trim(), source: "chatbot_consent", sid, chatbotType: smsChatbotType }),
       })
+      if (res.status === 400) { setSmsStatus("invalid"); return }
       const data = await res.json()
       if (data.ok) { setSmsStatus("ok") }
       else if (data.reason === "stopped") setSmsStatus("stopped")
@@ -1296,6 +1297,12 @@ export default function Chatbot() {
               {showSmsOptin && smsStatus === "stopped" && (
                 <div style={{ margin: "12px 16px", padding: "12px 16px", background: "#f5f7fa", borderRadius: "10px", fontSize: "13px", color: "#666" }}>
                   Dit nummer er på afmeldingslisten. Vi sender dig ingen SMS.
+                </div>
+              )}
+              {showSmsOptin && smsStatus === "invalid" && (
+                <div style={{ margin: "12px 16px", padding: "12px 16px", background: "#fdf6f0", borderRadius: "10px", fontSize: "13px", color: "#c0783a" }}>
+                  Indtast venligst et gyldigt dansk telefonnummer (8 cifre).
+                  <button onClick={() => { setSmsStatus("idle"); setSmsPhone("") }} style={{ marginLeft: "8px", background: "none", border: "none", color: "#5a7a8f", cursor: "pointer", fontSize: "13px" }}>Prøv igen</button>
                 </div>
               )}
               {showSmsOptin && smsStatus === "error" && (
