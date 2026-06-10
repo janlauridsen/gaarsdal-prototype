@@ -1225,7 +1225,15 @@ export default function AdminPage() {
                   <div style={{ ...S.card, padding:"20px" }}>
                     <div style={{ fontSize:"13px", fontWeight:500, color:"#888", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>STOP-liste ({stopped.length})</div>
                     {stopped.length === 0 && <span style={{ fontSize:"13px", color:"#555" }}>Ingen afmeldinger</span>}
-                    {stopped.map((p:string,i:number) => <div key={i} style={{ fontSize:"13px", color:"#666", fontFamily:"monospace", paddingBottom:"4px" }}>{p}</div>)}
+                    {stopped.map((p:string,i:number) => (
+                      <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingBottom:"6px" }}>
+                        <span style={{ fontSize:"13px", color:"#666", fontFamily:"monospace" }}>{p}</span>
+                        <button onClick={async ()=>{
+                          await fetch("/api/admin/sms?token="+encodeURIComponent(secret),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"remove_stopped",phone:p})})
+                          fetchSms()
+                        }} style={{ background:"none", border:"none", color:"#6B8F71", cursor:"pointer", fontSize:"12px", padding:"2px 6px" }} title="Fjern fra STOP-liste">↩ Genaktivér</button>
+                      </div>
+                    ))}
                   </div>
                   <div style={{ ...S.card, padding:"20px" }}>
                     <div style={{ fontSize:"13px", fontWeight:500, color:"#888", marginBottom:"12px", textTransform:"uppercase", letterSpacing:"0.05em" }}>Sendte kampagner (seneste 20)</div>
