@@ -383,6 +383,19 @@ export default function ChildrenPage() {
         )}
 
 
+        {/* TESTIMONIAL */}
+        <section style={{ marginBottom: "48px", padding: "28px 32px", background: "#fff", borderRadius: "10px", border: "1px solid #e5e7eb", borderLeft: "4px solid #5a7a8f" }}>
+          <p style={{ fontSize: "17px", lineHeight: 1.8, color: "#333", marginBottom: "16px", fontStyle: "italic" }}>
+            "Vi havde vores datter på 7 år til en konsultation hos Jan, med meget stor succes for både barn og forældre. Det var trygt for os alle, og Jan formåede at håndtere og behandle vores datter på den bedste og mest professionelle måde. Som forældre vil jeg anbefale andre at tage en dialog med Jan og afsøge om han kan være med til at hjælpe deres børn, da det for os har gjort en meget stor og positiv forandring!"
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ fontSize: "14px" }}>
+              <span style={{ fontWeight: 500, color: "#333" }}>Pernille Dixen</span>
+              <span style={{ color: "#888", marginLeft: "8px", fontSize: "13px" }}>⭐⭐⭐⭐⭐ Google-anmeldelse</span>
+            </div>
+          </div>
+        </section>
+
         {/* TILLID - hvem er Jan */}
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
