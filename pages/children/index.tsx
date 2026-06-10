@@ -390,7 +390,7 @@ export default function ChildrenPage() {
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <div style={{ fontSize: "14px" }}>
-              <span style={{ fontWeight: 500, color: "#333" }}>Pernille Dixen</span>
+              <span style={{ fontWeight: 500, color: "#333" }}>Mor til 7-årig pige</span>
               <span style={{ color: "#888", marginLeft: "8px", fontSize: "13px" }}>⭐⭐⭐⭐⭐ Google-anmeldelse</span>
             </div>
           </div>
