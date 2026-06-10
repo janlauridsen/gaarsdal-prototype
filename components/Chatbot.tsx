@@ -1075,7 +1075,7 @@ export default function Chatbot() {
         body: JSON.stringify({ phone: smsPhone.trim(), source: "chatbot_consent", sid, chatbotType: smsChatbotType }),
       })
       const data = await res.json()
-      if (data.ok) setSmsStatus("ok")
+      if (data.ok) { setSmsStatus("ok") }
       else if (data.reason === "stopped") setSmsStatus("stopped")
       else setSmsStatus("error")
     } catch {
@@ -1250,7 +1250,7 @@ export default function Chatbot() {
                     📱 Vil du modtage nyheder fra Jan 1-2 gange om året?
                   </p>
                   <p style={{ fontSize: "12px", color: "#666", margin: "0 0 12px" }}>
-                    Dit nummer gemmes kun til dette formål. Du kan altid afmelde med STOP.
+                    Dit nummer gemmes kun til dette formål. Du kan altid afmelde dig.
                   </p>
                   <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                     <input
@@ -1282,7 +1282,7 @@ export default function Chatbot() {
               )}
               {showSmsOptin && smsStatus === "ok" && (
                 <div style={{ margin: "12px 16px", padding: "12px 16px", background: "#e8f5e9", borderRadius: "10px", fontSize: "13px", color: "#4a7c5f" }}>
-                  ✓ Tak! Jan kontakter dig højst 1-2 gange om året. Svar altid STOP for at afmelde.
+                  ✓ Tak! Jan kontakter dig højst 1-2 gange om året. Du kan altid afmelde dig på gaarsdal.net/afmeld
                 </div>
               )}
               {showSmsOptin && smsStatus === "stopped" && (
