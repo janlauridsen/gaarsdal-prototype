@@ -113,6 +113,18 @@ export default function PriserPage() {
           </div>
         </section>
 
+
+        {/* SMS OPT-IN */}
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#f0f4f8", borderRadius: "10px", border: "1px solid #c5d2da" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hold dig opdateret</h2>
+          <p style={{ fontSize: "15px", color: "#555", marginBottom: "20px", lineHeight: 1.7 }}>
+            Modtag nyheder fra Jan 1-2 gange om året. Ingen spam. Du kan afmelde dig når som helst.
+          </p>
+          <a href="/tilmeld" style={{ display: "inline-block", padding: "11px 24px", background: "#5a7a8f", color: "#fff", textDecoration: "none", borderRadius: "6px", fontSize: "15px", fontWeight: 500 }}>
+            Tilmeld SMS-nyheder →
+          </a>
+        </section>
+
         {/* CTA */}
         <section style={{ marginBottom: "40px", textAlign: "center", padding: "40px 20px", background: "#f0f4f8", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "12px" }}>Start med en gratis forsamtale</h2>
