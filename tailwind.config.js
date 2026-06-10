@@ -7,6 +7,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["DM Sans", "system-ui", "-apple-system", "sans-serif"],
+      },
       colors: {
         bg: "#EFEDE7",
         surface: "#FFFFFF",
