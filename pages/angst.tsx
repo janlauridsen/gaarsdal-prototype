@@ -8,8 +8,8 @@ export default function Page() {
     <>
       <Header />
       <Head>
-        <title>Angst og bekymring, hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="Angst der ikke stopper. Bekymringer der kører i ring. Hypnoterapi arbejder med nervesystemet, der holder alarmen i gang. Jan Gaarsdal, Birkerød." />
+        <title>Hypnose mod angst - Birkerød/Nordsjælland | Gratis forsamtale</title>
+        <meta name="description" content="Slip angsten ved roden, ikke kun symptomerne. Hypnoterapi i Birkerød, tæt på Holte og Allerød. Gratis forsamtale 30 min. Ring 42 80 74 74." />
         <link rel="canonical" href="https://gaarsdal.net/angst" />
         <meta property="og:title" content="Angst og bekymring, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Angst der ikke stopper. Bekymringer der kører i ring. Hypnoterapi arbejder med nervesystemet der holder alarmen i gang. Jan Gaarsdal, Birkerød." />
@@ -23,7 +23,7 @@ export default function Page() {
         />
       </Head>
 
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Angsten stopper ikke, selvom du ved det er irrationelt</h1>

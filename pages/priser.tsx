@@ -8,7 +8,7 @@ export default function PriserPage() {
     <>
       <Header />
       <Head>
-        <title>Priser og pakker, hypnoterapi Birkerød | Gaarsdal</title>
+        <title>Priser på hypnoterapi - Gratis forsamtale | Gaarsdal Birkerød</title>
         <meta name="description" content="Priser på hypnoterapi hos Jan Gaarsdal i Birkerød. Gratis forsamtale. Pakker til studerende, arbejdsløse og flygtninge. Første session 900 kr." />
         <link rel="canonical" href="https://gaarsdal.net/priser" />
         <meta property="og:title" content="Priser, hypnoterapi Birkerød | Gaarsdal" />
@@ -18,7 +18,7 @@ export default function PriserPage() {
         <meta name="robots" content="index, follow" />
       </Head>
 
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "16px" }}>Priser</h1>

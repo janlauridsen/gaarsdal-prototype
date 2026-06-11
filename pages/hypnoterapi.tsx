@@ -8,10 +8,10 @@ export default function Hypnoterapi() {
   return (
     <div className="min-h-screen bg-bg text-text">
       <Head>
-        <title>Hypnoterapi - metode, forløb og FAQ | Gaarsdal</title>
+        <title>Hvad er hypnoterapi? Metode og forløb | Gratis forsamtale - Gaarsdal Birkerød</title>
         <meta
           name="description"
-          content="En nøgtern og struktureret tilgang til hypnoterapi i Birkerød. Læs om metoden, hvad der sker i en session, og svar på de spørgsmål jeg oftest får."
+          content="Forstå hvordan hypnoterapi virker, hvad et forløb indebærer, og om det passer til dig. Gratis forsamtale 30 min hos Jan Gaarsdal i Birkerød."
         />
         <link rel="canonical" href="https://gaarsdal.net/hypnoterapi" />
         <meta property="og:title" content="Hypnoterapi - metode og forløb | Gaarsdal" />

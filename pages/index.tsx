@@ -11,11 +11,11 @@ export default function Home() {
     <div className="bg-bg text-text min-h-screen">
       <Head>
         <title>
-          Hypnoterapi i Birkerød, ro, klarhed og ændringer der holder | Gaarsdal
+          Hypnoterapi i Birkerød - Jan Gaarsdal | Gratis forsamtale
         </title>
         <meta
           name="description"
-          content="Hypnoterapi i Birkerød (Rudersdal). En rolig, struktureret tilgang til mønstre, uro, søvn og vaner. Uforpligtende afklaring før du starter."
+          content="Hypnoterapi i Birkerød, tæt på Holte, Allerød og Hillerød. 500+ klienter. Gratis forsamtale 30 min - telefon eller fysisk. Ring 42 80 74 74."
         />
         <link rel="canonical" href="https://gaarsdal.net/" />
         <meta property="og:title" content="Hypnoterapi i Birkerød | Gaarsdal" />
@@ -288,9 +288,13 @@ export default function Home() {
               <p className="text-muted leading-relaxed mb-2">
                 Adresse: Bakkevej 36, 3460 Birkerød.
               </p>
+              <p className="text-muted leading-relaxed mb-2">
+                Klinikken ligger centralt i Nordsjælland, tæt på: Holte (5 min),
+                Allerød (10 min), Farum (10 min), Hillerød (20 min), Lyngby (15
+                min) og Helsingør (30 min).
+              </p>
               <p className="text-muted leading-relaxed">
-                Jeg har ofte klienter fra Rudersdal og nærområder, dvs. primært
-                borgere fra Birkerød, Holte, Farum og Allerød.
+                Sessioner kan også foregå online, uanset hvor du bor.
               </p>
             </div>
 
