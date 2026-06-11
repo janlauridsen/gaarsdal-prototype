@@ -17,7 +17,7 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/social-angst-born" />
         <meta name="robots" content="index, follow" />
       </Head>
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Dit barn er der, men føler sig ikke med</h1>
@@ -46,7 +46,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>Social angst er en af de hyppigste angstlidelser hos børn og unge. Forskning viser, at ubehandlet social angst i barndommen øger risikoen for depression og isolation i voksenlivet. WHO og Sundhedsstyrelsen fremhæver tidlig intervention som afgørende.</p>
-          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, WHO Mental Health Atlas, Dansk Institut for Psykiatri.</p>
+          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a>, WHO Mental Health Atlas, Dansk Institut for Psykiatri.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>

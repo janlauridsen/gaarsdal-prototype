@@ -23,7 +23,7 @@ export default function Page() {
         />
       </Head>
 
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Du kan ikke slukke for det</h1>
@@ -52,7 +52,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>Vedvarende overtænkning og rumination er tæt forbundet med angst og depression. Forskning viser, at evnen til at regulere tankemønstre er en af de vigtigste faktorer for mental sundhed.</p>
-          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Nolen-Hoeksema, Rumination Research, Psychological Bulletin. Sundhedsstyrelsen.dk.</p>
+          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Nolen-Hoeksema, Rumination Research, Psychological Bulletin. <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a>.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>

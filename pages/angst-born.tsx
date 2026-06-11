@@ -17,7 +17,7 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/angst-born" />
         <meta name="robots" content="index, follow" />
       </Head>
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Dit barn venter altid på at noget går galt</h1>
@@ -46,7 +46,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>Angst er den hyppigste psykiske lidelse hos børn og unge i Danmark. Sundhedsstyrelsen vurderer, at op mod 10-15 pct. af børn og unge oplever angst i en grad der påvirker deres hverdag. Ubehandlet angst i barndommen øger risikoen for angst og depression i voksenlivet.</p>
-          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, Psykiatrifonden, WHO Mental Health Atlas.</p>
+          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a>, <a href="https://psykiatrifonden.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Psykiatrifonden</a>, WHO Mental Health Atlas.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>

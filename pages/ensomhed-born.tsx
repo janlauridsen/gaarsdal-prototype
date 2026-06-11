@@ -17,7 +17,7 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/ensomhed-born" />
         <meta name="robots" content="index, follow" />
       </Head>
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Dit barn er ensomt, og du ved ikke hvordan du hjælper</h1>
@@ -46,7 +46,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>En rapport fra VIVE (Det Nationale Forsknings- og Analysecenter for Velfærd) viser, at en stigende andel af børn og unge i Danmark oplever ensomhed. Sundhedsstyrelsen fremhæver ensomhed som en af de centrale trivselstrusler for unge i dag.</p>
-          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: VIVE Rapport om Børn og Unges Trivsel, Sundhedsstyrelsen.dk, WHO.</p>
+          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: VIVE Rapport om Børn og Unges Trivsel, <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a>, WHO.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>

@@ -41,7 +41,7 @@ export default function SovnPage() {
         />
       </Head>
 
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
         {/* GENKENDELSE */}
         <section style={{ marginBottom: "60px" }}>
@@ -66,7 +66,7 @@ export default function SovnPage() {
             Samme forskning finder, at for lidt søvn øger risikoen for hjerte-kar-sygdomme, diabetes og en række muskel- og ledsygdomme. Mænd ser ud til at være mere sårbare overfor søvnunderskud end kvinder.
           </p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>
-            Kilde: Nature, maj 2025. Sundhedsstyrelsen.dk.
+            Kilde: Nature, maj 2025. <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a>.
           </p>
         </section>
 

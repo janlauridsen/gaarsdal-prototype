@@ -17,7 +17,7 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/selvbillede-born" />
         <meta name="robots" content="index, follow" />
       </Head>
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Dit barn er hårdere ved sig selv end det ville være ved nogen anden</h1>
@@ -46,7 +46,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>Lavt selvbillede hos børn og unge er tæt forbundet med angst, depression og social isolation. Sundhedsstyrelsen fremhæver selvbillede som en central beskyttelsesfaktor for mental sundhed. Forskning viser, at selvbilledet er plastisk og kan ændres med de rette metoder.</p>
-          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, WHO Mental Health Report, Rosenberg Self-Esteem Research.</p>
+          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a>, WHO Mental Health Report, Rosenberg Self-Esteem Research.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>

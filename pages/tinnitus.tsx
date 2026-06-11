@@ -21,7 +21,7 @@ export default function Page() {
           dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod tinnitus?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med hjernens reaktion på tinnituslyden og det stressniveau der forstærker den. Målet er sjældent at fjerne lyden helt, men at ændre den automatiske reaktion, så lyden fylder mindre i bevidstheden.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose fjerne min tinnitus helt?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Sjældent helt, men mange oplever at lyden fylder markant mindre når hjernens reaktion på den ændres. Når lyden ikke længere udløser uro, falder den i baggrunden som anden konstant baggrundsstøj.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner kræver tinnitus?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Jan anbefaler typisk at starte med et kort forløb og derefter vurdere effekten. Mange oplever bedring efter de første sessioner. Det er vigtigt at have fået din tinnitus undersøgt af en læge først.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor forværres min tinnitus når jeg er stresset?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Når nervesystemet er i beredskab, skærpes sansernes opmærksomhed, også på tinnituslyden. Derfor hænger stress og tinnitus tæt sammen, og derfor er stressreduktion en central del af hypnoterapien.\"}}]}" }}
         />
       </Head>
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Lyden er der altid, og jo mere du lytter efter den, jo mere fylder den</h1>
@@ -50,7 +50,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>Cirka 16 pct. af voksne lider af konstant tinnitus. Der findes ingen medicinsk kur, og behandlingen fokuserer derfor på at ændre reaktionen på lyden. Professor Bobby Zachariae, Aarhus Universitet, fremhæver hypnose som en dokumenteret metode mod stress og angst. Det er relevant for tinnitus, fordi netop stress og uro ofte forstærker oplevelsen af lyden, men referencen gælder hypnosens generelle effekt, ikke tinnitus specifikt.</p>
-          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Høreforeningen.dk, Sygeforsikringen Danmark / Netdoktor (2025).</p>
+          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: <a href="https://hoereforeningen.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Høreforeningen.dk</a>, Sygeforsikringen Danmark / Netdoktor (2025).</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>

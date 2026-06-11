@@ -17,7 +17,7 @@ export default function Page() {
         <meta property="og:url" content="https://gaarsdal.net/skolevagring" />
         <meta name="robots" content="index, follow" />
       </Head>
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Dit barn vil ikke i skole, og du ved ikke hvad du skal gøre</h1>
@@ -46,7 +46,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>Skolevægring rammer estimeret 1-5 pct. af alle skoleelever i Danmark og er stigende. Forskning viser, at tidlig intervention er afgørende for at forhindre langvarig fastlåsning. Sundhedsstyrelsen og kommunernes PPR anerkender skolevægring som en kompleks tilstand der kræver individuel tilgang.</p>
-          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, SFI Campbell, Videnscenter for Distriktpsykiatri.</p>
+          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a>, SFI Campbell, Videnscenter for Distriktpsykiatri.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>

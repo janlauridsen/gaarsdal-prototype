@@ -52,7 +52,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>Angst er en af de hyppigste årsager til psykisk mistrivsel i Danmark. Sundhedsstyrelsen estimerer, at op mod 15 pct. af befolkningen oplever angstlidelser på et tidspunkt i livet. WHO placerer angst blandt de mest udbredte psykiske lidelser globalt.</p>
-          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, WHO Mental Health Report.</p>
+          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a>, WHO Mental Health Report.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>

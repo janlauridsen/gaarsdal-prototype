@@ -60,10 +60,37 @@ export default function Home() {
                 longitude: 12.4304,
               },
               areaServed: [
+                { "@type": "City", name: "Birkerød" },
+                { "@type": "City", name: "Holte" },
+                { "@type": "City", name: "Allerød" },
+                { "@type": "City", name: "Farum" },
+                { "@type": "City", name: "Hillerød" },
+                { "@type": "City", name: "Lyngby" },
                 { "@type": "AdministrativeArea", name: "Rudersdal Kommune" },
                 { "@type": "AdministrativeArea", name: "Nordsjælland" },
               ],
-              sameAs: ["https://gaarsdal.net"],
+              openingHoursSpecification: [
+                {
+                  "@type": "OpeningHoursSpecification",
+                  dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                  opens: "08:00",
+                  closes: "18:00",
+                },
+              ],
+              makesOffer: {
+                "@type": "Offer",
+                name: "Gratis forsamtale",
+                description: "30 minutters uforpligtende forsamtale, telefon eller fysisk",
+                price: "0",
+                priceCurrency: "DKK",
+              },
+              founder: {
+                "@type": "Person",
+                name: "Jan Gaarsdal Lauridsen",
+                jobTitle: "Hypnoterapeut",
+                alumniOf: "Institut for Avanceret Hypnose",
+              },
+              sameAs: ["https://www.facebook.com/GaarsdalHypnoterapi/"],
             }),
           }}
         />

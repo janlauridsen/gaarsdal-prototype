@@ -21,7 +21,7 @@ export default function Page() {
           dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose kurere ADHD?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej. ADHD er en neuroudviklingsmæssig tilstand der ikke kan kureres med hypnose. Men hypnoterapi kan hjælpe med mange af de ting der følger med, som indre uro, stress, søvnproblemer og lavt selvværd.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose erstatte min ADHD-medicin?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej. Hypnoterapi er ikke en erstatning for medicin eller anden behandling i sundhedssystemet. Drøft altid din samlede behandling med din læge. Hypnose kan være et supplement der hjælper med følgevirkningerne.\"}}, {\"@type\": \"Question\", \"name\": \"Hvad kan hypnose så hjælpe med ved ADHD?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Den indre uro, stressen, søvnen og det lave selvværd der ofte opstår efter mange nederlag. For mange fylder netop disse følgevirkninger lige så meget som kernesymptomerne, og det er her hypnoterapi kan gøre en forskel.\"}}, {\"@type\": \"Question\", \"name\": \"Kan børn og unge med ADHD få hypnoterapi?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja, Jan arbejder med både unge og voksne med ADHD, altid som supplement til den behandling de modtager i sundhedssystemet, og for børn altid med forældrene inddraget.\"}}]}" }}
         />
       </Head>
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>ADHD fylder ikke kun i koncentrationen</h1>
@@ -50,7 +50,7 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>ADHD er en neuroudviklingsmæssig tilstand der kræver udredning og ofte behandling i sundhedssystemet. Forskning peger på at psykologiske og afspændingsbaserede metoder kan hjælpe med de følgevirkninger ADHD ofte medfører, som stress, søvnproblemer og lavt selvværd.</p>
-          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Sundhedsstyrelsen.dk, ADHD-foreningen.</p>
+          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a>, <a href="https://adhd.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>ADHD-foreningen</a>.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>

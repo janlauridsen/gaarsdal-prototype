@@ -41,7 +41,7 @@ export default function PraestationsangstPage() {
         />
       </Head>
 
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
         {/* GENKENDELSE */}
         <section style={{ marginBottom: "60px" }}>
@@ -92,7 +92,7 @@ export default function PraestationsangstPage() {
             Forskning viser, at eksamensangst påvirker en betydelig del af studerende og kan have direkte indvirkning på resultater, uanset det faglige niveau. Sundhedsstyrelsen anerkender præstationsangst som en af de hyppigste årsager til psykisk mistrivsel hos unge.
           </p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>
-            Kilde: Sundhedsstyrelsen.dk, Vidensråd for Forebyggelse.
+            Kilde: <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a>, <a href="https://www.vidensraad.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Vidensråd for Forebyggelse</a>.
           </p>
         </section>
 
