@@ -56,9 +56,45 @@ export default function Page() {
         </section>
 
         <section style={{ marginBottom: "60px" }}>
-          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder direkte med det lag, der kører angsten, nervesystemet og de automatiske reaktioner, ikke med tankerne alene. Du lærer at skifte fra alarmberedskab til ro ved at ændre, hvad der sker automatisk, ikke ved at kæmpe mod tankerne.</p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med generaliseret angst, social angst og situationsbestemt angst. Tilgangen tilpasses til, hvad der driver din specifikke angst.</p>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan beroliger hypnose nervesystemet</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>For at forstå hvorfor hypnoterapi virker mod angst, skal man forstå hvor angsten faktisk sidder. Angstresponsen udløses i amygdala, hjernens alarmsystem, før den bevidste tanke når at reagere. Det er derfor du kan vide at angsten er irrationel og alligevel mærke hjertet hamre. Alarmen kører i et lag, som fornuften ikke har direkte adgang til.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnose ændrer det. I den hypnotiske tilstand, en dyb, fokuseret afspænding du selv har kontrol over, falder nervesystemets alarmberedskab. Kroppen registrerer, måske for første gang længe, hvordan ro faktisk føles. Samtidig bliver de automatiske lag mere tilgængelige for forandring. Det er ikke magi: det er den samme mekanisme som gør, at man lærer dybest, når man er tryg og fokuseret.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>I den tilstand arbejdes der med selve alarmresponsen. De situationer der i dag udløser angst, kobles gradvist sammen med ro i stedet for alarm. Nervesystemet lærer, at faresignalet var falsk, ikke ved at du overbeviser dig selv om det, men ved at kroppen erfarer det. Det er forskellen på at vide noget og at mærke det.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Effekten bygges op over sessionerne: alarmtærsklen hæves, restitutionen efter uro bliver hurtigere, og de situationer der før udløste angst, mister gradvist deres ladning.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb mod angst</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler om din angst: hvornår den opstod, hvad der udløser den, og hvad du har prøvet. Her afklarer vi sammen, om hypnoterapi er den rette tilgang for netop dit mønster. Ingen forpligtelse.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> En grundig samtale om din historie og dit angstmønster, efterfulgt af den første hypnose. De fleste bliver overraskede over hvor naturligt det føles: en dyb afspænding hvor du hører alt, husker alt og har fuld kontrol.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet målrettes de specifikke situationer og reaktioner, der driver din angst. Mange mærker forandring efter få sessioner; situationsbestemt angst kan ofte bedres på 2-3 gange, mens generaliseret angst typisk kræver et lidt længere forløb.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Sessioner foregår fysisk i Birkerød eller online efter aftale.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>De forskellige former for angst</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Generaliseret angst</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>En vedvarende, flydende bekymring der ikke er bundet til én bestemt ting. Økonomi, helbred, familien, fremtiden: bekymringen finder altid et nyt emne. Nervesystemet står i konstant lavt alarmberedskab, og hypnoterapien retter sig mod selve grundspændingen frem for de enkelte bekymringer.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Social angst</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Frygten for andres blikke og vurdering: at rødme, ryste, sige noget forkert eller blive afsløret. Den driver ofte undgåelse, der gør verden mindre. Arbejdet retter sig mod den automatiske trussel-vurdering af sociale situationer og det selvbillede, der ligger under.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Panikangst</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Pludselige, intense anfald med hjertebanken, åndenød og en følelse af at miste kontrollen eller dø. Ofte opstår der angst for angsten: frygten for det næste anfald. Hypnoterapien arbejder både med anfaldsresponsen og med den frygt, der holder mønsteret i live.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Helbredsangst</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Tilbagevendende frygt for alvorlig sygdom, hvor kroppens normale signaler tolkes som faretegn. Beroligelse fra læger hjælper kun kortvarigt. Arbejdet retter sig mod den overfølsomme krops-skanning og det alarmberedskab, der fejltolker signalerne.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Situationsbestemt angst</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Angst bundet til bestemte situationer: at køre bil, flyve, tage til eksamen, gå til tandlæge. Fordi udløseren er afgrænset, reagerer denne type ofte hurtigt på hypnoterapi, nogle gange på få sessioner. Se også siden om <Link href="/fobi" style={{ color: "#5a7a8f" }}>fobier</Link> og <Link href="/praestationsangst" style={{ color: "#5a7a8f" }}>præstationsangst</Link>.</p>
+            </div>
+          </div>
         </section>
 
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
