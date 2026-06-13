@@ -21,7 +21,7 @@ export type NodeRunParams = {
   input: InputSignal
   userKey: string
   modelOverride?: string
-  chatbotType?: "standard" | "children"
+  chatbotType?: "standard" | "children" | "alcohol"
 }
 
 
