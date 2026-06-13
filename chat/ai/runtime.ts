@@ -2,6 +2,7 @@ import { createOpenAiCompatibleClient } from "./provider"
 import { AiCapability, AiCapabilityContext, AiCapabilityResult } from "./types"
 import { genHypnoCapability } from "./capabilities/genHypno"
 import { genChildrenCapability } from "./capabilities/genChildren"
+import { genAlcoholCapability } from "./capabilities/genAlcohol"
 import { prequalifyCapability } from "./capabilities/prequalify"
 import { clientSupportCapability } from "./capabilities/clientSupport"
 import { talkToMeCapability } from "./capabilities/talkToMe"
@@ -9,6 +10,7 @@ import { talkToMeCapability } from "./capabilities/talkToMe"
 const CAPABILITIES: Record<string, AiCapability> = {
   [genHypnoCapability.id]: genHypnoCapability,
   [genChildrenCapability.id]: genChildrenCapability,
+  [genAlcoholCapability.id]: genAlcoholCapability,
   [prequalifyCapability.id]: prequalifyCapability,
   [clientSupportCapability.id]: clientSupportCapability,
   [talkToMeCapability.id]: talkToMeCapability,
