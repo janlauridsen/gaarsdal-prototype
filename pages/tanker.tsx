@@ -61,6 +61,45 @@ export default function Page() {
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med overtænkning hos både unge og voksne, og tilpasser sin tilgang til, hvad der driver dit specifikke mønster.</p>
         </section>
 
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan får hypnose tankemylderet til at falde til ro</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Overtænkning er ikke et tegn på intelligens, og det er ikke noget, du kan beslutte dig fra. Det er et nervesystem, der kompenserer for usikkerhed ved at simulere og kontrollere. Hjernen tror, den hjælper dig, ved at gennemspille samtaler, forberede scenarier og forsøge at forudse alt. Den kører et beskyttelsesprogram på fuld kraft.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnose ændrer, hvad nervesystemet opfatter som nødvendigt. Når hjernen på et dybere plan lærer, at usikkerhed ikke er farlig, falder behovet for konstant simulering. Du behøver ikke længere gennemtænke alt for at føle dig tryg.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det betyder ikke, at du holder op med at tænke. Det betyder, at du styrer tankerne i stedet for, at de styrer dig. Pausen mellem tankerne vender tilbage, og hjernen får lov at hvile.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Overtænkning hænger tæt sammen med angst og søvnproblemer, fordi alle tre udspringer af det samme behov for kontrol og sikkerhed. Derfor arbejdes der ofte med dem i sammenhæng.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler om hvad du oplever, hvornår det startede, og hvad du har prøvet. Her afklarer vi sammen, om hypnoterapi er den rette tilgang for dig. Telefon eller fysisk, og helt uforpligtende.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> En grundig samtale om din historie og dit mønster, efterfulgt af den første hypnose. De fleste bliver overraskede over hvor naturligt det føles: en dyb afspænding hvor du hører alt, husker alt og har fuld kontrol.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet målrettes det, der driver netop dit mønster. Mange mærker forandring efter få sessioner; afgrænsede problemstillinger kan ofte klares hurtigt, mens mere indgroede mønstre kræver et lidt længere forløb.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan viser overtænkning sig</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Gentænkning af fortiden</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du spiller samtaler om igen, analyserer hvad du burde have sagt, vender situationer der for længst er ovre. Hjernen leder efter fejl og forsøger at gøre op, men når aldrig frem til ro.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Bekymring om fremtiden</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du forbereder dig på scenarier, der sjældent sker, forudser problemer og gennemspiller hvad-nu-hvis. Det føles som ansvarlig planlægning, men er i virkeligheden nervesystemets forsøg på at kontrollere det ukontrollerbare.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Sindet der aldrig holder pause</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Selv i hvile kører tankerne. Du kan ikke bare nyde en stille stund; hjernen finder altid noget at arbejde med. Det er udmattende, og det går ofte værst om aftenen, når distraktionerne forsvinder.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Hvad andre mon tænker</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>En stor del af overtænkningen handler om andres vurdering: hvordan du fremstod, hvad de mon mente, om du sagde noget forkert. Det hænger tæt sammen med selvværd og social tryghed.</p>
+            </div>
+          </div>
+        </section>
+
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
           <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>

@@ -61,6 +61,50 @@ export default function Page() {
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med lavt selvværd hos både unge og voksne. Tilgangen tilpasses til, hvad der historisk har formet selvbilledet.</p>
         </section>
 
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan ændrer hypnose et lavt selvværd</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Selvværd er summen af alle de overbevisninger, du har om dig selv, og de fleste er ikke bevidst valgte. De er bygget op over tid, ofte fra barndommen, og de sidder under den rationelle tænkning. Det er derfor positive bekræftelser sjældent virker: de afvises, fordi de ikke passer ind i det eksisterende system.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnose går ind under de bevidste lag, hvor overbevisningerne faktisk sidder. I stedet for at forsøge at overtale dig selv til en anden mening, arbejdes der med en reel oplevelse af egen værdi, der ikke afhænger af præstation eller andres bekræftelse.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det er forskellen på at vide, at man burde være mildere ved sig selv, og at faktisk mærke det. Den indre kritiker dæmpes, ikke ved at du argumenterer imod den, men ved at det grundlæggende selvbillede ændres dér, hvor det er lagret.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Når udgangspunktet ændres, ændrer alt det andet sig med: hvordan du tager imod ros, hvordan du håndterer fejl, og hvor hårdt du dømmer dig selv i forhold til andre.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler om hvad du oplever, hvornår det startede, og hvad du har prøvet. Her afklarer vi sammen, om hypnoterapi er den rette tilgang for dig. Telefon eller fysisk, og helt uforpligtende.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> En grundig samtale om din historie og dit mønster, efterfulgt af den første hypnose. De fleste bliver overraskede over hvor naturligt det føles: en dyb afspænding hvor du hører alt, husker alt og har fuld kontrol.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet målrettes det, der driver netop dit mønster. Mange mærker forandring efter få sessioner; afgrænsede problemstillinger kan ofte klares hurtigt, mens mere indgroede mønstre kræver et lidt længere forløb.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan viser lavt selvværd sig</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Det indre filter</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Ros preller af ("de siger det bare"), mens kritik bekræfter ("se, jeg vidste det"). Selvbilledet filtrerer dine oplevelser, så de passer til overbevisningen om at være utilstrækkelig. Derfor hjælper det ikke at få mere ros udefra.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Den hårde indre stemme</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du taler til dig selv på en måde, du aldrig ville tale til en ven. Hver fejl bliver et bevis på, at du ikke er god nok. Den stemme føles som sandhed, men den er lært, og den kan ændres.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Sammenligning som grundtilstand</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du måler dig konstant mod andre og kommer til kort. Sociale medier forstærker det, men roden ligger dybere: i en indre målestok, hvor du aldrig er nok. Arbejdet retter sig mod selve målestokken.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Værdi koblet til præstation</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Din værdi føles afhængig af, hvad du præsterer, eller af at gøre alle tilfredse. Det giver et skrøbeligt selvværd, der skal genfortjenes hver dag. Målet er en grundværdi, der ikke skal præsteres frem.</p>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Vigtigt at vide</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Hvis det lave selvværd ledsages af vedvarende tristhed, håbløshed eller tanker om ikke at ville være her, skal du kontakte din læge. Det kan være tegn på depression, som kræver behandling. Hypnoterapi arbejder med selvbilledet og kan være et værdifuldt supplement.</p>
+        </section>
+
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
           <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>

@@ -61,6 +61,45 @@ export default function Page() {
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan tilpasser sin tilgang til, hvad der driver dit specifikke rygemønster. Hvad udløser trangen, hvad dækker rygningen over, og hvad skal erstatte det.</p>
         </section>
 
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan hjælper hypnose dig med at stoppe</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Rygning er ikke en vane, der sidder i tankerne. Den sidder i de automatiske reaktioner. Hjernen har koblet cigaretten til ro, til pauser, til kaffe, til bestemte følelser og situationer. Den kobling kører under bevidst styring, og det er derfor viljestyrke slår fra præcis når det gælder: i stresset, i pausen, til festen.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnose arbejder direkte med de associationer. I stedet for at du skal kæmpe mod trangen med fornuft, ændres selve koblingen mellem situationen og cigaretten. Triggeren, kaffen, pausen, stresset, mister gradvist sin automatiske forbindelse til rygning.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det er forskellen på rygestop med hypnose og rygestop med viljestyrke alene: du bekæmper ikke en trang hele dagen, fordi trangen ikke aktiveres på samme måde. Mange oplever, at lysten falder markant eller forsvinder efter 1-2 sessioner.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Der arbejdes også med det, rygningen dækker: for mange er cigaretten blevet måden at holde pause, regulere stress eller skabe et øjebliks ro. Når det behov mødes på en anden måde, bliver stoppet lettere at fastholde.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler om hvad du oplever, hvornår det startede, og hvad du har prøvet. Her afklarer vi sammen, om hypnoterapi er den rette tilgang for dig. Telefon eller fysisk, og helt uforpligtende.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> En grundig samtale om din historie og dit mønster, efterfulgt af den første hypnose. De fleste bliver overraskede over hvor naturligt det føles: en dyb afspænding hvor du hører alt, husker alt og har fuld kontrol.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet målrettes det, der driver netop dit mønster. Mange mærker forandring efter få sessioner; afgrænsede problemstillinger kan ofte klares hurtigt, mens mere indgroede mønstre kræver et lidt længere forløb.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvorfor tidligere forsøg er slået fejl</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Viljestyrke har en grænse</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du kan holde igen et stykke tid, men viljestyrke er en begrænset ressource. I det øjeblik du er stresset, træt eller har drukket et glas vin, falder forsvaret, og den automatiske reaktion vinder. Det er ikke svaghed; det er sådan vaner fungerer.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Nikotinerstatning rammer kun det fysiske</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Plastre og tyggegummi dækker det fysiske abstinens, men ikke koblingen mellem situation og cigaret. Derfor falder mange tilbage, selv efter den fysiske afhængighed er aftaget: vanen og associationerne er der stadig.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Cigaretten dækkede et behov</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>For de fleste er rygning blevet andet end nikotin: en pause, en belønning, en måde at regulere stress eller uro. Tages cigaretten uden at behovet adresseres, finder trangen ofte et nyt udtryk, og man falder tilbage eller skifter til andet.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Frygten for at tage på</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Mange, især der har prøvet før, frygter vægtøgning eller en periode med dårligt humør. Når trangen ikke konstant skal bekæmpes, og behovet bag rygningen mødes, mindskes den risiko, fordi man ikke kompenserer med mad.</p>
+            </div>
+          </div>
+        </section>
+
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
           <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>

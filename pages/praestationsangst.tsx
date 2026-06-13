@@ -122,6 +122,45 @@ export default function PraestationsangstPage() {
           </p>
         </section>
 
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan hjælper hypnose mod præstationsangst</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Præstationsangst er ikke mangel på evner eller forberedelse. Det er to ting, der arbejder sammen: en overbevisning om, at resultatet definerer din værdi, og en krop, der aktiverer en reel stressrespons i det øjeblik, det gælder. Under den respons lukker adgangen til din arbejdshukommelse, og du kan ikke komme til det, du faktisk ved. Blackout til eksamen er ikke manglende forberedelse; det er en alarmreaktion.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnose arbejder med begge dele. Den automatiske stressrespons i præstationssituationen dæmpes, så kroppen kan blive i ro og fokus i stedet for panik. Og overbevisningen om, at din værdi afhænger af resultatet, ændres dér, hvor den er lagret, under den bevidste tænkning.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Resultatet er, at du får adgang til dine evner, når det gælder. Du lærer at aktivere ro og koncentration i situationer, der før udløste blokering. Det er en reel ændring i nervesystemet, ikke en mental teknik du skal huske midt i presset.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Paradoksalt nok stiger præstationen ofte, netop når frygten for at fejle falder, fordi energien ikke længere bruges på at bekæmpe panikken.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler om hvad du oplever, hvornår det startede, og hvad du har prøvet. Her afklarer vi sammen, om hypnoterapi er den rette tilgang for dig. Telefon eller fysisk, og helt uforpligtende.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> En grundig samtale om din historie og dit mønster, efterfulgt af den første hypnose. De fleste bliver overraskede over hvor naturligt det føles: en dyb afspænding hvor du hører alt, husker alt og har fuld kontrol.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet målrettes det, der driver netop dit mønster. Mange mærker forandring efter få sessioner; afgrænsede problemstillinger kan ofte klares hurtigt, mens mere indgroede mønstre kræver et lidt længere forløb.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan viser præstationsangst sig</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Blokering når det gælder</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Til daglig kan du det hele, men i eksamen, til præsentationen eller jobsamtalen forsvinder det. Hjernen går i alarm, og adgangen til det, du ved, lukker. Bagefter kommer det hele tilbage.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Eksamens- og prøveangst</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Måneders forberedelse, og så blackout i selve situationen. Eller søvnløse nætter og mavepine op til. Eksamensangst rammer ofte de dygtige og samvittighedsfulde, fordi de har mest på spil i egne øjne.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Køreprøveangst</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du kan køre fint i timerne, men til prøven tager nerverne over. Presset, den vurderende eksaminator og frygten for at dumpe skaber præcis den blokering, der får dig til at fejle. Et af de områder, hvor hypnose ofte virker hurtigt.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Værd koblet til præstation</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Bag angsten ligger ofte en overbevisning om, at du kun er noget værd, hvis du præsterer. Det gør hver præstation til en test af din værdi som menneske, og presset bliver enormt. Det er den kobling, der skal løsnes.</p>
+            </div>
+          </div>
+        </section>
+
         {/* OM JAN */}
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <div style={{ flex: 1 }}>

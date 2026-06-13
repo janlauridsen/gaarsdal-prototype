@@ -61,6 +61,45 @@ export default function Page() {
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan har særlig erfaring med køreangst og køreprøveangst samt klassiske fobier som flyvning, sprøjter og højder. Tilgangen tilpasses til den specifikke fobi.</p>
         </section>
 
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan fjerner hypnose en fobi</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>En fobi er en lært reaktion, der sidder i amygdala, hjernens alarmsystem. Den er ikke styret af den rationelle del af hjernen, og det er præcis derfor, du kan vide, at frygten er irrationel, og alligevel reagere med fuld kraft. Alarmen udløses automatisk og er designet til at overstyre alt andet på et splitsekund.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnose er et af de mest effektive redskaber mod fobier, fordi den arbejder netop dér, hvor reaktionen sidder. I stedet for gradvis eksponering, hvor du udsættes for frygten igen og igen, eller rationalisering, hvor du forsøger at tænke dig fra den, ændres selve den automatiske respons ved kilden.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Den lærte kobling, mellem udløseren og alarmen, erstattes med ro. Det, der før udløste panik, mister gradvist sin ladning. Fordi fobier ofte har én afgrænset udløser, reagerer de tit hurtigt på hypnoterapi, nogle gange på ganske få sessioner.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Du beholder en sund respekt for reel fare; det er kun den overdrevne, lammende reaktion, der dæmpes.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler om hvad du oplever, hvornår det startede, og hvad du har prøvet. Her afklarer vi sammen, om hypnoterapi er den rette tilgang for dig. Telefon eller fysisk, og helt uforpligtende.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> En grundig samtale om din historie og dit mønster, efterfulgt af den første hypnose. De fleste bliver overraskede over hvor naturligt det føles: en dyb afspænding hvor du hører alt, husker alt og har fuld kontrol.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet målrettes det, der driver netop dit mønster. Mange mærker forandring efter få sessioner; afgrænsede problemstillinger kan ofte klares hurtigt, mens mere indgroede mønstre kræver et lidt længere forløb.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>De typiske fobier</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Specifikke fobier</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Højder, edderkopper, sprøjter, lukkede rum, flyvning. Frygten er bundet til én bestemt ting, og du planlægger ofte dit liv for at undgå den. Netop fordi udløseren er afgrænset, er denne type ofte hurtig at arbejde med.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Flyskræk</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>For nogle er det højden, for andre følelsen af at miste kontrol eller være lukket inde. Flyskræk begrænser både ferier og arbejdsliv. Hypnoterapi arbejder med den specifikke frygtreaktion, der udløses ved tanken om og oplevelsen af at flyve.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Sprøjte- og tandlægeskræk</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>En fobi med reelle konsekvenser, fordi den kan få folk til at undgå nødvendig behandling. Reaktionen er ofte kropslig og stærk, og den kan ændres, så du kan komme igennem behandling uden panik.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Køreangst</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Angst for at køre bil, på motorvej, over broer, eller efter en ulykke. Den begrænser hverdagen mærkbart. Se også siden om <Link href="/praestationsangst" style={{ color: "#5a7a8f" }}>køreprøveangst</Link>, hvis det handler om selve prøven.</p>
+            </div>
+          </div>
+        </section>
+
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
           <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>

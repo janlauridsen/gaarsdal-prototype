@@ -61,6 +61,45 @@ export default function Page() {
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan tilpasser sin tilgang til, hvad der driver dit specifikke mønster, om det primært er stress, kedsomhed, ensomhed eller noget andet.</p>
         </section>
 
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan arbejder hypnose med følelsesspisning</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Følelsesspisning er en reguleringsmekanisme. Det er ikke sult, der driver den, men kedsomhed, stress, uro eller ensomhed, og maden dæmper ubehaget i et øjeblik. Hjernen har lært, at mad virker hurtigt og pålideligt, og den reaktion kører automatisk, stærkere end beslutningen om at lade være i det øjeblik ubehaget opstår.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnose arbejder med det underliggende behov, der driver spisningen, ikke med maden i sig selv. Når hjernen finder andre måder at regulere ubehaget på, falder trangen naturligt. Der er ingen restriktioner og ingen kamp mod maden, fordi det ikke er maden, der er problemet.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det er forskellen på en diæt og reel forandring. En diæt bekæmper symptomet med viljestyrke og udløser ofte endnu mere trang. Hypnoterapien retter sig mod årsagen, så behovet for at spise på følelserne aftager.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Samtidig arbejdes der med den skam, der ofte følger efter, fordi skammen i sig selv skaber den uro, der udløser næste episode.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler om hvad du oplever, hvornår det startede, og hvad du har prøvet. Her afklarer vi sammen, om hypnoterapi er den rette tilgang for dig. Telefon eller fysisk, og helt uforpligtende.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> En grundig samtale om din historie og dit mønster, efterfulgt af den første hypnose. De fleste bliver overraskede over hvor naturligt det føles: en dyb afspænding hvor du hører alt, husker alt og har fuld kontrol.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet målrettes det, der driver netop dit mønster. Mange mærker forandring efter få sessioner; afgrænsede problemstillinger kan ofte klares hurtigt, mens mere indgroede mønstre kræver et lidt længere forløb.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan viser følelsesspisning sig</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Det starter ikke med sult</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du spiser, selvom du ikke er sulten. Trangen kommer pludseligt, ofte efter en følelse: stress, kedsomhed, skuffelse. Det er et signal om regulering, ikke om næring.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Bestemte følelser, bestemt mad</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Det er sjældent tilfældigt hvad der spises. Søde eller fede ting dæmper hurtigst, og hjernen ved det. Trangen er målrettet, fordi den tjener et formål: at ændre hvordan du har det lige nu.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Skammen bagefter</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Efter episoden kommer skylden og skammen. Den følelse skaber ny uro, som igen kan udløse trang. Det bliver en cirkel, hvor selvbebrejdelsen holder mønsteret kørende.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Det sker oftest alene</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Følelsesspisning foregår typisk i det skjulte, om aftenen, alene. Det gør det ensomt og svært at tale om, og mange bærer på det i årevis uden at fortælle nogen det.</p>
+            </div>
+          </div>
+        </section>
+
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
           <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>

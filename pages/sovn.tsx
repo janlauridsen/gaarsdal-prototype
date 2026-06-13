@@ -110,6 +110,50 @@ export default function SovnPage() {
           </p>
         </section>
 
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan hjælper hypnose dig med at sove</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Søvnproblemer hos voksne er sjældent et søvnproblem i sig selv. Det er et nervesystem, der er for aktiveret til at slippe ned. Du er træt, men i det øjeblik du lægger dig, tænder systemet: tankerne starter, kroppen er på vagt. Sengen er blevet koblet til uro i stedet for ro.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnose arbejder direkte med den kobling. Den hypnotiske tilstand og den naturlige indsovning aktiverer de samme neurologiske mekanismer: en gradvis nedlukning hvor opmærksomheden vender indad og kroppen falder til ro. I sessionen lærer nervesystemet vejen ned igen.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det afgørende er, at det ikke er en teknik du skal huske at bruge klokken 23. Det er en ny automatisk reaktion: sengen og mørket kommer igen til at betyde ro frem for alarm. For mange kommer resultaterne relativt hurtigt, fordi søvn er kroppens naturlige tilstand, når alarmberedskabet slipper.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Samtidig arbejdes der med det, der holder dig vågen: bekymringerne der får frit løb i stilheden, eller den vedvarende uro der ikke vil falde til ro.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler om hvad du oplever, hvornår det startede, og hvad du har prøvet. Her afklarer vi sammen, om hypnoterapi er den rette tilgang for dig. Telefon eller fysisk, og helt uforpligtende.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> En grundig samtale om din historie og dit mønster, efterfulgt af den første hypnose. De fleste bliver overraskede over hvor naturligt det føles: en dyb afspænding hvor du hører alt, husker alt og har fuld kontrol.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet målrettes det, der driver netop dit mønster. Mange mærker forandring efter få sessioner; afgrænsede problemstillinger kan ofte klares hurtigt, mens mere indgroede mønstre kræver et lidt længere forløb.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>De typiske søvnmønstre</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Du kan ikke falde i søvn</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du ligger vågen i timevis selvom du er udmattet. Tankerne kører, kroppen vil ikke slippe. Ofte er sengen blevet en kampplads, og selve det at prøve at sove holder dig vågen.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Du vågner om natten</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du falder i søvn, men vågner kl. 3 og kan ikke falde i søvn igen. Hjernen tænder med det samme, ofte med bekymringer eller en diffus uro. Nattevågenhed er et af de tydeligste tegn på et overaktiveret nervesystem.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Bekymringer ved sengetid</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Når dagens distraktioner forsvinder, får tankerne frit løb. Sengen bliver det sted, hvor alt det uafsluttede melder sig. Det er ofte angst eller stress, der viser sig om natten, og begge dele kan der arbejdes med.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Du sover, men er aldrig udhvilet</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du får måske timerne, men vågner træt. Søvnen er overfladisk, fordi nervesystemet aldrig kommer helt ned i den dybe, restituerende søvn. Her arbejdes der med selve dybden, ikke kun med at falde i søvn.</p>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Vigtigt at vide</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Ved mistanke om søvnapnø (kraftig snorken med vejrtrækningspauser), rastløse ben eller hvis søvnproblemet er opstået pludseligt uden årsag, bør du tale med din læge, så fysiske årsager udelukkes. Hypnoterapi arbejder med de uro- og mønsterdrevne søvnproblemer.</p>
+        </section>
+
         {/* OM JAN */}
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>

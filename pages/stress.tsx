@@ -61,6 +61,50 @@ export default function Page() {
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med kronisk stress hos både erhvervsaktive og unge. Tilgangen tilpasses til om stressen primært sidder i tanker, krop eller overbevisninger om, hvad der er nødvendigt.</p>
         </section>
 
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan beroliger hypnose et stresset nervesystem</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Kronisk stress er ikke en reaktion på det, der sker omkring dig lige nu. Det er et nervesystem, der er låst i beredskab. Kroppen ved ikke, at faren er ovre, og holder dig på vagt, også i weekenden, også når der objektivt set ikke er noget at frygte. Beredskabet er blevet din grundindstilling.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnose arbejder med præcis den grundindstilling. I den hypnotiske tilstand falder alarmberedskabet, og kroppen registrerer, hvordan reel ro føles, ofte for første gang i lang tid. Det er ikke afspænding eller mindfulness, hvor du midlertidigt slapper af; det er en dybere ændring af, hvad nervesystemet opfatter som normaltilstand.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Over sessionerne lærer systemet, at beredskab ikke skal være standard, at ro er det normale, og at det kan vende tilbage til ro hurtigere efter belastning. Det hæver din samlede tærskel, så det skal mere til, før alarmen går.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Stress hænger ofte sammen med søvn og overtænkning, og de tre forstærker hinanden. Derfor arbejdes der med hele billedet, ikke kun det enkelte symptom.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler om hvad du oplever, hvornår det startede, og hvad du har prøvet. Her afklarer vi sammen, om hypnoterapi er den rette tilgang for dig. Telefon eller fysisk, og helt uforpligtende.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> En grundig samtale om din historie og dit mønster, efterfulgt af den første hypnose. De fleste bliver overraskede over hvor naturligt det føles: en dyb afspænding hvor du hører alt, husker alt og har fuld kontrol.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet målrettes det, der driver netop dit mønster. Mange mærker forandring efter få sessioner; afgrænsede problemstillinger kan ofte klares hurtigt, mens mere indgroede mønstre kræver et lidt længere forløb.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.</p>
+        </section>
+
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan viser kronisk stress sig</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Kroppen er konstant på vagt</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Spændt kæbe, anspændte skuldre, en uro i maven der ikke forsvinder. Kroppen er i alarmberedskab, selv når du hviler. Du slapper ikke rigtigt af, heller ikke i ferien.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Du fungerer, men det koster</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Udadtil klarer du det hele. Indadtil er reserverne ved at være brugt. Mange holder facaden længe, indtil kroppen sætter foden ned med søvnløshed, hovedpine, infektioner eller en pludselig følelse af tomhed.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Søvnen og tankerne følger med</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Stress, dårlig søvn og tankemylder hænger sammen. Det stressede nervesystem holder dig vågen, og søvnmanglen øger stressen yderligere. Det bliver en spiral, der er svær at bryde med viljestyrke alene.</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Mod udbrændthed</h3>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Når den kroniske stress får lov at fortsætte, ender mange i en tilstand af udmattelse, hvor selv små ting bliver uoverskuelige. Jo tidligere nervesystemet får hjælp til at finde ro, jo lettere er vejen tilbage.</p>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Vigtigt at vide</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Ved tegn på alvorlig stressbelastning eller begyndende udbrændthed (vedvarende udmattelse, hukommelsesbesvær, følelse af at bryde sammen) bør du også inddrage din læge. Hypnoterapi kan være en vigtig del af at finde ro, men ved svær stress er det et supplement til lægelig vurdering og eventuel sygemelding.</p>
+        </section>
+
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
           <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>
