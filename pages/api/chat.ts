@@ -160,6 +160,14 @@ async function handleInitOrRestore(params: {
       (conversationKind === "lobby"
         ? createLobbyState(conversationId)
         : createInitialState(conversationId))
+    // Route til korrekt HOME-node også før samtykke, så velkomstbesked matcher chatbotType
+    if (!storedState) {
+      const homeNodeId = chatbotType === "children" ? "HOME_CHILDREN" : chatbotType === "alcohol" ? "HOME_ALCOHOL" : "HOME"
+      const homeNode = getNode(homeNodeId)
+      tempState.active_node = homeNodeId
+      tempState.active_node_message = homeNode.message
+      tempState.allowed_transitions = homeNode.allowed_exits
+    }
     res.status(200).json({
       state: tempState,
       ...serializeActiveNode(tempState.active_node),
