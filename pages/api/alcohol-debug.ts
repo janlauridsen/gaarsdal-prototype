@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import { getNode } from "../../chat/nodes/registry"
-import { buildSystemPrompt } from "../../chat/ai/orchestration/singleTurnCall"
+import { runCapability } from "../../chat/ai/runtime"
+import { createLobbyState } from "../../chat/kernel/state"
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const token = req.query.token
@@ -8,39 +8,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const out: any = {}
 
-  // 1. Node check
+  // Kør gen-alcohol-v1 capability direkte - skal nu give substans-svar
   try {
-    const node = getNode("HOME_ALCOHOL")
-    out.home_alcohol = { capability_id: node.capability_id }
-  } catch (e) { out.home_alcohol = { error: String(e) } }
-
-  // 2. Test buildSystemPrompt MED alcohol-flag
-  try {
-    const promptAlcohol = buildSystemPrompt({
-      assistantCount: 0,
-      arousalLevel: "low",
-      policySignals: { is_practical_request: false, is_closing: false, is_alcohol_context: true },
+    const state = createLobbyState("debug:alcohol")
+    state.active_node = "HOME_ALCOHOL"
+    const result = await runCapability("gen-alcohol-v1", {
+      state,
+      userText: "Jeg drikker et par glas vin hver aften, men det er ikke noget problem",
+      contextPack: { system: "", user_profile: "", goal_hypothesis: null },
     } as any)
-    out.with_alcohol_flag = {
-      has_alcohol_block: promptAlcohol.includes("KONTEKST — ALKOHOL"),
-      has_alcohol_role: promptAlcohol.includes("TØR dele faglig substans"),
-      has_children_restriction: promptAlcohol.includes("Forbliv i undersøgende modus"),
-      first_300: promptAlcohol.slice(0, 300),
+    const resp = result.transition?.response_message ?? ""
+    out.capability_run = {
+      response: resp,
+      // Substans-markører: nævner den søvn, selvmedicinering, eller konkret evidens?
+      mentions_sleep: /søvn|sove|REM/i.test(resp),
+      mentions_mechanism: /nervesystem|dæmp|selvmedic|flugt|bedøv|tolerance/i.test(resp),
+      to: result.transition?.to,
     }
-  } catch (e) { out.with_alcohol_flag = { error: String(e) } }
-
-  // 3. Test UDEN flag (standard)
-  try {
-    const promptStd = buildSystemPrompt({
-      assistantCount: 0,
-      arousalLevel: "low",
-      policySignals: { is_practical_request: false, is_closing: false },
-    } as any)
-    out.without_flag = {
-      has_alcohol_block: promptStd.includes("KONTEKST — ALKOHOL"),
-      has_children_restriction: promptStd.includes("Forbliv i undersøgende modus"),
-    }
-  } catch (e) { out.without_flag = { error: String(e) } }
+  } catch (e) { out.capability_run = { error: String(e) } }
 
   res.setHeader("Cache-Control", "no-store")
   return res.status(200).json(out)
