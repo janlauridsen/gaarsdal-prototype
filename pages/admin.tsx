@@ -10,7 +10,7 @@ type Handoff = { id: string; received_at: string; navn: string; emne: string; ko
 type Lead = { id: string; received_at: string; email: string; tema?: string; conversation_id: string }
 type FeedbackItem = { ts: string; conversation_id: string; revision?: number; rating: "positive" | "partial" | "negative"; tags?: string[]; note?: string; meta?: { node?: string; mode?: string; move?: string } }
 type AnticipateDraft = { job_id: string; based_on_revision: number; anticipated_user_text: string; rhetorical_instruction: string; conversation_goal_hypothesis: string | null; created_at: number }
-type StateSummary = { conversation_id: string; fit?: "good" | "explore" | "unknown"; fit_reason?: string; arousal_level?: string; arousal_score?: number; problem_title?: string; topic_tags?: string[]; genHypnoTranscript?: Array<{role: string; content: string}>; chatbotType?: "standard" | "children" }
+type StateSummary = { conversation_id: string; fit?: "good" | "explore" | "unknown"; fit_reason?: string; arousal_level?: string; arousal_score?: number; problem_title?: string; topic_tags?: string[]; genHypnoTranscript?: Array<{role: string; content: string}>; chatbotType?: "standard" | "children" | "alcohol" }
 type TtmConversation = {
   conversation_id: string
   started_at: string
@@ -136,7 +136,7 @@ export default function AdminPage() {
   const [kwData, setKwData] = useState<Array<{ day: string; keywords: Record<string, number> }>>([])
   const [kwLoading, setKwLoading] = useState(false)
   const [showTestUsers, setShowTestUsers] = useState(false)
-  const [chatbotTypeFilter, setChatbotTypeFilter] = useState<"all" | "standard" | "children">("all")
+  const [chatbotTypeFilter, setChatbotTypeFilter] = useState<"all" | "standard" | "children" | "alcohol">("all")
   const [groupByUser, setGroupByUser] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
