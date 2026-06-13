@@ -12,6 +12,7 @@ type UnifiedRunOptions = {
   sourceNode: string
   stayOnNode: string
   forcedMode?: Exclude<PromptMode, "closing">
+  domain?: "children" | "alcohol"
 }
 
 const MAX_TRANSCRIPT_TURNS = 30
@@ -327,11 +328,13 @@ export async function runUnifiedHypnoCapability(
       : undefined
 
   // A: Beregn policy-signaler her og send dem med som input til LLM (upstream hints, ikke post-hoc override)
+  const isAlcohol = options.domain === "alcohol"
   const policySignals = {
     is_practical_request: detectPracticalKeywords(userText),
     is_closing: detectClosingText(userText),
     is_ready_signal: detectReadinessSignal(userText),
-    is_child_context: true, // Altid sandt i børne-chatbot
+    is_child_context: !isAlcohol, // børne-chatbot (default); slået fra for alkohol
+    is_alcohol_context: isAlcohol,
   }
 
   // ─── Forløb-invitation: route til BOOKING når bruger bekræfter ────────────
