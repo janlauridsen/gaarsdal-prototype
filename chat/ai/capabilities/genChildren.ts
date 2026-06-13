@@ -167,6 +167,8 @@ function buildMetaDelta(params: {
   arousalScore?: number
   arousalLevel?: import("../orchestration/applyPolicy").ArousalLevel
 }): Record<string, unknown> {
+  // Domæne-prefix udledt af transcriptKey: 'gen_children.transcript' -> 'gen_children', 'gen_alcohol.transcript' -> 'gen_alcohol'
+  const mp = params.transcriptKey.replace(/\.transcript$/, "")
   const previousTranscript = readTranscriptByKey(params.context, params.transcriptKey)
   const prevAssistantCount = countAssistantTurns(previousTranscript)
   const nextAssistantCount = params.assistantMessage ? prevAssistantCount + 1 : prevAssistantCount
@@ -183,18 +185,17 @@ function buildMetaDelta(params: {
 
   const meta: Record<string, unknown> = {
     [params.transcriptKey]: params.updatedTranscript,
-    "gen_children.transcript": params.updatedTranscript,
-    "gen_children.assistant_turn_count": nextAssistantCount,
+    [`${mp}.assistant_turn_count`]: nextAssistantCount,
     "dialog.mode": params.mode,
     "dialog.move": params.analysis.conversation_move,
     "dialog.investigation_focus": params.analysis.investigation_focus,
     "dialog.stage": dialogStage,
     "dialog.relational_state": params.relationalState,
-    "gen_children.analysis": params.analysis,
+    [`${mp}.analysis`]: params.analysis,
   }
 
   if (params.topic) {
-    meta["gen_children.last_topic"] = params.topic
+    meta[`${mp}.last_topic`] = params.topic
     meta["dialog.topic"] = params.topic
     meta["focused_reflection.topic"] = params.topic
   }
@@ -208,9 +209,9 @@ function buildMetaDelta(params: {
     meta["focused_reflection.transcript"] = params.updatedTranscript
   }
   if (params.mode === "closing") meta["focused_reflection.stage"] = "CLOSED"
-  if (derivedProblemTitle) meta["gen_children.problem_title"] = derivedProblemTitle
-  if (derivedProblemSummary) meta["gen_children.problem_summary"] = derivedProblemSummary
-  if (derivedTopicTags.length) meta["gen_children.topic_tags"] = derivedTopicTags
+  if (derivedProblemTitle) meta[`${mp}.problem_title`] = derivedProblemTitle
+  if (derivedProblemSummary) meta[`${mp}.problem_summary`] = derivedProblemSummary
+  if (derivedTopicTags.length) meta[`${mp}.topic_tags`] = derivedTopicTags
   if (typeof params.arousalScore === "number") meta["wot.arousal_score"] = params.arousalScore
   if (params.arousalLevel) meta["wot.arousal_level"] = params.arousalLevel
   // model logges fra capability niveau, ikke her
@@ -230,7 +231,9 @@ export async function runUnifiedHypnoCapability(
   const transcript = readTranscriptByKey(context, options.transcriptKey)
   const trimmedTranscript = trimTranscript(transcript)
   const userText = context.userText ?? ""
-  const storedTopic = readStringMeta(context, "gen_children.last_topic") || readStringMeta(context, "dialog.topic")
+  // Domæne-prefix udledt af transcriptKey (gen_children / gen_alcohol)
+  const metaPrefix = options.transcriptKey.replace(/\.transcript$/, "")
+  const storedTopic = readStringMeta(context, `${metaPrefix}.last_topic`) || readStringMeta(context, "dialog.topic")
   // Nulstil topic hvis bruger eksplicit skifter emne (kort besked der ikke matcher previous topic)
   const isTopicChange = storedTopic && trimmedTranscript.length >= 2 && (
     userText.toLowerCase().includes("ny samtale") ||
@@ -321,7 +324,7 @@ export async function runUnifiedHypnoCapability(
 
   // Hvis topic er sat af greeting-systemet (SYSTEM_THREAD_CREATE) og brugeren spørger om historik,
   // injicér greeting-kontekst så LLM'en ikke modsiger velkomstbeskeden.
-  const lastTopicSourceNode = (context.state.meta?.["gen_children.last_topic"] as any)?.source_node
+  const lastTopicSourceNode = (context.state.meta?.[`${metaPrefix}.last_topic`] as any)?.source_node
   const greetingHint =
     lastTopicSourceNode === "SYSTEM_THREAD_CREATE" && previousTopic
       ? `\n\nNOTE: Brugeren blev budt velkommen med en hilsen der refererede til emnet "${previousTopic}" fra en tidligere samtale. Bekræft dette emne hvis brugeren spørger om historik - svar IKKE at der ingen historik er.`
@@ -635,7 +638,7 @@ Selvskade/krise hos BARN 8-13 (barn skriver selv):
           arousalScore: arousal.score,
           arousalLevel: arousal.level,
         }),
-        "gen_children.model": context.modelOverride ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
+        [`${metaPrefix}.model`]: context.modelOverride ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
       },
     },
     debug: { capability: "unified-hypno-v5-single", used_fallback: usedFallback },
