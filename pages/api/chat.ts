@@ -86,7 +86,7 @@ function serializeActiveNode(nodeId: string): { node_kind: string; node_allow_fr
   }
 }
 
-type ChatRequestBody = { state: any; input: ApiInputSignal; chatbotType?: "children" | "standard" }
+type ChatRequestBody = { state: any; input: ApiInputSignal; chatbotType?: "children" | "standard" | "alcohol" }
 
 type ApiInputSignal =
   | InputSignal
@@ -148,7 +148,7 @@ async function ensureThreadBindingOnState(params: { userKey: string; conversatio
 async function handleInitOrRestore(params: {
   clientState: any; storedState: any | null; conversationId: string
   conversationKind: "lobby" | "thread"; userKey: string; res: NextApiResponse
-  consentRecord: ConsentRecord | null; chatbotType: "standard" | "children"; namespace: "gaarsdal" | "children"
+  consentRecord: ConsentRecord | null; chatbotType: "standard" | "children" | "alcohol"; namespace: "gaarsdal" | "children" | "alcohol"
 }): Promise<boolean> {
   const { clientState, storedState, conversationId, conversationKind, userKey, res, chatbotType, namespace } = params
   if (clientState !== null) return false
@@ -173,7 +173,7 @@ async function handleInitOrRestore(params: {
   
   // Route to correct HOME node based on chatbotType
   if (!storedState) {
-    const homeNodeId = chatbotType === "children" ? "HOME_CHILDREN" : "HOME"
+    const homeNodeId = chatbotType === "children" ? "HOME_CHILDREN" : chatbotType === "alcohol" ? "HOME_ALCOHOL" : "HOME"
     const homeNode = getNode(homeNodeId)
     baseState.active_node = homeNodeId
     baseState.active_node_message = homeNode.message
@@ -187,6 +187,14 @@ async function handleInitOrRestore(params: {
           { id: "c3", label: "Sover dårligt" },
           { id: "c4", label: "Føler sig udenfor" },
           { id: "c5", label: "Vil gerne booke en tid" },
+        ]
+      : chatbotType === "alcohol"
+      ? [
+          { id: "a1", label: "Jeg drikker mere end jeg vil" },
+          { id: "a2", label: "Drikker for at slappe af" },
+          { id: "a3", label: "Påvirker det min søvn?" },
+          { id: "a4", label: "Bekymret for en relation" },
+          { id: "a5", label: "Hvornår er det et problem?" },
         ]
       : [
           { id: "h1", label: "Hvad er hypnoterapi?" },
@@ -241,7 +249,7 @@ async function handleInitOrRestore(params: {
   return true
 }
 
-async function runTurnWithAutoAdvance(params: { baseState: any; input: InputSignal; userKey: string; chatbotType?: "standard" | "children" }): Promise<KernelResult> {
+async function runTurnWithAutoAdvance(params: { baseState: any; input: InputSignal; userKey: string; chatbotType?: "standard" | "children" | "alcohol" }): Promise<KernelResult> {
   const fromNode = params.baseState.active_node
   let kernelResult = await runNode({ state: params.baseState, input: params.input, userKey: params.userKey })
 
@@ -277,7 +285,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const clientState = body.state ?? null
   const input = body.input
   const chatbotType = body.chatbotType ?? "standard"
-  const namespace = chatbotType === "children" ? "children" : "gaarsdal"
+  const namespace = chatbotType === "children" ? "children" : chatbotType === "alcohol" ? "alcohol" : "gaarsdal"
   const requestedConversationId =
     (isPlatformThreadInput(input) && (input as any).type === "THREAD_SWITCH" && (input as any).conversation_id) ||
     (clientState && typeof clientState.conversation_id === "string" ? clientState.conversation_id : undefined)
@@ -348,6 +356,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Ensure correct HOME node for children chatbot if not yet set
     if (!stored && chatbotType === "children" && baseState.active_node === "HOME") {
       baseState.active_node = "HOME_CHILDREN"
+    }
+    if (!stored && chatbotType === "alcohol" && baseState.active_node === "HOME") {
+      baseState.active_node = "HOME_ALCOHOL"
     }
 
     let kernelResultFinal = await runTurnWithAutoAdvance({ baseState, input: input as InputSignal, userKey, chatbotType })
