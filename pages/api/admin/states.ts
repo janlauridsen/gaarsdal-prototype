@@ -22,7 +22,7 @@ type StateSummary = {
   active_node?: string
   status?: string
   genHypnoTranscript?: Array<{ role: string; content: string }>
-  chatbotType?: "standard" | "children"
+  chatbotType?: "standard" | "children" | "alcohol"
 }
 
 function extractMeta(raw: unknown): StateSummary | null {
