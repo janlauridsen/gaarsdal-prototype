@@ -531,9 +531,14 @@ Selvskade/krise hos BARN 8-13 (barn skriver selv):
     lastTopic: isTopicChange ? undefined : previousTopic,
     arousalLevel: arousal.level,
     assistantCount: assistantCountBefore,
-    contextPackSystem: greetingHint
-      ? CHILDREN_CONTEXT + "\n\n" + (context.contextPack?.system ?? "") + greetingHint
-      : CHILDREN_CONTEXT + (context.contextPack?.system ? "\n\n" + context.contextPack.system : ""),
+    contextPackSystem: (() => {
+      // Domæne-betinget: alkohol bruger IKKE børne-kontekst (dens rolle+domæneblok er i buildSystemPrompt)
+      const domainContext = isAlcohol ? "" : CHILDREN_CONTEXT
+      const base = context.contextPack?.system ?? ""
+      const sep = domainContext && base ? "\n\n" : ""
+      const core = domainContext + sep + base
+      return greetingHint ? core + greetingHint : core
+    })(),
     userProfileSystem: context.contextPack?.user_profile,
     previousMode,
     previousRelationalState,
