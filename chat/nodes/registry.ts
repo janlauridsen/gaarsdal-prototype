@@ -104,7 +104,7 @@ export const nodeRegistry: Record<string, Node> = {
       "wot.arousal_level",
       "gen_children.model",
     ],
-  }
+  },
   HOME_ALCOHOL: {
     id: "HOME_ALCOHOL",
     kind: "DIALOG",
