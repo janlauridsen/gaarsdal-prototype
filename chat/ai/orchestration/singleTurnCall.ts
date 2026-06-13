@@ -39,7 +39,7 @@ export type SingleTurnOutput = {
 
 // ─── System-prompt ───────────────────────────────────────────────────────────
 
-function buildSystemPrompt(params: {
+export function buildSystemPrompt(params: {
   assistantCount: number
   arousalLevel: "low" | "elevated" | "high"
   lastAssistantExcerpt: string | undefined
@@ -535,6 +535,7 @@ export async function singleTurnCall(params: {
     .reverse()
     .find((t) => t.role === "assistant")?.content
 
+  const __dbg = process.env.ALCOHOL_DEBUG === "1"
   const systemPrompt = buildSystemPrompt({
     assistantCount: params.assistantCount,
     arousalLevel: params.arousalLevel,
@@ -547,6 +548,11 @@ export async function singleTurnCall(params: {
     goalHypothesis: params.goalHypothesis,
     rhetoricalInstruction: params.rhetoricalInstruction,
   })
+  if (__dbg) {
+    console.log("[ALCOHOL_DEBUG] is_alcohol_context:", params.policySignals?.is_alcohol_context)
+    console.log("[ALCOHOL_DEBUG] systemPrompt_has_alcohol_block:", systemPrompt.includes("KONTEKST — ALKOHOL"))
+    console.log("[ALCOHOL_DEBUG] systemPrompt_first_400:", systemPrompt.slice(0, 400))
+  }
 
   // C: Dynamisk temperatur — reflection er mere kreativ, evidence/info mere præcis
   const temperature =
