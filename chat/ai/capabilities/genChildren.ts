@@ -400,6 +400,46 @@ export async function runUnifiedHypnoCapability(
   const crisisInText = selfHarmCrisis || CRISIS_PHRASES_FIRST_PERSON.some((p) => textLower.includes(p))
   const crisisDetected = crisisInMeta || crisisInText
 
+  // ═══ HARD STOP: Fysisk alkohol-afhængighed (kun alkohol-assistenten) ═══
+  // Abstinenssymptomer er for sikkerhedskritiske til at overlade til LLM'en.
+  // Deterministisk detektor → fast eskaleringssvar, ligesom krise.
+  if (options.domain === "alcohol") {
+    const t = userText.toLowerCase()
+    const DEPENDENCY_PHRASES = [
+      "ryster om morgen", "rysten om morgen", "ryster indtil", "ryster til jeg",
+      "skælver om morgen", "morgenøl", "morgen øl", "øl om morgenen", "drikke om morgenen",
+      "drikker om morgenen", "får det bedre når jeg drikker", "stabil når jeg",
+      "sved om natten", "sveder når jeg ikke", "kramper", "delirium", "abstinens",
+      "ryster når jeg ikke", "skal have noget at drikke for at",
+    ]
+    const dependencyDetected = DEPENDENCY_PHRASES.some((p) => t.includes(p))
+    if (dependencyDetected) {
+      const depMessage =
+        "Tak fordi du siger det højt — det er ikke nemt.\n\n" +
+        "Når kroppen ryster om morgenen og falder til ro, så snart du drikker, er det et tydeligt tegn på, at den er blevet fysisk afhængig af alkohol. Det er ikke et spørgsmål om viljestyrke — det er kroppens kemi.\n\n" +
+        "Det er vigtigt, at du ved, at det at stoppe brat på egen hånd i den tilstand i nogle tilfælde kan være farligt. Det her skal du tage med din egen læge, eller du kan ringe gratis og anonymt til Alkolinjen på 80 200 500.\n\n" +
+        "Hypnoterapi kan hjælpe med meget omkring alkohol — men ikke med dette. Her er det kroppen, der skal have lægelig hjælp først."
+      const updatedTranscript = appendTranscript(transcript, userText, depMessage)
+      return {
+        transition: {
+          type: "NODE_HOP" as const,
+          from: context.state.active_node,
+          to: context.state.active_node,
+          reason: "alcohol:dependency-detected (hard-stop)",
+          response_message: depMessage,
+          meta_delta: buildMetaDelta({
+            context, assistantMessage: depMessage, updatedTranscript,
+            topic: previousTopic, sourceNode: options.sourceNode,
+            transcriptKey: options.transcriptKey, userText,
+            analysis: buildDefaultAnalysis(userText, previousTopic, "info"),
+            mode: "info", relationalState: "building_trust",
+          }),
+        },
+        debug: { capability: "unified-hypno-v5-single", used_fallback: false },
+      }
+    }
+  }
+
   // ═══ HARD STOP: Krise afbryder LLM-kaldet helt ═══
   // Hvis krise detekteres, returner krise-svar direkte uden LLM-involvering
   if (crisisDetected) {
