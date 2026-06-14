@@ -492,7 +492,12 @@ export async function runUnifiedHypnoCapability(
 
   // ═══ HARD STOP: Krise har ALTID forrang ═══
   if (crisisDetected) {
-    const crisisMessage = "Det lyder som om du har det meget svært lige nu.\n\nDet er vigtigt at du ikke står alene med de tanker. Ring til Livslinjen på 70 201 201 (gratis, døgnet rundt), lægevagten på 1813, eller 112 hvis det er akut."
+    // Har vi allerede givet krise-svar i denne samtale? Så undgå robotagtig gentagelse.
+    const priorAssistantTexts = transcript.filter(t => t.role === "assistant").map(t => t.content)
+    const alreadyEscalated = priorAssistantTexts.some(c => c.includes("70 201 201"))
+    const crisisMessage = alreadyEscalated
+      ? "Jeg er her stadig, og du behøver ikke sige mere, end du har lyst til. Men jeg kan ikke bære det her med dig på den måde, du har brug for lige nu — det kan et rigtigt menneske. Livslinjen (70 201 201) lytter uden at dømme, døgnet rundt og gratis. Og er det akut, så ring 112. Du fortjener at have nogen ved din side i det her."
+      : "Det lyder som om du har det meget svært lige nu.\n\nDet er vigtigt at du ikke står alene med de tanker. Ring til Livslinjen på 70 201 201 (gratis, døgnet rundt), lægevagten på 1813, eller 112 hvis det er akut."
     const updatedTranscriptC = appendTranscript(transcript, userText, crisisMessage)
     return {
       transition: {
