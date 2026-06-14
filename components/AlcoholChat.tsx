@@ -18,7 +18,6 @@ export default function AlcoholChat() {
   const [state, setState] = useState<any>(null)
   const [started, setStarted] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const convIdRef = useRef<string>("lobby:u:alc-" + Math.random().toString(36).slice(2) + Date.now().toString(36))
 
   useEffect(() => {
     if (started && scrollRef.current) {
@@ -34,12 +33,25 @@ export default function AlcoholChat() {
     setMessages(prev => [...prev, { role: "user", content: userMessage }])
     setLoading(true)
     try {
-      // Første rigtige tur: send INIT-state med frisk conversation_id
-      const payloadState = state ?? { conversation_id: convIdRef.current }
+      // Sørg for at samtalen er initialiseret først (kernen kræver fuld state med active_node).
+      // Send INIT med state: null — præcis som children-siden — så serveren initialiserer korrekt.
+      let currentState = state
+      if (!currentState) {
+        const initRes = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ state: null, input: { type: "INIT", text: "" }, chatbotType: "alcohol" }),
+        })
+        if (initRes.ok) {
+          const initData = await initRes.json()
+          currentState = initData.state
+          setState(initData.state)
+        }
+      }
       const r = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state: payloadState, input: { type: "FREE_TEXT", text: userMessage }, chatbotType: "alcohol" }),
+        body: JSON.stringify({ state: currentState, input: { type: "FREE_TEXT", text: userMessage }, chatbotType: "alcohol" }),
       })
       if (r.ok) {
         const data = await r.json()
