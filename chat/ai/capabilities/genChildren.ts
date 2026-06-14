@@ -223,6 +223,62 @@ function buildMetaDelta(params: {
 
 // --- Main capability runner ---
 
+// ─── Semantisk sikkerhedsklassifikation ──────────────────────────────────────
+// Erstatter skrøbelige fraselister: en let LLM-vurdering der forstår BETYDNING,
+// ikke ordlyd. Returnerer struktureret resultat. De faste eskaleringssvar bruges
+// stadig (sikkerhed) — kun detektionen er nu semantisk.
+// Fraselisterne bevares som hurtig fast-path for åbenlyse tilfælde (sparer et kald).
+type SafetyClass = { crisis: boolean; dependency: boolean }
+
+async function classifySafety(
+  llm: LlmClient,
+  userText: string,
+  recentContext: string,
+  fastCrisis: boolean,
+  fastDependency: boolean,
+): Promise<SafetyClass> {
+  // Fast-path: åbenlyse tilfælde fanget af fraser → spring LLM-kald over
+  if (fastCrisis || fastDependency) {
+    return { crisis: fastCrisis, dependency: fastDependency }
+  }
+  // Semantisk vurdering for alt andet
+  try {
+    const raw = await llm.chatJson({
+      model: process.env.SAFETY_MODEL ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
+      temperature: 0,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "Du er en sikkerhedsklassifikator for en samtale om alkohol. " +
+            "Vurder KUN brugerens seneste besked (med kontekst) for to ting. Svar i JSON.\n\n" +
+            "crisis = true HVIS beskeden udtrykker akut psykisk nød: livstræthed, håbløshed, " +
+            "ikke at ville leve/være her, meningsløshed, selvmordstanker, eller at give op på livet. " +
+            "Fang BETYDNINGEN uanset formulering — fx 'træt af det hele', 'orker ikke mere', " +
+            "'ser ingen udvej', 'kan ikke mere' tæller alle som crisis.\n\n" +
+            "dependency = true HVIS beskeden beskriver fysiske tegn på alkoholafhængighed: " +
+            "rysten/skælven der lindres af alkohol, drikke om morgenen/ved opvågning for at " +
+            "stabilisere, sved/uro når man ikke drikker, kramper, abstinenser, morgendrik. " +
+            "Fang BETYDNINGEN uanset formulering.\n\n" +
+            'Svar PRÆCIST: {"crisis": boolean, "dependency": boolean}',
+        },
+        {
+          role: "user",
+          content: JSON.stringify({ recent_context: recentContext, latest_message: userText }),
+        },
+      ],
+    })
+    return {
+      crisis: raw?.crisis === true,
+      dependency: raw?.dependency === true,
+    }
+  } catch {
+    // Ved fejl: fald tilbage på fast-path-resultatet (fail-safe, ingen falsk negativ værre end fraser)
+    return { crisis: fastCrisis, dependency: fastDependency }
+  }
+}
+
 export async function runUnifiedHypnoCapability(
   context: AiCapabilityContext,
   llm: LlmClient,
@@ -401,15 +457,12 @@ export async function runUnifiedHypnoCapability(
   const selfHarmCrisis = selfHarmPhrase && !isAboutChild
 
   const crisisInText = selfHarmCrisis || CRISIS_PHRASES_FIRST_PERSON.some((p) => textLower.includes(p))
-  const crisisDetected = crisisInMeta || crisisInText
+  const fastCrisis = crisisInMeta || crisisInText
 
-  // ═══ HARD STOP: Fysisk alkohol-afhængighed (kun alkohol-assistenten) ═══
-  // Abstinenssymptomer er for sikkerhedskritiske til at overlade til LLM'en.
-  // Deterministisk detektor → fast eskaleringssvar, ligesom krise.
-  // Krise har altid forrang (tjekkes nedenfor), derfor !crisisDetected her.
-  if (options.domain === "alcohol" && !crisisDetected) {
-    const t = userText.toLowerCase()
-    // Eksplicitte fraser
+  // Fast-path afhængigheds-fraser (kun alkohol)
+  let fastDependency = false
+  if (options.domain === "alcohol") {
+    const t = textLower
     const DEPENDENCY_PHRASES = [
       "ryster om morgen", "rysten om morgen", "ryster indtil", "ryster til jeg",
       "skælver om morgen", "morgenøl", "morgen øl", "øl om morgenen", "drikke om morgenen",
@@ -417,55 +470,66 @@ export async function runUnifiedHypnoCapability(
       "sved om natten", "sveder når jeg ikke", "kramper", "delirium", "abstinens",
       "ryster når jeg ikke", "skal have noget at drikke for at",
     ]
-    // Kombinations-detektion: (morgen/vågne) + (drikke/øl/alkohol), eller (ryste/skælve) + (drikke/øl)
-    // Fanger variationer som "drikke en øl når jeg vågner så jeg ikke ryster"
-    const hasMorning = /morgen|vågn|vagn|står op|stå op|når jeg vågner/.test(t)
+    const hasMorning = /morgen|vågn|vagn|står op|stå op/.test(t)
     const hasShaking = /ryste|ryster|skælv|skælver|rysten|sitr/.test(t)
-    const hasDrink = /drikke|drikker|øl|vin|alkohol|sprut|genstand|dram|en lille en/.test(t)
-    const comboMorning = hasMorning && hasDrink
-    const comboShaking = hasShaking && hasDrink
-    const dependencyDetected = DEPENDENCY_PHRASES.some((p) => t.includes(p)) || comboMorning || comboShaking
-    if (dependencyDetected) {
-      const depMessage =
-        "Tak fordi du siger det højt — det er ikke nemt.\n\n" +
-        "Når kroppen ryster om morgenen og falder til ro, så snart du drikker, er det et tydeligt tegn på, at den er blevet fysisk afhængig af alkohol. Det er ikke et spørgsmål om viljestyrke — det er kroppens kemi.\n\n" +
-        "Det er vigtigt, at du ved, at det at stoppe brat på egen hånd i den tilstand i nogle tilfælde kan være farligt. Det her skal du tage med din egen læge, eller du kan ringe gratis og anonymt til Alkolinjen på 80 200 500.\n\n" +
-        "Hypnoterapi kan hjælpe med meget omkring alkohol — men ikke med dette. Her er det kroppen, der skal have lægelig hjælp først."
-      const updatedTranscript = appendTranscript(transcript, userText, depMessage)
-      return {
-        transition: {
-          type: "NODE_HOP" as const,
-          from: context.state.active_node,
-          to: context.state.active_node,
-          reason: "alcohol:dependency-detected (hard-stop)",
-          response_message: depMessage,
-          meta_delta: buildMetaDelta({
-            context, assistantMessage: depMessage, updatedTranscript,
-            topic: previousTopic, sourceNode: options.sourceNode,
-            transcriptKey: options.transcriptKey, userText,
-            analysis: buildDefaultAnalysis(userText, previousTopic, "info"),
-            mode: "info", relationalState: "building_trust",
-          }),
-        },
-        debug: { capability: "unified-hypno-v5-single", used_fallback: false },
-      }
-    }
+    const hasDrink = /drikke|drikker|øl|vin|alkohol|sprut|genstand|dram/.test(t)
+    fastDependency = DEPENDENCY_PHRASES.some((p) => t.includes(p)) || (hasMorning && hasDrink) || (hasShaking && hasDrink)
   }
 
-  // ═══ HARD STOP: Krise afbryder LLM-kaldet helt ═══
-  // Hvis krise detekteres, returner krise-svar direkte uden LLM-involvering
+  // ═══ SEMANTISK SIKKERHEDSKLASSIFIKATION ═══
+  // Fraser fanger åbenlyse tilfælde øjeblikkeligt (fast-path). Alt andet vurderes
+  // semantisk af en let LLM, så formuleringsvarians ikke slipper igennem.
+  const recentContext = trimmedTranscript.slice(-4).map(tt => `${tt.role}: ${tt.content}`).join("\n")
+  const safety = await classifySafety(llm, userText, recentContext, fastCrisis, fastDependency)
+  const crisisDetected = safety.crisis
+
+  // ═══ HARD STOP: Krise har ALTID forrang ═══
   if (crisisDetected) {
     const crisisMessage = "Det lyder som om du har det meget svært lige nu.\n\nDet er vigtigt at du ikke står alene med de tanker. Ring til Livslinjen på 70 201 201 (gratis, døgnet rundt), lægevagten på 1813, eller 112 hvis det er akut."
+    const updatedTranscriptC = appendTranscript(transcript, userText, crisisMessage)
     return {
       transition: {
         type: "NODE_HOP" as const,
         from: context.state.active_node,
-        to: "CRISIS_INFO",
-        reason: "crisis detected - hard stop",
+        to: context.state.active_node,
+        reason: "crisis-detected (hard-stop)",
         response_message: crisisMessage,
-        meta_delta: {},
+        meta_delta: buildMetaDelta({
+          context, assistantMessage: crisisMessage, updatedTranscript: updatedTranscriptC,
+          topic: previousTopic, sourceNode: options.sourceNode,
+          transcriptKey: options.transcriptKey, userText,
+          analysis: buildDefaultAnalysis(userText, previousTopic, "info"),
+          mode: "info", relationalState: "building_trust",
+        }),
       },
-      debug: { capability: "gen-children-v1", used_fallback: false },
+      debug: { capability: "unified-hypno-v5-single", used_fallback: false },
+    }
+  }
+
+  // ═══ HARD STOP: Fysisk alkohol-afhængighed (efter krise, kun alkohol) ═══
+  if (options.domain === "alcohol" && safety.dependency) {
+    const depMessage =
+      "Tak fordi du siger det højt — det er ikke nemt.\n\n" +
+      "Når kroppen ryster om morgenen og falder til ro, så snart du drikker, er det et tydeligt tegn på, at den er blevet fysisk afhængig af alkohol. Det er ikke et spørgsmål om viljestyrke — det er kroppens kemi.\n\n" +
+      "Det er vigtigt, at du ved, at det at stoppe brat på egen hånd i den tilstand i nogle tilfælde kan være farligt. Det her skal du tage med din egen læge, eller du kan ringe gratis og anonymt til Alkolinjen på 80 200 500.\n\n" +
+      "Hypnoterapi kan hjælpe med meget omkring alkohol — men ikke med dette. Her er det kroppen, der skal have lægelig hjælp først."
+    const updatedTranscript = appendTranscript(transcript, userText, depMessage)
+    return {
+      transition: {
+        type: "NODE_HOP" as const,
+        from: context.state.active_node,
+        to: context.state.active_node,
+        reason: "alcohol:dependency-detected (hard-stop)",
+        response_message: depMessage,
+        meta_delta: buildMetaDelta({
+          context, assistantMessage: depMessage, updatedTranscript,
+          topic: previousTopic, sourceNode: options.sourceNode,
+          transcriptKey: options.transcriptKey, userText,
+          analysis: buildDefaultAnalysis(userText, previousTopic, "info"),
+          mode: "info", relationalState: "building_trust",
+        }),
+      },
+      debug: { capability: "unified-hypno-v5-single", used_fallback: false },
     }
   }
 
