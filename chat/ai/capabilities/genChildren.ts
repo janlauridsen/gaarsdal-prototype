@@ -257,10 +257,17 @@ async function classifySafety(
             "ikke at ville leve/være her, meningsløshed, selvmordstanker, eller at give op på livet. " +
             "Fang BETYDNINGEN uanset formulering — fx 'træt af det hele', 'orker ikke mere', " +
             "'ser ingen udvej', 'kan ikke mere' tæller alle som crisis.\n\n" +
-            "dependency = true HVIS beskeden beskriver fysiske tegn på alkoholafhængighed: " +
-            "rysten/skælven der lindres af alkohol, drikke om morgenen/ved opvågning for at " +
-            "stabilisere, sved/uro når man ikke drikker, kramper, abstinenser, morgendrik. " +
-            "Fang BETYDNINGEN uanset formulering.\n\n" +
+            "dependency = true KUN HVIS beskeden beskriver FYSISKE abstinenssymptomer eller " +
+            "afhængighedstegn: rysten/skælven der lindres af alkohol, drikke om morgenen/ved " +
+            "opvågning for at stabilisere kroppen, sved/uro/kvalme når man IKKE drikker, " +
+            "kramper, delirium, eller at man ikke kan fungere uden. Fang BETYDNINGEN uanset formulering.\n\n" +
+            "dependency = false ved ALMINDELIGE drikkevaner uden fysiske abstinenser, også selvom de er " +
+            "daglige eller vanemæssige. VIGTIGE eksempler der IKKE er dependency: " +
+            "'jeg tager den første genstand når jeg kommer hjem fra arbejde' (fyraftensvane, ikke abstinens), " +
+            "'jeg drikker et par glas vin hver aften', 'jeg drikker for at slappe af', " +
+            "'jeg drikker mest i weekenden'. Disse er vaner, ikke fysisk afhængighed — sæt dependency=false. " +
+            "Kræv et TYDELIGT fysisk symptom (rysten, sved, kvalme, kramper) eller morgendrik-for-at-stabilisere " +
+            "før du sætter dependency=true. Er du i tvivl: false.\n\n" +
             'Svar PRÆCIST: {"crisis": boolean, "dependency": boolean}',
         },
         {
@@ -470,10 +477,10 @@ export async function runUnifiedHypnoCapability(
       "sved om natten", "sveder når jeg ikke", "kramper", "delirium", "abstinens",
       "ryster når jeg ikke", "skal have noget at drikke for at",
     ]
-    const hasMorning = /morgen|vågn|vagn|står op|stå op/.test(t)
-    const hasShaking = /ryste|ryster|skælv|skælver|rysten|sitr/.test(t)
-    const hasDrink = /drikke|drikker|øl|vin|alkohol|sprut|genstand|dram/.test(t)
-    fastDependency = DEPENDENCY_PHRASES.some((p) => t.includes(p)) || (hasMorning && hasDrink) || (hasShaking && hasDrink)
+    // Fast-path kun for UTVETYDIGE fraser. Bredere/tvetydige kombinationer (ryste+drikke,
+    // morgen+drikke) overlades til den semantiske klassifikator, som har negative eksempler
+    // mod falske positiver — ellers rammer "tager den første genstand efter arbejde" fejlagtigt.
+    fastDependency = DEPENDENCY_PHRASES.some((p) => t.includes(p))
   }
 
   // ═══ SEMANTISK SIKKERHEDSKLASSIFIKATION ═══
