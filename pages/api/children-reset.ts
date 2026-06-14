@@ -16,8 +16,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const redis = getRedisClient()
     if (redis) {
       await Promise.all([
+        // Ny namespaced nøgle (matcher conversationStateStore key-format)
+        redis.del(`gaarsdal:state:children:${conversationId}`),
+        // Gammel delt nøgle (oprydning af evt. forurenet state fra før namespace-fix)
         redis.del(`gaarsdal:state:${conversationId}`),
-        redis.del(`children:state:${conversationId}`),
         redis.del(`children:events:v1:conv:${conversationId}`),
         redis.del(`children:raw:conversation:${conversationId}`),
       ])
