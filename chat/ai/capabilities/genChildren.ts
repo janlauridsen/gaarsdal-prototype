@@ -387,6 +387,9 @@ export async function runUnifiedHypnoCapability(
     "slippe for det hele", "ville være lettere hvis jeg ikke var her",
     "vil hellere dø", "hellere dø", "vil dø", "ønsker jeg var død",
     "ikke eksistere", "leve mere",
+    "træt af livet", "træt af at leve", "orker ikke mere", "orker ikke livet",
+    "kan ikke mere", "magter ikke mere", "ser ingen mening", "ingen mening med",
+    "livet er meningsløst", "alt er meningsløst", "vil ikke være her",
   ]
   // Indikatorer for at det handler om et barn (ikke brugeren selv)
   const CHILD_CONTEXT_WORDS = ["min søn", "min datter", "mit barn", "barnet", "han ", "hun ", "ham ", "hende "]
@@ -403,8 +406,10 @@ export async function runUnifiedHypnoCapability(
   // ═══ HARD STOP: Fysisk alkohol-afhængighed (kun alkohol-assistenten) ═══
   // Abstinenssymptomer er for sikkerhedskritiske til at overlade til LLM'en.
   // Deterministisk detektor → fast eskaleringssvar, ligesom krise.
-  if (options.domain === "alcohol") {
+  // Krise har altid forrang (tjekkes nedenfor), derfor !crisisDetected her.
+  if (options.domain === "alcohol" && !crisisDetected) {
     const t = userText.toLowerCase()
+    // Eksplicitte fraser
     const DEPENDENCY_PHRASES = [
       "ryster om morgen", "rysten om morgen", "ryster indtil", "ryster til jeg",
       "skælver om morgen", "morgenøl", "morgen øl", "øl om morgenen", "drikke om morgenen",
@@ -412,7 +417,14 @@ export async function runUnifiedHypnoCapability(
       "sved om natten", "sveder når jeg ikke", "kramper", "delirium", "abstinens",
       "ryster når jeg ikke", "skal have noget at drikke for at",
     ]
-    const dependencyDetected = DEPENDENCY_PHRASES.some((p) => t.includes(p))
+    // Kombinations-detektion: (morgen/vågne) + (drikke/øl/alkohol), eller (ryste/skælve) + (drikke/øl)
+    // Fanger variationer som "drikke en øl når jeg vågner så jeg ikke ryster"
+    const hasMorning = /morgen|vågn|vagn|står op|stå op|når jeg vågner/.test(t)
+    const hasShaking = /ryste|ryster|skælv|skælver|rysten|sitr/.test(t)
+    const hasDrink = /drikke|drikker|øl|vin|alkohol|sprut|genstand|dram|en lille en/.test(t)
+    const comboMorning = hasMorning && hasDrink
+    const comboShaking = hasShaking && hasDrink
+    const dependencyDetected = DEPENDENCY_PHRASES.some((p) => t.includes(p)) || comboMorning || comboShaking
     if (dependencyDetected) {
       const depMessage =
         "Tak fordi du siger det højt — det er ikke nemt.\n\n" +
