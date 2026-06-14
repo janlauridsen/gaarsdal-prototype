@@ -9,17 +9,22 @@ export default function AlkoholChatTest() {
   const [loading, setLoading] = useState(false)
   const [state, setState] = useState<any>(null)
   const [crisis, setCrisis] = useState(false)
+  const [convId, setConvId] = useState<string>("")
   const endRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }) }, [messages, loading])
 
-  const init = async () => {
+  // Frisk conversation_id pr. session — lobby-format så vi bliver på den simple sti,
+  // men unik så hver reset er en ren samtale (ikke genbrug af gammel Redis-state)
+  const freshConvId = () => "lobby:u:alctest-" + Math.random().toString(36).slice(2) + Date.now().toString(36)
+
+  const init = async (cid: string) => {
     setLoading(true)
     try {
       const r = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state: null, input: { type: "INIT", text: "" }, chatbotType: "alcohol" }),
+        body: JSON.stringify({ state: { conversation_id: cid }, input: { type: "INIT", text: "" }, chatbotType: "alcohol" }),
       })
       if (r.ok) {
         const data = await r.json()
@@ -30,7 +35,11 @@ export default function AlkoholChatTest() {
     } finally { setLoading(false) }
   }
 
-  useEffect(() => { init() }, [])
+  useEffect(() => {
+    const cid = freshConvId()
+    setConvId(cid)
+    init(cid)
+  }, [])
 
   const send = async () => {
     if (!input.trim() || loading) return
@@ -57,7 +66,14 @@ export default function AlkoholChatTest() {
     } finally { setLoading(false) }
   }
 
-  const reset = () => { setMessages([]); setState(null); setCrisis(false); init() }
+  const reset = () => {
+    const cid = freshConvId()
+    setConvId(cid)
+    setMessages([])
+    setState(null)
+    setCrisis(false)
+    init(cid)
+  }
 
   return (
     <>
