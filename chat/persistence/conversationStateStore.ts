@@ -3,8 +3,15 @@ import { getRedisClient } from "./redis"
 
 const STATE_KEY_PREFIX = "gaarsdal:state:"
 
-function key(conversationId: string): string {
-  return `${STATE_KEY_PREFIX}${conversationId}`
+type Namespace = "gaarsdal" | "children" | "alcohol"
+
+function key(conversationId: string, namespace: Namespace = "gaarsdal"): string {
+  // gaarsdal (standard) beholder den oprindelige nøgle for bagudkompatibilitet.
+  // children og alcohol får et namespace-segment, så de tre bots ALDRIG deler state.
+  if (namespace === "gaarsdal") {
+    return `${STATE_KEY_PREFIX}${conversationId}`
+  }
+  return `${STATE_KEY_PREFIX}${namespace}:${conversationId}`
 }
 
 function isConversationState(value: unknown): value is ConversationState {
@@ -41,33 +48,34 @@ function parseState(raw: unknown): ConversationState | null {
 
 export async function readConversationState(
   conversationId: string,
-  namespace: "gaarsdal" | "children" | "alcohol" = "gaarsdal"
+  namespace: Namespace = "gaarsdal"
 ): Promise<ConversationState | null> {
   const client = getRedisClient()
   if (!client) return null
 
-  const raw = await client.get<unknown>(key(conversationId))
+  const raw = await client.get<unknown>(key(conversationId, namespace))
   return parseState(raw)
 }
 
 export async function writeConversationState(
   state: ConversationState,
   ttlSeconds: number,
-  namespace: "gaarsdal" | "children" | "alcohol" = "gaarsdal"
+  namespace: Namespace = "gaarsdal"
 ): Promise<void> {
   const client = getRedisClient()
   if (!client) return
 
   // Store as JSON string (works regardless of Upstash return mode)
-  await client.set(key(state.conversation_id), JSON.stringify(state), {
+  await client.set(key(state.conversation_id, namespace), JSON.stringify(state), {
     ex: ttlSeconds,
   })
 }
 
 export async function deleteConversationState(
-  conversationId: string
+  conversationId: string,
+  namespace: Namespace = "gaarsdal"
 ): Promise<void> {
   const client = getRedisClient()
   if (!client) return
-  await client.del(key(conversationId))
+  await client.del(key(conversationId, namespace))
 }
