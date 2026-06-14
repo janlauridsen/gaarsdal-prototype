@@ -1,3 +1,4 @@
+import { bumpDialogStarted, bumpTurn, bumpSafetyEvent, type UsageBotType } from "../../analytics/usage"
 import { AiCapability, AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
 import { PromptMode, RelationalState, TurnAnalysis } from "../contracts/turnAnalysis"
 import { computeRollingArousal, detectPracticalKeywords, detectClosingText, detectReadinessSignal, detectChildContext } from "../orchestration/applyPolicy"
@@ -432,6 +433,13 @@ export async function runUnifiedHypnoCapability(
 
   // A: Beregn policy-signaler her og send dem med som input til LLM (upstream hints, ikke post-hoc override)
   const isAlcohol = options.domain === "alcohol"
+  const usageBot: UsageBotType = isAlcohol ? "alcohol" : (options.domain === "children" ? "children" : "standard")
+
+  // Anonym brugstælling (GDPR-ren: ingen indhold, ingen IP). Best-effort.
+  if (assistantCountBefore === 0) {
+    await bumpDialogStarted(usageBot)
+  }
+  await bumpTurn(usageBot)
 
   // Anonym notifikation: kun på første tur i en alkohol-dialog (best-effort, ingen indhold)
   if (isAlcohol && assistantCountBefore === 0) {
@@ -535,6 +543,7 @@ export async function runUnifiedHypnoCapability(
 
   // ═══ HARD STOP: Krise har ALTID forrang ═══
   if (crisisDetected) {
+    await bumpSafetyEvent(usageBot, "crisis")
     // Har vi allerede givet krise-svar i denne samtale? Så undgå robotagtig gentagelse.
     const priorAssistantTexts = transcript.filter(t => t.role === "assistant").map(t => t.content)
     const alreadyEscalated = priorAssistantTexts.some(c => c.includes("70 201 201"))
@@ -563,6 +572,7 @@ export async function runUnifiedHypnoCapability(
 
   // ═══ HARD STOP: Fysisk alkohol-afhængighed (efter krise, kun alkohol) ═══
   if (options.domain === "alcohol" && safety.dependency) {
+    await bumpSafetyEvent("alcohol", "dependency")
     const depMessage =
       "Tak fordi du siger det højt — det er ikke nemt.\n\n" +
       "Når kroppen ryster om morgenen og falder til ro, så snart du drikker, er det et tydeligt tegn på, at den er blevet fysisk afhængig af alkohol. Det er ikke et spørgsmål om viljestyrke — det er kroppens kemi.\n\n" +
