@@ -237,6 +237,7 @@ async function classifySafety(
   recentContext: string,
   fastCrisis: boolean,
   fastDependency: boolean,
+  domain: "children" | "alcohol",
 ): Promise<SafetyClass> {
   // Fast-path: åbenlyse tilfælde fanget af fraser → spring LLM-kald over
   if (fastCrisis || fastDependency) {
@@ -244,6 +245,30 @@ async function classifySafety(
   }
   // Semantisk vurdering for alt andet
   try {
+    const contextLine = domain === "alcohol"
+      ? "Du er en sikkerhedsklassifikator for en samtale om alkohol."
+      : "Du er en sikkerhedsklassifikator for en samtale hvor en forælder eller en ung (8-18 år) søger råd om barnets/den unges trivsel."
+
+    const crisisRules = domain === "alcohol"
+      ? "crisis = true HVIS beskeden udtrykker akut psykisk nød hos SKRIBENTEN selv: livstræthed, " +
+        "håbløshed, ikke at ville leve/være her, meningsløshed, selvmordstanker, at give op på livet. " +
+        "Fang BETYDNINGEN uanset formulering — fx 'træt af det hele', 'orker ikke mere', 'ser ingen udvej'."
+      : "crisis = true KUN HVIS beskeden udtrykker AKUT fare: at skribenten (eller barnet) har selvmordstanker, " +
+        "vil gøre skade på sig selv/andre, eller er i umiddelbar nød lige nu. " +
+        "crisis = false ved ALMINDELIGE bekymringer om et barns trivsel — også selvom de bruger kliniske ord. " +
+        "VIGTIGE eksempler der IKKE er crisis: 'mit barn har angst', 'mit barn er ked af det', " +
+        "'mit barn vil ikke i skole', 'mit barn sover dårligt', 'mit barn bliver mobbet', " +
+        "'mit barn trækker sig'. Dette er normale henvendelser om et barns udfordringer — sæt crisis=false. " +
+        "Kun ved EKSPLICITTE tegn på selvmordsfare, selvskade eller akut fare sættes crisis=true. Er du i tvivl: false."
+
+    const depRules = domain === "alcohol"
+      ? "dependency = true KUN HVIS beskeden beskriver FYSISKE abstinenssymptomer: rysten/skælven der lindres " +
+        "af alkohol, morgendrik for at stabilisere, sved/uro/kvalme når man IKKE drikker, kramper, delirium. " +
+        "dependency = false ved almindelige drikkevaner uden fysiske abstinenser. Eksempler der IKKE er dependency: " +
+        "'tager den første genstand efter arbejde', 'et par glas vin hver aften', 'drikker for at slappe af'. " +
+        "Kræv et TYDELIGT fysisk symptom. Er du i tvivl: false."
+      : "dependency = false ALTID (ikke relevant i denne kontekst)."
+
     const raw = await llm.chatJson({
       model: process.env.SAFETY_MODEL ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
       temperature: 0,
@@ -252,23 +277,8 @@ async function classifySafety(
         {
           role: "system",
           content:
-            "Du er en sikkerhedsklassifikator for en samtale om alkohol. " +
-            "Vurder KUN brugerens seneste besked (med kontekst) for to ting. Svar i JSON.\n\n" +
-            "crisis = true HVIS beskeden udtrykker akut psykisk nød: livstræthed, håbløshed, " +
-            "ikke at ville leve/være her, meningsløshed, selvmordstanker, eller at give op på livet. " +
-            "Fang BETYDNINGEN uanset formulering — fx 'træt af det hele', 'orker ikke mere', " +
-            "'ser ingen udvej', 'kan ikke mere' tæller alle som crisis.\n\n" +
-            "dependency = true KUN HVIS beskeden beskriver FYSISKE abstinenssymptomer eller " +
-            "afhængighedstegn: rysten/skælven der lindres af alkohol, drikke om morgenen/ved " +
-            "opvågning for at stabilisere kroppen, sved/uro/kvalme når man IKKE drikker, " +
-            "kramper, delirium, eller at man ikke kan fungere uden. Fang BETYDNINGEN uanset formulering.\n\n" +
-            "dependency = false ved ALMINDELIGE drikkevaner uden fysiske abstinenser, også selvom de er " +
-            "daglige eller vanemæssige. VIGTIGE eksempler der IKKE er dependency: " +
-            "'jeg tager den første genstand når jeg kommer hjem fra arbejde' (fyraftensvane, ikke abstinens), " +
-            "'jeg drikker et par glas vin hver aften', 'jeg drikker for at slappe af', " +
-            "'jeg drikker mest i weekenden'. Disse er vaner, ikke fysisk afhængighed — sæt dependency=false. " +
-            "Kræv et TYDELIGT fysisk symptom (rysten, sved, kvalme, kramper) eller morgendrik-for-at-stabilisere " +
-            "før du sætter dependency=true. Er du i tvivl: false.\n\n" +
+            contextLine + " Vurder KUN brugerens seneste besked (med kontekst) for to ting. Svar i JSON.\n\n" +
+            crisisRules + "\n\n" + depRules + "\n\n" +
             'Svar PRÆCIST: {"crisis": boolean, "dependency": boolean}',
         },
         {
@@ -279,10 +289,10 @@ async function classifySafety(
     })
     return {
       crisis: raw?.crisis === true,
-      dependency: raw?.dependency === true,
+      dependency: domain === "alcohol" ? raw?.dependency === true : false,
     }
   } catch {
-    // Ved fejl: fald tilbage på fast-path-resultatet (fail-safe, ingen falsk negativ værre end fraser)
+    // Ved fejl: fald tilbage på fast-path-resultatet (fail-safe)
     return { crisis: fastCrisis, dependency: fastDependency }
   }
 }
@@ -540,7 +550,7 @@ export async function runUnifiedHypnoCapability(
   // Fraser fanger åbenlyse tilfælde øjeblikkeligt (fast-path). Alt andet vurderes
   // semantisk af en let LLM, så formuleringsvarians ikke slipper igennem.
   const recentContext = trimmedTranscript.slice(-4).map(tt => `${tt.role}: ${tt.content}`).join("\n")
-  const safety = await classifySafety(llm, userText, recentContext, fastCrisis, fastDependency)
+  const safety = await classifySafety(llm, userText, recentContext, fastCrisis, fastDependency, isAlcohol ? "alcohol" : "children")
   const crisisDetected = safety.crisis
 
   // ═══ HARD STOP: Krise har ALTID forrang ═══
