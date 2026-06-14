@@ -105,9 +105,9 @@ export default function AdminPage() {
   const [data, setData] = useState<ExportData|null>(null)
   const [stateMap, setStateMap] = useState<Record<string,StateSummary>>({})
   const [statesLoading, setStatesLoading] = useState(false)
-  const [tab, setTab] = useState<"conversations"|"handoffs"|"leads"|"feedback"|"traffic"|"memory"|"ttm"|"sms">("handoffs")
+  const [tab, setTab] = useState<"conversations"|"handoffs"|"leads"|"feedback"|"traffic"|"memory"|"ttm"|"sms"|"usage">("handoffs")
   const [openConvId, setOpenConvId] = useState<string|null>(null)
-  const [returnToTab, setReturnToTab] = useState<"conversations"|"handoffs"|"leads"|"feedback"|"traffic"|"memory"|"ttm"|"sms">("conversations")
+  const [returnToTab, setReturnToTab] = useState<"conversations"|"handoffs"|"leads"|"feedback"|"traffic"|"memory"|"ttm"|"sms"|"usage">("conversations")
   const [anticipateDrafts, setAnticipateDrafts] = useState<AnticipateDraft[]>([])
   const [anticipateLoading, setAnticipateLoading] = useState(false)
   const [expandedAnticipate, setExpandedAnticipate] = useState<string|null>(null)
@@ -118,6 +118,8 @@ export default function AdminPage() {
   const [ttmData, setTtmData] = useState<TtmConversation[]|null>(null)
   const [smsData, setSmsData] = useState<{optin:any[];positive:any[];stopped:string[];sent:any[]}|null>(null)
   const [smsLoading, setSmsLoading] = useState(false)
+  const [usageData, setUsageData] = useState<any|null>(null)
+  const [usageLoading, setUsageLoading] = useState(false)
   const [smsMsg, setSmsMsg] = useState("")
   const [smsTarget, setSmsTarget] = useState<"optin"|"positive"|"both">("optin")
   const [smsSending, setSmsSending] = useState(false)
@@ -157,6 +159,13 @@ export default function AdminPage() {
       const r = await fetch("/api/admin/sms?token=" + encodeURIComponent(secret) + "&t=" + Date.now())
       if (r.ok) setSmsData(await r.json())
     } catch {} finally { setSmsLoading(false) }
+  }, [secret])
+  const fetchUsage = useCallback(async () => {
+    if (!secret) return; setUsageLoading(true)
+    try {
+      const r = await fetch(`/api/admin/usage?secret=${encodeURIComponent(secret)}&days=30`)
+      if (r.ok) setUsageData(await r.json())
+    } finally { setUsageLoading(false) }
   }, [secret])
 
   const fetchHits = useCallback(async (days = hitsDays) => {
@@ -384,8 +393,9 @@ export default function AdminPage() {
               { id:"memory", label:"Hukommelse" },
               { id:"ttm", label:`TTM (${ttmData?.length ?? "?"})` },
               { id:"sms", label:"SMS" },
+              { id:"usage", label:"Brug" },
             ] as const).map(t => (
-              <button key={t.id} onClick={()=>{ setTab(t.id); setOpenConvId(null); if(t.id==="memory"&&!memoryData&&!memoryLoading) fetchMemory(); if(t.id==="traffic"&&hits.length===0&&!hitsLoading) { fetchHits(); fetchKeywords() }; if(t.id==="ttm"&&!ttmData&&!ttmLoading) fetchTtm(); if(t.id==="sms"&&!smsData&&!smsLoading) fetchSms() }}
+              <button key={t.id} onClick={()=>{ setTab(t.id); setOpenConvId(null); if(t.id==="memory"&&!memoryData&&!memoryLoading) fetchMemory(); if(t.id==="traffic"&&hits.length===0&&!hitsLoading) { fetchHits(); fetchKeywords() }; if(t.id==="ttm"&&!ttmData&&!ttmLoading) fetchTtm(); if(t.id==="sms"&&!smsData&&!smsLoading) fetchSms(); if(t.id==="usage"&&!usageData&&!usageLoading) fetchUsage() }}
                 style={{ padding:"8px 16px", borderRadius:"8px", fontSize:"14px", border:"none", cursor:"pointer", background:tab===t.id?"#6B8F71":"#1a1a1a", color:tab===t.id?"#1a1a1a":"#888888", fontWeight:tab===t.id?500:400, fontFamily:"inherit", boxShadow:"0 2px 10px rgba(0,0,0,0.05)" }}>
                 {t.label}
               </button>
@@ -1246,6 +1256,97 @@ export default function AdminPage() {
                     ))}
                   </div>
                 </div>
+              </div>
+            )
+          })()}
+
+          {tab==="usage" && (() => {
+            const bots = usageData?.bots ?? {}
+            const dayLabels: string[] = usageData?.days ?? []
+            const botMeta: { key: string; label: string; color: string }[] = [
+              { key: "alcohol", label: "Alkohol-assistent", color: "#8a6d9c" },
+              { key: "children", label: "Børne-assistent", color: "#6B8F71" },
+              { key: "standard", label: "Hoved-chatbot", color: "#5a7a8f" },
+            ]
+            const maxDialogs = Math.max(1, ...botMeta.flatMap(b => (bots[b.key]?.dialogs_by_day ?? [])))
+            return (
+              <div>
+                {usageLoading && <div style={{ color:"#888", fontSize:"14px", marginBottom:"12px" }}>Henter brugsdata…</div>}
+                {!usageLoading && !usageData?.enabled && <div style={{ color:"#888", fontSize:"14px" }}>Ingen brugsdata tilgængelig (Redis ikke aktiv).</div>}
+
+                <p style={{ fontSize:"12px", color:"#777", marginBottom:"20px", maxWidth:"600px" }}>
+                  Anonyme tællere. Ingen samtaleindhold, ingen IP, intet der kan identificere personer — kun at en samtale fandt sted, per type og dag.
+                </p>
+
+                {/* Nøgletal per bot */}
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:"14px", marginBottom:"28px" }}>
+                  {botMeta.map(b => {
+                    const d = bots[b.key] ?? {}
+                    return (
+                      <div key={b.key} style={{ ...S.card, padding:"18px 20px", borderLeft:`3px solid ${b.color}` }}>
+                        <div style={{ fontSize:"14px", fontWeight:600, color:"#cccccc", marginBottom:"10px" }}>{b.label}</div>
+                        <div style={{ display:"flex", gap:"20px", flexWrap:"wrap" }}>
+                          <div>
+                            <div style={{ fontSize:"24px", fontWeight:500, color:"#ffffff" }}>{d.dialogs_total ?? 0}</div>
+                            <div style={{ fontSize:"12px", color:"#888" }}>samtaler i alt</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize:"24px", fontWeight:500, color:"#aaaaaa" }}>{d.turns_total ?? 0}</div>
+                            <div style={{ fontSize:"12px", color:"#888" }}>beskeder i alt</div>
+                          </div>
+                        </div>
+                        {b.key === "alcohol" && (
+                          <div style={{ marginTop:"12px", paddingTop:"12px", borderTop:"1px solid #2a2a2a", display:"flex", gap:"20px" }}>
+                            <div>
+                              <div style={{ fontSize:"18px", fontWeight:500, color:"#c98a8a" }}>{d.crisis_total ?? 0}</div>
+                              <div style={{ fontSize:"11px", color:"#888" }}>krise-henvisninger</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize:"18px", fontWeight:500, color:"#c9a98a" }}>{d.dependency_total ?? 0}</div>
+                              <div style={{ fontSize:"11px", color:"#888" }}>afhængigheds-henvisninger</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Simpelt dagsdiagram - samtaler per dag */}
+                {dayLabels.length > 0 && (
+                  <div style={{ ...S.card, padding:"20px" }}>
+                    <div style={{ fontSize:"14px", fontWeight:600, color:"#cccccc", marginBottom:"16px" }}>Samtaler per dag (seneste {dayLabels.length} dage)</div>
+                    <div style={{ display:"flex", alignItems:"flex-end", gap:"3px", height:"120px" }}>
+                      {dayLabels.map((day, i) => {
+                        const total = botMeta.reduce((sum, b) => sum + (bots[b.key]?.dialogs_by_day?.[i] ?? 0), 0)
+                        const h = Math.round((total / maxDialogs) * 100)
+                        return (
+                          <div key={day} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:"4px" }} title={`${day}: ${total} samtaler`}>
+                            <div style={{ width:"100%", display:"flex", flexDirection:"column", justifyContent:"flex-end", height:"100px" }}>
+                              {botMeta.map(b => {
+                                const v = bots[b.key]?.dialogs_by_day?.[i] ?? 0
+                                const bh = total > 0 ? Math.round((v / maxDialogs) * 100) : 0
+                                return bh > 0 ? <div key={b.key} style={{ background:b.color, height:`${bh}px`, width:"100%" }} /> : null
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginTop:"8px", fontSize:"10px", color:"#666" }}>
+                      <span>{dayLabels[0]}</span>
+                      <span>{dayLabels[dayLabels.length-1]}</span>
+                    </div>
+                    <div style={{ display:"flex", gap:"16px", marginTop:"14px" }}>
+                      {botMeta.map(b => (
+                        <div key={b.key} style={{ display:"flex", alignItems:"center", gap:"6px", fontSize:"12px", color:"#999" }}>
+                          <div style={{ width:"10px", height:"10px", background:b.color, borderRadius:"2px" }} />
+                          {b.label}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })()}
