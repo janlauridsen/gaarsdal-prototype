@@ -20,6 +20,7 @@ export default function AlkoholChatTest() {
 
   const init = async (cid: string) => {
     setLoading(true)
+    setMessages([])
     try {
       const r = await fetch("/api/chat", {
         method: "POST",
@@ -30,8 +31,13 @@ export default function AlkoholChatTest() {
         const data = await r.json()
         setState(data.state)
         const msg = data.state?.active_node_message ?? data.transition?.response_message
-        if (msg) setMessages([{ role: "assistant", content: msg }])
+          ?? "Hej. Her kan du undersøge din relation til alkohol — hvad fylder, hvad koster det, hvad er du i tvivl om. Hvad tænker du på?"
+        setMessages([{ role: "assistant", content: msg }])
+      } else {
+        setMessages([{ role: "assistant", content: "Hej. Her kan du undersøge din relation til alkohol — hvad tænker du på?" }])
       }
+    } catch {
+      setMessages([{ role: "assistant", content: "Hej. Her kan du undersøge din relation til alkohol — hvad tænker du på?" }])
     } finally { setLoading(false) }
   }
 
@@ -69,7 +75,6 @@ export default function AlkoholChatTest() {
   const reset = () => {
     const cid = freshConvId()
     setConvId(cid)
-    setMessages([])
     setState(null)
     setCrisis(false)
     init(cid)
