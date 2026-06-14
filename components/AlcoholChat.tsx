@@ -82,7 +82,7 @@ export default function AlcoholChat() {
         <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#a3d9a5" }} />
         <div>
           <div style={{ fontSize: "15px", fontWeight: 600 }}>Anonym samtale om alkohol</div>
-          <div style={{ fontSize: "12px", opacity: 0.85 }}>Fortroligt · ingen registrering · svar med det samme</div>
+          <div style={{ fontSize: "12px", opacity: 0.85 }}>Fortroligt · samtalen behandles anonymt · svar med det samme</div>
         </div>
       </div>
 
@@ -180,7 +180,7 @@ export default function AlcoholChat() {
       {/* Disclaimer */}
       <div style={{ padding: "10px 16px", background: "#fafbfc", borderTop: "1px solid #eef1f3" }}>
         <p style={{ fontSize: "11px", color: "#9aa0a6", margin: 0, lineHeight: 1.5 }}>
-          Dette er en støttende samtale, ikke behandling eller diagnose. Ved akut behov: Alkolinjen 80 200 500 eller egen læge.
+          Dette er en støttende samtale, ikke behandling eller diagnose. Samtalen behandles anonymt og uden at identificere dig. Ved akut behov: Alkolinjen 80 200 500 eller egen læge.
         </p>
       </div>
 
