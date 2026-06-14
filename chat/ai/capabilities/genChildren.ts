@@ -332,6 +332,15 @@ export async function runUnifiedHypnoCapability(
   const transcript = readTranscriptByKey(context, options.transcriptKey)
   const trimmedTranscript = trimTranscript(transcript)
   const userText = context.userText ?? ""
+
+  // ─── Anonym brugstælling (GDPR-ren) — FØR alle tidlige returns, så hver tur tælles ───
+  const usageBot: UsageBotType = options.domain === "alcohol" ? "alcohol" : (options.domain === "children" ? "children" : "standard")
+  const usageAssistantCount = countAssistantTurns(transcript)
+  if (usageAssistantCount === 0) {
+    await bumpDialogStarted(usageBot)
+  }
+  await bumpTurn(usageBot)
+
   // Domæne-prefix udledt af transcriptKey (gen_children / gen_alcohol)
   const metaPrefix = options.transcriptKey.replace(/\.transcript$/, "")
   const storedTopic = readStringMeta(context, `${metaPrefix}.last_topic`) || readStringMeta(context, "dialog.topic")
@@ -433,13 +442,6 @@ export async function runUnifiedHypnoCapability(
 
   // A: Beregn policy-signaler her og send dem med som input til LLM (upstream hints, ikke post-hoc override)
   const isAlcohol = options.domain === "alcohol"
-  const usageBot: UsageBotType = isAlcohol ? "alcohol" : (options.domain === "children" ? "children" : "standard")
-
-  // Anonym brugstælling (GDPR-ren: ingen indhold, ingen IP). Best-effort.
-  if (assistantCountBefore === 0) {
-    await bumpDialogStarted(usageBot)
-  }
-  await bumpTurn(usageBot)
 
   // Anonym notifikation: kun på første tur i en alkohol-dialog (best-effort, ingen indhold)
   if (isAlcohol && assistantCountBefore === 0) {
