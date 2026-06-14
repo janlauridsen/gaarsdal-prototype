@@ -286,6 +286,43 @@ async function classifySafety(
   }
 }
 
+// ─── Anonym dialog-notifikation (alkohol) ────────────────────────────────────
+// GDPR-ren: sender KUN at en dialog er startet + tidspunkt. Intet indhold, ingen IP,
+// intet der kan identificere personen. Holder UI-løftet "ingen registrering" sandt.
+async function notifyAlcoholDialogStarted(): Promise<void> {
+  const resendKey = process.env.RESEND_API_KEY
+  const notifyTo = process.env.HANDOFF_NOTIFY_EMAIL ?? "jan@gaarsdal.net"
+  const notifyFrom = process.env.HANDOFF_FROM_EMAIL ?? "noreply@gaarsdal.net"
+  if (!resendKey) return
+  const ts = new Date().toLocaleString("da-DK", { timeZone: "Europe/Copenhagen" })
+  const html = [
+    "<h2>Alkohol-assistenten er taget i brug</h2>",
+    "<p>En person har netop startet en samtale med alkohol-assistenten på gaarsdal.net.</p>",
+    `<p><b>Tidspunkt:</b> ${ts}</p>`,
+    "<hr>",
+    "<p style=\"color:#888;font-size:12px\">Af hensyn til fortrolighed og GDPR sendes intet indhold fra samtalen, ingen IP og intet der kan identificere personen. Denne besked betyder kun at assistenten blev brugt.</p>",
+  ].join("")
+  try {
+    // Timeout-guard: en langsom mail må aldrig hænge brugerens svar
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 2500)
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${resendKey}` },
+      body: JSON.stringify({
+        from: notifyFrom,
+        to: [notifyTo],
+        subject: "Alkohol-assistenten er taget i brug",
+        html,
+      }),
+      signal: controller.signal,
+    }).catch(() => {})
+    clearTimeout(timer)
+  } catch {
+    // Notifikation er best-effort; må aldrig påvirke samtalen
+  }
+}
+
 export async function runUnifiedHypnoCapability(
   context: AiCapabilityContext,
   llm: LlmClient,
@@ -395,6 +432,12 @@ export async function runUnifiedHypnoCapability(
 
   // A: Beregn policy-signaler her og send dem med som input til LLM (upstream hints, ikke post-hoc override)
   const isAlcohol = options.domain === "alcohol"
+
+  // Anonym notifikation: kun på første tur i en alkohol-dialog (best-effort, ingen indhold)
+  if (isAlcohol && assistantCountBefore === 0) {
+    await notifyAlcoholDialogStarted()
+  }
+
   const policySignals = {
     is_practical_request: detectPracticalKeywords(userText),
     is_closing: detectClosingText(userText),
