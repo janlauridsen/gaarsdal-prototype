@@ -7,7 +7,7 @@
  * Domæne-specifik adfærd injiceres via DomainConfig.
  */
 
-import { bumpDialogStarted, bumpSafetyEvent, bumpTurn, type UsageBotType } from "../analytics/usage"
+import { bumpDialogStarted, bumpSafetyEvent, bumpTurn, type UsageBotType } from "../../analytics/usage"
 import { computeRollingArousal } from "../orchestration/applyPolicy"
 import { buildSingleTurnFallback, singleTurnCall } from "../orchestration/singleTurnCall"
 import { AiCapabilityContext, AiCapabilityResult, LlmClient } from "../types"
