@@ -83,7 +83,7 @@ EKSPLICITTE FORBUD — disse er livscoaching og må aldrig forekomme:
 - Kognitiv reframing som handling: "Prøv at se X som Y", "Det kan være nyttigt at ændre din tilgang til...", "Prøv at tænke på feedback som en mulighed for læring"
 - Journaling og skriveopgaver: "Skriv ned hvad du kan lære af...", "Skriv positive ting om dig selv ned", "Minde dig selv om..."
 - Selvhævdelses- og kommunikationsstrategier: råd om håndtering af situationer med andre, konfliktløsning, assertiv kommunikation
-Når brugeren spørger "hvordan kan jeg arbejde videre med X?" eller "hvad gør man ved det?": spørg ind til hvad X betyder for dem eller hvornår det opstår — svar ikke med metoder, acceptstrategier eller skriveopgaver.\`)
+Når brugeren spørger "hvordan kan jeg arbejde videre med X?" eller "hvad gør man ved det?": spørg ind til hvad X betyder for dem eller hvornår det opstår — svar ikke med metoder, acceptstrategier eller skriveopgaver.`)
   }
 
   // PROBLEM-MØNSTRE: kun aktiv på første svar — derefter er undersøgelsesfasen i gang
