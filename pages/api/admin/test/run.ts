@@ -91,7 +91,7 @@ async function callLLM(systemPrompt: string, userPrompt: string, temperature = 0
 
 // ─── Driver ───────────────────────────────────────────────────────────────────
 
-function buildDriverSystem(tc: TestCase | ChildrenTestCase): string {
+function buildDriverSystem(tc: TestCase): string {
   const isChildren = (tc as any).chatbotType === "children"
   const context = isChildren
     ? "Du simulerer en bruger (forælder eller ung) i en testscenarie for en børne-chatbot til Gaarsdal Hypnoterapi."
@@ -141,7 +141,7 @@ function buildObserverSystem(isChildren: boolean): string {
   return `${context}\nDin opgave er at evaluere om chatbottens adfærd lever op til de angivne kriterier.\nSvar KUN med valid JSON — ingen tekst udenfor JSON-blokken, ingen markdown backticks.`
 }
 
-async function runObserver(tc: TestCase | ChildrenTestCase, transcript: Turn[]): Promise<{ passed: boolean; criteria: CriterionResult[]; summary: string }> {
+async function runObserver(tc: TestCase, transcript: Turn[]): Promise<{ passed: boolean; criteria: CriterionResult[]; summary: string }> {
   const transcriptText = transcript
     .map((t) => `[Turn ${t.turn}]\nBruger: ${t.user}\nAssistent: ${t.bot.slice(0, 400)}${t.bot.length > 400 ? "…" : ""}`)
     .join("\n\n")
@@ -355,8 +355,10 @@ async function handleChunk(req: NextApiRequest, res: NextApiResponse): Promise<v
     }
   } catch { /* ignore */ }
 
-  const ALL_CASES_MERGED = [...ALL_TEST_CASES, ...ALL_CHILDREN_TEST_CASES]
-  const tc = ALL_CASES_MERGED.find((c) => c.id === id)
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  let childrenCases: TestCase[] = []
+  try { childrenCases = require("../../../../tests/children").ALL_CHILDREN_TEST_CASES } catch { /* ikke tilgængelig endnu */ }
+  const tc = [...ALL_TEST_CASES, ...childrenCases].find((c) => c.id === id)
   if (!tc) {
     res.status(404).json({ error: `Test case '${id}' ikke fundet` })
     return
@@ -507,8 +509,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const host = req.headers.host ?? "gaarsdal.net"
 
-  const ALL_CASES_MERGED_DIRECT = [...ALL_TEST_CASES, ...ALL_CHILDREN_TEST_CASES]
-  let cases = ALL_CASES_MERGED_DIRECT
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  let childrenCasesDirect: TestCase[] = []
+  try { childrenCasesDirect = require("../../../../tests/children").ALL_CHILDREN_TEST_CASES } catch { /* ikke tilgængelig endnu */ }
+  let cases = [...ALL_TEST_CASES, ...childrenCasesDirect]
   if (typeof req.query.id === "string") {
     cases = cases.filter((c) => c.id === req.query.id)
     if (cases.length === 0) return res.status(404).json({ error: `Test case '${req.query.id}' ikke fundet` })
