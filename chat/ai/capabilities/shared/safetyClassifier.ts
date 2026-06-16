@@ -32,6 +32,25 @@ const DEPENDENCY_PHRASES = [
   "ryster når jeg ikke", "skal have noget at drikke for at",
 ]
 
+const HATEFUL_PHRASES = [
+  "pædofil", "pædofile", "krænker", "krænkere",
+  "voldtægtsmand", "voldtægtsmænd", "pervers", "perverse",
+  "racist", "racister", "nazist", "nazister",
+  "islamist", "terrorist", "jihad",
+  "nigger", "neger", "bøsse", "luder", "hora",
+]
+
+const DEFAMATION_TARGETS = ["jan", "hypnoterapi", "hypnoterapeut", "terapeut"]
+
+export function detectHatefulContent(userText: string): boolean {
+  const t = userText.toLowerCase()
+  const hasHateful = HATEFUL_PHRASES.some((p) => t.includes(p))
+  if (!hasHateful) return false
+  // Returner kun true hvis det er en anklage (ikke et spørgsmål om tegn/symptomer)
+  const isQuestion = t.includes("hvad er") || t.includes("hvad betyder") || t.includes("hvad er tegn")
+  return !isQuestion
+}
+
 export function detectFastCrisis(userText: string, domain: SafetyDomain): boolean {
   const textLower = userText.toLowerCase()
   const isAboutChild = CHILD_CONTEXT_WORDS.some((w) => textLower.includes(w))
