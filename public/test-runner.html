@@ -27,7 +27,7 @@
   .presets { display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap; }
   .preset-btn { font-family:'IBM Plex Mono',monospace;font-size:11px;padding:4px 10px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.12s; }
   .preset-btn:hover { border-color:var(--accent);color:var(--accent); }
-  .selector { display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;margin-bottom:24px; }
+  .selector { display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1px;margin-bottom:24px; }
   .group-header { grid-column:1/-1;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);padding:12px 0 4px;letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid var(--border);margin-bottom:2px; }
   .cb-row { display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:4px;cursor:pointer;transition:background 0.1s;user-select:none; }
   .cb-row:hover { background:var(--surface); }
@@ -123,7 +123,7 @@
   </div>
 
   <div class="presets">
-    <button class="preset-btn" onclick="selectPreset('all')">Alle 35</button>
+    <button class="preset-btn" onclick="selectPreset('all')">Alle 47</button>
     <button class="preset-btn" onclick="selectPreset('baseline')">Baseline</button>
     <button class="preset-btn" onclick="selectPreset('safety')">Safety</button>
     <button class="preset-btn" onclick="selectPreset('routing')">Routing</button>
@@ -131,6 +131,7 @@
     <button class="preset-btn" onclick="selectPreset('reflection')">Refleksion</button>
     <button class="preset-btn" onclick="selectPreset('graenser')">Grænser</button>
     <button class="preset-btn" onclick="selectPreset('regression')">Regression</button>
+    <button class="preset-btn" onclick="selectPreset('children')">Børn & Unge</button>
     <button class="preset-btn" onclick="selectPreset('none')" style="margin-left:8px;opacity:0.6">Ryd alle</button>
   </div>
 
@@ -192,10 +193,23 @@ const CASES=[
   {group:'Regression',id:'tc-33-kontaktinfo-direkte',label:'Kontaktinfo direkte i svar'},
   {group:'Regression',id:'tc-34-reopen-after-close',label:'Re-åbning efter close'},
   {group:'Regression',id:'tc-35-returklient-med-ltm',label:'Returklient — ingen history-query misfire'},
+  {group:'Børn & Unge',id:'ch-01-spaedbarn-under-8',label:'Spædbarn / under 8 år'},
+  {group:'Børn & Unge',id:'ch-02-alder-formuleret-indirekte',label:'Alder indirekte ("fylder 8 næste uge")'},
+  {group:'Børn & Unge',id:'ch-03-sarkasme',label:'Sarkasme og skepsis'},
+  {group:'Børn & Unge',id:'ch-04-humor-absurd',label:'Humor / absurd input'},
+  {group:'Børn & Unge',id:'ch-05-seksuel-antydning-jan',label:'Seksuel antydning om Jan'},
+  {group:'Børn & Unge',id:'ch-06-bekymrende-barn-og-voksne',label:'Bekymrende barn+voksen situation'},
+  {group:'Børn & Unge',id:'ch-07-overgreb-direkte',label:'Direkte overgrebsdisclosure'},
+  {group:'Børn & Unge',id:'ch-08-diskrimination',label:'Diskrimination / hadefuldt'},
+  {group:'Børn & Unge',id:'ch-09-prompt-injection',label:'Prompt injection'},
+  {group:'Børn & Unge',id:'ch-10-juridisk-spoergsmaal',label:'Juridisk spørgsmål (samtykke)'},
+  {group:'Børn & Unge',id:'ch-11-ung-skriver-om-ven',label:'Ung skriver om syg ven'},
+  {group:'Børn & Unge',id:'ch-12-meningsloes-input',label:'Meningsløst input'},
 ]
 
 const PRESETS={
   all:CASES.map(c=>c.id),
+  children:CASES.filter(c=>c.group==='Børn & Unge').map(c=>c.id),
   baseline:CASES.slice(0,5).map(c=>c.id),
   safety:['tc-06-safety-crisis'],
   routing:['tc-02-booking','tc-03-no-handoff-on-problem-description','tc-10-no-handoff-false-positive','tc-29-false-positive-booking-ja','tc-32-klient-signal'],
