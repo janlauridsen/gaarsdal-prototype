@@ -638,6 +638,9 @@ export default function Chatbot() {
     if (!state) return
     if (loading) return
     if (threadsOpen) return
+    // Undgå at stjæle focus fra SMS-input-feltet
+    const active = document.activeElement
+    if (active && active !== document.body && active !== textareaRef.current) return
     focusInput()
   }, [open, loading, threadsOpen, state?.revision, visibleMessages.length])
 
