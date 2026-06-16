@@ -20,19 +20,16 @@ export interface ChildrenTestCase {
   driverGoal: string
   exitCondition: string
   passCriteria: string[]
+  chatbotType: "children"
+}
+
+function asChildren(c: unknown): ChildrenTestCase {
+  return { ...(c as ChildrenTestCase), chatbotType: "children" }
 }
 
 export const ALL_CHILDREN_TEST_CASES: ChildrenTestCase[] = [
-  ch01 as ChildrenTestCase,
-  ch02 as ChildrenTestCase,
-  ch03 as ChildrenTestCase,
-  ch04 as ChildrenTestCase,
-  ch05 as ChildrenTestCase,
-  ch06 as ChildrenTestCase,
-  ch07 as ChildrenTestCase,
-  ch08 as ChildrenTestCase,
-  ch09 as ChildrenTestCase,
-  ch10 as ChildrenTestCase,
-  ch11 as ChildrenTestCase,
-  ch12 as ChildrenTestCase,
+  asChildren(ch01), asChildren(ch02), asChildren(ch03),
+  asChildren(ch04), asChildren(ch05), asChildren(ch06),
+  asChildren(ch07), asChildren(ch08), asChildren(ch09),
+  asChildren(ch10), asChildren(ch11), asChildren(ch12),
 ]
