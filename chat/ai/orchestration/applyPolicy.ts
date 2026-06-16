@@ -56,6 +56,11 @@ export function detectReadinessSignal(text: string): boolean {
     "det er rigtigt", "det er korrekt", "det stemmer",
     "ja det stemmer", "det er mig", "det genkender jeg",
     "det er præcis", "præcis det", "netop",
+    // Eksplicitte booking-signaler — behandles som readiness-bekræftelse
+    "vil gerne booke", "vil booke", "booke en tid", "book en tid",
+    "bestille en tid", "bestil en tid", "vil aftale en tid",
+    "gerne kontakte jan", "vil kontakte jan", "vil i kontakt",
+    "ring til mig", "ringe til mig",
   ]
   return phrases.some((p) => t.includes(p))
 }
