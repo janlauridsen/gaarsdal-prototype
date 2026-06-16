@@ -462,9 +462,10 @@ async function handleChunk(req: NextApiRequest, res: NextApiResponse): Promise<v
 async function runCase(tc: TestCase, host: string): Promise<TestResult> {
   const userKey = generateUserKey()
   const transcript: Turn[] = []
+  const tcChatbotType = (tc as any).chatbotType ?? "standard"
 
   try {
-    const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays: 7 })
+    const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays: 7 }, tcChatbotType)
     let currentState = consent.state
 
     for (let i = 0; i < tc.maxTurns; i++) {
