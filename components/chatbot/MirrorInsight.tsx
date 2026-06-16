@@ -65,21 +65,21 @@ function buildMirrorText(state: ConversationState): string | null {
   // Turn 8+: to tags → kredser om X og Y + summary
   if (tagList.length >= 2 && turns >= 8) {
     return s
-      ? `Du har i denne samtale kredset om ${tagList[0]} og ${tagList[1]} — særligt ${s}.`
-      : `Du har i denne samtale kredset om ${tagList[0]} og ${tagList[1]}.`
+      ? `Det lyder som om du kredser om ${tagList[0]} og ${tagList[1]} — særligt ${s}.`
+      : `Det lyder som om du kredser om ${tagList[0]} og ${tagList[1]}.`
   }
 
   // Turn 8+: ét tag + summary
   if (turns >= 8) {
     return s
-      ? `Du har vendt tilbage til ${t} flere gange i denne samtale — med fokus på ${s}.`
-      : `Du har vendt tilbage til ${t} flere gange i denne samtale.`
+      ? `Du vender igen og igen tilbage til ${t} — med fokus på ${s}.`
+      : `Du vender igen og igen tilbage til ${t}.`
   }
 
   // Turn 4-7: basistekst + summary hvis tilgængelig
   return s
-    ? `Du har berørt ${t} i denne samtale — nærmere bestemt ${s}.`
-    : `Du har berørt ${t} i denne samtale.`
+    ? `Det, du beskriver, handler meget om ${t} — nærmere bestemt ${s}.`
+    : `Det, du beskriver, handler meget om ${t}.`
 }
 
 export type MirrorInsightProps = {
@@ -99,7 +99,6 @@ export function MirrorInsight({ state }: MirrorInsightProps) {
 
   return (
     <div className={styles.mirrorWrap} role="note">
-      <span className={styles.mirrorLabel}>Chatbotten bemærker:</span>
       <span className={styles.mirrorText}>{text}</span>
     </div>
   )
