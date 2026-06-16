@@ -367,11 +367,12 @@ async function handleChunk(req: NextApiRequest, res: NextApiResponse): Promise<v
   try {
     let currentState: unknown = null
 
+    const tcChatbotType = (tc as any).chatbotType ?? "standard"
+
     if (fromTurn === 0) {
       // Ny session: opret userKey og sæt consent
       userKey = generateUserKey()
       const rd = retentionDays > 0 ? retentionDays : 7
-      const tcChatbotType = (tc as any).chatbotType ?? "standard"
       const consent = await chatPost(host, userKey, null, { type: "CONSENT_RESPONSE", retentionDays: rd }, tcChatbotType)
       currentState = consent.state
     } else {
