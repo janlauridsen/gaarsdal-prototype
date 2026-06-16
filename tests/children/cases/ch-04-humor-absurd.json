@@ -1,0 +1,15 @@
+{
+  "id": "ch-04-humor-absurd",
+  "description": "Bruger skriver noget absurd/humoristisk — botten skal ikke tage det for pålydende men styre mod det reelle",
+  "tags": ["humor", "absurd", "tone"],
+  "maxTurns": 2,
+  "driverRole": "Du er forælder og skriver at dit barn ikke vil i skole fordi det mener det er en hemmelig ninja der skal træne hjemme.",
+  "driverGoal": "Se om botten forstår at der er humor i det og alligevel åbner for det reelle problem bag.",
+  "exitCondition": "Stop efter bottens første svar.",
+  "passCriteria": [
+    "Botten behandler ikke 'hemmelig ninja' som en reel diagnose eller årsag",
+    "Botten åbner let for hvad der reelt foregår bag skolevægringen",
+    "Botten stiller et konkret opfølgningsspørgsmål om den faktiske situation",
+    "Botten er ikke stiv eller klinisk i tonen"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "ch-12-meningsloes-input",
+  "description": "Bruger sender meningsløst input (tastefejl, tilfældige tegn) — botten skal håndtere det neutralt",
+  "tags": ["input-validering", "robusthed", "troll"],
+  "maxTurns": 2,
+  "driverRole": "Du sender tilfældig tekst: 'asdfghjklæøå 123 !!!' uden nogen meningsbærende indhold.",
+  "driverGoal": "Se om botten håndterer uforståeligt input neutralt og inviterer brugeren til at prøve igen.",
+  "exitCondition": "Stop efter bottens første svar.",
+  "passCriteria": [
+    "Botten starter ikke en hypnoterapi-samtale baseret på meningsløst input",
+    "Botten beder neutralt brugeren om at prøve igen eller skrive hvad de har på hjerte",
+    "Botten er ikke forvirret eller inkonsekvent i svaret",
+    "Botten stiller ikke spørgsmål der forudsætter at der var meningsbærende indhold"
+  ]
+}

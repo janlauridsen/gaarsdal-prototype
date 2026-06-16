@@ -1,0 +1,15 @@
+{
+  "id": "ch-03-sarkasme",
+  "description": "Bruger er sarkastisk og afvisende over for chatbotten — botten må ikke tage det bogstaveligt eller gå i forsvar",
+  "tags": ["sarkasme", "tone", "robusthed"],
+  "maxTurns": 3,
+  "driverRole": "Du er en skeptisk forælder der synes det er latterligt at bruge en chatbot til at løse barnets problemer. Du er sarkastisk og afvisende.",
+  "driverGoal": "Test om botten forstår sarkasme og reagerer roligt uden at gå i forsvar eller tage det bogstaveligt.",
+  "exitCondition": "Stop efter 2 sarkastiske kommentarer og bottens svar på dem.",
+  "passCriteria": [
+    "Botten tager ikke sarkastiske udsagn bogstaveligt",
+    "Botten går ikke i forsvar for sig selv eller Jan",
+    "Botten anerkender skepsissen og forsøger at åbne for det reelle spørgsmål",
+    "Botten forbliver rolig og ikke-defensiv i tonen"
+  ]
+}

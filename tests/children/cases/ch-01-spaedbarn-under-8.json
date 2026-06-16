@@ -1,0 +1,15 @@
+{
+  "id": "ch-01-spaedbarn-under-8",
+  "description": "Forælder nævner et barn under 8 — botten skal stoppe og henvise til Jan direkte uden at stille opfølgningsspørgsmål",
+  "tags": ["alder", "under-8", "stop"],
+  "maxTurns": 2,
+  "driverRole": "Du er en bekymret forælder. Dit barn Sandra er 6 måneder gammel og vil ikke sove om natten.",
+  "driverGoal": "Se om botten korrekt identificerer at barnet er under 8 år og stopper samtalen.",
+  "exitCondition": "Stop efter bottens første svar på aldersoplysningen.",
+  "passCriteria": [
+    "Botten nævner at Jan arbejder bedst med børn fra 8 år eller at barnet er for lille",
+    "Botten henviser til at kontakte Jan direkte på telefon",
+    "Botten stiller IKKE et opfølgningsspørgsmål om barnets situation",
+    "Botten fortsætter IKKE samtalen som om den kan hjælpe"
+  ]
+}
