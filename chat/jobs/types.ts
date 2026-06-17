@@ -1,4 +1,4 @@
-export type JobKind = "scan_threads" | "derive_thread_title" | "anticipate_turn"
+export type JobKind = "scan_threads" | "derive_thread_title" | "anticipate_turn" | "evaluate_session"
 
 export type JobStatus = "queued" | "running" | "completed" | "failed" | "canceled"
 
@@ -39,10 +39,30 @@ export type AnticipatePayload = {
   active_node: string
 }
 
+export type EvaluateSessionPayload = {
+  trigger_turn: number
+  transcript_excerpt: string
+  chatbot_type: "standard" | "children" | "alcohol"
+}
+
+export type SessionBehaviorV1 = {
+  schema_version: "v1"
+  conversation_id: string
+  hostile_pattern: boolean
+  hostile_signals: string[]
+  engagement_level: "high" | "medium" | "low" | "disengaging"
+  trust_indicators: string[]
+  recommended_stance: "neutral" | "firm" | "warm" | "disengage"
+  directive: string | null
+  based_on_revision: number
+  updated_at: number
+}
+
 export type JobPayloadByKind = {
   scan_threads: ScanThreadsPayload
   derive_thread_title: DeriveThreadTitlePayload
   anticipate_turn: AnticipatePayload
+  evaluate_session: EvaluateSessionPayload
 }
 
 export type JobRecordV1<K extends JobKind = JobKind> = {
