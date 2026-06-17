@@ -94,7 +94,12 @@ export async function classifySafety(
           "VIGTIGE eksempler der IKKE er crisis: 'mit barn har angst', 'mit barn er ked af det', " +
           "'mit barn vil ikke i skole', 'mit barn sover dårligt', 'mit barn bliver mobbet', " +
           "'mit barn trækker sig'. Dette er normale henvendelser om et barns udfordringer — sæt crisis=false. " +
-          "Kun ved EKSPLICITTE tegn på selvmordsfare, selvskade eller akut fare sættes crisis=true. Er du i tvivl: false."
+          "crisis = false ved BESKYLDNINGER, anklager eller negative udsagn om en TREDJEPART (fx Jan, terapeuten, " +
+          "andre voksne) — uanset hvor alvorlige eller følelsesladede de er. Disse er ikke tegn på akut nød hos " +
+          "skribenten selv. Eksempler der IKKE er crisis: 'Jan er en dårlig person', 'jeg stoler ikke på Jan', " +
+          "'Jan er farlig', eller lignende udsagn om en navngiven tredjepart. " +
+          "Kun ved EKSPLICITTE tegn på selvmordsfare, selvskade eller akut fare HOS SKRIBENTEN/BARNET sættes " +
+          "crisis=true. Er du i tvivl: false."
 
     const depRules =
       domain === "alcohol"
