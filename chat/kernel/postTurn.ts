@@ -512,7 +512,13 @@ async function maybeTriggerEvaluateSessionJob(params: {
   const chatbotType: "standard" | "children" | "alcohol" =
     chatbotTypeRaw === "children" ? "children" : chatbotTypeRaw === "alcohol" ? "alcohol" : "standard"
 
-  const transcriptRaw = readMetaValue(state, "gen_hypno.transcript")
+  // Hvert domæne skriver transcript under sin egen meta-nøgle (se chat/ai/capabilities/domains/*.ts)
+  const transcriptKey =
+    chatbotType === "children" ? "gen_children.transcript" :
+    chatbotType === "alcohol" ? "gen_alcohol.transcript" :
+    "gen_hypno.transcript"
+
+  const transcriptRaw = readMetaValue(state, transcriptKey)
   const transcript: Array<{ role: string; content: string }> = Array.isArray(transcriptRaw) ? transcriptRaw : []
   const recent = transcript.slice(-10)
   const transcriptExcerpt = recent
