@@ -50,6 +50,7 @@ export function buildSystemPrompt(params: {
   policySignals?: { is_practical_request: boolean; is_closing: boolean; is_ready_signal?: boolean; is_child_context?: boolean; is_alcohol_context?: boolean }
   goalHypothesis?: string | null
   rhetoricalInstruction?: string | null
+  sessionBehaviorDirective?: string | null
 }): string {
   const blocks: string[] = []
 
@@ -155,7 +156,7 @@ Tommelfingerregel: er spørgsmålet rettet mod hvad BOTTEN husker? → true. Er 
 
 info: direkte faktuel besvarelse. Start med kernepunktet, uddyb i 2-3 afsnit.
 reflection: flyt opmærksomheden til brugerens eget mønster. Ét præcist observationsfokus. Undgå brede lister.
-practical: konkret og handlingsorienteret. Når brugeren spørger om kontakt, booking eller Jan — giv ALTID de faktiske oplysninger fra SITE-KONTEKST: telefon +45 42 80 74 74 og email jan@gaarsdal.net. Skriv ALDRIG "se hjemmesiden" eller "find det på hjemmesiden" — det er en unyttig ikke-besvarelse. VIGTIGT: Du kan IKKE modtage, registrere eller bekræfte booking-tidspunkter — spørg ALDRIG brugeren om hvilken dag eller tid de ønsker. Henvis udelukkende til at kontakte Jan direkte.
+practical: konkret og handlingsorienteret. Når brugeren spørger om kontakt, booking eller Jan — giv ALTID de faktiske oplysninger fra SITE-KONTEKST: telefon +45 42 80 74 74 og email jan@gaarsdal.net. Skriv ALDRIG "se hjemmesiden" eller "find det på hjemmesiden" — det er en unyttig ikke-besvarelse.
 evidence: nøgtern vurdering af dokumentation for hypnoterapi. Angiv niveau: god/moderat/blandet/begrænset.
 closing: luk kort og naturligt. Max 1-2 sætninger. ALDRIG generiske afslutningsfraser som "Jeg er glad for at jeg kunne hjælpe", "Du er altid velkommen til at vende tilbage", "Tak fordi du tog kontakt" — disse er clichéer der ikke tilføjer noget. Sæt core_answer til den korte lukkesætning alene.
 
@@ -323,6 +324,15 @@ Dette er ikke valgfrit. Gentag IKKE undersøgelsesspørgsmål.`)
 
 
 
+  // SESSION-ADFÆRD DIREKTIV — fra evaluate_session-job, baseret på samtalens samlede mønster.
+  // Højere prioritet end retorisk direktiv: hvis brugeren har vist fjendtlighed, skal det styre
+  // svaret uanset hvad anticipation-systemet havde planlagt.
+  if (params.sessionBehaviorDirective) {
+    blocks.push(`SESSION-ADFÆRD DIREKTIV (obligatorisk — har forrang over retorisk direktiv):
+${params.sessionBehaviorDirective}
+Stil ikke opfølgende spørgsmål der inviterer til mere af samme adfærd.`)
+  }
+
   // RETORISK DIREKTIV — fra anticipation-system, baseret på forudsagt næste turn
   if (params.rhetoricalInstruction) {
     blocks.push(`RETORISK DIREKTIV (obligatorisk — følg dette i dit svar):
@@ -473,6 +483,7 @@ export async function singleTurnCall(params: {
   goalHypothesis?: string | null
   crisisDetected?: boolean
   rhetoricalInstruction?: string | null
+  sessionBehaviorDirective?: string | null
   modelOverride?: string
 }): Promise<SingleTurnOutput | null> {
   // Krise-override: returner hardcoded svar uden LLM-kald.
@@ -514,6 +525,7 @@ export async function singleTurnCall(params: {
     policySignals: params.policySignals,
     goalHypothesis: params.goalHypothesis,
     rhetoricalInstruction: params.rhetoricalInstruction,
+    sessionBehaviorDirective: params.sessionBehaviorDirective,
   })
 
   // C: Dynamisk temperatur — reflection er mere kreativ, evidence/info mere præcis
