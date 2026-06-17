@@ -340,6 +340,7 @@ export async function runPostTurn(params: {
     enqueueSuggestFacts({ userKey, conversationId, revisionAfter: revision, metaKeysWritten, threadThemeId: themeId, threadEpisodeId: episodeId }),
     maybeTriggerDeriveThreadTitleJob({ userKey, input, conversationId, revisionAfter: revision }),
     maybeTriggerAnticipateJob({ userKey, input, conversationId, state: kernelResult.state, revisionAfter: revision }),
+    maybeTriggerEvaluateSessionJob({ userKey, input, conversationId, state: kernelResult.state, revisionAfter: revision }),
     // Option A: scan ved session-afslutning — sikrer at alle afsluttede samtaler efterlader
     // et draft til næste besøg, uanset om turn-cadence-betingelserne var opfyldt.
     ...(
@@ -493,6 +494,48 @@ function shouldAutoTriggerHistoryScan(params: { state: any; problem: ProblemSpec
 }
 
 // ─── Anticipate Turn Job ───────────────────────────────────────────────────────
+
+async function maybeTriggerEvaluateSessionJob(params: {
+  userKey: string
+  input: InputSignal
+  conversationId: string
+  state: any
+  revisionAfter: number
+}): Promise<void> {
+  if (params.input.type !== "FREE_TEXT") return
+
+  const state = params.state
+  const turnCount = currentUserTurnCount(state)
+  if (turnCount < 1) return
+
+  const chatbotTypeRaw = readMetaValue(state, "chatbotType")
+  const chatbotType: "standard" | "children" | "alcohol" =
+    chatbotTypeRaw === "children" ? "children" : chatbotTypeRaw === "alcohol" ? "alcohol" : "standard"
+
+  const transcriptRaw = readMetaValue(state, "gen_hypno.transcript")
+  const transcript: Array<{ role: string; content: string }> = Array.isArray(transcriptRaw) ? transcriptRaw : []
+  const recent = transcript.slice(-10)
+  const transcriptExcerpt = recent
+    .map((t) => `${t.role === "user" ? "U" : "A"}: ${String(t.content ?? "").slice(0, 400)}`)
+    .join("\n\n")
+
+  if (!transcriptExcerpt) return
+
+  await triggerJob({
+    userKey: params.userKey,
+    conversationId: params.conversationId,
+    kind: "evaluate_session",
+    payload: {
+      trigger_turn: turnCount,
+      transcript_excerpt: transcriptExcerpt,
+      chatbot_type: chatbotType,
+    },
+    ttlSeconds: jobsTtlSeconds(),
+    dedupe: true,
+    basedOnRevision: Math.max(0, params.revisionAfter),
+    mode: "shadow",
+  })
+}
 
 async function maybeTriggerAnticipateJob(params: {
   userKey: string
