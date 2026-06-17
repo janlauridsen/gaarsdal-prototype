@@ -11,6 +11,16 @@ import { getRedisClient } from "../../../chat/persistence/redis"
 
 const STATE_KEY_PREFIX = "gaarsdal:state:"
 
+type SessionBehaviorSummary = {
+  hostile_pattern: boolean
+  hostile_signals: string[]
+  engagement_level: string
+  trust_indicators: string[]
+  recommended_stance: string
+  directive: string | null
+  updated_at: number
+}
+
 type StateSummary = {
   conversation_id: string
   fit?: "good" | "explore" | "unknown"
@@ -23,6 +33,29 @@ type StateSummary = {
   status?: string
   genHypnoTranscript?: Array<{ role: string; content: string }>
   chatbotType?: "standard" | "children" | "alcohol"
+  sessionBehavior?: SessionBehaviorSummary
+}
+
+async function readSessionBehavior(redis: ReturnType<typeof getRedisClient>, conversationId: string): Promise<SessionBehaviorSummary | undefined> {
+  if (!redis) return undefined
+  try {
+    const raw = await redis.get<unknown>(`gaarsdal:session:behavior:${conversationId}`)
+    if (!raw) return undefined
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw
+    if (!parsed || typeof parsed !== "object") return undefined
+    const p = parsed as any
+    return {
+      hostile_pattern: Boolean(p.hostile_pattern),
+      hostile_signals: Array.isArray(p.hostile_signals) ? p.hostile_signals : [],
+      engagement_level: typeof p.engagement_level === "string" ? p.engagement_level : "medium",
+      trust_indicators: Array.isArray(p.trust_indicators) ? p.trust_indicators : [],
+      recommended_stance: typeof p.recommended_stance === "string" ? p.recommended_stance : "neutral",
+      directive: typeof p.directive === "string" ? p.directive : null,
+      updated_at: typeof p.updated_at === "number" ? p.updated_at : 0,
+    }
+  } catch {
+    return undefined
+  }
 }
 
 function extractMeta(raw: unknown): StateSummary | null {
@@ -83,7 +116,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const raw = await redis.get<unknown>(`${STATE_KEY_PREFIX}${id}`)
       const summary = raw ? extractMeta(raw) : null
-      if (summary) results.push(summary)
+      if (summary) {
+        summary.sessionBehavior = await readSessionBehavior(redis, id)
+        results.push(summary)
+      }
     } catch {
       // skip
     }
