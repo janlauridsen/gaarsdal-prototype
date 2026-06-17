@@ -16,7 +16,7 @@ import { DomainConfig } from "./domains/types"
 import { buildDefaultAnalysis, outputToAnalysis } from "./shared/analysisHelpers"
 import { isHardExit } from "./shared/exitDetection"
 import { buildMetaDelta } from "./shared/metaDelta"
-import { classifySafety, detectFastCrisis, detectFastDependency, detectHatefulContent } from "./shared/safetyClassifier"
+import { classifySafety, detectFastCrisis, detectFastDependency } from "./shared/safetyClassifier"
 import {
   appendTranscript,
   countAssistantTurns,
@@ -192,22 +192,6 @@ export async function runUnifiedCapability(
     }
   }
 
-  // ─── Hadefuldt indhold — hard stop før safety-klassifikation ────────────────
-  if (detectHatefulContent(userText)) {
-    const hatefulMessage = "Jeg kan ikke hjælpe med den slags kommentarer. Hvis du har et reelt spørgsmål, er du velkommen til at stille det."
-    return {
-      transition: {
-        type: "NODE_HOP" as const,
-        from: context.state.active_node,
-        to: context.state.active_node,
-        reason: "hateful-content-detected",
-        response_message: hatefulMessage,
-        meta_delta: {},
-      },
-      debug: { capability: "unified-runner-v1", used_fallback: false },
-    }
-  }
-
   // ─── Sikkerhedsklassifikation ─────────────────────────────────────────────
   const crisisInMeta = (context.state.meta?.["safety.crisis_detected"] as any)?.value === true
   const fastCrisis = crisisInMeta || detectFastCrisis(userText, domain.safetyDomain)
@@ -308,6 +292,7 @@ export async function runUnifiedCapability(
     goalHypothesis: context.contextPack?.goal_hypothesis,
     modelOverride: context.modelOverride,
     rhetoricalInstruction: context.contextPack?.rhetorical_instruction,
+    sessionBehaviorDirective: context.contextPack?.session_behavior_directive,
     crisisDetected: safety.crisis,
   })
 
