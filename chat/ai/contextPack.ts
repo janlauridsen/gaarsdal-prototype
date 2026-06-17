@@ -20,6 +20,7 @@ export type ContextPackV23 = {
   episode_id?: string
   goal_hypothesis?: string | null
   rhetorical_instruction?: string | null
+  session_behavior_directive?: string | null
 }
 
 function clamp(s: string, max: number): string {
@@ -41,6 +42,20 @@ async function readAnticipateLatestDraft(conversationId: string): Promise<import
     if (typeof jobId !== "string" || !jobId.trim()) return null
     const draftKey = `${KEY_PREFIX}anticipate:draft:conversation:${conversationId}:${jobId.trim()}`
     const raw = await client.get<unknown>(draftKey)
+    if (!raw) return null
+    return typeof raw === "string" ? JSON.parse(raw) : (raw as any)
+  } catch {
+    return null
+  }
+}
+
+async function readSessionBehavior(conversationId: string): Promise<import("../jobs/types").SessionBehaviorV1 | null> {
+  try {
+    const { getRedisClient } = await import("../persistence/redis")
+    const client = getRedisClient()
+    if (!client) return null
+    const key = `gaarsdal:session:behavior:${conversationId}`
+    const raw = await client.get<unknown>(key)
     if (!raw) return null
     return typeof raw === "string" ? JSON.parse(raw) : (raw as any)
   } catch {
@@ -462,11 +477,21 @@ export async function buildContextPackV23(params: {
     } catch { /* non-fatal */ }
   }
 
+  // Session-behavior directive — kun injiceret hvis recommended_stance kræver justering
+  let sessionBehaviorDirective: string | null = null
+  try {
+    const behavior = await readSessionBehavior(params.state.conversation_id)
+    if (behavior && behavior.directive && (behavior.recommended_stance === "firm" || behavior.recommended_stance === "disengage")) {
+      sessionBehaviorDirective = behavior.directive
+    }
+  } catch { /* non-fatal */ }
+
   return {
     system: system === "LANGTIDSKONTEKST (v23, kompakt og bounded):" ? "" : system,
     theme_id: themeId,
     episode_id: episodeId,
     goal_hypothesis: goalHypothesis,
     rhetorical_instruction: rhetoricalInstruction,
+    session_behavior_directive: sessionBehaviorDirective,
   }
 }

@@ -25,6 +25,7 @@ export type AiCapabilityContext = {
     user_profile?: string
     goal_hypothesis?: string | null
     rhetorical_instruction?: string | null
+    session_behavior_directive?: string | null
   }
 }
 
