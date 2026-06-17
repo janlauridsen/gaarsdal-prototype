@@ -505,8 +505,6 @@ async function maybeTriggerEvaluateSessionJob(params: {
   if (params.input.type !== "FREE_TEXT") return
 
   const state = params.state
-  const turnCount = currentUserTurnCount(state)
-  if (turnCount < 1) return
 
   const chatbotTypeRaw = readMetaValue(state, "chatbotType")
   const chatbotType: "standard" | "children" | "alcohol" =
@@ -520,6 +518,13 @@ async function maybeTriggerEvaluateSessionJob(params: {
 
   const transcriptRaw = readMetaValue(state, transcriptKey)
   const transcript: Array<{ role: string; content: string }> = Array.isArray(transcriptRaw) ? transcriptRaw : []
+
+  // turnCount beregnes her direkte fra det domæne-korrekte transcript — currentUserTurnCount()
+  // kan IKKE bruges, da den kun læser gen_hypno.* nøgler og altid returnerer 0 for children/alcohol,
+  // hvilket tidligere stoppede denne funktion før den nåede transcript-logikken.
+  const turnCount = transcript.filter((t) => t && t.role === "assistant").length
+  if (turnCount < 1) return
+
   const recent = transcript.slice(-10)
   const transcriptExcerpt = recent
     .map((t) => `${t.role === "user" ? "U" : "A"}: ${String(t.content ?? "").slice(0, 400)}`)
