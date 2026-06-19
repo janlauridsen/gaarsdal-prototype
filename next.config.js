@@ -8,11 +8,6 @@ const nextConfig = {
         destination: 'https://g.page/r/CbHZ1EYRhAzlEBM/review',
         permanent: false,
       },
-      {
-        source: '/foto',
-        destination: '/om',
-        permanent: true,
-      },
     ]
   },
 };
