@@ -303,13 +303,27 @@ VIGTIG UNDTAGELSE: Hvis brugerens besked er et direkte spørgsmål (fx "virker d
   } else if (params.policySignals?.is_practical_request) {
     blocks.push(`POLICY: Brugerens besked indeholder praktiske nøgleord (kontaktinfo, pris, booking, adresse e.l.) — sæt mode_used til "practical" medmindre brugerens besked i øvrigt er klart refleksiv eller følelsesladet.`)
   } else if (params.policySignals?.is_ready_signal) {
-    blocks.push(`POLICY — OBLIGATORISK OVERRIDE: Brugerens besked er et accept-/readiness-signal ("det kan vi godt", "det lyder godt", "ja", "det giver mening" e.l.).
+    const lastExcerptLower = (params.lastAssistantExcerpt ?? "").toLowerCase()
+    const previousTurnWasInvitation =
+      lastExcerptLower.includes("kontakt") || lastExcerptLower.includes("tage det videre") || lastExcerptLower.includes("jan")
+
+    if (previousTurnWasInvitation) {
+      blocks.push(`POLICY — OBLIGATORISK OVERRIDE: Brugeren har netop bekræftet ("ja"/accept) en invitation til at kontakte Jan, som du selv gav i dit forrige svar.
+Du SKAL:
+1. Sæt conversation_move til "synthesis"
+2. Sæt mode_used til "practical_preparation"
+3. Giv NU de faktiske kontaktoplysninger: telefon +45 42 80 74 74 og email jan@gaarsdal.net
+4. Ingen ny blød invitation — brugeren har allerede sagt ja. Giv handling, ikke endnu en opfordring.
+Dette er ikke valgfrit. Skriv ALDRIG "kan du altid kontakte Jan" uden tallene denne gang — det er en ikke-besvarelse af et bekræftet samtykke.`)
+    } else {
+      blocks.push(`POLICY — OBLIGATORISK OVERRIDE: Brugerens besked er et accept-/readiness-signal ("det kan vi godt", "det lyder godt", "ja", "det giver mening" e.l.).
 Du SKAL:
 1. Sæt conversation_move til "synthesis"
 2. Sæt mode_used til "practical_preparation" 
 3. Komprimér mønsteret i én sætning
 4. Afslut med én blød invitation til Jan — fx: "Hvis du har lyst til at tage det videre, kan du altid skrive eller ringe til Jan."
 Dette er ikke valgfrit. Gentag IKKE undersøgelsesspørgsmål.`)
+    }
   }
 
   if (params.policySignals?.is_child_context) {
