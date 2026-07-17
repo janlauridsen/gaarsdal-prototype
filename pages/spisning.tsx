@@ -19,6 +19,10 @@ export default function Page() {
         <meta name="robots" content="index, follow" />
         <script
           type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Følelsesspisning og spiseproblemer — hypnoterapi", description: "Hypnoterapi til følelsesspisning og spiseproblemer i Birkerød. Jan Gaarsdal arbejder med de automatiske reaktioner der driver spisemønstre.", url: "https://gaarsdal.net/spisning", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }}
+        />
+        <script
+          type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod følelsesspisning?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med det underliggende behov der driver spisningen, ikke med maden i sig selv. Når hjernen finder andre måder at regulere ubehaget på, falder trangen naturligt, uden restriktioner eller viljestyrke.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor kan jeg ikke bare lade være med at spise på følelserne?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Fordi hjernen har lært at mad dæmper ubehag hurtigt og pålideligt. Den reaktion kører automatisk og er stærkere end beslutningen om at lade være i det øjeblik ubehaget opstår. Det er en lært kobling, ikke svag vilje.\"}}, {\"@type\": \"Question\", \"name\": \"Skal jeg på en diæt?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej. Hypnoterapi mod følelsesspisning handler ikke om kost eller restriktioner, men om at adressere det behov maden dækker. Restriktioner adresserer ikke årsagen og kan endda øge trangen.\"}}, {\"@type\": \"Question\", \"name\": \"Hvornår er det mere end følelsesspisning?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ved tegn på en egentlig spiseforstyrrelse som anoreksi, bulimi eller tvangsoverspisning skal du altid starte hos din læge eller et specialiseret behandlingstilbud. Hypnoterapi er her højst et supplement, ikke den primære behandling.\"}}]}" }}
         />
       </Head>
@@ -151,10 +155,10 @@ export default function Page() {
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                        <Link href="/angst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Angst</Link>
-            <Link href="/stress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Stress</Link>
-            <Link href="/vaner" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Vaner</Link>
-            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan</Link>
+                        <Link href="/angst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Angst →</Link>
+            <Link href="/stress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Stress →</Link>
+            <Link href="/vaner" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Vaner →</Link>
+            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan →</Link>
           </div>
         </section>
 

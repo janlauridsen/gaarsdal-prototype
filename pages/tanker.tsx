@@ -19,6 +19,10 @@ export default function Page() {
         <meta name="robots" content="index, follow" />
         <script
           type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Overtænkning og tankemylder — hypnoterapi", description: "Hypnoterapi til overtænkning og tankemylder i Birkerød. Jan Gaarsdal arbejder med nervesystemets behov for kontrol og simulering.", url: "https://gaarsdal.net/tanker", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }}
+        />
+        <script
+          type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod overtænkning?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi ændrer hvad nervesystemet opfatter som nødvendigt. Når hjernen lærer at usikkerhed ikke er farlig, falder behovet for konstant simulering, og du styrer tankerne i stedet for at de styrer dig.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor kan jeg ikke bare stoppe med at tænke så meget?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Fordi overtænkning kører fordi hjernen tror den hjælper dig. Den opfatter det som forberedelse og kontrol. At beslutte at stoppe virker ikke, fordi mønsteret kører hurtigere end den bevidste beslutning.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor tænker jeg mest om natten?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Fordi hjernen fylder stilheden og hvilen med simulering. Når der ikke er distraktioner, får tankemylderet frit løb. Det er også derfor overtænkning og søvnproblemer ofte følges ad.\"}}, {\"@type\": \"Question\", \"name\": \"Hænger overtænkning sammen med angst?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ofte ja. Vedvarende overtænkning og bekymring er tæt forbundet med angst. Hypnoterapi kan arbejde med begge dele, da de udspringer af det samme behov for kontrol og sikkerhed.\"}}]}" }}
         />
       </Head>
@@ -151,10 +155,10 @@ export default function Page() {
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                        <Link href="/angst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Angst</Link>
-            <Link href="/stress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Stress</Link>
-            <Link href="/sovn" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Søvnproblemer</Link>
-            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan</Link>
+                        <Link href="/angst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Angst →</Link>
+            <Link href="/stress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Stress →</Link>
+            <Link href="/sovn" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Søvnproblemer →</Link>
+            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan →</Link>
           </div>
         </section>
 

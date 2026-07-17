@@ -19,6 +19,10 @@ export default function Page() {
         <meta name="robots" content="index, follow" />
         <script
           type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Angst og hypnoterapi", description: "Hypnoterapi til angst i Birkerød. Jan Gaarsdal arbejder med nervesystemets alarmsystem og de automatiske angstreaktioner.", url: "https://gaarsdal.net/angst", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }}
+        />
+        <script
+          type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod angst?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder direkte med nervesystemet og de automatiske reaktioner der driver angsten, ikke kun med tankerne. Mange oplever mærkbar bedring, fordi metoden når ind under den bevidste tænkning, hvor angsten faktisk sidder.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner kræver det?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Det varierer efter angstens type og varighed. Situationsbestemt angst kan ofte bedres på få sessioner, mens mere dybtliggende angst kan kræve et længere forløb. Den gratis forsamtale giver et realistisk billede af dit forløb.\"}}, {\"@type\": \"Question\", \"name\": \"Er hypnose mod angst farligt?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej. Hypnose er en naturlig, afslappet tilstand du selv har kontrol over. Du kan ikke fastlåses eller tvinges til noget. Det er en anerkendt psykologisk metode, som blandt andre professor Bobby Zachariae ved Aarhus Universitet har forsket i.\"}}, {\"@type\": \"Question\", \"name\": \"Virker hypnose hvis jeg er skeptisk?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Du behøver ikke tro på hypnose for at det virker. Du skal blot være villig til at deltage. Hypnose er en fokuseret tilstand de fleste mennesker kan opnå, uanset deres forhåndsindstilling.\"}}, {\"@type\": \"Question\", \"name\": \"Hvad er forskellen på hypnose og medicin mod angst?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Medicin dæmper symptomerne, mens hypnoterapi arbejder med de underliggende mønstre der skaber angsten. Hypnose er en ikke-medicinsk tilgang uden bivirkninger. Ved svær angst bør du altid tale med din læge om den samlede behandling.\"}}]}" }}
         />
       </Head>
@@ -97,6 +101,11 @@ export default function Page() {
           </div>
         </section>
 
+
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Vigtigt at vide</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Hypnoterapi er et supplement til — ikke erstatning for — lægelig eller psykologisk behandling ved svær angstlidelse. Ved panikangst med hyppige anfald, agorafobi der hindrer dig i at forlade hjemmet, eller mistanke om PTSD, bør du starte med din læge eller en psykolog.</p>
+        </section>
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
           <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>
@@ -152,11 +161,11 @@ export default function Page() {
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                        <Link href="/sovn" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Søvnproblemer</Link>
-            <Link href="/stress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Stress</Link>
-            <Link href="/kender-du-det" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kender du det?</Link>
-            <Link href="/kaerlighed" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kærlighed og relationer</Link>
-            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan</Link>
+                        <Link href="/sovn" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Søvnproblemer →</Link>
+            <Link href="/stress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Stress →</Link>
+            <Link href="/kender-du-det" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kender du det? →</Link>
+            <Link href="/kaerlighed" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kærlighed og relationer →</Link>
+            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan →</Link>
           </div>
         </section>
 
