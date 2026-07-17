@@ -19,6 +19,10 @@ export default function Page() {
         <meta name="robots" content="index, follow" />
         <script
           type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Vaner du ikke kan bryde — hypnoterapi", description: "Hypnoterapi til vanemønstre i Birkerød. Jan Gaarsdal arbejder med triggere og automatiske reaktioner.", url: "https://gaarsdal.net/vaner", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }}
+        />
+                <script
+          type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mig med at bryde en vane?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder direkte med den automatiske reaktion der driver vanen, ikke med viljestyrken. Koblingen mellem trigger og adfærd afkobles og kan erstattes med en ny reaktion.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor kan jeg ikke bare ændre vanen med viljestyrke?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Fordi vaner kører i de basale dele af hjernen, ikke i den del der beslutter og planlægger. Når triggeren opstår, kører reaktionen hurtigere end den bevidste intention. Det er derfor beslutninger alene sjældent holder.\"}}, {\"@type\": \"Question\", \"name\": \"Hvilke vaner kan hypnoterapi hjælpe med?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"En bred vifte af vanemønstre, fra konkrete handlingsvaner til mere følelsesmæssige mønstre. Tilgangen tilpasses hvad der driver din specifikke vane, og hvad der udløser den.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor hurtigt kan en vane ændres?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Det varierer. Da arbejdet retter sig mod den automatiske kobling frem for viljestyrken, oplever mange forandring relativt hurtigt. Den gratis forsamtale afklarer hvad der er realistisk for dig.\"}}]}" }}
         />
       </Head>
@@ -151,10 +155,10 @@ export default function Page() {
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                        <Link href="/rygestop" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Rygestop</Link>
-            <Link href="/stress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Stress</Link>
-            <Link href="/kender-du-det" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kender du det?</Link>
-            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan</Link>
+                        <Link href="/rygestop" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Rygestop →</Link>
+            <Link href="/stress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Stress →</Link>
+            <Link href="/kender-du-det" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kender du det? →</Link>
+            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan →</Link>
           </div>
         </section>
 

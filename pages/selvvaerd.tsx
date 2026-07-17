@@ -19,6 +19,10 @@ export default function Page() {
         <meta name="robots" content="index, follow" />
         <script
           type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Lavt selvværd og hypnoterapi", description: "Hypnoterapi til lavt selvværd i Birkerød. Jan Gaarsdal arbejder med overbevisningerne der sidder under bevidst tænkning.", url: "https://gaarsdal.net/selvvaerd", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }}
+        />
+                <script
+          type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe på lavt selvværd?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med de grundlæggende overbevisninger om din egen værdi, der sidder under bevidst tænkning. Det er anderledes end at tale om selvværd, fordi du oplever dig selv anderledes indefra, ikke ved at overbevise dig selv udefra.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor virker positive bekræftelser ikke for mig?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Fordi hjernen afviser information der ikke passer ind i det eksisterende selvbillede. Hvis du grundlæggende tror du ikke er god nok, opfattes ros som undtagelsen. Det er ikke modvilje, det er et kognitivt filter der kører automatisk.\"}}, {\"@type\": \"Question\", \"name\": \"Kan man ændre et selvværd man har haft hele livet?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Selvværd er lært, ikke medfødt, og det er ikke permanent. Overbevisningerne kan ændres, men ikke ved at tale sig til en anden mening. Hypnoterapi arbejder der hvor de faktisk sidder.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner kræver det?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Det afhænger af hvor dybt det lave selvværd sidder, og hvad der har formet det. Den gratis forsamtale giver et realistisk billede af forløbet for netop dig.\"}}]}" }}
         />
       </Head>
@@ -156,11 +160,11 @@ export default function Page() {
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                        <Link href="/angst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Angst</Link>
-            <Link href="/praestationsangst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Præstationsangst</Link>
-            <Link href="/kender-du-det" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kender du det?</Link>
-            <Link href="/kaerlighed" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kærlighed og relationer</Link>
-            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan</Link>
+                        <Link href="/angst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Angst →</Link>
+            <Link href="/praestationsangst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Præstationsangst →</Link>
+            <Link href="/kender-du-det" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kender du det? →</Link>
+            <Link href="/kaerlighed" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kærlighed og relationer →</Link>
+            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan →</Link>
           </div>
         </section>
 

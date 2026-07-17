@@ -19,6 +19,10 @@ export default function Page() {
         <meta name="robots" content="index, follow" />
         <script
           type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Rygestop med hypnoterapi", description: "Rygestop med hypnoterapi i Birkerød. Jan Gaarsdal arbejder med associationerne der driver trangen — ikke viljestyrken.", url: "https://gaarsdal.net/rygestop", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }}
+        />
+                <script
+          type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mig med at stoppe med at ryge?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder direkte med de associationer der driver trangen, ikke med viljestyrken. Hjernen lærer at afkoble triggerne fra reaktionen, og mange oplever at lysten falder markant efter én til to sessioner.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner skal jeg bruge for at stoppe med at ryge?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Mange opnår resultater efter én til to sessioner. Da rygning er en lært kobling mellem triggere og adfærd, kan den kobling ofte ændres relativt hurtigt med hypnoterapi.\"}}, {\"@type\": \"Question\", \"name\": \"Tager jeg på i vægt hvis jeg stopper med at ryge via hypnose?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Hypnoterapi adresserer det underliggende behov rygningen dækker, så risikoen for at erstatte cigaretter med mad reduceres. Det kan indgå som en del af arbejdet at forebygge vægtøgning.\"}}, {\"@type\": \"Question\", \"name\": \"Virker hypnose mod rygning hvis jeg har røget i mange år?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Antallet af år betyder mindre end man tror, fordi hypnoterapi arbejder med den automatiske kobling, ikke med nikotinens fysiske afhængighed alene. Mange mangeårige rygere stopper med succes.\"}}]}" }}
         />
       </Head>
@@ -145,10 +149,10 @@ export default function Page() {
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                        <Link href="/angst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Angst</Link>
-            <Link href="/stress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Stress</Link>
-            <Link href="/kender-du-det" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kender du det?</Link>
-            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan</Link>
+                        <Link href="/angst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Angst →</Link>
+            <Link href="/stress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Stress →</Link>
+            <Link href="/kender-du-det" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kender du det? →</Link>
+            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan →</Link>
           </div>
         </section>
 

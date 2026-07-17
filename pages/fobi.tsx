@@ -19,6 +19,10 @@ export default function Page() {
         <meta name="robots" content="index, follow" />
         <script
           type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Fobi og frygt — hypnoterapi", description: "Hypnoterapi til fobier i Birkerød. Jan Gaarsdal arbejder med den lærte frygtreaktion ved kilden.", url: "https://gaarsdal.net/fobi", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }}
+        />
+                <script
+          type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose fjerne en fobi?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi er et af de mest effektive redskaber mod fobier. Arbejdet sker direkte med den lærte frygtreaktion og erstatter den med ro, ikke ved gradvis eksponering eller rationalisering, men ved at ændre den automatiske respons ved kilden.\"}}, {\"@type\": \"Question\", \"name\": \"Hvorfor hjælper det ikke at vide at fobien er irrationel?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Fordi frygtreaktionen udløses i amygdala, hjernens alarmsystem, hurtigere end den rationelle del af hjernen når at reagere. Derfor kan du godt vide at det er irrationelt og alligevel reagere stærkt. Fobien sidder ikke i fornuften.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner kræver en fobi?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Specifikke fobier reagerer ofte hurtigt på hypnoterapi, nogle gange på få sessioner. Det afhænger af fobien og dens historie. Den gratis forsamtale giver et realistisk billede.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod køreangst og flyskræk?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Jan har erfaring med blandt andet køreangst, køreprøveangst, flyskræk, højdeskræk og sprøjteskræk. Tilgangen tilpasses den specifikke fobi.\"}}]}" }}
         />
       </Head>
@@ -100,7 +104,13 @@ export default function Page() {
           </div>
         </section>
 
-        <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
+
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Vigtigt at vide</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Fobier er i udgangspunktet afgrænsede, men kan have reelle konsekvenser for hverdagen. Hypnoterapi er ikke egnet ved generaliseret angstlidelse der påvirker din evne til at fungere bredt — her bør du tale med din læge eller en psykolog. Den gratis forsamtale afklarer om din frygtreaktion egner sig til hypnoterapi.</p>
+        </section>
+
+                <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
           <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>
             Jan arbejder med dette område hos voksne og unge. Den gratis forsamtale på 30 minutter afklarer om hypnoterapi er den rette tilgang for dig.
@@ -145,10 +155,10 @@ export default function Page() {
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                        <Link href="/angst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Angst</Link>
-            <Link href="/praestationsangst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Præstationsangst</Link>
-            <Link href="/kender-du-det" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kender du det?</Link>
-            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan</Link>
+                        <Link href="/angst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Angst →</Link>
+            <Link href="/praestationsangst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Præstationsangst →</Link>
+            <Link href="/kender-du-det" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kender du det? →</Link>
+            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan →</Link>
           </div>
         </section>
 
