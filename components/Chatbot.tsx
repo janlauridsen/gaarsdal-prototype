@@ -114,6 +114,7 @@ export default function Chatbot() {
   const didAutoStartNewThreadRef = useRef(false)
   const jobLoopRef = useRef<{ conversationId: string; jobId: string; cancelled: boolean } | null>(null)
   const initInFlightRef = useRef(false)
+  const pendingSelvrefleksionRef = useRef<string | null>(null)
 
   const scrollChatToBottom = (behavior: ScrollBehavior = "smooth") => {
     endRef.current?.scrollIntoView({ behavior, block: "end" })
@@ -540,7 +541,20 @@ export default function Chatbot() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Nudge: vis tooltip efter 50 sek hvis chatbot ikke er åbnet og ikke vist før
+  // Nudge: vis tooltip
+
+  // Selvrefleksion: send pending kontekst første gang state sættes (init er færdig)
+  useEffect(() => {
+    if (!state || !pendingSelvrefleksionRef.current) return
+    const ctx = pendingSelvrefleksionRef.current
+    pendingSelvrefleksionRef.current = null // consume den kun én gang
+    void dispatch(
+      { type: "FREE_TEXT", text: `[SELVREFLEKSION_KONTEKST]: ${ctx}` },
+      { silentUser: true }
+    )
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.conversation_id])
+ efter 50 sek hvis chatbot ikke er åbnet og ikke vist før
   useEffect(() => {
     if (typeof window === "undefined") return
     if (sessionStorage.getItem("nudge_shown")) return
@@ -1136,26 +1150,19 @@ export default function Chatbot() {
   }
 
   function openChatWithContext(ctx: string) {
+    pendingSelvrefleksionRef.current = ctx
     setOpen(true)
     if (!state && !loading) {
-      // Init chatbot, vent på state, send kontekst som skjult systembesked
-      void init().then(() => {
-        // State er nu sat — send kontekst stille
-        setTimeout(() => {
-          void dispatch(
-            { type: "FREE_TEXT", text: `[SELVREFLEKSION_KONTEKST]: ${ctx}` },
-            { silentUser: true }
-          )
-        }, 300)
-      })
+      void init()
+      // useEffect på state?.conversation_id sender beskeden når init er færdig
     } else if (state) {
-      // Chat allerede åben — send straks
-      setTimeout(() => {
-        void dispatch(
-          { type: "FREE_TEXT", text: `[SELVREFLEKSION_KONTEKST]: ${ctx}` },
-          { silentUser: true }
-        )
-      }, 100)
+      // State allerede sat — useEffect trigger ikke (conversation_id ændres ikke)
+      // Send direkte
+      pendingSelvrefleksionRef.current = null
+      void dispatch(
+        { type: "FREE_TEXT", text: `[SELVREFLEKSION_KONTEKST]: ${ctx}` },
+        { silentUser: true }
+      )
     }
   }
 
