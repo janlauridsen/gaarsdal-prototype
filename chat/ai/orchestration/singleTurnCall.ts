@@ -51,8 +51,30 @@ export function buildSystemPrompt(params: {
   goalHypothesis?: string | null
   rhetoricalInstruction?: string | null
   sessionBehaviorDirective?: string | null
+  selvrefleksionContext?: string | null
 }): string {
   const blocks: string[] = []
+
+  // SELVREFLEKSION — detekteres fra userText når prefix er [SELVREFLEKSION_KONTEKST]
+  // Dette er den stille besked Chatbot.tsx sender efter init()
+  const selvRefleksionMatch = params.userText?.startsWith("[SELVREFLEKSION_KONTEKST]:") ? params.userText : null
+  if (selvRefleksionMatch || params.selvrefleksionContext) {
+    const ctxText = selvRefleksionMatch
+      ? selvRefleksionMatch.replace("[SELVREFLEKSION_KONTEKST]: ", "").trim()
+      : params.selvrefleksionContext!
+    blocks.push(`BRUGER-KONTEKST (fra selvrefleksionsskema — VIGTIGT):
+Brugeren har netop udfyldt et selvrefleksionsskema og valgt at tale med dig om sine svar.
+${ctxText}
+
+Brug denne viden aktivt i dit første svar:
+- Anerkend at du kender deres svar og hvad de har markeret
+- Spørg ind til det område der scorer højest eller virker mest smerteligt
+- Stil ét konkret, undersøgende spørgsmål baseret på deres specifikke markeringer
+- Introducer IKKE hypnoterapi med det samme — vær nysgerrig på det de har markeret
+
+Eksempel på godt første svar (tilpas til deres faktiske svar):
+"Jeg kan se du markerer meget inden for [kategori]. Det der med [specifikt udsagn] — hvornår mærker du det mest?"`)
+  }
 
   // ROLLE
   // Domæne-specifik rolle injiceres via contextPackSystem (sat af runner.ts).
@@ -498,6 +520,7 @@ export async function singleTurnCall(params: {
   crisisDetected?: boolean
   rhetoricalInstruction?: string | null
   sessionBehaviorDirective?: string | null
+  selvrefleksionContext?: string | null
   modelOverride?: string
 }): Promise<SingleTurnOutput | null> {
   // Krise-override: returner hardcoded svar uden LLM-kald.
@@ -540,6 +563,7 @@ export async function singleTurnCall(params: {
     goalHypothesis: params.goalHypothesis,
     rhetoricalInstruction: params.rhetoricalInstruction,
     sessionBehaviorDirective: params.sessionBehaviorDirective,
+    selvrefleksionContext: params.selvrefleksionContext,
   })
 
   // C: Dynamisk temperatur — reflection er mere kreativ, evidence/info mere præcis
