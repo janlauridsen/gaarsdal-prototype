@@ -309,6 +309,7 @@ export async function runUnifiedCapability(
     modelOverride: context.modelOverride,
     rhetoricalInstruction: context.contextPack?.rhetorical_instruction,
     sessionBehaviorDirective: context.contextPack?.session_behavior_directive,
+    selvrefleksionContext: context.contextPack?.selvrefleksion_context ?? undefined,
     crisisDetected: safety.crisis,
   })
 
