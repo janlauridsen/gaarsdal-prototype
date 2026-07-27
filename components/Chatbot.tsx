@@ -554,7 +554,8 @@ export default function Chatbot() {
     )
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state?.conversation_id])
- efter 50 sek hvis chatbot ikke er åbnet og ikke vist før
+
+  // Nudge: vis tooltip efter 50 sek hvis chatbot ikke er åbnet og ikke vist før
   useEffect(() => {
     if (typeof window === "undefined") return
     if (sessionStorage.getItem("nudge_shown")) return
