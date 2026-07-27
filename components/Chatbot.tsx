@@ -512,13 +512,30 @@ export default function Chatbot() {
     const handleOpenChat = () => openChat()
     window.addEventListener("open-chatbot", handleOpenChat)
 
-    // Check query param ved load (fx fra hypnoterapi-siden)
+    // Check query param ved load (fx fra hypnoterapi-siden eller selvrefleksionsskema)
     if (typeof window !== "undefined" && window.location.search.includes("open=chat")) {
-      openChat()
-      // Ryd query param uden reload
       const url = new URL(window.location.href)
+      const ctx = url.searchParams.get("ctx")
+
+      // Ryd query params uden reload
       url.searchParams.delete("open")
+      url.searchParams.delete("ctx")
       window.history.replaceState({}, "", url.toString())
+
+      if (ctx) {
+        // Variant B: kontekst fra selvrefleksionsskema — åbn og send stille besked
+        const decodedCtx = decodeURIComponent(ctx)
+        openChat()
+        // Vent til chatbot er initialiseret, send så kontekst som skjult brugerbesked
+        setTimeout(() => {
+          void dispatch(
+            { type: "FREE_TEXT", text: `[Selvrefleksion] ${decodedCtx}` },
+            { silentUser: true }
+          )
+        }, 1200)
+      } else {
+        openChat()
+      }
     }
 
     return () => window.removeEventListener("open-chatbot", handleOpenChat)
