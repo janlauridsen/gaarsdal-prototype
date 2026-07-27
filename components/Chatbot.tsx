@@ -523,16 +523,14 @@ export default function Chatbot() {
       window.history.replaceState({}, "", url.toString())
 
       if (ctx) {
-        // Variant B: kontekst fra selvrefleksionsskema — åbn og send stille besked
+        // Variant B: gem kontekst i sessionStorage, åbn chat
+        // contextPack.ts læser gaarsdal:selvrefleksion fra Redis første turn
+        // Vi gemmer det her og Chatbot init-funktionen skriver det til meta
         const decodedCtx = decodeURIComponent(ctx)
-        openChat()
-        // Vent til chatbot er initialiseret, send så kontekst som skjult brugerbesked
-        setTimeout(() => {
-          void dispatch(
-            { type: "FREE_TEXT", text: `[Selvrefleksion] ${decodedCtx}` },
-            { silentUser: true }
-          )
-        }, 1200)
+        if (typeof sessionStorage !== "undefined") {
+          sessionStorage.setItem("gaarsdal_selvrefleksion", decodedCtx)
+        }
+        openChatWithContext(decodedCtx)
       } else {
         openChat()
       }
@@ -1134,6 +1132,30 @@ export default function Chatbot() {
     setOpen(true)
     if (!state && !loading) {
       void init()
+    }
+  }
+
+  function openChatWithContext(ctx: string) {
+    setOpen(true)
+    if (!state && !loading) {
+      // Init chatbot, vent på state, send kontekst som skjult systembesked
+      void init().then(() => {
+        // State er nu sat — send kontekst stille
+        setTimeout(() => {
+          void dispatch(
+            { type: "FREE_TEXT", text: `[SELVREFLEKSION_KONTEKST]: ${ctx}` },
+            { silentUser: true }
+          )
+        }, 300)
+      })
+    } else if (state) {
+      // Chat allerede åben — send straks
+      setTimeout(() => {
+        void dispatch(
+          { type: "FREE_TEXT", text: `[SELVREFLEKSION_KONTEKST]: ${ctx}` },
+          { silentUser: true }
+        )
+      }, 100)
     }
   }
 
