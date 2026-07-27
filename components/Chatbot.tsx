@@ -115,6 +115,7 @@ export default function Chatbot() {
   const jobLoopRef = useRef<{ conversationId: string; jobId: string; cancelled: boolean } | null>(null)
   const initInFlightRef = useRef(false)
   const pendingSelvrefleksionRef = useRef<string | null>(null)
+  const [skemaPending, setSkemaPending] = useState(false)
 
   const scrollChatToBottom = (behavior: ScrollBehavior = "smooth") => {
     endRef.current?.scrollIntoView({ behavior, block: "end" })
@@ -247,6 +248,20 @@ export default function Chatbot() {
     if (!activeConversationId) return []
     return messagesByConversationId[activeConversationId] ?? []
   }, [activeConversationId, messagesByConversationId])
+
+  // Syntetisk "analyserer"-besked vises mens skema-kontekst afventer svar
+  const visibleMessagesWithPending = skemaPending
+    ? [
+        ...visibleMessages,
+        {
+          id: "skema-pending",
+          role: "assistant" as const,
+          text: "...",
+          revision: -1 as number,
+          nodeId: "",
+        },
+      ]
+    : visibleMessages
 
   const placeholder = useMemo(() => {
     if (!state) return "Initialiserer…"
@@ -548,6 +563,7 @@ export default function Chatbot() {
     if (!state || !pendingSelvrefleksionRef.current) return
     const ctx = pendingSelvrefleksionRef.current
     pendingSelvrefleksionRef.current = null // consume den kun én gang
+    setSkemaPending(true)
     void dispatch(
       { type: "FREE_TEXT", text: `[SELVREFLEKSION_KONTEKST]: ${ctx}` },
       { silentUser: true }
@@ -744,6 +760,7 @@ export default function Chatbot() {
   }, [open, activeConversationId, pendingJobs, draftReview?.job_id, draftReview?.accepted_at])
 
   function appendAssistantMessage(conversationId: string, text: string, meta?: { revision?: number; nodeId?: string }) {
+    setSkemaPending(false) // Svar modtaget — fjern "analyserer" indikator
     const message = (text ?? "").trim()
     if (!message) return
 
@@ -1260,7 +1277,7 @@ export default function Chatbot() {
                 />
 
                 <MessagePane
-                  visibleMessages={visibleMessages}
+                  visibleMessages={visibleMessagesWithPending}
                   state={state}
                   loading={loading}
                   freeTextEnabled={freeTextEnabled}
