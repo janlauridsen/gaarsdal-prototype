@@ -447,7 +447,16 @@ export function MessagePane(props: MessagePaneProps) {
       )}
       {props.visibleMessages.map((m, index) => (
         <div key={m.id} className={styles.messageStack}>
-          <div className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}>{m.text}</div>
+          {m.revision === -1 ? (
+            <div className={`${styles.message} ${styles.messageBot} ${styles.messageTyping}`}>
+              <span className={styles.typingDot} />
+              <span className={styles.typingDot} />
+              <span className={styles.typingDot} />
+              <span style={{ marginLeft: "6px", fontSize: "12px", color: "var(--text-secondary, #888)", fontStyle: "italic" }}>Analyserer dine svar…</span>
+            </div>
+          ) : (
+            <div className={`${styles.message} ${m.role === "assistant" ? styles.messageBot : styles.messageUser}`}>{m.text}</div>
+          )}
           {m.role === "assistant" && typeof m.revision === "number" && m.revision === 0 && props.visibleMessages.length === 1 && !props.loading && (
             <div className={styles.starterChips}>
               {buildStarterChips(props.state).map((chip) => (
