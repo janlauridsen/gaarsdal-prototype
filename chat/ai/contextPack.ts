@@ -21,6 +21,7 @@ export type ContextPackV23 = {
   goal_hypothesis?: string | null
   rhetorical_instruction?: string | null
   session_behavior_directive?: string | null
+  selvrefleksion_context?: string | null
 }
 
 function clamp(s: string, max: number): string {
