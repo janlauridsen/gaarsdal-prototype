@@ -55,16 +55,12 @@ export function buildSystemPrompt(params: {
 }): string {
   const blocks: string[] = []
 
-  // SELVREFLEKSION — detekteres fra userText når prefix er [SELVREFLEKSION_KONTEKST]
-  // Dette er den stille besked Chatbot.tsx sender efter init()
-  const selvRefleksionMatch = params.userText?.startsWith("[SELVREFLEKSION_KONTEKST]:") ? params.userText : null
-  if (selvRefleksionMatch || params.selvrefleksionContext) {
-    const ctxText = selvRefleksionMatch
-      ? selvRefleksionMatch.replace("[SELVREFLEKSION_KONTEKST]: ", "").trim()
-      : params.selvrefleksionContext!
+  // SELVREFLEKSION — injiceres når selvrefleksionContext er sat
+  // Konteksten ekstraheres fra userText i singleTurnCall og sendes hertil
+  if (params.selvrefleksionContext) {
     blocks.push(`BRUGER-KONTEKST (fra selvrefleksionsskema — VIGTIGT):
 Brugeren har netop udfyldt et selvrefleksionsskema og valgt at tale med dig om sine svar.
-${ctxText}
+${params.selvrefleksionContext}
 
 Brug denne viden aktivt i dit første svar:
 - Anerkend at du kender deres svar og hvad de har markeret
@@ -73,7 +69,7 @@ Brug denne viden aktivt i dit første svar:
 - Introducer IKKE hypnoterapi med det samme — vær nysgerrig på det de har markeret
 
 Eksempel på godt første svar (tilpas til deres faktiske svar):
-"Jeg kan se du markerer meget inden for [kategori]. Det der med [specifikt udsagn] — hvornår mærker du det mest?"`)
+"Jeg kan se du markerer mest inden for [kategori]. Det der med [specifikt udsagn] — hvornår mærker du det mest?"`)
   }
 
   // ROLLE
@@ -551,6 +547,12 @@ export async function singleTurnCall(params: {
     .reverse()
     .find((t) => t.role === "assistant")?.content
 
+  // Detektér selvrefleksion-kontekst fra userText-præfiks (sendt stille fra Chatbot.tsx)
+  let selvrefleksionCtx: string | undefined = params.selvrefleksionContext ?? undefined
+  if (!selvrefleksionCtx && params.userText.startsWith("[SELVREFLEKSION_KONTEKST]:")) {
+    selvrefleksionCtx = params.userText.replace("[SELVREFLEKSION_KONTEKST]: ", "").trim()
+  }
+
   const systemPrompt = buildSystemPrompt({
     assistantCount: params.assistantCount,
     arousalLevel: params.arousalLevel,
@@ -563,7 +565,7 @@ export async function singleTurnCall(params: {
     goalHypothesis: params.goalHypothesis,
     rhetoricalInstruction: params.rhetoricalInstruction,
     sessionBehaviorDirective: params.sessionBehaviorDirective,
-    selvrefleksionContext: params.selvrefleksionContext,
+    selvrefleksionContext: selvrefleksionCtx ?? null,
   })
 
   // C: Dynamisk temperatur — reflection er mere kreativ, evidence/info mere præcis
