@@ -103,7 +103,15 @@ async function maybeUpdateThreadPreview(params: {
   let index1 = updateThreadPreview({
     index: index0,
     conversationId: params.conversationId,
-    previewText: userText,
+    previewText: (() => {
+      if (!userText.startsWith("[SELVREFLEKSION_KONTEKST]:")) return userText
+      // Ekstraher emnetitel fra selvrefleksions-kontekst
+      const emnMatch = userText.match(/Emne: ([^|]+)/)
+      const emne = emnMatch ? emnMatch[1].trim() : "Selvrefleksion"
+      const antalMatch = userText.match(/markeret (\d+) ud af (\d+)/)
+      if (antalMatch) return `[Skema] ${emne} — ${antalMatch[1]}/${antalMatch[2]} markeret`
+      return `[Skema] ${emne}`
+    })(),
     maxPreviewChars: 120,
   })
   index1 = setActiveThread({ index: index1, conversationId: params.conversationId })
