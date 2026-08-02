@@ -469,7 +469,13 @@ export async function buildContextPackV23(params: {
           const currentRevision = (params.state.revision ?? 1)
           const draftRevision = (draft as any).based_on_revision ?? 0
           const isFreshDraft = draftRevision >= currentRevision - 1
-          const isOnTrack = isFreshDraft || topicOverlap(anticipatedText, actualText)
+          // AND, ikke OR. Friskhed er en NØDVENDIG betingelse (et forældet draft er
+          // ubrugeligt), men ikke en TILSTRÆKKELIG. Med || kortsluttede isFreshDraft
+          // altid til true — drafts bygges pr. definition på foregående revision — så
+          // topicOverlap blev aldrig evalueret, og relevans-gaten var død kode.
+          // Konsekvens: et direktiv bygget på en FORUDSAGT brugerbesked blev påtvunget
+          // uanset hvad brugeren faktisk skrev.
+          const isOnTrack = isFreshDraft && topicOverlap(anticipatedText, actualText)
           if (isOnTrack) {
             rhetoricalInstruction = clamp(draft.summary_draft, 300)
           }
