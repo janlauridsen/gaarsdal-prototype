@@ -50,6 +50,7 @@ export default function RefleksionsSkema({ slug, title, intro, categories, ctaLa
     const parts: string[] = []
     parts.push(`Emne: ${title}`)
     parts.push(`Bruger har markeret ${totalScore} ud af ${totalQuestions} udsagn.`)
+    const uberoerte: string[] = []
     categories.forEach((cat) => {
       const score = scoreFor(cat)
       if (score > 0) {
@@ -58,8 +59,15 @@ export default function RefleksionsSkema({ slug, title, intro, categories, ctaLa
           .map((q) => `"${q}"`)
           .join(", ")
         parts.push(`${cat.title} (${score}/${cat.questions.length}): ${markedQs}`)
+      } else {
+        uberoerte.push(`${cat.title} (0/${cat.questions.length})`)
       }
     })
+    // Uberørte kategorier sendes med: kontrasten mellem hvad brugeren har sat kryds ved
+    // og hvad de har ladet stå tomt er et selvstændigt signal for chatbotten.
+    if (uberoerte.length > 0) {
+      parts.push(`Ikke markeret: ${uberoerte.join(", ")}`)
+    }
     return encodeURIComponent(parts.join(" | "))
   }
 
