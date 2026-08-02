@@ -426,11 +426,22 @@ ${params.sessionBehaviorDirective}
 Stil ikke opfølgende spørgsmål der inviterer til mere af samme adfærd.`)
   }
 
-  // RETORISK DIREKTIV — fra anticipation-system, baseret på forudsagt næste turn
-  if (params.rhetoricalInstruction) {
+  // RETORISK DIREKTIV — fra anticipation-system, baseret på forudsagt næste turn.
+  //
+  // GATING: anticipate_turn bygger direktivet på en OPDIGTET næste brugerbesked
+  // (work.anticipated_user_text). På tur 0 i en selvrefleksion-dialog findes der
+  // ingen reel brugertekst — kun et skema-dump — så forudsigelsen gætter på en
+  // samtale der ikke er sket, og direktivet trækker svaret væk fra det brugeren
+  // faktisk har markeret. Blokken står desuden efter SELVREFLEKSION-blokken i
+  // stakken og vinder derfor ved konflikt. Derfor: undertrykt på tur 0.
+  const suppressRhetorical = inSelvrefleksion && selvrefleksionTurns === 0
+  if (params.rhetoricalInstruction && !suppressRhetorical) {
+    const selvrefleksionGuard = inSelvrefleksion
+      ? `\nGRÆNSE: Dette direktiv må ikke bruges til at invitere til Jan, foreslå hypnoterapi som løsning, opsummere skemaet eller give handlingsanvisninger. Kan direktivet ikke følges inden for de rammer, så følg SELVREFLEKSION-blokken i stedet.`
+      : ""
     blocks.push(`RETORISK DIREKTIV (obligatorisk — følg dette i dit svar):
 ${params.rhetoricalInstruction}
-Dette er ikke et forslag. Tilpas din core_answer og next_step til dette direktiv.`)
+Dette er ikke et forslag. Tilpas din core_answer og next_step til dette direktiv.${selvrefleksionGuard}`)
   }
 
   // JSON-KONTRAKT
