@@ -17,6 +17,7 @@ import { buildDefaultAnalysis, outputToAnalysis } from "./shared/analysisHelpers
 import { isHardExit } from "./shared/exitDetection"
 import { buildMetaDelta } from "./shared/metaDelta"
 import { classifySafety, detectFastCrisis, detectFastDependency, detectHatefulContent } from "./shared/safetyClassifier"
+import { buildSelvrefleksionMeta, resolveSelvrefleksion } from "./shared/selvrefleksion"
 import {
   appendTranscript,
   countAssistantTurns,
@@ -293,6 +294,11 @@ export async function runUnifiedCapability(
     : baseContextPack
   const contextPackWithHint = greetingHint ? domainContextPack + greetingHint : domainContextPack
 
+  // ─── Selvrefleksion-tilstand ─────────────────────────────────────────────
+  // Persistent på tværs af ture. Uden dette dør tilstanden ved brugerens første
+  // frie besked, og konverteringssporet (PROGRESSION) overtager dialogen.
+  const selvrefleksion = resolveSelvrefleksion({ context, userText, policySignals })
+
   let turnOutput = await singleTurnCall({
     llm,
     transcript: trimmedTranscript,
@@ -309,7 +315,10 @@ export async function runUnifiedCapability(
     modelOverride: context.modelOverride,
     rhetoricalInstruction: context.contextPack?.rhetorical_instruction,
     sessionBehaviorDirective: context.contextPack?.session_behavior_directive,
-    selvrefleksionContext: context.contextPack?.selvrefleksion_context ?? undefined,
+    selvrefleksionContext:
+      selvrefleksion.promptContext ?? context.contextPack?.selvrefleksion_context ?? undefined,
+    selvrefleksionSignal: selvrefleksion.promptSignal,
+    selvrefleksionTurns: selvrefleksion.state.turns,
     crisisDetected: safety.crisis,
   })
 
@@ -420,6 +429,9 @@ export async function runUnifiedCapability(
           arousalLevel: arousal.level,
         }),
         [`${metaPrefix}.model`]: context.modelOverride ?? process.env.HYPNO_MODEL ?? "gpt-4.1-mini",
+        ...(selvrefleksion.state.active || selvrefleksion.state.ctx
+          ? buildSelvrefleksionMeta(selvrefleksion.state)
+          : {}),
       },
     },
     debug: { capability: "unified-runner-v1", used_fallback: usedFallback },
