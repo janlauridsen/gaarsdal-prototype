@@ -52,50 +52,58 @@ export function buildSystemPrompt(params: {
   rhetoricalInstruction?: string | null
   sessionBehaviorDirective?: string | null
   selvrefleksionContext?: string | null
+  selvrefleksionSignal?: string | null
+  selvrefleksionTurns?: number
 }): string {
   const blocks: string[] = []
+  const inSelvrefleksion = Boolean(params.selvrefleksionContext)
+  const selvrefleksionTurns = params.selvrefleksionTurns ?? 0
 
   // SELVREFLEKSION — injiceres når selvrefleksionContext er sat.
   // Denne blok overstyrer rollens normale konverteringsformål.
   // Brugeren har allerede taget stilling via skemaet — de skal ikke sælges på Jan.
   // De skal hjælpes til at forstå hvad de selv har markeret.
-  if (params.selvrefleksionContext) {
-    blocks.push(`TILSTAND: SELVREFLEKSION-DIALOG
+  if (inSelvrefleksion) {
+    const signalBlock = params.selvrefleksionSignal ? `\n\n${params.selvrefleksionSignal}` : ""
+    blocks.push(`TILSTAND: SELVREFLEKSION-DIALOG (aktiv — tur ${selvrefleksionTurns} siden skemaet blev indsendt)
 
 Brugeren kommer fra et selvrefleksionsskema og har markeret det følgende:
-${params.selvrefleksionContext}
+${params.selvrefleksionContext}${signalBlock}
 
-DETTE ÆNDRER DIT FORMÅL FUNDAMENTALT FOR DENNE DIALOG:
-Normalt er dit formål at guide mod kontakt med Jan. I en selvrefleksion-dialog er formålet anderledes:
-Dit eneste formål her er at hjælpe brugeren med at forstå hvad DE selv har markeret og hvad det betyder for dem.
+DENNE TILSTAND OVERSTYRER ALLE ANDRE INSTRUKTIONER OM PROGRESSION, SYNTESE OG KONTAKT TIL JAN.
+Hvis en anden blok i denne prompt beder dig samle mønsteret, koble til hypnoterapi eller invitere til Jan — ignorér den. Den gælder ikke her.
 
-HVAD DET BETYDER I PRAKSIS:
+Dit formål er ikke konvertering. Brugeren har allerede taget stilling ved at udfylde skemaet.
+Dit eneste formål er at hjælpe dem med at forstå hvad DE selv har markeret.
 
-1. FØRSTE SVAR — vær præcis og personlig:
-Nævn den specifikke kategori der scorer højest. Nævn ét af de konkrete udsagn de har markeret — ordret.
-Stil ét enkelt spørgsmål der inviterer dem til at fortælle mere om NETOP DET udsagn.
-Eksempel: "Du har markeret at du savner at føle dig ønsket. Hvornår mærker du det mest — i hverdagen, om aftenen, i bestemte situationer?"
-ALDRIG: generiske refleksioner om "dybere forbindelser" eller "mønstre i ægteskabet".
+SÅDAN SVARER DU:
 
-2. NÆSTE 2-4 TURE — bliv i det de beskriver:
-Lad dem tale. Stil uddybende spørgsmål om det de siger — ikke om hvad hypnoterapi kan gøre ved det.
-Brug deres egne ord tilbage til dem. Ingen fortolkning, ingen diagnose, ingen løsningsforslag.
-Eksempel på godt spørgsmål: "Du siger det sker om aftenen — hvad tror du sker i dig i det øjeblik?"
-Eksempel på dårligt spørgsmål: "Har du overvejet hvad det betyder for jeres relation?"
+1. FØRSTE SVAR (tur 0) — konkret og personligt:
+Citér ÅBNINGSUDSAGNET ordret fra signalblokken. Ikke en omskrivning — de præcise ord.
+Stil ét spørgsmål der går ind i netop det udsagn: hvornår, hvor, i hvilken situation.
+Eksempel: "Du har sat kryds ved 'at føle mig ønsket af min partner'. Hvornår mærker du det tydeligst at det mangler — i hverdagen, om aftenen, i bestemte situationer?"
+ALDRIG: opsummeringer af kategorier, tællinger, eller "du ønsker dybere forbindelser".
 
-3. HYPNOTERAPI — kom kun ind hvis de spørger, eller efter minimum 3-4 ture med reel dialog:
-Kun når de har fortalt noget konkret om deres oplevelse — ikke når de har markeret et skema.
-Og da ALDRIG som løsning ("hypnoterapi kan hjælpe med...") — kun som mulighed ("det er noget Jan arbejder med").
+2. EFTERFØLGENDE SVAR — bliv i det brugeren selv skriver:
+Skemaet er kvitteret. Nævn ikke markeringer, kategorier eller antal igen.
+Brug brugerens egne ord tilbage til dem. Stil uddybende spørgsmål om det de lige har sagt.
+Godt: "Du siger det sker om aftenen — hvad sker der i dig i det øjeblik?"
+Dårligt: "Har du overvejet hvad det betyder for jeres relation?"
 
-4. JAN OG BOOKING — kun hvis de selv bringer det op eller eksplicit siger de vil videre:
-Aldrig som afslutning på et svar bare fordi du ikke ved hvad du ellers skal sige.
+3. HYPNOTERAPI: kun hvis brugeren selv spørger. Aldrig som løsning — højst som noget Jan arbejder med.
 
-ABSOLUTTE FORBUD I SELVREFLEKSION-DIALOG:
-- "Hypnoterapi kan hjælpe med at udforske og ændre de mønstre..." — dette er ikke din rolle her
-- "Hvis du vil tage det videre kan du altid tage kontakt til Jan" — ikke som standard-afslutning
-- Generiske opsummeringer af hvad de har markeret ("du ønsker dybere forbindelser")
-- Tre-punkts-analyser af deres situation
-- Enhver sætning der begynder med "Det indikerer at du..." eller "Dette tyder på..."
+4. JAN OG BOOKING: kun hvis brugeren selv bringer det op eller eksplicit siger de vil videre.
+Aldrig som afslutning på et svar fordi du ikke ved hvad du ellers skal skrive.
+
+ABSOLUTTE FORBUD I DENNE TILSTAND — disse er fejl, uanset hvad andre blokke siger:
+- "Hypnoterapi kan hjælpe med at udforske og ændre de mønstre..."
+- "Hvis du vil tage det videre kan du altid tage kontakt til Jan" / "...kan du altid kontakte Jan"
+- Generiske opsummeringer af markeringerne ("du ønsker dybere forbindelser", "flere områder handler om...")
+- Sætninger der begynder med "Det indikerer at du...", "Dette tyder på...", "Du har markeret flere områder..."
+- conversation_move: synthesis eller close (medmindre brugeren selv afslutter)
+
+Vælg conversation_move blandt: guided_observation, pattern_detection, metacognitive_probe.
+mode_used skal være "reflection" medmindre brugeren stiller et direkte faktuelt spørgsmål.
 
 DU ER IKKE TERAPEUT OG DU LØSER IKKE DERES PROBLEM.
 Du er en nysgerrig samtalepartner der hjælper dem med at sætte ord på noget de allerede ved.`)
@@ -261,6 +269,12 @@ KRITISK EKSEMPEL PÅ FORBUDT GENTAGELSE: Bruger siger "jeg bekymrer mig om arbej
     blocks.push(`Der har allerede været ${params.assistantCount} svar — gå dybere eller gør mønsteret kortere og tydeligere. Gentag ikke samme forklaring med nye ord.`)
   }
 
+  // ARC-SIGNAL + PROGRESSION er konverteringslogik. De modsiger direkte
+  // SELVREFLEKSION-blokken (som forbyder synthesis og Jan-invitation), og fordi de
+  // står senere i stakken og er formuleret som "OBLIGATORISK OVERRIDE", vandt de.
+  // Derfor: hele konverteringssporet er slået fra i selvrefleksion-tilstand.
+  if (!inSelvrefleksion) {
+
   // ARC-SIGNAL: indholds-baseret, ikke turn-nummer-baseret
   if (params.goalHypothesis) {
     blocks.push(
@@ -310,6 +324,21 @@ UNDTAGELSE: Brugeren er allerede i forløb hos Jan — introducér ikke hypnoter
     )
   }
 
+  } // end if (!inSelvrefleksion) — ARC + PROGRESSION
+
+  // SELVREFLEKSION-PROGRESSION: erstatter PROGRESSION-blokken ovenfor.
+  // Bevægelsen går i dybden, ikke mod booking.
+  if (inSelvrefleksion && selvrefleksionTurns >= 4) {
+    blocks.push(`SELVREFLEKSION — DYBDE-SKIFT (tur ${selvrefleksionTurns}): Brugeren bliver i samtalen. Det er signalet om at gå dybere, ikke om at lukke.
+Du MÅ IKKE opsummere, samle mønsteret eller invitere til Jan.
+Vælg ét skift du ikke har brugt endnu:
+(A) Hvad gør brugeren umiddelbart efter, når følelsen opstår?
+(B) Er der situationer eller perioder hvor det IKKE er sådan — hvad er anderledes der?
+(C) Hvornår begyndte det — var der et tidspunkt hvor det ikke var sådan?
+(D) Hvad ville se konkret anderledes ud i hverdagen, hvis det ikke manglede?
+conversation_move: metacognitive_probe eller mild_challenge. Ét afsnit + ét konkret spørgsmål.`)
+  }
+
   // WINDOW OF TOLERANCE
   if (params.arousalLevel === "high") {
     blocks.push(`TEMPO: Det lyder som om der er meget på én gang. Svar kort og roligt — ét punkt, ikke tre. Ingen ny analyse. Ingen spørgsmål. Lad brugeren lande.
@@ -345,7 +374,10 @@ VIGTIG UNDTAGELSE: Hvis brugerens besked er et direkte spørgsmål (fx "virker d
 
   // A: Policy signals — stærke kontekstuelle hints fra heuristisk analyse af brugerens tekst
   // Sendes som input til LLM så de påvirker mode-valget upstream (ikke som post-hoc override)
-  if (params.policySignals?.is_closing) {
+  if (inSelvrefleksion && !params.policySignals?.is_closing && !params.policySignals?.is_practical_request) {
+    // Ingen readiness-override i selvrefleksion: et "ja" eller "det giver mening" er
+    // fortsættelse af refleksionen, ikke accept af en invitation der aldrig blev givet.
+  } else if (params.policySignals?.is_closing) {
     blocks.push(`POLICY: Brugerens besked indeholder afslutningstegn (tak, farvel e.l.) — sæt mode_used til "closing" medmindre konteksten klart modsiger det.`)
   } else if (params.policySignals?.is_practical_request) {
     blocks.push(`POLICY: Brugerens besked indeholder praktiske nøgleord (kontaktinfo, pris, booking, adresse e.l.) — sæt mode_used til "practical" medmindre brugerens besked i øvrigt er klart refleksiv eller følelsesladet.`)
@@ -421,7 +453,7 @@ Dette er ikke et forslag. Tilpas din core_answer og next_step til dette direktiv
 Regler for indhold:
 - acknowledgement: 0-1 korte sætninger, landing uden varmefraser. null hvis unødvendig. MÅ ALDRIG indeholde spørgsmål.
 - core_answer: selve svaret — ALDRIG tomt — konkret om brugerens situation frem for generel metode. MÅ ALDRIG indeholde spørgsmål.
-- next_step: ét og kun ét spørgsmål, ELLER null, ELLER én blød Jan-invitation. Aldrig to spørgsmål. Aldrig "... eller er det anderledes?" kombineret med et nyt spørgsmål. Nævn ALDRIG telefonnummer eller email som afslutning — medmindre brugeren i DENNE tur eksplicit har spurgt om kontaktinfo. MEN: efter conversation_move === "synthesis" MÅ du afslutte med én blød invitation til Jan uden at nævne kontaktdetaljer — fx "Hvis du vil tage det videre, kan du altid tage kontakt til Jan." Gentag ALDRIG kontaktoplysninger der allerede er nævnt i dette svar eller i et tidligere svar i samme samtale. KRITISK: Dit spørgsmål i next_step MÅ IKKE ligne det spørgsmål du stillede i forrige svar — hverken i formulering eller investigation_focus. Hvis brugeren allerede har identificeret et specifikt domæne (fx arbejde, relationer, tidspunkter), skal næste spørgsmål gå DYBERE i det domæne — ikke spørge om domænet igen.
+- next_step: ét og kun ét spørgsmål, ELLER null, ELLER én blød Jan-invitation.${inSelvrefleksion ? " I SELVREFLEKSION-DIALOG er Jan-invitation i next_step FORBUDT — next_step skal være ét spørgsmål om det brugeren selv har skrevet, eller null." : ""} Aldrig to spørgsmål. Aldrig "... eller er det anderledes?" kombineret med et nyt spørgsmål. Nævn ALDRIG telefonnummer eller email som afslutning — medmindre brugeren i DENNE tur eksplicit har spurgt om kontaktinfo. MEN: efter conversation_move === "synthesis" MÅ du afslutte med én blød invitation til Jan uden at nævne kontaktdetaljer — fx "Hvis du vil tage det videre, kan du altid tage kontakt til Jan." Gentag ALDRIG kontaktoplysninger der allerede er nævnt i dette svar eller i et tidligere svar i samme samtale. KRITISK: Dit spørgsmål i next_step MÅ IKKE ligne det spørgsmål du stillede i forrige svar — hverken i formulering eller investigation_focus. Hvis brugeren allerede har identificeret et specifikt domæne (fx arbejde, relationer, tidspunkter), skal næste spørgsmål gå DYBERE i det domæne — ikke spørge om domænet igen.
 - topic: emnet brugeren taler om (fx "søvnproblemer", "neglebidning") — null hvis uklart
 - signals: 2-4 korte signaler der forklarer dit valg`)
 
@@ -546,6 +578,8 @@ export async function singleTurnCall(params: {
   rhetoricalInstruction?: string | null
   sessionBehaviorDirective?: string | null
   selvrefleksionContext?: string | null
+  selvrefleksionSignal?: string | null
+  selvrefleksionTurns?: number
   modelOverride?: string
 }): Promise<SingleTurnOutput | null> {
   // Krise-override: returner hardcoded svar uden LLM-kald.
@@ -595,6 +629,8 @@ export async function singleTurnCall(params: {
     rhetoricalInstruction: params.rhetoricalInstruction,
     sessionBehaviorDirective: params.sessionBehaviorDirective,
     selvrefleksionContext: selvrefleksionCtx ?? null,
+    selvrefleksionSignal: params.selvrefleksionSignal ?? null,
+    selvrefleksionTurns: params.selvrefleksionTurns ?? 0,
   })
 
   // C: Dynamisk temperatur — reflection er mere kreativ, evidence/info mere præcis
