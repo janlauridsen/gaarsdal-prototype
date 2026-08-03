@@ -557,6 +557,23 @@ function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTop
   }
 }
 
+// ─── Transcript-komprimering ──────────────────────────────────────────────────
+//
+// Skema-indsendelser står i transcript som rå [SELVREFLEKSION_KONTEKST]-dumps på
+// 500-700 tegn hver. I en selvrefleksion-dialog udgør de over 90% af token-massen
+// i de sidste 8 ture og skubber brugerens faktiske beskeder (10-15 ord) ud af
+// modellens opmærksomhed. Indholdet er allerede leveret via SELVREFLEKSION-blokken
+// og signalet, så i transcript erstattes de af en etlinjes markør.
+export function compactTranscriptForPrompt(turns: TranscriptTurn[]): TranscriptTurn[] {
+  return turns.map((t) => {
+    if (t.role !== "user" || !t.content.startsWith("[SELVREFLEKSION_KONTEKST]:")) return t
+    const emne = t.content.match(/Emne:\s*([^|]+)/)?.[1]?.trim() ?? "skema"
+    const antal = t.content.match(/markeret\s+(\d+)\s+ud af\s+(\d+)/)
+    const label = antal ? `${antal[1]}/${antal[2]} markeret` : "indsendt"
+    return { ...t, content: `[Brugeren indsendte selvrefleksionsskemaet "${emne}" — ${label}]` }
+  })
+}
+
 // ─── Fallback ─────────────────────────────────────────────────────────────────
 
 export function buildSingleTurnFallback(userText: string, lastTopic?: string): SingleTurnOutput {
@@ -673,13 +690,26 @@ export async function singleTurnCall(params: {
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
+        // Historik som separat besked. Den aktuelle brugerbesked lå tidligere som ét
+        // felt i SAMME JSON-objekt som transcript — en kort streng foran et array på
+        // flere tusinde tegn. Modellen ankrede på den sidste assistent-tur i arrayet
+        // og svarede på den forrige brugerbesked i stedet for den aktuelle.
+        // Nu står den aktuelle besked ALENE og SIDST, hvor recency-vægten er størst.
         {
           role: "user",
           content: JSON.stringify({
-            user_input: params.userText,
+            historik: compactTranscriptForPrompt(params.transcript.slice(-8)),
             last_topic: params.lastTopic ?? "",
-            transcript: params.transcript.slice(-8),
             policy_signals: params.policySignals ?? { is_practical_request: false, is_closing: false },
+          }),
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            instruks:
+              "Dette er brugerens AKTUELLE besked. Dit svar skal besvare DENNE besked. " +
+              "Historikken ovenfor er kun baggrund — gentag den ikke og svar ikke på en tidligere besked.",
+            user_input: params.userText,
           }),
         },
       ],
