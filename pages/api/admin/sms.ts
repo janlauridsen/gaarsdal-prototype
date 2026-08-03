@@ -2,7 +2,7 @@
 
 import type { NextApiRequest, NextApiResponse } from "next"
 import { getRedisClient } from "../../../chat/persistence/redis"
-import { OPTIN_KEY, POSITIVE_KEY, STOPPED_KEY, SENT_KEY, normalizePhone } from "../sms/optin"
+import { OPTIN_KEY, POSITIVE_KEY, STOPPED_KEY, SENT_KEY, normalizePhone, phoneOf } from "../sms/optin"
 
 function parseMembers(raw: unknown): any[] {
   if (!Array.isArray(raw)) return []
@@ -77,15 +77,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (action === "remove_positive" || action === "remove_optin") {
+      // Sletningen virkede aldrig. GET-stien noterer selv at Upstash auto-deserialiserer
+      // og returnerer objekter — men denne sti kaldte JSON.parse(m) på netop de objekter.
+      // JSON.parse på et objekt kaster, det tomme catch {} slugte fejlen, ingen zrem blev
+      // udført, og endpointet svarede alligevel { ok: true }. UI'et hentede listen igen
+      // og viste rækken uændret.
       const key = action === "remove_positive" ? POSITIVE_KEY : OPTIN_KEY
       const all = await safeZrange(redis, key)
+      let removed = 0
       for (const m of all) {
+        if (phoneOf(m) !== normalized) continue
         try {
-          if (JSON.parse(m).phone === normalized) await redis.zrem(key, m)
-        } catch {}
+          const r = await redis.zrem(key, m)
+          removed += Number(r) || 0
+        } catch (err) {
+          console.error("[admin/sms] zrem fejlede", { key, normalized, err })
+        }
       }
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
-    return res.status(200).json({ ok: true })
+      // removed returneres så UI'et kan se forskel på "slettet" og "ingen match".
+      return res.status(200).json({ ok: true, removed })
     }
   }
 
