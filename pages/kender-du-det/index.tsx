@@ -226,6 +226,7 @@ export default function KenderDuDetPage() {
             <a href="/sorg" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Sorg og tab</a>
             <a href="/ibs-spaendinger" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>IBS og spændinger</a>
             <a href="/parforhold" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Parforhold</a>
+            <a href="/agteskab" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Skema: Hvad savner jeg i mit ægteskab?</a>
           </div>
         </section>
 
