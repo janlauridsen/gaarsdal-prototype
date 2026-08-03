@@ -10,6 +10,29 @@ export const STOPPED_KEY = "gaarsdal:sms:stopped"
 export const POSITIVE_KEY = "gaarsdal:sms:positive"
 export const SENT_KEY    = "gaarsdal:sms:sent"
 
+/**
+ * Zset-medlemmer kan komme tilbage fra Upstash enten som rå JSON-streng eller som
+ * færdig-deserialiseret objekt, afhængigt af klientens auto-deserialisering.
+ * Alt der læser medlemmer skal gå gennem denne — ellers fejler JSON.parse på et
+ * objekt og bliver slugt af et tomt catch.
+ */
+export function phoneOf(member: unknown): string | null {
+  if (member == null) return null
+  if (typeof member === "object") {
+    const p = (member as { phone?: unknown }).phone
+    return typeof p === "string" ? p : null
+  }
+  if (typeof member === "string") {
+    try {
+      const p = JSON.parse(member)?.phone
+      return typeof p === "string" ? p : null
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
 export function normalizePhone(raw: string): string | null {
   const digits = raw.replace(/[\s\-]/g, "").replace(/^\+45/, "").replace(/^0045/, "")
   const match = digits.match(/^([0-9]{8})$/)
@@ -49,7 +72,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     day: new Date(now).toISOString().slice(0, 10),
   })
 
-  // nx = gem kun hvis ikke allerede eksisterer (samme score = ingen dubletter)
+  // Dedup på telefonnummer.
+  // Tidligere kommentar lovede "nx = ingen dubletter", men zadd blev kaldt uden nx,
+  // og medlemsstrengen indeholder ts/day — så hver tilmelding gav en ny række.
+  // Resultat: samme nummer optrådte flere gange i admin og ville modtage flere SMS.
+  // Ældre rækker for samme nummer fjernes, så den nyeste (= gældende) samtykkedato står tilbage.
+  const existing = await redis.zrange(OPTIN_KEY, 0, -1).catch(() => [])
+  if (Array.isArray(existing)) {
+    for (const m of existing) {
+      if (phoneOf(m) === normalized) {
+        await redis.zrem(OPTIN_KEY, m as never).catch(() => null)
+      }
+    }
+  }
+
   await redis.zadd(OPTIN_KEY, { score: now, member: record }).catch(() => null)
 
   return res.status(200).json({ ok: true, phone: normalized })
