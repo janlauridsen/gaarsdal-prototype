@@ -352,6 +352,23 @@ Vælg ét skift du ikke har brugt endnu:
 conversation_move: metacognitive_probe eller mild_challenge. Ét afsnit + ét konkret spørgsmål.`)
   }
 
+  // BRUGERFORSLAG — global, gælder alle domæner og begge tilstande.
+  blocks.push(`NÅR BRUGEREN LUFTER ET FORSLAG ELLER EN PLAN:
+Du bekræfter det ALDRIG. Ikke med "det lyder som en god tilgang", ikke med "det er en interessant tanke",
+ikke med at forklare hvordan det kunne virke. Du er ikke i en position til at vurdere om et forslag er godt for et menneske du ikke kender.
+Du undersøger det i stedet: hvad ligger bag ønsket, hvornår opstod det, hvad ville det koste, hvad løser det ikke.
+Vær særligt varsom hvis forslaget rører ved brud, utroskab, andre relationer, alkohol, medicin, at stoppe behandling eller at konfrontere nogen.
+Der siger du ligeud, at det er for stort til en chat, og at det hører til en samtale med et menneske.
+Godt: "Hvad er det, du håber det ville give dig, som du ikke får nu?"
+Forbudt: "Det kan være en måde at udforske dine behov på, men..."
+
+NÅR BRUGEREN BESKRIVER TYNGDE:
+Hvis brugeren over flere ture beskriver at undertrykke sig selv, ikke kunne mærke sig selv, fryse, gå på listefødder,
+miste lyst og energi, eller tilpasse sig konstant for at undgå en andens reaktion — så navngiv vægten af det ÉN gang, roligt og uden drama,
+før du stiller dit næste spørgsmål. Ikke som diagnose. Ikke som salg.
+"Det du beskriver lyder belastende at leve i over tid." — og så videre i samtalen.
+Det er også det ene sted hvor du må sige, at det er den slags mønstre Jan arbejder med. Én gang. Uden telefonnummer, uden opfordring.`)
+
   // WINDOW OF TOLERANCE
   if (params.arousalLevel === "high") {
     blocks.push(`TEMPO: Det lyder som om der er meget på én gang. Svar kort og roligt — ét punkt, ikke tre. Ingen ny analyse. Ingen spørgsmål. Lad brugeren lande.
@@ -514,9 +531,20 @@ function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTop
   const topic = typeof raw.topic === "string" && raw.topic.trim() ? raw.topic.trim() : lastTopic
   const objective = typeof raw.objective === "string" && raw.objective.trim() ? raw.objective.trim() : undefined
 
-  const acknowledgement = typeof raw.acknowledgement === "string" && raw.acknowledgement.trim()
+  const rawAcknowledgement = typeof raw.acknowledgement === "string" && raw.acknowledgement.trim()
     ? raw.acknowledgement.trim()
     : null
+
+  // ENDOSSERINGS-FILTER (globalt, ikke kun selvrefleksion).
+  //
+  // acknowledgement-feltet degenererer til en refleks: modellen åbner hver tur med
+  // en bekræftelse af hvad brugeren lige sagde, uanset indhold. I en refleksions-
+  // dialog betyder det, at ethvert forslag brugeren lufter — også et der ikke bør
+  // bekræftes — får et "det lyder som en god tilgang" med på vejen.
+  // Dette er ikke en tonefejl. På et behandlersite er det en faglig udtalelse.
+  // Prompten alene kan ikke håndhæve det, fordi bruddet ligger i ét felt der
+  // altid udfyldes. Derfor kasseres endosserende åbninger deterministisk.
+  const acknowledgement = isEndorsingAcknowledgement(rawAcknowledgement) ? null : rawAcknowledgement
 
   const core_answer = typeof raw.core_answer === "string" && raw.core_answer.trim()
     ? raw.core_answer.trim()
@@ -566,6 +594,23 @@ function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTop
     confidence,
     assistant_message,
   }
+}
+
+// ─── Endosserings-filter ─────────────────────────────────────────────────────
+
+const ENDORSING_OPENERS = [
+  "det er en god", "det lyder som en god", "det lyder godt", "det er en interessant",
+  "det lyder som en interessant", "det er en vigtig", "det er et vigtigt",
+  "det lyder som en vigtig", "det er en fornuftig", "det lyder fornuftigt",
+  "det er en klog", "det er en stærk", "det er en sund", "det lyder som en sund",
+  "godt tænkt", "det er rigtigt tænkt", "det er en rigtig god",
+  "det er modigt", "det er en modig",
+]
+
+export function isEndorsingAcknowledgement(text: string | null): boolean {
+  if (!text) return false
+  const t = text.trim().toLowerCase()
+  return ENDORSING_OPENERS.some((p) => t.startsWith(p))
 }
 
 // ─── Transcript-komprimering ──────────────────────────────────────────────────

@@ -21,8 +21,12 @@ const PRACTICAL_STEMS = [
 
 // "tid" er for kort til stammematch selv med venstregrænse ("tidligere",
 // "tidsforbrug"). Derfor eksplicitte former.
+// Bare "tid"/"tiden" er på dansk næsten altid tidsligt, ikke booking:
+// "hele tiden", "over tid", "på samme tid". Det lukkede selvrefleksion-tilstanden
+// midt i en refleksionsbesked. Booking-intention kræver en bærende frase.
 const PRACTICAL_EXACT_FORMS = [
-  "tid", "tider", "tiden", "tidspunkt", "tidsbestilling", "ledige tider",
+  "tidsbestilling", "ledige tider", "en tid", "aftale en tid", "bestille tid",
+  "book en tid", "booke en tid", "ledig tid", "hvilke tider", "hvornår kan jeg komme",
 ]
 
 export function detectPracticalKeywords(text: string): boolean {
