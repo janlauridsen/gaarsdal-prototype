@@ -1129,8 +1129,10 @@ export default function AdminPage() {
             const positive = smsData?.positive ?? []
             const stopped = smsData?.stopped ?? []
             const sent = smsData?.sent ?? []
-            const allRecipients = smsTarget === "optin" ? optin.map((o:any)=>o.phone)
-              : smsTarget === "positive" ? positive.map((o:any)=>o.phone)
+            // Dedupe i alle tre tilfælde. Tidligere blev der kun deduplikeret i "begge",
+            // så et nummer der stod dobbelt i opt-in ville modtage to SMS.
+            const allRecipients = smsTarget === "optin" ? [...new Set(optin.map((o:any)=>o.phone))]
+              : smsTarget === "positive" ? [...new Set(positive.map((o:any)=>o.phone))]
               : [...new Set([...optin.map((o:any)=>o.phone), ...positive.map((o:any)=>o.phone)])]
             const MSG_LIMIT = 160 - 30 // reserve for STOP line
 
@@ -1203,7 +1205,7 @@ export default function AdminPage() {
                           <span style={{ fontSize:"13px", color:"#ccc", fontFamily:"monospace" }}>{o.phone}</span>
                           <span style={{ fontSize:"11px", color:"#666", marginLeft:"8px" }}>{o.source} · {o.day}</span>
                         </div>
-                        <button onClick={async ()=>{ await fetch("/api/admin/sms?token="+encodeURIComponent(secret),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"remove_optin",phone:o.phone})}); fetchSms() }} style={{ background:"none", border:"none", color:"#666", cursor:"pointer", fontSize:"12px" }}>✕</button>
+                        <button onClick={async ()=>{ const r = await fetch("/api/admin/sms?token="+encodeURIComponent(secret),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"remove_optin",phone:o.phone})}); const j = await r.json().catch(()=>null); if (!j?.removed) alert("Kunne ikke slette "+o.phone+" — intet blev fjernet."); fetchSms() }} style={{ background:"none", border:"none", color:"#666", cursor:"pointer", fontSize:"12px" }}>✕</button>
                       </div>
                     ))}
                   </div>
@@ -1224,7 +1226,7 @@ export default function AdminPage() {
                           {o.note && <span style={{ fontSize:"11px", color:"#888", marginLeft:"8px" }}>{o.note}</span>}
                           <span style={{ fontSize:"11px", color:"#666", marginLeft:"8px" }}>{o.day}</span>
                         </div>
-                        <button onClick={async ()=>{ await fetch("/api/admin/sms?token="+encodeURIComponent(secret),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"remove_positive",phone:o.phone})}); fetchSms() }} style={{ background:"none", border:"none", color:"#666", cursor:"pointer", fontSize:"12px" }}>✕</button>
+                        <button onClick={async ()=>{ const r = await fetch("/api/admin/sms?token="+encodeURIComponent(secret),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"remove_positive",phone:o.phone})}); const j = await r.json().catch(()=>null); if (!j?.removed) alert("Kunne ikke slette "+o.phone+" — intet blev fjernet."); fetchSms() }} style={{ background:"none", border:"none", color:"#666", cursor:"pointer", fontSize:"12px" }}>✕</button>
                       </div>
                     ))}
                   </div>
