@@ -105,10 +105,10 @@ export default function KenderDuDetPage() {
       <Header />
       <Head>
         <title>Kender du det? Find dit mønster | Hypnoterapi Birkerød - Gratis forsamtale</title>
-        <meta name="description" content="Kender du det - bekymringer der ikke stopper, søvn der ikke vil, vaner du ikke kan bryde? Hypnoterapi i Birkerød arbejder der tankerne ikke når ind." />
+        <meta name="description" content="Kender du det - bekymringer der ikke stopper, søvn der ikke vil, vaner du ikke kan bryde? Hypnoterapi i Birkerød arbejder der, hvor tankerne ikke når ind." />
         <link rel="canonical" href="https://gaarsdal.net/kender-du-det" />
         <meta property="og:title" content="Kender du det? | Gaarsdal Hypnoterapi Birkerød" />
-        <meta property="og:description" content="Angst, søvn, stress, rygning, selvværd, vaner. Hypnoterapi arbejder der analysen ikke når ind." />
+        <meta property="og:description" content="Angst, søvn, stress, rygning, selvværd, vaner. Hypnoterapi arbejder der, hvor analysen ikke når ind." />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/kender-du-det" />
         <meta property="og:type" content="website" />
@@ -144,7 +144,7 @@ export default function KenderDuDetPage() {
             Du ved godt hvad problemet er. Du har tænkt over det mange gange. Måske prøvet at arbejde med det. Og alligevel bliver det ved.
           </p>
           <p style={{ fontSize: "15px", color: "#555", maxWidth: "640px" }}>
-            Hypnoterapi arbejder der analyserne ikke når ind - med de automatiske reaktioner og mønstre der kører under bevidst tænkning. Du behøver ikke forstå dem for at ændre dem.
+            Hypnoterapi arbejder der, hvor analysen ikke når ind - med de automatiske reaktioner og mønstre der kører under bevidst tænkning. Du behøver ikke forstå dem for at ændre dem.
           </p>
         </section>
 
