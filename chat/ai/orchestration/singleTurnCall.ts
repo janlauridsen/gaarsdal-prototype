@@ -477,6 +477,7 @@ Dette er ikke et forslag. Tilpas din core_answer og next_step til dette direktiv
 Regler for indhold:
 - acknowledgement: 0-1 korte sætninger, landing uden varmefraser. null hvis unødvendig. MÅ ALDRIG indeholde spørgsmål.
 - core_answer: selve svaret — ALDRIG tomt — konkret om brugerens situation frem for generel metode. MÅ ALDRIG indeholde spørgsmål.
+- core_answer: MÅ IKKE slutte med et spørgsmål. Spørgsmålet hører i next_step. Slutter core_answer alligevel på "?", bliver next_step kasseret.
 - next_step: ét og kun ét spørgsmål, ELLER null, ELLER én blød Jan-invitation.${inSelvrefleksion ? " I SELVREFLEKSION-DIALOG er Jan-invitation i next_step FORBUDT — next_step skal være ét spørgsmål om det brugeren selv har skrevet, eller null." : ""} Aldrig to spørgsmål. Aldrig "... eller er det anderledes?" kombineret med et nyt spørgsmål. Nævn ALDRIG telefonnummer eller email som afslutning — medmindre brugeren i DENNE tur eksplicit har spurgt om kontaktinfo. MEN: efter conversation_move === "synthesis" MÅ du afslutte med én blød invitation til Jan uden at nævne kontaktdetaljer — fx "Hvis du vil tage det videre, kan du altid tage kontakt til Jan." Gentag ALDRIG kontaktoplysninger der allerede er nævnt i dette svar eller i et tidligere svar i samme samtale. KRITISK: Dit spørgsmål i next_step MÅ IKKE ligne det spørgsmål du stillede i forrige svar — hverken i formulering eller investigation_focus. Hvis brugeren allerede har identificeret et specifikt domæne (fx arbejde, relationer, tidspunkter), skal næste spørgsmål gå DYBERE i det domæne — ikke spørge om domænet igen.
 - topic: emnet brugeren taler om (fx "søvnproblemer", "neglebidning") — null hvis uklart
 - signals: 2-4 korte signaler der forklarer dit valg`)
@@ -534,8 +535,18 @@ function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTop
   const confidenceRaw = typeof raw.confidence === "number" ? raw.confidence : Number(raw.confidence ?? 0.5)
   const confidence = Number.isFinite(confidenceRaw) ? Math.max(0, Math.min(1, confidenceRaw)) : 0.5
 
-  // Assemble final message
-  const parts = [acknowledgement, core_answer, next_step].filter(Boolean)
+  // Assemble final message.
+  //
+  // ÉT SPØRGSMÅL: core_answer og next_step sammensættes, og modellen lægger ofte
+  // et spørgsmål i BEGGE. Resultatet er to spørgsmål i træk, hver eneste tur.
+  // Prompten siger allerede "kun ét spørgsmål", men reglen kan ikke håndhæves i
+  // prompten alene, fordi den brydes på tværs af to felter der først samles her.
+  // Derfor deterministisk: slutter core_answer på et spørgsmål, droppes next_step.
+  const coreEndsWithQuestion = /\?\s*$/.test(core_answer)
+  const nextStepIsQuestion = next_step ? next_step.includes("?") : false
+  const effectiveNextStep = coreEndsWithQuestion && nextStepIsQuestion ? null : next_step
+
+  const parts = [acknowledgement, core_answer, effectiveNextStep].filter(Boolean)
   const assistant_message = parts.join("\n\n").trim()
 
   if (!assistant_message) return null
@@ -550,7 +561,7 @@ function normalizeOutput(raw: Record<string, unknown>, userText: string, lastTop
     objective,
     acknowledgement,
     core_answer,
-    next_step,
+    next_step: effectiveNextStep,
     signals,
     confidence,
     assistant_message,

@@ -10,9 +10,30 @@ function normalize(text: string): string {
  * Detekterer praktiske nøgleord der sendes som policy-hint til LLM.
  * Bruges som is_practical_request i policySignals — ikke som post-hoc override.
  */
+// Ordstammer der kræver ordgrænse til venstre. Uden grænsen matchede substring
+// "tid" inde i "alTID", "utidig", "midlertidig" osv. og klassificerede en ren
+// refleksionsbesked som praktisk forespørgsel — hvilket bl.a. lukkede
+// selvrefleksion-tilstanden midt i en dialog.
+const PRACTICAL_STEMS = [
+  "kontakt", "booking", "booke", "telefon", "mail", "e-mail", "email",
+  "pris", "koster", "koste", "betale", "betaling", "adresse",
+]
+
+// "tid" er for kort til stammematch selv med venstregrænse ("tidligere",
+// "tidsforbrug"). Derfor eksplicitte former.
+const PRACTICAL_EXACT_FORMS = [
+  "tid", "tider", "tiden", "tidspunkt", "tidsbestilling", "ledige tider",
+]
+
 export function detectPracticalKeywords(text: string): boolean {
   const t = normalize(text)
-  return ["kontakt", "booking", "booke", "telefon", "mail", "e-mail", "email", "pris", "koster", "koste", "betale", "betaling", "adresse", "tid", "ledige tider"].some((x) => t.includes(x))
+  const hasStem = PRACTICAL_STEMS.some((stem) =>
+    new RegExp(`(^|[^a-zæøå])${stem}`, "i").test(t),
+  )
+  if (hasStem) return true
+  return PRACTICAL_EXACT_FORMS.some((form) =>
+    new RegExp(`(^|[^a-zæøå])${form}([^a-zæøå]|$)`, "i").test(t),
+  )
 }
 
 /**
