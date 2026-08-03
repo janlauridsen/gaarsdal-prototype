@@ -138,7 +138,7 @@ export default function Home() {
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-h2 font-light mb-4">Hvad kæmper du med?</h2>
             <p className="text-muted mb-10 text-lg">
-              Hypnoterapi hjælper der analysen ikke når ind. Se om du genkender dig selv.
+              Hypnoterapi hjælper der, hvor forståelse ikke er nok. Se om du genkender dig selv.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
               <Link

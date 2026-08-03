@@ -12,7 +12,7 @@ export default function SovnPage() {
         <meta name="description" content="Kan du ikke sove? Vågner om natten? Hypnoterapi arbejder med nervesystemet, der holder dig vågen. Ikke med viljestyrke. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/sovn" />
         <meta property="og:title" content="Søvnproblemer og hypnoterapi | Gaarsdal Birkerød" />
-        <meta property="og:description" content="Søvnproblemer sidder dybere end gode vaner og skærmfri aftener. Hypnoterapi arbejder der viljestyrken ikke når ind." />
+        <meta property="og:description" content="Søvnproblemer sidder dybere end gode vaner og skærmfri aftener. Hypnoterapi arbejder der, hvor viljestyrken ikke når ind." />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/sovn" />
         <meta property="og:type" content="website" />
