@@ -222,6 +222,7 @@ export default function AgteskabPage() {
           </h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             {[
+              { href: "/", label: "Forsiden →" },
               { href: "/parforhold", label: "Parforhold →" },
               { href: "/kaerlighed", label: "Kærlighed og relationer →" },
               { href: "/selvvaerd", label: "Selvværd →" },

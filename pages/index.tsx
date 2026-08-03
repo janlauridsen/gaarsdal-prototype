@@ -140,7 +140,7 @@ export default function Home() {
             <p className="text-muted mb-10 text-lg">
               Hypnoterapi hjælper der analysen ikke når ind. Se om du genkender dig selv.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
               <Link
                 href="/kender-du-det"
                 className="block p-8 bg-stone-50 rounded-xl border border-stone-200 hover:border-stone-400 transition-all group"
@@ -162,6 +162,17 @@ export default function Home() {
                   Dit barn har det svært og du ved ikke hvad du skal gøre.
                 </p>
                 <span className="mt-4 inline-block text-sm font-medium text-accent">Se børns udfordringer →</span>
+              </Link>
+              <Link
+                href="/agteskab"
+                className="block p-8 bg-stone-50 rounded-xl border border-stone-200 hover:border-stone-400 transition-all group"
+              >
+                <div className="text-2xl mb-3">📝</div>
+                <h3 className="text-xl font-semibold mb-2 group-hover:text-accent transition-colors">Hvad savner jeg i mit ægteskab?</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Noget mangler, men det er svært at sætte ord på. Et skema der hjælper dig med at finde ud af hvad.
+                </p>
+                <span className="mt-4 inline-block text-sm font-medium text-accent">Prøv skemaet →</span>
               </Link>
             </div>
           </div>
