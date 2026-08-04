@@ -253,7 +253,7 @@ export default function ChildrenPage() {
     <>
       <Header />
       <Head>
-        <title>Hypnoterapi til børn og unge - Birkerød | Gratis forsamtale for forældre</title>
+        <title>Hypnoterapi til børn og unge, Birkerød | Gaarsdal</title>
         <meta name="description" content="Hjælp til børn fra 8 år: angst, skolevægring, søvn, selvværd. Forældre altid inddraget. Gratis forsamtale 30 min. Birkerød/Nordsjælland. Ring 42 80 74 74." />
         <link rel="canonical" href="https://gaarsdal.net/children" />
         <meta property="og:title" content="Hypnoterapi til børn og unge | Gaarsdal Birkerød" />
