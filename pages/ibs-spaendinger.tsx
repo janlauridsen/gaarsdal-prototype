@@ -8,7 +8,7 @@ export default function IbsSpaendingerPage() {
     <>
       <Header />
       <Head>
-        <title>IBS, maveproblemer og spændinger — hypnoterapi Birkerød | Gaarsdal</title>
+        <title>IBS og spændinger, hypnoterapi Birkerød | Gaarsdal</title>
         <meta name="description" content="IBS og kroniske spændinger opstår ofte i nervesystemet, ikke i organet. Hypnoterapi arbejder med stress-tarmsignalet og muskelspændinger. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/ibs-spaendinger" />
         <meta property="og:title" content="IBS og spændinger — hypnoterapi | Gaarsdal Birkerød" />

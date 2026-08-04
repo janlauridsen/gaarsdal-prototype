@@ -8,14 +8,33 @@ export default function Page() {
     <>
       <Header />
       <Head>
-        <title>Dårligt selvbillede hos børn og unge, hypnoterapi Birkerød | Gaarsdal</title>
+        <title>Selvbillede hos børn, hypnoterapi Birkerød | Gaarsdal</title>
         <meta name="description" content="Dit barn tror ikke, det er godt nok. Hypnoterapi arbejder med overbevisningerne under bevidst tænkning. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/selvbillede-born" />
         <meta property="og:title" content="Dårligt selvbillede hos børn og unge, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Dit barn tror ikke det er godt nok. Hypnoterapi arbejder med overbevisningerne under bevidst tænkning. Jan Gaarsdal, Birkerød." />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:type" content="website" />
         <meta property="og:url" content="https://gaarsdal.net/selvbillede-born" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "MedicalWebPage",
+              name: "Dårligt selvbillede hos børn og unge",
+              description: "Dit barn tror ikke, det er godt nok. Hypnoterapi arbejder med overbevisningerne under bevidst tænkning. Jan Gaarsdal, Birkerød.",
+              url: "https://gaarsdal.net/selvbillede-born",
+              provider: {
+                "@type": "Person",
+                name: "Jan Gaarsdal",
+                url: "https://gaarsdal.net/om",
+                telephone: "+4542807474",
+              },
+            }),
+          }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 

@@ -8,14 +8,33 @@ export default function Page() {
     <>
       <Header />
       <Head>
-        <title>Kropsutilfredshed hos børn og unge, hypnoterapi Birkerød | Gaarsdal</title>
+        <title>Kropsutilfredshed hos børn, Birkerød | Gaarsdal</title>
         <meta name="description" content="Dit barn er utilfreds med sin krop og sammenligner sig konstant. Hypnoterapi arbejder med det forvredne selvbillede. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/krop-born" />
         <meta property="og:title" content="Kropsutilfredshed hos børn og unge, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Dit barn er utilfreds med sin krop og sammenligner sig konstant. Hypnoterapi arbejder med det forvredne selvbillede. Jan Gaarsdal, Birkerød." />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:type" content="website" />
         <meta property="og:url" content="https://gaarsdal.net/krop-born" />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "MedicalWebPage",
+              name: "Kropsutilfredshed hos børn og unge",
+              description: "Dit barn er utilfreds med sin krop og sammenligner sig konstant. Hypnoterapi arbejder med det forvredne selvbillede. Jan Gaarsdal, Birkerød.",
+              url: "https://gaarsdal.net/krop-born",
+              provider: {
+                "@type": "Person",
+                name: "Jan Gaarsdal",
+                url: "https://gaarsdal.net/om",
+                telephone: "+4542807474",
+              },
+            }),
+          }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 

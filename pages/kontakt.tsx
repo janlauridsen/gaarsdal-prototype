@@ -58,7 +58,7 @@ export default function Kontakt() {
   return (
     <div className="min-h-screen bg-bg text-text">
       <Head>
-        <title>Book gratis forsamtale (30 min) | Gaarsdal Hypnoterapi Birkerød</title>
+        <title>Book gratis forsamtale (30 min) | Gaarsdal</title>
         <meta
           name="description"
           content="Book en gratis forsamtale på 30 minutter med Jan Gaarsdal - telefon eller fysisk i Birkerød. Find ud af om hypnoterapi passer til dig."
@@ -76,6 +76,24 @@ export default function Kontakt() {
           content="https://gaarsdal.net/Gaarsdal.net_logo_brand.png"
         />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "ContactPage",
+              name: "Kontakt og gratis forsamtale",
+              description: "Book en gratis forsamtale på 30 minutter med Jan Gaarsdal - telefon eller fysisk i Birkerød. Find ud af om hypnoterapi passer til dig.",
+              url: "https://gaarsdal.net/kontakt",
+              provider: {
+                "@type": "Person",
+                name: "Jan Gaarsdal",
+                url: "https://gaarsdal.net/om",
+                telephone: "+4542807474",
+              },
+            }),
+          }}
+        />
       </Head>
 
       <Header />

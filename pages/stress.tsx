@@ -21,6 +21,24 @@ export default function Page() {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod stress?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi resetter nervesystemets grundindstilling, så ro bliver standard i stedet for beredskab. Det er en dybere ændring end afspændingsøvelser, fordi det arbejder med hvad nervesystemet automatisk opfatter som normaltilstand.\"}}, {\"@type\": \"Question\", \"name\": \"Hvad er forskellen på hypnose og mindfulness mod stress?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Mindfulness træner din bevidste opmærksomhed. Hypnoterapi arbejder direkte med de automatiske reaktioner under bevidst tænkning. De kan supplere hinanden, men hypnose når et dybere lag.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner kræver stressbehandling?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Det afhænger af hvor længe stressen har stået på. Den gratis forsamtale giver et realistisk billede. Mange oplever bedring i søvn og ro tidligt i forløbet.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe ved arbejdsrelateret stress?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med den grundlæggende stressrespons uanset hvad der udløser den. Det ændrer hvordan nervesystemet reagerer på pres, så du genvinder overskud og ro.\"}}]}" }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "MedicalWebPage",
+              name: "Stress og hypnoterapi",
+              description: "Stress, der ikke slipper, selv i weekenden. Hypnoterapi resetter nervesystemets grundindstilling. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter.",
+              url: "https://gaarsdal.net/stress",
+              provider: {
+                "@type": "Person",
+                name: "Jan Gaarsdal",
+                url: "https://gaarsdal.net/om",
+                telephone: "+4542807474",
+              },
+            }),
+          }}
+        />
       </Head>
 
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>

@@ -28,7 +28,7 @@ export default function AfmeldPage() {
   return (
     <>
       <Head>
-        <title>Afmeld SMS | Gaarsdal Hypnoterapi</title>
+        <title>Afmeld SMS | Gaarsdal</title>
         <meta name="robots" content="noindex" />
       </Head>
       <main style={{

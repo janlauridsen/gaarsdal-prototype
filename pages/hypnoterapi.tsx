@@ -8,7 +8,7 @@ export default function Hypnoterapi() {
   return (
     <div className="min-h-screen bg-bg text-text">
       <Head>
-        <title>Hvad er hypnoterapi? Metode og forløb | Gratis forsamtale - Gaarsdal Birkerød</title>
+        <title>Hvad er hypnoterapi? Metode og forløb | Gaarsdal</title>
         <meta
           name="description"
           content="Forstå hvordan hypnoterapi virker, hvad et forløb indebærer, og om det passer til dig. Gratis forsamtale 30 min hos Jan Gaarsdal i Birkerød."
@@ -26,6 +26,24 @@ export default function Hypnoterapi() {
           content="https://gaarsdal.net/Gaarsdal.net_logo_brand.png"
         />
         <meta name="robots" content="index, follow" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "MedicalWebPage",
+              name: "Hvad er hypnoterapi",
+              description: "Forstå hvordan hypnoterapi virker, hvad et forløb indebærer, og om det passer til dig. Gratis forsamtale 30 min hos Jan Gaarsdal i Birkerød.",
+              url: "https://gaarsdal.net/hypnoterapi",
+              provider: {
+                "@type": "Person",
+                name: "Jan Gaarsdal",
+                url: "https://gaarsdal.net/om",
+                telephone: "+4542807474",
+              },
+            }),
+          }}
+        />
       </Head>
 
       <Header />

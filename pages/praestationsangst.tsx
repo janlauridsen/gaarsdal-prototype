@@ -8,7 +8,7 @@ export default function PraestationsangstPage() {
     <>
       <Header />
       <Head>
-        <title>Præstationsangst og eksamensangst, hypnoterapi Birkerød | Gaarsdal</title>
+        <title>Præstationsangst og eksamensangst | Gaarsdal</title>
         <meta name="description" content="Præstationsangst og eksamensangst. Du ved hvad du kan, men kroppen blokerer. Hypnoterapi arbejder med reaktionen, ikke pensummet. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/praestationsangst" />
         <meta property="og:title" content="Præstationsangst og eksamensangst | Gaarsdal Birkerød" />

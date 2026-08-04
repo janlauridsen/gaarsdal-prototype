@@ -8,7 +8,7 @@ export default function Page() {
     <>
       <Header />
       <Head>
-        <title>Hypnose mod angst - Birkerød/Nordsjælland | Gratis forsamtale</title>
+        <title>Hypnose mod angst, Birkerød | Gaarsdal</title>
         <meta name="description" content="Slip angsten ved roden, ikke kun symptomerne. Hypnoterapi i Birkerød, tæt på Holte og Allerød. Gratis forsamtale 30 min. Ring 42 80 74 74." />
         <link rel="canonical" href="https://gaarsdal.net/angst" />
         <meta property="og:title" content="Angst og bekymring, hypnoterapi Birkerød | Gaarsdal" />

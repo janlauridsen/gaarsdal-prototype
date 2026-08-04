@@ -23,7 +23,7 @@ export default function TilmeldPage() {
   return (
     <>
       <Head>
-        <title>Tilmeld SMS-nyheder | Gaarsdal Hypnoterapi</title>
+        <title>Tilmeld SMS-nyheder | Gaarsdal</title>
         <meta name="robots" content="noindex" />
       </Head>
       <main style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#f5f4f0", fontFamily:"system-ui, -apple-system, sans-serif", padding:"20px" }}>

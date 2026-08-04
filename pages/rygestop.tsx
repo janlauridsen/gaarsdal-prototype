@@ -8,7 +8,7 @@ export default function Page() {
     <>
       <Header />
       <Head>
-        <title>Rygestop med hypnoterapi Birkerød | Stop med at ryge | Gaarsdal</title>
+        <title>Rygestop med hypnoterapi Birkerød | Gaarsdal</title>
         <meta name="description" content="Vil du holde op med at ryge? Hypnoterapi arbejder med trangen, ikke viljestyrken. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter." />
         <link rel="canonical" href="https://gaarsdal.net/rygestop" />
         <meta property="og:title" content="Rygestop med hypnoterapi Birkerød | Stop med at ryge | Gaarsdal" />

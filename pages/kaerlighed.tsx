@@ -8,7 +8,7 @@ export default function KaerlighedPage() {
     <>
       <Header />
       <Head>
-        <title>Kærlighed og tilknytningsmønstre, hypnoterapi Birkerød | Gaarsdal</title>
+        <title>Kærlighed og tilknytningsmønstre | Gaarsdal</title>
         <meta name="description" content="Du længes efter kærlighed, men noget holder igen. Frygt for afvisning, gentagne mønstre, undgåelse af nærhed. Hypnoterapi arbejder med grundindstillingerne. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/kaerlighed" />
         <meta property="og:title" content="Kærlighed og tilknytningsmønstre | Gaarsdal Birkerød" />

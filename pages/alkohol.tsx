@@ -9,17 +9,36 @@ export default function Page() {
     <>
       <Header />
       <Head>
-        <title>Drikker du mere end du vil? Hypnoterapi mod alkohol | Gaarsdal Birkerød</title>
+        <title>Drikker du mere end du vil? Hypnoterapi | Gaarsdal</title>
         <meta name="description" content="Drikker du mere end du egentlig ønsker? Hypnoterapi arbejder med behovet bag alkoholen, ikke kun trangen. Diskret og fordomsfrit. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/alkohol" />
         <meta property="og:title" content="Drikker du mere end du vil? Hypnoterapi mod alkohol | Gaarsdal" />
         <meta property="og:description" content="For mange fylder alkohol mere end de ønsker. Hypnoterapi arbejder med behovet bag, ikke kun trangen. Diskret og fordomsfrit i Birkerød." />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:type" content="website" />
         <meta property="og:url" content="https://gaarsdal.net/alkohol" />
         <meta name="robots" content="index, follow" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Er jeg alkoholiker hvis jeg overvejer hjælp?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej. De fleste der søger hjælp befinder sig i gråzonen, hvor alkohol fylder mere end de ønsker, men hvor der ikke er tale om egentlig afhængighed. Du behøver ikke sætte en etikette på dig selv for at have ret til at ændre dit forhold til alkohol.\"}}, {\"@type\": \"Question\", \"name\": \"Skal jeg stoppe helt med at drikke?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ikke nødvendigvis. Målet sættes ud fra hvad du ønsker, om det er at drikke mindre, drikke sjældnere eller holde helt op. Hypnoterapi arbejder med at gøre det valg lettere at holde fast i, uanset hvad du sigter efter.\"}}, {\"@type\": \"Question\", \"name\": \"Jeg ved godt jeg drikker for meget. Hvorfor kan jeg ikke bare stoppe?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Fordi alkoholvanen sjældent sidder i beslutningen, men i det underliggende behov den dækker, ofte stress, uro eller en måde at slappe af på. At vide at man drikker for meget ændrer ikke det behov. Hypnoterapi arbejder netop der hvor vanen og behovet sidder.\"}}, {\"@type\": \"Question\", \"name\": \"Hvad hvis jeg har prøvet at stoppe før uden held?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Det er normalt. Tidligere forsøg slår ofte fejl, fordi de bygger på viljestyrke alene, mens det underliggende behov forbliver uberørt. Hypnoterapi adresserer behovet, så det bliver lettere at fastholde forandringen.\"}}, {\"@type\": \"Question\", \"name\": \"Er hypnose nok, eller skal jeg også have anden hjælp?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Det afhænger af dit forbrug. Ved egentlig fysisk afhængighed med abstinenser skal du altid starte med din læge eller et misbrugscenter, da afrusning kan kræve lægelig støtte. Hypnoterapi egner sig bedst til gråzonen og som supplement, ikke som erstatning for medicinsk behandling af svær afhængighed.\"}}]}" }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "MedicalWebPage",
+              name: "Hypnoterapi og alkohol",
+              description: "Drikker du mere end du egentlig ønsker? Hypnoterapi arbejder med behovet bag alkoholen, ikke kun trangen. Diskret og fordomsfrit. Jan Gaarsdal, Birkerød.",
+              url: "https://gaarsdal.net/alkohol",
+              provider: {
+                "@type": "Person",
+                name: "Jan Gaarsdal",
+                url: "https://gaarsdal.net/om",
+                telephone: "+4542807474",
+              },
+            }),
+          }}
         />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
