@@ -104,7 +104,7 @@ export default function KenderDuDetPage() {
     <>
       <Header />
       <Head>
-        <title>Kender du det? Find dit mønster | Hypnoterapi Birkerød - Gratis forsamtale</title>
+        <title>Kender du det? Mønstre og hypnoterapi | Gaarsdal</title>
         <meta name="description" content="Kender du det - bekymringer der ikke stopper, søvn der ikke vil, vaner du ikke kan bryde? Hypnoterapi i Birkerød arbejder der, hvor tankerne ikke når ind." />
         <link rel="canonical" href="https://gaarsdal.net/kender-du-det" />
         <meta property="og:title" content="Kender du det? | Gaarsdal Hypnoterapi Birkerød" />
