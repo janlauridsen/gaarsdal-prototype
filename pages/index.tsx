@@ -235,6 +235,7 @@ export default function Home() {
                 "Præstationspres og mentale blokeringer",
                 "Følelsesmæssige reaktioner, der fylder mere end ønsket",
                 "Afklaring i livssituationer eller overgange",
+                "Bekymring for et barn, der ikke trives",
               ].map((item) => (
                 <div
                   key={item}
