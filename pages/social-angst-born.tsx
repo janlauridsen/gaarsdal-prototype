@@ -157,7 +157,7 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Hvornår skal I søge anden hjælp</h2>
-          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Hvis den sociale angst er invaliderende, barnet isolerer sig markant eller mistrives dybt, skal I inddrage egen læge eller PPR. Hypnoterapi virker godt på afgrænsede sociale angstmønstre, men ved svær angst skal flere fagligheder samarbejde.</p>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Hvis den sociale angst er invaliderende, barnet isolerer sig markant eller mistrives dybt, skal I inddrage egen læge eller PPR, skolens pædagogisk-psykologiske rådgivning. Hypnoterapi virker godt på afgrænsede sociale angstmønstre, men ved svær angst skal flere fagligheder samarbejde.</p>
         </section>
 
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
