@@ -47,7 +47,7 @@ export default function Page() {
                                           "name": "Fra hvilken alder kan et barn gå til hypnoterapi?",
                                           "acceptedAnswer": {
                                                         "@type": "Answer",
-                                                        "text": "Jan arbejder med børn fra 8 år. Under den alder er sproget og fantasien sjældent modne nok til at arbejde med indre billeder på den måde metoden kræver. Er dit barn yngre, handler forsamtalen typisk mere om jer som forældre, og hvad I kan ændre i hverdagen omkring barnet."
+                                                        "text": "Jan arbejder med børn fra 8 år. Det er en praktisk grænse, ikke en skarp aldersgrænse i metoden - det handler om at barnet skal kunne holde fokus i et stykke tid og selv have lyst til at være der. Er dit barn yngre, er du velkommen til at ringe alligevel, så vurderer vi det sammen."
                                           }
                             },
                             {
@@ -181,7 +181,7 @@ export default function Page() {
             {[
               {
                 q: "Fra hvilken alder kan et barn gå til hypnoterapi?",
-                a: "Jan arbejder med børn fra 8 år. Under den alder er sproget og fantasien sjældent modne nok til at arbejde med indre billeder på den måde metoden kræver. Er dit barn yngre, handler forsamtalen typisk mere om jer som forældre, og hvad I kan ændre i hverdagen omkring barnet.",
+                a: "Jan arbejder med børn fra 8 år. Det er en praktisk grænse, ikke en skarp aldersgrænse i metoden - det handler om at barnet skal kunne holde fokus i et stykke tid og selv have lyst til at være der. Er dit barn yngre, er du velkommen til at ringe alligevel, så vurderer vi det sammen.",
               },
               {
                 q: "Skal jeg være med inde i rummet?",
