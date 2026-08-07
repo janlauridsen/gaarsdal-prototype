@@ -35,6 +35,49 @@ export default function Page() {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                            {
+                                          "@type": "Question",
+                                          "name": "Hvornår er det mere end almindelig teenageuro om udseende?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Utilfredshed med sin krop er udbredt i de år og ikke i sig selv alarmerende. Ændrer barnets forhold til mad eller træning sig, trækker det sig fra ting det før gjorde, eller fylder tankerne om kroppen det meste af dagen, skal I kontakte egen læge. Det er ikke noget I skal vurdere selv."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Jeg siger hele tiden til min datter at hun er smuk. Hvorfor preller det af?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Fordi ros bliver sorteret fra af det filter der i forvejen er der. Det er ikke utaknemmelighed, og det er ikke fordi du siger det forkert. Overbevisningen om kroppen sidder under bevidst tænkning og kan ikke nås med ord alene, uanset hvor mange gange de siges."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Handler det ikke bare om sociale medier?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Medierne leverer sammenligningsgrundlaget, men de skaber sjældent selvbilledet alene. To børn kan se det samme feed, og kun det ene tager skade. Forskellen ligger i hvad barnet i forvejen tror om sig selv, og det er dér arbejdet foregår."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Vores barn har en spiseforstyrrelse. Kan hypnoterapi bruges?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Ikke som behandling af spiseforstyrrelsen. Den hører til hos læge og i specialiseret behandling, og det skal være det primære spor. Er I allerede i et behandlingsforløb, kan hypnoterapi i nogle tilfælde supplere — men det aftales med barnets behandler, ikke i stedet for."
+                                          }
+                            }
+              ]
+            }),
+          }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
@@ -130,6 +173,36 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Hvornår skal I søge anden hjælp</h2>
           <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Hvis dit barns kropsutilfredshed ledsages af ændrede spisevaner, vægttab, overdreven motion eller tegn på en spiseforstyrrelse, skal I altid kontakte egen læge. Spiseforstyrrelser hos børn og unge kræver specialiseret, tværfaglig behandling. Hypnoterapi kan i de tilfælde højst være et supplement, ikke den primære indsats.</p>
+        </section>
+
+        {/* FAQ */}
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål om kropsutilfredshed hos børn og unge</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {[
+              {
+                q: "Hvornår er det mere end almindelig teenageuro om udseende?",
+                a: "Utilfredshed med sin krop er udbredt i de år og ikke i sig selv alarmerende. Ændrer barnets forhold til mad eller træning sig, trækker det sig fra ting det før gjorde, eller fylder tankerne om kroppen det meste af dagen, skal I kontakte egen læge. Det er ikke noget I skal vurdere selv.",
+              },
+              {
+                q: "Jeg siger hele tiden til min datter at hun er smuk. Hvorfor preller det af?",
+                a: "Fordi ros bliver sorteret fra af det filter der i forvejen er der. Det er ikke utaknemmelighed, og det er ikke fordi du siger det forkert. Overbevisningen om kroppen sidder under bevidst tænkning og kan ikke nås med ord alene, uanset hvor mange gange de siges.",
+              },
+              {
+                q: "Handler det ikke bare om sociale medier?",
+                a: "Medierne leverer sammenligningsgrundlaget, men de skaber sjældent selvbilledet alene. To børn kan se det samme feed, og kun det ene tager skade. Forskellen ligger i hvad barnet i forvejen tror om sig selv, og det er dér arbejdet foregår.",
+              },
+              {
+                q: "Vores barn har en spiseforstyrrelse. Kan hypnoterapi bruges?",
+                a: "Ikke som behandling af spiseforstyrrelsen. Den hører til hos læge og i specialiseret behandling, og det skal være det primære spor. Er I allerede i et behandlingsforløb, kan hypnoterapi i nogle tilfælde supplere — men det aftales med barnets behandler, ikke i stedet for.",
+              },
+            ].map((item) => (
+              <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>{item.q}</h3>
+                <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>{item.a}</p>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section style={{ marginBottom: "40px" }}>

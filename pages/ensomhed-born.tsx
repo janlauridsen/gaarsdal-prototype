@@ -35,6 +35,49 @@ export default function Page() {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                            {
+                                          "@type": "Question",
+                                          "name": "Skal vores barn ikke bare lære nogle sociale redskaber?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Redskaber hjælper et barn der grundlæggende tror det er værd at kende. Tror barnet det modsatte, bliver teknikkerne noget det udfører uden at tro på dem, og det kan andre børn mærke. Derfor arbejder hypnoterapien med selve overbevisningen frem for med adfærden ovenpå."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Er det ikke bare en fase?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Nogle gange er det. Ensomhed omkring skoleskift, flytning eller et venskab der gik i stykker går ofte over af sig selv. Bliver det ved i måneder, og begynder barnet at trække sig fra ting det før kunne lide, er mønsteret ved at sætte sig, og så er det værd at gøre noget."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Vores barn siger selv at det er ligeglad med ikke at have venner.",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Det er meget almindeligt, og det er sjældent hele sandheden. At sige man er ligeglad er en måde at beskytte sig mod skuffelse. Vi går derfor ikke direkte efter venskaberne, men efter det barnet selv oplever som svært, og det sociale følger ofte med."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Hvad kan vi gøre derhjemme imens?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Mest af alt at lade være med at reparere. Forslag om hvem barnet kunne lege med bekræfter ofte at der er noget galt. Du får konkret at vide hvad der arbejdes med i de opsamlende samtaler, så din støtte trækker samme vej som forløbet."
+                                          }
+                            }
+              ]
+            }),
+          }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
@@ -128,6 +171,36 @@ export default function Page() {
               <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>Book forsamtale</Link>
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>Ring +45 42 80 74 74</a>
             </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål om ensomhed hos børn</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {[
+              {
+                q: "Skal vores barn ikke bare lære nogle sociale redskaber?",
+                a: "Redskaber hjælper et barn der grundlæggende tror det er værd at kende. Tror barnet det modsatte, bliver teknikkerne noget det udfører uden at tro på dem, og det kan andre børn mærke. Derfor arbejder hypnoterapien med selve overbevisningen frem for med adfærden ovenpå.",
+              },
+              {
+                q: "Er det ikke bare en fase?",
+                a: "Nogle gange er det. Ensomhed omkring skoleskift, flytning eller et venskab der gik i stykker går ofte over af sig selv. Bliver det ved i måneder, og begynder barnet at trække sig fra ting det før kunne lide, er mønsteret ved at sætte sig, og så er det værd at gøre noget.",
+              },
+              {
+                q: "Vores barn siger selv at det er ligeglad med ikke at have venner.",
+                a: "Det er meget almindeligt, og det er sjældent hele sandheden. At sige man er ligeglad er en måde at beskytte sig mod skuffelse. Vi går derfor ikke direkte efter venskaberne, men efter det barnet selv oplever som svært, og det sociale følger ofte med.",
+              },
+              {
+                q: "Hvad kan vi gøre derhjemme imens?",
+                a: "Mest af alt at lade være med at reparere. Forslag om hvem barnet kunne lege med bekræfter ofte at der er noget galt. Du får konkret at vide hvad der arbejdes med i de opsamlende samtaler, så din støtte trækker samme vej som forløbet.",
+              },
+            ].map((item) => (
+              <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>{item.q}</h3>
+                <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>{item.a}</p>
+              </div>
+            ))}
           </div>
         </section>
 

@@ -35,6 +35,49 @@ export default function Page() {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                            {
+                                          "@type": "Question",
+                                          "name": "Mobningen er stoppet. Hvorfor har vores barn det stadig dårligt?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Fordi det sjældent er hændelserne der holder barnet fast, men det hjernen konkluderede om sig selv undervejs. De konklusioner forsvinder ikke fordi omgivelserne skifter. Barnet tager dem med ind i nye relationer og fortolker dem gennem dem."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Skal barnet fortælle hele historien igen?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Nej. Barnet behøver ikke genfortælle eller genopleve det der skete for at det kan bearbejdes. Det er en væsentlig forskel fra samtaleterapi, og det er ofte grunden til at børn der har lukket helt i alligevel kan arbejde med det her."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Vi skifter skole. Er det ikke nok?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Det hjælper, og det er tit rigtigt at gøre. Men et nyt klassemiljø ændrer ikke automatisk overbevisningen om at der er noget galt med én. Nogle børn falder til med det samme, andre gentager mønsteret i den nye klasse, fordi de går ind i den med forventningen om at blive valgt fra."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Vores barn blev mobbet for flere år siden. Er det for sent?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Nej. Der er ikke en tidsgrænse, og voksne arbejder med det samme materiale hos Jan. Til gengæld er det som regel lettere jo tættere man er på, fordi overbevisningerne har haft færre år til at blive bekræftet af nye erfaringer."
+                                          }
+                            }
+              ]
+            }),
+          }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
@@ -128,6 +171,36 @@ export default function Page() {
               <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>Book forsamtale</Link>
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>Ring +45 42 80 74 74</a>
             </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål om eftervirkninger af mobning</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {[
+              {
+                q: "Mobningen er stoppet. Hvorfor har vores barn det stadig dårligt?",
+                a: "Fordi det sjældent er hændelserne der holder barnet fast, men det hjernen konkluderede om sig selv undervejs. De konklusioner forsvinder ikke fordi omgivelserne skifter. Barnet tager dem med ind i nye relationer og fortolker dem gennem dem.",
+              },
+              {
+                q: "Skal barnet fortælle hele historien igen?",
+                a: "Nej. Barnet behøver ikke genfortælle eller genopleve det der skete for at det kan bearbejdes. Det er en væsentlig forskel fra samtaleterapi, og det er ofte grunden til at børn der har lukket helt i alligevel kan arbejde med det her.",
+              },
+              {
+                q: "Vi skifter skole. Er det ikke nok?",
+                a: "Det hjælper, og det er tit rigtigt at gøre. Men et nyt klassemiljø ændrer ikke automatisk overbevisningen om at der er noget galt med én. Nogle børn falder til med det samme, andre gentager mønsteret i den nye klasse, fordi de går ind i den med forventningen om at blive valgt fra.",
+              },
+              {
+                q: "Vores barn blev mobbet for flere år siden. Er det for sent?",
+                a: "Nej. Der er ikke en tidsgrænse, og voksne arbejder med det samme materiale hos Jan. Til gengæld er det som regel lettere jo tættere man er på, fordi overbevisningerne har haft færre år til at blive bekræftet af nye erfaringer.",
+              },
+            ].map((item) => (
+              <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>{item.q}</h3>
+                <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>{item.a}</p>
+              </div>
+            ))}
           </div>
         </section>
 

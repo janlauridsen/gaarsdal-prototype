@@ -35,6 +35,49 @@ export default function Page() {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                            {
+                                          "@type": "Question",
+                                          "name": "Kan man ændre et selvbillede der har siddet i årevis?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Ja. Overbevisninger om egen værdi er ikke medfødte, de er formet af erfaringer og de historier hjernen har lavet undervejs. Forskningen viser at selvbilledet er formbart. Det tager tid, men det er ikke fastlåst fordi det har været der længe."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Vores barn siger 'jeg er bare dum'. Skal vi modsige det?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Direkte modsigelse rammer sjældent, fordi udsagnet ikke er en påstand barnet kan tale sig fra. Det virker som regel bedre at spørge ind end at rette. Hvad du konkret kan sige i de situationer, får du med fra de opsamlende samtaler."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Er det ikke bare teenageår?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Der er en normal usikkerhed i de år, og den går over. Det der ikke går over af sig selv er et grundlæggende billede af sig selv som utilstrækkelig, hvor ros bliver sorteret fra og gode oplevelser regnes som held. Det er dér forskellen ligger."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Hvornår er det mere end lavt selvværd?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Hvis der kommer vedvarende tristhed, selvskade, ændringer i forholdet til mad, eller barnet siger noget om ikke at ville være her, skal I kontakte egen læge med det samme. Det er ikke noget der skal afventes eller vurderes hjemme."
+                                          }
+                            }
+              ]
+            }),
+          }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
@@ -128,6 +171,36 @@ export default function Page() {
               <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>Book forsamtale</Link>
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>Ring +45 42 80 74 74</a>
             </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål om selvbillede hos børn og unge</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {[
+              {
+                q: "Kan man ændre et selvbillede der har siddet i årevis?",
+                a: "Ja. Overbevisninger om egen værdi er ikke medfødte, de er formet af erfaringer og de historier hjernen har lavet undervejs. Forskningen viser at selvbilledet er formbart. Det tager tid, men det er ikke fastlåst fordi det har været der længe.",
+              },
+              {
+                q: "Vores barn siger 'jeg er bare dum'. Skal vi modsige det?",
+                a: "Direkte modsigelse rammer sjældent, fordi udsagnet ikke er en påstand barnet kan tale sig fra. Det virker som regel bedre at spørge ind end at rette. Hvad du konkret kan sige i de situationer, får du med fra de opsamlende samtaler.",
+              },
+              {
+                q: "Er det ikke bare teenageår?",
+                a: "Der er en normal usikkerhed i de år, og den går over. Det der ikke går over af sig selv er et grundlæggende billede af sig selv som utilstrækkelig, hvor ros bliver sorteret fra og gode oplevelser regnes som held. Det er dér forskellen ligger.",
+              },
+              {
+                q: "Hvornår er det mere end lavt selvværd?",
+                a: "Hvis der kommer vedvarende tristhed, selvskade, ændringer i forholdet til mad, eller barnet siger noget om ikke at ville være her, skal I kontakte egen læge med det samme. Det er ikke noget der skal afventes eller vurderes hjemme.",
+              },
+            ].map((item) => (
+              <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>{item.q}</h3>
+                <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>{item.a}</p>
+              </div>
+            ))}
           </div>
         </section>
 

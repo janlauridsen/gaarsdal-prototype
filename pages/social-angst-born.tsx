@@ -35,6 +35,49 @@ export default function Page() {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                            {
+                                          "@type": "Question",
+                                          "name": "Er vores barn bare genert?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Generthed er et temperament, og det behøver ikke laves om. Social angst er noget andet: barnet vil gerne være med, men holder sig tilbage af frygt for hvad de andre tænker, og bagefter gennemgår det situationen igen og igen. Det er lidelsen ved det, ikke tilbageholdenheden, der er signalet."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Hjælper det ikke at melde barnet til flere aktiviteter?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Sjældent alene. Flere sociale situationer giver ikke automatisk flere positive erfaringer, hvis barnet går ind i dem med en forventning om at blive vurderet. Så bliver aktiviteterne endnu et sted hvor overbevisningen bekræftes."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Vores barn klarer sig fint i skolen, men har ingen venner.",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Det er et almindeligt billede. Mange børn med social angst fungerer godt i strukturerede situationer, hvor det er tydeligt hvad man skal, og går i stå i frikvarteret hvor det ikke er. At det går godt fagligt betyder ikke at der ikke er noget at arbejde med."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Vi går allerede hos psykolog eller PPR. Kan vi bruge begge dele?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Ja, og ved svær social angst bør flere fagligheder samarbejde. Hypnoterapi står bedst alene ved afgrænsede mønstre. Sig i forsamtalen hvad I ellers har gang i, så tilrettelægges det derefter i stedet for at trække i hver sin retning."
+                                          }
+                            }
+              ]
+            }),
+          }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
@@ -128,6 +171,36 @@ export default function Page() {
               <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>Book forsamtale</Link>
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>Ring +45 42 80 74 74</a>
             </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål om social angst hos børn og unge</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {[
+              {
+                q: "Er vores barn bare genert?",
+                a: "Generthed er et temperament, og det behøver ikke laves om. Social angst er noget andet: barnet vil gerne være med, men holder sig tilbage af frygt for hvad de andre tænker, og bagefter gennemgår det situationen igen og igen. Det er lidelsen ved det, ikke tilbageholdenheden, der er signalet.",
+              },
+              {
+                q: "Hjælper det ikke at melde barnet til flere aktiviteter?",
+                a: "Sjældent alene. Flere sociale situationer giver ikke automatisk flere positive erfaringer, hvis barnet går ind i dem med en forventning om at blive vurderet. Så bliver aktiviteterne endnu et sted hvor overbevisningen bekræftes.",
+              },
+              {
+                q: "Vores barn klarer sig fint i skolen, men har ingen venner.",
+                a: "Det er et almindeligt billede. Mange børn med social angst fungerer godt i strukturerede situationer, hvor det er tydeligt hvad man skal, og går i stå i frikvarteret hvor det ikke er. At det går godt fagligt betyder ikke at der ikke er noget at arbejde med.",
+              },
+              {
+                q: "Vi går allerede hos psykolog eller PPR. Kan vi bruge begge dele?",
+                a: "Ja, og ved svær social angst bør flere fagligheder samarbejde. Hypnoterapi står bedst alene ved afgrænsede mønstre. Sig i forsamtalen hvad I ellers har gang i, så tilrettelægges det derefter i stedet for at trække i hver sin retning.",
+              },
+            ].map((item) => (
+              <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>{item.q}</h3>
+                <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>{item.a}</p>
+              </div>
+            ))}
           </div>
         </section>
 

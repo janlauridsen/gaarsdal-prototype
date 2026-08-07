@@ -35,6 +35,49 @@ export default function Page() {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                            {
+                                          "@type": "Question",
+                                          "name": "Vores barn får gode karakterer. Kan det så have præstationsangst?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Ja, og det er meget almindeligt. Dygtige børn kompenserer ofte ved at forberede sig i timevis, og resultatet skjuler hvad det koster. Præstationsangst måles ikke på karakteren, men på hvad der sker i kroppen op til og under en præstation."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Vi har eksamen om tre uger. Er det for sent at starte?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Ikke nødvendigvis. Akut eksamensangst med en kendt deadline er noget af det der reagerer hurtigst, fordi situationen er afgrænset. Om det er realistisk for netop jeres barn, siger Jan i forsamtalen frem for bagefter."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Er det ikke sundt at være lidt nervøs?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Jo. Et vist aktiveringsniveau skærper præstationen. Problemet opstår når nervesystemet går i fuldt alarmberedskab, for så sendes blod væk fra den tænkende del af hjernen, og barnet kan ikke huske hvad det ved. Det er ikke nervøsitet, det er en blokering."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Presset kommer fra skolen, ikke fra os. Kan hypnoterapi lave om på det?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Nej, og det skal det heller ikke forsøge. Er presset primært skabt af skolens eller hjemmets krav, er det rammerne der skal justeres først. Hypnoterapi kan derefter hjælpe barnet med sin reaktion — men den kan ikke gøre urimelige krav rimelige."
+                                          }
+                            }
+              ]
+            }),
+          }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
@@ -128,6 +171,36 @@ export default function Page() {
               <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>Book forsamtale</Link>
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>Ring +45 42 80 74 74</a>
             </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål om præstationsangst hos børn og unge</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {[
+              {
+                q: "Vores barn får gode karakterer. Kan det så have præstationsangst?",
+                a: "Ja, og det er meget almindeligt. Dygtige børn kompenserer ofte ved at forberede sig i timevis, og resultatet skjuler hvad det koster. Præstationsangst måles ikke på karakteren, men på hvad der sker i kroppen op til og under en præstation.",
+              },
+              {
+                q: "Vi har eksamen om tre uger. Er det for sent at starte?",
+                a: "Ikke nødvendigvis. Akut eksamensangst med en kendt deadline er noget af det der reagerer hurtigst, fordi situationen er afgrænset. Om det er realistisk for netop jeres barn, siger Jan i forsamtalen frem for bagefter.",
+              },
+              {
+                q: "Er det ikke sundt at være lidt nervøs?",
+                a: "Jo. Et vist aktiveringsniveau skærper præstationen. Problemet opstår når nervesystemet går i fuldt alarmberedskab, for så sendes blod væk fra den tænkende del af hjernen, og barnet kan ikke huske hvad det ved. Det er ikke nervøsitet, det er en blokering.",
+              },
+              {
+                q: "Presset kommer fra skolen, ikke fra os. Kan hypnoterapi lave om på det?",
+                a: "Nej, og det skal det heller ikke forsøge. Er presset primært skabt af skolens eller hjemmets krav, er det rammerne der skal justeres først. Hypnoterapi kan derefter hjælpe barnet med sin reaktion — men den kan ikke gøre urimelige krav rimelige.",
+              },
+            ].map((item) => (
+              <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>{item.q}</h3>
+                <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>{item.a}</p>
+              </div>
+            ))}
           </div>
         </section>
 
