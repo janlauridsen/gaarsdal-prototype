@@ -165,7 +165,7 @@ export default function PraestationsangstPage() {
 
         <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Vigtigt at vide</h2>
-          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Hypnoterapi er et supplement til — ikke en erstatning for — lægelig eller psykologisk behandling ved svær angstlidelse. Ved panikangst, generaliseret angst der lammet hverdagen, eller mistanke om PTSD, bør du starte med at tale med din læge.</p>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Hypnoterapi er et supplement til - ikke en erstatning for - lægelig eller psykologisk behandling ved svær angstlidelse. Ved panikangst, generaliseret angst der lammet hverdagen, eller mistanke om PTSD, bør du starte med at tale med din læge.</p>
         </section>
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <div style={{ flex: 1 }}>

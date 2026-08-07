@@ -11,7 +11,7 @@ export default function IbsSpaendingerPage() {
         <title>IBS og spændinger, hypnoterapi Birkerød | Gaarsdal</title>
         <meta name="description" content="IBS og kroniske spændinger opstår ofte i nervesystemet, ikke i organet. Hypnoterapi arbejder med stress-tarmsignalet og muskelspændinger. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/ibs-spaendinger" />
-        <meta property="og:title" content="IBS og spændinger — hypnoterapi | Gaarsdal Birkerød" />
+        <meta property="og:title" content="IBS og spændinger - hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="IBS og kroniske spændinger er kroppen der taler. Hypnoterapi arbejder med det nervesystem der driver symptomerne." />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/ibs-spaendinger" />
@@ -23,7 +23,7 @@ export default function IbsSpaendingerPage() {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "MedicalWebPage",
-              name: "IBS, maveproblemer og spændinger — hypnoterapi",
+              name: "IBS, maveproblemer og spændinger - hypnoterapi",
               description: "Hypnoterapi til IBS og kroniske spændinger i Birkerød. Jan Gaarsdal arbejder med det autonome nervesystem der driver mave- og muskelreaktioner.",
               url: "https://gaarsdal.net/ibs-spaendinger",
               provider: {
@@ -37,7 +37,7 @@ export default function IbsSpaendingerPage() {
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod IBS?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Gut-directed hypnotherapy er en af de mest veldokumenterede ikke-medicinske behandlinger ved IBS. Den arbejder direkte med kommunikationen mellem hjerne og tarm og reducerer både symptomhyppighed og intensitet.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnoterapi hjælpe mod kroniske spændinger?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Kroniske spændinger i nakke, skuldre, kæbe og ryg er ofte et nervesystem i vedvarende beredskab. Hypnoterapi arbejder med det autonome nervesystem og de mønstre der fastholder musklerne i spænding.\"}}, {\"@type\": \"Question\", \"name\": \"Jeg har fået konstateret IBS af min læge — hvad kan hypnose tilføje?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Medicinsk behandling af IBS fokuserer typisk på symptomlindring. Hypnoterapi arbejder med årsagen til at tarmen overreagerer: et nervesystem der sender for mange stresssignaler til mave-tarm-kanalen. Mange oplever vedvarende bedring frem for blot symptomlindring.\"}}, {\"@type\": \"Question\", \"name\": \"Hvad er gut-directed hypnotherapy?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Gut-directed hypnotherapy er en specifik tilgang til hypnoterapi ved IBS, dokumenteret i adskillige kliniske studier. Den kombinerer den hypnotiske tilstand med imagery og suggestioner rettet direkte mod tarmens reaktioner og nerve-tarmsignalet.\"}}]}" }}
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod IBS?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Gut-directed hypnotherapy er en af de mest veldokumenterede ikke-medicinske behandlinger ved IBS. Den arbejder direkte med kommunikationen mellem hjerne og tarm og reducerer både symptomhyppighed og intensitet.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnoterapi hjælpe mod kroniske spændinger?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Kroniske spændinger i nakke, skuldre, kæbe og ryg er ofte et nervesystem i vedvarende beredskab. Hypnoterapi arbejder med det autonome nervesystem og de mønstre der fastholder musklerne i spænding.\"}}, {\"@type\": \"Question\", \"name\": \"Jeg har fået konstateret IBS af min læge - hvad kan hypnose tilføje?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Medicinsk behandling af IBS fokuserer typisk på symptomlindring. Hypnoterapi arbejder med årsagen til at tarmen overreagerer: et nervesystem der sender for mange stresssignaler til mave-tarm-kanalen. Mange oplever vedvarende bedring frem for blot symptomlindring.\"}}, {\"@type\": \"Question\", \"name\": \"Hvad er gut-directed hypnotherapy?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Gut-directed hypnotherapy er en specifik tilgang til hypnoterapi ved IBS, dokumenteret i adskillige kliniske studier. Den kombinerer den hypnotiske tilstand med imagery og suggestioner rettet direkte mod tarmens reaktioner og nerve-tarmsignalet.\"}}]}" }}
         />
       </Head>
 
@@ -52,7 +52,7 @@ export default function IbsSpaendingerPage() {
             Mavepine der ikke har en forklaring. Nakken der altid er stram. IBS-anfald der ødelægger planer. Kæben der spænder om natten. Lægerne siger der ikke er noget galt fysisk. Men det gør ondt, og det påvirker din hverdag, dit arbejde og dit liv.
           </p>
           <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>
-            Disse symptomer er ikke i dit hoved. De er i dit nervesystem — og nervesystemet kan påvirkes.
+            Disse symptomer er ikke i dit hoved. De er i dit nervesystem - og nervesystemet kan påvirkes.
           </p>
         </section>
 
@@ -63,15 +63,15 @@ export default function IbsSpaendingerPage() {
             {[
               {
                 titel: "Tarmen er en anden hjerne",
-                tekst: "Mave-tarm-kanalen har sit eget nervesystem — det enteriske nervesystem — med over 100 millioner neuroner. Det kommunikerer konstant med hjernen via vagusnerven. Ved IBS og stressrelaterede maveproblemer er denne kommunikation overaktiveret: tarmen overreagerer på signaler der normalt filtreres fra.",
+                tekst: "Mave-tarm-kanalen har sit eget nervesystem - det enteriske nervesystem - med over 100 millioner neuroner. Det kommunikerer konstant med hjernen via vagusnerven. Ved IBS og stressrelaterede maveproblemer er denne kommunikation overaktiveret: tarmen overreagerer på signaler der normalt filtreres fra.",
               },
               {
                 titel: "Spændinger er fastfrosset beredskab",
-                tekst: "Kroniske muskelspændinger er et nervesystem der ikke slipper beredskabet ned. Musklerne forbliver i en let aktiveret tilstand, fordi nervesystemet fortolker hverdagen som en konstant, lav trussel. Det er ikke viljestyret — det er automatisk og kan ændres.",
+                tekst: "Kroniske muskelspændinger er et nervesystem der ikke slipper beredskabet ned. Musklerne forbliver i en let aktiveret tilstand, fordi nervesystemet fortolker hverdagen som en konstant, lav trussel. Det er ikke viljestyret - det er automatisk og kan ændres.",
               },
               {
                 titel: "Stress og krop er direkte forbundne",
-                tekst: "Kortisol og adrenalin påvirker direkte tarmens bevægelighed og muskeltonussen i hele kroppen. Mange oplever IBS-anfald og spændingsopblussen i pressede perioder — ikke som tilfældig sammenfald, men som en direkte biologisk reaktion.",
+                tekst: "Kortisol og adrenalin påvirker direkte tarmens bevægelighed og muskeltonussen i hele kroppen. Mange oplever IBS-anfald og spændingsopblussen i pressede perioder - ikke som tilfældig sammenfald, men som en direkte biologisk reaktion.",
               },
             ].map((k) => (
               <div key={k.titel} style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
@@ -100,13 +100,13 @@ export default function IbsSpaendingerPage() {
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør ved IBS og spændinger</h2>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
-            Ved IBS arbejder hypnoterapi direkte med kommunikationen mellem hjerne og tarm. I den hypnotiske tilstand bruges imagery og suggestioner der retter sig mod tarmens reaktioner — beroligende nerveaktiviteten og reducerende den sensoriske overfølsomhed der giver smerter og ubehag.
+            Ved IBS arbejder hypnoterapi direkte med kommunikationen mellem hjerne og tarm. I den hypnotiske tilstand bruges imagery og suggestioner der retter sig mod tarmens reaktioner - beroligende nerveaktiviteten og reducerende den sensoriske overfølsomhed der giver smerter og ubehag.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
-            Ved kroniske spændinger arbejdes der med det autonome nervesystem — at bringe kroppen ud af det vedvarende beredskab. Mange oplever at spændinger i nakke, skuldre og kæbe slipper gradvist, efterhånden som nervesystemet lærer at fortolke hverdagen som sikker.
+            Ved kroniske spændinger arbejdes der med det autonome nervesystem - at bringe kroppen ud af det vedvarende beredskab. Mange oplever at spændinger i nakke, skuldre og kæbe slipper gradvist, efterhånden som nervesystemet lærer at fortolke hverdagen som sikker.
           </p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>
-            IBS og spændinger optræder ofte sammen — og arbejdet med dem er ikke adskilt. Et nervesystem i ro påvirker begge.
+            IBS og spændinger optræder ofte sammen - og arbejdet med dem er ikke adskilt. Et nervesystem i ro påvirker begge.
           </p>
         </section>
 
@@ -116,19 +116,19 @@ export default function IbsSpaendingerPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>IBS med angst for anfald</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du planlægger din dag ud fra toiletters tilgængelighed. Sociale situationer og transport giver ekstra angst. Selve angsten for et anfald kan udløse anfaldet. Hypnoterapi bryder denne cirkel ved at arbejde med begge dele — tarmreaktionen og angsten for den.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du planlægger din dag ud fra toiletters tilgængelighed. Sociale situationer og transport giver ekstra angst. Selve angsten for et anfald kan udløse anfaldet. Hypnoterapi bryder denne cirkel ved at arbejde med begge dele - tarmreaktionen og angsten for den.</p>
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Nakke, skuldre og kæbespændinger</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du vågner om morgenen med stiv nakke. Din kæbe er presset om natten. Skuldrene sidder oppe ved ørerne. Massage hjælper kortvarigt. Spændingerne kommer tilbage. Det er fordi årsagen — et nervesystem i beredskab — ikke er adresseret.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du vågner om morgenen med stiv nakke. Din kæbe er presset om natten. Skuldrene sidder oppe ved ørerne. Massage hjælper kortvarigt. Spændingerne kommer tilbage. Det er fordi årsagen - et nervesystem i beredskab - ikke er adresseret.</p>
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Mavepine uden medicinsk forklaring</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Alle undersøgelser er normale. Lægerne finder intet. Men du har ondt, og det er virkeligt. Funktionelle mavegener — pine uden strukturel årsag — er typisk nervesystemsrelaterede og reagerer godt på hypnoterapeutisk arbejde.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Alle undersøgelser er normale. Lægerne finder intet. Men du har ondt, og det er virkeligt. Funktionelle mavegener - pine uden strukturel årsag - er typisk nervesystemsrelaterede og reagerer godt på hypnoterapeutisk arbejde.</p>
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Symptomerne forværres i pres-perioder</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du ved godt at stress spiller ind. Men at vide det ændrer ikke symptomerne. Hypnoterapi arbejder ikke med din bevidste viden om stress — det arbejder med den automatiske reaktion der sker, inden du når at tænke over det.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du ved godt at stress spiller ind. Men at vide det ændrer ikke symptomerne. Hypnoterapi arbejder ikke med din bevidste viden om stress - det arbejder med den automatiske reaktion der sker, inden du når at tænke over det.</p>
             </div>
           </div>
         </section>
@@ -162,7 +162,7 @@ export default function IbsSpaendingerPage() {
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
           <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>
-            Jan arbejder med IBS og kroniske spændinger som et nervesystemsfænomen. Han anvender gut-directed hypnotherapy ved IBS og tilpasser tilgangen til det specifikke mønster — om det primært er tarm, muskulatur eller en kombination.
+            Jan arbejder med IBS og kroniske spændinger som et nervesystemsfænomen. Han anvender gut-directed hypnotherapy ved IBS og tilpasser tilgangen til det specifikke mønster - om det primært er tarm, muskulatur eller en kombination.
           </p>
           <div style={{ padding: "12px 16px", background: "#f0f4f8", borderRadius: "6px", display: "inline-block" }}>
             <p style={{ fontSize: "14px", fontWeight: 500, color: "#333", margin: "0 0 8px" }}>
@@ -190,10 +190,10 @@ export default function IbsSpaendingerPage() {
               },
               {
                 q: "Kan hypnoterapi hjælpe mod kroniske spændinger?",
-                a: "Ja. Kroniske spændinger i nakke, skuldre, kæbe og ryg er ofte et nervesystem i vedvarende beredskab. Hypnoterapi arbejder med det autonome nervesystem og de mønstre der fastholder musklerne i spænding — ikke symptomerne, men årsagen.",
+                a: "Ja. Kroniske spændinger i nakke, skuldre, kæbe og ryg er ofte et nervesystem i vedvarende beredskab. Hypnoterapi arbejder med det autonome nervesystem og de mønstre der fastholder musklerne i spænding - ikke symptomerne, men årsagen.",
               },
               {
-                q: "Jeg har fået konstateret IBS af min læge — hvad kan hypnose tilføje?",
+                q: "Jeg har fået konstateret IBS af min læge - hvad kan hypnose tilføje?",
                 a: "Medicinsk behandling af IBS fokuserer typisk på symptomlindring. Hypnoterapi arbejder med årsagen til at tarmen overreagerer: et nervesystem der sender for mange stresssignaler til mave-tarm-kanalen. Mange oplever vedvarende bedring frem for blot symptomlindring.",
               },
               {
@@ -202,7 +202,7 @@ export default function IbsSpaendingerPage() {
               },
               {
                 q: "Kan hypnoterapi hjælpe, selv om mine spændinger er fysisk begrundede?",
-                a: "Ofte er sondringen uklar. Kroniske spændinger har typisk både fysiske og nervesystemsmæssige komponenter. Hypnoterapi adresserer nervesystemskomponenten — og selv ved primært fysiske årsager kan reduktion af beredskabsniveauet give merkbar lindring.",
+                a: "Ofte er sondringen uklar. Kroniske spændinger har typisk både fysiske og nervesystemsmæssige komponenter. Hypnoterapi adresserer nervesystemskomponenten - og selv ved primært fysiske årsager kan reduktion af beredskabsniveauet give merkbar lindring.",
               },
             ].map((item) => (
               <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>

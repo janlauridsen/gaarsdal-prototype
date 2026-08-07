@@ -73,11 +73,11 @@ export default function Page() {
           <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Du ved godt at du drikker for meget. Du har måske endda regnet på genstandene og lovet dig selv at skære ned. Men det ændrer sjældent noget, for vanen sidder ikke i det du ved, men i det behov alkoholen dækker, og i de automatiske reaktioner der udløses af bestemte triggere. Det er der hypnoterapi arbejder.</p>
         </section>
 
-        {/* ANONYM SAMTALE — AI-assistent */}
+        {/* ANONYM SAMTALE - AI-assistent */}
         <section style={{ marginBottom: "60px" }}>
-          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "10px" }}>Undersøg det her — anonymt og fordomsfrit</h2>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "10px" }}>Undersøg det her - anonymt og fordomsfrit</h2>
           <p style={{ fontSize: "15px", color: "#666", marginBottom: "24px", maxWidth: "700px" }}>
-            Er du i tvivl om hvor du står? Her kan du skrive frit om dit forhold til alkohol og få et nuanceret modspil. Ingen registrering, ingen vurdering — bare et rum til at tænke højt og forstå dit eget mønster bedre.
+            Er du i tvivl om hvor du står? Her kan du skrive frit om dit forhold til alkohol og få et nuanceret modspil. Ingen registrering, ingen vurdering - bare et rum til at tænke højt og forstå dit eget mønster bedre.
           </p>
           <AlcoholChat />
         </section>

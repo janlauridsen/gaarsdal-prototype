@@ -47,7 +47,7 @@ export default function Page() {
                                           "name": "Kan hypnoterapi få mit barn til at bruge mindre skærm?",
                                           "acceptedAnswer": {
                                                         "@type": "Answer",
-                                                        "text": "Ikke som fjernbetjening. Hypnoterapi arbejder med behovet bag brugen — anerkendelse, tilhørsforhold eller flugt fra noget ubehageligt. Bliver det behov mødt andre steder, falder skærmtiden som regel af sig selv. Går man direkte efter timerne uden at røre behovet, flytter det bare form."
+                                                        "text": "Ikke som fjernbetjening. Hypnoterapi arbejder med behovet bag brugen - anerkendelse, tilhørsforhold eller flugt fra noget ubehageligt. Bliver det behov mødt andre steder, falder skærmtiden som regel af sig selv. Går man direkte efter timerne uden at røre behovet, flytter det bare form."
                                           }
                             },
                             {
@@ -63,7 +63,7 @@ export default function Page() {
                                           "name": "Mit barn synes ikke selv det er et problem.",
                                           "acceptedAnswer": {
                                                         "@type": "Answer",
-                                                        "text": "Det er meget almindeligt, og det udelukker ikke et forløb. Men det ændrer hvor man starter. Er der ingen egen motivation, arbejder vi sjældent direkte med skærmen. Vi arbejder med det barnet selv oplever som svært — dårlig søvn, uro, det med at sammenligne sig — og skærmen kommer ind ad den vej."
+                                                        "text": "Det er meget almindeligt, og det udelukker ikke et forløb. Men det ændrer hvor man starter. Er der ingen egen motivation, arbejder vi sjældent direkte med skærmen. Vi arbejder med det barnet selv oplever som svært - dårlig søvn, uro, det med at sammenligne sig - og skærmen kommer ind ad den vej."
                                           }
                             },
                             {
@@ -182,7 +182,7 @@ export default function Page() {
             {[
               {
                 q: "Kan hypnoterapi få mit barn til at bruge mindre skærm?",
-                a: "Ikke som fjernbetjening. Hypnoterapi arbejder med behovet bag brugen — anerkendelse, tilhørsforhold eller flugt fra noget ubehageligt. Bliver det behov mødt andre steder, falder skærmtiden som regel af sig selv. Går man direkte efter timerne uden at røre behovet, flytter det bare form.",
+                a: "Ikke som fjernbetjening. Hypnoterapi arbejder med behovet bag brugen - anerkendelse, tilhørsforhold eller flugt fra noget ubehageligt. Bliver det behov mødt andre steder, falder skærmtiden som regel af sig selv. Går man direkte efter timerne uden at røre behovet, flytter det bare form.",
               },
               {
                 q: "Skal vi indføre forbud imens?",
@@ -190,7 +190,7 @@ export default function Page() {
               },
               {
                 q: "Mit barn synes ikke selv det er et problem.",
-                a: "Det er meget almindeligt, og det udelukker ikke et forløb. Men det ændrer hvor man starter. Er der ingen egen motivation, arbejder vi sjældent direkte med skærmen. Vi arbejder med det barnet selv oplever som svært — dårlig søvn, uro, det med at sammenligne sig — og skærmen kommer ind ad den vej.",
+                a: "Det er meget almindeligt, og det udelukker ikke et forløb. Men det ændrer hvor man starter. Er der ingen egen motivation, arbejder vi sjældent direkte med skærmen. Vi arbejder med det barnet selv oplever som svært - dårlig søvn, uro, det med at sammenligne sig - og skærmen kommer ind ad den vej.",
               },
               {
                 q: "Er skærmafhængighed en rigtig diagnose?",

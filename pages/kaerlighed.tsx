@@ -17,7 +17,7 @@ export default function KaerlighedPage() {
         <meta property="og:url" content="https://gaarsdal.net/kaerlighed" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Kærlighed og tilknytningsmønstre — hypnoterapi", description: "Hypnoterapi til tilknytningsmønstre og relationsvanskeligheder i Birkerød. Jan Gaarsdal arbejder med de automatiske reaktioner der holder folk tilbage fra kærlighed.", url: "https://gaarsdal.net/kaerlighed", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Kærlighed og tilknytningsmønstre - hypnoterapi", description: "Hypnoterapi til tilknytningsmønstre og relationsvanskeligheder i Birkerød. Jan Gaarsdal arbejder med de automatiske reaktioner der holder folk tilbage fra kærlighed.", url: "https://gaarsdal.net/kaerlighed", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: "{\"@context\":\"https://schema.org\",\"@type\":\"FAQPage\",\"mainEntity\":[{\"@type\":\"Question\",\"name\":\"Kan hypnoterapi hjælpe mig med at finde kærlighed?\",\"acceptedAnswer\":{\"@type\":\"Answer\",\"text\":\"Ja, men ikke ved at give dig dating-tips. Hypnoterapi arbejder med de grundindstillinger der ubevidst styrer hvem du tiltrækkes af, hvordan du reagerer på nærhed, og om du tør åbne dig. Når mønsteret ændres, møder du mennesker som en anden version af dig selv.\"}},{\"@type\":\"Question\",\"name\":\"Hvorfor tiltrækkes jeg altid af de forkerte?\",\"acceptedAnswer\":{\"@type\":\"Answer\",\"text\":\"Det er sjældent tilfældigt. Vi tiltrækkes ofte af det velkendte, også når det velkendte er usundt. Mønsteret er typisk formet af tidlige relationer og kører automatisk under bevidst tænkning. Hypnoterapi arbejder netop der hvor mønsteret sidder.\"}},{\"@type\":\"Question\",\"name\":\"Jeg har læst om tilknytningsmønstre. Hvorfor ændrer det ikke noget?\",\"acceptedAnswer\":{\"@type\":\"Answer\",\"text\":\"Fordi indsigt og forandring er to forskellige ting. Du kan godt vide at du har et ængsteligt eller undvigende mønster og alligevel reagere præcis samme måde når det gælder. Reaktionen sidder ikke i det du ved, men i det der reagerer hurtigere end tanken.\"}},{\"@type\":\"Question\",\"name\":\"Kan hypnose hjælpe efter et svært brud?\",\"acceptedAnswer\":{\"@type\":\"Answer\",\"text\":\"Ja. Et brud kan efterlade mistillid, frygt for at blive såret igen og mure der holder nye mennesker ude. Hypnoterapi arbejder med de beskyttelsesreaktioner, så du kan åbne dig igen uden at gentage fortiden.\"}},{\"@type\":\"Question\",\"name\":\"Hjælper det mod nervøsitet og dating-angst?\",\"acceptedAnswer\":{\"@type\":\"Answer\",\"text\":\"Ja. Nervøsitet på dates, blokering og det at ikke kunne være sig selv er ofte en stressrespons drevet af frygt for afvisning. Hypnoterapi ændrer den automatiske reaktion, så du kan være til stede og dig selv.\"}}]}" }} />
       </Head>
 
@@ -25,18 +25,18 @@ export default function KaerlighedPage() {
 
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Du længes efter kærlighed, men noget i dig holder igen</h1>
-          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Du møder mennesker, men det fører aldrig til noget. Eller du finder nogen, og så gentager det samme mønster sig. Du forstår det ikke — for du vil jo gerne. Alligevel ender du det samme sted igen og igen.</p>
-          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Det handler sjældent om at møde de rigtige. Det handler om de grundindstillinger der ubevidst styrer hvem du tiltrækkes af — og hvad der sker i dig, når nogen kommer tæt på.</p>
+          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Du møder mennesker, men det fører aldrig til noget. Eller du finder nogen, og så gentager det samme mønster sig. Du forstår det ikke - for du vil jo gerne. Alligevel ender du det samme sted igen og igen.</p>
+          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Det handler sjældent om at møde de rigtige. Det handler om de grundindstillinger der ubevidst styrer hvem du tiltrækkes af - og hvad der sker i dig, når nogen kommer tæt på.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "12px" }}>Mønstrene der styrer i det skjulte</h2>
-          <p style={{ fontSize: "15px", color: "#666", marginBottom: "24px", maxWidth: "700px" }}>Tilknytningsmønstre er ikke personlighedstyper, men reguleringsstrategier — strategier dit nervesystem lærte tidligt for at sikre nærhed og undgå smerte. De kører automatisk i voksenlivet, hurtigere end den bevidste tanke.</p>
+          <p style={{ fontSize: "15px", color: "#666", marginBottom: "24px", maxWidth: "700px" }}>Tilknytningsmønstre er ikke personlighedstyper, men reguleringsstrategier - strategier dit nervesystem lærte tidligt for at sikre nærhed og undgå smerte. De kører automatisk i voksenlivet, hurtigere end den bevidste tanke.</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
             {[
-              { titel: "Det ængstelige mønster", tekst: "Frygt for at blive forladt fører til konstant overvågning af relationen, overfortolkning af små signaler og svært ved at falde til ro uden bekræftelse. Barnet lærte: jeg får kun kontakt hvis jeg kæmper for den. Det er ikke svaghed — det er en indlært reguleringsstrategi." },
+              { titel: "Det ængstelige mønster", tekst: "Frygt for at blive forladt fører til konstant overvågning af relationen, overfortolkning af små signaler og svært ved at falde til ro uden bekræftelse. Barnet lærte: jeg får kun kontakt hvis jeg kæmper for den. Det er ikke svaghed - det er en indlært reguleringsstrategi." },
               { titel: "Det undvigende mønster", tekst: "Når nærhed bliver for tæt, trækker du dig. Du nedtoner egne behov, holder følelser på afstand og mister interessen præcis når det bliver alvorligt. Barnet lærte: jeg må klare mig selv, for mine behov bliver ikke mødt. Det er en overlevelsestrategi der engang var nødvendig." },
-              { titel: "De gentagne mønstre", tekst: "Du tiltrækkes af de samme forkerte typer, eller skubber de rigtige væk. Det velkendte føles trygt, selv når det er usundt. Mønstrene er lagret i de automatiske lag — ikke i det bevidste tankelag — og gentager sig, indtil de bliver bearbejdet der hvor de faktisk sidder." },
+              { titel: "De gentagne mønstre", tekst: "Du tiltrækkes af de samme forkerte typer, eller skubber de rigtige væk. Det velkendte føles trygt, selv når det er usundt. Mønstrene er lagret i de automatiske lag - ikke i det bevidste tankelag - og gentager sig, indtil de bliver bearbejdet der hvor de faktisk sidder." },
             ].map((k) => (
               <div key={k.titel} style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>{k.titel}</h3>
@@ -54,23 +54,23 @@ export default function KaerlighedPage() {
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Tilknytningsforskning (Bowlby, Ainsworth, Bartholomew & Horowitz) viser at de mønstre vi danner i de første år af livet præger voksne kærlighedsrelationer dybt. Forskning anslår at ca. 20 pct. har et ængsteligt tilknytningsmønster og ca. 25 pct. et undvigende. Tilknytningsmønstre regnes for plastiske — noget der kan ændres gennem nye erfaringer og målrettet arbejde med de automatiske reaktioner.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Tilknytningsforskning (Bowlby, Ainsworth, Bartholomew & Horowitz) viser at de mønstre vi danner i de første år af livet præger voksne kærlighedsrelationer dybt. Forskning anslår at ca. 20 pct. har et ængsteligt tilknytningsmønster og ca. 25 pct. et undvigende. Tilknytningsmønstre regnes for plastiske - noget der kan ændres gennem nye erfaringer og målrettet arbejde med de automatiske reaktioner.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Bowlby (1988) A Secure Base, Bartholomew & Horowitz (1991) Journal of Personality and Social Psychology.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med grundindstillingerne under bevidst tænkning — der hvor frygten for afvisning, det lave selvværd og de gamle mønstre faktisk sidder. Ikke med dating-tips eller kommunikationsteknikker, men med de automatiske reaktioner der styrer dig, når nogen kommer tæt på.</p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Når mønsteret ændres ved roden, møder du mennesker som en anden version af dig selv. Mere tryg, mindre styret af frygt — og i stand til at åbne dig uden at gentage fortiden.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med grundindstillingerne under bevidst tænkning - der hvor frygten for afvisning, det lave selvværd og de gamle mønstre faktisk sidder. Ikke med dating-tips eller kommunikationsteknikker, men med de automatiske reaktioner der styrer dig, når nogen kommer tæt på.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Når mønsteret ændres ved roden, møder du mennesker som en anden version af dig selv. Mere tryg, mindre styret af frygt - og i stand til at åbne dig uden at gentage fortiden.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Det der holder folk tilbage</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
             {[
-              { titel: "Frygt for afvisning", tekst: "Afvisningsfrygten er så stærk at du ikke tager initiativ, undgår at vise interesse, eller saboterer forholdet inden den anden kan sige stop. Det er nervesystemet der beskytter sig — men prisen er at du ikke får det du længes efter." },
+              { titel: "Frygt for afvisning", tekst: "Afvisningsfrygten er så stærk at du ikke tager initiativ, undgår at vise interesse, eller saboterer forholdet inden den anden kan sige stop. Det er nervesystemet der beskytter sig - men prisen er at du ikke får det du længes efter." },
               { titel: "Svært ved at forblive i det gode", tekst: "Når det går godt, dukker uroen op. Du venter på at noget går galt, fortolker neutrale signaler negativt, eller skaber konflikt for at teste om personen bliver. Det er det ængstelige mønsters måde at 'sikre' relationen på." },
-              { titel: "Afstand som beskyttelse", tekst: "Du er god til at se fejl i partneren eller i situationen præcis når det begynder at betyde noget. Ikke bevidst — men det undvigende mønster opfatter nærhed som en trussel og finder en vej ud, inden du mærker det selv." },
+              { titel: "Afstand som beskyttelse", tekst: "Du er god til at se fejl i partneren eller i situationen præcis når det begynder at betyde noget. Ikke bevidst - men det undvigende mønster opfatter nærhed som en trussel og finder en vej ud, inden du mærker det selv." },
               { titel: "Dating-angst og blokering", tekst: "Nervøsitet på dates, manglende evne til at være sig selv, blokering i samtaler. Det er en stressrespons der drives af frygt for ikke at slå til. Hypnoterapi arbejder med den automatiske reaktion, der aktiveres i relationssituationer." },
             ].map((k) => (
               <div key={k.titel}>
@@ -83,9 +83,9 @@ export default function KaerlighedPage() {
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler om hvad der er svært, hvornår mønstrene opstod, og hvad du har prøvet. Her afklares om hypnoterapi er den rette tilgang — og hvad der realistisk kan ændres.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler om hvad der er svært, hvornår mønstrene opstod, og hvad du har prøvet. Her afklares om hypnoterapi er den rette tilgang - og hvad der realistisk kan ændres.</p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> En grundig kortlægning af dit relationsmønster og dets rødder, efterfulgt af den første hypnose. Mange oplever allerede her en ro i forhold til det der normalt aktiverer dem.</p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet dykker dybere ned i de specifikke triggere og reaktioner. For afgrænsede mønstre — som dating-angst eller frygt for at åbne sig — kan der komme effekt relativt hurtigt. Dybere tilknytningsmønstre kræver et mere gradvist forløb.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet dykker dybere ned i de specifikke triggere og reaktioner. For afgrænsede mønstre - som dating-angst eller frygt for at åbne sig - kan der komme effekt relativt hurtigt. Dybere tilknytningsmønstre kræver et mere gradvist forløb.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.</p>
         </section>
 
@@ -96,7 +96,7 @@ export default function KaerlighedPage() {
 
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
-          <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>Jan arbejder med de mønstre der holder mennesker tilbage fra kærlighed og nærhed — ængstelige og undvigende tilknytningsmønstre, dating-angst og gentagne relationsmønstre.</p>
+          <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>Jan arbejder med de mønstre der holder mennesker tilbage fra kærlighed og nærhed - ængstelige og undvigende tilknytningsmønstre, dating-angst og gentagne relationsmønstre.</p>
           <div style={{ padding: "12px 16px", background: "#f0f4f8", borderRadius: "6px", display: "inline-block" }}>
             <p style={{ fontSize: "14px", fontWeight: 500, color: "#333", margin: "0 0 8px" }}>🎯 Gratis forsamtale, 30 minutter, telefon eller fysisk</p>
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
@@ -111,7 +111,7 @@ export default function KaerlighedPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             {[
               { q: "Kan hypnoterapi hjælpe mig med at finde kærlighed?", a: "Ja, men ikke ved at give dig dating-tips. Hypnoterapi arbejder med de grundindstillinger der ubevidst styrer hvem du tiltrækkes af, hvordan du reagerer på nærhed, og om du tør åbne dig. Når mønsteret ændres, møder du mennesker som en anden version af dig selv." },
-              { q: "Hvorfor tiltrækkes jeg altid af de forkerte?", a: "Det er sjældent tilfældigt. Vi tiltrækkes af det velkendte — også når det velkendte er usundt. Mønsteret er typisk formet af tidlige relationer og kører automatisk under bevidst tænkning. Hypnoterapi arbejder netop der hvor mønsteret sidder." },
+              { q: "Hvorfor tiltrækkes jeg altid af de forkerte?", a: "Det er sjældent tilfældigt. Vi tiltrækkes af det velkendte - også når det velkendte er usundt. Mønsteret er typisk formet af tidlige relationer og kører automatisk under bevidst tænkning. Hypnoterapi arbejder netop der hvor mønsteret sidder." },
               { q: "Jeg har læst om tilknytningsmønstre. Hvorfor ændrer det ikke noget?", a: "Fordi indsigt og forandring er to forskellige ting. Du kan godt vide at du har et ængsteligt eller undvigende mønster og alligevel reagere på præcis samme måde når det gælder. Reaktionen sidder ikke i det du ved, men i det der reagerer hurtigere end tanken." },
               { q: "Kan hypnose hjælpe efter et svært brud?", a: "Ja. Et brud kan efterlade mistillid, frygt for at blive såret igen og mure der holder nye mennesker ude. Hypnoterapi arbejder med de beskyttelsesreaktioner, så du kan åbne dig igen uden at gentage fortiden." },
               { q: "Hjælper det mod nervøsitet og dating-angst?", a: "Ja. Nervøsitet på dates, blokering og det at ikke kunne være sig selv er ofte en stressrespons drevet af frygt for afvisning. Hypnoterapi ændrer den automatiske reaktion, så du kan være til stede og dig selv." },

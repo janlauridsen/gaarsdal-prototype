@@ -19,7 +19,7 @@ export default function Page() {
         <meta name="robots" content="index, follow" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Fobi og frygt — hypnoterapi", description: "Hypnoterapi til fobier i Birkerød. Jan Gaarsdal arbejder med den lærte frygtreaktion ved kilden.", url: "https://gaarsdal.net/fobi", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Fobi og frygt - hypnoterapi", description: "Hypnoterapi til fobier i Birkerød. Jan Gaarsdal arbejder med den lærte frygtreaktion ved kilden.", url: "https://gaarsdal.net/fobi", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }}
         />
                 <script
           type="application/ld+json"
@@ -107,7 +107,7 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Vigtigt at vide</h2>
-          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Fobier er i udgangspunktet afgrænsede, men kan have reelle konsekvenser for hverdagen. Hypnoterapi er ikke egnet ved generaliseret angstlidelse der påvirker din evne til at fungere bredt — her bør du tale med din læge eller en psykolog. Den gratis forsamtale afklarer om din frygtreaktion egner sig til hypnoterapi.</p>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Fobier er i udgangspunktet afgrænsede, men kan have reelle konsekvenser for hverdagen. Hypnoterapi er ikke egnet ved generaliseret angstlidelse der påvirker din evne til at fungere bredt - her bør du tale med din læge eller en psykolog. Den gratis forsamtale afklarer om din frygtreaktion egner sig til hypnoterapi.</p>
         </section>
 
                 <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>

@@ -71,7 +71,7 @@ export default function Page() {
                                           "name": "Presset kommer fra skolen, ikke fra os. Kan hypnoterapi lave om på det?",
                                           "acceptedAnswer": {
                                                         "@type": "Answer",
-                                                        "text": "Nej, og det skal det heller ikke forsøge. Er presset primært skabt af skolens eller hjemmets krav, er det rammerne der skal justeres først. Hypnoterapi kan derefter hjælpe barnet med sin reaktion — men den kan ikke gøre urimelige krav rimelige."
+                                                        "text": "Nej, og det skal det heller ikke forsøge. Er presset primært skabt af skolens eller hjemmets krav, er det rammerne der skal justeres først. Hypnoterapi kan derefter hjælpe barnet med sin reaktion - men den kan ikke gøre urimelige krav rimelige."
                                           }
                             }
               ]
@@ -193,7 +193,7 @@ export default function Page() {
               },
               {
                 q: "Presset kommer fra skolen, ikke fra os. Kan hypnoterapi lave om på det?",
-                a: "Nej, og det skal det heller ikke forsøge. Er presset primært skabt af skolens eller hjemmets krav, er det rammerne der skal justeres først. Hypnoterapi kan derefter hjælpe barnet med sin reaktion — men den kan ikke gøre urimelige krav rimelige.",
+                a: "Nej, og det skal det heller ikke forsøge. Er presset primært skabt af skolens eller hjemmets krav, er det rammerne der skal justeres først. Hypnoterapi kan derefter hjælpe barnet med sin reaktion - men den kan ikke gøre urimelige krav rimelige.",
               },
             ].map((item) => (
               <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>

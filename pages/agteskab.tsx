@@ -18,7 +18,7 @@ const categories: SkemaCategory[] = [
     title: "Følelsesmæssig kontakt",
     questions: [
       "At blive set som mig selv, ikke bare som partner eller forælder",
-      "At blive mødt følelsesmæssigt — ikke bare praktisk",
+      "At blive mødt følelsesmæssigt - ikke bare praktisk",
       "At blive lyttet til uden at blive afvist eller overhørt",
       "At mærke varme og nærhed i hverdagen",
     ],
@@ -39,7 +39,7 @@ const categories: SkemaCategory[] = [
     questions: [
       "At kunne tale om dybe eller svære ting",
       "At blive udfordret og inspireret",
-      "At føle mig interessant — ikke usynlig",
+      "At føle mig interessant - ikke usynlig",
       "At blive spejlet som menneske, ikke bare partner",
     ],
   },
@@ -48,7 +48,7 @@ const categories: SkemaCategory[] = [
     title: "Livsenergi og spontanitet",
     questions: [
       "At mærke liv, leg og lethed i vores samvær",
-      "At blive overrasket — at der sker noget uventet",
+      "At blive overrasket - at der sker noget uventet",
       "At føle mig i live, ikke bare i funktion",
       "At have noget der vækker mig i vores relation",
     ],
@@ -58,9 +58,9 @@ const categories: SkemaCategory[] = [
     title: "Respekt og gensidighed",
     questions: [
       "At blive værdsat for hvem jeg er",
-      "At blive valgt aktivt — at min partner vælger mig",
+      "At blive valgt aktivt - at min partner vælger mig",
       "At mærke at min partner også investerer i os",
-      "At føle at vi er to om det — at det ikke kun er mig",
+      "At føle at vi er to om det - at det ikke kun er mig",
     ],
   },
   {
@@ -69,7 +69,7 @@ const categories: SkemaCategory[] = [
     questions: [
       "At kunne være ærlig om hvad jeg føler, uden at det skaber konflikt",
       "At kunne sige hvad jeg har brug for",
-      "At kunne være mig selv — uden at passe ind i en rolle",
+      "At kunne være mig selv - uden at passe ind i en rolle",
       "At leve et liv der passer til den jeg er blevet",
     ],
   },
@@ -83,13 +83,13 @@ export default function AgteskabPage() {
         <title>Hvad savner jeg i mit ægteskab? Selvrefleksion | Gaarsdal</title>
         <meta
           name="description"
-          content="Et selvrefleksionsskema om hvad du savner i dit ægteskab eller parforhold — følelsesmæssig kontakt, intimitet, respekt og personlig sandhed. Gratis og anonymt."
+          content="Et selvrefleksionsskema om hvad du savner i dit ægteskab eller parforhold - følelsesmæssig kontakt, intimitet, respekt og personlig sandhed. Gratis og anonymt."
         />
         <link rel="canonical" href="https://gaarsdal.net/agteskab" />
         <meta property="og:title" content="Hvad savner jeg i mit ægteskab? | Gaarsdal" />
         <meta
           property="og:description"
-          content="Sæt kryds ved det der rammer dig. Et redskab til selvrefleksion om hvad der mangler — og hvad det kan betyde."
+          content="Sæt kryds ved det der rammer dig. Et redskab til selvrefleksion om hvad der mangler - og hvad det kan betyde."
         />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/agteskab" />
@@ -143,7 +143,7 @@ export default function AgteskabPage() {
             Hvad savner jeg i mit ægteskab?
           </h1>
           <p style={{ fontSize: "18px", color: "#555", maxWidth: "660px", lineHeight: 1.7 }}>
-            Mange mærker at noget mangler, men har svært ved at sætte ord på det. Dette skema hjælper dig med at afklare hvad der fylder — ikke for at bebrejde nogen, men for at forstå dig selv bedre.
+            Mange mærker at noget mangler, men har svært ved at sætte ord på det. Dette skema hjælper dig med at afklare hvad der fylder - ikke for at bebrejde nogen, men for at forstå dig selv bedre.
           </p>
         </section>
 
@@ -151,7 +151,7 @@ export default function AgteskabPage() {
         <RefleksionsSkema
           slug="parforhold"
           title="Hvad savner jeg i mit ægteskab?"
-          intro="Sæt kryds ved de udsagn der rammer dig. Det du markerer giver dig et billede af hvad der faktisk savnes — og hvad der måske kan arbejdes med."
+          intro="Sæt kryds ved de udsagn der rammer dig. Det du markerer giver dig et billede af hvad der faktisk savnes - og hvad der måske kan arbejdes med."
           categories={categories}
           ctaLabel="Tal med chatbotten om dine svar →"
         />
@@ -171,7 +171,7 @@ export default function AgteskabPage() {
             Jan Gaarsdal, hypnoterapeut i Birkerød
           </h2>
           <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>
-            Jan arbejder med de mønstre der holder folk fast — i parforholdet, i følelserne og i de ting man ikke har sagt. Han tilbyder individuelle sessioner og en fælles indledende session for par.
+            Jan arbejder med de mønstre der holder folk fast - i parforholdet, i følelserne og i de ting man ikke har sagt. Han tilbyder individuelle sessioner og en fælles indledende session for par.
           </p>
           <div
             style={{

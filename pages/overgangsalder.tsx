@@ -9,10 +9,10 @@ export default function OvergangsalderPage() {
       <Header />
       <Head>
         <title>Overgangsalder og hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="Hedeture, søvnløshed, humørsvingninger og uro i overgangsalderen. Hypnoterapi arbejder med nervesystemet og symptomerne — uden medicin. Jan Gaarsdal, Birkerød." />
+        <meta name="description" content="Hedeture, søvnløshed, humørsvingninger og uro i overgangsalderen. Hypnoterapi arbejder med nervesystemet og symptomerne - uden medicin. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/overgangsalder" />
         <meta property="og:title" content="Overgangsalder og hypnoterapi | Gaarsdal Birkerød" />
-        <meta property="og:description" content="Hedeture, søvn og humør i overgangsalderen påvirkes direkte af nervesystemet. Hypnoterapi arbejder der — uden bivirkninger." />
+        <meta property="og:description" content="Hedeture, søvn og humør i overgangsalderen påvirkes direkte af nervesystemet. Hypnoterapi arbejder der - uden bivirkninger." />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/overgangsalder" />
         <meta property="og:type" content="website" />
@@ -26,16 +26,16 @@ export default function OvergangsalderPage() {
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Overgangsalderen påvirker mere end din krop</h1>
           <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Hedeture der vækker dig om natten og ødelægger søvnen. Humørsvingninger du ikke genkender som dine egne. En diffus uro eller irritabilitet der dukker op uden grund. Du fungerer, men det koster mere end det burde. Og du føler dig ikke som dig selv.</p>
-          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Overgangsalderen er ikke kun en hormonel forandring. Den påvirker nervesystemet, søvnen og den følelsesmæssige regulering direkte — og det kan der arbejdes med.</p>
+          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Overgangsalderen er ikke kun en hormonel forandring. Den påvirker nervesystemet, søvnen og den følelsesmæssige regulering direkte - og det kan der arbejdes med.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "20px" }}>Hvad der faktisk sker</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
             {[
-              { titel: "Hedeture og nervesystemet hænger sammen", tekst: "Hedeture udløses af forandringer i kroppens temperaturregulering, men forstærkes markant af et nervesystem i beredskab. Stress sænker tærsklen for hedeture, og hedetur-episoder skaber i sig selv stress og forstyrret søvn — en selvforstærkende cirkel." },
+              { titel: "Hedeture og nervesystemet hænger sammen", tekst: "Hedeture udløses af forandringer i kroppens temperaturregulering, men forstærkes markant af et nervesystem i beredskab. Stress sænker tærsklen for hedeture, og hedetur-episoder skaber i sig selv stress og forstyrret søvn - en selvforstærkende cirkel." },
               { titel: "Humøret påvirkes på to niveauer", tekst: "Hormonelle udsving påvirker hjernens regulering af stemningsleje og humør direkte via serotonin og dopamin. Samtidig er overgangsalderen ofte en livsfase med andre forandringer: voksne børn, aldrende forældre, identitetsspørgsmål. De to lag forstærker hinanden." },
-              { titel: "Symptomerne tales ned — men de er reelle", tekst: "Mange kvinder oplever at deres symptomer bagatelliseres, både af omgivelserne og af sig selv. Det betyder at belastningen bæres i stilhed. At anerkende at det er reelt og adresserbart er det første skridt." },
+              { titel: "Symptomerne tales ned - men de er reelle", tekst: "Mange kvinder oplever at deres symptomer bagatelliseres, både af omgivelserne og af sig selv. Det betyder at belastningen bæres i stilhed. At anerkende at det er reelt og adresserbart er det første skridt." },
             ].map((k) => (
               <div key={k.titel} style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>{k.titel}</h3>
@@ -48,13 +48,13 @@ export default function OvergangsalderPage() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser om hypnose og overgangsalder</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>Et klinisk studie fra Baylor University (2012, publiceret i Menopause) fandt at hypnoterapi reducerede hyppigheden af hedeture med 74 pct. hos postmenopausale kvinder over 12 uger. North American Menopause Society fremhæver hypnoterapi som en evidensbaseret ikke-hormonel behandling ved vasomotoriske symptomer.</p>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Professor Bobby Zachariae, Aarhus Universitet, som har forsket i hypnosens effekter i årtier, bekræfter hypnosens veldokumenterede effekt på angst og søvn — begge centrale komponenter i overgangsalderens symptomkompleks.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Professor Bobby Zachariae, Aarhus Universitet, som har forsket i hypnosens effekter i årtier, bekræfter hypnosens veldokumenterede effekt på angst og søvn - begge centrale komponenter i overgangsalderens symptomkompleks.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: <a href="https://www.menopause.org" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>North American Menopause Society</a>, Elkins et al. (2012) Menopause Journal.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør ved overgangsalderens symptomer</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med nervesystemets grundindstilling — det beredskabsniveau der forstærker hedeture, forstyrrer søvnen og reducerer den følelsesmæssige robusthed. I den hypnotiske tilstand lærer kroppen at slippe beredskabet og finde ro, og den reaktion begynder at blive automatisk.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med nervesystemets grundindstilling - det beredskabsniveau der forstærker hedeture, forstyrrer søvnen og reducerer den følelsesmæssige robusthed. I den hypnotiske tilstand lærer kroppen at slippe beredskabet og finde ro, og den reaktion begynder at blive automatisk.</p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hedeture reduceres ved at arbejde direkte med kroppens varmerespons og den angst der forstærker den. Søvn forbedres ved at bryde forbindelsen mellem sengen og beredskab. Humøret stabiliseres ved at styrke nervesystemets evne til at regulere sig selv.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Hypnoterapi er en ikke-medicinsk tilgang uden bivirkninger. Den kan stå alene eller supplere hormonbehandling eller andre tiltag.</p>
         </section>
@@ -63,10 +63,10 @@ export default function OvergangsalderPage() {
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>De typiske symptomer</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
             {[
-              { titel: "Hedeture — dag og nat", tekst: "Pludselige varmeflammer der breder sig fra bryst til ansigt. Nattesved der vækker dig. Episoderne kan komme uden varsel og er vanskelige at forudsige. Hypnoterapi reducerer både hyppighed og intensitet ved at arbejde med nervesystemet der trigger reaktionen." },
+              { titel: "Hedeture - dag og nat", tekst: "Pludselige varmeflammer der breder sig fra bryst til ansigt. Nattesved der vækker dig. Episoderne kan komme uden varsel og er vanskelige at forudsige. Hypnoterapi reducerer både hyppighed og intensitet ved at arbejde med nervesystemet der trigger reaktionen." },
               { titel: "Søvnforstyrrelser", tekst: "Nattesved, uro og tanker der kører er alle med til at fragmentere søvnen. Mange kvinder i overgangsalderen sover let, vågner tidligt og er aldrig rigtigt udhvilede. Søvnforringelsen i sig selv forværrer alle andre symptomer." },
-              { titel: "Humørsvingninger og irritabilitet", tekst: "Reaktioner der er stærkere end situationen kalder på. En kortere lunte end normalt. Tristhed der dukker op uden årsag. Disse reaktioner er ikke et personlighedstræk — de er hormonelt og nervesystemsmæssigt betingede og kan reduceres." },
-              { titel: "Angst og uro", tekst: "En diffus, baggrundsmæssig uro der ikke har en specifik årsag. Bekymringer der fylder mere end de plejer. Mange beskriver det som at være på kant med sig selv. Det er et nervesystem i forhøjet beredskab — og det er præcis der hypnoterapi arbejder." },
+              { titel: "Humørsvingninger og irritabilitet", tekst: "Reaktioner der er stærkere end situationen kalder på. En kortere lunte end normalt. Tristhed der dukker op uden årsag. Disse reaktioner er ikke et personlighedstræk - de er hormonelt og nervesystemsmæssigt betingede og kan reduceres." },
+              { titel: "Angst og uro", tekst: "En diffus, baggrundsmæssig uro der ikke har en specifik årsag. Bekymringer der fylder mere end de plejer. Mange beskriver det som at være på kant med sig selv. Det er et nervesystem i forhøjet beredskab - og det er præcis der hypnoterapi arbejder." },
             ].map((k) => (
               <div key={k.titel}>
                 <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>{k.titel}</h3>
@@ -78,7 +78,7 @@ export default function OvergangsalderPage() {
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler om hvilke symptomer der fylder mest, hvornår de opstod, og hvad du har prøvet. Her afklares om hypnoterapi er den rette tilgang — og hvad der er realistisk at forvente.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler om hvilke symptomer der fylder mest, hvornår de opstod, og hvad du har prøvet. Her afklares om hypnoterapi er den rette tilgang - og hvad der er realistisk at forvente.</p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> En grundig samtale om dit symptombillede og dit nervesystems mønster, efterfulgt af den første hypnose. Mange oplever allerede her en kropslig ro de sjældent mærker.</p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet målrettes det der fylder mest. Hedeture, søvn og humør adresseres typisk i kombination, da de hænger tæt sammen i nervesystemet. Kliniske studier anbefaler minimum 5 sessioner for varig effekt ved hedeture.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.</p>

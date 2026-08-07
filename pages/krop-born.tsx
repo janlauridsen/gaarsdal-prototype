@@ -71,7 +71,7 @@ export default function Page() {
                                           "name": "Vores barn har en spiseforstyrrelse. Kan hypnoterapi bruges?",
                                           "acceptedAnswer": {
                                                         "@type": "Answer",
-                                                        "text": "Ikke som behandling af spiseforstyrrelsen. Den hører til hos læge og i specialiseret behandling, og det skal være det primære spor. Er I allerede i et behandlingsforløb, kan hypnoterapi i nogle tilfælde supplere — men det aftales med barnets behandler, ikke i stedet for."
+                                                        "text": "Ikke som behandling af spiseforstyrrelsen. Den hører til hos læge og i specialiseret behandling, og det skal være det primære spor. Er I allerede i et behandlingsforløb, kan hypnoterapi i nogle tilfælde supplere - men det aftales med barnets behandler, ikke i stedet for."
                                           }
                             }
               ]
@@ -194,7 +194,7 @@ export default function Page() {
               },
               {
                 q: "Vores barn har en spiseforstyrrelse. Kan hypnoterapi bruges?",
-                a: "Ikke som behandling af spiseforstyrrelsen. Den hører til hos læge og i specialiseret behandling, og det skal være det primære spor. Er I allerede i et behandlingsforløb, kan hypnoterapi i nogle tilfælde supplere — men det aftales med barnets behandler, ikke i stedet for.",
+                a: "Ikke som behandling af spiseforstyrrelsen. Den hører til hos læge og i specialiseret behandling, og det skal være det primære spor. Er I allerede i et behandlingsforløb, kan hypnoterapi i nogle tilfælde supplere - men det aftales med barnets behandler, ikke i stedet for.",
               },
             ].map((item) => (
               <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>

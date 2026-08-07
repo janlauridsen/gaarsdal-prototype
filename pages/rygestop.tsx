@@ -19,7 +19,7 @@ export default function Page() {
         <meta name="robots" content="index, follow" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Rygestop med hypnoterapi", description: "Rygestop med hypnoterapi i Birkerød. Jan Gaarsdal arbejder med associationerne der driver trangen — ikke viljestyrken.", url: "https://gaarsdal.net/rygestop", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Rygestop med hypnoterapi", description: "Rygestop med hypnoterapi i Birkerød. Jan Gaarsdal arbejder med associationerne der driver trangen - ikke viljestyrken.", url: "https://gaarsdal.net/rygestop", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }}
         />
                 <script
           type="application/ld+json"

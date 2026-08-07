@@ -9,7 +9,7 @@ export default function AdhdPage() {
       <Header />
       <Head>
         <title>ADHD og hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="ADHD handler om et nervesystem der er svært at regulere. Hypnoterapi arbejder med koncentration, impulskontrol og indre uro — uden medicin. Jan Gaarsdal, Birkerød." />
+        <meta name="description" content="ADHD handler om et nervesystem der er svært at regulere. Hypnoterapi arbejder med koncentration, impulskontrol og indre uro - uden medicin. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/adhd" />
         <meta property="og:title" content="ADHD og hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="ADHD er et reguleringsproblem, ikke et viljensproblem. Hypnoterapi arbejder med det nervesystem der kæmper med at finde ro og fastholde fokus." />
@@ -37,7 +37,7 @@ export default function AdhdPage() {
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe ved ADHD?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Hypnoterapi kan hjælpe med at reducere den indre uro, forbedre evnen til at fastholde fokus og arbejde med impulsreaktioner. Det er ikke en behandling af ADHD som diagnose, men en metode til at arbejde med de mønstre der gør hverdagen svær.\"}}, {\"@type\": \"Question\", \"name\": \"Er hypnoterapi et alternativ til ADHD-medicin?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej, ikke nødvendigvis. Hypnoterapi er et supplement der kan arbejde med de mønstre og reaktioner medicin ikke adresserer. Mange bruger begge dele. Beslutningen om medicin træffes altid i samråd med din læge.\"}}, {\"@type\": \"Question\", \"name\": \"Kan voksne med ADHD have gavn af hypnoterapi?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Mange voksne med ADHD kæmper med uro, prokrastination, selvkritik og vanskeligheder med at afslutte opgaver. Hypnoterapi arbejder med de automatiske reaktioner bag disse mønstre — ikke med at øve teknikker.\"}}, {\"@type\": \"Question\", \"name\": \"Kan man hypnotisere nogen med ADHD?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. ADHD-hjernen er faktisk ofte særligt modtagelig for hypnotisk fokustilstand, da den evner at hyperfokusere. Sessionerne tilpasses det rastløse nervesystem: de er aktive, kortere og strukturerede anderledes end for neurotypiske klienter.\"}}]}" }}
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe ved ADHD?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Hypnoterapi kan hjælpe med at reducere den indre uro, forbedre evnen til at fastholde fokus og arbejde med impulsreaktioner. Det er ikke en behandling af ADHD som diagnose, men en metode til at arbejde med de mønstre der gør hverdagen svær.\"}}, {\"@type\": \"Question\", \"name\": \"Er hypnoterapi et alternativ til ADHD-medicin?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Nej, ikke nødvendigvis. Hypnoterapi er et supplement der kan arbejde med de mønstre og reaktioner medicin ikke adresserer. Mange bruger begge dele. Beslutningen om medicin træffes altid i samråd med din læge.\"}}, {\"@type\": \"Question\", \"name\": \"Kan voksne med ADHD have gavn af hypnoterapi?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Mange voksne med ADHD kæmper med uro, prokrastination, selvkritik og vanskeligheder med at afslutte opgaver. Hypnoterapi arbejder med de automatiske reaktioner bag disse mønstre - ikke med at øve teknikker.\"}}, {\"@type\": \"Question\", \"name\": \"Kan man hypnotisere nogen med ADHD?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. ADHD-hjernen er faktisk ofte særligt modtagelig for hypnotisk fokustilstand, da den evner at hyperfokusere. Sessionerne tilpasses det rastløse nervesystem: de er aktive, kortere og strukturerede anderledes end for neurotypiske klienter.\"}}]}" }}
         />
       </Head>
 
@@ -49,10 +49,10 @@ export default function AdhdPage() {
             Du ved hvad du skal gøre. Du kan bare ikke få dig til det
           </h1>
           <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>
-            Tankerne springer. Opgaverne hober sig op. Du begynder ti ting og afslutter ingen. Ikke fordi du er doven — du kan hyperfokusere i timevis på det der fanger dig. Men det du skal, det sidder fast. Og bagefter er selvkritikken hård.
+            Tankerne springer. Opgaverne hober sig op. Du begynder ti ting og afslutter ingen. Ikke fordi du er doven - du kan hyperfokusere i timevis på det der fanger dig. Men det du skal, det sidder fast. Og bagefter er selvkritikken hård.
           </p>
           <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>
-            ADHD er ikke et viljensproblem. Det er et nervesystem der regulerer sig anderledes — og det kan der arbejdes med.
+            ADHD er ikke et viljensproblem. Det er et nervesystem der regulerer sig anderledes - og det kan der arbejdes med.
           </p>
         </section>
 
@@ -63,15 +63,15 @@ export default function AdhdPage() {
             {[
               {
                 titel: "Dopaminsystemet fungerer anderledes",
-                tekst: "ADHD-hjernen producerer og håndterer dopamin på en anden måde end neurotypiske hjerner. Det betyder at rutineopgaver, der ikke giver øjeblikkelig belønning, er genuint sværere at starte og fastholde — ikke fordi viljen mangler, men fordi hjernens motivationssystem er koblet anderledes.",
+                tekst: "ADHD-hjernen producerer og håndterer dopamin på en anden måde end neurotypiske hjerner. Det betyder at rutineopgaver, der ikke giver øjeblikkelig belønning, er genuint sværere at starte og fastholde - ikke fordi viljen mangler, men fordi hjernens motivationssystem er koblet anderledes.",
               },
               {
                 titel: "Eksekutive funktioner er udfordrede",
-                tekst: "Planlægning, prioritering, tidsfornemmelse og impulskontrol sidder i præfrontalkortex og er de funktioner der typisk er sværest ved ADHD. Det er ikke intelligens — mange med ADHD er meget intelligente — det er den automatiske regulering der er svær.",
+                tekst: "Planlægning, prioritering, tidsfornemmelse og impulskontrol sidder i præfrontalkortex og er de funktioner der typisk er sværest ved ADHD. Det er ikke intelligens - mange med ADHD er meget intelligente - det er den automatiske regulering der er svær.",
               },
               {
                 titel: "Den indre uro kører konstant",
-                tekst: "Selv i hvile er nervesystemet aktivt. Det søger stimulation, skifter fokus, reagerer stærkt på omgivelser. Det udtrætter og gør det svært at lande — i en opgave, i en samtale, i sengen om aftenen.",
+                tekst: "Selv i hvile er nervesystemet aktivt. Det søger stimulation, skifter fokus, reagerer stærkt på omgivelser. Det udtrætter og gør det svært at lande - i en opgave, i en samtale, i sengen om aftenen.",
               },
             ].map((k) => (
               <div key={k.titel} style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
@@ -86,7 +86,7 @@ export default function AdhdPage() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser om ADHD og hypnoterapi</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>
-            ADHD rammer 3–5 pct. af børn og et stigende antal voksne — mange udiagnosticerede. Medicin (centralstimulerende midler) er veldokumenteret, men adresserer ikke de emotionelle og adfærdsmæssige mønstre der typisk følger med: perfektionisme, prokrastination, selvkritik og emotionel reaktivitet.
+            ADHD rammer 3–5 pct. af børn og et stigende antal voksne - mange udiagnosticerede. Medicin (centralstimulerende midler) er veldokumenteret, men adresserer ikke de emotionelle og adfærdsmæssige mønstre der typisk følger med: perfektionisme, prokrastination, selvkritik og emotionel reaktivitet.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>
             Studier fra bl.a. Journal of Developmental & Behavioral Pediatrics viser at ADHD-hjernen er særligt responsiv for hypnotisk fokustilstand, da hyperfokus er en naturlig egenskab ved ADHD-profilen. Hypnoterapi bruges i stigende grad som supplement til medicinsk behandling, særligt for at arbejde med angst, søvn og selvopfattelse.
@@ -100,10 +100,10 @@ export default function AdhdPage() {
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi kan gøre ved ADHD-mønstre</h2>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
-            Hypnoterapi behandler ikke ADHD-diagnosen — det gør medicin bedre. Men det arbejder med de mønstre diagnosen medfører: den automatiske selvkritik der siger du burde kunne bedre, den indre uro der ikke slipper, prokrastinationen der ikke kan brydes med viljestyrke, og de emotionelle reaktioner der er stærkere end situationen kalder på.
+            Hypnoterapi behandler ikke ADHD-diagnosen - det gør medicin bedre. Men det arbejder med de mønstre diagnosen medfører: den automatiske selvkritik der siger du burde kunne bedre, den indre uro der ikke slipper, prokrastinationen der ikke kan brydes med viljestyrke, og de emotionelle reaktioner der er stærkere end situationen kalder på.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
-            I den hypnotiske tilstand er hjernen fokuseret og modtagelig — paradoksalt nok er ADHD-hjernen ofte god til at gå ind i denne tilstand, da hyperfokus er en naturlig del af profilen. Her arbejdes der direkte med de automatiske reaktioner: angst for at starte, overbevisninger om manglende evner, og nervesystemets evne til kortvarig ro.
+            I den hypnotiske tilstand er hjernen fokuseret og modtagelig - paradoksalt nok er ADHD-hjernen ofte god til at gå ind i denne tilstand, da hyperfokus er en naturlig del af profilen. Her arbejdes der direkte med de automatiske reaktioner: angst for at starte, overbevisninger om manglende evner, og nervesystemets evne til kortvarig ro.
           </p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>
             Forløbet tilpasses den ADHD-ramte hjernen: sessioner er aktive, varierede og respekterer at 90 minutter i ét stræk kan være for meget.
@@ -116,11 +116,11 @@ export default function AdhdPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Prokrastination og opgaveparalyse</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du ved præcis hvad du skal gøre. Du kan ikke begynde. Jo vigtigere opgaven er, jo sværere er det at starte. Det er ikke lathed — det er et aktiveringsmønster der kan ændres uden at øve teknikker.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du ved præcis hvad du skal gøre. Du kan ikke begynde. Jo vigtigere opgaven er, jo sværere er det at starte. Det er ikke lathed - det er et aktiveringsmønster der kan ændres uden at øve teknikker.</p>
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Emotionel reaktivitet</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Frustrationer, kritik og modgang rammer hårdere end hos andre. Reaktionen er hurtig og intens, og bagefter ved du godt at den var overdreven. Hypnoterapi arbejder med den automatiske reaktion — at skabe et sekunds rum inden systemet aktiveres.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Frustrationer, kritik og modgang rammer hårdere end hos andre. Reaktionen er hurtig og intens, og bagefter ved du godt at den var overdreven. Hypnoterapi arbejder med den automatiske reaktion - at skabe et sekunds rum inden systemet aktiveres.</p>
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Søvn og nedlukning</h3>
@@ -137,13 +137,13 @@ export default function AdhdPage() {
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
-            <strong>Gratis forsamtale (30 min).</strong> Vi taler om hvad der er svært, hvornår det er svært, og hvad du allerede har prøvet. Her afklares om hypnoterapi giver mening som næste skridt — og om du har en diagnose eller blot genkender mønstrene.
+            <strong>Gratis forsamtale (30 min).</strong> Vi taler om hvad der er svært, hvornår det er svært, og hvad du allerede har prøvet. Her afklares om hypnoterapi giver mening som næste skridt - og om du har en diagnose eller blot genkender mønstrene.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
-            <strong>Første session (90 min).</strong> En grundig samtale om dit mønster efterfulgt af den første hypnose. For ADHD-profiler tilpasses sessionsformatet løbende — tempo, struktur og tilgang justeres til hvad der virker for dig.
+            <strong>Første session (90 min).</strong> En grundig samtale om dit mønster efterfulgt af den første hypnose. For ADHD-profiler tilpasses sessionsformatet løbende - tempo, struktur og tilgang justeres til hvad der virker for dig.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
-            <strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet målrettes det specifikke mønster der er sværest for dig. Prokrastination, søvn, selvbillede og emotionel regulering adresseres som regel i rækkefølge — eller i den kombination der giver mest mening.
+            <strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet målrettes det specifikke mønster der er sværest for dig. Prokrastination, søvn, selvbillede og emotionel regulering adresseres som regel i rækkefølge - eller i den kombination der giver mest mening.
           </p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>
             Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.
@@ -154,7 +154,7 @@ export default function AdhdPage() {
         <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Vigtigt at vide</h2>
           <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>
-            Hypnoterapi er ikke en behandling af ADHD-diagnosen og erstatter ikke psykiatrisk vurdering, medicinsk behandling eller neuropsykologisk udredning. Jan arbejder med de mønstre og reaktioner ADHD medfører i hverdagen — ikke med diagnosen selv. Har du mistanke om udiagnosticeret ADHD, er det en god idé at starte med en lægelig vurdering.
+            Hypnoterapi er ikke en behandling af ADHD-diagnosen og erstatter ikke psykiatrisk vurdering, medicinsk behandling eller neuropsykologisk udredning. Jan arbejder med de mønstre og reaktioner ADHD medfører i hverdagen - ikke med diagnosen selv. Har du mistanke om udiagnosticeret ADHD, er det en god idé at starte med en lægelig vurdering.
           </p>
         </section>
 
@@ -162,7 +162,7 @@ export default function AdhdPage() {
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
           <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>
-            Jan arbejder med ADHD-relaterede mønstre hos voksne og unge. Han tilpasser sin tilgang til den ADHD-ramte hjernen — sessioner er aktive, varierede og tilrettelagt med respekt for at koncentration er en begrænset ressource.
+            Jan arbejder med ADHD-relaterede mønstre hos voksne og unge. Han tilpasser sin tilgang til den ADHD-ramte hjernen - sessioner er aktive, varierede og tilrettelagt med respekt for at koncentration er en begrænset ressource.
           </p>
           <div style={{ padding: "12px 16px", background: "#f0f4f8", borderRadius: "6px", display: "inline-block" }}>
             <p style={{ fontSize: "14px", fontWeight: 500, color: "#333", margin: "0 0 8px" }}>
@@ -194,7 +194,7 @@ export default function AdhdPage() {
               },
               {
                 q: "Kan voksne med ADHD have gavn af hypnoterapi?",
-                a: "Ja. Mange voksne med ADHD kæmper med uro, prokrastination, selvkritik og vanskeligheder med at afslutte opgaver. Hypnoterapi arbejder med de automatiske reaktioner bag disse mønstre — ikke med at øve teknikker man alligevel glemmer at bruge.",
+                a: "Ja. Mange voksne med ADHD kæmper med uro, prokrastination, selvkritik og vanskeligheder med at afslutte opgaver. Hypnoterapi arbejder med de automatiske reaktioner bag disse mønstre - ikke med at øve teknikker man alligevel glemmer at bruge.",
               },
               {
                 q: "Kan man hypnotisere nogen med ADHD?",

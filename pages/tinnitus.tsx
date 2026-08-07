@@ -12,7 +12,7 @@ export default function TinnitusPage() {
         <meta name="description" content="Tinnitus, øresusen, forværres af stress og fokus. Hypnoterapi arbejder med hjernens reaktion på lyden og reducerer generne markant. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/tinnitus" />
         <meta property="og:title" content="Tinnitus og hypnoterapi | Gaarsdal Birkerød" />
-        <meta property="og:description" content="Tinnitus forværres af stress og opmærksomhed. Hypnoterapi ændrer hjernens reaktion på lyden — ikke lyden selv." />
+        <meta property="og:description" content="Tinnitus forværres af stress og opmærksomhed. Hypnoterapi ændrer hjernens reaktion på lyden - ikke lyden selv." />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/tinnitus" />
         <meta property="og:type" content="website" />
@@ -49,10 +49,10 @@ export default function TinnitusPage() {
             Lyden er der altid. Og jo mere du lytter efter den, jo mere fylder den
           </h1>
           <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>
-            Ringen, susen eller piben der ikke stopper. Værst når der er stille. Værst når du er stresset. Lægen siger der ikke er en kur. Du har lært at leve med den, men den tærer på din søvn, din ro og dit overskud — og nogle dage kan du ikke tænke på andet.
+            Ringen, susen eller piben der ikke stopper. Værst når der er stille. Værst når du er stresset. Lægen siger der ikke er en kur. Du har lært at leve med den, men den tærer på din søvn, din ro og dit overskud - og nogle dage kan du ikke tænke på andet.
           </p>
           <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>
-            Tinnitus er reel. Men hvor meget den fylder afhænger i høj grad af hjernens reaktion på lyden — og det kan ændres.
+            Tinnitus er reel. Men hvor meget den fylder afhænger i høj grad af hjernens reaktion på lyden - og det kan ændres.
           </p>
         </section>
 
@@ -63,15 +63,15 @@ export default function TinnitusPage() {
             {[
               {
                 titel: "Hjernen forstærker det den fokuserer på",
-                tekst: "Tinnitus opfattes ikke kun i øret, men i hjernens bearbejdning af lyden. Jo mere opmærksomhed lyden får, jo mere fremtrædende bliver den. Det er ikke indbildning — det er hvordan hjernens filtrering fungerer, og den mekanisme kan påvirkes.",
+                tekst: "Tinnitus opfattes ikke kun i øret, men i hjernens bearbejdning af lyden. Jo mere opmærksomhed lyden får, jo mere fremtrædende bliver den. Det er ikke indbildning - det er hvordan hjernens filtrering fungerer, og den mekanisme kan påvirkes.",
               },
               {
                 titel: "Stress og tinnitus forstærker hinanden",
-                tekst: "Når nervesystemet er i beredskab, skærpes alle sanser — også hørelsen. Mange oplever at tinnitus opstod eller forværredes i en stresset periode. Forbindelsen går begge veje: tinnitusen skaber stress, og stress skærper tinnitusen.",
+                tekst: "Når nervesystemet er i beredskab, skærpes alle sanser - også hørelsen. Mange oplever at tinnitus opstod eller forværredes i en stresset periode. Forbindelsen går begge veje: tinnitusen skaber stress, og stress skærper tinnitusen.",
               },
               {
                 titel: "Reaktionen kan ændres, selvom lyden ikke forsvinder",
-                tekst: "Målet er sjældent at fjerne lyden helt, men at ændre hjernens automatiske reaktion på den. Når lyden ikke længere udløser uro og frustration, falder den i baggrunden — ligesom køleskabets summen eller trafikstøj udenfor.",
+                tekst: "Målet er sjældent at fjerne lyden helt, men at ændre hjernens automatiske reaktion på den. Når lyden ikke længere udløser uro og frustration, falder den i baggrunden - ligesom køleskabets summen eller trafikstøj udenfor.",
               },
             ].map((k) => (
               <div key={k.titel} style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
@@ -89,7 +89,7 @@ export default function TinnitusPage() {
             Cirka 15–20 pct. af voksne oplever tinnitus i en grad der påvirker hverdagen. For ca. 2–3 pct. er generne så udtalte at de påvirker søvn, koncentration og livskvalitet alvorligt. Der findes ingen medicinsk kur, og behandlingen fokuserer derfor på at ændre reaktionen på lyden snarere end lyden selv.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>
-            Kognitiv adfærdsterapi (KAT) og hypnoterapi dokumenteres begge som effektive til at reducere tinnitusbelastning. Professor Bobby Zachariae, Aarhus Universitet, har forsket i hypnosens effekt på nervesystemet og fremhæver metoden som veldokumenteret til stressreduktion — en central komponent i tinnitusbehandling.
+            Kognitiv adfærdsterapi (KAT) og hypnoterapi dokumenteres begge som effektive til at reducere tinnitusbelastning. Professor Bobby Zachariae, Aarhus Universitet, har forsket i hypnosens effekt på nervesystemet og fremhæver metoden som veldokumenteret til stressreduktion - en central komponent i tinnitusbehandling.
           </p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>
             Kilde: <a href="https://hoereforeningen.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Høreforeningen.dk</a>, British Tinnitus Association, Netdoktor.dk.
@@ -103,7 +103,7 @@ export default function TinnitusPage() {
             Hypnoterapi arbejder på to niveauer. Det ene er nervesystemet: at bringe stressniveauet ned, så lyden ikke konstant forstærkes af beredskab. Det andet er hjernens opmærksomhedsfilter: at træne hjernen til at deprioritere tinnituslyden på samme måde som den filtrerer anden konstant baggrundsstøj fra.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
-            I den hypnotiske tilstand er hjernen særligt modtagelig for at lære nye automatiske reaktioner. Du lærer ikke en teknik du skal huske at bruge — du omprogrammerer den reaktion der sker, inden du når at tænke over det.
+            I den hypnotiske tilstand er hjernen særligt modtagelig for at lære nye automatiske reaktioner. Du lærer ikke en teknik du skal huske at bruge - du omprogrammerer den reaktion der sker, inden du når at tænke over det.
           </p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>
             Hypnoterapi er ikke det rette for alle tinnitustilfælde. Hvis tinnitusen er opstået pludseligt, er kraftigt ensidig, eller er ledsaget af svimmelhed, bør du tale med din læge, inden du starter. Den gratis forsamtale afklarer om hypnoterapi giver mening for dig.
@@ -120,15 +120,15 @@ export default function TinnitusPage() {
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Tinnitus opstod efter støj, medicin eller stress</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Uanset årsagen til tinnitusen er det hjernens nuværende reaktion der bestemmer, hvor meget den fylder. Oprindelsen ændrer ikke hvilken tilgang der virker — det er reaktionsmønsteret der skal arbejdes med.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Uanset årsagen til tinnitusen er det hjernens nuværende reaktion der bestemmer, hvor meget den fylder. Oprindelsen ændrer ikke hvilken tilgang der virker - det er reaktionsmønsteret der skal arbejdes med.</p>
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Søvnen er påvirket</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Tinnitus og søvnproblemer følges ofte ad. Stilheden om natten giver lyden frit spil, og træthed forværrer igen tinnitusen. Hypnoterapi arbejder med begge — og mange oplever at søvnen bedres som den første synlige effekt.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Tinnitus og søvnproblemer følges ofte ad. Stilheden om natten giver lyden frit spil, og træthed forværrer igen tinnitusen. Hypnoterapi arbejder med begge - og mange oplever at søvnen bedres som den første synlige effekt.</p>
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Du er holdt op med ting du holdt af</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Koncerter, biografer, støjende selskaber — steder du undgår fordi lyden bagefter er uudholdelig. Tilpasninger der over tid indsnævrer livet. Det er ikke nødvendigvis en permanent præmis.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Koncerter, biografer, støjende selskaber - steder du undgår fordi lyden bagefter er uudholdelig. Tilpasninger der over tid indsnævrer livet. Det er ikke nødvendigvis en permanent præmis.</p>
             </div>
           </div>
         </section>
@@ -143,7 +143,7 @@ export default function TinnitusPage() {
             <strong>Første session (90 min).</strong> En grundig samtale om dit tinnitusforløb og dine reaktionsmønstre, efterfulgt af den første hypnose. De fleste oplever at den hypnotiske tilstand i sig selv giver en ro de sjældent mærker til daglig.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
-            <strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet målrettes præcis det mønster der fastholder din tinnitus. For mange viser sig bedring i søvn og stressniveau inden der sker ændring i selve lydoplevelsen — det er et godt tegn, ikke en skuffelse.
+            <strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet målrettes præcis det mønster der fastholder din tinnitus. For mange viser sig bedring i søvn og stressniveau inden der sker ændring i selve lydoplevelsen - det er et godt tegn, ikke en skuffelse.
           </p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>
             Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.
@@ -162,7 +162,7 @@ export default function TinnitusPage() {
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
           <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>
-            Jan arbejder med tinnitus som en del af det samlede nervesystemsbillede — stress, søvn og reaktionsmønstre hænger som regel tæt sammen. Han har erfaring med klienter der har haft tinnitus i mange år og med dem der er i den akutte fase.
+            Jan arbejder med tinnitus som en del af det samlede nervesystemsbillede - stress, søvn og reaktionsmønstre hænger som regel tæt sammen. Han har erfaring med klienter der har haft tinnitus i mange år og med dem der er i den akutte fase.
           </p>
           <div style={{ padding: "12px 16px", background: "#f0f4f8", borderRadius: "6px", display: "inline-block" }}>
             <p style={{ fontSize: "14px", fontWeight: 500, color: "#333", margin: "0 0 8px" }}>
@@ -190,7 +190,7 @@ export default function TinnitusPage() {
               },
               {
                 q: "Kan hypnose fjerne min tinnitus helt?",
-                a: "Sjældent helt, men mange oplever at lyden fylder markant mindre når hjernens reaktion på den ændres. Når lyden ikke længere udløser uro, falder den i baggrunden — ligesom anden konstant baggrundsstøj man lærer at ignorere.",
+                a: "Sjældent helt, men mange oplever at lyden fylder markant mindre når hjernens reaktion på den ændres. Når lyden ikke længere udløser uro, falder den i baggrunden - ligesom anden konstant baggrundsstøj man lærer at ignorere.",
               },
               {
                 q: "Hvor mange sessioner kræver tinnitus?",
@@ -198,7 +198,7 @@ export default function TinnitusPage() {
               },
               {
                 q: "Hvorfor forværres tinnitusen når jeg er stresset?",
-                a: "Når nervesystemet er i beredskab, skærpes alle sanser — også hørelsen. Hjernen prioriterer tinnituslyd højere, fordi den fortolker den som en potentiel advarsel. Stressreduktion er derfor en central del af hypnoterapien ved tinnitus.",
+                a: "Når nervesystemet er i beredskab, skærpes alle sanser - også hørelsen. Hjernen prioriterer tinnituslyd højere, fordi den fortolker den som en potentiel advarsel. Stressreduktion er derfor en central del af hypnoterapien ved tinnitus.",
               },
               {
                 q: "Er hypnoterapi det samme som lydterapi eller TRT?",

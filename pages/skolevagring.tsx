@@ -63,7 +63,7 @@ export default function Page() {
                                           "name": "Hjælper det at skifte skole?",
                                           "acceptedAnswer": {
                                                         "@type": "Answer",
-                                                        "text": "Sjældent varigt i sig selv. Skolen er som regel konteksten, ikke årsagen — bag skolevægring ligger typisk social angst, præstationsangst eller angst for at forlade hjemmet. Skifter man skole uden at det underliggende ændrer sig, vender mønsteret ofte tilbage efter nogle uger."
+                                                        "text": "Sjældent varigt i sig selv. Skolen er som regel konteksten, ikke årsagen - bag skolevægring ligger typisk social angst, præstationsangst eller angst for at forlade hjemmet. Skifter man skole uden at det underliggende ændrer sig, vender mønsteret ofte tilbage efter nogle uger."
                                           }
                             },
                             {
@@ -185,7 +185,7 @@ export default function Page() {
               },
               {
                 q: "Hjælper det at skifte skole?",
-                a: "Sjældent varigt i sig selv. Skolen er som regel konteksten, ikke årsagen — bag skolevægring ligger typisk social angst, præstationsangst eller angst for at forlade hjemmet. Skifter man skole uden at det underliggende ændrer sig, vender mønsteret ofte tilbage efter nogle uger.",
+                a: "Sjældent varigt i sig selv. Skolen er som regel konteksten, ikke årsagen - bag skolevægring ligger typisk social angst, præstationsangst eller angst for at forlade hjemmet. Skifter man skole uden at det underliggende ændrer sig, vender mønsteret ofte tilbage efter nogle uger.",
               },
               {
                 q: "Hvad hvis mit barn nægter at komme til den første session?",

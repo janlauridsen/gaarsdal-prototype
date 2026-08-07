@@ -9,16 +9,16 @@ export default function SorgPage() {
       <Header />
       <Head>
         <title>Sorg og tab, hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="Sorg der ikke slipper. Hypnoterapi hjælper med at bearbejde tab og fastlåst sorg — og finde en vej videre. Jan Gaarsdal, Birkerød. Gratis forsamtale." />
+        <meta name="description" content="Sorg der ikke slipper. Hypnoterapi hjælper med at bearbejde tab og fastlåst sorg - og finde en vej videre. Jan Gaarsdal, Birkerød. Gratis forsamtale." />
         <link rel="canonical" href="https://gaarsdal.net/sorg" />
-        <meta property="og:title" content="Sorg og tab — hypnoterapi | Gaarsdal Birkerød" />
+        <meta property="og:title" content="Sorg og tab - hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="Sorg der sidder fast er ikke svaghed. Det er et nervesystem der ikke har fundet vej igennem tabet. Hypnoterapi hjælper der hvor ord ikke rækker." />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/sorg" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Sorg og tab — hypnoterapi", description: "Hypnoterapi til sorg og tab i Birkerød. Jan Gaarsdal hjælper med fastlåst sorg og bearbejdning af tab.", url: "https://gaarsdal.net/sorg", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: "{\"@context\":\"https://schema.org\",\"@type\":\"FAQPage\",\"mainEntity\":[{\"@type\":\"Question\",\"name\":\"Kan hypnose hjælpe mod sorg?\",\"acceptedAnswer\":{\"@type\":\"Answer\",\"text\":\"Ja, der hvor sorgen sidder fast. Hypnoterapi fjerner ikke savnet, men hjælper nervesystemet med at bearbejde tabet, så du finder en bæredygtig måde at leve videre med det. Det er særligt relevant ved fastlåst eller kompliceret sorg.\"}},{\"@type\":\"Question\",\"name\":\"Hvornår er sorg fastlåst?\",\"acceptedAnswer\":{\"@type\":\"Answer\",\"text\":\"Når sorgen ikke finder vej igennem, men bliver en vedvarende tilstand af uro, tomhed eller smerte uden bedring over tid. Det ses især ved pludselige, traumatiske eller uafsluttede tab. Den gratis forsamtale afklarer om det er tilfældet for dig.\"}},{\"@type\":\"Question\",\"name\":\"Tager hypnose minderne om den jeg har mistet?\",\"acceptedAnswer\":{\"@type\":\"Answer\",\"text\":\"Nej. Hypnoterapi fjerner hverken minder eller kærlighed til den du har mistet. Den arbejder med den fastlåste smerte — så minderne kan være der uden at lamme dig.\"}},{\"@type\":\"Question\",\"name\":\"Hvor lang tid efter et tab kan jeg søge hjælp?\",\"acceptedAnswer\":{\"@type\":\"Answer\",\"text\":\"Der er ingen rigtig tidsramme. Nogle søger hjælp tidligt, andre år efter et tab der aldrig blev bearbejdet. Hypnoterapi kan hjælpe uanset hvor lang tid der er gået siden tabet.\"}}]}" }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "MedicalWebPage", name: "Sorg og tab - hypnoterapi", description: "Hypnoterapi til sorg og tab i Birkerød. Jan Gaarsdal hjælper med fastlåst sorg og bearbejdning af tab.", url: "https://gaarsdal.net/sorg", provider: { "@type": "Person", name: "Jan Gaarsdal", url: "https://gaarsdal.net/om", telephone: "+4542807474" } }) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: "{\"@context\":\"https://schema.org\",\"@type\":\"FAQPage\",\"mainEntity\":[{\"@type\":\"Question\",\"name\":\"Kan hypnose hjælpe mod sorg?\",\"acceptedAnswer\":{\"@type\":\"Answer\",\"text\":\"Ja, der hvor sorgen sidder fast. Hypnoterapi fjerner ikke savnet, men hjælper nervesystemet med at bearbejde tabet, så du finder en bæredygtig måde at leve videre med det. Det er særligt relevant ved fastlåst eller kompliceret sorg.\"}},{\"@type\":\"Question\",\"name\":\"Hvornår er sorg fastlåst?\",\"acceptedAnswer\":{\"@type\":\"Answer\",\"text\":\"Når sorgen ikke finder vej igennem, men bliver en vedvarende tilstand af uro, tomhed eller smerte uden bedring over tid. Det ses især ved pludselige, traumatiske eller uafsluttede tab. Den gratis forsamtale afklarer om det er tilfældet for dig.\"}},{\"@type\":\"Question\",\"name\":\"Tager hypnose minderne om den jeg har mistet?\",\"acceptedAnswer\":{\"@type\":\"Answer\",\"text\":\"Nej. Hypnoterapi fjerner hverken minder eller kærlighed til den du har mistet. Den arbejder med den fastlåste smerte - så minderne kan være der uden at lamme dig.\"}},{\"@type\":\"Question\",\"name\":\"Hvor lang tid efter et tab kan jeg søge hjælp?\",\"acceptedAnswer\":{\"@type\":\"Answer\",\"text\":\"Der er ingen rigtig tidsramme. Nogle søger hjælp tidligt, andre år efter et tab der aldrig blev bearbejdet. Hypnoterapi kan hjælpe uanset hvor lang tid der er gået siden tabet.\"}}]}" }} />
       </Head>
 
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
@@ -26,16 +26,16 @@ export default function SorgPage() {
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>Sorgen fylder mere end omgivelserne forstår</h1>
           <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>Du har mistet nogen eller noget der betød alt. Omgivelserne siger det tager tid. Men de siger ikke noget om, hvad du gør med den tid. Sorgen er ikke noget der bare passerer. Og jo mere du prøver at fungere udadtil, jo mere sidder den fast indeni.</p>
-          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Sorg der sidder fast er ikke svaghed. Det er et nervesystem der ikke har fundet vej igennem tabet — og det kan der arbejdes med.</p>
+          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>Sorg der sidder fast er ikke svaghed. Det er et nervesystem der ikke har fundet vej igennem tabet - og det kan der arbejdes med.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "20px" }}>Hvad der faktisk sker</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
             {[
-              { titel: "Sorg er ikke lineær", tekst: "Der er ingen rigtig rækkefølge. Sorg kommer i bølger, vender tilbage uventet og kan aktiveres af steder, lyde og lugte år efter. Det er ikke et tegn på at noget er galt — det er et tegn på at der var noget der betød noget." },
+              { titel: "Sorg er ikke lineær", tekst: "Der er ingen rigtig rækkefølge. Sorg kommer i bølger, vender tilbage uventet og kan aktiveres af steder, lyde og lugte år efter. Det er ikke et tegn på at noget er galt - det er et tegn på at der var noget der betød noget." },
               { titel: "Fastlåst sorg", tekst: "Nogle gange finder sorgen ikke vej igennem. Den sidder fast som en vedvarende tilstand af uro, tomhed eller smerte. Det kan skyldes at tabet var pludseligt eller traumatisk, at der var uafsluttede forhold, eller at omstændighederne ikke gav rum til at sørge." },
-              { titel: "Kroppen bærer sorgen", tekst: "Sorg sidder ikke kun i tankerne. Søvnproblemer, træthed, manglende appetit, tyngde i kroppen — det er normale sorgresponser. Kroppen reagerer på tab som den reagerer på fare, og nervesystemet retter sig ikke automatisk selv." },
+              { titel: "Kroppen bærer sorgen", tekst: "Sorg sidder ikke kun i tankerne. Søvnproblemer, træthed, manglende appetit, tyngde i kroppen - det er normale sorgresponser. Kroppen reagerer på tab som den reagerer på fare, og nervesystemet retter sig ikke automatisk selv." },
             ].map((k) => (
               <div key={k.titel} style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>{k.titel}</h3>
@@ -47,26 +47,26 @@ export default function SorgPage() {
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser om sorg</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>For de fleste aftager sorgen gradvist, men hos 10–15 pct. af efterladte bliver den vedvarende og invaliderende. Denne tilstand — forlænget sorglidelse — blev anerkendt som selvstændig diagnose i WHO's ICD-11 i 2022. Den kendetegnes ved intens, fastlåst sorg der hindrer livet i at gå videre, typisk mere end 12 måneder efter tabet.</p>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Hypnoterapi er dokumenteret effektivt til at reducere angst, depression og søvnproblemer — de tilstande der typisk ledsager fastlåst sorg. Arbejdet med de automatiske emotionelle reaktioner er præcis det nervesystemsarbejde sorgebearbejdning kræver.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>For de fleste aftager sorgen gradvist, men hos 10–15 pct. af efterladte bliver den vedvarende og invaliderende. Denne tilstand - forlænget sorglidelse - blev anerkendt som selvstændig diagnose i WHO's ICD-11 i 2022. Den kendetegnes ved intens, fastlåst sorg der hindrer livet i at gå videre, typisk mere end 12 måneder efter tabet.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Hypnoterapi er dokumenteret effektivt til at reducere angst, depression og søvnproblemer - de tilstande der typisk ledsager fastlåst sorg. Arbejdet med de automatiske emotionelle reaktioner er præcis det nervesystemsarbejde sorgebearbejdning kræver.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: WHO ICD-11 (2022) om forlænget sorglidelse, <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a>.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør ved sorg</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi kan hjælpe der hvor sorgen sidder fast. Ikke ved at fjerne savnet — savnet hører til. Men ved at hjælpe nervesystemet med at bearbejde tabet, så du gradvist finder en bæredygtig måde at leve videre med det på.</p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>I den hypnotiske tilstand kan der arbejdes med de dele af sorgen der er for svære at nå i ord — de ting der er uafsluttede, usagte, eller fastlåste som en kropslig reaktion snarere end en tanke. Mange beskriver at der i sessionen åbner sig rum til noget de ikke vidste de bar på.</p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Arbejdet fjerner ikke minderne. Det ændrer den fastlåste smerte — så minderne kan være der, uden at de lammer.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi kan hjælpe der hvor sorgen sidder fast. Ikke ved at fjerne savnet - savnet hører til. Men ved at hjælpe nervesystemet med at bearbejde tabet, så du gradvist finder en bæredygtig måde at leve videre med det på.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>I den hypnotiske tilstand kan der arbejdes med de dele af sorgen der er for svære at nå i ord - de ting der er uafsluttede, usagte, eller fastlåste som en kropslig reaktion snarere end en tanke. Mange beskriver at der i sessionen åbner sig rum til noget de ikke vidste de bar på.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Arbejdet fjerner ikke minderne. Det ændrer den fastlåste smerte - så minderne kan være der, uden at de lammer.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sorg tager mange former</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
             {[
-              { titel: "Tab af en nær person", tekst: "Dødsfald — pludseligt eller forventet — sætter sig forskelligt. Det pludselige tab giver sjældent tid til forberedelse. Det forventede kan have sin egen kompleksitet: lettelse og sorg side om side, skyld over at have levet videre. Begge er naturlige og kan bearbejdes." },
-              { titel: "Sorg der aldrig fik lov at sætte sig", tekst: "Mange bærer på sorg der aldrig fik rum: en abort, et misbrug, et svigt der ikke blev anerkendt, en relation der sluttede brat. Sorgen kan sidde i årtier uden at have et navn. Det er stadig sorg — og det kan stadig bearbejdes." },
-              { titel: "Tab af det man troede livet ville blive", tekst: "Skilsmisse, infertilitet, alvorlig sygdom, miste sit arbejde. Tab er ikke kun mennesker — det er også drømme, planer og forestillinger om fremtiden. Den slags sorg tages sjældent seriøst af omgivelserne, men den sidder ligeså dybt." },
-              { titel: "Sorg og skyld", tekst: "Mange bærer på skyld over det der ikke blev sagt, gjort eller gjort anderledes. Skyld forstærker og fastholder sorgen. Hypnoterapi kan arbejde med begge lag — ikke for at tilgive eller glemme, men for at slippe det der holder dig fast i fortiden." },
+              { titel: "Tab af en nær person", tekst: "Dødsfald - pludseligt eller forventet - sætter sig forskelligt. Det pludselige tab giver sjældent tid til forberedelse. Det forventede kan have sin egen kompleksitet: lettelse og sorg side om side, skyld over at have levet videre. Begge er naturlige og kan bearbejdes." },
+              { titel: "Sorg der aldrig fik lov at sætte sig", tekst: "Mange bærer på sorg der aldrig fik rum: en abort, et misbrug, et svigt der ikke blev anerkendt, en relation der sluttede brat. Sorgen kan sidde i årtier uden at have et navn. Det er stadig sorg - og det kan stadig bearbejdes." },
+              { titel: "Tab af det man troede livet ville blive", tekst: "Skilsmisse, infertilitet, alvorlig sygdom, miste sit arbejde. Tab er ikke kun mennesker - det er også drømme, planer og forestillinger om fremtiden. Den slags sorg tages sjældent seriøst af omgivelserne, men den sidder ligeså dybt." },
+              { titel: "Sorg og skyld", tekst: "Mange bærer på skyld over det der ikke blev sagt, gjort eller gjort anderledes. Skyld forstærker og fastholder sorgen. Hypnoterapi kan arbejde med begge lag - ikke for at tilgive eller glemme, men for at slippe det der holder dig fast i fortiden." },
             ].map((k) => (
               <div key={k.titel}>
                 <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>{k.titel}</h3>
@@ -79,7 +79,7 @@ export default function SorgPage() {
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler om hvem eller hvad du har mistet, hvornår det skete, og hvad der er sværest nu. Ingen krav om at gå i detaljer med det smertefulde i denne fase. Her afklares om hypnoterapi er den rette tilgang.</p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> En grundig samtale om din sorg og dens karakter, efterfulgt af den første hypnose. Tempoet sættes af dig. Mange oplever en lettelse allerede efter den første session — ikke fordi sorgen er væk, men fordi noget er begyndt at bevæge sig.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> En grundig samtale om din sorg og dens karakter, efterfulgt af den første hypnose. Tempoet sættes af dig. Mange oplever en lettelse allerede efter den første session - ikke fordi sorgen er væk, men fordi noget er begyndt at bevæge sig.</p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet dykker gradvist dybere. Nylig sorg og fastlåst langtidssorg kræver forskelligt antal sessioner. Den gratis forsamtale giver et realistisk billede af hvad der er relevant for dig.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.</p>
         </section>
@@ -91,7 +91,7 @@ export default function SorgPage() {
 
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
-          <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>Jan arbejder med sorg og tab i mange former — nylig sorg, fastlåst langtidssorg, og tab der aldrig fik et navn. Han møder det der er svært med ro og uden at skynde på processen.</p>
+          <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>Jan arbejder med sorg og tab i mange former - nylig sorg, fastlåst langtidssorg, og tab der aldrig fik et navn. Han møder det der er svært med ro og uden at skynde på processen.</p>
           <div style={{ padding: "12px 16px", background: "#f0f4f8", borderRadius: "6px", display: "inline-block" }}>
             <p style={{ fontSize: "14px", fontWeight: 500, color: "#333", margin: "0 0 8px" }}>🎯 Gratis forsamtale, 30 minutter, telefon eller fysisk</p>
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
@@ -105,11 +105,11 @@ export default function SorgPage() {
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål om sorg og hypnose</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             {[
-              { q: "Kan hypnose hjælpe mod sorg?", a: "Ja, der hvor sorgen sidder fast. Hypnoterapi fjerner ikke savnet — savnet hører til. Men den hjælper nervesystemet med at bearbejde tabet, så du finder en bæredygtig måde at leve videre med det. Det er særligt relevant ved fastlåst eller kompliceret sorg." },
-              { q: "Hvornår er sorg fastlåst?", a: "Når sorgen ikke finder vej igennem, men bliver en vedvarende tilstand af uro, tomhed eller smerte uden bedring over tid. Det ses typisk ved pludselige, traumatiske eller uafsluttede tab — og ved sorg der aldrig fik rum til at blive bearbejdet." },
-              { q: "Tager hypnose minderne om den jeg har mistet?", a: "Nej. Hypnoterapi fjerner hverken minder eller kærlighed til den du har mistet. Den arbejder med den fastlåste smerte — så minderne kan være der, og du kan tænke på dem, uden at det lammer dig." },
+              { q: "Kan hypnose hjælpe mod sorg?", a: "Ja, der hvor sorgen sidder fast. Hypnoterapi fjerner ikke savnet - savnet hører til. Men den hjælper nervesystemet med at bearbejde tabet, så du finder en bæredygtig måde at leve videre med det. Det er særligt relevant ved fastlåst eller kompliceret sorg." },
+              { q: "Hvornår er sorg fastlåst?", a: "Når sorgen ikke finder vej igennem, men bliver en vedvarende tilstand af uro, tomhed eller smerte uden bedring over tid. Det ses typisk ved pludselige, traumatiske eller uafsluttede tab - og ved sorg der aldrig fik rum til at blive bearbejdet." },
+              { q: "Tager hypnose minderne om den jeg har mistet?", a: "Nej. Hypnoterapi fjerner hverken minder eller kærlighed til den du har mistet. Den arbejder med den fastlåste smerte - så minderne kan være der, og du kan tænke på dem, uden at det lammer dig." },
               { q: "Kan hypnoterapi hjælpe selv om tabet skete for mange år siden?", a: "Ja. Der er ingen tidsgrænse for sorgbearbejdning. Mange søger hjælp til sorg der er årtier gammel og aldrig rigtig fandt vej igennem. Nervesystemet arbejder med det der er, ikke med hvornår det skete." },
-              { q: "Kan hypnoterapi hjælpe med sorg og skyld?", a: "Ja. Skyld er en af de mest udbredte og fastholdende komponenter i sorg. Hypnoterapi kan arbejde med begge lag — ikke for at tilgive eller glemme, men for at slippe det der holder dig fast i fortiden og hindrer dig i at leve videre." },
+              { q: "Kan hypnoterapi hjælpe med sorg og skyld?", a: "Ja. Skyld er en af de mest udbredte og fastholdende komponenter i sorg. Hypnoterapi kan arbejde med begge lag - ikke for at tilgive eller glemme, men for at slippe det der holder dig fast i fortiden og hindrer dig i at leve videre." },
             ].map((item) => (
               <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>{item.q}</h3>
