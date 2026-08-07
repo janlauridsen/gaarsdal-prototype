@@ -71,7 +71,7 @@ export default function Page() {
                                           "name": "Er skærmafhængighed en rigtig diagnose?",
                                           "acceptedAnswer": {
                                                         "@type": "Answer",
-                                                        "text": "Ikke som selvstændig diagnose i Danmark. Det er en beskrivelse af et mønster, ikke en sygdom. Det betyder ikke at det er harmløst: forskningen viser en klar sammenhæng mellem højt skærmforbrug og angst, depression og søvnproblemer hos børn og unge."
+                                                        "text": "Ikke som selvstændig diagnose i Danmark. Det er en beskrivelse af et mønster, ikke en sygdom. Det betyder ikke at det er harmløst: forskningen peger på en sammenhæng mellem højt skærmforbrug og angst, depression og søvnproblemer hos børn og unge."
                                           }
                             }
               ]
@@ -107,7 +107,7 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Forskning viser en klar sammenhæng mellem høj skærmtid og øget forekomst af angst, depression og søvnproblemer hos børn og unge. Sundhedsstyrelsen og WHO anbefaler begrænsning af skærmtid og adressering af de sociale og psykologiske behov bag brugen.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Forskning peger på en sammenhæng mellem høj skærmtid og øget forekomst af angst, depression og søvnproblemer hos børn og unge. Sundhedsstyrelsen og WHO anbefaler begrænsning af skærmtid og adressering af de sociale og psykologiske behov bag brugen.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a>, WHO Guidelines on Physical Activity and Sedentary Behaviour, Twenge et al. 2018.</p>
         </section>
 
@@ -120,9 +120,9 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan virker hypnose for børn</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det første mange forældre spørger om: er det trygt? Svaret er ja. Hypnose hos børn er ikke kontroltab eller noget mystisk. Det er en fokuseret, afslappet tilstand, som børn faktisk kender bedre end voksne: det er den samme tilstand, de er i, når de er helt opslugt af leg eller en god historie. Børn er ofte lettere at arbejde med end voksne, netop fordi deres fantasi er stærk og deres mønstre endnu ikke har sat sig fast gennem årtier.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det første mange forældre spørger om: er det trygt? Ja. Hypnose hos børn er ikke kontroltab eller noget mystisk. Det er en fokuseret, afslappet tilstand, som børn faktisk kender bedre end voksne: det er den samme tilstand, de er i, når de er helt opslugt af leg eller en god historie. Børn er ofte lettere at arbejde med end voksne, netop fordi deres fantasi er stærk og deres mønstre endnu ikke har sat sig fast gennem årtier.</p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>I den tilstand arbejdes der med barnets indre billeder og automatiske reaktioner. Barnet behøver ikke kunne forklare eller analysere sit problem, og det er en afgørende forskel fra samtaleterapi. Mange børn kan ikke sætte ord på hvorfor de har det som de har det, men de kan sagtens forestille sig, mærke og opleve. Det er præcis dér hypnoterapien arbejder.</p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Barnet hører alt, husker alt og har fuld kontrol undervejs. De fleste børn beskriver det som rart og afslappende, og for skærmvaner er det centralt: barnet skal ikke skammes ud af skærmen, men have mødt det behov, skærmen dækker.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Barnet hører alt, husker det der sker, og har fuld kontrol undervejs. De fleste børn beskriver det som rart og afslappende, og for skærmvaner er det centralt: barnet skal ikke skammes ud af skærmen, men have mødt det behov, skærmen dækker.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
@@ -194,7 +194,7 @@ export default function Page() {
               },
               {
                 q: "Er skærmafhængighed en rigtig diagnose?",
-                a: "Ikke som selvstændig diagnose i Danmark. Det er en beskrivelse af et mønster, ikke en sygdom. Det betyder ikke at det er harmløst: forskningen viser en klar sammenhæng mellem højt skærmforbrug og angst, depression og søvnproblemer hos børn og unge.",
+                a: "Ikke som selvstændig diagnose i Danmark. Det er en beskrivelse af et mønster, ikke en sygdom. Det betyder ikke at det er harmløst: forskningen peger på en sammenhæng mellem højt skærmforbrug og angst, depression og søvnproblemer hos børn og unge.",
               },
             ].map((item) => (
               <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>

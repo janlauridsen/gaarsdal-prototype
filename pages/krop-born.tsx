@@ -92,11 +92,11 @@ export default function Page() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
                         <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Det forvredne selvbillede er neurologisk</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hvad et barn ser, når det kigger i spejlet er ikke blot en visuel registrering. Det er en fortolkning filtreret gennem eksisterende overbevisninger. Et barn med lavt selvbillede ser sig selv anderledes end andre ser det. Det er ikke indbildning, det er neurologisk.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hvad et barn ser, når det kigger i spejlet, er ikke blot en visuel registrering. Det er en fortolkning filtreret gennem eksisterende overbevisninger. Et barn med lavt selvbillede ser sig selv anderledes end andre ser det. Det er ikke indbildning. Barnet ser noget andet, end du gør.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Sociale medier forstærker presset massivt</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Filtrerede billeder og kropsidealer på sociale medier skaber et urealistisk sammenligningsgrundlag. For børn og unge i identitetsudvikling er dette særligt skadeligt. Forskning viser en direkte sammenhæng mellem skærmtid og kropsutilfredshed hos unge.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Filtrerede billeder og kropsidealer på sociale medier skaber et urealistisk sammenligningsgrundlag. For børn og unge i identitetsudvikling er dette særligt skadeligt. Undersøgelser peger på en sammenhæng mellem skærmtid og kropsutilfredshed hos unge.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Verbal ros ændrer det ikke</h3>
@@ -113,16 +113,16 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med selvbilledet under bevidst tænkning, det sted, overbevisningerne faktisk sidder. Barnet lærer at opleve sig selv anderledes indefra. Det er en af de mest markante forandringer hypnoterapi kan skabe hos unge.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med selvbilledet under bevidst tænkning - det sted, hvor overbevisningerne sidder. Barnet lærer at opleve sig selv anderledes indefra. Det er et af de områder Jan oftest arbejder med hos unge.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med kropsutilfredshed som en del af et bredere selvbilledarbejde. Tilgangen er skånsom og tilpasset barnets alder. Forældrene er en del af forløbet.</p>
         </section>
 
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan virker hypnose for børn</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det første mange forældre spørger om: er det trygt? Svaret er ja. Hypnose hos børn er ikke kontroltab eller noget mystisk. Det er en fokuseret, afslappet tilstand, som børn faktisk kender bedre end voksne: det er den samme tilstand, de er i, når de er helt opslugt af leg eller en god historie. Børn er ofte lettere at arbejde med end voksne, netop fordi deres fantasi er stærk og deres mønstre endnu ikke har sat sig fast gennem årtier.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det første mange forældre spørger om: er det trygt? Ja. Hypnose hos børn er ikke kontroltab eller noget mystisk. Det er en fokuseret, afslappet tilstand, som børn faktisk kender bedre end voksne: det er den samme tilstand, de er i, når de er helt opslugt af leg eller en god historie. Børn er ofte lettere at arbejde med end voksne, netop fordi deres fantasi er stærk og deres mønstre endnu ikke har sat sig fast gennem årtier.</p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>I den tilstand arbejdes der med barnets indre billeder og automatiske reaktioner. Barnet behøver ikke kunne forklare eller analysere sit problem, og det er en afgørende forskel fra samtaleterapi. Mange børn kan ikke sætte ord på hvorfor de har det som de har det, men de kan sagtens forestille sig, mærke og opleve. Det er præcis dér hypnoterapien arbejder.</p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Barnet hører alt, husker alt og har fuld kontrol undervejs. De fleste børn beskriver det som rart og afslappende, og ved kropsutilfredshed er det vigtigt: barnet skal ikke argumenteres til at kunne lide sin krop, det skal mærke det indefra.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Barnet hører alt, husker det der sker, og har fuld kontrol undervejs. De fleste børn beskriver det som rart og afslappende, og ved kropsutilfredshed er det vigtigt: barnet skal ikke argumenteres til at kunne lide sin krop, det skal mærke det indefra.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>

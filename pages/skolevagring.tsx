@@ -92,7 +92,7 @@ export default function Page() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
                         <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Angst gemmer sig som fysiske symptomer</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Mavepine, kvalme og hovedpine mandag morgen er reelle. Hjernen aktiverer tarmens nervesystem direkte via vagusnerven, når den registrerer en trussel. Barnet lider, selvom der ikke er noget fysisk galt. Det er et af de tydeligste tegn på angst hos børn.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Mavepine, kvalme og hovedpine mandag morgen er reelle. Hjernen og maven påvirker hinanden, og ved uro reagerer maven ofte først. Barnet lider, selvom der ikke er noget fysisk galt. Det er et af de tydeligste tegn på angst hos børn.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Undgåelse forværrer det</h3>
@@ -113,16 +113,16 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med den automatiske angstreaktion der sidder bag skolevægringen, ikke med selve skolen. Barnet lærer at skifte fra alarmberedskab til ro i de situationer, der tidligere udløste reaktionen. Det er en reel neurologisk ændring.</p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med børn fra 8 år. Forældrene er altid en del af forløbet. Mange familier oplever markant bedring allerede efter 1-2 sessioner. Den gratis forsamtale afklarer om hypnoterapi er det rette skridt.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med den automatiske angstreaktion der sidder bag skolevægringen, ikke med selve skolen. Barnet lærer at skifte fra alarmberedskab til ro i de situationer, der tidligere udløste reaktionen. Det er reaktionen der ændrer sig, ikke barnets vilje.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med børn fra 8 år. Forældrene er altid en del af forløbet. Nogle familier mærker en forskel hurtigt, andre har brug for længere tid. Den gratis forsamtale afklarer om hypnoterapi er det rette skridt.</p>
         </section>
 
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan virker hypnose for børn</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det første mange forældre spørger om: er det trygt? Svaret er ja. Hypnose hos børn er ikke kontroltab eller noget mystisk. Det er en fokuseret, afslappet tilstand, som børn faktisk kender bedre end voksne: det er den samme tilstand, de er i, når de er helt opslugt af leg eller en god historie. Børn er ofte lettere at arbejde med end voksne, netop fordi deres fantasi er stærk og deres mønstre endnu ikke har sat sig fast gennem årtier.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det første mange forældre spørger om: er det trygt? Ja. Hypnose hos børn er ikke kontroltab eller noget mystisk. Det er en fokuseret, afslappet tilstand, som børn faktisk kender bedre end voksne: det er den samme tilstand, de er i, når de er helt opslugt af leg eller en god historie. Børn er ofte lettere at arbejde med end voksne, netop fordi deres fantasi er stærk og deres mønstre endnu ikke har sat sig fast gennem årtier.</p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>I den tilstand arbejdes der med barnets indre billeder og automatiske reaktioner. Barnet behøver ikke kunne forklare eller analysere sit problem, og det er en afgørende forskel fra samtaleterapi. Mange børn kan ikke sætte ord på hvorfor de reagerer som de gør, men de kan sagtens forestille sig, mærke og opleve. Det er præcis dér hypnoterapien arbejder.</p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Barnet hører alt, husker alt og har fuld kontrol undervejs. De fleste børn beskriver det som rart og afslappende, og for skolevægring betyder det, at angstreaktionen ved tanken om skolen kan ændres uden at barnet skal presses gennem lange forklaringer om hvorfor.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Barnet hører alt, husker det der sker, og har fuld kontrol undervejs. De fleste børn beskriver det som rart og afslappende, og for skolevægring betyder det, at angstreaktionen ved tanken om skolen kan ændres uden at barnet skal presses gennem lange forklaringer om hvorfor.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>

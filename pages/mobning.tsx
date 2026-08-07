@@ -107,22 +107,22 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Forskning viser at mobning har langvarige psykologiske konsekvenser. Børn, der har været udsat for mobning har øget risiko for angst, depression og lavt selvværd i voksenlivet. Tidlig bearbejdning reducerer risikoen for langvarige konsekvenser markant.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Forskning viser at mobning har langvarige psykologiske konsekvenser. Børn, der har været udsat for mobning har øget risiko for angst, depression og lavt selvværd i voksenlivet. Forskningen peger på, at tidlig bearbejdning har betydning for, hvordan det går på længere sigt.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a>, Nationalt Videnscenter for Trivsel og Mobning, Olweus Bullying Research.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med de overbevisninger om skyld og skam som mobning efterlader. Ikke med, hvad der skete, men med, hvad barnet tror om sig selv nu. Mange børn oplever en mærkbar lettelse og bedre selvbillede efter 1-2 sessioner.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med de overbevisninger om skyld og skam som mobning efterlader. Ikke med, hvad der skete, men med, hvad barnet tror om sig selv nu. Nogle børn mærker en lettelse ret hurtigt, andre har brug for længere tid. Forsamtalen giver et realistisk billede af hvad der skal til.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med mobningens eftervirkninger hos børn og unge. Forældrene inddrages altid. Tilgangen er skånsom og tilpasset barnets alder.</p>
         </section>
 
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan virker hypnose for børn</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det første mange forældre spørger om: er det trygt? Svaret er ja. Hypnose hos børn er ikke kontroltab eller noget mystisk. Det er en fokuseret, afslappet tilstand, som børn faktisk kender bedre end voksne: det er den samme tilstand, de er i, når de er helt opslugt af leg eller en god historie. Børn er ofte lettere at arbejde med end voksne, netop fordi deres fantasi er stærk og deres mønstre endnu ikke har sat sig fast gennem årtier.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det første mange forældre spørger om: er det trygt? Ja. Hypnose hos børn er ikke kontroltab eller noget mystisk. Det er en fokuseret, afslappet tilstand, som børn faktisk kender bedre end voksne: det er den samme tilstand, de er i, når de er helt opslugt af leg eller en god historie. Børn er ofte lettere at arbejde med end voksne, netop fordi deres fantasi er stærk og deres mønstre endnu ikke har sat sig fast gennem årtier.</p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>I den tilstand arbejdes der med barnets indre billeder og automatiske reaktioner. Barnet behøver ikke kunne forklare eller analysere sit problem, og det er en afgørende forskel fra samtaleterapi. Mange børn kan ikke sætte ord på hvorfor de har det som de har det, men de kan sagtens forestille sig, mærke og opleve. Det er præcis dér hypnoterapien arbejder.</p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Barnet hører alt, husker alt og har fuld kontrol undervejs. De fleste børn beskriver det som rart og afslappende, og for børn der har været udsat for mobning, er det ofte første gang i lang tid, de mærker deres krop slappe helt af.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Barnet hører alt, husker det der sker, og har fuld kontrol undervejs. De fleste børn beskriver det som rart og afslappende, og for børn der har været udsat for mobning, er det ofte første gang i lang tid, de mærker deres krop slappe helt af.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
@@ -150,7 +150,7 @@ export default function Page() {
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Når såret er gammelt</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Nogle gange opdages følgerne først år senere: en teenager med socialt ubehag, hvis rod viser sig at være mobning i de små klasser. Det er aldrig for sent at arbejde med det. Mønsteret kan ændres, uanset hvor længe det har siddet.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Nogle gange opdages følgerne først år senere: en teenager med socialt ubehag, hvis rod viser sig at være mobning i de små klasser. Det er sjældent for sent at arbejde med det. Mønsteret kan ændres, uanset hvor længe det har siddet.</p>
             </div>
           </div>
         </section>

@@ -92,7 +92,7 @@ export default function Page() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
                         <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Hjernen afviser information der ikke passer</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Ros og bekræftelse opfattes som undtagelsen, der bekræfter reglen, når selvbilledet er lavt. Det er ikke negativt tænkning, det er et kognitivt filter. Hjernen sorterer information, så den passer til det eksisterende billede af sig selv.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Ros og bekræftelse opfattes som undtagelsen, der bekræfter reglen, når selvbilledet er lavt. Det er ikke negativ tænkning, det er et kognitivt filter. Hjernen sorterer information, så den passer til det eksisterende billede af sig selv.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Sociale medier forstærker det</h3>
@@ -113,16 +113,16 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi går ind under de bevidste lag og arbejder direkte med overbevisningerne om barnets egen værdi. Det er anderledes end at tale om selvbillede. Barnet oplever sig selv anderledes indefra. Forandringen er reel og mærkbar.</p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med selvbillede hos børn fra 8 år. Tilgangen tilpasses barnets alder og, hvad der historisk har formet selvbilledet.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi går ind under de bevidste lag og arbejder direkte med overbevisningerne om barnets egen værdi. Det er anderledes end at tale om selvbillede. Barnet oplever sig selv anderledes indefra.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med selvbillede hos børn fra 8 år. Tilgangen tilpasses barnets alder og det, der har formet selvbilledet undervejs.</p>
         </section>
 
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan virker hypnose for børn</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det første mange forældre spørger om: er det trygt? Svaret er ja. Hypnose hos børn er ikke kontroltab eller noget mystisk. Det er en fokuseret, afslappet tilstand, som børn faktisk kender bedre end voksne: det er den samme tilstand, de er i, når de er helt opslugt af leg eller en god historie. Børn er ofte lettere at arbejde med end voksne, netop fordi deres fantasi er stærk og deres mønstre endnu ikke har sat sig fast gennem årtier.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det første mange forældre spørger om: er det trygt? Ja. Hypnose hos børn er ikke kontroltab eller noget mystisk. Det er en fokuseret, afslappet tilstand, som børn faktisk kender bedre end voksne: det er den samme tilstand, de er i, når de er helt opslugt af leg eller en god historie. Børn er ofte lettere at arbejde med end voksne, netop fordi deres fantasi er stærk og deres mønstre endnu ikke har sat sig fast gennem årtier.</p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>I den tilstand arbejdes der med barnets indre billeder og automatiske reaktioner. Barnet behøver ikke kunne forklare eller analysere sit problem, og det er en afgørende forskel fra samtaleterapi. Mange børn kan ikke sætte ord på hvorfor de har det som de har det, men de kan sagtens forestille sig, mærke og opleve. Det er præcis dér hypnoterapien arbejder.</p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Barnet hører alt, husker alt og har fuld kontrol undervejs. De fleste børn beskriver det som rart og afslappende, og netop ved selvbillede er det en fordel: barnet skal ikke overbevises med ord, det opdager nye sider af sig selv indefra.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Barnet hører alt, husker det der sker, og har fuld kontrol undervejs. De fleste børn beskriver det som rart og afslappende, og netop ved selvbillede er det en fordel: barnet skal ikke overbevises med ord, det opdager nye sider af sig selv indefra.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
@@ -150,7 +150,7 @@ export default function Page() {
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Fra præstation til væren</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Mange børn med lavt selvværd har koblet deres værdi til at præstere: gode karakterer, mål i fodbold, at være sød. Hypnoterapien hjælper barnet med at mærke en grundværdi, der ikke skal fortjenes. Det er den forskel, der holder resten af livet.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Mange børn med lavt selvværd har koblet deres værdi til at præstere: gode karakterer, mål i fodbold, at være sød. Hypnoterapien hjælper barnet med at mærke en grundværdi, der ikke skal fortjenes. Det er den forskel, der betyder noget på længere sigt.</p>
             </div>
           </div>
         </section>
