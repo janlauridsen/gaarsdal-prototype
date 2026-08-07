@@ -35,6 +35,49 @@ export default function Page() {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                            {
+                                          "@type": "Question",
+                                          "name": "Vi har prøvet alt med skærmfri aftener og faste rutiner. Hvorfor skulle det her virke?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Fordi søvnproblemer hos børn sjældent handler om rutiner alene. Rutiner hjælper et nervesystem der godt kan falde til ro. Når nervesystemet ikke slipper ned, ændrer den bedste sengetidsrutine ikke ret meget. Hypnoterapi arbejder med selve den tilstand, ikke med rammerne omkring den."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Kan vi bruge hypnoterapi samtidig med melatonin?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Det udelukker ikke hinanden, men medicin er lægens område, ikke Jans. Tal med jeres læge om hvad der skal ske med melatoninen. Nogle familier trapper ned undervejs, andre venter til søvnen har stabiliseret sig. Den beslutning tages sammen med lægen."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Mit barn er teenager og vil ikke have at jeg blander mig.",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Det er normalt, og det kan lade sig gøre. Ældre børn arbejder ofte bedst med rummet for sig selv, og separate samtaler er en mulighed. Du får stadig at vide hvad der arbejdes med i overordnede træk, uden at den unge føler sig refereret."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Hvornår kan vi mærke en forskel?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Mange familier oplever ændringer inden for de første sessioner, ofte først i indsovningstiden. Det er sjældent en lige linje. Perioder med sygdom, prøver eller ferier kan give tilbageslag, uden at det betyder at det ikke virker."
+                                          }
+                            }
+              ]
+            }),
+          }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
@@ -128,6 +171,36 @@ export default function Page() {
               <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>Book forsamtale</Link>
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>Ring +45 42 80 74 74</a>
             </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål om søvnproblemer hos børn</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {[
+              {
+                q: "Vi har prøvet alt med skærmfri aftener og faste rutiner. Hvorfor skulle det her virke?",
+                a: "Fordi søvnproblemer hos børn sjældent handler om rutiner alene. Rutiner hjælper et nervesystem der godt kan falde til ro. Når nervesystemet ikke slipper ned, ændrer den bedste sengetidsrutine ikke ret meget. Hypnoterapi arbejder med selve den tilstand, ikke med rammerne omkring den.",
+              },
+              {
+                q: "Kan vi bruge hypnoterapi samtidig med melatonin?",
+                a: "Det udelukker ikke hinanden, men medicin er lægens område, ikke Jans. Tal med jeres læge om hvad der skal ske med melatoninen. Nogle familier trapper ned undervejs, andre venter til søvnen har stabiliseret sig. Den beslutning tages sammen med lægen.",
+              },
+              {
+                q: "Mit barn er teenager og vil ikke have at jeg blander mig.",
+                a: "Det er normalt, og det kan lade sig gøre. Ældre børn arbejder ofte bedst med rummet for sig selv, og separate samtaler er en mulighed. Du får stadig at vide hvad der arbejdes med i overordnede træk, uden at den unge føler sig refereret.",
+              },
+              {
+                q: "Hvornår kan vi mærke en forskel?",
+                a: "Mange familier oplever ændringer inden for de første sessioner, ofte først i indsovningstiden. Det er sjældent en lige linje. Perioder med sygdom, prøver eller ferier kan give tilbageslag, uden at det betyder at det ikke virker.",
+              },
+            ].map((item) => (
+              <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>{item.q}</h3>
+                <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>{item.a}</p>
+              </div>
+            ))}
           </div>
         </section>
 

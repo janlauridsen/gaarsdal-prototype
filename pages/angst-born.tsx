@@ -35,6 +35,49 @@ export default function Page() {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                            {
+                                          "@type": "Question",
+                                          "name": "Fra hvilken alder kan et barn gå til hypnoterapi?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Jan arbejder med børn fra 8 år. Under den alder er sproget og fantasien sjældent modne nok til at arbejde med indre billeder på den måde metoden kræver. Er dit barn yngre, handler forsamtalen typisk mere om jer som forældre, og hvad I kan ændre i hverdagen omkring barnet."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Skal jeg være med inde i rummet?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Det bestemmer barnet. Nogle børn er trygge ved at have en forælder siddende med, andre arbejder bedre alene. Begge dele fungerer. Uanset hvad deltager du i opsamlende samtaler, så du ved hvad der bliver arbejdet med, og hvordan du støtter derhjemme."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Mit barn vil ikke tale om sin angst. Kan det så overhovedet bruges?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Ja, og det er ofte netop derfor det virker. Barnet behøver ikke kunne forklare eller analysere hvorfor det reagerer som det gør. Det skal kunne forestille sig noget, og det kan de fleste børn bedre end voksne. Det er den afgørende forskel fra samtaleterapi."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Hvor mange sessioner skal der til?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Det afhænger af hvilken slags angst det er. Afgrænset angst, for eksempel for hunde eller mørke, reagerer ofte på ganske få sessioner. Generaliseret angst der har stået på i årevis tager længere tid. Forsamtalen giver et realistisk billede, før I beslutter jer."
+                                          }
+                            }
+              ]
+            }),
+          }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
@@ -128,6 +171,36 @@ export default function Page() {
               <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>Book forsamtale</Link>
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>Ring +45 42 80 74 74</a>
             </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål om angst hos børn</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {[
+              {
+                q: "Fra hvilken alder kan et barn gå til hypnoterapi?",
+                a: "Jan arbejder med børn fra 8 år. Under den alder er sproget og fantasien sjældent modne nok til at arbejde med indre billeder på den måde metoden kræver. Er dit barn yngre, handler forsamtalen typisk mere om jer som forældre, og hvad I kan ændre i hverdagen omkring barnet.",
+              },
+              {
+                q: "Skal jeg være med inde i rummet?",
+                a: "Det bestemmer barnet. Nogle børn er trygge ved at have en forælder siddende med, andre arbejder bedre alene. Begge dele fungerer. Uanset hvad deltager du i opsamlende samtaler, så du ved hvad der bliver arbejdet med, og hvordan du støtter derhjemme.",
+              },
+              {
+                q: "Mit barn vil ikke tale om sin angst. Kan det så overhovedet bruges?",
+                a: "Ja, og det er ofte netop derfor det virker. Barnet behøver ikke kunne forklare eller analysere hvorfor det reagerer som det gør. Det skal kunne forestille sig noget, og det kan de fleste børn bedre end voksne. Det er den afgørende forskel fra samtaleterapi.",
+              },
+              {
+                q: "Hvor mange sessioner skal der til?",
+                a: "Det afhænger af hvilken slags angst det er. Afgrænset angst, for eksempel for hunde eller mørke, reagerer ofte på ganske få sessioner. Generaliseret angst der har stået på i årevis tager længere tid. Forsamtalen giver et realistisk billede, før I beslutter jer.",
+              },
+            ].map((item) => (
+              <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>{item.q}</h3>
+                <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>{item.a}</p>
+              </div>
+            ))}
           </div>
         </section>
 

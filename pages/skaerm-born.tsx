@@ -35,6 +35,49 @@ export default function Page() {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                            {
+                                          "@type": "Question",
+                                          "name": "Kan hypnoterapi få mit barn til at bruge mindre skærm?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Ikke som fjernbetjening. Hypnoterapi arbejder med behovet bag brugen — anerkendelse, tilhørsforhold eller flugt fra noget ubehageligt. Bliver det behov mødt andre steder, falder skærmtiden som regel af sig selv. Går man direkte efter timerne uden at røre behovet, flytter det bare form."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Skal vi indføre forbud imens?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Rammer er fornuftige, men forbud alene adresserer ikke hvorfor barnet søger derhen. Det er også den hurtigste vej til daglige konflikter, hvor I bruger jeres energi på at kontrollere i stedet for at forstå. Hvad der giver mening hos jer, tager vi i forsamtalen."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Mit barn synes ikke selv det er et problem.",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Det er meget almindeligt, og det udelukker ikke et forløb. Men det ændrer hvor man starter. Er der ingen egen motivation, arbejder vi sjældent direkte med skærmen. Vi arbejder med det barnet selv oplever som svært — dårlig søvn, uro, det med at sammenligne sig — og skærmen kommer ind ad den vej."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Er skærmafhængighed en rigtig diagnose?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Ikke som selvstændig diagnose i Danmark. Det er en beskrivelse af et mønster, ikke en sygdom. Det betyder ikke at det er harmløst: forskningen viser en klar sammenhæng mellem højt skærmforbrug og angst, depression og søvnproblemer hos børn og unge."
+                                          }
+                            }
+              ]
+            }),
+          }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
@@ -130,6 +173,36 @@ export default function Page() {
         <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Når skærmbrug kan være et symptom</h2>
           <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Massiv skærmbrug kan nogle gange være et symptom på noget andet, for eksempel ADHD, autisme, angst eller depression. Hvis I oplever at problemet er en del af et bredere billede, eller at barnet mistrives markant, bør I tale med egen læge eller PPR. Hypnoterapi kan arbejde med vanen og det underliggende behov, men erstatter ikke en udredning.</p>
+        </section>
+
+        {/* FAQ */}
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål om skærmforbrug hos børn</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {[
+              {
+                q: "Kan hypnoterapi få mit barn til at bruge mindre skærm?",
+                a: "Ikke som fjernbetjening. Hypnoterapi arbejder med behovet bag brugen — anerkendelse, tilhørsforhold eller flugt fra noget ubehageligt. Bliver det behov mødt andre steder, falder skærmtiden som regel af sig selv. Går man direkte efter timerne uden at røre behovet, flytter det bare form.",
+              },
+              {
+                q: "Skal vi indføre forbud imens?",
+                a: "Rammer er fornuftige, men forbud alene adresserer ikke hvorfor barnet søger derhen. Det er også den hurtigste vej til daglige konflikter, hvor I bruger jeres energi på at kontrollere i stedet for at forstå. Hvad der giver mening hos jer, tager vi i forsamtalen.",
+              },
+              {
+                q: "Mit barn synes ikke selv det er et problem.",
+                a: "Det er meget almindeligt, og det udelukker ikke et forløb. Men det ændrer hvor man starter. Er der ingen egen motivation, arbejder vi sjældent direkte med skærmen. Vi arbejder med det barnet selv oplever som svært — dårlig søvn, uro, det med at sammenligne sig — og skærmen kommer ind ad den vej.",
+              },
+              {
+                q: "Er skærmafhængighed en rigtig diagnose?",
+                a: "Ikke som selvstændig diagnose i Danmark. Det er en beskrivelse af et mønster, ikke en sygdom. Det betyder ikke at det er harmløst: forskningen viser en klar sammenhæng mellem højt skærmforbrug og angst, depression og søvnproblemer hos børn og unge.",
+              },
+            ].map((item) => (
+              <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>{item.q}</h3>
+                <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>{item.a}</p>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section style={{ marginBottom: "40px" }}>

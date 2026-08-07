@@ -35,6 +35,49 @@ export default function Page() {
             }),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": [
+                            {
+                                          "@type": "Question",
+                                          "name": "Skal vi presse barnet i skole imens?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Det er ikke et spørgsmål der har ét svar, og det er ikke Jans alene at afgøre. Fuldstændig undgåelse fastlåser mønsteret, men hårdt pres på et barn i panik gør det også værre. Hvor grænsen går for netop jeres barn, er noget I lægger sammen med skolen og PPR, og hypnoterapien tilpasses den plan."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Vi er allerede i gang med PPR. Kan vi bruge begge dele?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Ja. Ved skolevægring er hypnoterapi et supplement til det kommunale spor, ikke et alternativ. Det arbejder med barnets angstreaktion, mens PPR og skolen arbejder med rammer, fravær og tilbagevenden. De to ting spænder ikke ben for hinanden."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Hjælper det at skifte skole?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Sjældent varigt i sig selv. Skolen er som regel konteksten, ikke årsagen — bag skolevægring ligger typisk social angst, præstationsangst eller angst for at forlade hjemmet. Skifter man skole uden at det underliggende ændrer sig, vender mønsteret ofte tilbage efter nogle uger."
+                                          }
+                            },
+                            {
+                                          "@type": "Question",
+                                          "name": "Hvad hvis mit barn nægter at komme til den første session?",
+                                          "acceptedAnswer": {
+                                                        "@type": "Answer",
+                                                        "text": "Så starter vi uden barnet. Forsamtalen er alligevel med jer som forældre, og den kan give jer noget at gå videre med, uanset om barnet kommer med næste gang. Modstand mod at møde endnu en voksen der skal fikse en er en helt forventelig reaktion, ikke et tegn på at det ikke kan lade sig gøre."
+                                          }
+                            }
+              ]
+            }),
+          }}
+        />
       </Head>
       <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
 
@@ -124,6 +167,36 @@ export default function Page() {
               <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>Book forsamtale</Link>
               <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>Ring +45 42 80 74 74</a>
             </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section style={{ marginBottom: "60px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px" }}>Ofte stillede spørgsmål om skolevægring</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {[
+              {
+                q: "Skal vi presse barnet i skole imens?",
+                a: "Det er ikke et spørgsmål der har ét svar, og det er ikke Jans alene at afgøre. Fuldstændig undgåelse fastlåser mønsteret, men hårdt pres på et barn i panik gør det også værre. Hvor grænsen går for netop jeres barn, er noget I lægger sammen med skolen og PPR, og hypnoterapien tilpasses den plan.",
+              },
+              {
+                q: "Vi er allerede i gang med PPR. Kan vi bruge begge dele?",
+                a: "Ja. Ved skolevægring er hypnoterapi et supplement til det kommunale spor, ikke et alternativ. Det arbejder med barnets angstreaktion, mens PPR og skolen arbejder med rammer, fravær og tilbagevenden. De to ting spænder ikke ben for hinanden.",
+              },
+              {
+                q: "Hjælper det at skifte skole?",
+                a: "Sjældent varigt i sig selv. Skolen er som regel konteksten, ikke årsagen — bag skolevægring ligger typisk social angst, præstationsangst eller angst for at forlade hjemmet. Skifter man skole uden at det underliggende ændrer sig, vender mønsteret ofte tilbage efter nogle uger.",
+              },
+              {
+                q: "Hvad hvis mit barn nægter at komme til den første session?",
+                a: "Så starter vi uden barnet. Forsamtalen er alligevel med jer som forældre, og den kan give jer noget at gå videre med, uanset om barnet kommer med næste gang. Modstand mod at møde endnu en voksen der skal fikse en er en helt forventelig reaktion, ikke et tegn på at det ikke kan lade sig gøre.",
+              },
+            ].map((item) => (
+              <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>{item.q}</h3>
+                <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>{item.a}</p>
+              </div>
+            ))}
           </div>
         </section>
 
