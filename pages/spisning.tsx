@@ -40,7 +40,7 @@ export default function Page() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
                         <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Maden dækker et behov</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hjernen har lært at mad dæmper ubehag hurtigt og pålideligt. Den reaktion kører automatisk og er stærkere end beslutningen om at lade være, i det øjeblik ubehaget opstår. Det er ikke grådighed, det er en lært kobling.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hjernen har lært at mad dæmper ubehag hurtigt og pålideligt. Den reaktion kører automatisk og er stærkere end beslutningen om at lade være, i det øjeblik ubehaget opstår. Det er ikke grådighed. Det er en lært kobling.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Skam forstærker mønsteret</h3>

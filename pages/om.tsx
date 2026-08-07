@@ -77,8 +77,7 @@ export default function Om() {
               Jeg har altid været optaget af, hvordan mennesker fungerer, ikke
               kun på overfladen, men i de dybere lag, hvor vores automatiske
               reaktioner bliver skabt. Det er også derfor, jeg arbejder med
-              hypnose. Det er en metode, der giver adgang til de steder, hvor
-              forandring faktisk kan ske, uden at man skal presse sig selv eller
+              hypnose. Det er en metode, der giver adgang til de steder, hvor forandring kan ske, uden at man skal presse sig selv eller
               forklare alting perfekt.
             </p>
             <p className="text-muted leading-relaxed">
@@ -105,8 +104,7 @@ export default function Om() {
               de dybere lag, hvor automatiske reaktioner og mønstre skabes. Det
               har lært mig én ting: Når noget bliver ved med at drille, er det
               sjældent, fordi man ikke prøver hårdt nok. Det er, fordi man ikke
-              har fået adgang til det sted, hvor mønstret styres fra. Det er
-              præcis dér, hypnose kan noget særligt.
+              har fået adgang til det sted, hvor mønstret styres fra. Og det er dér, hypnose kan noget særligt.
             </p>
             <p className="text-muted leading-relaxed">
               Jeg er ikke psykolog eller læge. Hypnoterapi er ikke behandling i
@@ -139,7 +137,7 @@ export default function Om() {
                 <h3 className="font-semibold mb-2">Respekt for tempo</h3>
                 <p className="text-sm text-muted leading-relaxed">
                   Tempoet er dit. Der er ikke standardløsninger, og vi justerer
-                  undervejs ud fra, hvad der faktisk virker for dig.
+                  undervejs ud fra, hvad der virker for dig.
                 </p>
               </div>
             </div>
@@ -158,9 +156,7 @@ export default function Om() {
                 <div>
                   <strong className="block mb-1">Afklaring og målretning</strong>
                   <p className="text-sm text-muted leading-relaxed">
-                    Hvad sker der konkret for dig, og hvad ønsker du ændret? Vi
-                    starter altid med det, der faktisk er i spil, ikke med
-                    antagelser.
+                    Hvad sker der konkret for dig, og hvad ønsker du ændret? Vi starter med det, der er i spil, ikke med antagelser.
                   </p>
                 </div>
               </div>

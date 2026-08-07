@@ -54,7 +54,7 @@ export default function Hypnoterapi() {
         <p className="text-base-lg text-muted mb-12">
           Hypnoterapi kan være relevant, når du forstår problemet rationelt, men
           alligevel oplever, at de samme reaktioner bliver ved. Her kan du læse
-          mere om metoden, hvad der faktisk sker i en session, og hvad du kan
+          mere om metoden, hvad der sker i en session, og hvad du kan
           forvente af et forløb.
         </p>
 
@@ -96,8 +96,7 @@ export default function Hypnoterapi() {
                 <h3 className="font-medium mb-1">Afklaring og målretning</h3>
                 <p className="text-muted text-sm leading-relaxed">
                   Vi taler konkret om, hvad der sker for dig, ikke hvad det
-                  sandsynligvis handler om, men hvad du faktisk oplever i de
-                  situationer, du vil ændre. Hvad vil du have mere af? Hvad skal
+                  sandsynligvis handler om, men hvad du oplever i de situationer, du vil ændre. Hvad vil du have mere af? Hvad skal
                   stoppe med at tage energi?
                 </p>
               </div>
@@ -127,8 +126,7 @@ export default function Hypnoterapi() {
                 <h3 className="font-medium mb-1">Evaluering</h3>
                 <p className="text-muted text-sm leading-relaxed">
                   Kort afrunding: hvad gav mening, hvad mærkede du, og hvad er
-                  næste realistiske skridt. Ingen store analyser, bare det, der
-                  faktisk er nyttigt at tage med.
+                  næste realistiske skridt. Ingen store analyser, bare det, der er nyttigt at tage med.
                 </p>
               </div>
             </div>
@@ -146,7 +144,7 @@ export default function Hypnoterapi() {
           <p className="text-muted leading-relaxed mb-4">
             Et typisk forløb er 3-6 sessioner, men det afhænger af, hvad vi
             arbejder med. Tempoet er dit. Der er ingen standardpakker, og vi
-            justerer undervejs ud fra, hvad der faktisk virker.
+            justerer undervejs ud fra, hvad der virker.
           </p>
           <p className="text-muted leading-relaxed">
             Jeg tilbyder sessioner i min klinik på Bakkevej 36, 3460 Birkerød.
@@ -175,8 +173,7 @@ export default function Hypnoterapi() {
               </h3>
               <p className="text-muted leading-relaxed text-sm">
                 Det er meget almindeligt. Hypnoterapi kræver ikke, at du kan
-                "slukke hjernen". Vi tilpasser tilgangen til det, der faktisk
-                sker for dig, ikke til en idé om, hvordan det burde føles.
+                "slukke hjernen". Vi tilpasser tilgangen til det, der sker for dig, ikke til en idé om, hvordan det burde føles.
               </p>
             </div>
 

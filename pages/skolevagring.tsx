@@ -96,7 +96,7 @@ export default function Page() {
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Undgåelse forværrer det</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hver gang barnet slipper for det frygtsomme, bekræfter hjernen, at faren var reel. Undgåelsen giver kortvarig lettelse men fastlåser angsten. Over tid udvides det barnet ikke kan klare. Det er ikke villet, det er et neurologisk mønster.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Hver gang barnet slipper for det frygtsomme, bekræfter hjernen, at faren var reel. Undgåelsen giver kortvarig lettelse men fastlåser angsten. Over tid udvides det barnet ikke kan klare. Barnet vælger det ikke. Mønsteret kører af sig selv.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Årsagen er sjældent skolen i sig selv</h3>
@@ -120,15 +120,15 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan virker hypnose for børn</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det første mange forældre spørger om: er det trygt? Ja. Hypnose hos børn er ikke kontroltab eller noget mystisk. Det er en fokuseret, afslappet tilstand, som børn faktisk kender bedre end voksne: det er den samme tilstand, de er i, når de er helt opslugt af leg eller en god historie. Børn er ofte lettere at arbejde med end voksne, netop fordi deres fantasi er stærk og deres mønstre endnu ikke har sat sig fast gennem årtier.</p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>I den tilstand arbejdes der med barnets indre billeder og automatiske reaktioner. Barnet behøver ikke kunne forklare eller analysere sit problem, og det er en afgørende forskel fra samtaleterapi. Mange børn kan ikke sætte ord på hvorfor de reagerer som de gør, men de kan sagtens forestille sig, mærke og opleve. Det er præcis dér hypnoterapien arbejder.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det første mange forældre spørger om: er det trygt? Ja. Hypnose hos børn er ikke kontroltab eller noget mystisk. Det er en fokuseret, afslappet tilstand. Børn kender den bedre end voksne - det er den samme tilstand de er i, når de er helt opslugt af leg eller en god historie. Børn er ofte lettere at arbejde med end voksne, netop fordi deres fantasi er stærk og deres mønstre endnu ikke har sat sig fast gennem årtier.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>I den tilstand arbejdes der med barnets indre billeder og automatiske reaktioner. Barnet behøver ikke kunne forklare eller analysere sit problem, og det er en afgørende forskel fra samtaleterapi. Mange børn kan ikke sætte ord på hvorfor de reagerer som de gør, men de kan sagtens forestille sig, mærke og opleve. Og det er dér arbejdet foregår.</p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Barnet hører alt, husker det der sker, og har fuld kontrol undervejs. De fleste børn beskriver det som rart og afslappende, og for skolevægring betyder det, at angstreaktionen ved tanken om skolen kan ændres uden at barnet skal presses gennem lange forklaringer om hvorfor.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler sammen, forældre og Jan, om hvad I oplever derhjemme: hvornår det startede, hvad I har prøvet, og hvordan barnet har det. Her afklarer vi om hypnoterapi er det rette skridt. Ingen forpligtelse.</p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> Barnet og Jan lærer hinanden at kende i ro og mag. Tilgangen tilpasses barnets alder og temperament: for nogle børn ligner det mest en fantasirejse, for andre en rolig samtale med lukkede øjne. Du kan være til stede, hvis barnet ønsker det.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler sammen, forældre og Jan, om hvad I oplever derhjemme. Hvornår det startede, hvad I har prøvet, og hvordan barnet har det. Her afklarer vi om hypnoterapi er det rette skridt. Ingen forpligtelse.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> Barnet og Jan lærer hinanden at kende i ro og mag. Tilgangen tilpasses barnets alder og temperament. For nogle børn ligner det mest en fantasirejse, for andre en rolig samtale med lukkede øjne. Du kan være til stede, hvis barnet ønsker det.</p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgning og forældreinddragelse.</strong> Du deltager i opsamlende samtaler, så du ved hvad der arbejdes med, og hvordan du støtter derhjemme. Ældre børn arbejder nogle gange bedst med rummet for sig selv; separate samtaler er også en mulighed. Mange familier oplever mærkbar bedring efter få sessioner.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Samme priser som for voksne: gratis forsamtale, 900 kr første session, 600 kr opfølgning. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.</p>
         </section>
@@ -142,7 +142,7 @@ export default function Page() {
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Undgåelsen forstærker mønsteret</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Hver dag barnet bliver hjemme, falder angsten kortvarigt, og netop dén lettelse lærer hjernen at undgåelse virker. Derfor bliver skolevægring værre med tiden, hvis ikke selve angstreaktionen ændres. Det er også derfor pres og skæld ud sjældent hjælper: det øger alarmen i stedet for at dæmpe den.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Hver dag barnet bliver hjemme, falder angsten kortvarigt, og netop dén lettelse lærer hjernen at undgåelse virker. Derfor bliver skolevægring værre med tiden, hvis ikke selve angstreaktionen ændres. Det er også derfor pres og skæld ud sjældent hjælper. Det øger alarmen i stedet for at dæmpe den.</p>
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Tilbagevenden skal ske gradvist</h3>
@@ -153,7 +153,7 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Hvornår skal I søge anden hjælp</h2>
-          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Ved langvarig skolevægring (flere måneder), markant mistrivsel eller mistanke om underliggende udfordringer som autisme eller ADHD bør I altid inddrage skolen, PPR (skolens pædagogisk-psykologiske rådgivning) og eventuelt egen læge. Hypnoterapi kan være en del af løsningen, men ved komplekse forløb skal flere fagligheder arbejde sammen.</p>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Ved langvarig skolevægring (flere måneder), tydelig mistrivsel eller mistanke om underliggende udfordringer som autisme eller ADHD bør I altid inddrage skolen, PPR (skolens pædagogisk-psykologiske rådgivning) og eventuelt egen læge. Hypnoterapi kan være en del af løsningen, men ved komplekse forløb skal flere fagligheder arbejde sammen.</p>
         </section>
 
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>

@@ -92,11 +92,11 @@ export default function Page() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
                         <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Sociale medier er designet til afhængighed</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Notifikationer, likes og uforudsigelig belønning aktiverer dopaminsystemet på præcis den måde der skaber afhængighed. Det er ikke tilfældigt, det er designet. Barnet reagerer neurologisk præcis som det er meningen.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Notifikationer, likes og uforudsigelig belønning aktiverer dopaminsystemet på præcis den måde der skaber afhængighed. Det er ikke tilfældigt. Det er designet sådan. Barnet reagerer neurologisk præcis som det er meningen.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Sammenligningskulturen rammer selvbilledet</h3>
-              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Sociale medier leverer konstant sammenligningsgrundlag med andres tilsyneladende bedste øjeblikke. For børn og unge i identitetsudvikling er dette særligt skadeligt og kan forstærke lavt selvbillede og social angst markant.</p>
+              <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>Sociale medier leverer konstant sammenligningsgrundlag med andres tilsyneladende bedste øjeblikke. For børn og unge midt i at finde ud af hvem de er, rammer det hårdt og kan forstærke lavt selvbillede og social angst.</p>
             </div>
             <div style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>Skærmen dækker et underliggende behov</h3>
@@ -113,22 +113,22 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med det underliggende behov der driver skærmbrugen. Når behovet mødes på anden måde, falder afhængigheden naturligt. Det er ikke en kamp mod telefonen, det er en forandring indefra.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med det underliggende behov der driver skærmbrugen. Når behovet mødes på anden måde, falder afhængigheden naturligt. Det er ikke en kamp mod telefonen, men en forandring indefra.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med skærmproblematikker som en del af et bredere billede. Tilgangen tilpasses, hvad der driver dit barns specifikke brug.</p>
         </section>
 
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan virker hypnose for børn</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det første mange forældre spørger om: er det trygt? Ja. Hypnose hos børn er ikke kontroltab eller noget mystisk. Det er en fokuseret, afslappet tilstand, som børn faktisk kender bedre end voksne: det er den samme tilstand, de er i, når de er helt opslugt af leg eller en god historie. Børn er ofte lettere at arbejde med end voksne, netop fordi deres fantasi er stærk og deres mønstre endnu ikke har sat sig fast gennem årtier.</p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>I den tilstand arbejdes der med barnets indre billeder og automatiske reaktioner. Barnet behøver ikke kunne forklare eller analysere sit problem, og det er en afgørende forskel fra samtaleterapi. Mange børn kan ikke sætte ord på hvorfor de har det som de har det, men de kan sagtens forestille sig, mærke og opleve. Det er præcis dér hypnoterapien arbejder.</p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Barnet hører alt, husker det der sker, og har fuld kontrol undervejs. De fleste børn beskriver det som rart og afslappende, og for skærmvaner er det centralt: barnet skal ikke skammes ud af skærmen, men have mødt det behov, skærmen dækker.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Det første mange forældre spørger om: er det trygt? Ja. Hypnose hos børn er ikke kontroltab eller noget mystisk. Det er en fokuseret, afslappet tilstand. Børn kender den bedre end voksne - det er den samme tilstand de er i, når de er helt opslugt af leg eller en god historie. Børn er ofte lettere at arbejde med end voksne, netop fordi deres fantasi er stærk og deres mønstre endnu ikke har sat sig fast gennem årtier.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>I den tilstand arbejdes der med barnets indre billeder og automatiske reaktioner. Barnet behøver ikke kunne forklare eller analysere sit problem, og det er en afgørende forskel fra samtaleterapi. Mange børn kan ikke sætte ord på hvorfor de har det som de har det, men de kan sagtens forestille sig, mærke og opleve. Og det er dér arbejdet foregår.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Barnet hører alt, husker det der sker, og har fuld kontrol undervejs. De fleste børn beskriver det som rart og afslappende, og for skærmvaner er det vigtigt. Barnet skal ikke skammes ud af skærmen, men have mødt det behov skærmen dækker.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler sammen, forældre og Jan, om hvad I oplever derhjemme: hvornår det startede, hvad I har prøvet, og hvordan barnet har det. Her afklarer vi om hypnoterapi er det rette skridt. Ingen forpligtelse.</p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> Barnet og Jan lærer hinanden at kende i ro og mag. Tilgangen tilpasses barnets alder og temperament: for nogle børn ligner det mest en fantasirejse, for andre en rolig samtale med lukkede øjne. Du kan være til stede, hvis barnet ønsker det.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Gratis forsamtale (30 min).</strong> Vi taler sammen, forældre og Jan, om hvad I oplever derhjemme. Hvornår det startede, hvad I har prøvet, og hvordan barnet har det. Her afklarer vi om hypnoterapi er det rette skridt. Ingen forpligtelse.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Første session (90 min).</strong> Barnet og Jan lærer hinanden at kende i ro og mag. Tilgangen tilpasses barnets alder og temperament. For nogle børn ligner det mest en fantasirejse, for andre en rolig samtale med lukkede øjne. Du kan være til stede, hvis barnet ønsker det.</p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}><strong>Opfølgning og forældreinddragelse.</strong> Du deltager i opsamlende samtaler, så du ved hvad der arbejdes med, og hvordan du støtter derhjemme. Ældre børn arbejder nogle gange bedst med rummet for sig selv; separate samtaler er også en mulighed. Mange familier oplever mærkbar bedring efter få sessioner.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Samme priser som for voksne: gratis forsamtale, 900 kr første session, 600 kr opfølgning. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.</p>
         </section>
@@ -142,7 +142,7 @@ export default function Page() {
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Hjernens belønningssystem er designet til at tabe</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Spil og sociale medier er bygget af professionelle til at fastholde, med variable belønninger, streaks og uendelige feeds. Det er ikke svag vilje, når et barn ikke kan stoppe: det er et umodent belønningssystem mod et milliardindustri-design. Derfor virker skæld ud så dårligt.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Spil og sociale medier er bygget af professionelle til at fastholde, med variable belønninger, streaks og uendelige feeds. Når et barn ikke kan stoppe, er det ikke svag vilje. Det er et umodent belønningssystem sat op mod et design, der er betalt for at fastholde det. Derfor virker skæld ud så dårligt.</p>
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Konflikten forstærker mønsteret</h3>
@@ -172,7 +172,7 @@ export default function Page() {
         {/* VIGTIG AFGRÆNSNING */}
         <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Når skærmbrug kan være et symptom</h2>
-          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Massiv skærmbrug kan nogle gange være et symptom på noget andet, for eksempel ADHD, autisme, angst eller depression. Hvis I oplever at problemet er en del af et bredere billede, eller at barnet mistrives markant, bør I tale med egen læge eller PPR. Hypnoterapi kan arbejde med vanen og det underliggende behov, men erstatter ikke en udredning.</p>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Massiv skærmbrug kan nogle gange være et symptom på noget andet, for eksempel ADHD, autisme, angst eller depression. Hvis I oplever at problemet er en del af et bredere billede, eller at barnet mistrives tydeligt, bør I tale med egen læge eller PPR. Hypnoterapi kan arbejde med vanen og det underliggende behov, men erstatter ikke en udredning.</p>
         </section>
 
         {/* FAQ */}
