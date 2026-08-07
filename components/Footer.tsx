@@ -1,7 +1,7 @@
 export default function Footer({ contact = { phone: '+45 42 80 74 74', email: 'jan@gaarsdal.net' } }) {
   return (
     <footer className="bg-white border-t py-16 mt-20" style={{ position: 'relative', overflow: 'hidden' }}>
-      {/* Vandmærke — stort logo centreret bag teksten */}
+      {/* Vandmærke - stort logo centreret bag teksten */}
       <img
         src="/gaarsdal-logo-branding-notext.png"
         alt=""

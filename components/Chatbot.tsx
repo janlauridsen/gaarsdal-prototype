@@ -405,7 +405,7 @@ export default function Chatbot() {
       })
       if (!res.ok) {
         const txt = await res.text().catch(() => "")
-        throw new Error(`Jobs accept: HTTP ${res.status}${txt ? ` — ${txt}` : ""}`)
+        throw new Error(`Jobs accept: HTTP ${res.status}${txt ? ` - ${txt}` : ""}`)
       }
       applyDraftToEditor(null)
       showHeaderNavHint("Opsummering gemt")
@@ -760,7 +760,7 @@ export default function Chatbot() {
   }, [open, activeConversationId, pendingJobs, draftReview?.job_id, draftReview?.accepted_at])
 
   function appendAssistantMessage(conversationId: string, text: string, meta?: { revision?: number; nodeId?: string }) {
-    setSkemaPending(false) // Svar modtaget — fjern "analyserer" indikator
+    setSkemaPending(false) // Svar modtaget - fjern "analyserer" indikator
     const message = (text ?? "").trim()
     if (!message) return
 
@@ -939,7 +939,7 @@ export default function Chatbot() {
       }
 
       const body = await res.text().catch(() => "")
-      throw new Error(`Chat: HTTP ${res.status}${body ? ` — ${body}` : ""}`)
+      throw new Error(`Chat: HTTP ${res.status}${body ? ` - ${body}` : ""}`)
     }
 
     const data: KernelResponse = await res.json()
@@ -1174,7 +1174,7 @@ export default function Chatbot() {
       void init()
       // useEffect på state?.conversation_id sender beskeden når init er færdig
     } else if (state) {
-      // State allerede sat — useEffect trigger ikke (conversation_id ændres ikke)
+      // State allerede sat - useEffect trigger ikke (conversation_id ændres ikke)
       // Send direkte
       pendingSelvrefleksionRef.current = null
       void dispatch(
@@ -1236,7 +1236,7 @@ export default function Chatbot() {
                 <div className={styles.fallbackBody}>
                   <h2 className={styles.fallbackTitle}>Åbn siden i din browser</h2>
                   <p className={styles.fallbackText}>
-                    Tryk på knappen nedenfor for at åbne siden i din browser — chatten fungerer bedst der.
+                    Tryk på knappen nedenfor for at åbne siden i din browser - chatten fungerer bedst der.
                   </p>
 
                   <div className={styles.fallbackActions}>

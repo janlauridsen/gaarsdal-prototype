@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react"
 
 type Message = { role: "user" | "assistant"; content: string }
 
-const WELCOME = "Hej. Her kan du undersøge din relation til alkohol — hvad fylder, hvad koster det, hvad er du i tvivl om. Skriv frit, det er fortroligt."
+const WELCOME = "Hej. Her kan du undersøge din relation til alkohol - hvad fylder, hvad koster det, hvad er du i tvivl om. Skriv frit, det er fortroligt."
 
 const CHIPS = [
   "Jeg drikker mere end jeg vil",
@@ -34,7 +34,7 @@ export default function AlcoholChat() {
     setLoading(true)
     try {
       // Sørg for at samtalen er initialiseret først (kernen kræver fuld state med active_node).
-      // Send INIT med state: null — præcis som children-siden — så serveren initialiserer korrekt.
+      // Send INIT med state: null - præcis som children-siden - så serveren initialiserer korrekt.
       let currentState = state
       if (!currentState) {
         const initRes = await fetch("/api/chat", {

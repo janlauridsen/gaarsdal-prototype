@@ -4,11 +4,11 @@
 // Bruges på /agteskab, /angst-skema, /stress-skema osv.
 //
 // Props:
-//   slug       — url-slug der linker til emnesiden (fx "parforhold")
-//   title      — sidetitel (fx "Hvad savner jeg i mit ægteskab?")
-//   intro      — kort indledning
-//   categories — liste af kategorier med spørgsmål
-//   ctaLabel   — tekst på CTA-knap (valgfri, default: "Tal med chatbotten om det")
+//   slug       - url-slug der linker til emnesiden (fx "parforhold")
+//   title      - sidetitel (fx "Hvad savner jeg i mit ægteskab?")
+//   intro      - kort indledning
+//   categories - liste af kategorier med spørgsmål
+//   ctaLabel   - tekst på CTA-knap (valgfri, default: "Tal med chatbotten om det")
 //
 // Variant B (URL-kontekst):
 //   Når brugeren klikker CTA, navigeres til /?open=chat&ctx=<encoded>
@@ -210,7 +210,7 @@ export default function RefleksionsSkema({ slug, title, intro, categories, ctaLa
         </div>
       </section>
 
-      {/* REFLEKSION — vises kun når der er markeringer */}
+      {/* REFLEKSION - vises kun når der er markeringer */}
       {hasAnyChecked && topCategories.length > 0 && (
         <section style={{
           marginBottom: "40px",
@@ -228,7 +228,7 @@ export default function RefleksionsSkema({ slug, title, intro, categories, ctaLa
             <strong style={{ color: "#2d4a5a" }}>
               {topCategories.map((c) => c.title.toLowerCase()).join(" og ")}
             </strong>
-            . Det peger på at det er der din opmærksomhed er — og måske der noget kan arbejdes med.
+            . Det peger på at det er der din opmærksomhed er - og måske der noget kan arbejdes med.
           </p>
         </section>
       )}
@@ -238,7 +238,7 @@ export default function RefleksionsSkema({ slug, title, intro, categories, ctaLa
         {hasAnyChecked ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxWidth: "500px" }}>
             <p style={{ fontSize: "15px", color: "#555", marginBottom: "4px", lineHeight: 1.6 }}>
-              Chatbotten kan hjælpe dig med at forstå hvad dine markeringer betyder — og om hypnoterapi kunne være relevant for dig.
+              Chatbotten kan hjælpe dig med at forstå hvad dine markeringer betyder - og om hypnoterapi kunne være relevant for dig.
             </p>
             <a
               href={`/?open=chat&ctx=${buildCtxParam()}`}
@@ -276,7 +276,7 @@ export default function RefleksionsSkema({ slug, title, intro, categories, ctaLa
           </div>
         ) : (
           <p style={{ fontSize: "15px", color: "#888", fontStyle: "italic" }}>
-            Marker det der rammer dig — så viser vi dig hvad det betyder.
+            Marker det der rammer dig - så viser vi dig hvad det betyder.
           </p>
         )}
       </section>
