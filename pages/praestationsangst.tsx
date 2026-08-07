@@ -37,7 +37,7 @@ export default function PraestationsangstPage() {
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod præstationsangst?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi ændrer den fysiologiske stressrespons i præstationssituationen, så nervesystemet aktiverer ro og fokus i stedet for panik. Resultater kommer ofte hurtigt ved situationsbestemt præstationsangst.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod eksamensangst?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Eksamensangst er en stressrespons hvor adgangen til det man ved blokeres. Hypnoterapi træner nervesystemet til at forblive roligt og fokuseret i prøvesituationen, så du kan præstere efter dit faktiske niveau.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor lang tid før min eksamen skal jeg starte?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Helst nogle uger før, så der er tid til at arbejde med reaktionen. Men selv få sessioner tæt på en eksamen kan have effekt. Kontakt Jan i god tid hvis muligt.\"}}, {\"@type\": \"Question\", \"name\": \"Hjælper hypnose mod køreprøveangst?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Jan har hjulpet over 25 klienter med køreprøveangst, hvor alle har bestået efter blot én behandling, og enkelte har ønsket en opfølgende session. Køreprøveangst reagerer ofte hurtigt på hypnoterapi.\"}}]}" }}
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod præstationsangst?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi ændrer den fysiologiske stressrespons i præstationssituationen, så nervesystemet aktiverer ro og fokus i stedet for panik. Resultater kommer ofte hurtigt ved situationsbestemt præstationsangst.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod eksamensangst?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Eksamensangst er en stressrespons hvor adgangen til det man ved blokeres. Hypnoterapi træner nervesystemet til at forblive roligt og fokuseret i prøvesituationen, så du kan præstere efter dit faktiske niveau.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor lang tid før min eksamen skal jeg starte?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Helst nogle uger før, så der er tid til at arbejde med reaktionen. Men selv få sessioner tæt på en eksamen kan have effekt. Kontakt Jan i god tid hvis muligt.\"}}, {\"@type\": \"Question\", \"name\": \"Hjælper hypnose mod køreprøveangst?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Jan har arbejdet med over 25 med køreprøveangst, henvist af den samme kørelærer, som fortæller at de består. De fleste har kun brug for én session.\"}}]}" }}
         />
       </Head>
 
@@ -100,7 +100,7 @@ export default function PraestationsangstPage() {
         {/* CITAT - KØREPRØVE */}
         <section style={{ marginBottom: "60px", padding: "32px", background: "#fff", borderRadius: "10px", border: "1px solid #e5e7eb", borderLeft: "4px solid #5a7a8f" }}>
           <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#333", marginBottom: "16px", fontStyle: "italic" }}>
-            "Jeg har behandlet over 25 klienter, der havde problemer med at gennemføre og blive indstillet til køreprøven, samt bestå selve prøven. Alle har bestået efter blot én behandling. Enkelte ønskede selv en opfølgende session."
+            "Jeg har arbejdet med over 25 med køreprøveangst, henvist af den samme kørelærer. Han fortæller mig, at de består. De fleste har kun brug for én session."
           </p>
           <p style={{ fontSize: "14px", color: "#888", fontWeight: 500 }}>Jan Gaarsdal, hypnoterapeut</p>
         </section>
@@ -207,7 +207,7 @@ export default function PraestationsangstPage() {
             </div>
             <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hjælper hypnose mod køreprøveangst?</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Jan har hjulpet over 25 klienter med køreprøveangst, hvor alle har bestået efter blot én behandling, og enkelte har ønsket en opfølgende session. Køreprøveangst reagerer ofte hurtigt på hypnoterapi.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Jan har arbejdet med over 25 med køreprøveangst, henvist af den samme kørelærer, som fortæller at de består. De fleste har kun brug for én session.</p>
             </div>
           </div>
         </section>
