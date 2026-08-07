@@ -103,7 +103,7 @@ export default function TinnitusPage() {
             Hypnoterapi arbejder på to niveauer. Det ene er nervesystemet: at bringe stressniveauet ned, så lyden ikke konstant forstærkes af beredskab. Det andet er hjernens opmærksomhedsfilter: at træne hjernen til at deprioritere tinnituslyden på samme måde som den filtrerer anden konstant baggrundsstøj fra.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
-            I den hypnotiske tilstand er hjernen særligt modtagelig for at lære nye automatiske reaktioner. Du lærer ikke en teknik du skal huske at bruge - du omprogrammerer den reaktion der sker, inden du når at tænke over det.
+            I den hypnotiske tilstand er hjernen særligt modtagelig for at lære nye automatiske reaktioner. Du lærer ikke en teknik du skal huske at bruge - du arbejder med den reaktion der sker, inden du når at tænke over det.
           </p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>
             Hypnoterapi er ikke det rette for alle tinnitustilfælde. Hvis tinnitusen er opstået pludseligt, er kraftigt ensidig, eller er ledsaget af svimmelhed, bør du tale med din læge, inden du starter. Den gratis forsamtale afklarer om hypnoterapi giver mening for dig.

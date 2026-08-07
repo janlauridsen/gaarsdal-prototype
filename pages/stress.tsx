@@ -9,17 +9,17 @@ export default function Page() {
       <Header />
       <Head>
         <title>Konstant stress og hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="Stress, der ikke slipper, selv i weekenden. Hypnoterapi resetter nervesystemets grundindstilling. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter." />
+        <meta name="description" content="Stress, der ikke slipper, selv i weekenden. Hypnoterapi arbejder med nervesystemets grundindstilling. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter." />
         <link rel="canonical" href="https://gaarsdal.net/stress" />
         <meta property="og:title" content="Konstant stress og hypnoterapi Birkerød | Gaarsdal" />
-        <meta property="og:description" content="Stress der ikke slipper, selv i weekenden. Hypnoterapi resetter nervesystemets grundindstilling. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter." />
+        <meta property="og:description" content="Stress der ikke slipper, selv i weekenden. Hypnoterapi arbejder med nervesystemets grundindstilling. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter." />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/stress" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod stress?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi resetter nervesystemets grundindstilling, så ro bliver standard i stedet for beredskab. Det er en dybere ændring end afspændingsøvelser, fordi det arbejder med hvad nervesystemet automatisk opfatter som normaltilstand.\"}}, {\"@type\": \"Question\", \"name\": \"Hvad er forskellen på hypnose og mindfulness mod stress?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Mindfulness træner din bevidste opmærksomhed. Hypnoterapi arbejder direkte med de automatiske reaktioner under bevidst tænkning. De kan supplere hinanden, men hypnose når et dybere lag.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner kræver stressbehandling?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Det afhænger af hvor længe stressen har stået på. Den gratis forsamtale giver et realistisk billede. Mange oplever bedring i søvn og ro tidligt i forløbet.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe ved arbejdsrelateret stress?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med den grundlæggende stressrespons uanset hvad der udløser den. Det ændrer hvordan nervesystemet reagerer på pres, så du genvinder overskud og ro.\"}}]}" }}
+          dangerouslySetInnerHTML={{ __html: "{\"@context\": \"https://schema.org\", \"@type\": \"FAQPage\", \"mainEntity\": [{\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe mod stress?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med nervesystemets grundindstilling, så ro får lettere ved at blive standard i stedet for beredskab. Det er en dybere ændring end afspændingsøvelser, fordi det arbejder med hvad nervesystemet automatisk opfatter som normaltilstand.\"}}, {\"@type\": \"Question\", \"name\": \"Hvad er forskellen på hypnose og mindfulness mod stress?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Mindfulness træner din bevidste opmærksomhed. Hypnoterapi arbejder direkte med de automatiske reaktioner under bevidst tænkning. De kan supplere hinanden, men hypnose når et dybere lag.\"}}, {\"@type\": \"Question\", \"name\": \"Hvor mange sessioner kræver stressbehandling?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Det afhænger af hvor længe stressen har stået på. Den gratis forsamtale giver et realistisk billede. Mange oplever bedring i søvn og ro tidligt i forløbet.\"}}, {\"@type\": \"Question\", \"name\": \"Kan hypnose hjælpe ved arbejdsrelateret stress?\", \"acceptedAnswer\": {\"@type\": \"Answer\", \"text\": \"Ja. Hypnoterapi arbejder med den grundlæggende stressrespons uanset hvad der udløser den. Det ændrer hvordan nervesystemet reagerer på pres, så du genvinder overskud og ro.\"}}]}" }}
         />
         <script
           type="application/ld+json"
@@ -28,7 +28,7 @@ export default function Page() {
               "@context": "https://schema.org",
               "@type": "MedicalWebPage",
               name: "Stress og hypnoterapi",
-              description: "Stress, der ikke slipper, selv i weekenden. Hypnoterapi resetter nervesystemets grundindstilling. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter.",
+              description: "Stress, der ikke slipper, selv i weekenden. Hypnoterapi arbejder med nervesystemets grundindstilling. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter.",
               url: "https://gaarsdal.net/stress",
               provider: {
                 "@type": "Person",
@@ -75,7 +75,7 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi resetter nervesystemets grundindstilling. Dit system lærer, at ro er standard, ikke beredskab. Det sker ikke ved afspænding eller mindfulness alene, men ved en dybere ændring i, hvad nervesystemet opfatter som normalt.</p>
+          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med nervesystemets grundindstilling. Dit system lærer, at ro er standard, ikke beredskab. Det sker ikke ved afspænding eller mindfulness alene, men ved en dybere ændring i, hvad nervesystemet opfatter som normalt.</p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Jan arbejder med kronisk stress hos både erhvervsaktive og unge. Tilgangen tilpasses til om stressen primært sidder i tanker, krop eller overbevisninger om, hvad der er nødvendigt.</p>
         </section>
 
@@ -154,7 +154,7 @@ export default function Page() {
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Kan hypnose hjælpe mod stress?</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi resetter nervesystemets grundindstilling, så ro bliver standard i stedet for beredskab. Det er en dybere ændring end afspændingsøvelser, fordi det arbejder med hvad nervesystemet automatisk opfatter som normaltilstand.</p>
+              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>Ja. Hypnoterapi arbejder med nervesystemets grundindstilling, så ro får lettere ved at blive standard i stedet for beredskab. Det er en dybere ændring end afspændingsøvelser, fordi det arbejder med hvad nervesystemet automatisk opfatter som normaltilstand.</p>
             </div>
             <div style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hvad er forskellen på hypnose og mindfulness mod stress?</h3>

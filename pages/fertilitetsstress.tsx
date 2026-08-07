@@ -47,7 +47,7 @@ export default function FertilitetsstressPage() {
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Fertilitetsstress er dokumenteret som en af de mest psykisk belastende livssituationer - på niveau med alvorlig sygdom. Studier viser at kvinder i IVF-forløb har stressniveauer der svarer til kræftpatienter. Hypnoterapi har veldokumenteret effekt på angst, stress og søvn - alle centrale komponenter i fertilitetsstress.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Fertilitetsstress er dokumenteret som en af de mest psykisk belastende livssituationer - på niveau med alvorlig sygdom. Studier viser at kvinder i IVF-forløb har stressniveauer der svarer til kræftpatienter. Hypnoterapi er undersøgt i forhold til angst, stress og søvn - alle centrale komponenter i fertilitetsstress.</p>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>Et israelsk studie (2011, Fertility and Sterility) fandt dobbelt så høj implantationsrate hos kvinder der blev hypnotiseret under embryooverførslen sammenlignet med kontrolgruppen. Resultaterne er ikke bredt replikeret, og man bør ikke drage stærke konklusioner - men de peger på at mental ro under proceduren har biologisk relevans.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Levitas et al. (2006) Fertility and Sterility, <a href="https://www.fertilitetsnetvaerket.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Fertilitetsnetværket.dk</a>.</p>
         </section>

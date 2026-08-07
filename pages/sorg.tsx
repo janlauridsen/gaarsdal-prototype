@@ -48,7 +48,7 @@ export default function SorgPage() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser om sorg</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>For de fleste aftager sorgen gradvist, men hos 10–15 pct. af efterladte bliver den vedvarende og invaliderende. Denne tilstand - forlænget sorglidelse - blev anerkendt som selvstændig diagnose i WHO's ICD-11 i 2022. Den kendetegnes ved intens, fastlåst sorg der hindrer livet i at gå videre, typisk mere end 12 måneder efter tabet.</p>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Hypnoterapi er dokumenteret effektivt til at reducere angst, depression og søvnproblemer - de tilstande der typisk ledsager fastlåst sorg. Arbejdet med de automatiske emotionelle reaktioner er præcis det nervesystemsarbejde sorgebearbejdning kræver.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Hypnoterapi er undersøgt i forhold til angst, depression og søvnproblemer - de tilstande der typisk ledsager fastlåst sorg. Arbejdet med de automatiske emotionelle reaktioner er præcis det nervesystemsarbejde sorgebearbejdning kræver.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: WHO ICD-11 (2022) om forlænget sorglidelse, <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a>.</p>
         </section>
 

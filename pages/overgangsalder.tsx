@@ -12,7 +12,7 @@ export default function OvergangsalderPage() {
         <meta name="description" content="Hedeture, søvnløshed, humørsvingninger og uro i overgangsalderen. Hypnoterapi arbejder med nervesystemet og symptomerne - uden medicin. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/overgangsalder" />
         <meta property="og:title" content="Overgangsalder og hypnoterapi | Gaarsdal Birkerød" />
-        <meta property="og:description" content="Hedeture, søvn og humør i overgangsalderen påvirkes direkte af nervesystemet. Hypnoterapi arbejder der - uden bivirkninger." />
+        <meta property="og:description" content="Hedeture, søvn og humør i overgangsalderen påvirkes direkte af nervesystemet. Hypnoterapi arbejder der - uden medicin." />
         <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
         <meta property="og:url" content="https://gaarsdal.net/overgangsalder" />
         <meta property="og:type" content="website" />
@@ -56,7 +56,7 @@ export default function OvergangsalderPage() {
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør ved overgangsalderens symptomer</h2>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hypnoterapi arbejder med nervesystemets grundindstilling - det beredskabsniveau der forstærker hedeture, forstyrrer søvnen og reducerer den følelsesmæssige robusthed. I den hypnotiske tilstand lærer kroppen at slippe beredskabet og finde ro, og den reaktion begynder at blive automatisk.</p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>Hedeture reduceres ved at arbejde direkte med kroppens varmerespons og den angst der forstærker den. Søvn forbedres ved at bryde forbindelsen mellem sengen og beredskab. Humøret stabiliseres ved at styrke nervesystemets evne til at regulere sig selv.</p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Hypnoterapi er en ikke-medicinsk tilgang uden bivirkninger. Den kan stå alene eller supplere hormonbehandling eller andre tiltag.</p>
+          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>Hypnoterapi er en ikke-medicinsk tilgang. Den kan stå alene eller supplere hormonbehandling eller andre tiltag.</p>
         </section>
 
         <section style={{ marginBottom: "60px" }}>

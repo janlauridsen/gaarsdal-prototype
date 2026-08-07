@@ -48,7 +48,7 @@ export default function ParforholdPage() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser om relationer og individuel terapi</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>Tilknytningsforskning - baseret på John Bowlbys og Mary Ainsworths arbejde - viser at de mønstre vi danner i tidlige relationer sætter sig som automatiske reaktioner i voksne kærlighedsrelationer. Hypnoterapi arbejder direkte med disse automatiske reaktioner på et niveau som samtaleterapi sjældent når.</p>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Forskning viser at individuel terapi der adresserer underliggende mønstre kan have markant positiv effekt på parrelationer - i visse tilfælde mere effektivt end parterapi, fordi de individuelle barrierer for nærhed adresseres direkte.</p>
+          <p style={{ fontSize: "15px", marginBottom: "12px" }}>Der forskes også i, hvordan individuel terapi der adresserer underliggende mønstre kan påvirke parrelationer, fordi de individuelle barrierer for nærhed adresseres direkte.</p>
           <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>Kilde: Bowlby (1988) A Secure Base, <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a> om psykisk trivsel og relationer.</p>
         </section>
 
