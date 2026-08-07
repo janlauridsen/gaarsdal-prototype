@@ -14,7 +14,7 @@ HUSET – KLINTEN 2, 4400 KALUNDBORG
 FAKTA:
 - Adresse: Klinten 2, 4400 Kalundborg
 - Pris: 1.500.000 kr. kontant
-- Boligareal: 48 m² – isoleret til vinterbrug
+- Boligareal: 54 m² – isoleret til vinterbrug
 - Grundareal: knap 1.200 m²
 - Huset har været i samme families eje i over 40 år
 - Frem til 2018 var det mormors hus – hun boede her fra maj til oktober
