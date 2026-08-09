@@ -1,4 +1,12 @@
 User-agent: *
 Allow: /
 
+# UI-parametre. Samme indhold som forsiden, kun med chatten åbnet.
+# ?ctx= genererer desuden en ny URL for hver kombination af afkrydsninger
+# i refleksionsskemaet - potentielt uendeligt mange.
+Disallow: /*?open=chat
+Disallow: /*&open=chat
+Disallow: /*?ctx=
+Disallow: /*&ctx=
+
 Sitemap: https://gaarsdal.net/sitemap.xml
