@@ -287,15 +287,15 @@ export default function ChildrenPage() {
         />
       </Head>
 
-      <main style={{ maxWidth: "900px", margin: "0 auto", padding: "120px 20px 60px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.6, color: "#333" }}>
+      <main style={{ maxWidth: "900px", margin: "0 auto", padding: "120px 20px 60px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.6, color: "#2C2A28" }}>
         
         {/* SEKTION 1: GENKENDELSE */}
         <section style={{ marginBottom: "60px" }}>
           <div style={{ display: "flex", gap: "30px", alignItems: "flex-start" }}>
             <div style={{ flex: 1 }}>
               <h1 style={{ fontSize: "32px", fontWeight: 600, marginBottom: "16px" }}>Dit barn har det svært - og du ved ikke hvad du skal gøre</h1>
-              <p style={{ fontSize: "16px", color: "#666", marginBottom: "16px" }}>Du har prøvet meget. Måske systemet. Måske venner. Du elsker dit barn og kan ikke nå ind til det. Det er ikke din fejl.</p>
-              <p style={{ fontSize: "15px", color: "#555" }}>Jan arbejder med børn og unge der kæmper med angst, sociale problemer, selvbillede, søvnproblemer og præstationsangst - og hjælper forældre med at forstå hvad der sker.</p>
+              <p style={{ fontSize: "16px", color: "#6B675F", marginBottom: "16px", lineHeight: 1.7 }}>Du har prøvet meget. Måske systemet. Måske venner. Du elsker dit barn og kan ikke nå ind til det. Det er ikke din fejl.</p>
+              <p style={{ fontSize: "16px", color: "#4A463F", lineHeight: 1.7 }}>Jan arbejder med børn og unge der kæmper med angst, sociale problemer, selvbillede, søvnproblemer og præstationsangst - og hjælper forældre med at forstå hvad der sker.</p>
             </div>
 
           </div>
@@ -309,17 +309,7 @@ export default function ChildrenPage() {
               <button
                 key={key}
                 onClick={() => setSelected(key as ProblemType)}
-                style={{
-                  padding: "20px",
-                  border: selected === key ? "2px solid #5a7a8f" : "1px solid #ddd",
-                  background: selected === key ? "#f0f4f8" : "#fff",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "16px",
-                  fontWeight: 500,
-                  textAlign: "left",
-                  transition: "all 0.2s",
-                }}
+                style={{ padding: "20px", border: selected === key ? "2px solid #5A7049" : "1px solid #ddd", background: selected === key ? "#E8EBE2" : "#fff", borderRadius: "8px", cursor: "pointer", fontSize: "16px", fontWeight: 500, textAlign: "left", transition: "all 0.2s" }}
               >
                 {prob.title}
               </button>
@@ -331,49 +321,35 @@ export default function ChildrenPage() {
         {selected && problems[selected] && (
           <section
             ref={detailRef}
-            style={{
-              marginBottom: "60px",
-              padding: "30px",
-              background: "#f9fafb",
-              borderRadius: "8px",
-              animation: "slideDown 0.25s ease-out",
-            }}>
+            style={{ marginBottom: "60px", padding: "30px", background: "#F5F3EE", borderRadius: "8px", animation: "slideDown 0.25s ease-out" }}>
             <h3 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "20px" }}>{problems[selected].title}</h3>
 
             <div style={{ marginBottom: "30px" }}>
-              <h4 style={{ fontSize: "14px", fontWeight: 600, textTransform: "uppercase", color: "#888", marginBottom: "12px" }}>Dit perspektiv</h4>
-              <p style={{ fontSize: "15px", lineHeight: 1.7 }}>{problems[selected].morensOplevelse}</p>
+              <h4 style={{ fontSize: "14px", fontWeight: 600, textTransform: "uppercase", color: "#6B675F", marginBottom: "12px" }}>Dit perspektiv</h4>
+              <p style={{ fontSize: "16px", lineHeight: 1.7 }}>{problems[selected].morensOplevelse}</p>
             </div>
 
             <div style={{ marginBottom: "30px" }}>
-              <h4 style={{ fontSize: "14px", fontWeight: 600, textTransform: "uppercase", color: "#888", marginBottom: "12px" }}>Hvad der sker i dit barn</h4>
-              <p style={{ fontSize: "15px", lineHeight: 1.7 }}>{problems[selected].hvadSker}</p>
+              <h4 style={{ fontSize: "14px", fontWeight: 600, textTransform: "uppercase", color: "#6B675F", marginBottom: "12px" }}>Hvad der sker i dit barn</h4>
+              <p style={{ fontSize: "16px", lineHeight: 1.7 }}>{problems[selected].hvadSker}</p>
             </div>
 
             <div style={{ marginBottom: "30px" }}>
-              <h4 style={{ fontSize: "14px", fontWeight: 600, textTransform: "uppercase", color: "#888", marginBottom: "12px" }}>Hvordan hypnoterapi hjælper</h4>
-              <p style={{ fontSize: "15px", lineHeight: 1.7 }}>{problems[selected].hvadVirker}</p>
+              <h4 style={{ fontSize: "14px", fontWeight: 600, textTransform: "uppercase", color: "#6B675F", marginBottom: "12px" }}>Hvordan hypnoterapi hjælper</h4>
+              <p style={{ fontSize: "16px", lineHeight: 1.7 }}>{problems[selected].hvadVirker}</p>
             </div>
 
             <div style={{ display: "flex", gap: "12px", alignItems: "center", marginTop: "8px" }}>
               <button
                 onClick={() => setSelected(null)}
-                style={{
-                  padding: "8px 16px",
-                  fontSize: "13px",
-                  background: "transparent",
-                  border: "1px solid #ccc",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  color: "#666",
-                }}
+                style={{ padding: "8px 16px", fontSize: "13px", background: "transparent", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer", color: "#6B675F" }}
               >
                 Luk
               </button>
               {(() => {
                 const prob = selected ? (problems as any)[selected] : null
                 return prob?.link ? (
-                  <a href={prob.link} style={{ fontSize: "13px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
+                  <a href={prob.link} style={{ fontSize: "13px", color: "#5A7049", textDecoration: "none", fontWeight: 500 }}>
                     Læs mere om dette emne →
                   </a>
                 ) : null
@@ -384,36 +360,36 @@ export default function ChildrenPage() {
 
 
         {/* TESTIMONIAL */}
-        <section style={{ marginBottom: "48px", padding: "28px 32px", background: "#fff", borderRadius: "10px", border: "1px solid #e5e7eb", borderLeft: "4px solid #5a7a8f" }}>
-          <p style={{ fontSize: "17px", lineHeight: 1.8, color: "#333", marginBottom: "16px", fontStyle: "italic" }}>
+        <section style={{ marginBottom: "48px", padding: "28px 32px", background: "#fff", borderRadius: "10px", border: "1px solid #E3DFD5", borderLeft: "4px solid #5A7049" }}>
+          <p style={{ fontSize: "17px", lineHeight: 1.8, color: "#2C2A28", marginBottom: "16px", fontStyle: "italic" }}>
             "Vi havde vores datter på 7 år til en konsultation hos Jan, med meget stor succes for både barn og forældre. Det var trygt for os alle, og Jan formåede at håndtere og behandle vores datter på den bedste og mest professionelle måde. Som forældre vil jeg anbefale andre at tage en dialog med Jan og afsøge om han kan være med til at hjælpe deres børn, da det for os har gjort en meget stor og positiv forandring!"
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <div style={{ fontSize: "14px" }}>
-              <span style={{ fontWeight: 500, color: "#333" }}>Mor til 7-årig pige</span>
-              <span style={{ color: "#888", marginLeft: "8px", fontSize: "13px" }}>⭐⭐⭐⭐⭐ Google-anmeldelse</span>
+              <span style={{ fontWeight: 500, color: "#2C2A28" }}>Mor til 7-årig pige</span>
+              <span style={{ color: "#6B675F", marginLeft: "8px", fontSize: "13px" }}>⭐⭐⭐⭐⭐ Google-anmeldelse</span>
             </div>
           </div>
         </section>
 
         {/* TILLID - hvem er Jan */}
-        <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
+        <section style={{ marginBottom: "48px", padding: "32px", background: "#F5F3EE", borderRadius: "10px", borderLeft: "3px solid #5A7049" }}>
           <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
             <div style={{ flex: 1 }}>
-              <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px", color: "#333" }}>
+              <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px", color: "#2C2A28" }}>
                 Hvem er Jan?
               </h2>
-              <p style={{ fontSize: "15px", lineHeight: 1.7, marginBottom: "12px", color: "#555" }}>
+              <p style={{ fontSize: "16px", lineHeight: 1.7, marginBottom: "12px", color: "#4A463F" }}>
                 Jan er hypnoterapeut i Birkerød og arbejder med børn fra 8 år. Han tilpasser sin tilgang til barnets alder og temperament - og involverer altid forældrene som en del af forløbet.
               </p>
-              <p style={{ fontSize: "15px", lineHeight: 1.7, color: "#555" }}>
+              <p style={{ fontSize: "16px", lineHeight: 1.7, color: "#4A463F" }}>
                 Hypnoterapi arbejder med de overbevisninger og reaktionsmønstre der driver adfærden - under bevidst tænkning. Dit barn behøver ikke forstå hvorfor for at ændre sig. Første samtale er uforpligtende.
               </p>
               <div style={{ marginTop: "16px", display: "flex", gap: "24px", flexWrap: "wrap" }}>
-                <a href="/om" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
+                <a href="/om" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", fontWeight: 500 }}>
                   Læs mere om Jan →
                 </a>
-                <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
+                <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", fontWeight: 500 }}>
                   Ring +45 42 80 74 74
                 </a>
               </div>
@@ -431,47 +407,38 @@ export default function ChildrenPage() {
         </section>
 
         {/* FORÆLDREINDDRAGELSE */}
-        <section style={{ marginBottom: "48px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
+        <section style={{ marginBottom: "48px", padding: "32px", background: "#F5F3EE", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "16px" }}>Sådan inddrages du som forælder</h2>
-          <p style={{ fontSize: "15px", color: "#555", marginBottom: "12px", lineHeight: 1.7 }}>
+          <p style={{ fontSize: "16px", color: "#4A463F", marginBottom: "12px", lineHeight: 1.7 }}>
             Som forælder er du altid en del af forløbet. Du deltager i den indledende forsamtale og i de opsamlende samtaler, og du er velkommen til at være til stede under selve sessionen, hvis barnet ønsker det.
           </p>
-          <p style={{ fontSize: "15px", color: "#555", margin: 0, lineHeight: 1.7 }}>
+          <p style={{ fontSize: "16px", color: "#4A463F", margin: 0, lineHeight: 1.7 }}>
             Nogle børn, særligt de ældre, arbejder bedst når de har rummet for sig selv. Derfor er separate samtaler også en mulighed. Vi tilpasser det til barnets alder, temperament og hvad der skaber mest tryghed.
           </p>
         </section>
 
         {/* SEKTION 4: CHATBOT */}
         {!showChat ? (
-          <section style={{ marginBottom: "60px", padding: "40px", background: "#f5f7fa", borderRadius: "8px", textAlign: "center" }}>
+          <section style={{ marginBottom: "60px", padding: "40px", background: "#F5F3EE", borderRadius: "8px", textAlign: "center" }}>
             <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Du kan snakke med en AI-assistent her</h2>
-            <p style={{ fontSize: "15px", marginBottom: "24px", maxWidth: "600px", margin: "0 auto 24px", color: "#555" }}>
+            <p style={{ fontSize: "16px", marginBottom: "24px", maxWidth: "600px", margin: "0 auto 24px", color: "#4A463F", lineHeight: 1.7 }}>
               Jeg har en AI-assistent der kan besvare almindelige spørgsmål og lytte uden at dømme. Det er ikke direkte kontakt med Jan, men den kan hjælpe dig med at klare tankerne.
             </p>
 
             <button
               onClick={() => { setShowChat(true); initChat() }}
-              style={{
-                padding: "12px 24px",
-                background: "#5a7a8f",
-                color: "#fff",
-                border: "none",
-                borderRadius: "4px",
-                fontWeight: 500,
-                fontSize: "15px",
-                cursor: "pointer",
-              }}
+              style={{ padding: "12px 24px", background: "#627A52", color: "#fff", border: "none", borderRadius: "4px", fontWeight: 500, fontSize: "16px", cursor: "pointer" }}
             >
               Åbn AI-chat
             </button>
 
-            <p style={{ fontSize: "13px", color: "#888", marginTop: "16px" }}>Eller kontakt mig direkte på +45 42 80 74 74 eller jan@gaarsdal.net</p>
+            <p style={{ fontSize: "13px", color: "#6B675F", marginTop: "16px", lineHeight: 1.7 }}>Eller kontakt mig direkte på +45 42 80 74 74 eller jan@gaarsdal.net</p>
           </section>
         ) : !hasConsent ? (
           <section style={{ marginBottom: "60px", padding: "40px", background: "#fff", borderRadius: "8px", border: "1px solid #ddd" }}>
             <div style={{ maxWidth: "500px", margin: "0 auto", textAlign: "center" }}>
               <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "16px" }}>Samtykke til at gemme din samtale</h2>
-              <p style={{ fontSize: "14px", color: "#555", marginBottom: "24px", lineHeight: 1.6 }}>
+              <p style={{ fontSize: "14px", color: "#4A463F", marginBottom: "24px", lineHeight: 1.6 }}>
                 Denne AI-assistent kan gemme dine beskeder for at huske konteksten i samtalen. 
                 Vælg nedenfor hvad du er komfortabel med.
               </p>
@@ -479,54 +446,25 @@ export default function ChildrenPage() {
               <div style={{ display: "grid", gap: "12px" }}>
                 <button
                   onClick={() => startChat(365)}
-                  style={{
-                    padding: "12px 20px",
-                    background: "#5a7a8f",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "4px",
-                    fontWeight: 500,
-                    fontSize: "14px",
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
+                  style={{ padding: "12px 20px", background: "#627A52", color: "#fff", border: "none", borderRadius: "4px", fontWeight: 500, fontSize: "14px", cursor: "pointer", textAlign: "left" }}
                 >
                   Gem samtale (1 år)
                 </button>
                 <button
                   onClick={() => startChat(0)}
-                  style={{
-                    padding: "12px 20px",
-                    background: "transparent",
-                    color: "#5a7a8f",
-                    border: "1px solid #5a7a8f",
-                    borderRadius: "4px",
-                    fontWeight: 500,
-                    fontSize: "14px",
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
+                  style={{ padding: "12px 20px", background: "transparent", color: "#5A7049", border: "1px solid #5A7049", borderRadius: "4px", fontWeight: 500, fontSize: "14px", cursor: "pointer", textAlign: "left" }}
                 >
                   Kun denne session (ingen gemte data)
                 </button>
               </div>
 
-              <p style={{ fontSize: "12px", color: "#888", marginTop: "16px" }}>
+              <p style={{ fontSize: "12px", color: "#6B675F", marginTop: "16px", lineHeight: 1.7 }}>
                 Dine samtaler bruges ikke til træning og deles ikke med tredjeparter. Jan ser ikke dine refleksioner.
               </p>
 
               <button
                 onClick={() => setShowChat(false)}
-                style={{
-                  marginTop: "12px",
-                  padding: "8px 16px",
-                  background: "transparent",
-                  color: "#666",
-                  border: "1px solid #ccc",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                }}
+                style={{ marginTop: "12px", padding: "8px 16px", background: "transparent", color: "#6B675F", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer", fontSize: "13px" }}
               >
                 Annuller
               </button>
@@ -540,41 +478,19 @@ export default function ChildrenPage() {
                 <button
                   onClick={() => setShowSettings(s => !s)}
                   title="Dataindstillinger"
-                  style={{
-                    background: "transparent",
-                    border: "1px solid #ddd",
-                    borderRadius: "4px",
-                    padding: "5px 8px",
-                    fontSize: "14px",
-                    cursor: "pointer",
-                    color: "#888",
-                  }}
+                  style={{ background: "transparent", border: "1px solid #ddd", borderRadius: "4px", padding: "5px 8px", fontSize: "14px", cursor: "pointer", color: "#6B675F" }}
                 >
                   ⚙
                 </button>
                 <button
                   onClick={resetChat}
-                  style={{
-                    background: "transparent",
-                    border: "1px solid #ddd",
-                    borderRadius: "4px",
-                    padding: "5px 10px",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    color: "#666",
-                  }}
+                  style={{ background: "transparent", border: "1px solid #ddd", borderRadius: "4px", padding: "5px 10px", fontSize: "12px", cursor: "pointer", color: "#6B675F" }}
                 >
                   Ny samtale
                 </button>
                 <button
                   onClick={() => setShowChat(false)}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    fontSize: "20px",
-                    cursor: "pointer",
-                    color: "#999",
-                  }}
+                  style={{ background: "transparent", border: "none", fontSize: "20px", cursor: "pointer", color: "#6B675F" }}
                 >
                   ✕
                 </button>
@@ -582,16 +498,9 @@ export default function ChildrenPage() {
             </div>
 
             {showSettings && (
-              <div style={{
-                marginBottom: "12px",
-                padding: "14px 16px",
-                background: "#f5f7fa",
-                borderRadius: "6px",
-                border: "1px solid #e5e7eb",
-                fontSize: "13px",
-              }}>
-                <div style={{ fontWeight: 600, marginBottom: "10px", color: "#444" }}>Dataindstillinger</div>
-                <p style={{ color: "#666", marginBottom: "10px", lineHeight: 1.5 }}>
+              <div style={{ marginBottom: "12px", padding: "14px 16px", background: "#F5F3EE", borderRadius: "6px", border: "1px solid #E3DFD5", fontSize: "13px" }}>
+                <div style={{ fontWeight: 600, marginBottom: "10px", color: "#4A463F" }}>Dataindstillinger</div>
+                <p style={{ color: "#6B675F", marginBottom: "10px", lineHeight: 1.5 }}>
                   Vælg hvor længe vi må huske dine samtaler. Du kan ændre det til enhver tid.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -604,57 +513,37 @@ export default function ChildrenPage() {
                     <button
                       key={days}
                       onClick={() => updateConsent(days)}
-                      style={{
-                        padding: "8px 12px",
-                        background: retentionDays === days ? "#5a7a8f" : "#fff",
-                        color: retentionDays === days ? "#fff" : "#444",
-                        border: "1px solid",
-                        borderColor: retentionDays === days ? "#5a7a8f" : "#ddd",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        fontSize: "13px",
-                        textAlign: "left",
-                      }}
+                      style={{ padding: "8px 12px", background: retentionDays === days ? "#5A7049" : "#fff", color: retentionDays === days ? "#fff" : "#4A463F", border: "1px solid", borderColor: retentionDays === days ? "#5A7049" : "#ddd", borderRadius: "4px", cursor: "pointer", fontSize: "13px", textAlign: "left" }}
                     >
                       {label}{retentionDays === days ? " ✓" : ""}
                     </button>
                   ))}
                 </div>
-                <p style={{ color: "#999", fontSize: "12px", marginTop: "10px" }}>
+                <p style={{ color: "#6B675F", fontSize: "12px", marginTop: "10px", lineHeight: 1.7 }}>
                   Dine samtaler bruges ikke til træning og deles ikke med tredjeparter. Jan ser ikke dine refleksioner.
                 </p>
               </div>
             )}
 
             {showCrisisBanner && (
-              <div style={{
-                marginBottom: "12px",
-                padding: "14px 16px",
-                background: "#fff",
-                border: "1px solid #e5e7eb",
-                borderRadius: "8px",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "12px",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-              }}>
+              <div style={{ marginBottom: "12px", padding: "14px 16px", background: "#fff", border: "1px solid #E3DFD5", borderRadius: "8px", display: "flex", alignItems: "flex-start", gap: "12px", boxShadow: "0 1px 4px rgba(0, 0, 0.08)" }}>
                 <span style={{ fontSize: "22px", flexShrink: 0 }}>🕊</span>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: "13px", color: "#444", margin: 0, lineHeight: 1.5 }}>
+                  <p style={{ fontSize: "13px", color: "#4A463F", margin: 0, lineHeight: 1.5 }}>
                     Hvis du eller nogen du kender har det svært, er der gratis hjælp at få.
                   </p>
                   {showCrisisResources && (
                     <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <a href="tel:70201201" style={{ fontSize: "13px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
+                      <a href="tel:70201201" style={{ fontSize: "13px", color: "#5A7049", textDecoration: "none", fontWeight: 500 }}>
                         📞 Livslinjen, 70 201 201 (gratis, døgnet rundt)
                       </a>
-                      <a href="tel:1813" style={{ fontSize: "13px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
+                      <a href="tel:1813" style={{ fontSize: "13px", color: "#5A7049", textDecoration: "none", fontWeight: 500 }}>
                         📞 Lægevagten, 1813
                       </a>
-                      <a href="tel:112" style={{ fontSize: "13px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
+                      <a href="tel:112" style={{ fontSize: "13px", color: "#5A7049", textDecoration: "none", fontWeight: 500 }}>
                         📞 Akut hjælp, 112
                       </a>
-                      <a href="https://www.livslinjen.dk" target="_blank" rel="noopener noreferrer" style={{ fontSize: "13px", color: "#888", textDecoration: "underline" }}>
+                      <a href="https://www.livslinjen.dk" target="_blank" rel="noopener noreferrer" style={{ fontSize: "13px", color: "#6B675F", textDecoration: "underline" }}>
                         livslinjen.dk
                       </a>
                     </div>
@@ -663,21 +552,13 @@ export default function ChildrenPage() {
                 <div style={{ display: "flex", gap: "6px", flexShrink: 0, alignItems: "center" }}>
                   <button
                     onClick={() => setShowCrisisResources(r => !r)}
-                    style={{
-                      padding: "5px 10px",
-                      border: "1px solid #ccc",
-                      borderRadius: "4px",
-                      background: "#fff",
-                      fontSize: "12px",
-                      cursor: "pointer",
-                      color: "#444",
-                    }}
+                    style={{ padding: "5px 10px", border: "1px solid #ccc", borderRadius: "4px", background: "#fff", fontSize: "12px", cursor: "pointer", color: "#4A463F" }}
                   >
                     {showCrisisResources ? "Skjul ▲" : "Find hjælp ▼"}
                   </button>
                   <button
                     onClick={() => { setShowCrisisBanner(false); setShowCrisisResources(false) }}
-                    style={{ background: "transparent", border: "none", fontSize: "16px", cursor: "pointer", color: "#bbb" }}
+                    style={{ background: "transparent", border: "none", fontSize: "16px", cursor: "pointer", color: "#6B675F" }}
                   >
                     ✕
                   </button>
@@ -685,34 +566,14 @@ export default function ChildrenPage() {
               </div>
             )}
 
-            <div style={{
-              height: "400px",
-              overflowY: "auto",
-              border: "1px solid #e5e7eb",
-              borderRadius: "6px",
-              padding: "16px",
-              marginBottom: "16px",
-              background: "#fafbfc",
-            }}>
+            <div style={{ height: "400px", overflowY: "auto", border: "1px solid #E3DFD5", borderRadius: "6px", padding: "16px", marginBottom: "16px", background: "#F5F3EE" }}>
               {messages.map((msg, idx) => (
                 <div
                   key={idx}
-                  style={{
-                    marginBottom: "12px",
-                    display: "flex",
-                    justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
-                  }}
+                  style={{ marginBottom: "12px", display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}
                 >
                   <div
-                    style={{
-                      maxWidth: "70%",
-                      padding: "10px 14px",
-                      borderRadius: "6px",
-                      background: msg.role === "user" ? "#5a7a8f" : "#e5e7eb",
-                      color: msg.role === "user" ? "#fff" : "#333",
-                      fontSize: "14px",
-                      lineHeight: 1.5,
-                    }}
+                    style={{ maxWidth: "70%", padding: "10px 14px", borderRadius: "6px", background: msg.role === "user" ? "#5A7049" : "#E3DFD5", color: msg.role === "user" ? "#fff" : "#2C2A28", fontSize: "14px", lineHeight: 1.5 }}
                   >
                     {msg.content}
                   </div>
@@ -761,16 +622,7 @@ export default function ChildrenPage() {
                           setLoading(false)
                         }
                       }}
-                      style={{
-                        padding: "7px 14px",
-                        background: "#f0f4f8",
-                        border: "1px solid #d0dce8",
-                        borderRadius: "20px",
-                        fontSize: "13px",
-                        cursor: "pointer",
-                        color: "#3d5a72",
-                        transition: "background 0.15s",
-                      }}
+                      style={{ padding: "7px 14px", background: "#E8EBE2", border: "1px solid #d0dce8", borderRadius: "20px", fontSize: "13px", cursor: "pointer", color: "#2C2A28", transition: "background 0.15s" }}
                     >
                       {chip}
                     </button>
@@ -779,7 +631,7 @@ export default function ChildrenPage() {
               )}
 
               {loading && (
-                <div style={{ color: "#999", fontSize: "13px" }}>
+                <div style={{ color: "#6B675F", fontSize: "13px" }}>
                   Assistenten skriver...
                 </div>
               )}
@@ -794,28 +646,12 @@ export default function ChildrenPage() {
                 onKeyPress={(e) => e.key === "Enter" && sendMessage()}
                 placeholder="Skriv hvad som helst..."
                 disabled={loading}
-                style={{
-                  flex: 1,
-                  padding: "10px 14px",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                  fontSize: "14px",
-                  fontFamily: "inherit",
-                }}
+                style={{ flex: 1, padding: "10px 14px", border: "1px solid #ddd", borderRadius: "4px", fontSize: "14px", fontFamily: "inherit" }}
               />
               <button
                 onClick={sendMessage}
                 disabled={loading || !input.trim()}
-                style={{
-                  padding: "10px 20px",
-                  background: "#5a7a8f",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: loading ? "default" : "pointer",
-                  fontSize: "14px",
-                  opacity: loading || !input.trim() ? 0.6 : 1,
-                }}
+                style={{ padding: "10px 20px", background: "#627A52", color: "#fff", border: "none", borderRadius: "4px", cursor: loading ? "default" : "pointer", fontSize: "14px", opacity: loading || !input.trim() ? 0.6 : 1 }}
               >
                 Send
               </button>
