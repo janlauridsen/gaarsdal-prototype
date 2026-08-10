@@ -109,7 +109,7 @@ export default function KenderDuDetPage() {
         <link rel="canonical" href="https://gaarsdal.net/kender-du-det" />
         <meta property="og:title" content="Kender du det? | Gaarsdal Hypnoterapi Birkerød" />
         <meta property="og:description" content="Angst, søvn, stress, rygning, selvværd, vaner. Hypnoterapi arbejder der, hvor analysen ikke når ind." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/kender-du-det" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
@@ -238,7 +238,7 @@ export default function KenderDuDetPage() {
               </div>
             </div>
             <div style={{ flexShrink: 0 }}>
-              <Image src="/Jan-AI.png" alt="Jan Gaarsdal" width={90} height={90} className="rounded-xl object-cover shadow-sm" />
+              <Image src="/jan-gaarsdal.jpg" alt="Jan Gaarsdal" width={90} height={90} className="rounded-xl object-cover shadow-sm" />
             </div>
           </div>
         </section>
