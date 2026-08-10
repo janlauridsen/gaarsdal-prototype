@@ -86,7 +86,7 @@ export default function TinnitusPage() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser om tinnitus</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>
-            Cirka 15–20 pct. af voksne oplever tinnitus i en grad der påvirker hverdagen. For ca. 2–3 pct. er generne så udtalte at de påvirker søvn, koncentration og livskvalitet alvorligt. Der findes ingen medicinsk kur, og behandlingen fokuserer derfor på at ændre reaktionen på lyden snarere end lyden selv.
+            Cirka 15-20 pct. af voksne oplever tinnitus i en grad der påvirker hverdagen. For ca. 2-3 pct. er generne så udtalte at de påvirker søvn, koncentration og livskvalitet alvorligt. Der findes ingen medicinsk kur, og behandlingen fokuserer derfor på at ændre reaktionen på lyden snarere end lyden selv.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>
             Kognitiv adfærdsterapi (KAT) og hypnoterapi dokumenteres begge som effektive til at reducere tinnitusbelastning. Professor Bobby Zachariae, Aarhus Universitet, har forsket i hypnosens effekt på nervesystemet og fremhæver metoden som veldokumenteret til stressreduktion - en central komponent i tinnitusbehandling.
@@ -194,7 +194,7 @@ export default function TinnitusPage() {
               },
               {
                 q: "Hvor mange sessioner kræver tinnitus?",
-                a: "Jan anbefaler typisk at starte med et kort forløb på 3–4 sessioner og derefter vurdere effekten. Mange oplever bedring i søvn og stressniveau inden selve lydoplevelsen ændrer sig. Det er vigtigt at have fået tinnitusen undersøgt af en læge først.",
+                a: "Jan anbefaler typisk at starte med et kort forløb på 3-4 sessioner og derefter vurdere effekten. Mange oplever bedring i søvn og stressniveau inden selve lydoplevelsen ændrer sig. Det er vigtigt at have fået tinnitusen undersøgt af en læge først.",
               },
               {
                 q: "Hvorfor forværres tinnitusen når jeg er stresset?",

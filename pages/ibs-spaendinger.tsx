@@ -86,7 +86,7 @@ export default function IbsSpaendingerPage() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser om hypnose og IBS</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>
-            Gut-directed hypnotherapy er en af de bedst dokumenterede ikke-medicinske behandlinger ved IBS. En metaanalyse publiceret i American Journal of Gastroenterology (2019) fandt at hypnoterapi reducerede IBS-symptomer hos 70–80 pct. af deltagerne, og at effekten holdt sig i op til 5 år efter behandlingen.
+            Gut-directed hypnotherapy er en af de bedst dokumenterede ikke-medicinske behandlinger ved IBS. En metaanalyse publiceret i American Journal of Gastroenterology (2019) fandt at hypnoterapi reducerede IBS-symptomer hos 70-80 pct. af deltagerne, og at effekten holdt sig i op til 5 år efter behandlingen.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>
             National Institute for Health and Care Excellence (NICE) i UK anbefaler gut-directed hypnotherapy som behandling ved IBS for patienter der ikke har tilstrækkelig effekt af kost- og medicinbehandling. Det er en af de meget få komplementære behandlinger med officiel klinisk anbefaling.
@@ -143,7 +143,7 @@ export default function IbsSpaendingerPage() {
             <strong>Første session (90 min).</strong> En grundig samtale om din krop og dit nervesystems mønster, efterfulgt af den første hypnose. Mange beskriver at de allerede her mærker en kropslig ro de sjældent oplever.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
-            <strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet dykker dybere ned i det specifikke mønster. Ved IBS følges en protokol der typisk kræver 6–8 sessioner for varig effekt. Ved spændinger ses effekt ofte tidligere.
+            <strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet dykker dybere ned i det specifikke mønster. Ved IBS følges en protokol der typisk kræver 6-8 sessioner for varig effekt. Ved spændinger ses effekt ofte tidligere.
           </p>
           <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>
             Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.

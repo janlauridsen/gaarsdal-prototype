@@ -86,7 +86,7 @@ export default function AdhdPage() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser om ADHD og hypnoterapi</h2>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>
-            ADHD rammer 3–5 pct. af børn og et stigende antal voksne - mange udiagnosticerede. Medicin (centralstimulerende midler) er veldokumenteret, men adresserer ikke de emotionelle og adfærdsmæssige mønstre der typisk følger med: perfektionisme, prokrastination, selvkritik og emotionel reaktivitet.
+            ADHD rammer 3-5 pct. af børn og et stigende antal voksne - mange udiagnosticerede. Medicin (centralstimulerende midler) er veldokumenteret, men adresserer ikke de emotionelle og adfærdsmæssige mønstre der typisk følger med: perfektionisme, prokrastination, selvkritik og emotionel reaktivitet.
           </p>
           <p style={{ fontSize: "15px", marginBottom: "12px" }}>
             Studier fra bl.a. Journal of Developmental & Behavioral Pediatrics viser at ADHD-hjernen er særligt responsiv for hypnotisk fokustilstand, da hyperfokus er en naturlig egenskab ved ADHD-profilen. Hypnoterapi bruges i stigende grad som supplement til medicinsk behandling, særligt for at arbejde med angst, søvn og selvopfattelse.
