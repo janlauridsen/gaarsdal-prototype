@@ -37,11 +37,11 @@ export default function PriserPage() {
         />
       </Head>
 
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#2C2A28" }}>
 
         <section style={{ marginBottom: "60px" }}>
-          <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "16px" }}>Priser</h1>
-          <p style={{ fontSize: "18px", color: "#555", maxWidth: "620px" }}>
+          <h1 style={{ fontSize: "32px", fontWeight: 600, lineHeight: 1.3, letterSpacing: "-0.01em", marginBottom: "16px" }}>Priser</h1>
+          <p style={{ fontSize: "18px", color: "#4A463F", maxWidth: "620px", lineHeight: 1.7 }}>
             Vi starter altid med en gratis forsamtale på 30 minutter, telefon eller fysisk, så du kan vurdere, om metoden og min tilgang passer til dig. Ingen forpligtelse.
           </p>
         </section>
@@ -55,11 +55,11 @@ export default function PriserPage() {
               { titel: "Første session", pris: "900 kr", varighed: "90 minutter", note: "Inkluderer grundig indledende samtale og hypnoterapi." },
               { titel: "Opfølgende session", pris: "600 kr", varighed: "60 minutter", note: "Alle sessioner efter den første." },
             ].map((p) => (
-              <div key={p.titel} style={{ padding: "28px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px" }}>
+              <div key={p.titel} style={{ padding: "28px", background: "#fff", border: "1px solid #E3DFD5", borderRadius: "10px" }}>
                 <h3 style={{ fontSize: "17px", fontWeight: 600, marginBottom: "8px" }}>{p.titel}</h3>
-                <div style={{ fontSize: "28px", fontWeight: 700, color: "#5a7a8f", marginBottom: "4px" }}>{p.pris}</div>
-                <div style={{ fontSize: "13px", color: "#888", marginBottom: "12px" }}>{p.varighed}</div>
-                <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.6 }}>{p.note}</p>
+                <div style={{ fontSize: "28px", fontWeight: 700, color: "#5A7049", marginBottom: "4px" }}>{p.pris}</div>
+                <div style={{ fontSize: "13px", color: "#6B675F", marginBottom: "12px" }}>{p.varighed}</div>
+                <p style={{ fontSize: "14px", color: "#4A463F", lineHeight: 1.6 }}>{p.note}</p>
               </div>
             ))}
           </div>
@@ -68,7 +68,7 @@ export default function PriserPage() {
         {/* SOCIALE VILKÅR */}
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "8px" }}>Særlige vilkår</h2>
-          <p style={{ fontSize: "15px", color: "#666", marginBottom: "24px", maxWidth: "620px" }}>
+          <p style={{ fontSize: "16px", color: "#6B675F", marginBottom: "24px", maxWidth: "620px", lineHeight: 1.7 }}>
             Jan mener, at adgang til hjælp ikke bør begrænses af økonomi. Nedenstående vilkår gælder ved dokumentation.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
@@ -77,13 +77,13 @@ export default function PriserPage() {
               { titel: "Arbejdsløse", pris: "400 kr", note: "Gælder ALLE sessioner ved dokumentation af ledighedsstatus, også den 90 minutter lange første session (normalt 900 kr).", badge: "A-kasse" },
               { titel: "Flygtninge", pris: "Gratis", note: "Gælder flygtninge med opholdstilladelse. Session på dansk eller engelsk. Ingen dokumentation krævet.", badge: "🌍" },
             ].map((p) => (
-              <div key={p.titel} style={{ padding: "28px", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "10px" }}>
+              <div key={p.titel} style={{ padding: "28px", background: "#F5F3EE", border: "1px solid #E3DFD5", borderRadius: "10px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                   <h3 style={{ fontSize: "17px", fontWeight: 600 }}>{p.titel}</h3>
-                  <span style={{ fontSize: "12px", background: "#e8f0f5", color: "#5a7a8f", padding: "2px 8px", borderRadius: "20px", fontWeight: 500 }}>{p.badge}</span>
+                  <span style={{ fontSize: "12px", background: "#E8EBE2", color: "#5A7049", padding: "2px 8px", borderRadius: "20px", fontWeight: 500 }}>{p.badge}</span>
                 </div>
-                <div style={{ fontSize: "28px", fontWeight: 700, color: "#5a7a8f", marginBottom: "4px" }}>{p.pris}</div>
-                <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.6 }}>{p.note}</p>
+                <div style={{ fontSize: "28px", fontWeight: 700, color: "#5A7049", marginBottom: "4px" }}>{p.pris}</div>
+                <p style={{ fontSize: "14px", color: "#4A463F", lineHeight: 1.6 }}>{p.note}</p>
               </div>
             ))}
           </div>
@@ -92,7 +92,7 @@ export default function PriserPage() {
         {/* PAKKER */}
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "8px" }}>Pakker</h2>
-          <p style={{ fontSize: "15px", color: "#666", marginBottom: "24px", maxWidth: "620px" }}>
+          <p style={{ fontSize: "16px", color: "#6B675F", marginBottom: "24px", maxWidth: "620px", lineHeight: 1.7 }}>
             Nogle udfordringer kræver mere end én session. Pakker aftales individuelt og betales forud.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
@@ -101,32 +101,32 @@ export default function PriserPage() {
               { titel: "5-session pakke", pris: "2.800 kr", note: "Første session + 4 opfølgende. Passer til mere komplekse mønstre som angst, selvværd eller vaner.", besparelse: "Spar 500 kr" },
               { titel: "Børneforløb", pris: "Som voksne", note: "Samme prisstruktur som for voksne: gratis forsamtale, 900 kr første session, 600 kr opfølgning. Inkluderer forældreinddragelse.", besparelse: "" },
             ].map((p) => (
-              <div key={p.titel} style={{ padding: "28px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "10px", position: "relative" }}>
+              <div key={p.titel} style={{ padding: "28px", background: "#fff", border: "1px solid #E3DFD5", borderRadius: "10px", position: "relative" }}>
                 {p.besparelse && (
-                  <span style={{ position: "absolute", top: "16px", right: "16px", fontSize: "11px", background: "#e8f5e9", color: "#4a7c5f", padding: "2px 8px", borderRadius: "20px", fontWeight: 600 }}>{p.besparelse}</span>
+                  <span style={{ position: "absolute", top: "16px", right: "16px", fontSize: "11px", background: "#E8EBE2", color: "#5A7049", padding: "2px 8px", borderRadius: "20px", fontWeight: 600 }}>{p.besparelse}</span>
                 )}
                 <h3 style={{ fontSize: "17px", fontWeight: 600, marginBottom: "8px" }}>{p.titel}</h3>
-                <div style={{ fontSize: "28px", fontWeight: 700, color: "#5a7a8f", marginBottom: "4px" }}>{p.pris}</div>
-                <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.6, marginTop: "8px" }}>{p.note}</p>
+                <div style={{ fontSize: "28px", fontWeight: 700, color: "#5A7049", marginBottom: "4px" }}>{p.pris}</div>
+                <p style={{ fontSize: "14px", color: "#4A463F", lineHeight: 1.6, marginTop: "8px" }}>{p.note}</p>
               </div>
             ))}
           </div>
         </section>
 
         {/* REFUGEE ENGLISH */}
-        <section style={{ marginBottom: "60px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
+        <section style={{ marginBottom: "60px", padding: "32px", background: "#F5F3EE", borderRadius: "10px", borderLeft: "3px solid #5A7049" }}>
           <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "12px" }}>Sessions in English for refugees / Sessioner på engelsk for flygtninge</h2>
-          <p style={{ fontSize: "15px", color: "#555", marginBottom: "12px", lineHeight: 1.7 }}>
+          <p style={{ fontSize: "16px", color: "#4A463F", marginBottom: "12px", lineHeight: 1.7 }}>
             Jan offers free hypnotherapy sessions for refugees in Denmark. Sessions can be conducted in Danish or English. No documentation required.
           </p>
-          <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>
+          <p style={{ fontSize: "16px", color: "#4A463F", marginBottom: "16px", lineHeight: 1.7 }}>
             Jan tilbyder gratis hypnoterapi-sessioner for flygtninge i Danmark. Sessioner kan gennemføres på dansk eller engelsk. Ingen dokumentation krævet.
           </p>
           <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-            <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "10px 20px", borderRadius: "4px" }}>
+            <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#627A52", textDecoration: "none", fontWeight: 500, padding: "10px 20px", borderRadius: "4px" }}>
               Book / Kontakt
             </Link>
-            <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "10px 0" }}>
+            <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", fontWeight: 500, padding: "10px 0" }}>
               +45 42 80 74 74
             </a>
           </div>
@@ -134,25 +134,25 @@ export default function PriserPage() {
 
 
         {/* SMS OPT-IN */}
-        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#f0f4f8", borderRadius: "10px", border: "1px solid #c5d2da" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>Hold dig opdateret</h2>
-          <p style={{ fontSize: "15px", color: "#555", marginBottom: "20px", lineHeight: 1.7 }}>
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#E8EBE2", borderRadius: "10px", border: "1px solid #c5d2da" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "8px", color: "#2C2A28" }}>Hold dig opdateret</h2>
+          <p style={{ fontSize: "16px", color: "#4A463F", marginBottom: "20px", lineHeight: 1.7 }}>
             Modtag nyheder fra Jan 1-2 gange om året. Ingen spam. Du kan afmelde dig når som helst.
           </p>
-          <a href="/tilmeld" style={{ display: "inline-block", padding: "11px 24px", background: "#5a7a8f", color: "#fff", textDecoration: "none", borderRadius: "6px", fontSize: "15px", fontWeight: 500 }}>
+          <a href="/tilmeld" style={{ display: "inline-block", padding: "11px 24px", background: "#627A52", color: "#fff", textDecoration: "none", borderRadius: "6px", fontSize: "16px", fontWeight: 500 }}>
             Tilmeld SMS-nyheder →
           </a>
         </section>
 
         {/* CTA */}
-        <section style={{ marginBottom: "40px", textAlign: "center", padding: "40px 20px", background: "#f0f4f8", borderRadius: "10px" }}>
+        <section style={{ marginBottom: "40px", textAlign: "center", padding: "40px 20px", background: "#E8EBE2", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "12px" }}>Start med en gratis forsamtale</h2>
-          <p style={{ fontSize: "15px", color: "#555", marginBottom: "24px" }}>30 minutter, telefon eller fysisk. Ingen forpligtelse.</p>
+          <p style={{ fontSize: "16px", color: "#4A463F", marginBottom: "24px", lineHeight: 1.7 }}>30 minutter, telefon eller fysisk. Ingen forpligtelse.</p>
           <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/kontakt" style={{ padding: "14px 28px", background: "#5a7a8f", color: "#fff", textDecoration: "none", borderRadius: "6px", fontWeight: 500, fontSize: "16px" }}>
+            <Link href="/kontakt" style={{ padding: "14px 28px", background: "#627A52", color: "#fff", textDecoration: "none", borderRadius: "6px", fontWeight: 500, fontSize: "16px" }}>
               Book forsamtale
             </Link>
-            <a href="tel:+4542807474" style={{ padding: "14px 28px", background: "transparent", color: "#5a7a8f", textDecoration: "none", border: "1px solid #5a7a8f", borderRadius: "6px", fontWeight: 500, fontSize: "16px" }}>
+            <a href="tel:+4542807474" style={{ padding: "14px 28px", background: "transparent", color: "#5A7049", textDecoration: "none", border: "1px solid #5A7049", borderRadius: "6px", fontWeight: 500, fontSize: "16px" }}>
               Ring +45 42 80 74 74
             </a>
           </div>

@@ -41,17 +41,17 @@ export default function IbsSpaendingerPage() {
         />
       </Head>
 
-      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#333" }}>
+      <main style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#2C2A28" }}>
 
         {/* GENKENDELSE */}
         <section style={{ marginBottom: "60px" }}>
-          <h1 style={{ fontSize: "34px", fontWeight: 600, lineHeight: 1.25, marginBottom: "20px" }}>
+          <h1 style={{ fontSize: "32px", fontWeight: 600, lineHeight: 1.3, letterSpacing: "-0.01em", marginBottom: "20px" }}>
             Kroppen spænder. Maven reagerer. Og du ved ikke hvornår det slår til
           </h1>
-          <p style={{ fontSize: "18px", color: "#555", marginBottom: "16px", maxWidth: "660px" }}>
+          <p style={{ fontSize: "19px", lineHeight: 1.65, color: "#4A463F", marginBottom: "18px", maxWidth: "700px" }}>
             Mavepine der ikke har en forklaring. Nakken der altid er stram. IBS-anfald der ødelægger planer. Kæben der spænder om natten. Lægerne siger der ikke er noget galt fysisk. Men det gør ondt, og det påvirker din hverdag, dit arbejde og dit liv.
           </p>
-          <p style={{ fontSize: "16px", color: "#666", maxWidth: "660px" }}>
+          <p style={{ fontSize: "17px", lineHeight: 1.7, color: "#4A463F", maxWidth: "700px" }}>
             Disse symptomer er ikke i dit hoved. De er i dit nervesystem - og nervesystemet kan påvirkes.
           </p>
         </section>
@@ -74,38 +74,38 @@ export default function IbsSpaendingerPage() {
                 tekst: "Kortisol og adrenalin påvirker direkte tarmens bevægelighed og muskeltonussen i hele kroppen. Mange oplever IBS-anfald og spændingsopblussen i pressede perioder - ikke som tilfældig sammenfald, men som en direkte biologisk reaktion.",
               },
             ].map((k) => (
-              <div key={k.titel} style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+              <div key={k.titel} style={{ padding: "24px", background: "#fff", border: "1px solid #E3DFD5", borderRadius: "8px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>{k.titel}</h3>
-                <p style={{ fontSize: "14px", color: "#555", lineHeight: 1.7 }}>{k.tekst}</p>
+                <p style={{ fontSize: "14px", color: "#4A463F", lineHeight: 1.7 }}>{k.tekst}</p>
               </div>
             ))}
           </div>
         </section>
 
         {/* FORSKNING */}
-        <section style={{ marginBottom: "60px", padding: "32px", background: "#f5f7fa", borderRadius: "10px" }}>
+        <section style={{ marginBottom: "60px", padding: "32px", background: "#F5F3EE", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser om hypnose og IBS</h2>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>
+          <p style={{ fontSize: "16px", marginBottom: "12px", lineHeight: 1.7 }}>
             Gut-directed hypnotherapy er en af de bedst dokumenterede ikke-medicinske behandlinger ved IBS. En metaanalyse publiceret i American Journal of Gastroenterology (2019) fandt at hypnoterapi reducerede IBS-symptomer hos 70-80 pct. af deltagerne, og at effekten holdt sig i op til 5 år efter behandlingen.
           </p>
-          <p style={{ fontSize: "15px", marginBottom: "12px" }}>
+          <p style={{ fontSize: "16px", marginBottom: "12px", lineHeight: 1.7 }}>
             National Institute for Health and Care Excellence (NICE) i UK anbefaler gut-directed hypnotherapy som behandling ved IBS for patienter der ikke har tilstrækkelig effekt af kost- og medicinbehandling. Det er en af de meget få komplementære behandlinger med officiel klinisk anbefaling.
           </p>
-          <p style={{ fontSize: "15px", color: "#666", fontStyle: "italic" }}>
-            Kilde: American Journal of Gastroenterology, <a href="https://www.nice.org.uk" target="_blank" rel="noopener" style={{ color: "#5a7a8f", textDecoration: "underline" }}>NICE guidelines</a>, IBS-forbundet Danmark.
+          <p style={{ fontSize: "16px", color: "#6B675F", fontStyle: "italic", lineHeight: 1.7 }}>
+            Kilde: American Journal of Gastroenterology, <a href="https://www.nice.org.uk" target="_blank" rel="noopener" style={{ color: "#5A7049", textDecoration: "underline" }}>NICE guidelines</a>, IBS-forbundet Danmark.
           </p>
         </section>
 
         {/* HVAD HYPNOTERAPI GØR */}
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Hvad hypnoterapi gør ved IBS og spændinger</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
+          <p style={{ fontSize: "16px", marginBottom: "16px", maxWidth: "700px", lineHeight: 1.7 }}>
             Ved IBS arbejder hypnoterapi direkte med kommunikationen mellem hjerne og tarm. I den hypnotiske tilstand bruges imagery og suggestioner der retter sig mod tarmens reaktioner - beroligende nerveaktiviteten og reducerende den sensoriske overfølsomhed der giver smerter og ubehag.
           </p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
+          <p style={{ fontSize: "16px", marginBottom: "16px", maxWidth: "700px", lineHeight: 1.7 }}>
             Ved kroniske spændinger arbejdes der med det autonome nervesystem - at bringe kroppen ud af det vedvarende beredskab. Mange oplever at spændinger i nakke, skuldre og kæbe slipper gradvist, efterhånden som nervesystemet lærer at fortolke hverdagen som sikker.
           </p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>
+          <p style={{ fontSize: "16px", color: "#6B675F", maxWidth: "700px", lineHeight: 1.7 }}>
             IBS og spændinger optræder ofte sammen - og arbejdet med dem er ikke adskilt. Et nervesystem i ro påvirker begge.
           </p>
         </section>
@@ -116,19 +116,19 @@ export default function IbsSpaendingerPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "700px" }}>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>IBS med angst for anfald</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du planlægger din dag ud fra toiletters tilgængelighed. Sociale situationer og transport giver ekstra angst. Selve angsten for et anfald kan udløse anfaldet. Hypnoterapi bryder denne cirkel ved at arbejde med begge dele - tarmreaktionen og angsten for den.</p>
+              <p style={{ fontSize: "16px", color: "#4A463F", lineHeight: 1.7, margin: 0 }}>Du planlægger din dag ud fra toiletters tilgængelighed. Sociale situationer og transport giver ekstra angst. Selve angsten for et anfald kan udløse anfaldet. Hypnoterapi bryder denne cirkel ved at arbejde med begge dele - tarmreaktionen og angsten for den.</p>
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Nakke, skuldre og kæbespændinger</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du vågner om morgenen med stiv nakke. Din kæbe er presset om natten. Skuldrene sidder oppe ved ørerne. Massage hjælper kortvarigt. Spændingerne kommer tilbage. Det er fordi årsagen - et nervesystem i beredskab - ikke er adresseret.</p>
+              <p style={{ fontSize: "16px", color: "#4A463F", lineHeight: 1.7, margin: 0 }}>Du vågner om morgenen med stiv nakke. Din kæbe er presset om natten. Skuldrene sidder oppe ved ørerne. Massage hjælper kortvarigt. Spændingerne kommer tilbage. Det er fordi årsagen - et nervesystem i beredskab - ikke er adresseret.</p>
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Mavepine uden medicinsk forklaring</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Alle undersøgelser er normale. Lægerne finder intet. Men du har ondt, og det er virkeligt. Funktionelle mavegener - pine uden strukturel årsag - er typisk nervesystemsrelaterede og reagerer godt på hypnoterapeutisk arbejde.</p>
+              <p style={{ fontSize: "16px", color: "#4A463F", lineHeight: 1.7, margin: 0 }}>Alle undersøgelser er normale. Lægerne finder intet. Men du har ondt, og det er virkeligt. Funktionelle mavegener - pine uden strukturel årsag - er typisk nervesystemsrelaterede og reagerer godt på hypnoterapeutisk arbejde.</p>
             </div>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "6px" }}>Symptomerne forværres i pres-perioder</h3>
-              <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7, margin: 0 }}>Du ved godt at stress spiller ind. Men at vide det ændrer ikke symptomerne. Hypnoterapi arbejder ikke med din bevidste viden om stress - det arbejder med den automatiske reaktion der sker, inden du når at tænke over det.</p>
+              <p style={{ fontSize: "16px", color: "#4A463F", lineHeight: 1.7, margin: 0 }}>Du ved godt at stress spiller ind. Men at vide det ændrer ikke symptomerne. Hypnoterapi arbejder ikke med din bevidste viden om stress - det arbejder med den automatiske reaktion der sker, inden du når at tænke over det.</p>
             </div>
           </div>
         </section>
@@ -136,43 +136,43 @@ export default function IbsSpaendingerPage() {
         {/* FORLØB */}
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "16px" }}>Sådan foregår et forløb</h2>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
+          <p style={{ fontSize: "16px", marginBottom: "16px", maxWidth: "700px", lineHeight: 1.7 }}>
             <strong>Gratis forsamtale (30 min).</strong> Vi taler om dine symptomer, hvornår de opstod, hvad der udløser dem, og hvad du har prøvet. Her afklares om hypnoterapi er den rette tilgang. Telefon eller fysisk, uforpligtende.
           </p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
+          <p style={{ fontSize: "16px", marginBottom: "16px", maxWidth: "700px", lineHeight: 1.7 }}>
             <strong>Første session (90 min).</strong> En grundig samtale om din krop og dit nervesystems mønster, efterfulgt af den første hypnose. Mange beskriver at de allerede her mærker en kropslig ro de sjældent oplever.
           </p>
-          <p style={{ fontSize: "15px", marginBottom: "16px", maxWidth: "700px" }}>
+          <p style={{ fontSize: "16px", marginBottom: "16px", maxWidth: "700px", lineHeight: 1.7 }}>
             <strong>Opfølgende sessioner (ca. 60 min).</strong> Arbejdet dykker dybere ned i det specifikke mønster. Ved IBS følges en protokol der typisk kræver 6-8 sessioner for varig effekt. Ved spændinger ses effekt ofte tidligere.
           </p>
-          <p style={{ fontSize: "15px", color: "#666", maxWidth: "700px" }}>
-            Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5a7a8f" }}>priser</Link>.
+          <p style={{ fontSize: "16px", color: "#6B675F", maxWidth: "700px", lineHeight: 1.7 }}>
+            Sessioner foregår fysisk i Birkerød eller online efter aftale. Se <Link href="/priser" style={{ color: "#5A7049" }}>priser</Link>.
           </p>
         </section>
 
         {/* VIGTIGT AT VIDE */}
-        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#F7F1E8", borderRadius: "10px", border: "1px solid #E6D9C2" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Vigtigt at vide</h2>
-          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>
+          <p style={{ fontSize: "16px", color: "#4A463F", maxWidth: "700px", margin: 0, lineHeight: 1.7 }}>
             Nye, uforklarede mave-tarm-symptomer bør altid undersøges af din læge, inden du starter hypnoterapi. Det gælder særligt ved blod i afføringen, uventet vægttab, feber eller symptomer der eskalerer hurtigt. Hypnoterapi er ikke en erstatning for lægelig udredning, men et supplement der virker bedst når fysiske årsager er udelukket.
           </p>
         </section>
 
         {/* OM JAN */}
-        <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
+        <section style={{ marginBottom: "48px", padding: "32px", background: "#F5F3EE", borderRadius: "10px", borderLeft: "3px solid #5A7049" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
-          <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>
+          <p style={{ fontSize: "16px", color: "#4A463F", marginBottom: "16px", lineHeight: 1.7 }}>
             Jan arbejder med IBS og kroniske spændinger som et nervesystemsfænomen. Han anvender gut-directed hypnotherapy ved IBS og tilpasser tilgangen til det specifikke mønster - om det primært er tarm, muskulatur eller en kombination.
           </p>
-          <div style={{ padding: "12px 16px", background: "#f0f4f8", borderRadius: "6px", display: "inline-block" }}>
-            <p style={{ fontSize: "14px", fontWeight: 500, color: "#333", margin: "0 0 8px" }}>
+          <div style={{ padding: "12px 16px", background: "#E8EBE2", borderRadius: "6px", display: "inline-block" }}>
+            <p style={{ fontSize: "14px", fontWeight: 500, color: "#2C2A28", margin: "0 0 8px", lineHeight: 1.7 }}>
               🎯 Gratis forsamtale, 30 minutter, telefon eller fysisk
             </p>
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-              <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>
+              <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#627A52", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>
                 Book forsamtale →
               </Link>
-              <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>
+              <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>
                 Ring +45 42 80 74 74
               </a>
             </div>
@@ -205,9 +205,9 @@ export default function IbsSpaendingerPage() {
                 a: "Ofte er sondringen uklar. Kroniske spændinger har typisk både fysiske og nervesystemsmæssige komponenter. Hypnoterapi adresserer nervesystemskomponenten - og selv ved primært fysiske årsager kan reduktion af beredskabsniveauet give merkbar lindring.",
               },
             ].map((item) => (
-              <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#333" }}>{item.q}</h3>
-                <p style={{ fontSize: "15px", color: "#555", lineHeight: 1.7 }}>{item.a}</p>
+              <div key={item.q} style={{ borderBottom: "1px solid #E3DFD5", paddingBottom: "16px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#2C2A28" }}>{item.q}</h3>
+                <p style={{ fontSize: "16px", color: "#4A463F", lineHeight: 1.7 }}>{item.a}</p>
               </div>
             ))}
           </div>
@@ -215,14 +215,14 @@ export default function IbsSpaendingerPage() {
 
         {/* RELATEREDE EMNER */}
         <section style={{ marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>Relaterede emner</h2>
+          <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#6B675F", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <Link href="/stress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Stress →</Link>
-            <Link href="/angst" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Angst →</Link>
-            <Link href="/sovn" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Søvnproblemer →</Link>
-            <Link href="/tinnitus" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Tinnitus →</Link>
-            <Link href="/hypnoterapi" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Om hypnoterapi →</Link>
-            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan →</Link>
+            <Link href="/stress" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Stress →</Link>
+            <Link href="/angst" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Angst →</Link>
+            <Link href="/sovn" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Søvnproblemer →</Link>
+            <Link href="/tinnitus" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Tinnitus →</Link>
+            <Link href="/hypnoterapi" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Om hypnoterapi →</Link>
+            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Kontakt Jan →</Link>
           </div>
         </section>
 

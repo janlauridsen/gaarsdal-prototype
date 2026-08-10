@@ -117,32 +117,19 @@ export default function AgteskabPage() {
       </Head>
 
       <main
-        style={{
-          maxWidth: "860px",
-          margin: "0 auto",
-          padding: "120px 20px 80px",
-          fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif",
-          lineHeight: 1.7,
-          color: "#333",
-        }}
+        style={{ maxWidth: "860px", margin: "0 auto", padding: "120px 20px 80px", fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", lineHeight: 1.7, color: "#2C2A28" }}
       >
         {/* OVERSKRIFT */}
         <section style={{ marginBottom: "48px" }}>
-          <p style={{ fontSize: "13px", color: "#5a7a8f", fontWeight: 500, marginBottom: "10px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          <p style={{ fontSize: "13px", color: "#5A7049", fontWeight: 500, marginBottom: "10px", textTransform: "uppercase", letterSpacing: "0.06em", lineHeight: 1.7 }}>
             Selvrefleksion
           </p>
           <h1
-            style={{
-              fontSize: "34px",
-              fontWeight: 600,
-              lineHeight: 1.25,
-              marginBottom: "20px",
-              color: "#1a2a35",
-            }}
+            style={{ fontSize: "32px", fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.25, marginBottom: "20px", color: "#2C2A28" }}
           >
             Hvad savner jeg i mit ægteskab?
           </h1>
-          <p style={{ fontSize: "18px", color: "#555", maxWidth: "660px", lineHeight: 1.7 }}>
+          <p style={{ fontSize: "18px", color: "#4A463F", maxWidth: "700px", lineHeight: 1.7 }}>
             Mange mærker at noget mangler, men har svært ved at sætte ord på det. Dette skema hjælper dig med at afklare hvad der fylder - ikke for at bebrejde nogen, men for at forstå dig selv bedre.
           </p>
         </section>
@@ -158,56 +145,30 @@ export default function AgteskabPage() {
 
         {/* KONTEKST OM JAN */}
         <section
-          style={{
-            marginTop: "60px",
-            marginBottom: "48px",
-            padding: "32px",
-            background: "#f9fafb",
-            borderRadius: "10px",
-            borderLeft: "3px solid #5a7a8f",
-          }}
+          style={{ marginTop: "60px", marginBottom: "48px", padding: "32px", background: "#F5F3EE", borderRadius: "10px", borderLeft: "3px solid #5A7049" }}
         >
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>
             Jan Gaarsdal, hypnoterapeut i Birkerød
           </h2>
-          <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>
+          <p style={{ fontSize: "16px", color: "#4A463F", marginBottom: "16px", lineHeight: 1.7 }}>
             Jan arbejder med de mønstre der holder folk fast - i parforholdet, i følelserne og i de ting man ikke har sagt. Han tilbyder individuelle sessioner og en fælles indledende session for par.
           </p>
           <div
-            style={{
-              padding: "12px 16px",
-              background: "#f0f4f8",
-              borderRadius: "6px",
-              display: "inline-block",
-            }}
+            style={{ padding: "12px 16px", background: "#E8EBE2", borderRadius: "6px", display: "inline-block" }}
           >
-            <p style={{ fontSize: "14px", fontWeight: 500, color: "#333", margin: "0 0 8px" }}>
+            <p style={{ fontSize: "14px", fontWeight: 500, color: "#2C2A28", margin: "0 0 8px", lineHeight: 1.7 }}>
               🎯 Gratis forsamtale, 30 minutter, telefon eller fysisk
             </p>
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
               <Link
                 href="/kontakt"
-                style={{
-                  fontSize: "14px",
-                  color: "#fff",
-                  background: "#5a7a8f",
-                  textDecoration: "none",
-                  fontWeight: 500,
-                  padding: "8px 16px",
-                  borderRadius: "4px",
-                }}
+                style={{ fontSize: "14px", color: "#fff", background: "#627A52", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}
               >
                 Book forsamtale →
               </Link>
               <a
                 href="tel:+4542807474"
-                style={{
-                  fontSize: "14px",
-                  color: "#5a7a8f",
-                  textDecoration: "none",
-                  fontWeight: 500,
-                  padding: "8px 0",
-                }}
+                style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}
               >
                 Ring +45 42 80 74 74
               </a>
@@ -217,7 +178,7 @@ export default function AgteskabPage() {
 
         {/* RELATEREDE EMNER */}
         <section style={{ marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#888", marginBottom: "12px" }}>
+          <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#6B675F", marginBottom: "12px" }}>
             Relaterede emner
           </h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
@@ -233,14 +194,7 @@ export default function AgteskabPage() {
               <Link
                 key={l.href}
                 href={l.href}
-                style={{
-                  fontSize: "14px",
-                  color: "#5a7a8f",
-                  textDecoration: "none",
-                  padding: "6px 14px",
-                  border: "1px solid #5a7a8f",
-                  borderRadius: "20px",
-                }}
+                style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}
               >
                 {l.label}
               </Link>

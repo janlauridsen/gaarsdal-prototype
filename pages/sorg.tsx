@@ -37,7 +37,7 @@ export default function SorgPage() {
               { titel: "Fastlåst sorg", tekst: "Nogle gange finder sorgen ikke vej igennem. Den sidder fast som en vedvarende tilstand af uro, tomhed eller smerte. Det kan skyldes at tabet var pludseligt eller traumatisk, at der var uafsluttede forhold, eller at omstændighederne ikke gav rum til at sørge." },
               { titel: "Kroppen bærer sorgen", tekst: "Sorg sidder ikke kun i tankerne. Søvnproblemer, træthed, manglende appetit, tyngde i kroppen - det er normale sorgresponser. Kroppen reagerer på tab som den reagerer på fare, og nervesystemet retter sig ikke automatisk selv." },
             ].map((k) => (
-              <div key={k.titel} style={{ padding: "24px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px" }}>
+              <div key={k.titel} style={{ padding: "24px", background: "#fff", border: "1px solid #E3DFD5", borderRadius: "8px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "10px" }}>{k.titel}</h3>
                 <p style={{ fontSize: "14px", color: "#4A463F", lineHeight: 1.7 }}>{k.tekst}</p>
               </div>
@@ -94,7 +94,7 @@ export default function SorgPage() {
           <p style={{ fontSize: "16px", lineHeight: 1.7, color: "#4A463F", maxWidth: "700px", margin: 0 }}>Hvis sorgen står stille i mere end et år, fylder det meste af hverdagen og gør det svært at fungere, kan der være tale om forlænget sorglidelse. Det er en selvstændig diagnose, og den hører til hos egen læge, der kan henvise videre. Det samme gælder ved vedvarende tristhed, hvis du mister lysten til at være her, eller hvis alkohol er blevet en måde at holde det ud på. Hypnoterapi kan være en del af et samlet forløb, men erstatter ikke psykologisk eller psykiatrisk behandling. Jan samarbejder gerne med behandlere i sundhedssystemet.</p>
         </section>
 
-        <section style={{ marginBottom: "48px", padding: "32px", background: "#F5F3EE", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
+        <section style={{ marginBottom: "48px", padding: "32px", background: "#F5F3EE", borderRadius: "10px", borderLeft: "3px solid #5A7049" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
           <p style={{ fontSize: "16px", lineHeight: 1.7, color: "#4A463F", marginBottom: "16px" }}>Jan arbejder med sorg og tab i mange former - nylig sorg, fastlåst langtidssorg, og tab der aldrig fik et navn. Han møder det der er svært med ro og uden at skynde på processen.</p>
           <div style={{ padding: "12px 16px", background: "#E8EBE2", borderRadius: "6px", display: "inline-block" }}>
@@ -116,7 +116,7 @@ export default function SorgPage() {
               { q: "Kan hypnoterapi hjælpe selv om tabet skete for mange år siden?", a: "Ja. Der er ingen tidsgrænse for sorgbearbejdning. Mange søger hjælp til sorg der er årtier gammel og aldrig rigtig fandt vej igennem. Nervesystemet arbejder med det der er, ikke med hvornår det skete." },
               { q: "Kan hypnoterapi hjælpe med sorg og skyld?", a: "Ja. Skyld er en af de mest udbredte og fastholdende komponenter i sorg. Hypnoterapi kan arbejde med begge lag - ikke for at tilgive eller glemme, men for at slippe det der holder dig fast i fortiden og hindrer dig i at leve videre." },
             ].map((item) => (
-              <div key={item.q} style={{ borderBottom: "1px solid #eee", paddingBottom: "16px" }}>
+              <div key={item.q} style={{ borderBottom: "1px solid #E3DFD5", paddingBottom: "16px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", color: "#2C2A28" }}>{item.q}</h3>
                 <p style={{ fontSize: "16px", lineHeight: 1.7, color: "#4A463F" }}>{item.a}</p>
               </div>
@@ -127,12 +127,12 @@ export default function SorgPage() {
         <section style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 500, color: "#6B675F", marginBottom: "12px" }}>Relaterede emner</h2>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <Link href="/angst" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Angst →</Link>
-            <Link href="/ptsd" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>PTSD og traumer →</Link>
-            <Link href="/sovn" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Søvnproblemer →</Link>
-            <Link href="/kaerlighed" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kærlighed og relationer →</Link>
-            <Link href="/hypnoterapi" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Om hypnoterapi →</Link>
-            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5a7a8f", borderRadius: "20px" }}>Kontakt Jan →</Link>
+            <Link href="/angst" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Angst →</Link>
+            <Link href="/ptsd" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>PTSD og traumer →</Link>
+            <Link href="/sovn" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Søvnproblemer →</Link>
+            <Link href="/kaerlighed" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Kærlighed og relationer →</Link>
+            <Link href="/hypnoterapi" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Om hypnoterapi →</Link>
+            <Link href="/kontakt" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Kontakt Jan →</Link>
           </div>
         </section>
 
