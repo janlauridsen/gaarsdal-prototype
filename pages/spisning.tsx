@@ -55,7 +55,7 @@ export default function Page() {
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#F5F3EE", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser</h2>
-          <p style={{ fontSize: "16px", marginBottom: "12px", lineHeight: 1.7 }}>Følelsesspisning er en af de hyppigste årsager til overspisning og vægtproblemer. Forskning viser at adfærdsbaserede tilgange der adresserer de underliggende følelsesmæssige mønstre er mere effektive end kostbaserede løsninger alene.</p>
+          <p style={{ fontSize: "16px", marginBottom: "12px", lineHeight: 1.7 }}>Følelsesspisning er en af de hyppigste årsager til overspisning og vægtproblemer. Forskning viser at adfærdsbaserede tilgange der adresserer de underliggende følelsesmæssige mønstre er et vigtigt supplement til kostbaserede løsninger.</p>
           <p style={{ fontSize: "16px", color: "#6B675F", fontStyle: "italic", lineHeight: 1.7 }}>Kilde: <a href="https://www.sst.dk" target="_blank" rel="noopener" style={{ color: "#5A7049", textDecoration: "underline" }}>Sundhedsstyrelsen.dk</a> om følelsesmæssig spisning og vaner.</p>
         </section>
 
