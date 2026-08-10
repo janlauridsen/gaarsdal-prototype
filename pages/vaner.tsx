@@ -104,6 +104,11 @@ export default function Page() {
           </div>
         </section>
 
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Vigtigt at vide om afhængighed</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Der er forskel på en vane og en afhængighed. Hvis der er tale om alkohol, stoffer, medicin eller spil, hører det til hos egen læge eller i et specialiseret behandlingstilbud - både fordi afhængighed kræver en anden tilgang, og fordi nedtrapning i nogle tilfælde skal foregå under lægeligt tilsyn. Hypnoterapi kan indgå som en del af et forløb, men ikke som eneste indsats. Er du i tvivl om hvor grænsen går for dig, så tag det med i forsamtalen.</p>
+        </section>
+
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
           <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>

@@ -89,6 +89,11 @@ export default function SorgPage() {
           <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Hvis sorgen ledsages af vedvarende håbløshed, tanker om ikke at ville leve, eller manglende evne til at fungere i hverdagen over længere tid, bør du tale med din læge. Det kan være tegn på depression eller forlænget sorglidelse der kræver professionel behandling. Hypnoterapi kan støtte sorgbearbejdning, men erstatter ikke lægelig hjælp ved disse tegn.</p>
         </section>
 
+        <section style={{ marginBottom: "60px", padding: "28px 32px", background: "#fdf6f0", borderRadius: "10px", border: "1px solid #ecd9c6" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Vigtigt at vide om fastlåst sorg</h2>
+          <p style={{ fontSize: "15px", color: "#555", maxWidth: "700px", margin: 0 }}>Hvis sorgen står stille i mere end et år, fylder det meste af hverdagen og gør det svært at fungere, kan der være tale om forlænget sorglidelse. Det er en selvstændig diagnose, og den hører til hos egen læge, der kan henvise videre. Det samme gælder ved vedvarende tristhed, hvis du mister lysten til at være her, eller hvis alkohol er blevet en måde at holde det ud på. Hypnoterapi kan være en del af et samlet forløb, men erstatter ikke psykologisk eller psykiatrisk behandling. Jan samarbejder gerne med behandlere i sundhedssystemet.</p>
+        </section>
+
         <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>Jan Gaarsdal, hypnoterapeut i Birkerød</h2>
           <p style={{ fontSize: "15px", color: "#555", marginBottom: "16px", lineHeight: 1.7 }}>Jan arbejder med sorg og tab i mange former - nylig sorg, fastlåst langtidssorg, og tab der aldrig fik et navn. Han møder det der er svært med ro og uden at skynde på processen.</p>
