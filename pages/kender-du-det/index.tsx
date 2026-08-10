@@ -133,17 +133,17 @@ export default function KenderDuDetPage() {
         />
       </Head>
 
-      <main style={{ maxWidth: "900px", margin: "0 auto", padding: "120px 20px 60px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.6, color: "#333" }}>
+      <main style={{ maxWidth: "900px", margin: "0 auto", padding: "120px 20px 60px", fontFamily: "system-ui, -apple-system, sans-serif", lineHeight: 1.6, color: "#2C2A28" }}>
 
         {/* SEKTION 1: GENKENDELSE */}
         <section style={{ marginBottom: "60px" }}>
           <h1 style={{ fontSize: "32px", fontWeight: 600, marginBottom: "16px", lineHeight: 1.3 }}>
             Kender du det?
           </h1>
-          <p style={{ fontSize: "18px", color: "#666", marginBottom: "16px", maxWidth: "640px" }}>
+          <p style={{ fontSize: "18px", color: "#6B675F", marginBottom: "16px", maxWidth: "640px", lineHeight: 1.7 }}>
             Du ved godt hvad problemet er. Du har tænkt over det mange gange. Måske prøvet at arbejde med det. Og alligevel bliver det ved.
           </p>
-          <p style={{ fontSize: "15px", color: "#555", maxWidth: "640px" }}>
+          <p style={{ fontSize: "16px", color: "#4A463F", maxWidth: "640px", lineHeight: 1.7 }}>
             Hypnoterapi arbejder der, hvor analysen ikke når ind - med de automatiske reaktioner og mønstre der kører under bevidst tænkning. Du behøver ikke forstå dem for at ændre dem.
           </p>
         </section>
@@ -156,18 +156,7 @@ export default function KenderDuDetPage() {
               <button
                 key={key}
                 onClick={() => setSelected(key as ProblemType)}
-                style={{
-                  padding: "20px",
-                  border: selected === key ? "2px solid #5a7a8f" : "1px solid #ddd",
-                  background: selected === key ? "#f0f4f8" : "#fff",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "16px",
-                  fontWeight: 500,
-                  textAlign: "left",
-                  color: selected === key ? "#fff" : "#333",
-                  transition: "all 0.15s",
-                }}
+                style={{ padding: "20px", border: selected === key ? "2px solid #5A7049" : "1px solid #ddd", background: selected === key ? "#E8EBE2" : "#fff", borderRadius: "8px", cursor: "pointer", fontSize: "16px", fontWeight: 500, textAlign: "left", color: selected === key ? "#fff" : "#2C2A28", transition: "all 0.15s" }}
               >
                 {prob.title}
               </button>
@@ -179,32 +168,26 @@ export default function KenderDuDetPage() {
         {selected && problems[selected] && (
           <section
             ref={detailRef}
-            style={{
-              marginBottom: "60px",
-              padding: "30px",
-              background: "#f9fafb",
-              borderRadius: "8px",
-              animation: "slideDown 0.25s ease-out",
-            }}>
+            style={{ marginBottom: "60px", padding: "30px", background: "#F5F3EE", borderRadius: "8px", animation: "slideDown 0.25s ease-out" }}>
             <h3 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "20px" }}>{problems[selected].title}</h3>
             <div style={{ marginBottom: "24px" }}>
-              <h4 style={{ fontSize: "13px", fontWeight: 600, textTransform: "uppercase", color: "#888", marginBottom: "10px", letterSpacing: "0.05em" }}>Din oplevelse</h4>
-              <p style={{ fontSize: "15px", lineHeight: 1.7 }}>{problems[selected].oplevelse}</p>
+              <h4 style={{ fontSize: "13px", fontWeight: 600, textTransform: "uppercase", color: "#6B675F", marginBottom: "10px", letterSpacing: "0.05em" }}>Din oplevelse</h4>
+              <p style={{ fontSize: "16px", lineHeight: 1.7 }}>{problems[selected].oplevelse}</p>
             </div>
             <div style={{ marginBottom: "24px" }}>
-              <h4 style={{ fontSize: "13px", fontWeight: 600, textTransform: "uppercase", color: "#888", marginBottom: "10px", letterSpacing: "0.05em" }}>Hvad der sker</h4>
-              <p style={{ fontSize: "15px", lineHeight: 1.7 }}>{problems[selected].hvadSker}</p>
+              <h4 style={{ fontSize: "13px", fontWeight: 600, textTransform: "uppercase", color: "#6B675F", marginBottom: "10px", letterSpacing: "0.05em" }}>Hvad der sker</h4>
+              <p style={{ fontSize: "16px", lineHeight: 1.7 }}>{problems[selected].hvadSker}</p>
             </div>
             <div style={{ marginBottom: "24px" }}>
-              <h4 style={{ fontSize: "13px", fontWeight: 600, textTransform: "uppercase", color: "#888", marginBottom: "10px", letterSpacing: "0.05em" }}>Hvad der virker</h4>
-              <p style={{ fontSize: "15px", lineHeight: 1.7 }}>{problems[selected].hvadVirker}</p>
+              <h4 style={{ fontSize: "13px", fontWeight: 600, textTransform: "uppercase", color: "#6B675F", marginBottom: "10px", letterSpacing: "0.05em" }}>Hvad der virker</h4>
+              <p style={{ fontSize: "16px", lineHeight: 1.7 }}>{problems[selected].hvadVirker}</p>
             </div>
             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-              <button onClick={() => setSelected(null)} style={{ padding: "8px 16px", fontSize: "13px", background: "transparent", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer", color: "#666" }}>
+              <button onClick={() => setSelected(null)} style={{ padding: "8px 16px", fontSize: "13px", background: "transparent", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer", color: "#6B675F" }}>
                 Luk
               </button>
               {problems[selected].link && (
-                <a href={problems[selected].link} style={{ fontSize: "13px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500 }}>
+                <a href={problems[selected].link} style={{ fontSize: "13px", color: "#5A7049", textDecoration: "none", fontWeight: 500 }}>
                   Læs mere om dette emne →
                 </a>
               )}
@@ -214,41 +197,41 @@ export default function KenderDuDetPage() {
 
         {/* JAN ARBEJDER OGSÅ MED */}
         <section style={{ marginBottom: "48px" }}>
-          <p style={{ fontSize: "15px", color: "#888", marginBottom: "12px" }}>Jan arbejder også med:</p>
+          <p style={{ fontSize: "16px", color: "#6B675F", marginBottom: "12px", lineHeight: 1.7 }}>Jan arbejder også med:</p>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <a href="/kaerlighed" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Kærlighed og relationer</a>
-            <a href="/alkohol" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Alkohol</a>
-            <a href="/ptsd" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>PTSD og traumer</a>
-            <a href="/adhd" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>ADHD</a>
-            <a href="/overgangsalder" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Overgangsalder</a>
-            <a href="/fertilitetsstress" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Fertilitetsstress</a>
-            <a href="/tinnitus" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Tinnitus</a>
-            <a href="/sorg" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Sorg og tab</a>
-            <a href="/ibs-spaendinger" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>IBS og spændinger</a>
-            <a href="/parforhold" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Parforhold</a>
-            <a href="/agteskab" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Skema: Hvad savner jeg i mit ægteskab?</a>
+            <a href="/kaerlighed" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Kærlighed og relationer</a>
+            <a href="/alkohol" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Alkohol</a>
+            <a href="/ptsd" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>PTSD og traumer</a>
+            <a href="/adhd" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>ADHD</a>
+            <a href="/overgangsalder" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Overgangsalder</a>
+            <a href="/fertilitetsstress" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Fertilitetsstress</a>
+            <a href="/tinnitus" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Tinnitus</a>
+            <a href="/sorg" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Sorg og tab</a>
+            <a href="/ibs-spaendinger" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>IBS og spændinger</a>
+            <a href="/parforhold" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Parforhold</a>
+            <a href="/agteskab" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Skema: Hvad savner jeg i mit ægteskab?</a>
           </div>
         </section>
 
         {/* SEKTION 4: OM JAN */}
-        <section style={{ marginBottom: "48px", padding: "32px", background: "#f9fafb", borderRadius: "10px", borderLeft: "3px solid #5a7a8f" }}>
+        <section style={{ marginBottom: "48px", padding: "32px", background: "#F5F3EE", borderRadius: "10px", borderLeft: "3px solid #5A7049" }}>
           <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
             <div style={{ flex: 1 }}>
-              <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px", color: "#333" }}>
+              <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px", color: "#2C2A28" }}>
                 Hvem er Jan Gaarsdal?
               </h2>
-              <p style={{ fontSize: "15px", lineHeight: 1.7, marginBottom: "12px", color: "#555" }}>
+              <p style={{ fontSize: "16px", lineHeight: 1.7, marginBottom: "12px", color: "#4A463F" }}>
                 Jan er hypnoterapeut i Birkerød. Han arbejder med de mønstre og reaktioner der kører automatisk - dem der ikke ændrer sig selv om man forstår dem nok og vil nok.
               </p>
-              <div style={{ marginTop: "16px", padding: "12px 16px", background: "#f0f4f8", borderRadius: "6px", display: "inline-block" }}>
-                <p style={{ fontSize: "14px", fontWeight: 500, color: "#333", margin: "0 0 8px" }}>
+              <div style={{ marginTop: "16px", padding: "12px 16px", background: "#E8EBE2", borderRadius: "6px", display: "inline-block" }}>
+                <p style={{ fontSize: "14px", fontWeight: 500, color: "#2C2A28", margin: "0 0 8px", lineHeight: 1.7 }}>
                   🎯 Gratis forsamtale, 30 minutter, telefon eller fysisk
                 </p>
                 <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-                  <a href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>
+                  <a href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#627A52", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "4px" }}>
                     Book forsamtale →
                   </a>
-                  <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5a7a8f", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>
+                  <a href="tel:+4542807474" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", fontWeight: 500, padding: "8px 0" }}>
                     Ring +45 42 80 74 74
                   </a>
                 </div>
@@ -263,36 +246,19 @@ export default function KenderDuDetPage() {
 
         {/* CTA */}
         <section style={{ marginBottom: "60px", textAlign: "center", padding: "40px 20px" }}>
-          <p style={{ fontSize: "16px", color: "#555", marginBottom: "28px" }}>
+          <p style={{ fontSize: "16px", color: "#4A463F", marginBottom: "28px", lineHeight: 1.7 }}>
             Gratis forsamtale på 30 minutter, telefon eller fysisk. Ingen forpligtelse.
           </p>
           <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
             <Link
               href="/?open=chat"
-              style={{
-                padding: "14px 28px",
-                background: "#5a7a8f",
-                color: "#fff",
-                textDecoration: "none",
-                borderRadius: "6px",
-                fontWeight: 500,
-                fontSize: "16px",
-              }}
+              style={{ padding: "14px 28px", background: "#627A52", color: "#fff", textDecoration: "none", borderRadius: "6px", fontWeight: 500, fontSize: "16px" }}
             >
               Er det noget for mig? →
             </Link>
             <Link
               href="/kontakt"
-              style={{
-                padding: "14px 28px",
-                background: "transparent",
-                color: "#5a7a8f",
-                textDecoration: "none",
-                border: "1px solid #5a7a8f",
-                borderRadius: "6px",
-                fontWeight: 500,
-                fontSize: "16px",
-              }}
+              style={{ padding: "14px 28px", background: "transparent", color: "#5A7049", textDecoration: "none", border: "1px solid #5A7049", borderRadius: "6px", fontWeight: 500, fontSize: "16px" }}
             >
               Kontakt for afklaring
             </Link>
