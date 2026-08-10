@@ -9,7 +9,7 @@ export default function IbsSpaendingerPage() {
       <Header />
       <Head>
         <title>IBS og spændinger, hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="IBS og kroniske spændinger opstår ofte i nervesystemet, ikke i organet. Hypnoterapi arbejder med stress-tarmsignalet og muskelspændinger. Jan Gaarsdal, Birkerød." />
+        <meta name="description" content="IBS og kroniske spændinger opstår ofte i nervesystemet, ikke i organet. Hypnoterapi arbejder med stress-tarmsignalet. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/ibs-spaendinger" />
         <meta property="og:title" content="IBS og spændinger - hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="IBS og kroniske spændinger er kroppen der taler. Hypnoterapi arbejder med det nervesystem der driver symptomerne." />
@@ -86,7 +86,7 @@ export default function IbsSpaendingerPage() {
         <section style={{ marginBottom: "60px", padding: "32px", background: "#F5F3EE", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser om hypnose og IBS</h2>
           <p style={{ fontSize: "16px", marginBottom: "12px", lineHeight: 1.7 }}>
-            Gut-directed hypnotherapy er en af de bedst dokumenterede ikke-medicinske behandlinger ved IBS. En metaanalyse publiceret i American Journal of Gastroenterology (2019) fandt at hypnoterapi reducerede IBS-symptomer hos 70-80 pct. af deltagerne, og at effekten holdt sig i op til 5 år efter behandlingen.
+            Gut-directed hypnotherapy er en af de bedst dokumenterede ikke-medicinske behandlinger ved IBS. Systematiske gennemgange finder responsrater på 40-80 pct. afhængigt af studie og population, og opfølgningsstudier peger på at effekten kan holde sig i årevis hos dem der responderer.
           </p>
           <p style={{ fontSize: "16px", marginBottom: "12px", lineHeight: 1.7 }}>
             National Institute for Health and Care Excellence (NICE) i UK anbefaler gut-directed hypnotherapy som behandling ved IBS for patienter der ikke har tilstrækkelig effekt af kost- og medicinbehandling. Det er en af de meget få komplementære behandlinger med officiel klinisk anbefaling.

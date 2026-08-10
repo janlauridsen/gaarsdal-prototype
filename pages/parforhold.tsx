@@ -9,7 +9,7 @@ export default function ParforholdPage() {
       <Header />
       <Head>
         <title>Parforhold og kommunikation, hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="Mønstre i parforholdet der gentager sig. Hypnoterapi arbejder med de individuelle reaktioner der driver konflikterne - ikke med teknikkerne. Jan Gaarsdal, Birkerød." />
+        <meta name="description" content="Mønstre i parforholdet der gentager sig. Hypnoterapi arbejder med de individuelle reaktioner der driver konflikterne. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/parforhold" />
         <meta property="og:title" content="Parforhold og kommunikation - hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="De samme konflikter bliver ved at komme tilbage. Hypnoterapi ændrer de individuelle reaktioner der driver mønstrene - ikke blot kommunikationsteknikken." />

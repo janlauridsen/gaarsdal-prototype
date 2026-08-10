@@ -9,7 +9,7 @@ export default function AdhdPage() {
       <Header />
       <Head>
         <title>ADHD og hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="ADHD handler om et nervesystem der er svært at regulere. Hypnoterapi arbejder med koncentration, impulskontrol og indre uro - uden medicin. Jan Gaarsdal, Birkerød." />
+        <meta name="description" content="ADHD handler om et nervesystem der er svært at regulere. Hypnoterapi arbejder med koncentration, impulskontrol og indre uro. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/adhd" />
         <meta property="og:title" content="ADHD og hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="ADHD er et reguleringsproblem, ikke et viljensproblem. Hypnoterapi arbejder med det nervesystem der kæmper med at finde ro og fastholde fokus." />
@@ -89,10 +89,10 @@ export default function AdhdPage() {
             ADHD rammer 3-5 pct. af børn og et stigende antal voksne - mange udiagnosticerede. Medicin (centralstimulerende midler) er veldokumenteret, men adresserer ikke de emotionelle og adfærdsmæssige mønstre der typisk følger med: perfektionisme, prokrastination, selvkritik og emotionel reaktivitet.
           </p>
           <p style={{ fontSize: "16px", marginBottom: "12px", lineHeight: 1.7 }}>
-            Studier fra bl.a. Journal of Developmental & Behavioral Pediatrics viser at ADHD-hjernen er særligt responsiv for hypnotisk fokustilstand, da hyperfokus er en naturlig egenskab ved ADHD-profilen. Hypnoterapi bruges i stigende grad som supplement til medicinsk behandling, særligt for at arbejde med angst, søvn og selvopfattelse.
+            Hyperfokus er en velkendt del af ADHD-profilen, og evnen til at gå helt op i noget er den samme evne hypnose bygger på. Det er en af grundene til at mange med ADHD har lettere ved hypnose end de selv forventer. Hypnoterapi bruges i stigende grad som supplement til medicinsk behandling, særligt for at arbejde med angst, søvn og selvopfattelse.
           </p>
           <p style={{ fontSize: "16px", color: "#6B675F", fontStyle: "italic", lineHeight: 1.7 }}>
-            Kilde: ADHD-foreningen Danmark, <a href="https://www.psykiatri-regionh.dk" target="_blank" rel="noopener" style={{ color: "#5A7049", textDecoration: "underline" }}>Psykiatri Region Hovedstaden</a>, Journal of Developmental & Behavioral Pediatrics.
+            Kilde: ADHD-foreningen Danmark, <a href="https://www.psykiatri-regionh.dk" target="_blank" rel="noopener" style={{ color: "#5A7049", textDecoration: "underline" }}>Psykiatri Region Hovedstaden</a>.
           </p>
         </section>
 

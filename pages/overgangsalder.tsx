@@ -47,7 +47,7 @@ export default function OvergangsalderPage() {
 
         <section style={{ marginBottom: "60px", padding: "32px", background: "#F5F3EE", borderRadius: "10px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>Hvad forskning viser om hypnose og overgangsalder</h2>
-          <p style={{ fontSize: "16px", marginBottom: "12px", lineHeight: 1.7 }}>Et klinisk studie fra Baylor University (2012, publiceret i Menopause) fandt at hypnoterapi reducerede hyppigheden af hedeture med 74 pct. hos postmenopausale kvinder over 12 uger. North American Menopause Society fremhæver hypnoterapi som en evidensbaseret ikke-hormonel behandling ved vasomotoriske symptomer.</p>
+          <p style={{ fontSize: "16px", marginBottom: "12px", lineHeight: 1.7 }}>Et klinisk studie fra Baylor University (Elkins et al., Menopause 2013) fandt at hypnoterapi reducerede hyppigheden af hedeture med 74 pct. hos postmenopausale kvinder over 12 uger. North American Menopause Society fremhæver hypnoterapi som en evidensbaseret ikke-hormonel behandling ved vasomotoriske symptomer.</p>
           <p style={{ fontSize: "16px", marginBottom: "12px", lineHeight: 1.7 }}>Professor Bobby Zachariae, Aarhus Universitet, som har forsket i hypnosens effekter i årtier, bekræfter hypnosens veldokumenterede effekt på angst og søvn - begge centrale komponenter i overgangsalderens symptomkompleks.</p>
           <p style={{ fontSize: "16px", color: "#6B675F", fontStyle: "italic", lineHeight: 1.7 }}>Kilde: <a href="https://www.menopause.org" target="_blank" rel="noopener" style={{ color: "#5A7049", textDecoration: "underline" }}>North American Menopause Society</a>, Elkins et al. (2012) Menopause Journal.</p>
         </section>

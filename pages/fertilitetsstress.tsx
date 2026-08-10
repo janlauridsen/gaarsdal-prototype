@@ -9,7 +9,7 @@ export default function FertilitetsstressPage() {
       <Header />
       <Head>
         <title>Fertilitetsstress og hypnoterapi Birkerød | Gaarsdal</title>
-        <meta name="description" content="Fertilitetsbehandling er en af de største psykiske belastninger man kan møde. Hypnoterapi hjælper med stress, uro og søvn under IVF og fertilitetsforløb. Jan Gaarsdal, Birkerød." />
+        <meta name="description" content="Fertilitetsbehandling er en stor psykisk belastning. Hypnoterapi arbejder med stress, uro og søvn under IVF-forløb. Jan Gaarsdal, Birkerød." />
         <link rel="canonical" href="https://gaarsdal.net/fertilitetsstress" />
         <meta property="og:title" content="Fertilitetsstress og hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="Ventetiden, håbet og skuffelserne tærer. Hypnoterapi hjælper med at bære et fertilitetsforløb - og reducerer den stress der påvirker kroppen." />
