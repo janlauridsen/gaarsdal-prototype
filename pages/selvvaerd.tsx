@@ -13,7 +13,7 @@ export default function Page() {
         <link rel="canonical" href="https://gaarsdal.net/selvvaerd" />
         <meta property="og:title" content="Lavt selvværd og hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Lavt selvværd sidder dybere end positive bekræftelser kan nå. Hypnoterapi arbejder med overbevisningerne under bevidst tænkning. Jan Gaarsdal, Birkerød." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/selvvaerd" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

@@ -13,7 +13,7 @@ export default function FertilitetsstressPage() {
         <link rel="canonical" href="https://gaarsdal.net/fertilitetsstress" />
         <meta property="og:title" content="Fertilitetsstress og hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="Ventetiden, håbet og skuffelserne tærer. Hypnoterapi hjælper med at bære et fertilitetsforløb - og reducerer den stress der påvirker kroppen." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/fertilitetsstress" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

@@ -13,7 +13,7 @@ export default function PtsdPage() {
         <link rel="canonical" href="https://gaarsdal.net/ptsd" />
         <meta property="og:title" content="PTSD og traumer - hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="Du ved det er overstået. Men kroppen reagerer som om det sker igen. Hypnoterapi arbejder med traumet der hvor det sidder - i de automatiske reaktioner." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/ptsd" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

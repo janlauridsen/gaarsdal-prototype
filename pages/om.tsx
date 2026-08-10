@@ -22,7 +22,7 @@ export default function Om() {
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://gaarsdal.net/om" />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta name="robots" content="index, follow" />
         <script
           type="application/ld+json"
@@ -49,12 +49,11 @@ export default function Om() {
           <div className="flex flex-col sm:flex-row gap-8 items-center mb-14">
             <div className="flex-shrink-0">
               <Image
-                src="/Jan-AI.png"
+                src="/jan-gaarsdal.jpg"
                 alt="Jan Gaarsdal Lauridsen, hypnoterapeut"
                 width={120}
                 height={120}
                 className="rounded-xl object-cover shadow-sm"
-                style={{ opacity: 0.80 }}
                 priority
               />
             </div>

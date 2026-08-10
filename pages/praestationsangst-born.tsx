@@ -13,7 +13,7 @@ export default function Page() {
         <link rel="canonical" href="https://gaarsdal.net/praestationsangst-born" />
         <meta property="og:title" content="Præstationsangst og eksamensangst, børn og unge | Gaarsdal Birkerød" />
         <meta property="og:description" content="Dit barn blokerer til prøver og fremlæggelser. Hypnoterapi ændrer nervesystemets reaktion i præstationssituationer. Jan Gaarsdal, Birkerød." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://gaarsdal.net/praestationsangst-born" />
         <meta name="robots" content="index, follow" />

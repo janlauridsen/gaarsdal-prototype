@@ -13,7 +13,7 @@ export default function ParforholdPage() {
         <link rel="canonical" href="https://gaarsdal.net/parforhold" />
         <meta property="og:title" content="Parforhold og kommunikation - hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="De samme konflikter bliver ved at komme tilbage. Hypnoterapi ændrer de individuelle reaktioner der driver mønstrene - ikke blot kommunikationsteknikken." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/parforhold" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

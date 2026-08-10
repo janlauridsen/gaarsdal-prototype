@@ -91,7 +91,7 @@ export default function AgteskabPage() {
           property="og:description"
           content="Sæt kryds ved det der rammer dig. Et redskab til selvrefleksion om hvad der mangler - og hvad det kan betyde."
         />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/agteskab" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

@@ -13,7 +13,7 @@ export default function SorgPage() {
         <link rel="canonical" href="https://gaarsdal.net/sorg" />
         <meta property="og:title" content="Sorg og tab - hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="Sorg der sidder fast er ikke svaghed. Det er et nervesystem der ikke har fundet vej igennem tabet. Hypnoterapi hjælper der hvor ord ikke rækker." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/sorg" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

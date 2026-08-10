@@ -13,7 +13,7 @@ export default function PriserPage() {
         <link rel="canonical" href="https://gaarsdal.net/priser" />
         <meta property="og:title" content="Priser, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Første session 900 kr. Opfølgning 600 kr. Gratis forsamtale 30 minutter. Særlige vilkår for studerende, arbejdsløse og flygtninge." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://gaarsdal.net/priser" />
         <meta name="robots" content="index, follow" />

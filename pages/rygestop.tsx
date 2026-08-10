@@ -13,7 +13,7 @@ export default function Page() {
         <link rel="canonical" href="https://gaarsdal.net/rygestop" />
         <meta property="og:title" content="Rygestop med hypnoterapi Birkerød | Stop med at ryge | Gaarsdal" />
         <meta property="og:description" content="Vil du holde op med at ryge? Hypnoterapi arbejder med trangen, ikke viljestyrken. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/rygestop" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

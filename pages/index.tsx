@@ -45,7 +45,7 @@ export default function Home() {
               telephone: "+4542807474",
               email: "jan@gaarsdal.net",
               priceRange: "600-900 kr",
-              image: "https://gaarsdal.net/Jan-AI.png",
+              image: "https://gaarsdal.net/og-jan-gaarsdal.jpg",
               address: {
                 "@type": "PostalAddress",
                 streetAddress: "Bakkevej 36",

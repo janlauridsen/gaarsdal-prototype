@@ -13,7 +13,7 @@ export default function Page() {
         <link rel="canonical" href="https://gaarsdal.net/krop-born" />
         <meta property="og:title" content="Kropsutilfredshed hos børn og unge, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Dit barn er utilfreds med sin krop og sammenligner sig konstant. Hypnoterapi arbejder med det forvredne selvbillede. Jan Gaarsdal, Birkerød." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://gaarsdal.net/krop-born" />
         <meta name="robots" content="index, follow" />

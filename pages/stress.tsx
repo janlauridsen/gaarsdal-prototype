@@ -13,7 +13,7 @@ export default function Page() {
         <link rel="canonical" href="https://gaarsdal.net/stress" />
         <meta property="og:title" content="Konstant stress og hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Stress der ikke slipper, selv i weekenden. Hypnoterapi arbejder med nervesystemets grundindstilling. Jan Gaarsdal, Birkerød. Gratis forsamtale 30 minutter." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/stress" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

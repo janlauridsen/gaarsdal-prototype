@@ -13,7 +13,7 @@ export default function Page() {
         <link rel="canonical" href="https://gaarsdal.net/social-angst-born" />
         <meta property="og:title" content="Socialt udenfor, børn og unge, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Dit barn føler sig udenfor og har svært ved venskaber. Hypnoterapi arbejder med selvopfattelsen der driver adfærden. Jan Gaarsdal, Birkerød." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://gaarsdal.net/social-angst-born" />
         <meta name="robots" content="index, follow" />

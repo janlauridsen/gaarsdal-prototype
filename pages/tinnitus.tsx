@@ -13,7 +13,7 @@ export default function TinnitusPage() {
         <link rel="canonical" href="https://gaarsdal.net/tinnitus" />
         <meta property="og:title" content="Tinnitus og hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="Tinnitus forværres af stress og opmærksomhed. Hypnoterapi ændrer hjernens reaktion på lyden - ikke lyden selv." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/tinnitus" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

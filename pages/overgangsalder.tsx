@@ -13,7 +13,7 @@ export default function OvergangsalderPage() {
         <link rel="canonical" href="https://gaarsdal.net/overgangsalder" />
         <meta property="og:title" content="Overgangsalder og hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="Hedeture, søvn og humør i overgangsalderen påvirkes direkte af nervesystemet. Hypnoterapi arbejder der - uden medicin." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/overgangsalder" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

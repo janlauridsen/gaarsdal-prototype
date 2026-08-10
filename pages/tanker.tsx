@@ -13,7 +13,7 @@ export default function Page() {
         <link rel="canonical" href="https://gaarsdal.net/tanker" />
         <meta property="og:title" content="Overtænkning og tankemylder, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Kan du ikke slukke for tankerne? Overtænkning er ikke intelligens, det er et nervesystem der kompenserer. Jan Gaarsdal, Birkerød." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/tanker" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

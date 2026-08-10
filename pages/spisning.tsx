@@ -13,7 +13,7 @@ export default function Page() {
         <link rel="canonical" href="https://gaarsdal.net/spisning" />
         <meta property="og:title" content="Følelsesspisning og hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Spiser du på følelserne? Maden dækker noget andet end sult. Hypnoterapi arbejder med det underliggende behov. Jan Gaarsdal, Birkerød." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/spisning" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

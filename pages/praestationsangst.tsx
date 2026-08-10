@@ -13,7 +13,7 @@ export default function PraestationsangstPage() {
         <link rel="canonical" href="https://gaarsdal.net/praestationsangst" />
         <meta property="og:title" content="Præstationsangst og eksamensangst | Gaarsdal Birkerød" />
         <meta property="og:description" content="Du har forberedt dig. Og alligevel blokerer du. Præstationsangst sidder ikke i pensummet, det sidder i nervesystemet." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/praestationsangst" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

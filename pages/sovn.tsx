@@ -13,7 +13,7 @@ export default function SovnPage() {
         <link rel="canonical" href="https://gaarsdal.net/sovn" />
         <meta property="og:title" content="Søvnproblemer og hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="Søvnproblemer sidder dybere end gode vaner og skærmfri aftener. Hypnoterapi arbejder der, hvor viljestyrken ikke når ind." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/sovn" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

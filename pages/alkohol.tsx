@@ -14,7 +14,7 @@ export default function Page() {
         <link rel="canonical" href="https://gaarsdal.net/alkohol" />
         <meta property="og:title" content="Drikker du mere end du vil? Hypnoterapi mod alkohol | Gaarsdal" />
         <meta property="og:description" content="For mange fylder alkohol mere end de ønsker. Hypnoterapi arbejder med behovet bag, ikke kun trangen. Diskret og fordomsfrit i Birkerød." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://gaarsdal.net/alkohol" />
         <meta name="robots" content="index, follow" />

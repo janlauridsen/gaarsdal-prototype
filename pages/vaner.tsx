@@ -13,7 +13,7 @@ export default function Page() {
         <link rel="canonical" href="https://gaarsdal.net/vaner" />
         <meta property="og:title" content="Vaner du ikke kan bryde, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Du har besluttet dig mange gange. De første dage går godt. Og så er du tilbage til det gamle. Hypnoterapi ændrer vanen ved kilden. Jan Gaarsdal, Birkerød." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/vaner" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

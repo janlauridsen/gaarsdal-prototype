@@ -13,7 +13,7 @@ export default function IbsSpaendingerPage() {
         <link rel="canonical" href="https://gaarsdal.net/ibs-spaendinger" />
         <meta property="og:title" content="IBS og spændinger - hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="IBS og kroniske spændinger er kroppen der taler. Hypnoterapi arbejder med det nervesystem der driver symptomerne." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/ibs-spaendinger" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

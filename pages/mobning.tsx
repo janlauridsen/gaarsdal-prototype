@@ -13,7 +13,7 @@ export default function Page() {
         <link rel="canonical" href="https://gaarsdal.net/mobning" />
         <meta property="og:title" content="Mobning, børn og unge, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Mobning efterlader overbevisninger om skyld og skam der sidder længe efter mobningen stopper. Hypnoterapi arbejder med hvad barnet tror om sig selv nu. Jan Gaarsdal." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://gaarsdal.net/mobning" />
         <meta name="robots" content="index, follow" />

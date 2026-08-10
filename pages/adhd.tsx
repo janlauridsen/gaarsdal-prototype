@@ -13,7 +13,7 @@ export default function AdhdPage() {
         <link rel="canonical" href="https://gaarsdal.net/adhd" />
         <meta property="og:title" content="ADHD og hypnoterapi | Gaarsdal Birkerød" />
         <meta property="og:description" content="ADHD er et reguleringsproblem, ikke et viljensproblem. Hypnoterapi arbejder med det nervesystem der kæmper med at finde ro og fastholde fokus." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/adhd" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

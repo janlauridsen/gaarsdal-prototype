@@ -13,7 +13,7 @@ export default function Page() {
         <link rel="canonical" href="https://gaarsdal.net/fobi" />
         <meta property="og:title" content="Fobi og frygt, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Bange for højder, flyvning, sprøjter, edderkopper eller noget helt andet? Fobi er en lært reaktion der kan ændres. Jan Gaarsdal, Birkerød." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/fobi" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

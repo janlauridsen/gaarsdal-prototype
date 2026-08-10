@@ -13,7 +13,7 @@ export default function Page() {
         <link rel="canonical" href="https://gaarsdal.net/angst" />
         <meta property="og:title" content="Angst og bekymring, hypnoterapi Birkerød | Gaarsdal" />
         <meta property="og:description" content="Angst der ikke stopper. Bekymringer der kører i ring. Hypnoterapi arbejder med nervesystemet der holder alarmen i gang. Jan Gaarsdal, Birkerød." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/angst" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />

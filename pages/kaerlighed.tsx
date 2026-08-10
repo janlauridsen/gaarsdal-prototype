@@ -13,7 +13,7 @@ export default function KaerlighedPage() {
         <link rel="canonical" href="https://gaarsdal.net/kaerlighed" />
         <meta property="og:title" content="Kærlighed og tilknytningsmønstre | Gaarsdal Birkerød" />
         <meta property="og:description" content="Frygt for afvisning, gentagne mønstre i forhold, undgåelse af nærhed. Hypnoterapi arbejder med de grundindstillinger der holder dig tilbage fra kærlighed." />
-        <meta property="og:image" content="https://gaarsdal.net/Jan-AI.png" />
+        <meta property="og:image" content="https://gaarsdal.net/og-jan-gaarsdal.jpg" />
         <meta property="og:url" content="https://gaarsdal.net/kaerlighed" />
         <meta property="og:type" content="website" />
         <meta name="robots" content="index, follow" />
