@@ -211,6 +211,7 @@ export default function KenderDuDetPage() {
             <a href="/parforhold" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Parforhold</a>
             <a href="/digital-udbraendthed" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Digital udbrændthed</a>
             <a href="/irritation" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Irritabilitet og kort lunte</a>
+            <a href="/irritation-skema" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Skema: Hvorfor har jeg så kort lunte?</a>
             <a href="/agteskab" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #d8dde2", borderRadius: "20px" }}>Skema: Hvad savner jeg i mit ægteskab?</a>
           </div>
         </section>
