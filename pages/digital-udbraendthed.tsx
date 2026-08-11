@@ -127,6 +127,7 @@ export default function Page() {
               🎯 Gratis forsamtale, 30 minutter, telefon eller fysisk
             </p>
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+              <Link href="/irritation-skema" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Skema: kort lunte →</Link>
               <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#627A52", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "6px" }}>
                 Book forsamtale
               </Link>

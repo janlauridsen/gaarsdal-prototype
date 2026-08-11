@@ -29,6 +29,12 @@ export default function Page() {
           <p style={{ fontSize: "17px", lineHeight: 1.7, color: "#4A463F", maxWidth: "700px" }}>Du har ikke fået mere vrede. Du har fået mindre overskud til at være tolerant. Det er en vigtig forskel, for tolerance er ikke noget man beslutter sig for - det er noget der er der, når nervesystemet har plads, og som forsvinder når det ikke har.</p>
         </section>
 
+        <section style={{ marginBottom: "60px", padding: "24px 28px", background: "#E8EBE2", borderRadius: "10px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "8px" }}>Er du i tvivl om hvad der ligger under?</h2>
+          <p style={{ fontSize: "16px", color: "#4A463F", maxWidth: "700px", marginBottom: "14px", lineHeight: 1.7 }}>Sæt kryds ved det du genkender, og få et billede af hvad der trækker på dit overskud.</p>
+          <Link href="/irritation-skema" style={{ fontSize: "15px", color: "#fff", background: "#627A52", textDecoration: "none", fontWeight: 500, padding: "10px 18px", borderRadius: "6px", display: "inline-block" }}>Prøv refleksionsskemaet →</Link>
+        </section>
+
         <section style={{ marginBottom: "60px" }}>
           <h2 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "20px" }}>Hvad der sker</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
@@ -147,6 +153,7 @@ export default function Page() {
               🎯 Gratis forsamtale, 30 minutter, telefon eller fysisk
             </p>
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+              <Link href="/irritation-skema" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Skema: kort lunte →</Link>
               <Link href="/kontakt" style={{ fontSize: "14px", color: "#fff", background: "#627A52", textDecoration: "none", fontWeight: 500, padding: "8px 16px", borderRadius: "6px" }}>
                 Book forsamtale
               </Link>
