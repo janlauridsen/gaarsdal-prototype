@@ -210,6 +210,7 @@ export default function Page() {
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <Link href="/selvbillede-born" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Selvbillede</Link>
             <Link href="/angst-born" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Angst hos børn</Link>
+            <Link href="/digital-udbraendthed" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Digital udbrændthed →</Link>
             <Link href="/sovn-born" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Søvnproblemer</Link>
             <Link href="/children" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Børn & Unge</Link>
             <Link href="/priser" style={{ fontSize: "14px", color: "#5A7049", textDecoration: "none", padding: "6px 14px", border: "1px solid #5A7049", borderRadius: "20px" }}>Priser</Link>
